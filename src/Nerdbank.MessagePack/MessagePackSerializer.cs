@@ -23,6 +23,10 @@ public class MessagePackSerializer
 		{ typeof(short), new Int16Converter() },
 		{ typeof(int), new Int32Converter() },
 		{ typeof(long), new Int64Converter() },
+		{ typeof(string), new StringConverter() },
+		{ typeof(bool), new BooleanConverter() },
+		{ typeof(float), new SingleConverter() },
+		{ typeof(double), new DoubleConverter() },
 	}.ToFrozenDictionary();
 
 	private readonly ConcurrentDictionary<Type, IMessagePackConverter> cachedConverters = new();
@@ -110,13 +114,15 @@ public class MessagePackSerializer
 	/// <returns><see langword="true"/> if a converter was found to already exist; otherwise <see langword="false" />.</returns>
 	internal bool TryGetConverter<T>([NotNullWhen(true)] out IMessagePackConverter<T>? converter)
 	{
-		if (PrimitiveConverters.TryGetValue(typeof(T), out IMessagePackConverter? candidate))
+		// Query our cache before the static converters to allow overrides of the built-in converters.
+		// For example this may allow for string interning or other optimizations.
+		if (this.cachedConverters.TryGetValue(typeof(T), out IMessagePackConverter? candidate))
 		{
 			converter = (IMessagePackConverter<T>)candidate;
 			return true;
 		}
 
-		if (this.cachedConverters.TryGetValue(typeof(T), out candidate))
+		if (PrimitiveConverters.TryGetValue(typeof(T), out candidate))
 		{
 			converter = (IMessagePackConverter<T>)candidate;
 			return true;

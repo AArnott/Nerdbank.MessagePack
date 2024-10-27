@@ -26,6 +26,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	[Fact]
 	public void ClassWithDefaultCtorWithInitProperty() => this.AssertRoundtrip(new DefaultCtorWithInitProperty { Age = 42 });
 
+	[Fact]
+	public void RecordWithOtherPrimitives() => this.AssertRoundtrip(new OtherPrimitiveTypes("hello", true, 0.1f, 0.2));
+
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
 	{
@@ -80,6 +83,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 			&& this.Int32 == other.Int32
 			&& this.Int64 == other.Int64;
 	}
+
+	[GenerateShape]
+	public partial record OtherPrimitiveTypes(string AString, bool ABoolean, float AFloat, double ADouble);
 
 	[GenerateShape]
 	public partial record RecordClass(int Seeds)
