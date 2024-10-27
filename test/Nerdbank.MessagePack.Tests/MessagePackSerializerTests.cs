@@ -29,6 +29,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	[Fact]
 	public void RecordWithOtherPrimitives() => this.AssertRoundtrip(new OtherPrimitiveTypes("hello", true, 0.1f, 0.2));
 
+	[Fact]
+	public void NullableStruct_Null() => this.AssertRoundtrip(new RecordWithNullableStruct(null));
+
+	[Fact]
+	public void NullableStruct_NotNull() => this.AssertRoundtrip(new RecordWithNullableStruct(3));
+
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
 	{
@@ -102,4 +108,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 
 		public bool Equals(DefaultCtorWithInitProperty? other) => other is not null && this.Age == other.Age;
 	}
+
+	[GenerateShape]
+	public partial record RecordWithNullableStruct(int? Value);
 }

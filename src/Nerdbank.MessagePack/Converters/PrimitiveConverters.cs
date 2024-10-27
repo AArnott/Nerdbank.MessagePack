@@ -53,3 +53,37 @@ internal class DoubleConverter : IMessagePackConverter<double>
 	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref double value) => writer.Write(value);
 }
+
+/// <summary>
+/// Serializes a nullable value type.
+/// </summary>
+/// <typeparam name="T">The value type.</typeparam>
+/// <param name="elementConverter">The converter to use when the value is not null.</param>
+internal class NullableConverter<T>(IMessagePackConverter<T> elementConverter) : IMessagePackConverter<T?>
+	where T : struct
+{
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref T? value)
+	{
+		if (value.HasValue)
+		{
+			T nonnullValue = value.Value;
+			elementConverter.Serialize(ref writer, ref nonnullValue);
+		}
+		else
+		{
+			writer.WriteNil();
+		}
+	}
+
+	/// <inheritdoc/>
+	public override T? Deserialize(ref MessagePackReader reader)
+	{
+		if (reader.TryReadNil())
+		{
+			return null;
+		}
+
+		return elementConverter.Deserialize(ref reader);
+	}
+}

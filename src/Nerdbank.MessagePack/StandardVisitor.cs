@@ -112,6 +112,9 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 		return new DeserializeProperty<TArgumentState>((ref TArgumentState state, ref MessagePackReader reader) => setter(ref state, converter.Deserialize(ref reader)!));
 	}
 
+	/// <inheritdoc/>
+	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
+
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
 	/// </summary>

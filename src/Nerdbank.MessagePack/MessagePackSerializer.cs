@@ -11,6 +11,17 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Serializes .NET objects using the MessagePack format.
 /// </summary>
+/// <devremarks>
+/// <para>
+/// This class may declare properties that customize how msgpack serialization is performed.
+/// These properties must use <see langword="init"/> accessors to prevent modification after construction,
+/// since there is no means to replace converters once they are created.
+/// </para>
+/// <para>
+/// If the ability to add custom converters is exposed publicly, such a method should throw once generated converters have started being generated
+/// because generated ones have already locked-in their dependencies.
+/// </para>
+/// </devremarks>
 public class MessagePackSerializer
 {
 	private static readonly FrozenDictionary<Type, IMessagePackConverter> PrimitiveConverters = new Dictionary<Type, IMessagePackConverter>()
