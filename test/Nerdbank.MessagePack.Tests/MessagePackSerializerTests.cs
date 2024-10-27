@@ -1,6 +1,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
 using Nerdbank.MessagePack;
 using Nerdbank.Streams;
 using TypeShape;
@@ -34,6 +35,15 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 
 	[Fact]
 	public void NullableStruct_NotNull() => this.AssertRoundtrip(new RecordWithNullableStruct(3));
+
+	[Fact]
+	public void Dictionary() => this.AssertRoundtrip(new ClassWithDictionary { StringInt = new() { { "a", 1 }, { "b", 2 } } });
+
+	[Fact]
+	public void Dictionary_Null() => this.AssertRoundtrip(new ClassWithDictionary { StringInt = null });
+
+	[Fact]
+	public void ImmutableDictionary() => this.AssertRoundtrip(new ClassWithImmutableDictionary { StringInt = ImmutableDictionary<string, int>.Empty.Add("a", 1) });
 
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
@@ -111,4 +121,20 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 
 	[GenerateShape]
 	public partial record RecordWithNullableStruct(int? Value);
+
+	[GenerateShape]
+	public partial class ClassWithDictionary : IEquatable<ClassWithDictionary>
+	{
+		public Dictionary<string, int>? StringInt { get; set; }
+
+		public bool Equals(ClassWithDictionary? other) => other is not null && ByValueEquality.Equal(this.StringInt, other.StringInt);
+	}
+
+	[GenerateShape]
+	public partial class ClassWithImmutableDictionary : IEquatable<ClassWithImmutableDictionary>
+	{
+		public ImmutableDictionary<string, int>? StringInt { get; set; }
+
+		public bool Equals(ClassWithImmutableDictionary? other) => other is not null && ByValueEquality.Equal(this.StringInt, other.StringInt);
+	}
 }

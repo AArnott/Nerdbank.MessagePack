@@ -115,6 +115,33 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	/// <inheritdoc/>
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
 
+	/// <inheritdoc/>
+	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
+	{
+		// Serialization functions.
+		IMessagePackConverter<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);
+		IMessagePackConverter<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
+		Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
+
+		// Deserialization functions.
+		switch (dictionaryShape.ConstructionStrategy)
+		{
+			case CollectionConstructionStrategy.None:
+				return new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter);
+			case CollectionConstructionStrategy.Mutable:
+				Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry = dictionaryShape.GetAddKeyValuePair();
+				Func<TDictionary> ctor = dictionaryShape.GetDefaultConstructor();
+				return new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addEntry, ctor);
+			case CollectionConstructionStrategy.Span:
+				SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetSpanConstructor();
+				return new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, spanCtor);
+			case CollectionConstructionStrategy.Enumerable:
+				Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumCtor = dictionaryShape.GetEnumerableConstructor();
+				return new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, enumCtor);
+			default: throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}");
+		}
+	}
+
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
 	/// </summary>
