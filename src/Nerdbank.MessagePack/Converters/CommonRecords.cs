@@ -14,3 +14,5 @@ internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, Deser
 internal record struct PropertyData<T>(SpanDictionary<byte, DeserializeProperty<T>?> PropertyReaders, List<(byte[] RawPropertyNameString, byte[] PropertyNameUtf8, PropertyAccessors<T> Accessors)> Properties);
 
 internal record struct PropertyAccessors<TDeclaringType>(SerializeProperty<TDeclaringType>? Serialize, DeserializeProperty<TDeclaringType>? Deserialize);
+
+internal record ConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers);

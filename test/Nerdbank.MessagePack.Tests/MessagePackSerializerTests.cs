@@ -12,22 +12,16 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	private readonly MessagePackSerializer serializer = new();
 
 	[Fact]
-	public void SimpleNull()
-	{
-		this.AssertRoundtrip<Fruit>(null);
-	}
+	public void SimpleNull() => this.AssertRoundtrip<Fruit>(null);
 
 	[Fact]
-	public void SimplePoco()
-	{
-		this.AssertRoundtrip(new Fruit { Seeds = 18 });
-	}
+	public void SimplePoco() => this.AssertRoundtrip(new Fruit { Seeds = 18 });
 
 	[Fact]
-	public void AllIntTypes()
-	{
-		this.AssertRoundtrip(new IntRichPoco { Int8 = -1, Int16 = -2, Int32 = -3, Int64 = -4, UInt8 = 1, UInt16 = 2, UInt32 = 3, UInt64 = 4 });
-	}
+	public void AllIntTypes() => this.AssertRoundtrip(new IntRichPoco { Int8 = -1, Int16 = -2, Int32 = -3, Int64 = -4, UInt8 = 1, UInt16 = 2, UInt32 = 3, UInt64 = 4 });
+
+	[Fact]
+	public void SimpleRecordClass() => this.AssertRoundtrip(new RecordClass(42) { Weight = 5, ChildNumber = 2 });
 
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
@@ -82,5 +76,13 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 			&& this.Int16 == other.Int16
 			&& this.Int32 == other.Int32
 			&& this.Int64 == other.Int64;
+	}
+
+	[GenerateShape]
+	public partial record RecordClass(int Seeds)
+	{
+		public int Weight { get; set; }
+
+		public int ChildNumber { get; init; }
 	}
 }
