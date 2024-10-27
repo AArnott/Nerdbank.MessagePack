@@ -23,6 +23,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	[Fact]
 	public void SimpleRecordClass() => this.AssertRoundtrip(new RecordClass(42) { Weight = 5, ChildNumber = 2 });
 
+	[Fact]
+	public void ClassWithDefaultCtorWithInitProperty() => this.AssertRoundtrip(new DefaultCtorWithInitProperty { Age = 42 });
+
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
 	{
@@ -84,5 +87,13 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 		public int Weight { get; set; }
 
 		public int ChildNumber { get; init; }
+	}
+
+	[GenerateShape]
+	public partial class DefaultCtorWithInitProperty : IEquatable<DefaultCtorWithInitProperty>
+	{
+		public int Age { get; init; }
+
+		public bool Equals(DefaultCtorWithInitProperty? other) => other is not null && this.Age == other.Age;
 	}
 }
