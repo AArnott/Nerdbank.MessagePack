@@ -1,0 +1,91 @@
+// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+/* THIS (.cs) FILE IS GENERATED. DO NOT CHANGE IT.
+ * CHANGE THE .tt FILE INSTEAD. */
+
+#pragma warning disable SA1121 // Simplify type syntax
+#pragma warning disable SA1649 // File name should match first type name
+#pragma warning disable SA1402 // File may only contain a single class
+
+namespace Nerdbank.MessagePack;
+
+/// <summary>Serializes the primitive integer type <see cref="SByte"/> as a MessagePack integer.</summary>
+internal class SByteConverter : MessagePackConverter<SByte>
+{
+	/// <inheritdoc/>
+	public override SByte Deserialize(ref MessagePackReader reader) => reader.ReadSByte();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref SByte value) => writer.Write(value);
+}
+
+/// <summary>Serializes the primitive integer type <see cref="Int16"/> as a MessagePack integer.</summary>
+internal class Int16Converter : MessagePackConverter<Int16>
+{
+	/// <inheritdoc/>
+	public override Int16 Deserialize(ref MessagePackReader reader) => reader.ReadInt16();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref Int16 value) => writer.Write(value);
+}
+
+/// <summary>Serializes the primitive integer type <see cref="Int32"/> as a MessagePack integer.</summary>
+internal class Int32Converter : MessagePackConverter<Int32>
+{
+	/// <inheritdoc/>
+	public override Int32 Deserialize(ref MessagePackReader reader) => reader.ReadInt32();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref Int32 value) => writer.Write(value);
+}
+
+/// <summary>Serializes the primitive integer type <see cref="Int64"/> as a MessagePack integer.</summary>
+internal class Int64Converter : MessagePackConverter<Int64>
+{
+	/// <inheritdoc/>
+	public override Int64 Deserialize(ref MessagePackReader reader) => reader.ReadInt64();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref Int64 value) => writer.Write(value);
+}
+
+/// <summary>Serializes the primitive integer type <see cref="Byte"/> as a MessagePack integer.</summary>
+internal class ByteConverter : MessagePackConverter<Byte>
+{
+	/// <inheritdoc/>
+	public override Byte Deserialize(ref MessagePackReader reader) => reader.ReadByte();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref Byte value) => writer.Write(value);
+}
+
+/// <summary>Serializes the primitive integer type <see cref="UInt16"/> as a MessagePack integer.</summary>
+internal class UInt16Converter : MessagePackConverter<UInt16>
+{
+	/// <inheritdoc/>
+	public override UInt16 Deserialize(ref MessagePackReader reader) => reader.ReadUInt16();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref UInt16 value) => writer.Write(value);
+}
+
+/// <summary>Serializes the primitive integer type <see cref="UInt32"/> as a MessagePack integer.</summary>
+internal class UInt32Converter : MessagePackConverter<UInt32>
+{
+	/// <inheritdoc/>
+	public override UInt32 Deserialize(ref MessagePackReader reader) => reader.ReadUInt32();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref UInt32 value) => writer.Write(value);
+}
+
+/// <summary>Serializes the primitive integer type <see cref="UInt64"/> as a MessagePack integer.</summary>
+internal class UInt64Converter : MessagePackConverter<UInt64>
+{
+	/// <inheritdoc/>
+	public override UInt64 Deserialize(ref MessagePackReader reader) => reader.ReadUInt64();
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref UInt64 value) => writer.Write(value);
+}

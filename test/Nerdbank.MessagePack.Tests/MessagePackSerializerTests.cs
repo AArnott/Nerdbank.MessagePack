@@ -23,6 +23,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 		this.AssertRoundtrip(new Fruit { Seeds = 18 });
 	}
 
+	[Fact]
+	public void AllIntTypes()
+	{
+		this.AssertRoundtrip(new IntRichPoco { Int8 = -1, Int16 = -2, Int32 = -3, Int64 = -4, UInt8 = 1, UInt16 = 2, UInt32 = 3, UInt64 = 4 });
+	}
+
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
 	{
@@ -45,5 +51,36 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 		public int Seeds { get; set; }
 
 		public bool Equals(Fruit? other) => other is not null && this.Seeds == other.Seeds;
+	}
+
+	[GenerateShape]
+	public partial class IntRichPoco : IEquatable<IntRichPoco>
+	{
+		public byte UInt8 { get; set; }
+
+		public ushort UInt16 { get; set; }
+
+		public uint UInt32 { get; set; }
+
+		public ulong UInt64 { get; set; }
+
+		public sbyte Int8 { get; set; }
+
+		public short Int16 { get; set; }
+
+		public int Int32 { get; set; }
+
+		public long Int64 { get; set; }
+
+		public bool Equals(IntRichPoco? other)
+			=> other is not null
+			&& this.UInt8 == other.UInt8
+			&& this.UInt16 == other.UInt16
+			&& this.UInt32 == other.UInt32
+			&& this.UInt64 == other.UInt64
+			&& this.Int8 == other.Int8
+			&& this.Int16 == other.Int16
+			&& this.Int32 == other.Int32
+			&& this.Int64 == other.Int64;
 	}
 }

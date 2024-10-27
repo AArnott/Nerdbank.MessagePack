@@ -3,13 +3,20 @@
 
 namespace Nerdbank.MessagePack.Utilities;
 
+/// <summary>
+/// Helpers for converter generation.
+/// </summary>
 internal static class CodeGenHelpers
 {
 	/// <summary>
 	/// Gets the messagepack encoding for a given string.
 	/// </summary>
 	/// <param name="value">The string to encode.</param>
-	/// <returns>The messagepack encoding for <paramref name="value"/>, including messagepack header and UTF-8 bytes.</returns>
+	/// <param name="utf8Bytes">The UTF-8 encoded string.</param>
+	/// <param name="msgpackEncoded">The msgpack-encoded string.</param>
+	/// <remarks>
+	/// Because msgpack encodes with UTF-8 bytes, the two output parameter share most of the memory.
+	/// </remarks>
 	internal static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 	{
 		var byteCount = StringEncoding.UTF8.GetByteCount(value);
@@ -17,7 +24,7 @@ internal static class CodeGenHelpers
 		{
 			var bytes = new byte[byteCount + 1];
 			bytes[0] = (byte)(MessagePackCode.MinFixStr | byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes[1..]);
+			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(1));
 			utf8Bytes = bytes[1..];
 			msgpackEncoded = bytes;
 		}
@@ -26,7 +33,7 @@ internal static class CodeGenHelpers
 			var bytes = new byte[byteCount + 2];
 			bytes[0] = MessagePackCode.Str8;
 			bytes[1] = unchecked((byte)byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes[2..]);
+			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(2));
 			utf8Bytes = bytes[2..];
 			msgpackEncoded = bytes;
 		}
@@ -36,7 +43,7 @@ internal static class CodeGenHelpers
 			bytes[0] = MessagePackCode.Str16;
 			bytes[1] = unchecked((byte)(byteCount >> 8));
 			bytes[2] = unchecked((byte)byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes[3..]);
+			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(3));
 			utf8Bytes = bytes[3..];
 			msgpackEncoded = bytes;
 		}
@@ -48,7 +55,7 @@ internal static class CodeGenHelpers
 			bytes[2] = unchecked((byte)(byteCount >> 16));
 			bytes[3] = unchecked((byte)(byteCount >> 8));
 			bytes[4] = unchecked((byte)byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes[5..]);
+			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(5));
 			utf8Bytes = bytes[5..];
 			msgpackEncoded = bytes;
 		}

@@ -16,7 +16,14 @@ public class MessagePackSerializer
 {
 	private static readonly FrozenDictionary<Type, IMessagePackConverter> PrimitiveConverters = new Dictionary<Type, IMessagePackConverter>()
 	{
+		{ typeof(byte), new ByteConverter() },
+		{ typeof(ushort), new UInt16Converter() },
+		{ typeof(uint), new UInt32Converter() },
+		{ typeof(ulong), new UInt64Converter() },
+		{ typeof(sbyte), new SByteConverter() },
+		{ typeof(short), new Int16Converter() },
 		{ typeof(int), new Int32Converter() },
+		{ typeof(long), new Int64Converter() },
 	}.ToFrozenDictionary();
 
 	private readonly ConcurrentDictionary<Type, IMessagePackConverter> cachedConverters = new();

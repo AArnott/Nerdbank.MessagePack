@@ -11,6 +11,10 @@
     <PackageReference Include="typeshape-csharp" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Converters\IntConverters.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>IntConverters.cs</LastGenOutput>
+    </None>
     <None Update="MessagePackReader.Integers.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackReader.Integers.cs</LastGenOutput>
@@ -20,6 +24,11 @@
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="Converters\IntConverters.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>IntConverters.tt</DependentUpon>
+    </Compile>
     <Compile Update="MessagePackReader.Integers.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
