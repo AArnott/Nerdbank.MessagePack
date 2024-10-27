@@ -16,6 +16,7 @@ indent_style = space
 # Code files
 [*.{cs,csx,vb,vbx,h,cpp,idl}]
 indent_size = 4
+indent_style = tab
 insert_final_newline = true
 trim_trailing_whitespace = true
 
@@ -31,7 +32,7 @@ indent_style = space
 # JSON files
 [*.json]
 indent_size = 2
-indent_style = space
+indent_style = tab
 
 [*.ps1]
 indent_style = space
