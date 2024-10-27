@@ -3,23 +3,9 @@
 
 namespace Nerdbank.MessagePack;
 
-public struct ExtensionHeader : IEquatable<ExtensionHeader>
-{
-	public sbyte TypeCode { get; private set; }
-
-	public uint Length { get; private set; }
-
-	public ExtensionHeader(sbyte typeCode, uint length)
-	{
-		this.TypeCode = typeCode;
-		this.Length = length;
-	}
-
-	public ExtensionHeader(sbyte typeCode, int length)
-	{
-		this.TypeCode = typeCode;
-		this.Length = (uint)length;
-	}
-
-	public bool Equals(ExtensionHeader other) => this.TypeCode == other.TypeCode && this.Length == other.Length;
-}
+/// <summary>
+/// Describes a msgpack extension. This precedes the extension payload itself in the msgpack encoded format.
+/// </summary>
+/// <param name="TypeCode">A value that uniquely identifies the extension type. Negative values are reserved for official msgpack extensions. See <see cref="ReservedMessagePackExtensionTypeCode"/> for values already assigned from the reserved range.</param>
+/// <param name="Length">The length of the extension's data payload.</param>
+public record struct ExtensionHeader(sbyte TypeCode, uint Length);

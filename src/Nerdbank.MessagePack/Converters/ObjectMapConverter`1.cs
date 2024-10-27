@@ -3,8 +3,17 @@
 
 namespace Nerdbank.MessagePack.Converters;
 
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : MessagePackConverter<T>
+/// <summary>
+/// A <see cref="IMessagePackConverter{T}"/> that writes objects as maps of property names to values.
+/// Only data types with default constructors may be deserialized.
+/// </summary>
+/// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
+/// <param name="serializable">Tools for serializing individual property values.</param>
+/// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
+/// <param name="constructor">The default constructor, if present.</param>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : IMessagePackConverter<T>
 {
+	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref T? value)
 	{
 		if (value is null)
@@ -14,13 +23,14 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		writer.WriteMapHeader(serializable.Properties.Count);
-		foreach (var property in serializable.Properties)
+		foreach ((ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write) property in serializable.Properties)
 		{
 			writer.WriteRaw(property.RawPropertyNameString.Span);
 			property.Write(ref value, ref writer);
 		}
 	}
 
+	/// <inheritdoc/>
 	public override T? Deserialize(ref MessagePackReader reader)
 	{
 		if (reader.TryReadNil())
@@ -30,7 +40,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (constructor is null || deserializable is null)
 		{
-			throw new NotSupportedException($"No constructor for {typeof(T).Name}.");
+			throw new NotSupportedException($"The {typeof(T).Name} type cannot be deserialized.");
 		}
 
 		T value = constructor();
@@ -49,33 +59,5 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		return value;
-	}
-}
-
-internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(MapSerializableProperties<TDeclaringType> serializable, Func<TArgumentState> argStateCtor, Constructor<TArgumentState, TDeclaringType> ctor, MapDeserializableProperties<TArgumentState> parameters) : ObjectMapConverter<TDeclaringType>(serializable, null, null)
-{
-	public override TDeclaringType? Deserialize(ref MessagePackReader reader)
-	{
-		if (reader.TryReadNil())
-		{
-			return default;
-		}
-
-		TArgumentState argState = argStateCtor();
-		int count = reader.ReadMapHeader();
-		for (int i = 0; i < count; i++)
-		{
-			ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
-			if (parameters.Readers.TryGetValue(propertyName, out DeserializeProperty<TArgumentState>? deserializeArg))
-			{
-				deserializeArg(ref argState, ref reader);
-			}
-			else
-			{
-				reader.Skip();
-			}
-		}
-
-		return ctor(ref argState);
 	}
 }

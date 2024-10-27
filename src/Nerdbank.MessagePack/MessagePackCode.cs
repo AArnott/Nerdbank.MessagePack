@@ -1,6 +1,11 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable SA1402 // File may only contain a single type
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1602 // Enumeration items should be documented
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -25,7 +30,7 @@ public enum MessagePackType : byte
 /// The core type codes as defined by msgpack.
 /// </summary>
 /// <seealso href="https://github.com/msgpack/msgpack/blob/master/spec.md#overview" />
-public static class MessagePackCode
+internal static class MessagePackCode
 {
 	public const byte MinFixInt = 0x00; // 0
 	public const byte MaxFixInt = 0x7f; // 127
@@ -258,12 +263,12 @@ public static class MessagePackCode
 /// <summary>
 /// The officially defined messagepack extension type codes.
 /// </summary>
-public static class ReservedMessagePackExtensionTypeCode
+internal static class ReservedMessagePackExtensionTypeCode
 {
 	public const sbyte DateTime = -1;
 }
 
-public static class MessagePackRange
+internal static class MessagePackRange
 {
 	public const int MinFixNegativeInt = -32;
 	public const int MaxFixNegativeInt = -1;

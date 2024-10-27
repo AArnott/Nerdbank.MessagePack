@@ -3,9 +3,16 @@
 
 namespace Nerdbank.MessagePack.Converters;
 
-internal class DelayedConverter<T>(ResultBox<MessagePackConverter<T>> box) : MessagePackConverter<T>
+/// <summary>
+/// A converter that defers to another converter that is not yet available.
+/// </summary>
+/// <typeparam name="T">The convertible data type.</typeparam>
+/// <param name="box">A box containing the not-yet-done converter.</param>
+internal class DelayedConverter<T>(ResultBox<IMessagePackConverter<T>> box) : IMessagePackConverter<T>
 {
+	/// <inheritdoc/>
 	public override T? Deserialize(ref MessagePackReader reader) => box.Result.Deserialize(ref reader);
 
+	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref T? value) => box.Result.Serialize(ref writer, ref value);
 }

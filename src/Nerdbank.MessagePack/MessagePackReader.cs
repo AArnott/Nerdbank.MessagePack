@@ -123,77 +123,6 @@ public ref partial struct MessagePackReader
 	public void Skip() => ThrowInsufficientBufferUnless(this.TrySkip());
 
 	/// <summary>
-	/// Advances the reader to the next MessagePack structure to be read.
-	/// </summary>
-	/// <returns><see langword="true"/> if the entire structure beginning at the current <see cref="Position"/> is found in the <see cref="Sequence"/>; <see langword="false"/> otherwise.</returns>
-	/// <remarks>
-	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
-	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw()"/> instead.
-	/// WARNING: when false is returned, the position of the reader is undefined.
-	/// </remarks>
-	internal bool TrySkip()
-	{
-		if (this.reader.Remaining == 0)
-		{
-			return false;
-		}
-
-		byte code = this.NextCode;
-		switch (code)
-		{
-			case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
-			case MessagePackCode.Nil:
-			case MessagePackCode.True:
-			case MessagePackCode.False:
-				return this.reader.TryAdvance(1);
-			case MessagePackCode.Int8:
-			case MessagePackCode.UInt8:
-				return this.reader.TryAdvance(2);
-			case MessagePackCode.Int16:
-			case MessagePackCode.UInt16:
-				return this.reader.TryAdvance(3);
-			case MessagePackCode.Int32:
-			case MessagePackCode.UInt32:
-			case MessagePackCode.Float32:
-				return this.reader.TryAdvance(5);
-			case MessagePackCode.Int64:
-			case MessagePackCode.UInt64:
-			case MessagePackCode.Float64:
-				return this.reader.TryAdvance(9);
-			case byte x when MessagePackCode.IsFixMap(x):
-			case MessagePackCode.Map16:
-			case MessagePackCode.Map32:
-				return this.TrySkipNextMap();
-			case byte x when MessagePackCode.IsFixArray(x):
-			case MessagePackCode.Array16:
-			case MessagePackCode.Array32:
-				return this.TrySkipNextArray();
-			case byte x when MessagePackCode.IsFixStr(x):
-			case MessagePackCode.Str8:
-			case MessagePackCode.Str16:
-			case MessagePackCode.Str32:
-				return this.TryGetStringLengthInBytes(out int length) && this.reader.TryAdvance(length);
-			case MessagePackCode.Bin8:
-			case MessagePackCode.Bin16:
-			case MessagePackCode.Bin32:
-				return this.TryGetBytesLength(out length) && this.reader.TryAdvance(length);
-			case MessagePackCode.FixExt1:
-			case MessagePackCode.FixExt2:
-			case MessagePackCode.FixExt4:
-			case MessagePackCode.FixExt8:
-			case MessagePackCode.FixExt16:
-			case MessagePackCode.Ext8:
-			case MessagePackCode.Ext16:
-			case MessagePackCode.Ext32:
-				return this.TryReadExtensionFormatHeader(out ExtensionHeader header) && this.reader.TryAdvance(header.Length);
-			default:
-				// We don't actually expect to ever hit this point, since every code is supported.
-				Debug.Fail("Missing handler for code: " + code);
-				throw ThrowInvalidCode(code);
-		}
-	}
-
-	/// <summary>
 	/// Reads a <see cref="MessagePackCode.Nil"/> value.
 	/// </summary>
 	public void ReadNil()
@@ -262,6 +191,7 @@ public ref partial struct MessagePackReader
 	/// <see cref="MessagePackCode.Array32"/>, or
 	/// some built-in code between <see cref="MessagePackCode.MinFixArray"/> and <see cref="MessagePackCode.MaxFixArray"/>.
 	/// </summary>
+	/// <returns>The number of elements in the array.</returns>
 	/// <exception cref="EndOfStreamException">
 	/// Thrown if the header cannot be read in the bytes left in the <see cref="Sequence"/>
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
@@ -560,7 +490,7 @@ public ref partial struct MessagePackReader
 	/// Expects extension type code <see cref="ReservedMessagePackExtensionTypeCode.DateTime"/>.
 	/// </summary>
 	/// <returns>The value.</returns>
-	public DateTime ReadDateTime() => this.ReadDateTime(this.ReadExtensionFormatHeader());
+	public DateTime ReadDateTime() => this.ReadDateTime(this.ReadExtensionHeader());
 
 	/// <summary>
 	/// Reads a <see cref="DateTime"/> from a value encoded with
@@ -745,9 +675,9 @@ public ref partial struct MessagePackReader
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the bytes the header claims to be there.
 	/// </exception>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an extension format header is encountered.</exception>
-	public ExtensionHeader ReadExtensionFormatHeader()
+	public ExtensionHeader ReadExtensionHeader()
 	{
-		ThrowInsufficientBufferUnless(this.TryReadExtensionFormatHeader(out ExtensionHeader header));
+		ThrowInsufficientBufferUnless(this.TryReadExtensionHeader(out ExtensionHeader header));
 
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
 		ThrowInsufficientBufferUnless(this.reader.Remaining >= header.Length);
@@ -774,7 +704,7 @@ public ref partial struct MessagePackReader
 	/// When this method returns <see langword="false"/> the position of the reader is left in an undefined position.
 	/// The caller is expected to recreate the reader (presumably with a longer sequence to read from) before continuing.
 	/// </remarks>
-	public bool TryReadExtensionFormatHeader(out ExtensionHeader extensionHeader)
+	public bool TryReadExtensionHeader(out ExtensionHeader extensionHeader)
 	{
 		extensionHeader = default;
 		if (!this.reader.TryRead(out byte code))
@@ -852,9 +782,9 @@ public ref partial struct MessagePackReader
 	/// The extension format.
 	/// The data is a slice from the original sequence passed to this reader's constructor.
 	/// </returns>
-	public Extension ReadExtensionFormat()
+	public Extension ReadExtension()
 	{
-		ExtensionHeader header = this.ReadExtensionFormatHeader();
+		ExtensionHeader header = this.ReadExtensionHeader();
 		try
 		{
 			ReadOnlySequence<byte> data = this.reader.Sequence.Slice(this.reader.Position, header.Length);
@@ -864,6 +794,77 @@ public ref partial struct MessagePackReader
 		catch (ArgumentOutOfRangeException ex)
 		{
 			throw ThrowNotEnoughBytesException(ex);
+		}
+	}
+
+	/// <summary>
+	/// Advances the reader to the next MessagePack structure to be read.
+	/// </summary>
+	/// <returns><see langword="true"/> if the entire structure beginning at the current <see cref="Position"/> is found in the <see cref="Sequence"/>; <see langword="false"/> otherwise.</returns>
+	/// <remarks>
+	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
+	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw()"/> instead.
+	/// WARNING: when false is returned, the position of the reader is undefined.
+	/// </remarks>
+	internal bool TrySkip()
+	{
+		if (this.reader.Remaining == 0)
+		{
+			return false;
+		}
+
+		byte code = this.NextCode;
+		switch (code)
+		{
+			case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
+			case MessagePackCode.Nil:
+			case MessagePackCode.True:
+			case MessagePackCode.False:
+				return this.reader.TryAdvance(1);
+			case MessagePackCode.Int8:
+			case MessagePackCode.UInt8:
+				return this.reader.TryAdvance(2);
+			case MessagePackCode.Int16:
+			case MessagePackCode.UInt16:
+				return this.reader.TryAdvance(3);
+			case MessagePackCode.Int32:
+			case MessagePackCode.UInt32:
+			case MessagePackCode.Float32:
+				return this.reader.TryAdvance(5);
+			case MessagePackCode.Int64:
+			case MessagePackCode.UInt64:
+			case MessagePackCode.Float64:
+				return this.reader.TryAdvance(9);
+			case byte x when MessagePackCode.IsFixMap(x):
+			case MessagePackCode.Map16:
+			case MessagePackCode.Map32:
+				return this.TrySkipNextMap();
+			case byte x when MessagePackCode.IsFixArray(x):
+			case MessagePackCode.Array16:
+			case MessagePackCode.Array32:
+				return this.TrySkipNextArray();
+			case byte x when MessagePackCode.IsFixStr(x):
+			case MessagePackCode.Str8:
+			case MessagePackCode.Str16:
+			case MessagePackCode.Str32:
+				return this.TryGetStringLengthInBytes(out int length) && this.reader.TryAdvance(length);
+			case MessagePackCode.Bin8:
+			case MessagePackCode.Bin16:
+			case MessagePackCode.Bin32:
+				return this.TryGetBytesLength(out length) && this.reader.TryAdvance(length);
+			case MessagePackCode.FixExt1:
+			case MessagePackCode.FixExt2:
+			case MessagePackCode.FixExt4:
+			case MessagePackCode.FixExt8:
+			case MessagePackCode.FixExt16:
+			case MessagePackCode.Ext8:
+			case MessagePackCode.Ext16:
+			case MessagePackCode.Ext32:
+				return this.TryReadExtensionHeader(out ExtensionHeader header) && this.reader.TryAdvance(header.Length);
+			default:
+				// We don't actually expect to ever hit this point, since every code is supported.
+				Debug.Fail("Missing handler for code: " + code);
+				throw ThrowInvalidCode(code);
 		}
 	}
 

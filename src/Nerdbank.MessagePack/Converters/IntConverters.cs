@@ -11,7 +11,7 @@
 namespace Nerdbank.MessagePack;
 
 /// <summary>Serializes the primitive integer type <see cref="SByte"/> as a MessagePack integer.</summary>
-internal class SByteConverter : MessagePackConverter<SByte>
+internal class SByteConverter : IMessagePackConverter<SByte>
 {
 	/// <inheritdoc/>
 	public override SByte Deserialize(ref MessagePackReader reader) => reader.ReadSByte();
@@ -21,7 +21,7 @@ internal class SByteConverter : MessagePackConverter<SByte>
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int16"/> as a MessagePack integer.</summary>
-internal class Int16Converter : MessagePackConverter<Int16>
+internal class Int16Converter : IMessagePackConverter<Int16>
 {
 	/// <inheritdoc/>
 	public override Int16 Deserialize(ref MessagePackReader reader) => reader.ReadInt16();
@@ -31,7 +31,7 @@ internal class Int16Converter : MessagePackConverter<Int16>
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int32"/> as a MessagePack integer.</summary>
-internal class Int32Converter : MessagePackConverter<Int32>
+internal class Int32Converter : IMessagePackConverter<Int32>
 {
 	/// <inheritdoc/>
 	public override Int32 Deserialize(ref MessagePackReader reader) => reader.ReadInt32();
@@ -41,7 +41,7 @@ internal class Int32Converter : MessagePackConverter<Int32>
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int64"/> as a MessagePack integer.</summary>
-internal class Int64Converter : MessagePackConverter<Int64>
+internal class Int64Converter : IMessagePackConverter<Int64>
 {
 	/// <inheritdoc/>
 	public override Int64 Deserialize(ref MessagePackReader reader) => reader.ReadInt64();
@@ -51,7 +51,7 @@ internal class Int64Converter : MessagePackConverter<Int64>
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Byte"/> as a MessagePack integer.</summary>
-internal class ByteConverter : MessagePackConverter<Byte>
+internal class ByteConverter : IMessagePackConverter<Byte>
 {
 	/// <inheritdoc/>
 	public override Byte Deserialize(ref MessagePackReader reader) => reader.ReadByte();
@@ -61,7 +61,7 @@ internal class ByteConverter : MessagePackConverter<Byte>
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt16"/> as a MessagePack integer.</summary>
-internal class UInt16Converter : MessagePackConverter<UInt16>
+internal class UInt16Converter : IMessagePackConverter<UInt16>
 {
 	/// <inheritdoc/>
 	public override UInt16 Deserialize(ref MessagePackReader reader) => reader.ReadUInt16();
@@ -71,7 +71,7 @@ internal class UInt16Converter : MessagePackConverter<UInt16>
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt32"/> as a MessagePack integer.</summary>
-internal class UInt32Converter : MessagePackConverter<UInt32>
+internal class UInt32Converter : IMessagePackConverter<UInt32>
 {
 	/// <inheritdoc/>
 	public override UInt32 Deserialize(ref MessagePackReader reader) => reader.ReadUInt32();
@@ -81,7 +81,7 @@ internal class UInt32Converter : MessagePackConverter<UInt32>
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt64"/> as a MessagePack integer.</summary>
-internal class UInt64Converter : MessagePackConverter<UInt64>
+internal class UInt64Converter : IMessagePackConverter<UInt64>
 {
 	/// <inheritdoc/>
 	public override UInt64 Deserialize(ref MessagePackReader reader) => reader.ReadUInt64();

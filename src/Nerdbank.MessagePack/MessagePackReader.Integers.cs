@@ -4,8 +4,8 @@
 /* THIS (.cs) FILE IS GENERATED. DO NOT CHANGE IT.
  * CHANGE THE .tt FILE INSTEAD. */
 
-using System;
-using System.Buffers;
+#pragma warning disable SA1121 // Simplify type syntax
+#pragma warning disable SA1601 // Partial elements should be documented
 
 namespace Nerdbank.MessagePack;
 

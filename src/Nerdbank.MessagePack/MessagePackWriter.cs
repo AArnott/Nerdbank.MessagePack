@@ -52,6 +52,48 @@ public ref struct MessagePackWriter
 	public bool OldSpec { get; set; }
 
 	/// <summary>
+	/// Get the number of bytes required to encode a value in msgpack.
+	/// </summary>
+	/// <param name="value">The value to encode.</param>
+	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
+	public static int GetEncodedLength(long value)
+	{
+		return value switch
+		{
+			>= 0 => value switch
+			{
+				<= MessagePackRange.MaxFixPositiveInt => 1,
+				<= byte.MaxValue => 2,
+				<= ushort.MaxValue => 3,
+				<= uint.MaxValue => 5,
+				_ => 9,
+			},
+			_ => value switch
+			{
+				>= MessagePackRange.MinFixNegativeInt => 1,
+				>= sbyte.MinValue => 2,
+				>= short.MinValue => 3,
+				>= int.MinValue => 5,
+				_ => 9,
+			},
+		};
+	}
+
+	/// <summary>
+	/// Get the number of bytes required to encode a value in msgpack.
+	/// </summary>
+	/// <param name="value">The value to encode.</param>
+	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
+	public static int GetEncodedLength(ulong value)
+	{
+		return value switch
+		{
+			> long.MaxValue => 9,
+			_ => GetEncodedLength((long)value),
+		};
+	}
+
+	/// <summary>
 	/// Initializes a new instance of the <see cref="MessagePackWriter"/> struct,
 	/// with the same settings as this one, but with its own buffer writer.
 	/// </summary>
@@ -627,9 +669,9 @@ public ref struct MessagePackWriter
 				dateTime = dateTime.ToUniversalTime();
 			}
 
-			var secondsSinceBclEpoch = dateTime.Ticks / TimeSpan.TicksPerSecond;
-			var seconds = secondsSinceBclEpoch - DateTimeConstants.BclSecondsAtUnixEpoch;
-			var nanoseconds = (dateTime.Ticks % TimeSpan.TicksPerSecond) * DateTimeConstants.NanosecondsPerTick;
+			long secondsSinceBclEpoch = dateTime.Ticks / TimeSpan.TicksPerSecond;
+			long seconds = secondsSinceBclEpoch - DateTimeConstants.BclSecondsAtUnixEpoch;
+			long nanoseconds = (dateTime.Ticks % TimeSpan.TicksPerSecond) * DateTimeConstants.NanosecondsPerTick;
 
 			// reference pseudo code.
 			/*
@@ -661,11 +703,11 @@ public ref struct MessagePackWriter
 
 			if ((seconds >> 34) == 0)
 			{
-				var data64 = unchecked((ulong)((nanoseconds << 34) | seconds));
+				ulong data64 = unchecked((ulong)((nanoseconds << 34) | seconds));
 				if ((data64 & 0xffffffff00000000L) == 0)
 				{
 					// timestamp 32(seconds in 32-bit unsigned int)
-					var data32 = (UInt32)data64;
+					uint data32 = (uint)data64;
 					Span<byte> span = this.writer.GetSpan(6);
 					span[0] = MessagePackCode.FixExt4;
 					span[1] = unchecked((byte)ReservedMessagePackExtensionTypeCode.DateTime);
@@ -730,7 +772,7 @@ public ref struct MessagePackWriter
 	{
 		int length = (int)src.Length;
 		this.WriteBinHeader(length);
-		var span = this.writer.GetSpan(length);
+		Span<byte> span = this.writer.GetSpan(length);
 		src.CopyTo(span);
 		this.writer.Advance(length);
 	}
@@ -749,7 +791,7 @@ public ref struct MessagePackWriter
 	{
 		int length = (int)src.Length;
 		this.WriteBinHeader(length);
-		var span = this.writer.GetSpan(length);
+		Span<byte> span = this.writer.GetSpan(length);
 		src.CopyTo(span);
 		this.writer.Advance(length);
 	}
@@ -783,7 +825,7 @@ public ref struct MessagePackWriter
 		// as that may help ensure we only allocate a buffer once.
 		if (length <= byte.MaxValue)
 		{
-			var size = length + 2;
+			int size = length + 2;
 			Span<byte> span = this.writer.GetSpan(size);
 
 			span[0] = MessagePackCode.Bin8;
@@ -791,9 +833,9 @@ public ref struct MessagePackWriter
 
 			this.writer.Advance(2);
 		}
-		else if (length <= UInt16.MaxValue)
+		else if (length <= ushort.MaxValue)
 		{
-			var size = length + 3;
+			int size = length + 3;
 			Span<byte> span = this.writer.GetSpan(size);
 
 			span[0] = MessagePackCode.Bin16;
@@ -803,7 +845,7 @@ public ref struct MessagePackWriter
 		}
 		else
 		{
-			var size = length + 5;
+			int size = length + 5;
 			Span<byte> span = this.writer.GetSpan(size);
 
 			span[0] = MessagePackCode.Bin32;
@@ -823,7 +865,7 @@ public ref struct MessagePackWriter
 	/// <param name="utf8stringBytes">The bytes to write.</param>
 	public void WriteString(in ReadOnlySequence<byte> utf8stringBytes)
 	{
-		var length = (int)utf8stringBytes.Length;
+		int length = (int)utf8stringBytes.Length;
 		this.WriteStringHeader(length);
 		Span<byte> span = this.writer.GetSpan(length);
 		utf8stringBytes.CopyTo(span);
@@ -840,7 +882,7 @@ public ref struct MessagePackWriter
 	/// <param name="utf8stringBytes">The bytes to write.</param>
 	public void WriteString(ReadOnlySpan<byte> utf8stringBytes)
 	{
-		var length = utf8stringBytes.Length;
+		int length = utf8stringBytes.Length;
 		this.WriteStringHeader(length);
 		Span<byte> span = this.writer.GetSpan(length);
 		utf8stringBytes.CopyTo(span);
@@ -913,10 +955,12 @@ public ref struct MessagePackWriter
 
 		ref byte buffer = ref this.WriteString_PrepareSpan(value.Length, out int bufferSize, out int useOffset);
 		fixed (char* pValue = value)
-		fixed (byte* pBuffer = &buffer)
 		{
-			int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
-			this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
+			fixed (byte* pBuffer = &buffer)
+			{
+				int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
+				this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
+			}
 		}
 	}
 
@@ -932,10 +976,12 @@ public ref struct MessagePackWriter
 	{
 		ref byte buffer = ref this.WriteString_PrepareSpan(value.Length, out int bufferSize, out int useOffset);
 		fixed (char* pValue = value)
-		fixed (byte* pBuffer = &buffer)
 		{
-			int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
-			this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
+			fixed (byte* pBuffer = &buffer)
+			{
+				int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
+				this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
+			}
 		}
 	}
 
@@ -998,7 +1044,7 @@ public ref struct MessagePackWriter
 						span[2] = unchecked(typeCode);
 						this.writer.Advance(3);
 					}
-					else if (dataLength <= UInt16.MaxValue)
+					else if (dataLength <= ushort.MaxValue)
 					{
 						span = this.writer.GetSpan(dataLength + 4);
 						span[0] = MessagePackCode.Ext16;
@@ -1093,6 +1139,11 @@ public ref struct MessagePackWriter
 		this.writer.Advance(8);
 	}
 
+	/// <summary>
+	/// Flushes the writer and returns the written data as a byte array.
+	/// </summary>
+	/// <returns>A byte array containing the written data.</returns>
+	/// <exception cref="NotSupportedException">Thrown if the instance was not initialized to support this operation.</exception>
 	internal byte[] FlushAndGetArray()
 	{
 		if (this.writer.TryGetUncommittedSpan(out ReadOnlySpan<byte> span))
@@ -1275,47 +1326,5 @@ public ref struct MessagePackWriter
 			WriteBigEndian((uint)byteCount, pBuffer + 1);
 			this.writer.Advance(byteCount + 5);
 		}
-	}
-
-	/// <summary>
-	/// Get the number of bytes required to encode a value in msgpack.
-	/// </summary>
-	/// <param name="value">The value to encode.</param>
-	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
-	public static int GetEncodedLength(long value)
-	{
-		return value switch
-		{
-			>= 0 => value switch
-			{
-				<= MessagePackRange.MaxFixPositiveInt => 1,
-				<= byte.MaxValue => 2,
-				<= ushort.MaxValue => 3,
-				<= uint.MaxValue => 5,
-				_ => 9,
-			},
-			_ => value switch
-			{
-				>= MessagePackRange.MinFixNegativeInt => 1,
-				>= sbyte.MinValue => 2,
-				>= short.MinValue => 3,
-				>= int.MinValue => 5,
-				_ => 9,
-			},
-		};
-	}
-
-	/// <summary>
-	/// Get the number of bytes required to encode a value in msgpack.
-	/// </summary>
-	/// <param name="value">The value to encode.</param>
-	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
-	public static int GetEncodedLength(ulong value)
-	{
-		return value switch
-		{
-			> long.MaxValue => 9,
-			_ => GetEncodedLength((long)value),
-		};
 	}
 }

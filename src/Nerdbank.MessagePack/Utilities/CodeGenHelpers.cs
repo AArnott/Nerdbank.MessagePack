@@ -19,10 +19,10 @@ internal static class CodeGenHelpers
 	/// </remarks>
 	internal static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 	{
-		var byteCount = StringEncoding.UTF8.GetByteCount(value);
+		int byteCount = StringEncoding.UTF8.GetByteCount(value);
 		if (byteCount <= MessagePackRange.MaxFixStringLength)
 		{
-			var bytes = new byte[byteCount + 1];
+			byte[] bytes = new byte[byteCount + 1];
 			bytes[0] = (byte)(MessagePackCode.MinFixStr | byteCount);
 			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(1));
 			utf8Bytes = bytes[1..];
@@ -30,7 +30,7 @@ internal static class CodeGenHelpers
 		}
 		else if (byteCount <= byte.MaxValue)
 		{
-			var bytes = new byte[byteCount + 2];
+			byte[] bytes = new byte[byteCount + 2];
 			bytes[0] = MessagePackCode.Str8;
 			bytes[1] = unchecked((byte)byteCount);
 			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(2));
@@ -39,7 +39,7 @@ internal static class CodeGenHelpers
 		}
 		else if (byteCount <= ushort.MaxValue)
 		{
-			var bytes = new byte[byteCount + 3];
+			byte[] bytes = new byte[byteCount + 3];
 			bytes[0] = MessagePackCode.Str16;
 			bytes[1] = unchecked((byte)(byteCount >> 8));
 			bytes[2] = unchecked((byte)byteCount);
@@ -49,7 +49,7 @@ internal static class CodeGenHelpers
 		}
 		else
 		{
-			var bytes = new byte[byteCount + 5];
+			byte[] bytes = new byte[byteCount + 5];
 			bytes[0] = MessagePackCode.Str32;
 			bytes[1] = unchecked((byte)(byteCount >> 24));
 			bytes[2] = unchecked((byte)(byteCount >> 16));

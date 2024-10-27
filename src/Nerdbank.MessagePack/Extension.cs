@@ -3,23 +3,25 @@
 
 namespace Nerdbank.MessagePack;
 
-public struct Extension
+/// <summary>
+/// Describes a msgpack extension.
+/// </summary>
+/// <param name="TypeCode">A value that uniquely identifies the extension type. Negative values are reserved for official msgpack extensions. See <see cref="ReservedMessagePackExtensionTypeCode"/> for values already assigned from the reserved range.</param>
+/// <param name="Data">The data payload, in whatever format is prescribed by the extension as per the <paramref name="TypeCode"/>.</param>
+public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data)
 {
+	/// <summary>
+	/// Initializes a new instance of the <see cref="Extension"/> struct.
+	/// </summary>
+	/// <param name="typeCode"><inheritdoc cref="Extension(sbyte, ReadOnlySequence{byte})" path="/param[@name='TypeCode']"/></param>
+	/// <param name="data"><inheritdoc cref="Extension(sbyte, ReadOnlySequence{byte})" path="/param[@name='Data']"/></param>
 	public Extension(sbyte typeCode, Memory<byte> data)
+		: this(typeCode, new ReadOnlySequence<byte>(data))
 	{
-		this.TypeCode = typeCode;
-		this.Data = new ReadOnlySequence<byte>(data);
 	}
 
-	public Extension(sbyte typeCode, ReadOnlySequence<byte> data)
-	{
-		this.TypeCode = typeCode;
-		this.Data = data;
-	}
-
-	public sbyte TypeCode { get; private set; }
-
-	public ReadOnlySequence<byte> Data { get; private set; }
-
-	public ExtensionHeader Header => new ExtensionHeader(this.TypeCode, (uint)this.Data.Length);
+	/// <summary>
+	/// Gets the header for the extension that should precede the <see cref="Data"/> in the msgpack encoded format.
+	/// </summary>
+	public ExtensionHeader Header => new(this.TypeCode, checked((uint)this.Data.Length));
 }

@@ -5,20 +5,15 @@ using System.Text;
 
 namespace Nerdbank.MessagePack;
 
+/// <summary>
+/// A <see cref="TypeShapeVisitor"/> that produces <see cref="IMessagePackConverter"/> instances for each type shape it visits.
+/// </summary>
+/// <param name="owner">The serializer that created this instance. Usable for obtaining settings that may influence the generated converter.</param>
 internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 {
 	private readonly TypeDictionary converters = new();
 
-	protected MessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape)
-	{
-		if (owner.TryGetConverter(out MessagePackConverter<T>? converter))
-		{
-			return converter;
-		}
-
-		return this.converters.GetOrAdd<MessagePackConverter<T>>(shape, this, box => new DelayedConverter<T>(box));
-	}
-
+	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
 		IConstructorShape? ctorShape = objectShape.GetConstructor();
@@ -57,9 +52,10 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 			: new ObjectMapConverter<T>(serializableMap, null, null);
 	}
 
+	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
 	{
-		var converter = GetConverter(propertyShape.PropertyType);
+		IMessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
 
 		SerializeProperty<TDeclaringType>? serialize = null;
 		if (propertyShape.HasGetter)
@@ -82,6 +78,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 		return new PropertyAccessors<TDeclaringType>(serialize, deserialize);
 	}
 
+	/// <inheritdoc/>
 	public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
 	{
 		ConstructorVisitorInputs<TDeclaringType> inputs = (ConstructorVisitorInputs<TDeclaringType>)state!;
@@ -106,11 +103,28 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 			new MapDeserializableProperties<TArgumentState>(parameters));
 	}
 
+	/// <inheritdoc/>
 	public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
-		MessagePackConverter<TParameterType> converter = owner.GetOrAddConverter(parameterShape.ParameterType);
+		IMessagePackConverter<TParameterType> converter = owner.GetOrAddConverter(parameterShape.ParameterType);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 		return new DeserializeProperty<TArgumentState>((ref TArgumentState state, ref MessagePackReader reader) => setter(ref state, converter.Deserialize(ref reader)!));
+	}
+
+	/// <summary>
+	/// Gets or creates a converter for the given type shape.
+	/// </summary>
+	/// <typeparam name="T">The data type to make convertible.</typeparam>
+	/// <param name="shape">The type shape.</param>
+	/// <returns>The converter.</returns>
+	protected IMessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape)
+	{
+		if (owner.TryGetConverter(out IMessagePackConverter<T>? converter))
+		{
+			return converter;
+		}
+
+		return this.converters.GetOrAdd<IMessagePackConverter<T>>(shape, this, box => new DelayedConverter<T>(box));
 	}
 }

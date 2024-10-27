@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -14,33 +15,33 @@ internal ref struct BufferWriter
 	/// <summary>
 	/// The underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>
-	private IBufferWriter<byte> _output;
+	private IBufferWriter<byte>? output;
 
 	/// <summary>
 	/// The result of the last call to <see cref="IBufferWriter{T}.GetSpan(int)"/>, less any bytes already "consumed" with <see cref="Advance(int)"/>.
 	/// Backing field for the <see cref="Span"/> property.
 	/// </summary>
-	private Span<byte> _span;
+	private Span<byte> span;
 
 	/// <summary>
 	/// The result of the last call to <see cref="IBufferWriter{T}.GetMemory(int)"/>, less any bytes already "consumed" with <see cref="Advance(int)"/>.
 	/// </summary>
-	private ArraySegment<byte> _segment;
+	private ArraySegment<byte> segment;
 
 	/// <summary>
 	/// The number of uncommitted bytes (all the calls to <see cref="Advance(int)"/> since the last call to <see cref="Commit"/>).
 	/// </summary>
-	private int _buffered;
+	private int buffered;
 
 	/// <summary>
 	/// The total number of bytes written with this writer.
 	/// Backing field for the <see cref="BytesCommitted"/> property.
 	/// </summary>
-	private long _bytesCommitted;
+	private long bytesCommitted;
 
-	private SequencePool _sequencePool;
+	private SequencePool? sequencePool;
 
-	private SequencePool.Rental _rental;
+	private SequencePool.Rental rental;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="BufferWriter"/> struct.
@@ -49,16 +50,16 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BufferWriter(IBufferWriter<byte> output)
 	{
-		_buffered = 0;
-		_bytesCommitted = 0;
-		_output = output ?? throw new ArgumentNullException(nameof(output));
+		this.buffered = 0;
+		this.bytesCommitted = 0;
+		this.output = output ?? throw new ArgumentNullException(nameof(output));
 
-		_sequencePool = default;
-		_rental = default;
+		this.sequencePool = default;
+		this.rental = default;
 
-		var memory = _output.GetMemoryCheckResult();
-		MemoryMarshal.TryGetArray(memory, out _segment);
-		_span = memory.Span;
+		Memory<byte> memory = this.output.GetMemoryCheckResult();
+		MemoryMarshal.TryGetArray(memory, out this.segment);
+		this.span = memory.Span;
 	}
 
 	/// <summary>
@@ -69,52 +70,60 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal BufferWriter(SequencePool sequencePool, byte[] array)
 	{
-		_buffered = 0;
-		_bytesCommitted = 0;
-		_sequencePool = sequencePool ?? throw new ArgumentNullException(nameof(sequencePool));
-		_rental = default;
-		_output = null;
+		this.buffered = 0;
+		this.bytesCommitted = 0;
+		this.sequencePool = sequencePool ?? throw new ArgumentNullException(nameof(sequencePool));
+		this.rental = default;
+		this.output = null;
 
-		_segment = new ArraySegment<byte>(array);
-		_span = _segment.AsSpan();
+		this.segment = new ArraySegment<byte>(array);
+		this.span = this.segment.AsSpan();
 	}
 
 	/// <summary>
 	/// Gets the result of the last call to <see cref="IBufferWriter{T}.GetSpan(int)"/>.
 	/// </summary>
-	public Span<byte> Span => _span;
+	public Span<byte> Span => this.span;
 
 	/// <summary>
 	/// Gets the total number of bytes written with this writer.
 	/// </summary>
-	public long BytesCommitted => _bytesCommitted;
+	public long BytesCommitted => this.bytesCommitted;
 
 	/// <summary>
 	/// Gets the <see cref="IBufferWriter{T}"/> underlying this instance.
 	/// </summary>
-	internal IBufferWriter<byte> UnderlyingWriter => _output;
+	internal IBufferWriter<byte>? UnderlyingWriter => this.output;
 
-	internal SequencePool.Rental SequenceRental => _rental;
+	/// <summary>
+	/// Gets the rental.
+	/// </summary>
+	internal SequencePool.Rental SequenceRental => this.rental;
 
 	/// <inheritdoc cref="IBufferWriter{T}.GetSpan(int)"/>
 	public Span<byte> GetSpan(int sizeHint = 0)
 	{
-		Ensure(sizeHint);
+		this.Ensure(sizeHint);
 		return this.Span;
 	}
 
+	/// <summary>
+	/// Gets a reference to the next byte to write to.
+	/// </summary>
+	/// <param name="sizeHint">The minimum size to guarantee is available in the buffer.</param>
+	/// <returns>The first byte in the buffer.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ref byte GetPointer(int sizeHint = 0)
 	{
-		Ensure(sizeHint);
+		this.Ensure(sizeHint);
 
-		if (_segment.Array != null)
+		if (this.segment.Array != null)
 		{
-			return ref _segment.Array[_segment.Offset + _buffered];
+			return ref this.segment.Array[this.segment.Offset + this.buffered];
 		}
 		else
 		{
-			return ref _span.GetPinnableReference();
+			return ref this.span.GetPinnableReference();
 		}
 	}
 
@@ -125,15 +134,16 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Commit()
 	{
-		var buffered = _buffered;
+		int buffered = this.buffered;
 		if (buffered > 0)
 		{
 			this.MigrateToSequence();
 
-			_bytesCommitted += buffered;
-			_buffered = 0;
-			_output.Advance(buffered);
-			_span = default;
+			this.bytesCommitted += buffered;
+			this.buffered = 0;
+			Assumes.NotNull(this.output);
+			this.output.Advance(buffered);
+			this.span = default;
 		}
 	}
 
@@ -144,8 +154,8 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Advance(int count)
 	{
-		_buffered += count;
-		_span = _span.Slice(count);
+		this.buffered += count;
+		this.span = this.span.Slice(count);
 	}
 
 	/// <summary>
@@ -155,14 +165,14 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Write(ReadOnlySpan<byte> source)
 	{
-		if (_span.Length >= source.Length)
+		if (this.span.Length >= source.Length)
 		{
-			source.CopyTo(_span);
-			Advance(source.Length);
+			source.CopyTo(this.span);
+			this.Advance(source.Length);
 		}
 		else
 		{
-			WriteMultiBuffer(source);
+			this.WriteMultiBuffer(source);
 		}
 	}
 
@@ -173,22 +183,22 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Ensure(int count = 0)
 	{
-		if (_span.Length < count)
+		if (this.span.Length < count)
 		{
-			EnsureMore(count);
+			this.EnsureMore(count);
 		}
 	}
 
 	/// <summary>
 	/// Gets the span to the bytes written if they were never committed to the underlying buffer writer.
 	/// </summary>
-	/// <param name="span"></param>
-	/// <returns></returns>
+	/// <param name="span">Receives the uncommitted span.</param>
+	/// <returns><see langword="true" /> if an uncommitted span was set; otherwise <see langword="false" />.</returns>
 	internal bool TryGetUncommittedSpan(out ReadOnlySpan<byte> span)
 	{
-		if (this._sequencePool != null)
+		if (this.sequencePool != null)
 		{
-			span = _segment.AsSpan(0, _buffered);
+			span = this.segment.AsSpan(0, this.buffered);
 			return true;
 		}
 
@@ -203,18 +213,19 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void EnsureMore(int count = 0)
 	{
-		if (_buffered > 0)
+		if (this.buffered > 0)
 		{
-			Commit();
+			this.Commit();
 		}
 		else
 		{
 			this.MigrateToSequence();
 		}
 
-		var memory = _output.GetMemoryCheckResult(count);
-		MemoryMarshal.TryGetArray(memory, out _segment);
-		_span = memory.Span;
+		Assumes.NotNull(this.output);
+		Memory<byte> memory = this.output.GetMemoryCheckResult(count);
+		MemoryMarshal.TryGetArray(memory, out this.segment);
+		this.span = memory.Span;
 	}
 
 	/// <summary>
@@ -227,29 +238,29 @@ internal ref struct BufferWriter
 		int bytesLeftToCopy = source.Length;
 		while (bytesLeftToCopy > 0)
 		{
-			if (_span.Length == 0)
+			if (this.span.Length == 0)
 			{
-				EnsureMore();
+				this.EnsureMore();
 			}
 
-			var writable = Math.Min(bytesLeftToCopy, _span.Length);
-			source.Slice(copiedBytes, writable).CopyTo(_span);
+			int writable = Math.Min(bytesLeftToCopy, this.span.Length);
+			source.Slice(copiedBytes, writable).CopyTo(this.span);
 			copiedBytes += writable;
 			bytesLeftToCopy -= writable;
-			Advance(writable);
+			this.Advance(writable);
 		}
 	}
 
 	private void MigrateToSequence()
 	{
-		if (this._sequencePool != null)
+		if (this.sequencePool != null)
 		{
 			// We were writing to our private scratch memory, so we have to copy it into the actual writer.
-			_rental = _sequencePool.Rent();
-			_output = _rental.Value;
-			var realSpan = _output.GetSpan(_buffered);
-			_segment.AsSpan(0, _buffered).CopyTo(realSpan);
-			_sequencePool = null;
+			this.rental = this.sequencePool.Rent();
+			this.output = this.rental.Value;
+			Span<byte> realSpan = this.output.GetSpan(this.buffered);
+			this.segment.AsSpan(0, this.buffered).CopyTo(realSpan);
+			this.sequencePool = null;
 		}
 	}
 }

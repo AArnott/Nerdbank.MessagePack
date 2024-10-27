@@ -1,7 +1,13 @@
-﻿using Nerdbank.Streams;
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Nerdbank.Streams;
 
 namespace Nerdbank.MessagePack;
 
+/// <summary>
+/// A pool of <see cref="Sequence{T}"/> objects.
+/// </summary>
 internal class SequencePool
 {
 	/// <summary>
@@ -109,10 +115,18 @@ internal class SequencePool
 		}
 	}
 
+	/// <summary>
+	/// A struct that manages the rental of a <see cref="Sequence{T}"/> from a <see cref="SequencePool"/>.
+	/// </summary>
 	internal struct Rental : IDisposable
 	{
 		private readonly SequencePool owner;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="Rental"/> struct.
+		/// </summary>
+		/// <param name="owner">The <see cref="SequencePool"/> that owns this rental.</param>
+		/// <param name="value">The <see cref="Sequence{T}"/> object being rented.</param>
 		internal Rental(SequencePool owner, Sequence<byte> value)
 		{
 			this.owner = owner;
