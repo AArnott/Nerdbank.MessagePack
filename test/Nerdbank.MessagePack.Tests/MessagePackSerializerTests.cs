@@ -59,6 +59,16 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	public void Array_Null() => this.AssertRoundtrip(new ClassWithArray { IntArray = null });
 
 	[Fact]
+	public void MultidimensionalArray() => this.AssertRoundtrip(new HasMultiDimensionalArray
+	{
+		Array2D = new[,]
+		{
+			{ 1, 2, 5 },
+			{ 3, 4, 6 },
+		},
+	});
+
+	[Fact]
 	public void Enumerable() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = [1, 2, 3] });
 
 	[Fact]
@@ -178,4 +188,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 
 	[GenerateShape]
 	public partial record HasEnum(SomeEnum Value);
+
+	[GenerateShape]
+	public partial class HasMultiDimensionalArray : IEquatable<HasMultiDimensionalArray>
+	{
+		public int[,]? Array2D { get; set; }
+
+		public bool Equals(HasMultiDimensionalArray? other) => other is not null && ByValueEquality.Equal(this.Array2D, other.Array2D);
+	}
 }

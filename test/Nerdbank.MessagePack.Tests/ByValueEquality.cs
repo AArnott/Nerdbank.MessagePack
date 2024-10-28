@@ -53,4 +53,35 @@ internal static class ByValueEquality
 
 		return true;
 	}
+
+	internal static bool Equal<T>(T[,]? left, T[,]? right, IEqualityComparer<T>? equalityComparer = null)
+	{
+		equalityComparer ??= EqualityComparer<T>.Default;
+
+		if (left is null || right is null)
+		{
+			return left is null == right is null;
+		}
+
+		int rows = left.GetLength(0);
+		int cols = left.GetLength(1);
+
+		if (rows != right.GetLength(0) || cols != right.GetLength(1))
+		{
+			return false;
+		}
+
+		for (int i = 0; i < rows; i++)
+		{
+			for (int j = 0; j < cols; j++)
+			{
+				if (!equalityComparer.Equals(left[i, j], right[i, j]))
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
 }
