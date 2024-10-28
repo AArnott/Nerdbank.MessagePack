@@ -148,6 +148,10 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 		};
 	}
 
+	/// <inheritdoc/>
+	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
+		=> new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
+
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
 	/// </summary>

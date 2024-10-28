@@ -12,6 +12,13 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 {
 	private readonly MessagePackSerializer serializer = new();
 
+	public enum SomeEnum
+	{
+		A,
+		B,
+		C,
+	}
+
 	[Fact]
 	public void SimpleNull() => this.AssertRoundtrip<Fruit>(null);
 
@@ -56,6 +63,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 
 	[Fact]
 	public void Enumerable_Null() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = null });
+
+	[Fact]
+	public void Enum() => this.AssertRoundtrip(new HasEnum(SomeEnum.B));
 
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
@@ -165,4 +175,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 
 		public bool Equals(ClassWithEnumerable? other) => other is not null && ByValueEquality.Equal(this.IntEnum, other.IntEnum);
 	}
+
+	[GenerateShape]
+	public partial record HasEnum(SomeEnum Value);
 }
