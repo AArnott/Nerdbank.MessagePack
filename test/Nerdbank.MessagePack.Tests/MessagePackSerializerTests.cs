@@ -1,13 +1,6 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Immutable;
-using Nerdbank.MessagePack;
-using Nerdbank.Streams;
-using TypeShape;
-using Xunit;
-using Xunit.Abstractions;
-
 public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 {
 	private MessagePackSerializer serializer = new();
