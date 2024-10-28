@@ -85,6 +85,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void SerializeUnannotatedViaWitness() => this.AssertRoundtrip<UnannotatedPoco, Witness>(new UnannotatedPoco { Value = 42 });
 
+	[Fact]
+	public void SerializeGraphWithAnnotationOnlyAtBase() => this.AssertRoundtrip(new ReferencesUnannotatedPoco { Poco = new UnannotatedPoco { Value = 42 } });
+
 	[GenerateShape]
 	public partial class Fruit : IEquatable<Fruit>
 	{
@@ -194,6 +197,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public record UnannotatedPoco
 	{
 		public int Value { get; set; }
+	}
+
+	[GenerateShape]
+	public partial record ReferencesUnannotatedPoco
+	{
+		public UnannotatedPoco? Poco { get; set; }
 	}
 
 	[GenerateShape<UnannotatedPoco>]
