@@ -47,6 +47,14 @@ public record MessagePackSerializer
 	/// </summary>
 	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat { get; init; } = MultiDimensionalArrayFormat.Nested;
 
+	/// <summary>
+	/// Gets the maximum depth of the object graph to serialize or deserialize.
+	/// </summary>
+	/// <remarks>
+	/// Exceeding this depth will result in a <see cref="MessagePackSerializationException"/> being thrown.
+	/// </remarks>
+	public int MaxDepth { get; init; } = 64;
+
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)"/>
 	/// <param name="writer">The buffer writer to serialize to.</param>
 	/// <param name="value"><inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)" path="/param[@name='value']"/></param>
@@ -67,7 +75,7 @@ public record MessagePackSerializer
 	public void Serialize<T>(ref MessagePackWriter writer, T? value)
 		where T : IShapeable<T>
 	{
-		this.GetOrAddConverter<T>().Serialize(ref writer, ref value);
+		this.GetOrAddConverter<T>().Serialize(ref writer, ref value, new SerializationContext(this.MaxDepth));
 	}
 
 	/// <param name="buffer">The msgpack to deserialize from.</param>
@@ -88,7 +96,7 @@ public record MessagePackSerializer
 	public T? Deserialize<T>(MessagePackReader reader)
 		where T : IShapeable<T>
 	{
-		return this.GetOrAddConverter<T>().Deserialize(ref reader);
+		return this.GetOrAddConverter<T>().Deserialize(ref reader, new SerializationContext(this.MaxDepth));
 	}
 
 	/// <summary>

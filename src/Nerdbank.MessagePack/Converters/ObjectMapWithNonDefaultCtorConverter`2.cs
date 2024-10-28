@@ -16,13 +16,14 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(MapSerializableProperties<TDeclaringType> serializable, Func<TArgumentState> argStateCtor, Constructor<TArgumentState, TDeclaringType> ctor, MapDeserializableProperties<TArgumentState> parameters) : ObjectMapConverter<TDeclaringType>(serializable, null, null)
 {
 	/// <inheritdoc/>
-	public override TDeclaringType? Deserialize(ref MessagePackReader reader)
+	public override TDeclaringType? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 		int count = reader.ReadMapHeader();
 		for (int i = 0; i < count; i++)
@@ -30,7 +31,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
 			if (parameters.Readers.TryGetValue(propertyName, out DeserializeProperty<TArgumentState>? deserializeArg))
 			{
-				deserializeArg(ref argState, ref reader);
+				deserializeArg(ref argState, ref reader, context);
 			}
 			else
 			{

@@ -26,7 +26,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public override TArray? Deserialize(ref MessagePackReader reader)
+	public override TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -37,13 +37,13 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 		this.PeekDimensionsLength(reader, dimensions);
 		Array array = Array.CreateInstance(typeof(TElement), dimensions);
 		Span<TElement> elements = AsSpan(array);
-		this.ReadSubArray(ref reader, dimensions, elements);
+		this.ReadSubArray(ref reader, dimensions, elements, context);
 
 		return (TArray)(object)array;
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TArray? value)
+	public override void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
 	{
 		Array? array = (Array?)(object?)value;
 		if (array is null)
@@ -60,7 +60,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 			dimensions[i] = array.GetLength(i);
 		}
 
-		this.WriteSubArray(ref writer, dimensions.AsSpan(), AsSpan(array));
+		this.WriteSubArray(ref writer, dimensions.AsSpan(), AsSpan(array), context);
 	}
 
 	/// <summary>
@@ -77,8 +77,10 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 	/// <param name="writer">The msgpack writer.</param>
 	/// <param name="dimensions">The remaining dimensions to be written.</param>
 	/// <param name="elements">A flat list of elements to write.</param>
-	private void WriteSubArray(ref MessagePackWriter writer, Span<int> dimensions, Span<TElement> elements)
+	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
+	private void WriteSubArray(ref MessagePackWriter writer, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
+		context.DepthStep();
 		int outerDimension = dimensions[0];
 		writer.WriteArrayHeader(outerDimension);
 		if (dimensions.Length > 1 && outerDimension > 0)
@@ -86,7 +88,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 			int subArrayLength = elements.Length / outerDimension;
 			for (int i = 0; i < outerDimension; i++)
 			{
-				this.WriteSubArray(ref writer, dimensions[1..], elements[..subArrayLength]);
+				this.WriteSubArray(ref writer, dimensions[1..], elements[..subArrayLength], context);
 				elements = elements[subArrayLength..];
 			}
 		}
@@ -94,7 +96,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 		{
 			for (int i = 0; i < outerDimension; i++)
 			{
-				elementConverter.Serialize(ref writer, ref elements[i]!);
+				elementConverter.Serialize(ref writer, ref elements[i]!, context);
 			}
 		}
 	}
@@ -105,8 +107,10 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 	/// <param name="reader">The msgpack reader.</param>
 	/// <param name="dimensions">The remaining dimensions to be read.</param>
 	/// <param name="elements">A flat list of elements to populate.</param>
-	private void ReadSubArray(ref MessagePackReader reader, Span<int> dimensions, Span<TElement> elements)
+	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	private void ReadSubArray(ref MessagePackReader reader, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
+		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 
 		int outerDimension = dimensions[0];
@@ -115,7 +119,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 			int subArrayLength = elements.Length / outerDimension;
 			for (int i = 0; i < outerDimension; i++)
 			{
-				this.ReadSubArray(ref reader, dimensions[1..], elements[..subArrayLength]);
+				this.ReadSubArray(ref reader, dimensions[1..], elements[..subArrayLength], context);
 				elements = elements[subArrayLength..];
 			}
 		}
@@ -123,7 +127,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 		{
 			for (int i = 0; i < outerDimension; i++)
 			{
-				elements[i] = elementConverter.Deserialize(ref reader)!;
+				elements[i] = elementConverter.Deserialize(ref reader, context)!;
 			}
 		}
 	}

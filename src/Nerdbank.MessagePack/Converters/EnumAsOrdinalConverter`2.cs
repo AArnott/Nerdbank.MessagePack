@@ -11,12 +11,12 @@ namespace Nerdbank.MessagePack.Converters;
 internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(IMessagePackConverter<TUnderlyingType> primitiveConverter) : IMessagePackConverter<TEnum>
 {
 	/// <inheritdoc/>
-	public override TEnum? Deserialize(ref MessagePackReader reader) => (TEnum?)(object?)primitiveConverter.Deserialize(ref reader);
+	public override TEnum? Deserialize(ref MessagePackReader reader, SerializationContext context) => (TEnum?)(object?)primitiveConverter.Deserialize(ref reader, context);
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TEnum? value)
+	public override void Serialize(ref MessagePackWriter writer, ref TEnum? value, SerializationContext context)
 	{
 		TUnderlyingType? intValue = (TUnderlyingType?)(object?)value;
-		primitiveConverter.Serialize(ref writer, ref intValue);
+		primitiveConverter.Serialize(ref writer, ref intValue, context);
 	}
 }

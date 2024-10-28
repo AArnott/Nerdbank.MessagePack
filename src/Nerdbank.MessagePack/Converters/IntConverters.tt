@@ -15,12 +15,12 @@ namespace Nerdbank.MessagePack;
 foreach (string type in types) { #>
 
 /// <summary>Serializes the primitive integer type <see cref="<#=type#>"/> as a MessagePack integer.</summary>
-internal class <#=type#>Converter : MessagePackConverter<<#=type#>>
+internal class <#=type#>Converter : IMessagePackConverter<<#=type#>>
 {
 	/// <inheritdoc/>
-	public override <#=type#> Deserialize(ref MessagePackReader reader) => reader.Read<#=type#>();
+	public override <#=type#> Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.Read<#=type#>();
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref <#=type#> value) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref <#=type#> value, SerializationContext context) => writer.Write(value);
 }
 <# } #>

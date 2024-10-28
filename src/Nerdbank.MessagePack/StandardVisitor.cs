@@ -61,10 +61,10 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 		if (propertyShape.HasGetter)
 		{
 			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
-			serialize = (ref TDeclaringType container, ref MessagePackWriter writer) =>
+			serialize = (ref TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
 			{
 				TPropertyType? value = getter(ref container);
-				converter.Serialize(ref writer, ref value);
+				converter.Serialize(ref writer, ref value, context);
 			};
 		}
 
@@ -72,7 +72,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 		if (propertyShape.HasSetter)
 		{
 			Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-			deserialize = (ref TDeclaringType container, ref MessagePackReader reader) => setter(ref container, converter.Deserialize(ref reader)!);
+			deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) => setter(ref container, converter.Deserialize(ref reader, context)!);
 		}
 
 		return new PropertyAccessors<TDeclaringType>(serialize, deserialize);
@@ -109,7 +109,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 		IMessagePackConverter<TParameterType> converter = owner.GetOrAddConverter(parameterShape.ParameterType);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
-		return new DeserializeProperty<TArgumentState>((ref TArgumentState state, ref MessagePackReader reader) => setter(ref state, converter.Deserialize(ref reader)!));
+		return new DeserializeProperty<TArgumentState>((ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Deserialize(ref reader, context)!));
 	}
 
 	/// <inheritdoc/>

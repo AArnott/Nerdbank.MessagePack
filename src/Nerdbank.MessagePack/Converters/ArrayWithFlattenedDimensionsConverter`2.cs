@@ -24,13 +24,14 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessageP
 
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public override TArray? Deserialize(ref MessagePackReader reader)
+	public override TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		int outerCount = reader.ReadArrayHeader();
 		if (outerCount != 2)
 		{
@@ -54,14 +55,14 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessageP
 
 		for (int i = 0; i < elements.Length; i++)
 		{
-			elements[i] = elementConverter.Deserialize(ref reader)!;
+			elements[i] = elementConverter.Deserialize(ref reader, context)!;
 		}
 
 		return (TArray)(object)array;
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TArray? value)
+	public override void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -69,6 +70,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessageP
 			return;
 		}
 
+		context.DepthStep();
 		Array array = (Array)(object)value;
 
 		writer.WriteArrayHeader(2);
@@ -85,7 +87,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessageP
 		writer.WriteArrayHeader(elements.Length);
 		for (int i = 0; i < elements.Length; i++)
 		{
-			elementConverter.Serialize(ref writer, ref elements[i]!);
+			elementConverter.Serialize(ref writer, ref elements[i]!, context);
 		}
 	}
 

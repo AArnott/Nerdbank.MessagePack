@@ -1,10 +1,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class MessagePackSerializerTests(ITestOutputHelper logger)
+public partial class MessagePackSerializerTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
-	private MessagePackSerializer serializer = new();
-
 	public enum SomeEnum
 	{
 		A,
@@ -55,7 +53,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	[Theory, PairwiseData]
 	public void MultidimensionalArray(MultiDimensionalArrayFormat format)
 	{
-		this.serializer = this.serializer with { MultiDimensionalArrayFormat = format };
+		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = format };
 		this.AssertRoundtrip(new HasMultiDimensionalArray
 		{
 			Array2D = new[,]
@@ -83,22 +81,6 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 
 	[Fact]
 	public void Enum() => this.AssertRoundtrip(new HasEnum(SomeEnum.B));
-
-	protected void AssertRoundtrip<T>(T? value)
-		where T : IShapeable<T>
-	{
-		T? roundtripped = this.Roundtrip(value);
-		Assert.Equal(value, roundtripped);
-	}
-
-	protected T? Roundtrip<T>(T? value)
-		where T : IShapeable<T>
-	{
-		Sequence<byte> sequence = new();
-		this.serializer.Serialize(sequence, value);
-		logger.WriteLine(MessagePack.MessagePackSerializer.ConvertToJson(sequence, MessagePack.MessagePackSerializerOptions.Standard));
-		return this.serializer.Deserialize<T>(sequence);
-	}
 
 	[GenerateShape]
 	public partial class Fruit : IEquatable<Fruit>

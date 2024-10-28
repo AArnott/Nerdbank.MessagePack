@@ -14,7 +14,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : IMessagePackConverter<T>
 {
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref T? value)
+	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -22,16 +22,17 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			return;
 		}
 
+		context.DepthStep();
 		writer.WriteMapHeader(serializable.Properties.Count);
 		foreach ((ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write) property in serializable.Properties)
 		{
 			writer.WriteRaw(property.RawPropertyNameString.Span);
-			property.Write(ref value, ref writer);
+			property.Write(ref value, ref writer, context);
 		}
 	}
 
 	/// <inheritdoc/>
-	public override T? Deserialize(ref MessagePackReader reader)
+	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -43,6 +44,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			throw new NotSupportedException($"The {typeof(T).Name} type cannot be deserialized.");
 		}
 
+		context.DepthStep();
 		T value = constructor();
 		int count = reader.ReadMapHeader();
 		for (int i = 0; i < count; i++)
@@ -50,7 +52,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
 			if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializeProperty<T>? deserialize))
 			{
-				deserialize(ref value, ref reader);
+				deserialize(ref value, ref reader, context);
 			}
 			else
 			{

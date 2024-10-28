@@ -11,7 +11,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TDeclaringType">The data type whose property is to be read.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="writer">The means by which msgpack should be written.</param>
-internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackWriter writer);
+/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
+internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
 
 /// <summary>
 /// A delegate that can deserialize the value of a property from a <see cref="MessagePackReader"/> and assign it to a data type.
@@ -19,7 +20,8 @@ internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType cont
 /// <typeparam name="TDeclaringType">The data type whose property is to be initialized.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="reader">The means by which msgpack should be read.</param>
-internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader);
+/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context);
 
 /// <summary>
 /// A map of serializable properties.

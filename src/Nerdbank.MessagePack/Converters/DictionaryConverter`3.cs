@@ -18,7 +18,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, IMessagePackConverter<TKey> keyConverter, IMessagePackConverter<TValue> valueConverter) : IMessagePackConverter<TDictionary>
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader)
+	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -29,7 +29,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TDictionary? value)
+	public override void Serialize(ref MessagePackWriter writer, ref TDictionary? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -37,6 +37,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			return;
 		}
 
+		context.DepthStep();
 		IReadOnlyDictionary<TKey, TValue> dictionary = getReadable(value);
 		writer.WriteMapHeader(dictionary.Count);
 		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
@@ -44,8 +45,8 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			TKey? entryKey = pair.Key;
 			TValue? entryValue = pair.Value;
 
-			keyConverter.Serialize(ref writer, ref entryKey);
-			valueConverter.Serialize(ref writer, ref entryValue);
+			keyConverter.Serialize(ref writer, ref entryKey, context);
+			valueConverter.Serialize(ref writer, ref entryValue, context);
 		}
 	}
 
@@ -53,12 +54,13 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// Reads a key and value pair.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
+	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 	/// <param name="key">Receives the key.</param>
 	/// <param name="value">Receives the value.</param>
-	protected void ReadEntry(ref MessagePackReader reader, out TKey? key, out TValue? value)
+	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey? key, out TValue? value)
 	{
-		key = keyConverter.Deserialize(ref reader);
-		value = valueConverter.Deserialize(ref reader);
+		key = keyConverter.Deserialize(ref reader, context);
+		value = valueConverter.Deserialize(ref reader, context);
 	}
 }
 
@@ -79,18 +81,19 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader)
+	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		TDictionary result = ctor();
 		int count = reader.ReadMapHeader();
 		for (int i = 0; i < count; i++)
 		{
-			this.ReadEntry(ref reader, out TKey? key, out TValue? value);
+			this.ReadEntry(ref reader, context, out TKey? key, out TValue? value);
 			addEntry(ref result, new KeyValuePair<TKey, TValue>(key!, value!));
 		}
 
@@ -113,20 +116,21 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader)
+	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		int count = reader.ReadMapHeader();
 		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, out TKey? key, out TValue? value);
+				this.ReadEntry(ref reader, context, out TKey? key, out TValue? value);
 				entries[i] = new(key!, value!);
 			}
 
@@ -154,20 +158,21 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader)
+	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		int count = reader.ReadMapHeader();
 		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, out TKey? key, out TValue? value);
+				this.ReadEntry(ref reader, context, out TKey? key, out TValue? value);
 				entries[i] = new(key!, value!);
 			}
 

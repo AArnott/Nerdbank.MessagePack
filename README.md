@@ -22,6 +22,11 @@
 * Streaming deserialization.
 * Optional LZ4 compression.
 
+### Analyzer ideas
+
+* Converters should *not* call out to the top-level serialization functions (as this would bypass the depth check and user options).
+* Write only one value -- or an (optional) runtime check.
+
 ## Usage
 
 Given a type annotated with `[GenerateShape]` like this:

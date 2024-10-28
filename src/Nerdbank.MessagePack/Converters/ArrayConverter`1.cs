@@ -10,25 +10,26 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ArrayConverter<TElement>(IMessagePackConverter<TElement> elementConverter) : IMessagePackConverter<TElement[]>
 {
 	/// <inheritdoc/>
-	public override TElement[]? Deserialize(ref MessagePackReader reader)
+	public override TElement[]? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return null;
 		}
 
+		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		TElement[] array = new TElement[count];
 		for (int i = 0; i < count; i++)
 		{
-			array[i] = elementConverter.Deserialize(ref reader)!;
+			array[i] = elementConverter.Deserialize(ref reader, context)!;
 		}
 
 		return array;
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TElement[]? value)
+	public override void Serialize(ref MessagePackWriter writer, ref TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -36,10 +37,11 @@ internal class ArrayConverter<TElement>(IMessagePackConverter<TElement> elementC
 			return;
 		}
 
+		context.DepthStep();
 		writer.WriteArrayHeader(value.Length);
 		for (int i = 0; i < value.Length; i++)
 		{
-			elementConverter.Serialize(ref writer, ref value[i]!);
+			elementConverter.Serialize(ref writer, ref value[i]!, context);
 		}
 	}
 }

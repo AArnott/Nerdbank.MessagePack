@@ -14,7 +14,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, IMessagePackConverter<TElement> elementConverter) : IMessagePackConverter<TEnumerable>
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader)
+	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -25,7 +25,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TEnumerable? value)
+	public override void Serialize(ref MessagePackWriter writer, ref TEnumerable? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -33,6 +33,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			return;
 		}
 
+		context.DepthStep();
 		IEnumerable<TElement> enumerable = getEnumerable(value);
 		if (Enumerable.TryGetNonEnumeratedCount(enumerable, out int count))
 		{
@@ -40,7 +41,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			foreach (TElement element in enumerable)
 			{
 				TElement? el = element;
-				elementConverter.Serialize(ref writer, ref el);
+				elementConverter.Serialize(ref writer, ref el, context);
 			}
 		}
 		else
@@ -49,7 +50,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			writer.WriteArrayHeader(array.Length);
 			for (int i = 0; i < array.Length; i++)
 			{
-				elementConverter.Serialize(ref writer, ref array[i]);
+				elementConverter.Serialize(ref writer, ref array[i], context);
 			}
 		}
 	}
@@ -58,8 +59,9 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// Reads one element from the reader.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
+	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
-	protected TElement ReadElement(ref MessagePackReader reader) => elementConverter.Deserialize(ref reader)!;
+	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Deserialize(ref reader, context)!;
 }
 
 /// <summary>
@@ -77,18 +79,19 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader)
+	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		TEnumerable result = ctor();
 		int count = reader.ReadArrayHeader();
 		for (int i = 0; i < count; i++)
 		{
-			addElement(ref result, this.ReadElement(ref reader));
+			addElement(ref result, this.ReadElement(ref reader, context));
 		}
 
 		return result;
@@ -108,20 +111,21 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader)
+	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
-				elements[i] = this.ReadElement(ref reader);
+				elements[i] = this.ReadElement(ref reader, context);
 			}
 
 			return ctor(elements.AsSpan(0, count));
@@ -146,20 +150,21 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader)
+	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
 			return default;
 		}
 
+		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
-				elements[i] = this.ReadElement(ref reader);
+				elements[i] = this.ReadElement(ref reader, context);
 			}
 
 			return ctor(elements.Take(count));

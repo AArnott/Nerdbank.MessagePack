@@ -11,8 +11,8 @@ namespace Nerdbank.MessagePack.Converters;
 internal class DelayedConverter<T>(ResultBox<IMessagePackConverter<T>> box) : IMessagePackConverter<T>
 {
 	/// <inheritdoc/>
-	public override T? Deserialize(ref MessagePackReader reader) => box.Result.Deserialize(ref reader);
+	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context) => box.Result.Deserialize(ref reader, context);
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref T? value) => box.Result.Serialize(ref writer, ref value);
+	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context) => box.Result.Serialize(ref writer, ref value, context);
 }
