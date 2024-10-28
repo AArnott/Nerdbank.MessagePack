@@ -26,4 +26,31 @@ internal static class ByValueEquality
 
 		return true;
 	}
+
+	internal static bool Equal<T>(IEnumerable<T>? left, IEnumerable<T>? right, IEqualityComparer<T>? equalityComparer = null) => Equal(left?.ToArray(), right?.ToArray(), equalityComparer);
+
+	internal static bool Equal<T>(IReadOnlyList<T>? left, IReadOnlyList<T>? right, IEqualityComparer<T>? equalityComparer = null)
+	{
+		equalityComparer ??= EqualityComparer<T>.Default;
+
+		if (left is null || right is null)
+		{
+			return left is null == right is null;
+		}
+
+		if (left.Count != right.Count)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < left.Count; i++)
+		{
+			if (!equalityComparer.Equals(left[i], right[i]))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
 }

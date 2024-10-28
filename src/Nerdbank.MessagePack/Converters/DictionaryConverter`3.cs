@@ -20,6 +20,11 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <inheritdoc/>
 	public override TDictionary? Deserialize(ref MessagePackReader reader)
 	{
+		if (reader.TryReadNil())
+		{
+			return default;
+		}
+
 		throw new NotSupportedException();
 	}
 

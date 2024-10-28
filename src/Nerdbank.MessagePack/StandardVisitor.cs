@@ -124,22 +124,28 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 		Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
 
 		// Deserialization functions.
-		switch (dictionaryShape.ConstructionStrategy)
+		return dictionaryShape.ConstructionStrategy switch
 		{
-			case CollectionConstructionStrategy.None:
-				return new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter);
-			case CollectionConstructionStrategy.Mutable:
-				Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry = dictionaryShape.GetAddKeyValuePair();
-				Func<TDictionary> ctor = dictionaryShape.GetDefaultConstructor();
-				return new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addEntry, ctor);
-			case CollectionConstructionStrategy.Span:
-				SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetSpanConstructor();
-				return new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, spanCtor);
-			case CollectionConstructionStrategy.Enumerable:
-				Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumCtor = dictionaryShape.GetEnumerableConstructor();
-				return new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, enumCtor);
-			default: throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}");
-		}
+			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter),
+			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Span => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetSpanConstructor()),
+			CollectionConstructionStrategy.Enumerable => new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetEnumerableConstructor()),
+			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
+		};
+	}
+
+	/// <inheritdoc/>
+	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
+	{
+		IMessagePackConverter<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
+		return enumerableShape.ConstructionStrategy switch
+		{
+			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter),
+			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter, enumerableShape.GetSpanConstructor()),
+			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter, enumerableShape.GetEnumerableConstructor()),
+			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
+		};
 	}
 
 	/// <summary>

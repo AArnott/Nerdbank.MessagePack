@@ -45,6 +45,18 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	[Fact]
 	public void ImmutableDictionary() => this.AssertRoundtrip(new ClassWithImmutableDictionary { StringInt = ImmutableDictionary<string, int>.Empty.Add("a", 1) });
 
+	[Fact]
+	public void Array() => this.AssertRoundtrip(new ClassWithArray { IntArray = [1, 2, 3] });
+
+	[Fact]
+	public void Array_Null() => this.AssertRoundtrip(new ClassWithArray { IntArray = null });
+
+	[Fact]
+	public void Enumerable() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = [1, 2, 3] });
+
+	[Fact]
+	public void Enumerable_Null() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = null });
+
 	protected void AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T>
 	{
@@ -136,5 +148,21 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 		public ImmutableDictionary<string, int>? StringInt { get; set; }
 
 		public bool Equals(ClassWithImmutableDictionary? other) => other is not null && ByValueEquality.Equal(this.StringInt, other.StringInt);
+	}
+
+	[GenerateShape]
+	public partial class ClassWithArray : IEquatable<ClassWithArray>
+	{
+		public int[]? IntArray { get; set; }
+
+		public bool Equals(ClassWithArray? other) => other is not null && ByValueEquality.Equal(this.IntArray, other.IntArray);
+	}
+
+	[GenerateShape]
+	public partial class ClassWithEnumerable : IEquatable<ClassWithEnumerable>
+	{
+		public IEnumerable<int>? IntEnum { get; set; }
+
+		public bool Equals(ClassWithEnumerable? other) => other is not null && ByValueEquality.Equal(this.IntEnum, other.IntEnum);
 	}
 }
