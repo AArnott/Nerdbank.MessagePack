@@ -18,6 +18,9 @@
 * Automatically serialize non-annotated types by adding a 'witness' type with a similar annotation.
 * Security mitigations for hash collision attacks and stack overflows.
 * Serialize only "changes" to an object graph and deserialize onto existing objects to apply those changes.
+* Async serialization and deserialization.
+* Streaming deserialization.
+* Optional LZ4 compression.
 
 ## Usage
 
