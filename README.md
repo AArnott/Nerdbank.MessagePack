@@ -9,15 +9,16 @@
 * Serializes in the compact and fast [MessagePack format](https://msgpack.org/).
 * [Performance](#perf) is on par with the highly tuned and popular MessagePack-CSharp library.
 * Automatically serialize any type annotated with the [TypeShape-csharp](https://github.com/eiriktsarpalis/typeshape-csharp) `[GenerateShape]` attribute.
+* Automatically serialize non-annotated types by adding [a 'witness' type](#witness) with a similar annotation.
 * Fast `ref`-based serialization and deserialization minimizes copying of large structs.
-* NativeAOT compatible.
+* NativeAOT and trimming compatible.
 * Primitive msgpack reader and writer APIs for low-level scenarios.
 * Author custom converters for advanced scenarios.
 * Security mitigations for stack overflows.
 
 ### Potential future features
 
-* Automatically serialize non-annotated types by adding a 'witness' type with a similar annotation.
+* Deserializing into any of a constrained set of types, as determined by the data.
 * Security mitigations for hash collision attacks.
 * Serialize only "changes" to an object graph and deserialize onto existing objects to apply those changes.
 * Async serialization and deserialization.
@@ -60,7 +61,7 @@ var deserialized = this.serializer.Deserialize<ARecord>(buffer);
 Only the top-level types that you serialize need the attribute.
 All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.
 
-### Witness classes
+### <a name="witness"></a>Witness classes
 
 If you need to directly serialize a type that isn't declared in your project and is not annotated with `[GenerateShape]`, you can define another class in your own project to provide that shape.
 Doing so leads to default serialization rules being applied to the type (e.g. only public members are serialized).
@@ -93,6 +94,9 @@ You do *not* need a witness class for an external type to reference that type fr
 
 Not all types are suitable for serialization.
 I/O types (e.g. `Steam`) or types that are more about function that data (e.g. `Task<T>`, `CancellationToken`) are not suitable for serialization.
+
+Typeless serialization is not supported.
+For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time.
 
 ## <a name="perf"></a>Performance
 
