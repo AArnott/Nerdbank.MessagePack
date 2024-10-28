@@ -12,11 +12,12 @@
 * NativeAOT compatible.
 * Primitive msgpack reader and writer APIs for low-level scenarios.
 * Author custom converters for advanced scenarios.
+* Security mitigations for stack overflows.
 
 ### Potential future features
 
 * Automatically serialize non-annotated types by adding a 'witness' type with a similar annotation.
-* Security mitigations for hash collision attacks and stack overflows.
+* Security mitigations for hash collision attacks.
 * Serialize only "changes" to an object graph and deserialize onto existing objects to apply those changes.
 * Async serialization and deserialization.
 * Streaming deserialization.
