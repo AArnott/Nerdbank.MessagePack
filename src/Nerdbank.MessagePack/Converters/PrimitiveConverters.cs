@@ -12,10 +12,10 @@ namespace Nerdbank.MessagePack.Converters;
 internal class StringConverter : IMessagePackConverter<string>
 {
 	/// <inheritdoc/>
-	public override string? Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
+	public string? Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref string? value, SerializationContext context) => writer.Write(value);
+	public void Serialize(ref MessagePackWriter writer, ref string? value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
@@ -24,10 +24,10 @@ internal class StringConverter : IMessagePackConverter<string>
 internal class BooleanConverter : IMessagePackConverter<bool>
 {
 	/// <inheritdoc/>
-	public override bool Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadBoolean();
+	public bool Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadBoolean();
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref bool value, SerializationContext context) => writer.Write(value);
+	public void Serialize(ref MessagePackWriter writer, ref bool value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
@@ -36,10 +36,10 @@ internal class BooleanConverter : IMessagePackConverter<bool>
 internal class SingleConverter : IMessagePackConverter<float>
 {
 	/// <inheritdoc/>
-	public override float Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadSingle();
+	public float Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadSingle();
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref float value, SerializationContext context) => writer.Write(value);
+	public void Serialize(ref MessagePackWriter writer, ref float value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
@@ -48,10 +48,10 @@ internal class SingleConverter : IMessagePackConverter<float>
 internal class DoubleConverter : IMessagePackConverter<double>
 {
 	/// <inheritdoc/>
-	public override double Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadDouble();
+	public double Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadDouble();
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref double value, SerializationContext context) => writer.Write(value);
+	public void Serialize(ref MessagePackWriter writer, ref double value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
@@ -63,7 +63,7 @@ internal class NullableConverter<T>(IMessagePackConverter<T> elementConverter) :
 	where T : struct
 {
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
+	public void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value.HasValue)
 		{
@@ -77,7 +77,7 @@ internal class NullableConverter<T>(IMessagePackConverter<T> elementConverter) :
 	}
 
 	/// <inheritdoc/>
-	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public T? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

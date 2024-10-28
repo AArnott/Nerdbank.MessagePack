@@ -10,7 +10,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ArrayConverter<TElement>(IMessagePackConverter<TElement> elementConverter) : IMessagePackConverter<TElement[]>
 {
 	/// <inheritdoc/>
-	public override TElement[]? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public TElement[]? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -29,7 +29,7 @@ internal class ArrayConverter<TElement>(IMessagePackConverter<TElement> elementC
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TElement[]? value, SerializationContext context)
+	public void Serialize(ref MessagePackWriter writer, ref TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
 		{

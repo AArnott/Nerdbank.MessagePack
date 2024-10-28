@@ -24,7 +24,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessageP
 
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public override TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -62,7 +62,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessageP
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
+	public void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
 	{
 		if (value is null)
 		{

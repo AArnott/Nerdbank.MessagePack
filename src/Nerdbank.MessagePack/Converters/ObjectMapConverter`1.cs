@@ -14,7 +14,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : IMessagePackConverter<T>
 {
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
+	public void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -32,7 +32,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	}
 
 	/// <inheritdoc/>
-	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public virtual T? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

@@ -24,7 +24,7 @@ namespace Nerdbank.MessagePack;
 /// </devremarks>
 public record MessagePackSerializer
 {
-	private static readonly FrozenDictionary<Type, IMessagePackConverter> PrimitiveConverters = new Dictionary<Type, IMessagePackConverter>()
+	private static readonly FrozenDictionary<Type, object> PrimitiveConverters = new Dictionary<Type, object>()
 	{
 		{ typeof(byte), new ByteConverter() },
 		{ typeof(ushort), new UInt16Converter() },
@@ -40,7 +40,7 @@ public record MessagePackSerializer
 		{ typeof(double), new DoubleConverter() },
 	}.ToFrozenDictionary();
 
-	private readonly ConcurrentDictionary<Type, IMessagePackConverter> cachedConverters = new();
+	private readonly ConcurrentDictionary<Type, object> cachedConverters = new();
 
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
@@ -140,7 +140,7 @@ public record MessagePackSerializer
 	{
 		// Query our cache before the static converters to allow overrides of the built-in converters.
 		// For example this may allow for string interning or other optimizations.
-		if (this.cachedConverters.TryGetValue(typeof(T), out IMessagePackConverter? candidate))
+		if (this.cachedConverters.TryGetValue(typeof(T), out object? candidate))
 		{
 			converter = (IMessagePackConverter<T>)candidate;
 			return true;
@@ -176,9 +176,9 @@ public record MessagePackSerializer
 	/// <remarks>
 	/// Any collisions with existing converters are resolved in favor of the original converters.
 	/// </remarks>
-	internal void RegisterConverters(IEnumerable<KeyValuePair<Type, IMessagePackConverter>> converters)
+	internal void RegisterConverters(IEnumerable<KeyValuePair<Type, object>> converters)
 	{
-		foreach (KeyValuePair<Type, IMessagePackConverter> pair in converters)
+		foreach (KeyValuePair<Type, object> pair in converters)
 		{
 			this.cachedConverters.TryAdd(pair.Key, pair.Value);
 		}

@@ -6,7 +6,7 @@ using System.Text;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A <see cref="TypeShapeVisitor"/> that produces <see cref="IMessagePackConverter"/> instances for each type shape it visits.
+/// A <see cref="TypeShapeVisitor"/> that produces <see cref="IMessagePackConverter{T}"/> instances for each type shape it visits.
 /// </summary>
 /// <param name="owner">The serializer that created this instance. Usable for obtaining settings that may influence the generated converter.</param>
 internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor

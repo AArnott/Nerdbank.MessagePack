@@ -14,7 +14,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, IMessagePackConverter<TElement> elementConverter) : IMessagePackConverter<TEnumerable>
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public virtual TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -25,7 +25,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TEnumerable? value, SerializationContext context)
+	public void Serialize(ref MessagePackWriter writer, ref TEnumerable? value, SerializationContext context)
 	{
 		if (value is null)
 		{

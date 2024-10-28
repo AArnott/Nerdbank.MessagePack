@@ -18,7 +18,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, IMessagePackConverter<TKey> keyConverter, IMessagePackConverter<TValue> valueConverter) : IMessagePackConverter<TDictionary>
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public virtual TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -29,7 +29,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TDictionary? value, SerializationContext context)
+	public void Serialize(ref MessagePackWriter writer, ref TDictionary? value, SerializationContext context)
 	{
 		if (value is null)
 		{
