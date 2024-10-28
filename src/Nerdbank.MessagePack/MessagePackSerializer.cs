@@ -58,48 +58,71 @@ public record MessagePackSerializer
 	/// </remarks>
 	public int MaxDepth { get; init; } = 64;
 
+	/// <summary>
+	/// Gets a new <see cref="SerializationContext"/> for a new serialization job.
+	/// </summary>
+	protected SerializationContext StartingContext => new(this.MaxDepth);
+
+	/// <inheritdoc cref="Serialize{T, TProvider}(IBufferWriter{byte}, T)"/>
+	public void Serialize<T>(IBufferWriter<byte> writer, T value)
+		where T : IShapeable<T> => this.Serialize<T, T>(writer, value);
+
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)"/>
 	/// <param name="writer">The buffer writer to serialize to.</param>
 	/// <param name="value"><inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)" path="/param[@name='value']"/></param>
-	public void Serialize<T>(IBufferWriter<byte> writer, T? value)
-		where T : IShapeable<T>
+	public void Serialize<T, TProvider>(IBufferWriter<byte> writer, T? value)
+		where TProvider : IShapeable<T>
 	{
 		MessagePackWriter msgpackWriter = new(writer);
-		this.Serialize(ref msgpackWriter, value);
+		this.Serialize<T, TProvider>(ref msgpackWriter, value);
 		msgpackWriter.Flush();
 	}
+
+	/// <inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, T)"/>
+	public void Serialize<T>(ref MessagePackWriter writer, T? value)
+		where T : IShapeable<T> => this.Serialize<T, T>(ref writer, value);
 
 	/// <summary>
 	/// Serializes a value using the given <see cref="MessagePackWriter"/>.
 	/// </summary>
 	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
 	/// <param name="writer">The msgpack writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, T? value)
-		where T : IShapeable<T>
+	public void Serialize<T, TProvider>(ref MessagePackWriter writer, T? value)
+		where TProvider : IShapeable<T>
 	{
-		this.GetOrAddConverter<T>().Serialize(ref writer, ref value, new SerializationContext(this.MaxDepth));
+		this.GetOrAddConverter(TProvider.GetShape()).Serialize(ref writer, ref value, this.StartingContext);
 	}
 
-	/// <param name="buffer">The msgpack to deserialize from.</param>
-	/// <inheritdoc cref="Deserialize{T}(MessagePackReader)"/>
+	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
 	public T? Deserialize<T>(ReadOnlySequence<byte> buffer)
-		where T : IShapeable<T>
+		where T : IShapeable<T> => this.Deserialize<T, T>(buffer);
+
+	/// <param name="buffer">The msgpack to deserialize from.</param>
+	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader)"/>
+	public T? Deserialize<T, TProvider>(ReadOnlySequence<byte> buffer)
+		where TProvider : IShapeable<T>
 	{
 		MessagePackReader reader = new(buffer);
-		return this.Deserialize<T>(reader);
+		return this.Deserialize<T, TProvider>(ref reader);
 	}
+
+	/// <inheritdoc cref="Deserialize{T, TProvider}(ref MessagePackReader)"/>
+	public T? Deserialize<T>(ref MessagePackReader reader)
+		where T : IShapeable<T> => this.Deserialize<T, T>(ref reader);
 
 	/// <summary>
 	/// Deserializes a value from a <see cref="MessagePackReader"/>.
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, T)" path="/typeparam[@name='TProvider']"/></typeparam>
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
 	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(MessagePackReader reader)
-		where T : IShapeable<T>
+	public T? Deserialize<T, TProvider>(ref MessagePackReader reader)
+		where TProvider : IShapeable<T>
 	{
-		return this.GetOrAddConverter<T>().Deserialize(ref reader, new SerializationContext(this.MaxDepth));
+		return this.GetOrAddConverter(TProvider.GetShape()).Deserialize(ref reader, this.StartingContext);
 	}
 
 	/// <summary>

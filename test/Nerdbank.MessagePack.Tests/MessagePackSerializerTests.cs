@@ -82,6 +82,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void Enum() => this.AssertRoundtrip(new HasEnum(SomeEnum.B));
 
+	[Fact]
+	public void SerializeUnannotatedViaWitness() => this.AssertRoundtrip<UnannotatedPoco, Witness>(new UnannotatedPoco { Value = 42 });
+
 	[GenerateShape]
 	public partial class Fruit : IEquatable<Fruit>
 	{
@@ -187,4 +190,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 		public bool Equals(HasMultiDimensionalArray? other) => other is not null && ByValueEquality.Equal<int>(this.Array2D, other.Array2D) && ByValueEquality.Equal<int>(this.Array3D, other.Array3D);
 	}
+
+	public record UnannotatedPoco
+	{
+		public int Value { get; set; }
+	}
+
+	[GenerateShape<UnannotatedPoco>]
+	internal partial class Witness;
 }

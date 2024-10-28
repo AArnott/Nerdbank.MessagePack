@@ -54,3 +54,6 @@ serializer.Serialize(buffer, value);
 // Deserialize it back.
 var deserialized = this.serializer.Deserialize<ARecord>(buffer);
 ```
+
+Only the top-level types that you serialize need the attribute.
+All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.
