@@ -27,7 +27,7 @@ internal static class ByValueEquality
 		return true;
 	}
 
-	internal static bool Equal<T>(IEnumerable<T>? left, IEnumerable<T>? right, IEqualityComparer<T>? equalityComparer = null) => Equal(left?.ToArray(), right?.ToArray(), equalityComparer);
+	internal static bool Equal<T>(IEnumerable<T>? left, IEnumerable<T>? right, IEqualityComparer<T>? equalityComparer = null) => Equal((Array?)left?.ToArray(), right?.ToArray(), equalityComparer);
 
 	internal static bool Equal<T>(IReadOnlyList<T>? left, IReadOnlyList<T>? right, IEqualityComparer<T>? equalityComparer = null)
 	{
@@ -54,7 +54,7 @@ internal static class ByValueEquality
 		return true;
 	}
 
-	internal static bool Equal<T>(T[,]? left, T[,]? right, IEqualityComparer<T>? equalityComparer = null)
+	internal static bool Equal<T>(Array? left, Array? right, IEqualityComparer<T>? equalityComparer = null)
 	{
 		equalityComparer ??= EqualityComparer<T>.Default;
 
@@ -63,25 +63,30 @@ internal static class ByValueEquality
 			return left is null == right is null;
 		}
 
-		int rows = left.GetLength(0);
-		int cols = left.GetLength(1);
-
-		if (rows != right.GetLength(0) || cols != right.GetLength(1))
+		if (left.Rank != right.Rank)
 		{
 			return false;
 		}
 
-		for (int i = 0; i < rows; i++)
+		for (int dimension = 0; dimension < left.Rank; dimension++)
 		{
-			for (int j = 0; j < cols; j++)
+			if (left.GetLength(dimension) != right.GetLength(dimension))
 			{
-				if (!equalityComparer.Equals(left[i, j], right[i, j]))
-				{
-					return false;
-				}
+				return false;
 			}
 		}
 
-		return true;
+		System.Collections.IEnumerator leftEnumerator = left.GetEnumerator();
+		System.Collections.IEnumerator rightEnumerator = right.GetEnumerator();
+
+		while (leftEnumerator.MoveNext() && rightEnumerator.MoveNext())
+		{
+			if (!equalityComparer.Equals((T)leftEnumerator.Current, (T)rightEnumerator.Current))
+			{
+				return false;
+			}
+		}
+
+		return !leftEnumerator.MoveNext() && !rightEnumerator.MoveNext();
 	}
 }

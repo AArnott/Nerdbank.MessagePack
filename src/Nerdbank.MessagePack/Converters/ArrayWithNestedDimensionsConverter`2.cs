@@ -1,0 +1,143 @@
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace Nerdbank.MessagePack.Converters;
+
+/// <summary>
+/// Serializes and deserializes an array with rank 1 (or more).
+/// </summary>
+/// <typeparam name="TArray">The type of the array.</typeparam>
+/// <typeparam name="TElement">The type of element stored in the array.</typeparam>
+/// <remarks>
+/// The msgpack spec doesn't define how to encode multi-dimensional arrays,
+/// so we just nest arrays for each dimension.
+/// This may change if <see href="https://github.com/msgpack/msgpack/pull/267">this pull request</see> is ever merged
+/// into the msgpack spec.
+/// </remarks>
+internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePackConverter<TElement> elementConverter, int rank) : IMessagePackConverter<TArray>
+{
+	[ThreadStatic]
+	private static int[]? dimensionsReusable;
+
+	/// <inheritdoc/>
+	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
+	public override TArray? Deserialize(ref MessagePackReader reader)
+	{
+		if (reader.TryReadNil())
+		{
+			return default;
+		}
+
+		int[] dimensions = dimensionsReusable ??= new int[rank];
+		this.PeekDimensionsLength(reader, dimensions);
+		Array array = Array.CreateInstance(typeof(TElement), dimensions);
+		Span<TElement> elements = AsSpan(array);
+		this.ReadSubArray(ref reader, dimensions, elements);
+
+		return (TArray)(object)array;
+	}
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref TArray? value)
+	{
+		Array? array = (Array?)(object?)value;
+		if (array is null)
+		{
+			writer.WriteNil();
+			return;
+		}
+
+		Debug.Assert(rank == array.Rank, $"{rank} == {array.Rank}");
+
+		int[] dimensions = dimensionsReusable ??= new int[rank];
+		for (int i = 0; i < rank; i++)
+		{
+			dimensions[i] = array.GetLength(i);
+		}
+
+		this.WriteSubArray(ref writer, dimensions.AsSpan(), AsSpan(array));
+	}
+
+	/// <summary>
+	/// Exposes an array of any rank as a flat span of elements.
+	/// </summary>
+	/// <param name="array">The array.</param>
+	/// <returns>The span of all elements.</returns>
+	private static Span<TElement> AsSpan(Array array) =>
+		MemoryMarshal.CreateSpan(ref Unsafe.As<byte, TElement>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length);
+
+	/// <summary>
+	/// Writes an array containing one dimension of an array, and its children, recursively.
+	/// </summary>
+	/// <param name="writer">The msgpack writer.</param>
+	/// <param name="dimensions">The remaining dimensions to be written.</param>
+	/// <param name="elements">A flat list of elements to write.</param>
+	private void WriteSubArray(ref MessagePackWriter writer, Span<int> dimensions, Span<TElement> elements)
+	{
+		int outerDimension = dimensions[0];
+		writer.WriteArrayHeader(outerDimension);
+		if (dimensions.Length > 1 && outerDimension > 0)
+		{
+			int subArrayLength = elements.Length / outerDimension;
+			for (int i = 0; i < outerDimension; i++)
+			{
+				this.WriteSubArray(ref writer, dimensions[1..], elements[..subArrayLength]);
+				elements = elements[subArrayLength..];
+			}
+		}
+		else
+		{
+			for (int i = 0; i < outerDimension; i++)
+			{
+				elementConverter.Serialize(ref writer, ref elements[i]!);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Reads an array containing one dimension of an array, and its children, recursively.
+	/// </summary>
+	/// <param name="reader">The msgpack reader.</param>
+	/// <param name="dimensions">The remaining dimensions to be read.</param>
+	/// <param name="elements">A flat list of elements to populate.</param>
+	private void ReadSubArray(ref MessagePackReader reader, Span<int> dimensions, Span<TElement> elements)
+	{
+		int count = reader.ReadArrayHeader();
+
+		int outerDimension = dimensions[0];
+		if (dimensions.Length > 1 && outerDimension > 0)
+		{
+			int subArrayLength = elements.Length / outerDimension;
+			for (int i = 0; i < outerDimension; i++)
+			{
+				this.ReadSubArray(ref reader, dimensions[1..], elements[..subArrayLength]);
+				elements = elements[subArrayLength..];
+			}
+		}
+		else
+		{
+			for (int i = 0; i < outerDimension; i++)
+			{
+				elements[i] = elementConverter.Deserialize(ref reader)!;
+			}
+		}
+	}
+
+	/// <summary>
+	/// Reads the array headers necessary to determine the length of each dimension for an array.
+	/// </summary>
+	/// <param name="reader">The reader. This is <em>not</em> a <see langword="ref" /> so as to not impact the caller's read position.</param>
+	/// <param name="dimensions">The dimensional array to initialize.</param>
+	private void PeekDimensionsLength(MessagePackReader reader, int[] dimensions)
+	{
+		for (int i = 0; i < dimensions.Length; i++)
+		{
+			dimensions[i] = reader.ReadArrayHeader();
+		}
+	}
+}

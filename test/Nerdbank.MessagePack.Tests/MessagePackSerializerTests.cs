@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 {
-	private readonly MessagePackSerializer serializer = new();
+	private MessagePackSerializer serializer = new();
 
 	public enum SomeEnum
 	{
@@ -58,15 +58,29 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	[Fact]
 	public void Array_Null() => this.AssertRoundtrip(new ClassWithArray { IntArray = null });
 
-	[Fact]
-	public void MultidimensionalArray() => this.AssertRoundtrip(new HasMultiDimensionalArray
+#pragma warning disable SA1500 // Braces for multi-line statements should not share line
+	[Theory, PairwiseData]
+	public void MultidimensionalArray(MultiDimensionalArrayFormat format)
 	{
-		Array2D = new[,]
+		this.serializer = this.serializer with { MultiDimensionalArrayFormat = format };
+		this.AssertRoundtrip(new HasMultiDimensionalArray
 		{
-			{ 1, 2, 5 },
-			{ 3, 4, 6 },
-		},
-	});
+			Array2D = new[,]
+			{
+				{ 1, 2, 5 },
+				{ 3, 4, 6 },
+			},
+			Array3D = new int[2, 3, 4]
+			{
+				{ { 20, 21, 22, 23 }, { 24, 25, 26, 27 }, { 28, 29, 30, 31 } },
+				{ { 40, 41, 42, 43 }, { 44, 45, 46, 47 }, { 48, 49, 50, 51 } },
+			},
+		});
+	}
+#pragma warning restore SA1500 // Braces for multi-line statements should not share line
+
+	[Fact]
+	public void MultidimensionalArray_Null() => this.AssertRoundtrip(new HasMultiDimensionalArray());
 
 	[Fact]
 	public void Enumerable() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = [1, 2, 3] });
@@ -194,6 +208,8 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger)
 	{
 		public int[,]? Array2D { get; set; }
 
-		public bool Equals(HasMultiDimensionalArray? other) => other is not null && ByValueEquality.Equal(this.Array2D, other.Array2D);
+		public int[,,]? Array3D { get; set; }
+
+		public bool Equals(HasMultiDimensionalArray? other) => other is not null && ByValueEquality.Equal<int>(this.Array2D, other.Array2D) && ByValueEquality.Equal<int>(this.Array3D, other.Array3D);
 	}
 }

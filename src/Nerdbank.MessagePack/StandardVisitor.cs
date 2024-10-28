@@ -138,6 +138,19 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
 	{
 		IMessagePackConverter<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
+
+		if (enumerableShape.Type.IsArray)
+		{
+			return enumerableShape.Rank > 1
+				? owner.MultiDimensionalArrayFormat switch
+				{
+					MultiDimensionalArrayFormat.Nested => new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank),
+					MultiDimensionalArrayFormat.Flat => new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter),
+					_ => throw new NotSupportedException(),
+				}
+				: new ArrayConverter<TElement>(elementConverter);
+		}
+
 		return enumerableShape.ConstructionStrategy switch
 		{
 			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter),

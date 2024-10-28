@@ -22,7 +22,7 @@ namespace Nerdbank.MessagePack;
 /// because generated ones have already locked-in their dependencies.
 /// </para>
 /// </devremarks>
-public class MessagePackSerializer
+public record MessagePackSerializer
 {
 	private static readonly FrozenDictionary<Type, IMessagePackConverter> PrimitiveConverters = new Dictionary<Type, IMessagePackConverter>()
 	{
@@ -41,6 +41,11 @@ public class MessagePackSerializer
 	}.ToFrozenDictionary();
 
 	private readonly ConcurrentDictionary<Type, IMessagePackConverter> cachedConverters = new();
+
+	/// <summary>
+	/// Gets the format to use when serializing multi-dimensional arrays.
+	/// </summary>
+	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat { get; init; } = MultiDimensionalArrayFormat.Nested;
 
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)"/>
 	/// <param name="writer">The buffer writer to serialize to.</param>
