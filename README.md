@@ -27,6 +27,7 @@
 
 * Converters should *not* call out to the top-level serialization functions (as this would bypass the depth check and user options).
 * Write only one value -- or an (optional) runtime check.
+* Converters of reference types should always use a nullable ref annotation on that type.
 
 ## Usage
 

@@ -55,6 +55,42 @@ internal class DoubleConverter : IMessagePackConverter<double>
 }
 
 /// <summary>
+/// Serializes <see cref="DateTime"/> values.
+/// </summary>
+internal class DateTimeConverter : IMessagePackConverter<DateTime>
+{
+	/// <inheritdoc/>
+	public DateTime Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadDateTime();
+
+	/// <inheritdoc/>
+	public void Serialize(ref MessagePackWriter writer, ref DateTime value, SerializationContext context) => writer.Write(value);
+}
+
+/// <summary>
+/// Serializes <see cref="char"/> values.
+/// </summary>
+internal class CharConverter : IMessagePackConverter<char>
+{
+	/// <inheritdoc/>
+	public char Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadChar();
+
+	/// <inheritdoc/>
+	public void Serialize(ref MessagePackWriter writer, ref char value, SerializationContext context) => writer.Write(value);
+}
+
+/// <summary>
+/// Serializes <see cref="byte"/> array values.
+/// </summary>
+internal class ByteArrayConverter : IMessagePackConverter<byte[]?>
+{
+	/// <inheritdoc/>
+	public byte[]? Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadBytes()?.ToArray();
+
+	/// <inheritdoc/>
+	public void Serialize(ref MessagePackWriter writer, ref byte[]? value, SerializationContext context) => writer.Write(value);
+}
+
+/// <summary>
 /// Serializes a nullable value type.
 /// </summary>
 /// <typeparam name="T">The value type.</typeparam>

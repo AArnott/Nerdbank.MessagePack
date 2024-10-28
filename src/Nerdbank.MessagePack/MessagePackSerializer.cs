@@ -26,6 +26,7 @@ public record MessagePackSerializer
 {
 	private static readonly FrozenDictionary<Type, object> PrimitiveConverters = new Dictionary<Type, object>()
 	{
+		{ typeof(char), new CharConverter() },
 		{ typeof(byte), new ByteConverter() },
 		{ typeof(ushort), new UInt16Converter() },
 		{ typeof(uint), new UInt32Converter() },
@@ -38,6 +39,8 @@ public record MessagePackSerializer
 		{ typeof(bool), new BooleanConverter() },
 		{ typeof(float), new SingleConverter() },
 		{ typeof(double), new DoubleConverter() },
+		{ typeof(DateTime), new DateTimeConverter() },
+		{ typeof(byte[]), new ByteArrayConverter() },
 	}.ToFrozenDictionary();
 
 	private readonly ConcurrentDictionary<Type, object> cachedConverters = new();
