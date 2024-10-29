@@ -25,7 +25,12 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	{
 		Sequence<byte> sequence = new();
 		this.Serializer.Serialize<T, TProvider>(sequence, value);
-		logger.WriteLine(MessagePack.MessagePackSerializer.ConvertToJson(sequence, MessagePack.MessagePackSerializerOptions.Standard));
+		this.LogMsgPack(sequence);
 		return this.Serializer.Deserialize<T, TProvider>(sequence);
+	}
+
+	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
+	{
+		logger.WriteLine(MessagePack.MessagePackSerializer.ConvertToJson(msgPack, MessagePack.MessagePackSerializerOptions.Standard));
 	}
 }

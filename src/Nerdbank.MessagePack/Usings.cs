@@ -4,4 +4,5 @@
 global using System.Buffers;
 global using Nerdbank.MessagePack.Converters;
 global using Nerdbank.MessagePack.Utilities;
+global using TypeShape;
 global using TypeShape.Abstractions;

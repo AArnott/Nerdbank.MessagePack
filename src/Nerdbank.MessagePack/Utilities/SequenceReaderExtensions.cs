@@ -126,7 +126,7 @@ internal static class SequenceReaderExtensions
 	/// <param name="reader">The reader.</param>
 	/// <param name="count">The number of bytes to advance.</param>
 	/// <returns><see langword="true" /> if the reader had enough bytes and was advaned; <see langword="false" /> otherwise.</returns>
-	internal static bool TryAdvance(this SequenceReader<byte> reader, long count)
+	internal static bool TryAdvance(ref this SequenceReader<byte> reader, long count)
 	{
 		if (reader.Remaining >= count)
 		{

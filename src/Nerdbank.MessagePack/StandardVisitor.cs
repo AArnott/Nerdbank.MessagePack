@@ -18,15 +18,39 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	{
 		IConstructorShape? ctorShape = objectShape.GetConstructor();
 
-		List<(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write)> serializable = new();
-		List<(ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<T> Read)> deserializable = new();
+		bool? keyAttributesPresent = null;
+		List<(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write)>? serializable = null;
+		List<(ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<T> Read)>? deserializable = null;
+		List<(string Name, PropertyAccessors<T> Accessors)?>? propertyAccessors = null;
 		foreach (IPropertyShape property in objectShape.GetProperties())
 		{
-			if (property.HasGetter)
+			KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
+			if (keyAttributesPresent is null)
 			{
-				// PERF: encode the property name once and reuse it for both serialization and deserialization.
+				keyAttributesPresent = keyAttribute is not null;
+			}
+			else if (keyAttributesPresent != keyAttribute is not null)
+			{
+				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has fields/properties that are candidates for serialization but are inconsistently attributed with {nameof(KeyAttribute)}.");
+			}
+
+			PropertyAccessors<T> accessors = (PropertyAccessors<T>)property.Accept(this)!;
+			if (keyAttribute is not null)
+			{
+				propertyAccessors ??= new();
+				while (propertyAccessors.Count <= keyAttribute.Index)
+				{
+					propertyAccessors.Add(null);
+				}
+
+				propertyAccessors[keyAttribute.Index] = (property.Name, accessors);
+			}
+			else
+			{
+				serializable ??= new();
+				deserializable ??= new();
+
 				CodeGenHelpers.GetEncodedStringBytes(property.Name, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
-				PropertyAccessors<T> accessors = (PropertyAccessors<T>)property.Accept(this)!;
 				if (accessors.Serialize is not null)
 				{
 					serializable.Add((msgpackEncoded, accessors.Serialize));
@@ -39,17 +63,28 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 			}
 		}
 
-		SpanDictionary<byte, DeserializeProperty<T>> propertyReaders = deserializable
-			.ToSpanDictionary(
-				p => p.PropertyNameUtf8,
-				p => p.Read,
-				ByteSpanEqualityComparer.Ordinal);
+		if (propertyAccessors is not null)
+		{
+			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
+			return ctorShape is not null
+				? ctorShape.Accept(this, inputs)
+				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null);
+		}
+		else
+		{
+			SpanDictionary<byte, DeserializeProperty<T>> propertyReaders = deserializable!
+				.ToSpanDictionary(
+					p => p.PropertyNameUtf8,
+					p => p.Read,
+					ByteSpanEqualityComparer.Ordinal);
 
-		MapSerializableProperties<T> serializableMap = new(serializable);
-		MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
-		return ctorShape is not null
-			? ctorShape.Accept(this, new ConstructorVisitorInputs<T>(serializableMap, deserializableMap))
-			: new ObjectMapConverter<T>(serializableMap, null, null);
+			MapSerializableProperties<T> serializableMap = new(serializable ?? new());
+			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
+			MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap);
+			return ctorShape is not null
+				? ctorShape.Accept(this, inputs)
+				: new ObjectMapConverter<T>(serializableMap, null, null);
+		}
 	}
 
 	/// <inheritdoc/>
@@ -81,26 +116,62 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	/// <inheritdoc/>
 	public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
 	{
-		ConstructorVisitorInputs<TDeclaringType> inputs = (ConstructorVisitorInputs<TDeclaringType>)state!;
-		if (constructorShape.ParameterCount == 0)
+		switch (state)
 		{
-			return new ObjectMapConverter<TDeclaringType>(inputs.Serializers, inputs.Deserializers, constructorShape.GetDefaultConstructor());
+			case MapConstructorVisitorInputs<TDeclaringType> inputs:
+				{
+					if (constructorShape.ParameterCount == 0)
+					{
+						return new ObjectMapConverter<TDeclaringType>(inputs.Serializers, inputs.Deserializers, constructorShape.GetDefaultConstructor());
+					}
+
+					SpanDictionary<byte, DeserializeProperty<TArgumentState>> parameters = constructorShape.GetParameters()
+						.Select(p => (p.Name, Deserialize: (DeserializeProperty<TArgumentState>)p.Accept(this)!))
+						.ToSpanDictionary(
+							p => Encoding.UTF8.GetBytes(p.Name),
+							p => p.Deserialize,
+							ByteSpanEqualityComparer.Ordinal);
+
+					return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
+						inputs.Serializers,
+						constructorShape.GetArgumentStateConstructor(),
+						constructorShape.GetParameterizedConstructor(),
+						new MapDeserializableProperties<TArgumentState>(parameters));
+				}
+
+			case ArrayConstructorVisitorInputs<TDeclaringType> inputs:
+				{
+					if (constructorShape.ParameterCount == 0)
+					{
+						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor());
+					}
+
+					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
+					for (int i = 0; i < inputs.Properties.Count; i++)
+					{
+						if (inputs.Properties[i] is { } property)
+						{
+							propertyIndexesByName[property.Name] = i;
+						}
+					}
+
+					DeserializeProperty<TArgumentState>[] parameters = new DeserializeProperty<TArgumentState>[inputs.Properties.Count];
+					foreach (IConstructorParameterShape parameter in constructorShape.GetParameters())
+					{
+						int index = propertyIndexesByName[parameter.Name];
+						parameters[index] = (DeserializeProperty<TArgumentState>)parameter.Accept(this)!;
+					}
+
+					return new ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
+						inputs.GetJustAccessors(),
+						constructorShape.GetArgumentStateConstructor(),
+						constructorShape.GetParameterizedConstructor(),
+						parameters);
+				}
+
+			default:
+				throw new NotSupportedException("Unsupported state.");
 		}
-
-		SpanDictionary<byte, DeserializeProperty<TArgumentState>> parameters = constructorShape.GetParameters()
-			.Select(p => (p.Name, Deserialize: (DeserializeProperty<TArgumentState>)p.Accept(this)!))
-			.ToSpanDictionary(
-				p => Encoding.UTF8.GetBytes(p.Name),
-				p => p.Deserialize,
-				ByteSpanEqualityComparer.Ordinal);
-
-		Func<TArgumentState> argStateCtor = constructorShape.GetArgumentStateConstructor();
-		Constructor<TArgumentState, TDeclaringType> ctor = constructorShape.GetParameterizedConstructor();
-		return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
-			inputs.Serializers,
-			constructorShape.GetArgumentStateConstructor(),
-			constructorShape.GetParameterizedConstructor(),
-			new MapDeserializableProperties<TArgumentState>(parameters));
 	}
 
 	/// <inheritdoc/>

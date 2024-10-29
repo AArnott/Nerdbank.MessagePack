@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable SA1402 // File may only contain a single type
 #pragma warning disable SA1649 // File name should match first type name
 
 namespace Nerdbank.MessagePack.Converters;
@@ -46,9 +47,25 @@ internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, Deser
 internal record struct PropertyAccessors<TDeclaringType>(SerializeProperty<TDeclaringType>? Serialize, DeserializeProperty<TDeclaringType>? Deserialize);
 
 /// <summary>
-/// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments.
+/// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
+/// when serializing an object as a map.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
 /// <param name="Serializers">Serializable properties on the data type.</param>
 /// <param name="Deserializers">Deserializable properties on the data type.</param>
-internal record ConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers);
+internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers);
+
+/// <summary>
+/// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
+/// when serializing an object as an array.
+/// </summary>
+/// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
+/// <param name="Properties">The accessors to use for accessing each array element.</param>
+internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties)
+{
+	/// <summary>
+	/// Constructs an array of just the property accessors (without property names).
+	/// </summary>
+	/// <returns>An array of accessors.</returns>
+	internal PropertyAccessors<TDeclaringType>?[] GetJustAccessors() => this.Properties.Select(p => p?.Accessors).ToArray();
+}

@@ -15,6 +15,7 @@
 * Primitive msgpack reader and writer APIs for low-level scenarios.
 * Author custom converters for advanced scenarios.
 * Security mitigations for stack overflows.
+* Optionally serialize your custom types as arrays of bvalues instead of maps of names and value for more compact representation and even higher performance.
 
 ### Potential future features
 
@@ -31,6 +32,7 @@
 * Converters should *not* call out to the top-level serialization functions (as this would bypass the depth check and user options).
 * Write only one value -- or an (optional) runtime check.
 * Converters of reference types should always use a nullable ref annotation on that type.
+* Consistent use of `[Key]` attribute (including presence, unique indexes across type hierarchy).
 
 ## Usage
 
