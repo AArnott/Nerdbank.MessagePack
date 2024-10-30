@@ -17,23 +17,6 @@
 * Security mitigations for stack overflows.
 * Optionally serialize your custom types as arrays of bvalues instead of maps of names and value for more compact representation and even higher performance.
 
-### Potential future features
-
-* Deserializing into any of a constrained set of types, as determined by the data.
-* Security mitigations for hash collision attacks.
-* Serialize only "changes" to an object graph and deserialize onto existing objects to apply those changes.
-* Async serialization and deserialization.
-* Streaming deserialization.
-* Optional LZ4 compression.
-* AOT source generation.
-
-### Analyzer ideas
-
-* Converters should *not* call out to the top-level serialization functions (as this would bypass the depth check and user options).
-* Write only one value -- or an (optional) runtime check.
-* Converters of reference types should always use a nullable ref annotation on that type.
-* Consistent use of `[Key]` attribute (including presence, unique indexes across type hierarchy).
-
 ## Usage
 
 Given a type annotated with `[GenerateShape]` like this:
