@@ -1,6 +1,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+
 /* THIS (.cs) FILE IS GENERATED. DO NOT CHANGE IT.
  * CHANGE THE .tt FILE INSTEAD. */
 
