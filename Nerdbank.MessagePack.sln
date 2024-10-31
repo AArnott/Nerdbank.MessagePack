@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35424.255 main
+VisualStudioVersion = 17.13.35424.255
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1CE9670B-D5FF-46A7-9D00-24E70E6ED48B}"
 	ProjectSection(SolutionItems) = preProject
@@ -19,6 +19,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9E154A29-1796-4B85-BD81-B6A385D8FF71}"
 	ProjectSection(SolutionItems) = preProject
 		src\.editorconfig = src\.editorconfig
+		src\Analyzers.props = src\Analyzers.props
 		src\Directory.Build.props = src\Directory.Build.props
 		src\Directory.Build.targets = src\Directory.Build.targets
 	EndProjectSection
@@ -40,6 +41,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "test\Benchmarks\Benchmarks.csproj", "{14818214-87CD-4FA4-8EED-9ABC785BC79B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyzers", "src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj", "{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyzers.Tests", "test\Nerdbank.MessagePack.Analyzers.Tests\Nerdbank.MessagePack.Analyzers.Tests.csproj", "{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyzers.CodeFixes", "src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj", "{B4123457-1704-46DF-BEC8-9F92D7A51C05}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +65,18 @@ Global
 		{14818214-87CD-4FA4-8EED-9ABC785BC79B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14818214-87CD-4FA4-8EED-9ABC785BC79B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14818214-87CD-4FA4-8EED-9ABC785BC79B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4123457-1704-46DF-BEC8-9F92D7A51C05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4123457-1704-46DF-BEC8-9F92D7A51C05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4123457-1704-46DF-BEC8-9F92D7A51C05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4123457-1704-46DF-BEC8-9F92D7A51C05}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -68,6 +87,9 @@ Global
 		{EC0B20E6-6236-459F-8AB9-F92A73F19D57} = {D8954A17-45FA-4893-A5D6-83C0F6269631}
 		{3C96A147-ACDD-49D7-A0E5-01461E032FB1} = {A9500399-3916-4C15-8456-E17FCA73EF9F}
 		{14818214-87CD-4FA4-8EED-9ABC785BC79B} = {A9500399-3916-4C15-8456-E17FCA73EF9F}
+		{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07} = {D8954A17-45FA-4893-A5D6-83C0F6269631}
+		{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA} = {A9500399-3916-4C15-8456-E17FCA73EF9F}
+		{B4123457-1704-46DF-BEC8-9F92D7A51C05} = {D8954A17-45FA-4893-A5D6-83C0F6269631}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3944F6A-384B-4B0F-B93F-3BD513DC57BD}

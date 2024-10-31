@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackAnalyzers</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
@@ -19,6 +20,17 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackReader.Integers.cs</LastGenOutput>
     </None>
+    <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>AnalyzerAssembly</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="..\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>AnalyzerAssembly</OutputItemType>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
@@ -35,4 +47,9 @@
       <DependentUpon>MessagePackReader.Integers.tt</DependentUpon>
     </Compile>
   </ItemGroup>
+  <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="%(AnalyzerAssembly.Identity)" PackagePath="analyzers\cs\" />
+    </ItemGroup>
+  </Target>
 </Project>
