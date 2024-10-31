@@ -88,6 +88,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void SerializeGraphWithAnnotationOnlyAtBase() => this.AssertRoundtrip(new ReferencesUnannotatedPoco { Poco = new UnannotatedPoco { Value = 42 } });
 
+	[Fact]
+	public void PrivateFields() => this.AssertRoundtrip(new InternalRecordWithPrivateField { PrivateFieldAccessor = 42, PrivatePropertyAccessor = 43 });
+
 	[GenerateShape]
 	public partial class Fruit : IEquatable<Fruit>
 	{
@@ -203,6 +206,30 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public partial record ReferencesUnannotatedPoco
 	{
 		public UnannotatedPoco? Poco { get; set; }
+	}
+
+	[GenerateShape]
+	internal partial record InternalRecordWithPrivateField
+	{
+		[PropertyShape]
+		private int privateField;
+
+		[PropertyShape(Ignore = true)]
+		internal int PrivateFieldAccessor
+		{
+			get => this.privateField;
+			set => this.privateField = value;
+		}
+
+		[PropertyShape(Ignore = true)]
+		internal int PrivatePropertyAccessor
+		{
+			get => this.PrivateProperty;
+			set => this.PrivateProperty = value;
+		}
+
+		[PropertyShape]
+		private int PrivateProperty { get; set; }
 	}
 
 	[GenerateShape<UnannotatedPoco>]
