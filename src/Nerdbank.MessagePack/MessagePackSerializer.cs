@@ -133,9 +133,9 @@ public record MessagePackSerializer
 	/// <typeparam name="T">The data type to convert.</typeparam>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
+	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
 	{
-		if (this.TryGetConverter<T>(out IMessagePackConverter<T>? converter))
+		if (this.TryGetConverter<T>(out MessagePackConverter<T>? converter))
 		{
 			return converter;
 		}
@@ -153,7 +153,7 @@ public record MessagePackSerializer
 	/// </summary>
 	/// <typeparam name="T">The data type to convert.</typeparam>
 	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverter<T> GetOrAddConverter<T>()
+	internal MessagePackConverter<T> GetOrAddConverter<T>()
 		where T : IShapeable<T> => this.GetOrAddConverter(T.GetShape());
 
 	/// <summary>
@@ -162,19 +162,35 @@ public record MessagePackSerializer
 	/// <typeparam name="T">The data type to be converted.</typeparam>
 	/// <param name="converter">Receives the converter instance if one exists.</param>
 	/// <returns><see langword="true"/> if a converter was found to already exist; otherwise <see langword="false" />.</returns>
-	internal bool TryGetConverter<T>([NotNullWhen(true)] out IMessagePackConverter<T>? converter)
+	internal bool TryGetConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
-		// Query our cache before the static converters to allow overrides of the built-in converters.
-		// For example this may allow for string interning or other optimizations.
-		if (this.cachedConverters.TryGetValue(typeof(T), out object? candidate))
+		if (this.TryGetConverter(typeof(T), out object? candidate))
 		{
-			converter = (IMessagePackConverter<T>)candidate;
+			converter = (MessagePackConverter<T>)candidate;
 			return true;
 		}
 
-		if (PrimitiveConverters.TryGetValue(typeof(T), out candidate))
+		converter = null;
+		return false;
+	}
+
+	/// <summary>
+	/// Searches our static and instance cached converters for a converter for the given type.
+	/// </summary>
+	/// <param name="type">The data type to be converted.</param>
+	/// <param name="converter">Receives the converter instance if one exists.</param>
+	/// <returns><see langword="true"/> if a converter was found to already exist; otherwise <see langword="false" />.</returns>
+	internal bool TryGetConverter(Type type, [NotNullWhen(true)] out object? converter)
+	{
+		// Query our cache before the static converters to allow overrides of the built-in converters.
+		// For example this may allow for string interning or other optimizations.
+		if (this.cachedConverters.TryGetValue(type, out converter))
 		{
-			converter = (IMessagePackConverter<T>)candidate;
+			return true;
+		}
+
+		if (PrimitiveConverters.TryGetValue(type, out converter))
+		{
 			return true;
 		}
 
@@ -190,7 +206,7 @@ public record MessagePackSerializer
 	/// <remarks>
 	/// If a converter for the data type has already been cached, this method does nothing.
 	/// </remarks>
-	internal void RegisterConverter<T>(IMessagePackConverter<T> converter)
+	internal void RegisterConverter<T>(MessagePackConverter<T> converter)
 	{
 		this.cachedConverters.TryAdd(typeof(T), converter);
 	}
@@ -211,15 +227,15 @@ public record MessagePackSerializer
 	}
 
 	/// <summary>
-	/// Synthesizes a <see cref="IMessagePackConverter{T}"/> for a type with the given shape.
+	/// Synthesizes a <see cref="MessagePackConverter{T}"/> for a type with the given shape.
 	/// </summary>
 	/// <typeparam name="T">The data type that should be serializable.</typeparam>
 	/// <param name="typeShape">The shape of the data type.</param>
 	/// <returns>The msgpack converter.</returns>
-	private IMessagePackConverter<T> CreateConverter<T>(ITypeShape<T> typeShape)
+	private MessagePackConverter<T> CreateConverter<T>(ITypeShape<T> typeShape)
 	{
 		StandardVisitor visitor = new(this);
-		IMessagePackConverter<T> result = (IMessagePackConverter<T>)typeShape.Accept(visitor)!;
+		MessagePackConverter<T> result = (MessagePackConverter<T>)typeShape.Accept(visitor)!;
 
 		// Cache all the converters that have been generated to support the one that our caller wants.
 		this.RegisterConverters(visitor.GeneratedConverters.Where(kv => kv.Value is not null)!);

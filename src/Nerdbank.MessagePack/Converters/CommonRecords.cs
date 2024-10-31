@@ -4,6 +4,8 @@
 #pragma warning disable SA1402 // File may only contain a single type
 #pragma warning disable SA1649 // File name should match first type name
 
+using System.Collections.Frozen;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -12,7 +14,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TDeclaringType">The data type whose property is to be read.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="writer">The means by which msgpack should be written.</param>
-/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
+/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
 internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
 
 /// <summary>
@@ -21,7 +23,7 @@ internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType cont
 /// <typeparam name="TDeclaringType">The data type whose property is to be initialized.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="reader">The means by which msgpack should be read.</param>
-/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context);
 
 /// <summary>
@@ -68,4 +70,21 @@ internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name,
 	/// </summary>
 	/// <returns>An array of accessors.</returns>
 	internal PropertyAccessors<TDeclaringType>?[] GetJustAccessors() => this.Properties.Select(p => p?.Accessors).ToArray();
+}
+
+/// <summary>
+/// Describes the derived types of some class that are allowed to appear as the runtime type in an object graph
+/// for serialization, or may be referenced by an alias in the serialized data for deserialization.
+/// </summary>
+internal record SubTypes
+{
+	/// <summary>
+	/// Gets the converters to use to deserialize a subtype, keyed by their alias.
+	/// </summary>
+	internal required FrozenDictionary<int, IMessagePackConverter> Deserializers { get; init; }
+
+	/// <summary>
+	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
+	/// </summary>
+	internal required FrozenDictionary<Type, (int Alias, IMessagePackConverter Converter)> Serializers { get; init; }
 }

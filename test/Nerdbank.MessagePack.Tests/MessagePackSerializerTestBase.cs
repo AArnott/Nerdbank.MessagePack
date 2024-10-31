@@ -3,18 +3,21 @@
 
 public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 {
+	private ReadOnlySequence<byte> lastRoundtrippedMsgpack;
+
 	protected MessagePackSerializer Serializer { get; set; } = new();
 
 	protected ITestOutputHelper Logger => logger;
 
-	protected void AssertRoundtrip<T>(T? value)
+	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T> => this.AssertRoundtrip<T, T>(value);
 
-	protected void AssertRoundtrip<T, TProvider>(T? value)
+	protected ReadOnlySequence<byte> AssertRoundtrip<T, TProvider>(T? value)
 		where TProvider : IShapeable<T>
 	{
 		T? roundtripped = this.Roundtrip<T, TProvider>(value);
 		Assert.Equal(value, roundtripped);
+		return this.lastRoundtrippedMsgpack;
 	}
 
 	protected T? Roundtrip<T>(T? value)
@@ -26,6 +29,7 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 		Sequence<byte> sequence = new();
 		this.Serializer.Serialize<T, TProvider>(sequence, value);
 		this.LogMsgPack(sequence);
+		this.lastRoundtrippedMsgpack = sequence;
 		return this.Serializer.Deserialize<T, TProvider>(sequence);
 	}
 

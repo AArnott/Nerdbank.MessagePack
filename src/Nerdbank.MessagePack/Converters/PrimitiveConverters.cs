@@ -9,85 +9,85 @@ namespace Nerdbank.MessagePack.Converters;
 /// <summary>
 /// Serializes a <see cref="string"/>.
 /// </summary>
-internal class StringConverter : IMessagePackConverter<string>
+internal class StringConverter : MessagePackConverter<string>
 {
 	/// <inheritdoc/>
-	public string? Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
+	public override string? Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref string? value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref string? value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
 /// Serializes a <see cref="bool"/>.
 /// </summary>
-internal class BooleanConverter : IMessagePackConverter<bool>
+internal class BooleanConverter : MessagePackConverter<bool>
 {
 	/// <inheritdoc/>
-	public bool Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadBoolean();
+	public override bool Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadBoolean();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref bool value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref bool value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
 /// Serializes a <see cref="float"/>.
 /// </summary>
-internal class SingleConverter : IMessagePackConverter<float>
+internal class SingleConverter : MessagePackConverter<float>
 {
 	/// <inheritdoc/>
-	public float Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadSingle();
+	public override float Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadSingle();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref float value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref float value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
 /// Serializes a <see cref="double"/>.
 /// </summary>
-internal class DoubleConverter : IMessagePackConverter<double>
+internal class DoubleConverter : MessagePackConverter<double>
 {
 	/// <inheritdoc/>
-	public double Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadDouble();
+	public override double Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadDouble();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref double value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref double value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
 /// Serializes <see cref="DateTime"/> values.
 /// </summary>
-internal class DateTimeConverter : IMessagePackConverter<DateTime>
+internal class DateTimeConverter : MessagePackConverter<DateTime>
 {
 	/// <inheritdoc/>
-	public DateTime Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadDateTime();
+	public override DateTime Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadDateTime();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref DateTime value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref DateTime value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
 /// Serializes <see cref="char"/> values.
 /// </summary>
-internal class CharConverter : IMessagePackConverter<char>
+internal class CharConverter : MessagePackConverter<char>
 {
 	/// <inheritdoc/>
-	public char Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadChar();
+	public override char Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadChar();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref char value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref char value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
 /// Serializes <see cref="byte"/> array values.
 /// </summary>
-internal class ByteArrayConverter : IMessagePackConverter<byte[]?>
+internal class ByteArrayConverter : MessagePackConverter<byte[]?>
 {
 	/// <inheritdoc/>
-	public byte[]? Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadBytes()?.ToArray();
+	public override byte[]? Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadBytes()?.ToArray();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref byte[]? value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref byte[]? value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>
@@ -95,11 +95,11 @@ internal class ByteArrayConverter : IMessagePackConverter<byte[]?>
 /// </summary>
 /// <typeparam name="T">The value type.</typeparam>
 /// <param name="elementConverter">The converter to use when the value is not null.</param>
-internal class NullableConverter<T>(IMessagePackConverter<T> elementConverter) : IMessagePackConverter<T?>
+internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : MessagePackConverter<T?>
 	where T : struct
 {
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value.HasValue)
 		{
@@ -113,7 +113,7 @@ internal class NullableConverter<T>(IMessagePackConverter<T> elementConverter) :
 	}
 
 	/// <inheritdoc/>
-	public T? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

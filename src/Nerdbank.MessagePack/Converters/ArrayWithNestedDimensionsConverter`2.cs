@@ -19,14 +19,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// This may change if <see href="https://github.com/msgpack/msgpack/pull/267">this pull request</see> is ever merged
 /// into the msgpack spec.
 /// </remarks>
-internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePackConverter<TElement> elementConverter, int rank) : IMessagePackConverter<TArray>
+internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackConverter<TElement> elementConverter, int rank) : MessagePackConverter<TArray>
 {
 	[ThreadStatic]
 	private static int[]? dimensionsReusable;
 
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -43,7 +43,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 	}
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
 	{
 		Array? array = (Array?)(object?)value;
 		if (array is null)
@@ -77,7 +77,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 	/// <param name="writer">The msgpack writer.</param>
 	/// <param name="dimensions">The remaining dimensions to be written.</param>
 	/// <param name="elements">A flat list of elements to write.</param>
-	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
 	private void WriteSubArray(ref MessagePackWriter writer, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
 		context.DepthStep();
@@ -107,7 +107,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(IMessagePack
 	/// <param name="reader">The msgpack reader.</param>
 	/// <param name="dimensions">The remaining dimensions to be read.</param>
 	/// <param name="elements">A flat list of elements to populate.</param>
-	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 	private void ReadSubArray(ref MessagePackReader reader, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
 		context.DepthStep();
