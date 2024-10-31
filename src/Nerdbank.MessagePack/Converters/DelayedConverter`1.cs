@@ -8,11 +8,11 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="T">The convertible data type.</typeparam>
 /// <param name="box">A box containing the not-yet-done converter.</param>
-internal class DelayedConverter<T>(ResultBox<IMessagePackConverter<T>> box) : IMessagePackConverter<T>
+internal class DelayedConverter<T>(ResultBox<MessagePackConverter<T>> box) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
-	public T? Deserialize(ref MessagePackReader reader, SerializationContext context) => box.Result.Deserialize(ref reader, context);
+	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context) => box.Result.Deserialize(ref reader, context);
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context) => box.Result.Serialize(ref writer, ref value, context);
+	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context) => box.Result.Serialize(ref writer, ref value, context);
 }

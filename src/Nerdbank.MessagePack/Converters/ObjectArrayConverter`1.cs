@@ -4,14 +4,14 @@
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
-/// A <see cref="IMessagePackConverter{T}"/> that writes objects as arrays of property values.
+/// A <see cref="MessagePackConverter{T}"/> that writes objects as arrays of property values.
 /// Only data types with default constructors may be deserialized.
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
-internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<T>? constructor) : IMessagePackConverter<T>
+internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<T>? constructor) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
-	public virtual T? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -42,7 +42,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 	}
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value is null)
 		{

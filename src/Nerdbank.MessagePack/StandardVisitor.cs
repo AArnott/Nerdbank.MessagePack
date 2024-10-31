@@ -1,15 +1,17 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Frozen;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A <see cref="TypeShapeVisitor"/> that produces <see cref="IMessagePackConverter{T}"/> instances for each type shape it visits.
+/// A <see cref="TypeShapeVisitor"/> that produces <see cref="MessagePackConverter{T}"/> instances for each type shape it visits.
 /// </summary>
 /// <param name="owner">The serializer that created this instance. Usable for obtaining settings that may influence the generated converter.</param>
-internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
+internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, ITypeShapeFunc
 {
 	private readonly TypeDictionary converters = new();
 
@@ -19,8 +21,13 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	internal IReadOnlyDictionary<Type, object?> GeneratedConverters => this.converters;
 
 	/// <inheritdoc/>
+	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => this.GetConverter(typeShape, state);
+
+	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
+		SubTypes? unionTypes = this.DiscoverUnionTypes(objectShape);
+
 		IConstructorShape? ctorShape = objectShape.GetConstructor();
 
 		bool? keyAttributesPresent = null;
@@ -68,11 +75,12 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 			}
 		}
 
+		MessagePackConverter<T> converter;
 		if (propertyAccessors is not null)
 		{
 			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
-			return ctorShape is not null
-				? ctorShape.Accept(this, inputs)
+			converter = ctorShape is not null
+				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
 				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null);
 		}
 		else
@@ -86,16 +94,18 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 			MapSerializableProperties<T> serializableMap = new(serializable ?? new());
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 			MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap);
-			return ctorShape is not null
-				? ctorShape.Accept(this, inputs)
+			converter = ctorShape is not null
+				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
 				: new ObjectMapConverter<T>(serializableMap, null, null);
 		}
+
+		return unionTypes is null ? converter : new SubTypeUnionConverter<T>(unionTypes, converter);
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
 	{
-		IMessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
+		MessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
 
 		SerializeProperty<TDeclaringType>? serialize = null;
 		if (propertyShape.HasGetter)
@@ -182,7 +192,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	/// <inheritdoc/>
 	public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
-		IMessagePackConverter<TParameterType> converter = owner.GetOrAddConverter(parameterShape.ParameterType);
+		MessagePackConverter<TParameterType> converter = owner.GetOrAddConverter(parameterShape.ParameterType);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 		return new DeserializeProperty<TArgumentState>((ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Deserialize(ref reader, context)!));
@@ -195,8 +205,8 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 	{
 		// Serialization functions.
-		IMessagePackConverter<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);
-		IMessagePackConverter<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
+		MessagePackConverter<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);
+		MessagePackConverter<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
 		Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
 
 		// Deserialization functions.
@@ -213,7 +223,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
 	{
-		IMessagePackConverter<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
+		MessagePackConverter<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
 
 		if (enumerableShape.Type.IsArray)
 		{
@@ -246,14 +256,75 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor
 	/// </summary>
 	/// <typeparam name="T">The data type to make convertible.</typeparam>
 	/// <param name="shape">The type shape.</param>
+	/// <param name="state">An optional state object to pass to the converter.</param>
 	/// <returns>The converter.</returns>
-	protected IMessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape)
+	protected MessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape, object? state = null)
 	{
-		if (owner.TryGetConverter(out IMessagePackConverter<T>? converter))
+		if (owner.TryGetConverter(out MessagePackConverter<T>? converter))
 		{
 			return converter;
 		}
 
-		return this.converters.GetOrAdd<IMessagePackConverter<T>>(shape, this, box => new DelayedConverter<T>(box));
+		return this.converters.GetOrAdd<MessagePackConverter<T>>(shape, this, box => new DelayedConverter<T>(box));
+	}
+
+	/// <summary>
+	/// Gets or creates a converter for the given type shape.
+	/// </summary>
+	/// <param name="shape">The type shape.</param>
+	/// <param name="state">An optional state object to pass to the converter.</param>
+	/// <returns>The converter.</returns>
+	protected IMessagePackConverter GetConverter(ITypeShape shape, object? state = null)
+	{
+		ITypeShapeFunc self = this;
+		return (IMessagePackConverter)shape.Invoke(this, state)!;
+	}
+
+	/// <summary>
+	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
+	/// </summary>
+	/// <param name="objectShape">The shape of the data type that may define derived types that are also allowed for serialization.</param>
+	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objets, keyed by the alias by which they will be identified in the data stream.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
+	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
+	{
+		KnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(KnownSubTypeAttribute), false).Cast<KnownSubTypeAttribute>().ToArray();
+		if (unionAttributes is null or { Length: 0 })
+		{
+			return null;
+		}
+
+		Dictionary<int, IMessagePackConverter> deserializerData = new();
+		Dictionary<Type, (int Alias, IMessagePackConverter Converter)> serializerData = new();
+		foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
+		{
+			IObjectTypeShape? subtypeShape = (IObjectTypeShape?)objectShape.Provider.GetShape(unionAttribute.SubType);
+			if (subtypeShape is null)
+			{
+				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has a union attribute that references a type that is not known to the serializer: {unionAttribute.SubType.FullName}.");
+			}
+
+			if (!objectShape.Type.IsAssignableFrom(subtypeShape.Type))
+			{
+				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has a {nameof(KnownSubTypeAttribute)} that references non-derived {unionAttribute.SubType.FullName}.");
+			}
+
+			IMessagePackConverter converter = this.GetConverter(subtypeShape);
+			if (!deserializerData.TryAdd(unionAttribute.Alias, converter))
+			{
+				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has more than one {nameof(KnownSubTypeAttribute)} with a duplicate alias: {unionAttribute.Alias}.");
+			}
+
+			if (!serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter)))
+			{
+				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
+			}
+		}
+
+		return new SubTypes
+		{
+			Deserializers = deserializerData.ToFrozenDictionary(),
+			Serializers = serializerData.ToFrozenDictionary(),
+		};
 	}
 }

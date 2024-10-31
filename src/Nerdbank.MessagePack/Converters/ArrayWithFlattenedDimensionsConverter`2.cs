@@ -17,14 +17,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// The format for this is:
 /// <c>[[dimension0, dimension1, ...], [element0, element1, ...]]</c>.
 /// </remarks>
-internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessagePackConverter<TElement> elementConverter) : IMessagePackConverter<TArray>
+internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TArray>
 {
 	[ThreadStatic]
 	private static int[]? dimensionsReusable;
 
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TArray? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -62,7 +62,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(IMessageP
 	}
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
 	{
 		if (value is null)
 		{

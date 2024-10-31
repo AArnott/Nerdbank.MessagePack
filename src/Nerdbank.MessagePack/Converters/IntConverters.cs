@@ -11,81 +11,81 @@
 namespace Nerdbank.MessagePack;
 
 /// <summary>Serializes the primitive integer type <see cref="SByte"/> as a MessagePack integer.</summary>
-internal class SByteConverter : IMessagePackConverter<SByte>
+internal class SByteConverter : MessagePackConverter<SByte>
 {
 	/// <inheritdoc/>
-	public SByte Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadSByte();
+	public override SByte Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadSByte();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref SByte value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref SByte value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int16"/> as a MessagePack integer.</summary>
-internal class Int16Converter : IMessagePackConverter<Int16>
+internal class Int16Converter : MessagePackConverter<Int16>
 {
 	/// <inheritdoc/>
-	public Int16 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt16();
+	public override Int16 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt16();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref Int16 value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref Int16 value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int32"/> as a MessagePack integer.</summary>
-internal class Int32Converter : IMessagePackConverter<Int32>
+internal class Int32Converter : MessagePackConverter<Int32>
 {
 	/// <inheritdoc/>
-	public Int32 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt32();
+	public override Int32 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt32();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref Int32 value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref Int32 value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int64"/> as a MessagePack integer.</summary>
-internal class Int64Converter : IMessagePackConverter<Int64>
+internal class Int64Converter : MessagePackConverter<Int64>
 {
 	/// <inheritdoc/>
-	public Int64 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt64();
+	public override Int64 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt64();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref Int64 value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref Int64 value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Byte"/> as a MessagePack integer.</summary>
-internal class ByteConverter : IMessagePackConverter<Byte>
+internal class ByteConverter : MessagePackConverter<Byte>
 {
 	/// <inheritdoc/>
-	public Byte Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadByte();
+	public override Byte Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadByte();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref Byte value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref Byte value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt16"/> as a MessagePack integer.</summary>
-internal class UInt16Converter : IMessagePackConverter<UInt16>
+internal class UInt16Converter : MessagePackConverter<UInt16>
 {
 	/// <inheritdoc/>
-	public UInt16 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt16();
+	public override UInt16 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt16();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref UInt16 value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref UInt16 value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt32"/> as a MessagePack integer.</summary>
-internal class UInt32Converter : IMessagePackConverter<UInt32>
+internal class UInt32Converter : MessagePackConverter<UInt32>
 {
 	/// <inheritdoc/>
-	public UInt32 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt32();
+	public override UInt32 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt32();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref UInt32 value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref UInt32 value, SerializationContext context) => writer.Write(value);
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt64"/> as a MessagePack integer.</summary>
-internal class UInt64Converter : IMessagePackConverter<UInt64>
+internal class UInt64Converter : MessagePackConverter<UInt64>
 {
 	/// <inheritdoc/>
-	public UInt64 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt64();
+	public override UInt64 Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt64();
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref UInt64 value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, ref UInt64 value, SerializationContext context) => writer.Write(value);
 }

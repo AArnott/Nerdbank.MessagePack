@@ -4,17 +4,17 @@
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
-/// A <see cref="IMessagePackConverter{T}"/> that writes objects as maps of property names to values.
+/// A <see cref="MessagePackConverter{T}"/> that writes objects as maps of property names to values.
 /// Only data types with default constructors may be deserialized.
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
 /// <param name="serializable">Tools for serializing individual property values.</param>
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="constructor">The default constructor, if present.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : IMessagePackConverter<T>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -32,7 +32,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	}
 
 	/// <inheritdoc/>
-	public virtual T? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

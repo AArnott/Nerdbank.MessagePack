@@ -4,7 +4,7 @@
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
-/// A <see cref="IMessagePackConverter{T}"/> that writes objects as maps of property names to values.
+/// A <see cref="MessagePackConverter{T}"/> that writes objects as maps of property names to values.
 /// Data types with constructors and/or <see langword="init" /> properties may be deserialized.
 /// </summary>
 /// <typeparam name="TDeclaringType">The type of objects that can be serialized or deserialized with this converter.</typeparam>

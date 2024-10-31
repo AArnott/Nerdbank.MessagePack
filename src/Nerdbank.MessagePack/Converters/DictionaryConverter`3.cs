@@ -15,10 +15,10 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="getReadable">A delegate which converts the opaque dictionary type to a readable form.</param>
 /// <param name="keyConverter">A converter for keys.</param>
 /// <param name="valueConverter">A converter for values.</param>
-internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, IMessagePackConverter<TKey> keyConverter, IMessagePackConverter<TValue> valueConverter) : IMessagePackConverter<TDictionary>
+internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter) : MessagePackConverter<TDictionary>
 {
 	/// <inheritdoc/>
-	public virtual TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -29,7 +29,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	}
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref TDictionary? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref TDictionary? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -54,7 +54,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// Reads a key and value pair.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 	/// <param name="key">Receives the key.</param>
 	/// <param name="value">Receives the value.</param>
 	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey? key, out TValue? value)
@@ -75,8 +75,8 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 /// <param name="ctor">The default constructor for the dictionary type.</param>
 internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
-	IMessagePackConverter<TKey> keyConverter,
-	IMessagePackConverter<TValue> valueConverter,
+	MessagePackConverter<TKey> keyConverter,
+	MessagePackConverter<TValue> valueConverter,
 	Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry,
 	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
@@ -111,8 +111,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 /// <param name="ctor">A dictionary initializer that constructs from a span of entries.</param>
 internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
-	IMessagePackConverter<TKey> keyConverter,
-	IMessagePackConverter<TValue> valueConverter,
+	MessagePackConverter<TKey> keyConverter,
+	MessagePackConverter<TValue> valueConverter,
 	SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
 	/// <inheritdoc/>
@@ -153,8 +153,8 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 /// <param name="ctor">A dictionary initializer that constructs from an enumerable of entries.</param>
 internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
-	IMessagePackConverter<TKey> keyConverter,
-	IMessagePackConverter<TValue> valueConverter,
+	MessagePackConverter<TKey> keyConverter,
+	MessagePackConverter<TValue> valueConverter,
 	Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
 	/// <inheritdoc/>

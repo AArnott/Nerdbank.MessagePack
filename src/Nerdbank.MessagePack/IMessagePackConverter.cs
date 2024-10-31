@@ -4,24 +4,23 @@
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// An interface for all message pack converters.
+/// A non-generic, <see cref="object"/>-based interface for all message pack converters.
 /// </summary>
-/// <typeparam name="T">The data type that can be converted by this object.</typeparam>
-public interface IMessagePackConverter<T>
+internal interface IMessagePackConverter
 {
 	/// <summary>
-	/// Serializes an instance of <typeparamref name="T"/>.
+	/// Serializes an instance of an object.
 	/// </summary>
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
-	void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context);
+	void Serialize(ref MessagePackWriter writer, ref object? value, SerializationContext context);
 
 	/// <summary>
-	/// Deserializes an instance of <typeparamref name="T"/>.
+	/// Deserializes an instance of an object.
 	/// </summary>
 	/// <param name="reader">The reader to use.</param>
 	/// <param name="context">Context for the deserialization.</param>
 	/// <returns>The deserialized value.</returns>
-	T? Deserialize(ref MessagePackReader reader, SerializationContext context);
+	object? Deserialize(ref MessagePackReader reader, SerializationContext context);
 }

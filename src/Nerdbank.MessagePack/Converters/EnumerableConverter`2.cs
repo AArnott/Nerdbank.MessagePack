@@ -11,10 +11,10 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
-internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, IMessagePackConverter<TElement> elementConverter) : IMessagePackConverter<TEnumerable>
+internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
 {
 	/// <inheritdoc/>
-	public virtual TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -25,7 +25,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref TEnumerable? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref TEnumerable? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -59,7 +59,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// Reads one element from the reader.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="IMessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
 	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Deserialize(ref reader, context)!;
 }
@@ -74,7 +74,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 /// <param name="ctor">The default constructor for the enumerable type.</param>
 internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-	IMessagePackConverter<TElement> elementConverter,
+	MessagePackConverter<TElement> elementConverter,
 	Setter<TEnumerable, TElement> addElement,
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
@@ -107,7 +107,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 /// <param name="ctor">A enumerable initializer that constructs from a span of elements.</param>
 internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-	IMessagePackConverter<TElement> elementConverter,
+	MessagePackConverter<TElement> elementConverter,
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
@@ -146,7 +146,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 /// <param name="ctor">A enumerable initializer that constructs from an enumerable of elements.</param>
 internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-	IMessagePackConverter<TElement> elementConverter,
+	MessagePackConverter<TElement> elementConverter,
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>

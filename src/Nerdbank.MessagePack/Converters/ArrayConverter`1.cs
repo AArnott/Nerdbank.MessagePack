@@ -7,10 +7,10 @@ namespace Nerdbank.MessagePack.Converters;
 /// Serializes and deserializes a 1-rank array.
 /// </summary>
 /// <typeparam name="TElement">The element type.</typeparam>
-internal class ArrayConverter<TElement>(IMessagePackConverter<TElement> elementConverter) : IMessagePackConverter<TElement[]>
+internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TElement[]>
 {
 	/// <inheritdoc/>
-	public TElement[]? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TElement[]? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -29,7 +29,7 @@ internal class ArrayConverter<TElement>(IMessagePackConverter<TElement> elementC
 	}
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref TElement[]? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
 		{

@@ -8,13 +8,13 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TEnum">The enum type.</typeparam>
 /// <typeparam name="TUnderlyingType">The underlying integer type.</typeparam>
-internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(IMessagePackConverter<TUnderlyingType> primitiveConverter) : IMessagePackConverter<TEnum>
+internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConverter<TUnderlyingType> primitiveConverter) : MessagePackConverter<TEnum>
 {
 	/// <inheritdoc/>
-	public TEnum? Deserialize(ref MessagePackReader reader, SerializationContext context) => (TEnum?)(object?)primitiveConverter.Deserialize(ref reader, context);
+	public override TEnum? Deserialize(ref MessagePackReader reader, SerializationContext context) => (TEnum?)(object?)primitiveConverter.Deserialize(ref reader, context);
 
 	/// <inheritdoc/>
-	public void Serialize(ref MessagePackWriter writer, ref TEnum? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, ref TEnum? value, SerializationContext context)
 	{
 		TUnderlyingType? intValue = (TUnderlyingType?)(object?)value;
 		primitiveConverter.Serialize(ref writer, ref intValue, context);
