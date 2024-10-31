@@ -32,7 +32,7 @@
     <!-- <PackageProjectUrl>https://github.com/ORG/REPO</PackageProjectUrl> -->
     <Company>Andrew Arnott</Company>
     <Authors>Andrew Arnott</Authors>
-    <Copyright>Â© Andrew Arnott. All rights reserved.</Copyright>
+    <Copyright>© Andrew Arnott. All rights reserved.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
