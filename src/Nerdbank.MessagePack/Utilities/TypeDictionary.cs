@@ -20,7 +20,7 @@ namespace Nerdbank.MessagePack.Utilities;
 /// Can be used for storing values while walking potentially cyclic type graphs.
 /// Includes facility for delayed value computation in case of recursive types.
 /// </remarks>
-internal class TypeDictionary : IDictionary<Type, object?>
+internal class TypeDictionary : IDictionary<Type, object?>, IReadOnlyDictionary<Type, object?>
 {
 	// Entries with IsCompleted: false denote types whose values are still being computed.
 	// In such cases the value is either null or an instance of IResultBox representing a delayed value.
@@ -59,6 +59,12 @@ internal class TypeDictionary : IDictionary<Type, object?>
 	/// Gets the total number of generated values.
 	/// </summary>
 	public int Count => this.dict.Count(e => e.Value.IsCompleted);
+
+	/// <inheritdoc/>
+	IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => ((IDictionary<Type, object?>)this).Keys;
+
+	/// <inheritdoc/>
+	IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => ((IDictionary<Type, object?>)this).Values;
 
 	/// <summary>
 	/// Gets or sets the value associated with the specified key.
@@ -254,6 +260,9 @@ internal class TypeDictionary : IDictionary<Type, object?>
 
 	/// <inheritdoc/>
 	IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<Type, object?>>)this).GetEnumerator();
+
+	/// <inheritdoc/>
+	bool IReadOnlyDictionary<Type, object?>.TryGetValue(Type key, out object? value) => this.TryGetValue(key, out value);
 
 	private sealed class ResultBoxImpl<T> : ResultBox<T>, IResultBox
 	{

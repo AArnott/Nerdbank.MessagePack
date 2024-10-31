@@ -217,5 +217,13 @@ public record MessagePackSerializer
 	/// <param name="typeShape">The shape of the data type.</param>
 	/// <returns>The msgpack converter.</returns>
 	private IMessagePackConverter<T> CreateConverter<T>(ITypeShape<T> typeShape)
-		=> (IMessagePackConverter<T>)typeShape.Accept(new StandardVisitor(this))!;
+	{
+		StandardVisitor visitor = new(this);
+		IMessagePackConverter<T> result = (IMessagePackConverter<T>)typeShape.Accept(visitor)!;
+
+		// Cache all the converters that have been generated to support the one that our caller wants.
+		this.RegisterConverters(visitor.GeneratedConverters.Where(kv => kv.Value is not null)!);
+
+		return result;
+	}
 }
