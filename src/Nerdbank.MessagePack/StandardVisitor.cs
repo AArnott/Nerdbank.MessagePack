@@ -94,9 +94,15 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			MapSerializableProperties<T> serializableMap = new(serializable);
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 			MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap);
-			converter = ctorShape is not null
-				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectMapConverter<T>(serializableMap, null, null);
+			if (ctorShape is not null)
+			{
+				converter = (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!;
+			}
+			else
+			{
+				Func<T>? ctor = typeof(T) == typeof(object) ? (Func<T>)(object)new Func<object>(() => new object()) : null;
+				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor);
+			}
 		}
 
 		return unionTypes is null ? converter : new SubTypeUnionConverter<T>(unionTypes, converter);

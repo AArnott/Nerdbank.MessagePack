@@ -91,6 +91,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void PrivateFields() => this.AssertRoundtrip(new InternalRecordWithPrivateField { PrivateFieldAccessor = 42, PrivatePropertyAccessor = 43 });
 
+	[Fact]
+	public void SystemObject()
+	{
+		Assert.NotNull(this.Roundtrip(new object(), Witness.Default.GetShape<object>()!));
+	}
+
 	[GenerateShape]
 	public partial class Fruit : IEquatable<Fruit>
 	{
@@ -233,5 +239,6 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	}
 
 	[GenerateShape<UnannotatedPoco>]
+	[GenerateShape<object>]
 	internal partial class Witness;
 }
