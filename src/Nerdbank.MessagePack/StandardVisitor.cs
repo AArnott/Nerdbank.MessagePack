@@ -94,9 +94,15 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			MapSerializableProperties<T> serializableMap = new(serializable);
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 			MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap);
-			converter = ctorShape is not null
-				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectMapConverter<T>(serializableMap, null, null);
+			if (ctorShape is not null)
+			{
+				converter = (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!;
+			}
+			else
+			{
+				Func<T>? ctor = typeof(T) == typeof(object) ? (Func<T>)(object)new Func<object>(() => new object()) : null;
+				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor);
+			}
 		}
 
 		return unionTypes is null ? converter : new SubTypeUnionConverter<T>(unionTypes, converter);
@@ -150,9 +156,25 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 					}
 
 					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = constructorShape.GetParameters()
-						.Select(p => (DeserializableProperty<TArgumentState>)p.Accept(this)!)
-						.ToSpanDictionary(
-							p => p.PropertyNameUtf8,
+						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
+						{
+							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
+							if (char.IsLower(p.Name[0]))
+							{
+								// Also allow a PascalCase match, since the property will probably have serialized that way.
+								Span<char> pascalCased = stackalloc char[p.Name.Length];
+								p.Name.AsSpan().CopyTo(pascalCased);
+								pascalCased[0] = char.ToUpperInvariant(pascalCased[0]);
+								return [(p.Name, prop), (new string(pascalCased), prop)];
+							}
+							else
+							{
+								// The parameter name isn't camelCased, so expect it to match the property name exactly.
+								return [(p.Name, prop)];
+							}
+						}).ToSpanDictionary(
+							p => Encoding.UTF8.GetBytes(p.Name),
+							p => p.Deserialize,
 							ByteSpanEqualityComparer.Ordinal);
 
 					return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
