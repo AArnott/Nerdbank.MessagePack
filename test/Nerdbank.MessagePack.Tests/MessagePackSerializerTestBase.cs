@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
+
 public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 {
 	private ReadOnlySequence<byte> lastRoundtrippedMsgpack;
@@ -30,6 +32,24 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 		this.LogMsgPack(sequence);
 		this.lastRoundtrippedMsgpack = sequence;
 		return this.Serializer.Deserialize(sequence, shape);
+	}
+
+	protected ValueTask<T?> RoundtripAsync<T>(T? value)
+		where T : IShapeable<T> => this.RoundtripAsync<T, T>(value);
+
+	protected async ValueTask<T?> RoundtripAsync<T, TProvider>(T? value)
+		where TProvider : IShapeable<T>
+	{
+		Pipe pipe = new();
+
+		// Arrange the reader first to avoid deadlocks if the Pipe gets full.
+		ValueTask<T?> result = this.Serializer.DeserializeAsync<T, TProvider>(pipe.Reader);
+
+		await this.Serializer.SerializeAsync<T, TProvider>(pipe.Writer, value);
+		await pipe.Writer.FlushAsync();
+
+		// The deserializer should complete even *without* our completing the writer.
+		return await result;
 	}
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)

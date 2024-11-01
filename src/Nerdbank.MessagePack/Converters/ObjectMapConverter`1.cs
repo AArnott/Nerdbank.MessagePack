@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
+using Microsoft;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -14,6 +17,9 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => true;
+
+	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value is null)
@@ -24,15 +30,53 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		writer.WriteMapHeader(serializable.Properties?.Count ?? 0);
-		if (serializable.Properties is null)
+		if (serializable.Properties is not null)
 		{
+			foreach (var property in serializable.Properties)
+			{
+				writer.WriteRaw(property.RawPropertyNameString.Span);
+				property.Write(ref value, ref writer, context);
+			}
+		}
+	}
+
+	/// <inheritdoc/>
+	public override async ValueTask SerializeAsync(PipeWriter pipeWriter, T? value, SerializationContext context, CancellationToken cancellationToken)
+	{
+		Requires.NotNull(pipeWriter);
+
+		cancellationToken.ThrowIfCancellationRequested();
+
+		if (value is null)
+		{
+			WriteNil(pipeWriter);
 			return;
 		}
 
-		foreach ((ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write) property in serializable.Properties)
+		context.DepthStep();
+		SerializeHeader();
+		if (serializable.Properties is not null)
 		{
-			writer.WriteRaw(property.RawPropertyNameString.Span);
-			property.Write(ref value, ref writer, context);
+			foreach (var property in serializable.Properties)
+			{
+				SerializePropertyName(property.RawPropertyNameString);
+				await property.WriteAsync(value, pipeWriter, context, cancellationToken).ConfigureAwait(false);
+				await FlushIfAppropriateAsync(pipeWriter, context, cancellationToken).ConfigureAwait(false);
+			}
+		}
+
+		void SerializeHeader()
+		{
+			MessagePackWriter writer = new(pipeWriter);
+			writer.WriteMapHeader(serializable.Properties?.Count ?? 0);
+			writer.Flush();
+		}
+
+		void SerializePropertyName(ReadOnlyMemory<byte> propertyName)
+		{
+			MessagePackWriter writer = new(pipeWriter);
+			writer.WriteRaw(propertyName.Span);
+			writer.Flush();
 		}
 	}
 
@@ -58,9 +102,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
-				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializeProperty<T>? deserialize))
+				if (deserializable.Value.Readers.TryGetValue(propertyName, out var propertyReader))
 				{
-					deserialize(ref value, ref reader, context);
+					propertyReader.Read(ref value, ref reader, context);
 				}
 				else
 				{
@@ -75,5 +119,12 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		return value;
+	}
+
+	/// <inheritdoc/>
+	public override ValueTask<T?> DeserializeAsync(PipeReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		// TODO: implement this.
+		return base.DeserializeAsync(reader, context, cancellationToken);
 	}
 }

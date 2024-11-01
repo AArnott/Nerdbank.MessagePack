@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -10,6 +12,9 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
 internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<T>? constructor) : MessagePackConverter<T>
 {
+	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => true;
+
 	/// <inheritdoc/>
 	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
@@ -64,5 +69,19 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 				writer.WriteNil();
 			}
 		}
+	}
+
+	/// <inheritdoc/>
+	public override ValueTask SerializeAsync(PipeWriter pipeWriter, T? value, SerializationContext context, CancellationToken cancellationToken)
+	{
+		// TODO: implement this.
+		return base.SerializeAsync(pipeWriter, value, context, cancellationToken);
+	}
+
+	/// <inheritdoc/>
+	public override ValueTask<T?> DeserializeAsync(PipeReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		// TODO: implement this.
+		return base.DeserializeAsync(reader, context, cancellationToken);
 	}
 }

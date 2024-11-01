@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Frozen;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -31,8 +32,8 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		IConstructorShape? ctorShape = objectShape.GetConstructor();
 
 		bool? keyAttributesPresent = null;
-		List<(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write)>? serializable = null;
-		List<(ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<T> Read)>? deserializable = null;
+		List<SerializableProperty<T>>? serializable = null;
+		List<DeserializableProperty<T>>? deserializable = null;
 		List<(string Name, PropertyAccessors<T> Accessors)?>? propertyAccessors = null;
 		foreach (IPropertyShape property in objectShape.GetProperties())
 		{
@@ -65,12 +66,12 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				CodeGenHelpers.GetEncodedStringBytes(property.Name, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 				if (accessors.Serialize is not null)
 				{
-					serializable.Add((msgpackEncoded, accessors.Serialize));
+					serializable.Add(new(msgpackEncoded, accessors.Serialize, accessors.SerializeAsync));
 				}
 
 				if (accessors.Deserialize is not null)
 				{
-					deserializable.Add((utf8Bytes, accessors.Deserialize));
+					deserializable.Add(new(utf8Bytes, accessors.Deserialize, accessors.DeserializeAsync));
 				}
 			}
 		}
@@ -85,10 +86,9 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		}
 		else
 		{
-			SpanDictionary<byte, DeserializeProperty<T>>? propertyReaders = deserializable?
+			SpanDictionary<byte, DeserializableProperty<T>>? propertyReaders = deserializable?
 				.ToSpanDictionary(
 					p => p.PropertyNameUtf8,
-					p => p.Read,
 					ByteSpanEqualityComparer.Ordinal);
 
 			MapSerializableProperties<T> serializableMap = new(serializable);
@@ -114,6 +114,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		MessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
 
 		SerializeProperty<TDeclaringType>? serialize = null;
+		SerializePropertyAsync<TDeclaringType>? serializeAsync = null;
 		if (propertyShape.HasGetter)
 		{
 			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
@@ -122,16 +123,24 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				TPropertyType? value = getter(ref container);
 				converter.Serialize(ref writer, ref value, context);
 			};
+			serializeAsync = (TDeclaringType container, PipeWriter writer, SerializationContext context, CancellationToken cancellationToken)
+                 => converter.SerializeAsync(writer, getter(ref container), context, cancellationToken);
 		}
 
 		DeserializeProperty<TDeclaringType>? deserialize = null;
+		DeserializePropertyAsync<TDeclaringType>? deserializeAsync = null;
 		if (propertyShape.HasSetter)
 		{
 			Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
 			deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) => setter(ref container, converter.Deserialize(ref reader, context)!);
+			deserializeAsync = async (TDeclaringType container, PipeReader reader, SerializationContext context, CancellationToken cancellationToken) =>
+			{
+				setter(ref container, (await converter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false))!);
+				return container;
+			};
 		}
 
-		return new PropertyAccessors<TDeclaringType>(serialize, deserialize);
+		return new PropertyAccessors<TDeclaringType>(serialize, serializeAsync, deserialize, deserializeAsync);
 	}
 
 	/// <inheritdoc/>
@@ -146,10 +155,10 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 						return new ObjectMapConverter<TDeclaringType>(inputs.Serializers, inputs.Deserializers, constructorShape.GetDefaultConstructor());
 					}
 
-					SpanDictionary<byte, DeserializeProperty<TArgumentState>> parameters = constructorShape.GetParameters()
-						.SelectMany<IConstructorParameterShape, (string Name, DeserializeProperty<TArgumentState> Deserialize)>(p =>
+					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = constructorShape.GetParameters()
+						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
 						{
-							var prop = (DeserializeProperty<TArgumentState>)p.Accept(this)!;
+							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
 							if (char.IsLower(p.Name[0]))
 							{
 								// Also allow a PascalCase match, since the property will probably have serialized that way.
@@ -191,11 +200,11 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 						}
 					}
 
-					DeserializeProperty<TArgumentState>[] parameters = new DeserializeProperty<TArgumentState>[inputs.Properties.Count];
+					DeserializableProperty<TArgumentState>?[] parameters = new DeserializableProperty<TArgumentState>?[inputs.Properties.Count];
 					foreach (IConstructorParameterShape parameter in constructorShape.GetParameters())
 					{
 						int index = propertyIndexesByName[parameter.Name];
-						parameters[index] = (DeserializeProperty<TArgumentState>)parameter.Accept(this)!;
+						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this)!;
 					}
 
 					return new ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
@@ -216,7 +225,14 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		MessagePackConverter<TParameterType> converter = owner.GetOrAddConverter(parameterShape.ParameterType);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
-		return new DeserializeProperty<TArgumentState>((ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Deserialize(ref reader, context)!));
+		return new DeserializableProperty<TArgumentState>(
+			StringEncoding.UTF8.GetBytes(parameterShape.Name),
+			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Deserialize(ref reader, context)!),
+			async (TArgumentState state, PipeReader reader, SerializationContext context, CancellationToken cancellationToken) =>
+			{
+				setter(ref state, (await converter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false))!);
+				return state;
+			});
 	}
 
 	/// <inheritdoc/>

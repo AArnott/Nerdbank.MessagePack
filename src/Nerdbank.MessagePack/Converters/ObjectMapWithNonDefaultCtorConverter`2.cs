@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -35,9 +37,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
-				if (parameters.Readers.TryGetValue(propertyName, out DeserializeProperty<TArgumentState>? deserializeArg))
+				if (parameters.Readers.TryGetValue(propertyName, out var deserializeArg))
 				{
-					deserializeArg(ref argState, ref reader, context);
+					deserializeArg.Read(ref argState, ref reader, context);
 				}
 				else
 				{
@@ -52,5 +54,12 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		}
 
 		return ctor(ref argState);
+	}
+
+	/// <inheritdoc/>
+	public override ValueTask<TDeclaringType?> DeserializeAsync(PipeReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		// TODO: implement this.
+		return base.DeserializeAsync(reader, context, cancellationToken);
 	}
 }
