@@ -85,13 +85,13 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		}
 		else
 		{
-			SpanDictionary<byte, DeserializeProperty<T>> propertyReaders = deserializable!
+			SpanDictionary<byte, DeserializeProperty<T>>? propertyReaders = deserializable?
 				.ToSpanDictionary(
 					p => p.PropertyNameUtf8,
 					p => p.Read,
 					ByteSpanEqualityComparer.Ordinal);
 
-			MapSerializableProperties<T> serializableMap = new(serializable ?? new());
+			MapSerializableProperties<T> serializableMap = new(serializable);
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 			MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap);
 			converter = ctorShape is not null

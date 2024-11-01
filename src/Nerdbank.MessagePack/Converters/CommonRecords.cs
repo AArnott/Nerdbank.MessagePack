@@ -31,14 +31,14 @@ internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType co
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that contains the properties to be serialized.</typeparam>
 /// <param name="Properties">The list of serializable properties, including the msgpack encoding of the property name and the delegate to serialize that property.</param>
-internal record struct MapSerializableProperties<TDeclaringType>(List<(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write)> Properties);
+internal record struct MapSerializableProperties<TDeclaringType>(List<(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write)>? Properties);
 
 /// <summary>
 /// A map of deserializable properties.
 /// </summary>
 /// <typeparam name="T">The data type that contains properties to be deserialized.</typeparam>
 /// <param name="Readers">The map of deserializable properties, keyed by the UTF-8 encoding of the property name.</param>
-internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, DeserializeProperty<T>> Readers);
+internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, DeserializeProperty<T>>? Readers);
 
 /// <summary>
 /// Encapsulates serializing accessors for a particular property of some data type.
