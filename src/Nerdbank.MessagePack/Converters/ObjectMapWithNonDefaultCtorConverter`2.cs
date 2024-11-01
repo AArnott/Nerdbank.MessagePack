@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -29,20 +31,35 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
-		int count = reader.ReadMapHeader();
-		for (int i = 0; i < count; i++)
+		if (parameters.Readers is not null)
 		{
-			ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
-			if (parameters.Readers.TryGetValue(propertyName, out DeserializeProperty<TArgumentState>? deserializeArg))
+			int count = reader.ReadMapHeader();
+			for (int i = 0; i < count; i++)
 			{
-				deserializeArg(ref argState, ref reader, context);
+				ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
+				if (parameters.Readers.TryGetValue(propertyName, out var deserializeArg))
+				{
+					deserializeArg.Read(ref argState, ref reader, context);
+				}
+				else
+				{
+					reader.Skip();
+				}
 			}
-			else
-			{
-				reader.Skip();
-			}
+		}
+		else
+		{
+			// We have nothing to read into, so just skip any data in the object.
+			reader.Skip();
 		}
 
 		return ctor(ref argState);
+	}
+
+	/// <inheritdoc/>
+	public override ValueTask<TDeclaringType?> DeserializeAsync(PipeReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		// TODO: implement this.
+		return base.DeserializeAsync(reader, context, cancellationToken);
 	}
 }

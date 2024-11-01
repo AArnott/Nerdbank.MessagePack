@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Pipelines;
 using Microsoft;
 using TypeShape;
 
@@ -52,17 +53,9 @@ public record MessagePackSerializer
 	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat { get; init; } = MultiDimensionalArrayFormat.Nested;
 
 	/// <summary>
-	/// Gets the maximum depth of the object graph to serialize or deserialize.
+	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
-	/// <remarks>
-	/// Exceeding this depth will result in a <see cref="MessagePackSerializationException"/> being thrown.
-	/// </remarks>
-	public int MaxDepth { get; init; } = 64;
-
-	/// <summary>
-	/// Gets a new <see cref="SerializationContext"/> for a new serialization job.
-	/// </summary>
-	protected SerializationContext StartingContext => new(this.MaxDepth);
+	public SerializationContext StartingContext { get; init; } = new();
 
 	/// <inheritdoc cref="Serialize{T, TProvider}(IBufferWriter{byte}, T)"/>
 	public void Serialize<T>(IBufferWriter<byte> writer, T? value)
@@ -94,6 +87,47 @@ public record MessagePackSerializer
 		where TProvider : IShapeable<T>
 	{
 		this.GetOrAddConverter(TProvider.GetShape()).Serialize(ref writer, ref value, this.StartingContext);
+	}
+
+	/// <inheritdoc cref="SerializeAsync{T, TProvider}(PipeWriter, T, CancellationToken)"/>
+	public ValueTask SerializeAsync<T>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
+		where T : IShapeable<T> => this.SerializeAsync<T, T>(writer, value, cancellationToken);
+
+	/// <summary>
+	/// Serializes a value using the given <see cref="PipeWriter"/>.
+	/// </summary>
+	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
+	/// <param name="writer">The writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>A task that tracks the async serialization.</returns>
+	public ValueTask SerializeAsync<T, TProvider>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
+		where TProvider : IShapeable<T>
+	{
+		Requires.NotNull(writer);
+		cancellationToken.ThrowIfCancellationRequested();
+		return this.GetOrAddConverter(TProvider.GetShape()).SerializeAsync(writer, value, this.StartingContext, cancellationToken);
+	}
+
+	/// <inheritdoc cref="DeserializeAsync{T, TProvider}(PipeReader, CancellationToken)"/>
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, CancellationToken cancellationToken = default)
+		where T : IShapeable<T> => this.DeserializeAsync<T, T>(reader, cancellationToken);
+
+	/// <summary>
+	/// Deserializes a value from a <see cref="PipeReader"/>.
+	/// </summary>
+	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, T)" path="/typeparam[@name='TProvider']"/></typeparam>
+	/// <param name="reader">The reader to deserialize from.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	public ValueTask<T?> DeserializeAsync<T, TProvider>(PipeReader reader, CancellationToken cancellationToken = default)
+		where TProvider : IShapeable<T>
+	{
+		Requires.NotNull(reader);
+		cancellationToken.ThrowIfCancellationRequested();
+		return this.GetOrAddConverter(TProvider.GetShape()).DeserializeAsync(reader, this.StartingContext, cancellationToken);
 	}
 
 	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>

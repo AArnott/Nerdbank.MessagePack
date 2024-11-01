@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -17,7 +19,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	PropertyAccessors<TDeclaringType>?[] properties,
 	Func<TArgumentState> argStateCtor,
 	Constructor<TArgumentState, TDeclaringType> ctor,
-	DeserializeProperty<TArgumentState>?[] parameters) : ObjectArrayConverter<TDeclaringType>(properties, null)
+	DeserializableProperty<TArgumentState>?[] parameters) : ObjectArrayConverter<TDeclaringType>(properties, null)
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Deserialize(ref MessagePackReader reader, SerializationContext context)
@@ -35,7 +37,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		{
 			if (parameters.Length > i && parameters[i] is { } deserialize)
 			{
-				deserialize(ref argState, ref reader, context);
+				deserialize.Read(ref argState, ref reader, context);
 			}
 			else
 			{
@@ -44,5 +46,12 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		return ctor(ref argState);
+	}
+
+	/// <inheritdoc/>
+	public override ValueTask<TDeclaringType?> DeserializeAsync(PipeReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		// TODO: implement this.
+		return base.DeserializeAsync(reader, context, cancellationToken);
 	}
 }

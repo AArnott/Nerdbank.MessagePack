@@ -5,6 +5,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 
 using System.Collections.Frozen;
+using System.IO.Pipelines;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -17,6 +18,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
 internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
 
+internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, PipeWriter writer, SerializationContext context, CancellationToken cancellationToken);
+
 /// <summary>
 /// A delegate that can deserialize the value of a property from a <see cref="MessagePackReader"/> and assign it to a data type.
 /// </summary>
@@ -26,19 +29,25 @@ internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType cont
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context);
 
+internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, PipeReader reader, SerializationContext context, CancellationToken cancellationToken);
+
 /// <summary>
 /// A map of serializable properties.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that contains the properties to be serialized.</typeparam>
 /// <param name="Properties">The list of serializable properties, including the msgpack encoding of the property name and the delegate to serialize that property.</param>
-internal record struct MapSerializableProperties<TDeclaringType>(List<(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write)> Properties);
+internal record struct MapSerializableProperties<TDeclaringType>(List<SerializableProperty<TDeclaringType>>? Properties);
+
+internal record struct SerializableProperty<TDeclaringType>(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync);
 
 /// <summary>
 /// A map of deserializable properties.
 /// </summary>
 /// <typeparam name="T">The data type that contains properties to be deserialized.</typeparam>
 /// <param name="Readers">The map of deserializable properties, keyed by the UTF-8 encoding of the property name.</param>
-internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, DeserializeProperty<T>> Readers);
+internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, DeserializableProperty<T>>? Readers);
+
+internal record struct DeserializableProperty<TDeclaringType>(ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync);
 
 /// <summary>
 /// Encapsulates serializing accessors for a particular property of some data type.
@@ -46,7 +55,11 @@ internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, Deser
 /// <typeparam name="TDeclaringType">The data type that declares the property that these accessors can serialize and deserialize values for.</typeparam>
 /// <param name="Serialize">A delegate that serializes the property.</param>
 /// <param name="Deserialize">A delegate that can initialize the property with a value deserialized from msgpack.</param>
-internal record struct PropertyAccessors<TDeclaringType>(SerializeProperty<TDeclaringType>? Serialize, DeserializeProperty<TDeclaringType>? Deserialize);
+internal record struct PropertyAccessors<TDeclaringType>(
+	SerializeProperty<TDeclaringType>? Serialize,
+	SerializePropertyAsync<TDeclaringType>? SerializeAsync,
+	DeserializeProperty<TDeclaringType>? Deserialize,
+	DeserializePropertyAsync<TDeclaringType>? DeserializeAsync);
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
