@@ -169,8 +169,8 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref decimal value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(MessagePackRange.MaxFixStringLength);
-		if (System.Buffers.Text.Utf8Formatter.TryFormat(value, dest.Slice(1), out var written))
+		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
+		if (System.Buffers.Text.Utf8Formatter.TryFormat(value, dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written))
 		{
 			// write header
 			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
@@ -239,8 +239,8 @@ internal class Int128Converter : MessagePackConverter<Int128>
 	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref Int128 value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(MessagePackRange.MaxFixStringLength);
-		if (value.TryFormat(dest.Slice(1), out var written, provider: CultureInfo.InvariantCulture))
+		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
+		if (value.TryFormat(dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written, provider: CultureInfo.InvariantCulture))
 		{
 			// write header
 			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
@@ -309,8 +309,8 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref UInt128 value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(MessagePackRange.MaxFixStringLength);
-		if (value.TryFormat(dest.Slice(1), out var written, provider: CultureInfo.InvariantCulture))
+		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
+		if (value.TryFormat(dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written, provider: CultureInfo.InvariantCulture))
 		{
 			// write header
 			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
@@ -336,7 +336,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
 		if (bytes.IsSingleSegment)
 		{
-			return new System.Numerics.BigInteger(bytes.First.Span);
+			return new BigInteger(bytes.First.Span);
 		}
 		else
 		{
@@ -344,7 +344,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			try
 			{
 				bytes.CopyTo(bytesArray);
-				return new System.Numerics.BigInteger(bytesArray.AsSpan(0, (int)bytes.Length));
+				return new BigInteger(bytesArray.AsSpan(0, (int)bytes.Length));
 			}
 			finally
 			{
@@ -358,7 +358,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	{
 		// try to get bin8 buffer.
 		Span<byte> span = writer.GetSpan(byte.MaxValue);
-		if (value.TryWriteBytes(span.Slice(2), out var written))
+		if (value.TryWriteBytes(span.Slice(2, byte.MaxValue), out var written))
 		{
 			span[0] = MessagePackCode.Bin8;
 			span[1] = (byte)written;
