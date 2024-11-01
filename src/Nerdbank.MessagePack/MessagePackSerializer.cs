@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Text;
 
 namespace Nerdbank.MessagePack;
 
@@ -33,6 +34,7 @@ public record MessagePackSerializer
 	private static readonly FrozenDictionary<Type, object> PrimitiveConverters = new Dictionary<Type, object>()
 	{
 		{ typeof(char), new CharConverter() },
+		{ typeof(Rune), new RuneConverter() },
 		{ typeof(byte), new ByteConverter() },
 		{ typeof(ushort), new UInt16Converter() },
 		{ typeof(uint), new UInt32Converter() },

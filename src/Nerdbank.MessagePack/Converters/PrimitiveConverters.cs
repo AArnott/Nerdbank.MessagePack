@@ -7,6 +7,7 @@
 using System;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 using Microsoft;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -447,6 +448,18 @@ internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
 
 	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
+}
+
+/// <summary>
+/// Serializes <see cref="Rune"/> values.
+/// </summary>
+internal class RuneConverter : MessagePackConverter<Rune>
+{
+	/// <inheritdoc/>
+	public override Rune Deserialize(ref MessagePackReader reader, SerializationContext context) => new Rune(reader.ReadInt32());
+
+	/// <inheritdoc/>
+	public override void Serialize(ref MessagePackWriter writer, ref Rune value, SerializationContext context) => writer.Write(value.Value);
 }
 
 /// <summary>
