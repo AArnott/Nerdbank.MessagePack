@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace Nerdbank.MessagePack;
 
@@ -40,11 +41,23 @@ public record MessagePackSerializer
 		{ typeof(short), new Int16Converter() },
 		{ typeof(int), new Int32Converter() },
 		{ typeof(long), new Int64Converter() },
+		{ typeof(BigInteger), new BigIntegerConverter() },
+		{ typeof(Int128), new Int128Converter() },
+		{ typeof(UInt128), new UInt128Converter() },
 		{ typeof(string), new StringConverter() },
 		{ typeof(bool), new BooleanConverter() },
+		{ typeof(Version), new VersionConverter() },
+		{ typeof(Uri), new UriConverter() },
+		{ typeof(Half), new HalfConverter() },
 		{ typeof(float), new SingleConverter() },
 		{ typeof(double), new DoubleConverter() },
+		{ typeof(decimal), new DecimalConverter() },
+		{ typeof(TimeOnly), new TimeOnlyConverter() },
+		{ typeof(DateOnly), new DateOnlyConverter() },
 		{ typeof(DateTime), new DateTimeConverter() },
+		{ typeof(DateTimeOffset), new DateTimeOffsetConverter() },
+		{ typeof(TimeSpan), new TimeSpanConverter() },
+		{ typeof(Guid), new GuidConverter() },
 		{ typeof(byte[]), new ByteArrayConverter() },
 	}.ToFrozenDictionary();
 
