@@ -15,22 +15,21 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	protected ReadOnlySequence<byte> AssertRoundtrip<T, TProvider>(T? value)
 		where TProvider : IShapeable<T>
 	{
-		T? roundtripped = this.Roundtrip<T, TProvider>(value);
+		T? roundtripped = this.Roundtrip(value, TProvider.GetShape());
 		Assert.Equal(value, roundtripped);
 		return this.lastRoundtrippedMsgpack;
 	}
 
 	protected T? Roundtrip<T>(T? value)
-		where T : IShapeable<T> => this.Roundtrip<T, T>(value);
+		where T : IShapeable<T> => this.Roundtrip(value, T.GetShape());
 
-	protected T? Roundtrip<T, TProvider>(T? value)
-		where TProvider : IShapeable<T>
+	protected T? Roundtrip<T>(T? value, ITypeShape<T> shape)
 	{
 		Sequence<byte> sequence = new();
-		this.Serializer.Serialize<T, TProvider>(sequence, value);
+		this.Serializer.Serialize(sequence, value, shape);
 		this.LogMsgPack(sequence);
 		this.lastRoundtrippedMsgpack = sequence;
-		return this.Serializer.Deserialize<T, TProvider>(sequence);
+		return this.Serializer.Deserialize(sequence, shape);
 	}
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)

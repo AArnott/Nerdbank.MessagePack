@@ -23,7 +23,12 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		context.DepthStep();
-		writer.WriteMapHeader(serializable.Properties.Count);
+		writer.WriteMapHeader(serializable.Properties?.Count ?? 0);
+		if (serializable.Properties is null)
+		{
+			return;
+		}
+
 		foreach ((ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write) property in serializable.Properties)
 		{
 			writer.WriteRaw(property.RawPropertyNameString.Span);
@@ -46,18 +51,27 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		T value = constructor();
-		int count = reader.ReadMapHeader();
-		for (int i = 0; i < count; i++)
+
+		if (deserializable.Value.Readers is not null)
 		{
-			ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
-			if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializeProperty<T>? deserialize))
+			int count = reader.ReadMapHeader();
+			for (int i = 0; i < count; i++)
 			{
-				deserialize(ref value, ref reader, context);
+				ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
+				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializeProperty<T>? deserialize))
+				{
+					deserialize(ref value, ref reader, context);
+				}
+				else
+				{
+					reader.Skip();
+				}
 			}
-			else
-			{
-				reader.Skip();
-			}
+		}
+		else
+		{
+			// We have nothing to read into, so just skip any data in the object.
+			reader.Skip();
 		}
 
 		return value;

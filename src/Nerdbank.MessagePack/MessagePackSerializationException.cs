@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -26,4 +28,12 @@ public class MessagePackSerializationException : Exception
 		: base(message, innerException)
 	{
 	}
+
+	/// <summary>
+	/// Throws an exception explaining that nil was unexpectedly encountered while deserializing a value type.
+	/// </summary>
+	/// <typeparam name="T">The value type that was being deserialized.</typeparam>
+	/// <returns>Nothing. This method always throws.</returns>
+	[DoesNotReturn]
+	internal static MessagePackSerializationException ThrowUnexpectedNilWhileDeserializing<T>() => throw new MessagePackSerializationException("Unexpected nil encountered while deserializing " + typeof(T).FullName);
 }

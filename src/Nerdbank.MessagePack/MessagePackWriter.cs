@@ -1088,7 +1088,7 @@ public ref struct MessagePackWriter
 	/// <summary>
 	/// Gets memory where raw messagepack data can be written.
 	/// </summary>
-	/// <param name="length">The size of the memory block required.</param>
+	/// <param name="length"><inheritdoc cref="BufferWriter.GetSpan(int)" path="/param[@name='sizeHint']"/></param>
 	/// <returns>The span of memory to write to. This *may* exceed <paramref name="length"/>.</returns>
 	/// <remarks>
 	/// <para>After initializing the resulting memory, always follow up with a call to <see cref="Advance(int)"/>.</para>
