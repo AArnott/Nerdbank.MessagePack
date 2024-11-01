@@ -5,6 +5,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <RoslynVersion>4.11.0</RoslynVersion>
+    <TypeShapeVersion>0.14.5-g568f33b8e9</TypeShapeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
@@ -15,7 +16,8 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.8.8" />
     <PackageVersion Include="Nerdbank.Streams" Version="2.11.79" />
-    <PackageVersion Include="typeshape-csharp" Version="0.14.1" />
+    <PackageVersion Include="typeshape-csharp" Version="$(TypeShapeVersion)" />
+    <PackageVersion Include="TypeShape.TestCases" Version="$(TypeShapeVersion)" />
     <PackageVersion Include="Xunit.Combinatorial" Version="1.6.24" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="xunit" Version="2.9.2" />
