@@ -6,5 +6,6 @@ global using System.Collections.Immutable;
 global using Nerdbank.MessagePack;
 global using Nerdbank.Streams;
 global using TypeShape;
+global using TypeShape.Abstractions;
 global using Xunit;
 global using Xunit.Abstractions;
