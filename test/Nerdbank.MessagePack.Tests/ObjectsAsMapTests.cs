@@ -21,6 +21,9 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal(person, this.Serializer.Deserialize<Person>(buffer));
 	}
 
+	[Fact]
+	public void PropertyAndConstructorNameCaseMismatch() => this.AssertRoundtrip(new ClassWithConstructorParameterNameMatchTest("Andrew"));
+
 	[GenerateShape]
 	public partial record Person
 	{
@@ -29,5 +32,15 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 
 		[PropertyShape(Name = "last_name")]
 		public required string LastName { get; init; }
+	}
+
+	[GenerateShape]
+	public partial class ClassWithConstructorParameterNameMatchTest : IEquatable<ClassWithConstructorParameterNameMatchTest>
+	{
+		public ClassWithConstructorParameterNameMatchTest(string name) => this.Name = name;
+
+		public string Name { get; set; }
+
+		public bool Equals(ClassWithConstructorParameterNameMatchTest? other) => other is not null && this.Name == other.Name;
 	}
 }

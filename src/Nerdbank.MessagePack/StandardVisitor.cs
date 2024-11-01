@@ -147,8 +147,23 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 					}
 
 					SpanDictionary<byte, DeserializeProperty<TArgumentState>> parameters = constructorShape.GetParameters()
-						.Select(p => (p.Name, Deserialize: (DeserializeProperty<TArgumentState>)p.Accept(this)!))
-						.ToSpanDictionary(
+						.SelectMany<IConstructorParameterShape, (string Name, DeserializeProperty<TArgumentState> Deserialize)>(p =>
+						{
+							var prop = (DeserializeProperty<TArgumentState>)p.Accept(this)!;
+							if (char.IsLower(p.Name[0]))
+							{
+								// Also allow a PascalCase match, since the property will probably have serialized that way.
+								Span<char> pascalCased = stackalloc char[p.Name.Length];
+								p.Name.AsSpan().CopyTo(pascalCased);
+								pascalCased[0] = char.ToUpperInvariant(pascalCased[0]);
+								return [(p.Name, prop), (new string(pascalCased), prop)];
+							}
+							else
+							{
+								// The parameter name isn't camelCased, so expect it to match the property name exactly.
+								return [(p.Name, prop)];
+							}
+						}).ToSpanDictionary(
 							p => Encoding.UTF8.GetBytes(p.Name),
 							p => p.Deserialize,
 							ByteSpanEqualityComparer.Ordinal);
