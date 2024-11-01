@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Text;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -211,6 +212,149 @@ public record MessagePackSerializer
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <returns>The deserialized value.</returns>
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Deserialize(ref reader, this.StartingContext);
+
+	/// <summary>
+	/// Converts a msgpack sequence into equivalent JSON.
+	/// </summary>
+	/// <param name="msgpack">The msgpack sequence.</param>
+	/// <returns>The JSON.</returns>
+	/// <remarks>
+	/// <para>
+	/// Not all valid msgpack can be converted to JSON. For example, msgpack maps with non-string keys cannot be represented in JSON.
+	/// As such, this method is intended for debugging purposes rather than for production use.
+	/// </para>
+	/// </remarks>
+	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack)
+	{
+		StringWriter jsonWriter = new();
+		MessagePackReader reader = new(msgpack);
+		while (!reader.End)
+		{
+			ConvertToJson(ref reader, jsonWriter);
+		}
+
+		return jsonWriter.ToString();
+	}
+
+	/// <summary>
+	/// Converts one MessagePack structure to a JSON stream.
+	/// </summary>
+	/// <param name="reader">A reader of the msgpack stream.</param>
+	/// <param name="jsonWriter">The writer that will receive JSON text.</param>
+	public static void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter)
+	{
+		Requires.NotNull(jsonWriter);
+
+		WriteOneElement(ref reader, jsonWriter);
+
+		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter)
+		{
+			switch (reader.NextMessagePackType)
+			{
+				case MessagePackType.Nil:
+					reader.ReadNil();
+					jsonWriter.Write("null");
+					break;
+				case MessagePackType.Integer:
+					if (MessagePackCode.IsSignedInteger(reader.NextCode))
+					{
+						jsonWriter.Write(reader.ReadInt64());
+					}
+					else
+					{
+						jsonWriter.Write(reader.ReadUInt64());
+					}
+
+					break;
+				case MessagePackType.Boolean:
+					jsonWriter.Write(reader.ReadBoolean() ? "true" : "false");
+					break;
+				case MessagePackType.Float:
+					jsonWriter.Write(reader.ReadDouble());
+					break;
+				case MessagePackType.String:
+					WriteJsonString(reader.ReadString()!, jsonWriter);
+					break;
+				case MessagePackType.Array:
+					jsonWriter.Write('[');
+					int count = reader.ReadArrayHeader();
+					for (int i = 0; i < count; i++)
+					{
+						if (i > 0)
+						{
+							jsonWriter.Write(',');
+						}
+
+						WriteOneElement(ref reader, jsonWriter);
+					}
+
+					jsonWriter.Write(']');
+					break;
+				case MessagePackType.Map:
+					jsonWriter.Write('{');
+					count = reader.ReadMapHeader();
+					for (int i = 0; i < count; i++)
+					{
+						if (i > 0)
+						{
+							jsonWriter.Write(',');
+						}
+
+						WriteOneElement(ref reader, jsonWriter);
+						jsonWriter.Write(':');
+						WriteOneElement(ref reader, jsonWriter);
+					}
+
+					jsonWriter.Write('}');
+					break;
+				case MessagePackType.Binary:
+				case MessagePackType.Extension:
+				case MessagePackType.Unknown:
+					throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented.");
+			}
+		}
+
+		// escape string
+		static void WriteJsonString(string value, TextWriter builder)
+		{
+			builder.Write('\"');
+
+			var len = value.Length;
+			for (int i = 0; i < len; i++)
+			{
+				var c = value[i];
+				switch (c)
+				{
+					case '"':
+						builder.Write("\\\"");
+						break;
+					case '\\':
+						builder.Write("\\\\");
+						break;
+					case '\b':
+						builder.Write("\\b");
+						break;
+					case '\f':
+						builder.Write("\\f");
+						break;
+					case '\n':
+						builder.Write("\\n");
+						break;
+					case '\r':
+						builder.Write("\\r");
+						break;
+					case '\t':
+						builder.Write("\\t");
+						break;
+					default:
+						builder.Write(c);
+						break;
+				}
+			}
+
+			builder.Write('\"');
+		}
+	}
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
