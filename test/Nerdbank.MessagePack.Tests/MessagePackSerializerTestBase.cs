@@ -35,6 +35,6 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
 	{
-		logger.WriteLine(MessagePack.MessagePackSerializer.ConvertToJson(msgPack, MessagePack.MessagePackSerializerOptions.Standard));
+		logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));
 	}
 }
