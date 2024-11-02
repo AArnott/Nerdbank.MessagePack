@@ -34,7 +34,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 			}
 			else
 			{
-				reader.Skip();
+				reader.Skip(context);
 			}
 		}
 
