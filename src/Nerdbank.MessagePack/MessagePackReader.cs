@@ -117,11 +117,12 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// Advances the reader to the next MessagePack structure to be read.
 	/// </summary>
+	/// <param name="context">Serialization context. Used for the stack guard.</param>
 	/// <remarks>
 	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
-	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw()"/> instead.
+	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw(SerializationContext)"/> instead.
 	/// </remarks>
-	public void Skip() => ThrowInsufficientBufferUnless(this.TrySkip());
+	public void Skip(SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(context));
 
 	/// <summary>
 	/// Reads a <see cref="MessagePackCode.Nil"/> value.
@@ -175,14 +176,15 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// Reads the next MessagePack primitive.
 	/// </summary>
+	/// <param name="context">The serialization context. Used for the stack guard.</param>
 	/// <returns>The raw MessagePack sequence.</returns>
 	/// <remarks>
 	/// The entire primitive is read, including content of maps or arrays, or any other type with payloads.
 	/// </remarks>
-	public ReadOnlySequence<byte> ReadRaw()
+	public ReadOnlySequence<byte> ReadRaw(SerializationContext context)
 	{
 		SequencePosition initialPosition = this.Position;
-		this.Skip();
+		this.Skip(context);
 		return this.Sequence.Slice(initialPosition, this.Position);
 	}
 
@@ -801,13 +803,14 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// Advances the reader to the next MessagePack structure to be read.
 	/// </summary>
+	/// <param name="context">The serialization context. Used for the stack guard.</param>
 	/// <returns><see langword="true"/> if the entire structure beginning at the current <see cref="Position"/> is found in the <see cref="Sequence"/>; <see langword="false"/> otherwise.</returns>
 	/// <remarks>
 	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
-	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw()"/> instead.
+	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw(SerializationContext)"/> instead.
 	/// WARNING: when false is returned, the position of the reader is undefined.
 	/// </remarks>
-	internal bool TrySkip()
+	internal bool TrySkip(SerializationContext context)
 	{
 		if (this.reader.Remaining == 0)
 		{
@@ -839,11 +842,13 @@ public ref partial struct MessagePackReader
 			case byte x when MessagePackCode.IsFixMap(x):
 			case MessagePackCode.Map16:
 			case MessagePackCode.Map32:
-				return this.TrySkipNextMap();
+				context.DepthStep();
+				return this.TrySkipNextMap(context);
 			case byte x when MessagePackCode.IsFixArray(x):
 			case MessagePackCode.Array16:
 			case MessagePackCode.Array32:
-				return this.TrySkipNextArray();
+				context.DepthStep();
+				return this.TrySkipNextArray(context);
 			case byte x when MessagePackCode.IsFixStr(x):
 			case MessagePackCode.Str8:
 			case MessagePackCode.Str16:
@@ -1072,15 +1077,15 @@ public ref partial struct MessagePackReader
 		return value;
 	}
 
-	private bool TrySkipNextArray() => this.TryReadArrayHeader(out int count) && this.TrySkip(count);
+	private bool TrySkipNextArray(SerializationContext context) => this.TryReadArrayHeader(out int count) && this.TrySkip(count, context);
 
-	private bool TrySkipNextMap() => this.TryReadMapHeader(out int count) && this.TrySkip(count * 2);
+	private bool TrySkipNextMap(SerializationContext context) => this.TryReadMapHeader(out int count) && this.TrySkip(count * 2, context);
 
-	private bool TrySkip(int count)
+	private bool TrySkip(int count, SerializationContext context)
 	{
 		for (int i = 0; i < count; i++)
 		{
-			if (!this.TrySkip())
+			if (!this.TrySkip(context))
 			{
 				return false;
 			}

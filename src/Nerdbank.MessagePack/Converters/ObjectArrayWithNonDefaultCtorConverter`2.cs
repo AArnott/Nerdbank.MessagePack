@@ -39,7 +39,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			}
 			else
 			{
-				reader.Skip();
+				reader.Skip(context);
 			}
 		}
 

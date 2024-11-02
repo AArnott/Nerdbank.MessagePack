@@ -41,14 +41,14 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 				}
 				else
 				{
-					reader.Skip();
+					reader.Skip(context);
 				}
 			}
 		}
 		else
 		{
 			// We have nothing to read into, so just skip any data in the object.
-			reader.Skip();
+			reader.Skip(context);
 		}
 
 		return ctor(ref argState);
