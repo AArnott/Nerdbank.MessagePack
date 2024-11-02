@@ -43,8 +43,10 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void EnumerableDerived_BaseType()
 	{
+		// This is a lossy operation. Only the collection elements are serialized,
+		// and the class cannot be deserialized because the constructor doesn't take a collection.
 		EnumerableDerived value = new(3) { BaseClassProperty = 5 };
-		byte[] msgpack = this.Serializer.Serialize(value);
+		byte[] msgpack = this.Serializer.Serialize<BaseClass>(value);
 		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
 	}
 
