@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Frozen;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Nerdbank.MessagePack;
@@ -319,7 +318,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		Dictionary<Type, (int Alias, IMessagePackConverter Converter)> serializerData = new();
 		foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
 		{
-			IObjectTypeShape? subtypeShape = (IObjectTypeShape?)objectShape.Provider.GetShape(unionAttribute.SubType);
+			ITypeShape? subtypeShape = objectShape.Provider.GetShape(unionAttribute.SubType);
 			if (subtypeShape is null)
 			{
 				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has a union attribute that references a type that is not known to the serializer: {unionAttribute.SubType.FullName}.");

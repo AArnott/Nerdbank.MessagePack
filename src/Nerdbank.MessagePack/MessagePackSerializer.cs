@@ -213,6 +213,9 @@ public record MessagePackSerializer
 	/// <returns>The deserialized value.</returns>
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Deserialize(ref reader, this.StartingContext);
 
+	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
+	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
+
 	/// <summary>
 	/// Converts a msgpack sequence into equivalent JSON.
 	/// </summary>
