@@ -7,6 +7,15 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	public void Person_Roundtrip() => this.AssertRoundtrip(new Person { FirstName = "Andrew", LastName = "Arnott" });
 
 	[Fact]
+	public void PersonWithDefaultConstructor_Roundtrip() => this.AssertRoundtrip(new PersonWithDefaultConstructor { FirstName = "Andrew", LastName = "Arnott" });
+
+	[Fact]
+	public void Null() => this.AssertRoundtrip<Person>(null);
+
+	[Fact]
+	public void Null_DefaultCtro() => this.AssertRoundtrip<PersonWithDefaultConstructor>(null);
+
+	[Fact]
 	public void Person_SerializesAsArray()
 	{
 		Person person = new Person { FirstName = "Andrew", LastName = "Arnott" };
@@ -33,5 +42,15 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		[Key(2)] // Deliberately leave an empty spot.
 		public required string LastName { get; init; }
+	}
+
+	[GenerateShape]
+	public partial record PersonWithDefaultConstructor
+	{
+		[Key(0)]
+		public string? FirstName { get; set; }
+
+		[Key(2)] // Deliberately leave an empty spot.
+		public string? LastName { get; set; }
 	}
 }
