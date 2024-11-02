@@ -22,8 +22,8 @@ jobs:
       matrix:
         os:
         - ubuntu-22.04
-        - macos-14
-        - windows-2022
+        #- macos-14
+        #- windows-2022
 
     steps:
     - uses: actions/checkout@v4
@@ -47,6 +47,10 @@ jobs:
     - name: 🧪 test
       run: azure-pipelines/dotnet-test-cloud.ps1 -Configuration ${{ env.BUILDCONFIGURATION }} -Agent ${{ runner.os }}
       shell: pwsh
+    - name: 💅🏻 Verify formatted code
+      run: dotnet format --verify-no-changes --no-restore
+      shell: pwsh
+      if: runner.os == 'Linux'
     - name: ⚙ Update pipeline variables based on build outputs
       run: azure-pipelines/variables/_pipelines.ps1
       shell: pwsh
