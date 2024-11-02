@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class UnionTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Fact]
 	public void BaseType()
@@ -40,10 +40,19 @@ public partial class UnionTests(ITestOutputHelper logger) : MessagePackSerialize
 	[Fact]
 	public void DerivedB_AsBaseType() => this.AssertRoundtrip<BaseClass>(new DerivedB(10) { BaseClassProperty = 5 });
 
+	[Fact]
+	public void EnumerableDerived_BaseType()
+	{
+		EnumerableDerived value = new(3) { BaseClassProperty = 5 };
+		byte[] msgpack = this.Serializer.Serialize(value);
+		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+	}
+
 	[GenerateShape]
 	[KnownSubType(1, typeof(DerivedA))]
 	[KnownSubType(2, typeof(DerivedAA))]
 	[KnownSubType(3, typeof(DerivedB))]
+	[KnownSubType(4, typeof(EnumerableDerived))]
 	public partial record BaseClass
 	{
 		public int BaseClassProperty { get; set; }
@@ -63,5 +72,13 @@ public partial class UnionTests(ITestOutputHelper logger) : MessagePackSerialize
 	[GenerateShape]
 	public partial record DerivedB(int DerivedBProperty) : BaseClass
 	{
+	}
+
+	[GenerateShape]
+	public partial record EnumerableDerived(int Count) : BaseClass, IEnumerable<int>
+	{
+		public IEnumerator<int> GetEnumerator() => Enumerable.Range(0, this.Count).GetEnumerator();
+
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
 	}
 }
