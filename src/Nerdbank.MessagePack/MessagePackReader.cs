@@ -31,18 +31,12 @@ public ref partial struct MessagePackReader
 		: this()
 	{
 		this.reader = new SequenceReader<byte>(readOnlySequence);
-		this.Depth = 0;
 	}
 
 	/// <summary>
 	/// Gets or sets the cancellation token for this deserialization operation.
 	/// </summary>
 	public CancellationToken CancellationToken { get; set; }
-
-	/// <summary>
-	/// Gets or sets the present depth of the object graph being deserialized.
-	/// </summary>
-	public int Depth { get; set; }
 
 	/// <summary>
 	/// Gets the <see cref="ReadOnlySequence{T}"/> originally supplied to the constructor.
@@ -100,7 +94,6 @@ public ref partial struct MessagePackReader
 	public MessagePackReader Clone(scoped in ReadOnlySequence<byte> readOnlySequence) => new MessagePackReader(readOnlySequence)
 	{
 		CancellationToken = this.CancellationToken,
-		Depth = this.Depth,
 	};
 
 	/// <summary>
