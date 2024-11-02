@@ -7,8 +7,8 @@ Learn more about [subtype unions](../docs/unions.md).
 ## Example violations
 
 ```cs
-[KnownSubType(1, typeof(DerivedType1))]
-[KnownSubType(1, typeof(DerivedType2))] // Reused an alias
+[KnownSubType<DerivedType1>(1)]
+[KnownSubType<DerivedType2>(1)] // Reused an alias
 class BaseType
 {
 }
@@ -27,8 +27,8 @@ class DerivedType2 : BaseType
 Change the alias to one that has not yet been used.
 
 ```cs
-[KnownSubType(1, typeof(DerivedType1))]
-[KnownSubType(2, typeof(DerivedType2))]
+[KnownSubType<DerivedType1>(1)]
+[KnownSubType<DerivedType2>(2)]
 class BaseType
 {
 }
@@ -48,12 +48,12 @@ Note that across types, the alias does not need to be unique.
 The following is perfectly valid:
 
 ```cs
-[KnownSubType(1, typeof(DerivedFromBaseType))]
+[KnownSubType<DerivedFromBaseType>(1)]
 class BaseType
 {
 }
 
-[KnownSubType(1, typeof(DerivedFromAnotherType))]
+[KnownSubType<DerivedFromAnotherType>(1)]
 class AnotherType
 {
 }

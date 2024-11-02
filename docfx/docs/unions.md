@@ -2,7 +2,7 @@
 
 ## Polymorphic serialization
 
-You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the @Nerdbank.MessagePack.KnownSubTypeAttribute.
+You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the @Nerdbank.MessagePack.KnownSubTypeAttribute`1.
 
 For instance, suppose you have this type to serialize:
 
@@ -17,22 +17,25 @@ But there are many kinds of animals.
 You can get them to serialize and deserialize correctly like this:
 
 ```cs
-[KnownSubType(1, typeof(Cow))]
-[KnownSubType(2, typeof(Horse))]
-[KnownSubType(3, typeof(Dog))]
+[KnownSubType<Cow>(1)]
+[KnownSubType<Horse>(2)]
+[KnownSubType<Dog>(3)]
 public class Animal
 {
     public string Name { get; set; }
 }
 
-public class Cow : Animal { }
-public class Horse : Animal { }
-public class Dog : Animal { }
+[GenerateShape]
+public partial class Cow : Animal { }
+[GenerateShape]
+public partial class Horse : Animal { }
+[GenerateShape]
+public partial class Dog : Animal { }
 ```
 
 This changes the schema of the serialized data to include a tag that indicates the type of the object.
 
-*Without* any @Nerdbank.MessagePack.KnownSubTypeAttribute, an `Animal` object would serialize like this (as represented in JSON):
+*Without* any @Nerdbank.MessagePack.KnownSubTypeAttribute`1, an `Animal` object would serialize like this (as represented in JSON):
 
 ```json
 { "Name": "Bessie" }
@@ -73,12 +76,14 @@ This is because the `Horse` type is statically known as the generic type argumen
 Now suppose you have different breeds of horses that each had their own subtype:
 
 ```cs
-[KnownSubType(1, typeof(QuarterHorse))]
-[KnownSubType(2, typeof(Thoroughbred))]
+[KnownSubType<QuarterHorse>(1)]
+[KnownSubType<Thoroughbred>(2)]
 public class Horse : Animal { }
 
-public class QuarterHorse : Horse { }
-public class Thoroughbred : Horse { }
+[GenerateShape]
+public partial class QuarterHorse : Horse { }
+[GenerateShape]
+public partial class Thoroughbred : Horse { }
 ```
 
 At this point your `HorsePen` *would* serialize with the union schema around each horse:
@@ -90,4 +95,37 @@ But now let's consider your `Farm` class, which has a collection of `Animal` obj
 The `Animal` class only knows about `Horse` as a subtype and designates `2` as the alias for that subtype.
 `Animal` has no designation for `QuarterHorse` or `Thoroughbred`.
 As such, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects, not `QuarterHorse` or `Thoroughbred`.
-To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
+To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1 to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
+
+### Generic sub-types
+
+Sub-types may be generic types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
+You may close the generic type several times, assigning a unique alias to each one.
+
+Generic sub-types require a [witness class](getting-started.md#witness-classes) to provide their type shape.
+This witness type must be specified as a second type argument to @Nerdbank.MessagePack.KnownSubTypeAttribute`2.
+
+For example:
+
+```cs
+[KnownSubType<Horse>(1)]
+[KnownSubType<Cow<SolidHoof>, Witness>(2)]
+[KnownSubType<Cow<ClovenHoof>, Witness>(3)]
+class Animal
+{
+    public string? Name { get; set; }
+}
+
+[GenerateShape]
+partial class Horse : Animal { }
+
+partial class Cow<THoof> : Animal { }
+
+[GenerateShape<Cow<SolidHoof>>]
+[GenerateShape<Cow<ClovenHoof>>]
+partial class Witness;
+
+class SolidHoof { }
+
+class ClovenHoof { }
+```

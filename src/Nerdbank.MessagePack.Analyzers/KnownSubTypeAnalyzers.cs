@@ -82,13 +82,13 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 				context =>
 				{
 					INamedTypeSymbol appliedSymbol = (INamedTypeSymbol)context.Symbol;
-					AttributeData[] attributeDatas = context.Symbol.FindAttributes(referenceSymbols.KnownSubTypeAttribute).ToArray();
+					AttributeData[] attributeDatas = context.Symbol.FindAttributes(referenceSymbols.IKnownSubTypeAttribute).ToArray();
 					Dictionary<int, ITypeSymbol?>? typesByAlias = null;
 					Dictionary<ITypeSymbol, int?>? aliasesByType = null;
 					foreach (AttributeData att in attributeDatas)
 					{
-						int? alias = att.ConstructorArguments is [{ Value: int a }, _] ? a : null;
-						ITypeSymbol? subType = att.ConstructorArguments is [_, { Value: ITypeSymbol t }] ? t : null;
+						int? alias = att.ConstructorArguments is [{ Value: int a }] ? a : null;
+						ITypeSymbol? subType = att.AttributeClass?.TypeArguments[0];
 
 						if (alias is not null)
 						{
@@ -112,7 +112,7 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 							{
 								context.ReportDiagnostic(Diagnostic.Create(
 									NonUniqueTypeDescriptor,
-									GetArgumentLocation(1),
+									GetTypeArgumentLocation(0),
 									existingAlias));
 							}
 							else
@@ -125,7 +125,7 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 						{
 							context.ReportDiagnostic(Diagnostic.Create(
 								NonDerivedTypeDescriptor,
-								GetArgumentLocation(1),
+								GetTypeArgumentLocation(0),
 								subType.Name));
 						}
 
@@ -133,14 +133,18 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 						{
 							context.ReportDiagnostic(Diagnostic.Create(
 								OpenGenericTypeDescriptor,
-								GetArgumentLocation(1)));
+								GetTypeArgumentLocation(0)));
 						}
 
 						Location? GetArgumentLocation(int argumentIndex)
-						{
-							return AnalyzerUtilities.GetArgumentLocation(att, argumentIndex, context.CancellationToken)
+							=> AnalyzerUtilities.GetArgumentLocation(att, argumentIndex, context.CancellationToken)
+								?? att.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()
 								?? appliedSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
-						}
+
+						Location? GetTypeArgumentLocation(int typeArgumentIndex)
+							=> AnalyzerUtilities.GetTypeArgumentLocation(att, typeArgumentIndex, context.CancellationToken)
+								?? att.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()
+								?? appliedSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
 					}
 				},
 				SymbolKind.NamedType);

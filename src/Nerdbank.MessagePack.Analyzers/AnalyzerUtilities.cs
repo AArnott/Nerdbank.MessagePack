@@ -28,7 +28,7 @@ public static class AnalyzerUtilities
 				attClass = attClass.ConstructUnboundGenericType();
 			}
 
-			if (SymbolEqualityComparer.Default.Equals(attClass, attributeSymbol))
+			if (SymbolEqualityComparer.Default.Equals(attClass, attributeSymbol) || attClass?.IsAssignableTo(attributeSymbol) is true)
 			{
 				yield return att;
 			}
@@ -130,6 +130,11 @@ public static class AnalyzerUtilities
 
 		return null;
 	}
+
+	public static Location? GetTypeArgumentLocation(AttributeData att, int typeArgumentIndex, CancellationToken cancellationToken)
+		=> att.ApplicationSyntaxReference?.GetSyntax(cancellationToken) is AttributeSyntax { Name: GenericNameSyntax { TypeArgumentList.Arguments: { } a } } && a.Count > typeArgumentIndex
+			? a[typeArgumentIndex].GetLocation()
+			: null;
 
 	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/Nerdbank.MessagePack/analyzers/{diagnosticId}.html";
 }

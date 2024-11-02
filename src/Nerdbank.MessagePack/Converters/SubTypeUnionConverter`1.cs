@@ -66,7 +66,7 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 		}
 		else
 		{
-			throw new MessagePackSerializationException($"value is of type {valueType.FullName} which is not one of those listed via {nameof(KnownSubTypeAttribute)} on the declared base type {typeof(TBase).FullName}.");
+			throw new MessagePackSerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
 		}
 	}
 }

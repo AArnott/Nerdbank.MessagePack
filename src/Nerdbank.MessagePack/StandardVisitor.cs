@@ -407,7 +407,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
 	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
 	{
-		KnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(KnownSubTypeAttribute), false).Cast<KnownSubTypeAttribute>().ToArray();
+		IKnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(IKnownSubTypeAttribute), false).Cast<IKnownSubTypeAttribute>().ToArray();
 		if (unionAttributes is null or { Length: 0 })
 		{
 			return null;
@@ -415,14 +415,13 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 
 		Dictionary<int, IMessagePackConverter> deserializerData = new();
 		Dictionary<Type, (int Alias, IMessagePackConverter Converter)> serializerData = new();
-		foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
+		foreach (IKnownSubTypeAttribute unionAttribute in unionAttributes)
 		{
-			ITypeShape? subtypeShape = objectShape.Provider.GetShape(unionAttribute.SubType);
-			Verify.Operation(subtypeShape is not null, $"The type {objectShape.Type.FullName} has a union attribute that references a type that is not known to the serializer: {unionAttribute.SubType.FullName}.");
-			Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {nameof(KnownSubTypeAttribute)} that references non-derived {unionAttribute.SubType.FullName}.");
+			ITypeShape subtypeShape = unionAttribute.Shape;
+			Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {KnownSubTypeAttribute.TypeName} that references non-derived {unionAttribute.Shape.Type.FullName}.");
 
 			IMessagePackConverter converter = this.GetConverter(subtypeShape);
-			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {nameof(KnownSubTypeAttribute)} with a duplicate alias: {unionAttribute.Alias}.");
+			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
 			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
 		}
 

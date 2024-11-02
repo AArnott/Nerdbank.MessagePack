@@ -12,7 +12,7 @@ public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackReader,
 	INamedTypeSymbol MessagePackWriter,
 	INamedTypeSymbol KeyAttribute,
-	INamedTypeSymbol KnownSubTypeAttribute,
+	INamedTypeSymbol IKnownSubTypeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute)
 {
@@ -69,8 +69,8 @@ public record ReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? knownSubTypeAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.KnownSubTypeAttribute");
-		if (knownSubTypeAttribute is null)
+		INamedTypeSymbol? iknownSubTypeAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.IKnownSubTypeAttribute");
+		if (iknownSubTypeAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -104,7 +104,7 @@ public record ReferenceSymbols(
 			messagePackReader,
 			messagePackWriter,
 			keyAttribute,
-			knownSubTypeAttribute,
+			iknownSubTypeAttribute,
 			generateShapeAttribute,
 			propertyShapeAttribute);
 		return true;
