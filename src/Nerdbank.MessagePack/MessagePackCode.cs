@@ -32,7 +32,7 @@ public enum MessagePackType : byte
 /// The core type codes as defined by msgpack.
 /// </summary>
 /// <seealso href="https://github.com/msgpack/msgpack/blob/master/spec.md#overview" />
-internal static class MessagePackCode
+public static class MessagePackCode
 {
 	public const byte MinFixInt = 0x00; // 0
 	public const byte MaxFixInt = 0x7f; // 127
