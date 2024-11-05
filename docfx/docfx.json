@@ -3,7 +3,7 @@
 		{
 			"src": [
 				{
-					"src": "../../src/Nerdbank.MessagePack",
+					"src": "../src/Nerdbank.MessagePack",
 					"files": [
 						"**/*.csproj"
 					]
