@@ -5,6 +5,8 @@ They will emit diagnostics with warnings or errors depending on the severity of 
 
 Some of these diagnostics will include a suggested code fix that can apply the correction to your code automatically.
 
-Rule ID | Category | Severity | Notes
---------|----------|----------|-------
-[NBMsgPack001](NBMsgPack001.md) | Usage | Error | Apply `[Key]` consistently across members
+[!INCLUDE [AnalyzerReleases.Shipped](../../src/Nerdbank.MessagePack.Analyzers/AnalyzerReleases.Shipped.md)]
+
+## Upcoming release
+
+[!INCLUDE [AnalyzerReleases.Unshipped](../../src/Nerdbank.MessagePack.Analyzers/AnalyzerReleases.Unshipped.md)]
