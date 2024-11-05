@@ -28,13 +28,13 @@ jobs:
     - name: ⚙ Install prerequisites
       run: ./init.ps1 -UpgradePrerequisites
 
-    - run: dotnet docfx doc/github.io/docfx.json
+    - run: dotnet docfx docfx/docfx.json
       name: 📚 Generate documentation
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: doc/github.io/_site
+        path: docfx/_site
 
     - name: Deploy to GitHub Pages
       id: deployment
