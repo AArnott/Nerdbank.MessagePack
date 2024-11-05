@@ -42,3 +42,27 @@ Doing so dramatically increases the cost to the attacker to carry out this attac
 > They must come from your own code or a library with cryptographic hash functions.
 
 This library does not (yet) have the capability to create collections during deserialization that have collision resistant hash functions, due to [a limitation in TypeShape](https://github.com/eiriktsarpalis/typeshape-csharp/issues/33), which it depends on.
+
+Instead, you can provide your own defense by initializing your collections with a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1 in your data type's constructor.
+
+> [!NOTE]
+> Hash collision resistance has no impact on the serialized data itself.
+> A program may defend itself against hash collision attacks without breaking interoperability with other parties that they exchange data with.
+
+Here is an example of a defense against hash collisions:
+
+```cs
+[GenerateShape]
+public partial class HashCollisionResistance : IEquatable<HashCollisionResistance>
+{
+    public HashCollisionResistance()
+    {
+        this.Dictionary = new(SipHashEqualityComparer<CustomType>.Default);
+        this.HashSet = new(SipHashEqualityComparer<CustomType>.Default);
+    }
+
+    public Dictionary<CustomType, string> Dictionary { get; }
+
+    public HashSet<CustomType> HashSet { get; }
+}
+```

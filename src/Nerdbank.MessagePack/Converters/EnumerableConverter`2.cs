@@ -3,6 +3,8 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -13,6 +15,11 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
 internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
 {
+	/// <summary>
+	/// Gets a value indicating whether the element converter prefers async serialization.
+	/// </summary>
+	protected bool ElementPrefersAsyncSerialization => elementConverter.PreferAsyncSerialization;
+
 	/// <inheritdoc/>
 	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
@@ -62,6 +69,17 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
 	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Deserialize(ref reader, context)!;
+
+	/// <summary>
+	/// Reads one element from the reader.
+	/// </summary>
+	/// <param name="reader">The reader.</param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The element.</returns>
+	[Experimental("NBMsgPackAsync")]
+	protected ValueTask<TElement> ReadElementAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+		=> elementConverter.DeserializeAsync(reader, context, cancellationToken)!;
 }
 
 /// <summary>
@@ -76,7 +94,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	Setter<TEnumerable, TElement> addElement,
-	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
+	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {
 	/// <inheritdoc/>
 	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
@@ -86,15 +104,51 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			return default;
 		}
 
-		context.DepthStep();
 		TEnumerable result = ctor();
+		this.DeserializeInto(ref reader, ref result, context);
+		return result;
+	}
+
+	/// <inheritdoc/>
+	public void DeserializeInto(ref MessagePackReader reader, ref TEnumerable collection, SerializationContext context)
+	{
+		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		for (int i = 0; i < count; i++)
 		{
-			addElement(ref result, this.ReadElement(ref reader, context));
+			addElement(ref collection, this.ReadElement(ref reader, context));
 		}
+	}
 
-		return result;
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context, CancellationToken cancellationToken)
+	{
+		context.DepthStep();
+
+		if (this.ElementPrefersAsyncSerialization)
+		{
+			int count = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
+			for (int i = 0; i < count; i++)
+			{
+				addElement(ref collection, await this.ReadElementAsync(reader, context, cancellationToken).ConfigureAwait(false));
+			}
+		}
+		else
+		{
+			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+			Read(new MessagePackReader(map));
+			reader.AdvanceTo(map.End);
+
+			void Read(MessagePackReader syncReader)
+			{
+				int count = syncReader.ReadArrayHeader();
+				for (int i = 0; i < count; i++)
+				{
+					addElement(ref collection, this.ReadElement(ref syncReader, context));
+				}
+			}
+		}
 	}
 }
 

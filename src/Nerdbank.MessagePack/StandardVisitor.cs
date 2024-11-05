@@ -139,6 +139,35 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			};
 			msgpackReaders = (deserialize, deserializeAsync);
 		}
+		else if (propertyShape.HasGetter && converter is IDeserializeInto<TPropertyType> inflater)
+		{
+			// The property has no setter, but it has a getter and the property type is a collection.
+			// So we'll assume the declaring type initializes the collection in its constructor,
+			// and we'll just deserialize into it.
+			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
+			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+			{
+				if (reader.TryReadNil())
+				{
+					// No elements to read. A null collection in msgpack doesn't let us set the collection to null, so just return.
+					return;
+				}
+
+				TPropertyType collection = getter(ref container);
+				inflater.DeserializeInto(ref reader, ref collection, context);
+			};
+			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken) =>
+			{
+				if (!await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+				{
+					TPropertyType collection = propertyShape.GetGetter()(ref container);
+					await inflater.DeserializeIntoAsync(reader, collection, context, cancellationToken).ConfigureAwait(false);
+				}
+
+				return container;
+			};
+			msgpackReaders = (deserialize, deserializeAsync);
+		}
 
 		return new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders);
 	}
