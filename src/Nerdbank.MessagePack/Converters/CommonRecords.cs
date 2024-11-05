@@ -3,8 +3,10 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 #pragma warning disable SA1649 // File name should match first type name
+#pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -18,7 +20,19 @@ namespace Nerdbank.MessagePack.Converters;
 internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
 
 /// <summary>
-/// A delegate that can deserialize the value of a property from a <see cref="MessagePackReader"/> and assign it to a data type.
+/// A delegate that can asynchronously serialize a property to a <see cref="MessagePackAsyncWriter"/>.
+/// </summary>
+/// <typeparam name="TDeclaringType">The data type whose property is to be serialized.</typeparam>
+/// <param name="container">The instance of the data type to be serialized.</param>
+/// <param name="writer">The means by which msgpack should be written.</param>
+/// <param name="context">The serialization context.</param>
+/// <param name="cancellationToken">A cancellation token.</param>
+/// <returns>A task that represents the asynchronous operation.</returns>
+[Experimental("NBMsgPackAsync")]
+internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context, CancellationToken cancellationToken);
+
+/// <summary>
+/// A delegate that can deserialize a value from a <see cref="MessagePackReader"/> and assign it to a property.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose property is to be initialized.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
@@ -27,26 +41,58 @@ internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType cont
 internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context);
 
 /// <summary>
+/// A delegate that can asynchronously deserialize the value from a <see cref="MessagePackAsyncReader"/> and assign it to a property.
+/// </summary>
+/// <typeparam name="TDeclaringType">The data type whose property is to be initialized.</typeparam>
+/// <param name="container">The instance of the data type to be serialized.</param>
+/// <param name="reader">The means by which msgpack should be read.</param>
+/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+/// <param name="cancellationToken">A cancellation token.</param>
+/// <returns>The <paramref name="container"/>, with the property initialized. This is useful when <typeparamref name="TDeclaringType"/> is a struct.</returns>
+[Experimental("NBMsgPackAsync")]
+internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken);
+
+/// <summary>
 /// A map of serializable properties.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that contains the properties to be serialized.</typeparam>
 /// <param name="Properties">The list of serializable properties, including the msgpack encoding of the property name and the delegate to serialize that property.</param>
-internal record struct MapSerializableProperties<TDeclaringType>(List<(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write)>? Properties);
+internal record struct MapSerializableProperties<TDeclaringType>(List<SerializableProperty<TDeclaringType>>? Properties);
+
+/// <summary>
+/// Contains the data necessary for a converter to serialize the value of a particular property.
+/// </summary>
+/// <typeparam name="TDeclaringType">The type that declares the property to be serialized.</typeparam>
+/// <param name="RawPropertyNameString">The entire msgpack encoding of the property name, including the string header.</param>
+/// <param name="Write">A delegate that synchronously serializes the value of the property.</param>
+/// <param name="WriteAsync">A delegate that asynchonously serializes the value of the property.</param>
+internal record struct SerializableProperty<TDeclaringType>(ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync);
 
 /// <summary>
 /// A map of deserializable properties.
 /// </summary>
 /// <typeparam name="T">The data type that contains properties to be deserialized.</typeparam>
 /// <param name="Readers">The map of deserializable properties, keyed by the UTF-8 encoding of the property name.</param>
-internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, DeserializeProperty<T>>? Readers);
+internal record struct MapDeserializableProperties<T>(SpanDictionary<byte, DeserializableProperty<T>>? Readers);
+
+/// <summary>
+/// Contains the data necessary for a converter to initialize some property with a value deserialized from msgpack.
+/// </summary>
+/// <typeparam name="TDeclaringType">The type that declares the property to be serialized.</typeparam>
+/// <param name="PropertyNameUtf8">The UTF-8 encoding of the property name.</param>
+/// <param name="Read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
+/// <param name="ReadAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
+internal record struct DeserializableProperty<TDeclaringType>(ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync);
 
 /// <summary>
 /// Encapsulates serializing accessors for a particular property of some data type.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that declares the property that these accessors can serialize and deserialize values for.</typeparam>
-/// <param name="Serialize">A delegate that serializes the property.</param>
-/// <param name="Deserialize">A delegate that can initialize the property with a value deserialized from msgpack.</param>
-internal record struct PropertyAccessors<TDeclaringType>(SerializeProperty<TDeclaringType>? Serialize, DeserializeProperty<TDeclaringType>? Deserialize);
+/// <param name="MsgPackWriters">Delegates that can serialize the value of a property.</param>
+/// <param name="MsgPackReaders">Delegates that can initialize the property with a value deserialized from msgpack.</param>
+internal record struct PropertyAccessors<TDeclaringType>(
+	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters,
+	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? MsgPackReaders);
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments

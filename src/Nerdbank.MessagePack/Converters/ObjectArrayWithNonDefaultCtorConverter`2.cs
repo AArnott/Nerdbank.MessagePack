@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -17,7 +19,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	PropertyAccessors<TDeclaringType>?[] properties,
 	Func<TArgumentState> argStateCtor,
 	Constructor<TArgumentState, TDeclaringType> ctor,
-	DeserializeProperty<TArgumentState>?[] parameters) : ObjectArrayConverter<TDeclaringType>(properties, null)
+	DeserializableProperty<TArgumentState>?[] parameters) : ObjectArrayConverter<TDeclaringType>(properties, null)
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Deserialize(ref MessagePackReader reader, SerializationContext context)
@@ -35,11 +37,39 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		{
 			if (parameters.Length > i && parameters[i] is { } deserialize)
 			{
-				deserialize(ref argState, ref reader, context);
+				deserialize.Read(ref argState, ref reader, context);
 			}
 			else
 			{
 				reader.Skip(context);
+			}
+		}
+
+		return ctor(ref argState);
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TDeclaringType?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		{
+			return default;
+		}
+
+		context.DepthStep();
+		TArgumentState argState = argStateCtor();
+
+		int count = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
+		for (int i = 0; i < count; i++)
+		{
+			if (parameters.Length > i && parameters[i] is { } deserialize)
+			{
+				argState = await deserialize.ReadAsync(argState, reader, context, cancellationToken).ConfigureAwait(false);
+			}
+			else
+			{
+				await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
 			}
 		}
 

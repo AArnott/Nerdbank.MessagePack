@@ -1,0 +1,3 @@
+[*.cs]
+
+dotnet_diagnostic.VSTHRD111.severity = warning # Use ConfigureAwait(bool)

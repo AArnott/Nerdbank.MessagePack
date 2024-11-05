@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -14,6 +16,9 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => true;
+
+	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
 	{
 		if (value is null)
@@ -24,15 +29,39 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		writer.WriteMapHeader(serializable.Properties?.Count ?? 0);
-		if (serializable.Properties is null)
+		if (serializable.Properties is not null)
 		{
+			foreach (SerializableProperty<T> property in serializable.Properties)
+			{
+				writer.WriteRaw(property.RawPropertyNameString.Span);
+				property.Write(ref value, ref writer, context);
+			}
+		}
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask SerializeAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+
+		if (value is null)
+		{
+			writer.WriteNil();
 			return;
 		}
 
-		foreach ((ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<T> Write) property in serializable.Properties)
+		context.DepthStep();
+		writer.WriteMapHeader(serializable.Properties?.Count ?? 0);
+
+		if (serializable.Properties is not null)
 		{
-			writer.WriteRaw(property.RawPropertyNameString.Span);
-			property.Write(ref value, ref writer, context);
+			foreach (SerializableProperty<T> property in serializable.Properties)
+			{
+				writer.WriteRaw(property.RawPropertyNameString.Span);
+				await property.WriteAsync(value, writer, context, cancellationToken).ConfigureAwait(false);
+				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+			}
 		}
 	}
 
@@ -58,9 +87,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
-				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializeProperty<T>? deserialize))
+				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 				{
-					deserialize(ref value, ref reader, context);
+					propertyReader.Read(ref value, ref reader, context);
 				}
 				else
 				{
@@ -72,6 +101,58 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		{
 			// We have nothing to read into, so just skip any data in the object.
 			reader.Skip(context);
+		}
+
+		return value;
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<T?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		{
+			return default;
+		}
+
+		if (constructor is null || deserializable is null)
+		{
+			throw new NotSupportedException($"The {typeof(T).Name} type cannot be deserialized.");
+		}
+
+		context.DepthStep();
+		T value = constructor();
+
+		if (deserializable.Value.Readers is not null)
+		{
+			int count = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
+			for (int i = 0; i < count; i++)
+			{
+				ReadOnlySequence<byte> buffer = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+				bool matchedProperty = TryMatchProperty(buffer, out DeserializableProperty<T> propertyReader);
+				reader.AdvanceTo(buffer.End);
+
+				if (matchedProperty)
+				{
+					value = await propertyReader.ReadAsync(value, reader, context, cancellationToken).ConfigureAwait(false);
+				}
+				else
+				{
+					await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+				}
+			}
+		}
+		else
+		{
+			// We have nothing to read into, so just skip any data in the object.
+			await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+		}
+
+		bool TryMatchProperty(ReadOnlySequence<byte> propertyName, out DeserializableProperty<T> propertyReader)
+		{
+			MessagePackReader reader = new(propertyName);
+			ReadOnlySpan<byte> propertyNameSpan = CodeGenHelpers.ReadStringSpan(ref reader);
+			return deserializable.Value.Readers.TryGetValue(propertyNameSpan, out propertyReader);
 		}
 
 		return value;
