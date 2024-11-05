@@ -78,6 +78,21 @@ public record MessagePackSerializer
 	public SerializationContext StartingContext { get; init; } = new();
 
 	/// <summary>
+	/// Registers a converter for use with this serializer.
+	/// </summary>
+	/// <typeparam name="T">The convertible type.</typeparam>
+	/// <param name="converter">The converter.</param>
+	/// <remarks>
+	/// If a converter for the data type has already been cached, this method does nothing.
+	/// Custom converters should be registered before serializing anything on this
+	/// instance of <see cref="MessagePackSerializer" />.
+	/// </remarks>
+	public void RegisterConverter<T>(MessagePackConverter<T> converter)
+	{
+		this.cachedConverters.TryAdd(typeof(T), converter);
+	}
+
+	/// <summary>
 	/// Serializes a given value to a byte array.
 	/// </summary>
 	/// <typeparam name="T">The type of value to be serialized. This must be able to disclose its own shape.</typeparam>
@@ -469,19 +484,6 @@ public record MessagePackSerializer
 
 		converter = null;
 		return false;
-	}
-
-	/// <summary>
-	/// Stores a converter in the cache for later reuse.
-	/// </summary>
-	/// <typeparam name="T">The convertible type.</typeparam>
-	/// <param name="converter">The converter.</param>
-	/// <remarks>
-	/// If a converter for the data type has already been cached, this method does nothing.
-	/// </remarks>
-	internal void RegisterConverter<T>(MessagePackConverter<T> converter)
-	{
-		this.cachedConverters.TryAdd(typeof(T), converter);
 	}
 
 	/// <summary>
