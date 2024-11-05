@@ -1,0 +1,8 @@
+- name: Docs
+  href: docs/
+- name: API
+  href: api/
+- name: Analyzers
+  href: analyzers/
+- name: Github
+  href: https://github.com/AArnott/Nerdbank.MessagePack

@@ -1,0 +1,49 @@
+{
+	"metadata": [
+		{
+			"src": [
+				{
+					"src": "../../src/Nerdbank.MessagePack",
+					"files": [
+						"**/*.csproj"
+					]
+				}
+			],
+			"dest": "api"
+		}
+	],
+	"build": {
+		"content": [
+			{
+				"files": [
+					"**/*.{md,yml}"
+				],
+				"exclude": [
+					"_site/**"
+				]
+			}
+		],
+		"resource": [
+			{
+				"files": [
+					"images/**"
+				]
+			}
+		],
+		"xref": [
+			"https://eiriktsarpalis.github.io/typeshape-csharp/xrefmap.yml",
+			"https://learn.microsoft.com/en-us/dotnet/.xrefmap.json"
+		],
+		"output": "_site",
+		"template": [
+			"default",
+			"modern"
+		],
+		"globalMetadata": {
+			"_appName": "Nerdbank.MessagePack",
+			"_appTitle": "Nerdbank.MessagePack",
+			"_enableSearch": true,
+			"pdf": false
+		}
+	}
+}
