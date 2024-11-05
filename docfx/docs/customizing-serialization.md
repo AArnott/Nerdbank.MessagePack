@@ -77,3 +77,11 @@ to this:
 > Do not use the same key index for two different properties over time if older deserializers may read your newer data or they will assign the value to the wrong property.
 > It is OK to leave 'holes' in the array.
 > When you delete a property, reserve the `Key` index that it had been assigned so it is never reused, perhaps using a code comment.
+
+## Multi-dimensional arrays
+
+The msgpack binary format does not specify how multi-dimensional arrays are to be encoded.
+As a result, this library has chosen a default format for them.
+For interoperability with other libraries you may want to change this format to another option.
+
+Use the @Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat property to change the format.
