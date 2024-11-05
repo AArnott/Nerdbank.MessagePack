@@ -589,46 +589,55 @@ partial class MessagePackPrimitives
 			return DecodeResult.EmptyBuffer;
 		}
 
-		switch (source[0])
+		byte x = source[0];
+		if (MessagePackCode.IsFixStr(x))
 		{
-			case MessagePackCode.Str8:
-				tokenSize = 2;
-				if (source.Length < tokenSize)
-				{
-					length = 0;
-					return DecodeResult.InsufficientBuffer;
-				}
+			length = (byte)(x & 0x1F);
+			return DecodeResult.Success;
+		}
 
-				length = source[1];
-				return DecodeResult.Success;
-			case MessagePackCode.Str16:
-				tokenSize = 3;
-				if (source.Length < tokenSize)
-				{
-					length = 0;
-					return DecodeResult.InsufficientBuffer;
-				}
+		return SlowPath(source, out length, ref tokenSize);
 
-				AssumesTrue(TryReadBigEndian(source.Slice(1), out ushort ushortValue));
-				length = ushortValue;
-				return DecodeResult.Success;
-			case MessagePackCode.Str32:
-				tokenSize = 5;
-				if (source.Length < tokenSize)
-				{
-					length = 0;
-					return DecodeResult.InsufficientBuffer;
-				}
+		static DecodeResult SlowPath(ReadOnlySpan<byte> source, out uint length, ref int tokenSize)
+		{
+			switch (source[0])
+			{
+				case MessagePackCode.Str8:
+					tokenSize = 2;
+					if (source.Length < tokenSize)
+					{
+						length = 0;
+						return DecodeResult.InsufficientBuffer;
+					}
 
-				AssumesTrue(TryReadBigEndian(source.Slice(1), out uint uintValue));
-				length = uintValue;
-				return DecodeResult.Success;
-			case >= MessagePackCode.MinFixStr and <= MessagePackCode.MaxFixStr:
-				length = (byte)(source[0] & 0x1F);
-				return DecodeResult.Success;
-			default:
-				length = 0;
-				return DecodeResult.TokenMismatch;
+					length = source[1];
+					return DecodeResult.Success;
+				case MessagePackCode.Str16:
+					tokenSize = 3;
+					if (source.Length < tokenSize)
+					{
+						length = 0;
+						return DecodeResult.InsufficientBuffer;
+					}
+
+					AssumesTrue(TryReadBigEndian(source.Slice(1), out ushort ushortValue));
+					length = ushortValue;
+					return DecodeResult.Success;
+				case MessagePackCode.Str32:
+					tokenSize = 5;
+					if (source.Length < tokenSize)
+					{
+						length = 0;
+						return DecodeResult.InsufficientBuffer;
+					}
+
+					AssumesTrue(TryReadBigEndian(source.Slice(1), out uint uintValue));
+					length = uintValue;
+					return DecodeResult.Success;
+				default:
+					length = 0;
+					return DecodeResult.TokenMismatch;
+			}
 		}
 	}
 
