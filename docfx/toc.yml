@@ -4,5 +4,5 @@
   href: api/
 - name: Analyzers
   href: analyzers/
-- name: Github
+- name: GitHub
   href: https://github.com/AArnott/Nerdbank.MessagePack

@@ -2,7 +2,7 @@
 
 ## Polymorphic serialization
 
-You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the `KnownSubTypeAttribute`.
+You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the @Nerdbank.MessagePack.KnownSubTypeAttribute.
 
 For instance, suppose you have this type to serialize:
 
@@ -32,7 +32,7 @@ public class Dog : Animal { }
 
 This changes the schema of the serialized data to include a tag that indicates the type of the object.
 
-*Without* any `KnownSubTypeAttribute`, an `Animal` object would serialize like this (as represented in JSON):
+*Without* any @Nerdbank.MessagePack.KnownSubTypeAttribute, an `Animal` object would serialize like this (as represented in JSON):
 
 ```json
 { "Name": "Bessie" }
@@ -90,4 +90,4 @@ But now let's consider your `Farm` class, which has a collection of `Animal` obj
 The `Animal` class only knows about `Horse` as a subtype and designates `2` as the alias for that subtype.
 `Animal` has no designation for `QuarterHorse` or `Thoroughbred`.
 As such, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects, not `QuarterHorse` or `Thoroughbred`.
-To fix this, you would need to add `KnownSubTypeAttribute` to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
+To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.

@@ -10,3 +10,5 @@
   href: custom-converters.md
 - name: Performance
   href: performance.md
+- name: Security
+  href: security.md
