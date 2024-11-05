@@ -4,6 +4,8 @@
   href: getting-started.md
 - name: Unions
   href: unions.md
+- name: Customizing serialization
+  href: customizing-serialization.md
 - name: Custom converters
   href: custom-converters.md
 - name: Performance
