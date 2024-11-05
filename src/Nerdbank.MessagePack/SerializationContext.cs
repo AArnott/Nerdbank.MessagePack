@@ -8,14 +8,25 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Context that flows through the serialization process.
 /// </summary>
-/// <param name="maxDepth">The maximum depth of the object graph to serialize or deserialize.</param>
-[DebuggerDisplay($"Depth remaining = {{{nameof(depthRemaining)}}}")]
-public struct SerializationContext(int maxDepth)
+[DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
+public struct SerializationContext
 {
 	/// <summary>
-	/// The remaining depth of the object graph to serialize or deserialize.
+	/// Initializes a new instance of the <see cref="SerializationContext"/> struct.
 	/// </summary>
-	private int depthRemaining = maxDepth;
+	public SerializationContext()
+	{
+	}
+
+	/// <summary>
+	/// Gets or sets the remaining depth of the object graph to serialize or deserialize.
+	/// </summary>
+	/// <value>The default value is 64.</value>
+	/// <remarks>
+	/// Exceeding this depth will result in a <see cref="MessagePackSerializationException"/> being thrown
+	/// from <see cref="DepthStep"/>.
+	/// </remarks>
+	public int MaxDepth { get; set; } = 64;
 
 	/// <summary>
 	/// Decrements the depth remaining.
@@ -26,7 +37,7 @@ public struct SerializationContext(int maxDepth)
 	/// <exception cref="MessagePackSerializationException">Thrown if the depth limit has been exceeded.</exception>
 	public void DepthStep()
 	{
-		if (--this.depthRemaining < 0)
+		if (--this.MaxDepth < 0)
 		{
 			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
 		}

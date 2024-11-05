@@ -12,7 +12,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	public void StackGuard_ObjectMap_Serialize()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
-		Nested outer = this.ConstructDeepObjectGraph(this.Serializer.MaxDepth + 1);
+		Nested outer = this.ConstructDeepObjectGraph(this.Serializer.StartingContext.MaxDepth + 1);
 
 		// Try serializing that structure. This should throw for security reasons.
 		Sequence<byte> buffer = new();
@@ -26,7 +26,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	public void StackGuard_ObjectMap_Serialize_WithinLimit()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
-		Nested outer = this.ConstructDeepObjectGraph(this.Serializer.MaxDepth);
+		Nested outer = this.ConstructDeepObjectGraph(this.Serializer.StartingContext.MaxDepth);
 
 		// Try serializing that structure. This should throw for security reasons.
 		Sequence<byte> buffer = new();
@@ -40,7 +40,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	public void StackGuard_ObjectMap_Deserialize()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
-		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.MaxDepth + 1);
+		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth + 1);
 
 		// Try deserializing that structure. This should throw for security reasons.
 		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Nested>(buffer));
@@ -53,7 +53,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	public void StackGuard_ObjectMap_Deserialize_WithinLimit()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
-		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.MaxDepth);
+		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth);
 
 		// Try deserializing that structure. This should throw for security reasons.
 		this.Serializer.Deserialize<Nested>(buffer);
