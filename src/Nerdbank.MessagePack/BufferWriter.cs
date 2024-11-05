@@ -34,12 +34,6 @@ internal ref struct BufferWriter
 	/// </summary>
 	private int buffered;
 
-	/// <summary>
-	/// The total number of bytes written with this writer.
-	/// Backing field for the <see cref="BytesCommitted"/> property.
-	/// </summary>
-	private long bytesCommitted;
-
 	private SequencePool? sequencePool;
 
 	private SequencePool.Rental rental;
@@ -49,14 +43,9 @@ internal ref struct BufferWriter
 	/// </summary>
 	/// <param name="output">The <see cref="IBufferWriter{T}"/> to be wrapped.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BufferWriter(IBufferWriter<byte> output)
+	internal BufferWriter(IBufferWriter<byte> output)
 	{
-		this.buffered = 0;
-		this.bytesCommitted = 0;
 		this.output = output ?? throw new ArgumentNullException(nameof(output));
-
-		this.sequencePool = default;
-		this.rental = default;
 
 		Memory<byte> memory = this.output.GetMemoryCheckResult();
 		MemoryMarshal.TryGetArray(memory, out this.segment);
@@ -72,7 +61,6 @@ internal ref struct BufferWriter
 	internal BufferWriter(SequencePool sequencePool, byte[] array)
 	{
 		this.buffered = 0;
-		this.bytesCommitted = 0;
 		this.sequencePool = sequencePool ?? throw new ArgumentNullException(nameof(sequencePool));
 		this.rental = default;
 		this.output = null;
@@ -84,17 +72,7 @@ internal ref struct BufferWriter
 	/// <summary>
 	/// Gets the result of the last call to <see cref="IBufferWriter{T}.GetSpan(int)"/>.
 	/// </summary>
-	public Span<byte> Span => this.span;
-
-	/// <summary>
-	/// Gets the total number of bytes written with this writer.
-	/// </summary>
-	public long BytesCommitted => this.bytesCommitted;
-
-	/// <summary>
-	/// Gets the <see cref="IBufferWriter{T}"/> underlying this instance.
-	/// </summary>
-	internal IBufferWriter<byte>? UnderlyingWriter => this.output;
+	internal Span<byte> Span => this.span;
 
 	/// <summary>
 	/// Gets the rental.
@@ -102,7 +80,7 @@ internal ref struct BufferWriter
 	internal SequencePool.Rental SequenceRental => this.rental;
 
 	/// <inheritdoc cref="IBufferWriter{T}.GetSpan(int)"/>
-	public Span<byte> GetSpan(int sizeHint = 0)
+	internal Span<byte> GetSpan(int sizeHint = 0)
 	{
 		this.Ensure(sizeHint);
 		return this.Span;
@@ -114,7 +92,7 @@ internal ref struct BufferWriter
 	/// <param name="sizeHint">The minimum size to guarantee is available in the buffer.</param>
 	/// <returns>The first byte in the buffer.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ref byte GetPointer(int sizeHint = 0)
+	internal ref byte GetPointer(int sizeHint = 0)
 	{
 		this.Ensure(sizeHint);
 
@@ -133,14 +111,13 @@ internal ref struct BufferWriter
 	/// with the number of uncommitted bytes.
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Commit()
+	internal void Commit()
 	{
 		int buffered = this.buffered;
 		if (buffered > 0)
 		{
 			this.MigrateToSequence();
 
-			this.bytesCommitted += buffered;
 			this.buffered = 0;
 			Assumes.NotNull(this.output);
 			this.output.Advance(buffered);
@@ -153,7 +130,7 @@ internal ref struct BufferWriter
 	/// </summary>
 	/// <param name="count">The number of bytes written to.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Advance(int count)
+	internal void Advance(int count)
 	{
 		this.buffered += count;
 		this.span = this.span.Slice(count);
@@ -164,7 +141,7 @@ internal ref struct BufferWriter
 	/// </summary>
 	/// <param name="source">The buffer to copy in.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Write(ReadOnlySpan<byte> source)
+	internal void Write(ReadOnlySpan<byte> source)
 	{
 		if (this.span.Length >= source.Length)
 		{
@@ -182,7 +159,7 @@ internal ref struct BufferWriter
 	/// </summary>
 	/// <param name="count">The number of bytes that must be allocated in a single buffer.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Ensure(int count = 0)
+	internal void Ensure(int count = 0)
 	{
 		if (this.span.Length < count)
 		{
