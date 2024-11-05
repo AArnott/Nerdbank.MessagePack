@@ -5,6 +5,7 @@
     <IsAotCompatible>true</IsAotCompatible>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackAnalyzers</TargetsForTfmSpecificContentInPackage>
+    <PackageDescription>A fast and more user-friendly MessagePack serialization library for .NET. With ground-up support for trimming and Native AOT.</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
