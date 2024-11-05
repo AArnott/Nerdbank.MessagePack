@@ -40,3 +40,13 @@ This repository can be built on Windows, Linux, and OSX.
 Building, testing, and packing this repository can be done by using the standard dotnet CLI commands (e.g. `dotnet build`, `dotnet test`, `dotnet pack`, etc.).
 
 [pwsh]: https://docs.microsoft.com/powershell/scripting/install/installing-powershell?view=powershell-6
+
+## github.io docs
+
+The site at https://aarnott.github.io/Nerdbank.MessagePack builds from this repo's `doc/github.io` directory.
+The site is updated on every push to the `main` branch.
+
+You can make changes and host the site locally to preview them by switching to that directory and running the `dotnet docfx --serve` command.
+After making a change, you can rebuild the docs site while the localhost server is running by running `dotnet docfx` again from a separate terminal.
+
+[Learn more about docfx](https://dotnet.github.io/docfx/).

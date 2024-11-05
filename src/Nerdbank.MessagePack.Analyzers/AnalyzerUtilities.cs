@@ -5,7 +5,7 @@ namespace Nerdbank.MessagePack.Analyzers;
 
 internal static class AnalyzerUtilities
 {
-	internal static string GetHelpLink(string diagnosticId) => $"https://github.com/AArnott/Nerdbank.MessagePack/blob/main/doc/analyzers/{diagnosticId}.md";
+	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/Nerdbank.MessagePack/analyzers/{diagnosticId}.html";
 
 	internal static IEnumerable<AttributeData> FindAttributes(this ISymbol symbol, string name, ImmutableArray<string> containingNamespaces)
 	{
