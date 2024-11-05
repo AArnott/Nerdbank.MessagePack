@@ -59,6 +59,14 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		this.Serializer.Deserialize<Nested>(buffer);
 	}
 
+	[Fact]
+	public void ManualHashCollisionResistance()
+	{
+		// This doesn't really test for hash collision resistance directly.
+		// But it ensures that a type that controls its own collection's hash function can be deserialized.
+		this.AssertRoundtrip(new HashCollisionResistance { Dictionary = { { "a", "b" }, { "c", "d" } } });
+	}
+
 	/// <summary>
 	/// Verifies that the dictionaries created by the deserializer use collision resistant key hashes.
 	/// </summary>
@@ -97,5 +105,25 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	public partial class Nested
 	{
 		public Nested? Another { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class HashCollisionResistance : IEquatable<HashCollisionResistance>
+	{
+		public HashCollisionResistance()
+		{
+			// Theoretically these instances would be created with hash-collision resistant equality comparers.
+			// In this particular case, it turns out that the string equality comparer *is* hash resistant.
+			this.Dictionary = new(EqualityComparer<string>.Default);
+			this.HashSet = new(EqualityComparer<string>.Default);
+		}
+
+		public Dictionary<string, string> Dictionary { get; }
+
+		public HashSet<string> HashSet { get; }
+
+		public bool Equals(HashCollisionResistance? other) =>
+			ByValueEquality.Equal(this.Dictionary, other?.Dictionary) &&
+			ByValueEquality.Equal(this.HashSet, other?.HashSet);
 	}
 }

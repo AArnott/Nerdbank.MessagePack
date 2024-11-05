@@ -119,6 +119,17 @@ The built-in converters take special considerations to avoid allocating, encodin
 This reduces GC pressure and removes redundant CPU time spent repeatedly converting UTF-8 encoded property names as strings.
 Your custom converters *may* follow similar patterns if tuning performance for your particular type's serialization is important.
 
+### Async converters
+
+@Nerdbank.MessagePack.MessagePackConverter`1 is an abstract class that requires a derived converter to implement synchronous @Nerdbank.MessagePack.MessagePackConverter`1.Serialize* and @Nerdbank.MessagePack.MessagePackConverter`1.Deserialize* methods.
+The base class also declares `virtual` async alternatives to these methods (@Nerdbank.MessagePack.MessagePackConverter`1.SerializeAsync* and @Nerdbank.MessagePack.MessagePackConverter`1.DeserializeAsync*, respectively) which a derived class may *optionally* override.
+These default async implementations are correct, and essentially buffer the whole msgpack representation while deferring the actual serialization work to the synchronous methods.
+
+For types that may represent a great deal of data (e.g. arrays and maps), overriding the async methods in order to read or flush msgpack in smaller portions may reduce memory pressure and/or improve performance.
+When a derived type overrides the async methods, it should also override @Nerdbank.MessagePack.MessagePackConverter`1.PreferAsyncSerialization to return `true` so that callers know that you have optimized async paths.
+
+The built-in converters, including those that serialize your custom data types by default, already override the async methods with optimal implementations.
+
 ## Register your custom converter
 
 Register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter*.

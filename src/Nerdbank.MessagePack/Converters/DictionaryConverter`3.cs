@@ -3,6 +3,8 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -17,6 +19,11 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="valueConverter">A converter for values.</param>
 internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter) : MessagePackConverter<TDictionary>
 {
+	/// <summary>
+	/// Gets a value indicating whether the key or value converters prefer async serialization.
+	/// </summary>
+	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
+
 	/// <inheritdoc/>
 	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
 	{
@@ -57,10 +64,25 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
 	/// <param name="key">Receives the key.</param>
 	/// <param name="value">Receives the value.</param>
-	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey? key, out TValue? value)
+	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey key, out TValue value)
 	{
-		key = keyConverter.Deserialize(ref reader, context);
-		value = valueConverter.Deserialize(ref reader, context);
+		key = keyConverter.Deserialize(ref reader, context)!;
+		value = valueConverter.Deserialize(ref reader, context)!;
+	}
+
+	/// <summary>
+	/// Reads a key and value pair.
+	/// </summary>
+	/// <param name="reader">The reader.</param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The key=value pair.</returns>
+	[Experimental("NBMsgPackAsync")]
+	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		TKey? key = await keyConverter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false);
+		TValue? value = await valueConverter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false);
+		return new(key!, value!);
 	}
 }
 
@@ -78,7 +100,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry,
-	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 {
 	/// <inheritdoc/>
 	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
@@ -88,16 +110,67 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			return default;
 		}
 
-		context.DepthStep();
 		TDictionary result = ctor();
+		this.DeserializeInto(ref reader, ref result, context);
+		return result;
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TDictionary?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		{
+			return default;
+		}
+
+		TDictionary result = ctor();
+		await this.DeserializeIntoAsync(reader, result, context, cancellationToken).ConfigureAwait(false);
+		return result;
+	}
+
+	/// <inheritdoc/>
+	public void DeserializeInto(ref MessagePackReader reader, ref TDictionary collection, SerializationContext context)
+	{
+		context.DepthStep();
 		int count = reader.ReadMapHeader();
 		for (int i = 0; i < count; i++)
 		{
-			this.ReadEntry(ref reader, context, out TKey? key, out TValue? value);
-			addEntry(ref result, new KeyValuePair<TKey, TValue>(key!, value!));
+			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
+			addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
 		}
+	}
 
-		return result;
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context, CancellationToken cancellationToken)
+	{
+		context.DepthStep();
+
+		if (this.ElementPrefersAsyncSerialization)
+		{
+			int count = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
+			for (int i = 0; i < count; i++)
+			{
+				addEntry(ref collection, await this.ReadEntryAsync(reader, context, cancellationToken).ConfigureAwait(false));
+			}
+		}
+		else
+		{
+			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+			Read(new MessagePackReader(map));
+			reader.AdvanceTo(map.End);
+
+			void Read(MessagePackReader syncReader)
+			{
+				int count = syncReader.ReadMapHeader();
+				for (int i = 0; i < count; i++)
+				{
+					this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
+					addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
+				}
+			}
+		}
 	}
 }
 
@@ -130,8 +203,8 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey? key, out TValue? value);
-				entries[i] = new(key!, value!);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
+				entries[i] = new(key, value);
 			}
 
 			return ctor(entries.AsSpan(0, count));
@@ -172,8 +245,8 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey? key, out TValue? value);
-				entries[i] = new(key!, value!);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
+				entries[i] = new(key, value);
 			}
 
 			return ctor(entries.Take(count));
