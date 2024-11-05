@@ -17,6 +17,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void SimplePoco() => this.AssertRoundtrip(new Fruit { Seeds = 18 });
 
 	[Fact]
+	public void NoProperties() => this.AssertRoundtrip(new EmptyClass());
+
+	[Fact]
 	public void AllIntTypes() => this.AssertRoundtrip(new IntRichPoco { Int8 = -1, Int16 = -2, Int32 = -3, Int64 = -4, UInt8 = 1, UInt16 = 2, UInt32 = 3, UInt64 = 4 });
 
 	[Fact]
@@ -138,6 +141,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 	[GenerateShape]
 	public partial record OtherPrimitiveTypes(string AString, bool ABoolean, float AFloat, double ADouble);
+
+	[GenerateShape]
+	public partial class EmptyClass : IEquatable<EmptyClass>
+	{
+		public bool Equals(EmptyClass? other) => other is not null;
+	}
 
 	[GenerateShape]
 	public partial record RecordClass(int Seeds)
