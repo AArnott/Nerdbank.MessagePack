@@ -43,7 +43,7 @@ Building, testing, and packing this repository can be done by using the standard
 
 ## github.io docs
 
-The site at https://aarnott.github.io/Nerdbank.MessagePack builds from this repo's `doc/github.io` directory.
+The site at https://aarnott.github.io/Nerdbank.MessagePack builds from this repo's `docfx/` directory.
 The site is updated on every push to the `main` branch.
 
 You can make changes and host the site locally to preview them by switching to that directory and running the `dotnet docfx --serve` command.

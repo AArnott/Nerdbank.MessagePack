@@ -18,7 +18,7 @@
 * Author custom converters for advanced scenarios.
 * Security mitigations for stack overflows.
 * Optionally serialize your custom types as arrays of values instead of maps of names and value for more compact representation and even higher performance.
-* Support for serializing instances of certain types derived from the declared type and deserializing them back to their original runtime types using [unions](doc/github.io/docs/unions.md).
+* Support for serializing instances of certain types derived from the declared type and deserializing them back to their original runtime types using [unions](https://aarnott.github.io/Nerdbank.MessagePack/docs/unions.html).
 
 ## Usage
 
