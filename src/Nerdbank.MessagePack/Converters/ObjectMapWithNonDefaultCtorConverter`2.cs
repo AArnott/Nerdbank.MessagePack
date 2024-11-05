@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -35,9 +37,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
-				if (parameters.Readers.TryGetValue(propertyName, out DeserializeProperty<TArgumentState>? deserializeArg))
+				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
 				{
-					deserializeArg(ref argState, ref reader, context);
+					deserializeArg.Read(ref argState, ref reader, context);
 				}
 				else
 				{
@@ -49,6 +51,53 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		{
 			// We have nothing to read into, so just skip any data in the object.
 			reader.Skip(context);
+		}
+
+		return ctor(ref argState);
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TDeclaringType?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	{
+		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		{
+			return default;
+		}
+
+		context.DepthStep();
+		TArgumentState argState = argStateCtor();
+
+		if (parameters.Readers is not null)
+		{
+			int count = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
+			for (int i = 0; i < count; i++)
+			{
+				ReadOnlySequence<byte> buffer = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+				bool matchedProperty = TryMatchProperty(buffer, out DeserializableProperty<TArgumentState> propertyReader);
+				reader.AdvanceTo(buffer.End);
+
+				if (matchedProperty)
+				{
+					argState = await propertyReader.ReadAsync(argState, reader, context, cancellationToken).ConfigureAwait(false);
+				}
+				else
+				{
+					await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+				}
+			}
+		}
+		else
+		{
+			// We have nothing to read into, so just skip any data in the object.
+			await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+		}
+
+		bool TryMatchProperty(ReadOnlySequence<byte> propertyName, out DeserializableProperty<TArgumentState> propertyReader)
+		{
+			MessagePackReader reader = new(propertyName);
+			ReadOnlySpan<byte> propertyNameSpan = CodeGenHelpers.ReadStringSpan(ref reader);
+			return parameters.Readers.TryGetValue(propertyNameSpan, out propertyReader);
 		}
 
 		return ctor(ref argState);

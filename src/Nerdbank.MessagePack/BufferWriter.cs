@@ -18,6 +18,8 @@ internal ref struct BufferWriter
 	/// </summary>
 	private IBufferWriter<byte>? output;
 
+	private ref BufferMemoryWriter memoryWriter;
+
 	/// <summary>
 	/// The result of the last call to <see cref="IBufferWriter{T}.GetSpan(int)"/>, less any bytes already "consumed" with <see cref="Advance(int)"/>.
 	/// Backing field for the <see cref="Span"/> property.
@@ -55,15 +57,22 @@ internal ref struct BufferWriter
 	/// <summary>
 	/// Initializes a new instance of the <see cref="BufferWriter"/> struct.
 	/// </summary>
+	/// <param name="memoryWriter">The async compatible equivalent to this struct, that this struct will temporarily wrap.</param>
+	internal BufferWriter(ref BufferMemoryWriter memoryWriter)
+	{
+		this.memoryWriter = ref memoryWriter;
+		this.span = memoryWriter.GetSpan();
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="BufferWriter"/> struct.
+	/// </summary>
 	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required..</param>
 	/// <param name="array">An array to start with so we can avoid accessing the <paramref name="sequencePool"/> if possible.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal BufferWriter(SequencePool sequencePool, byte[] array)
 	{
-		this.buffered = 0;
 		this.sequencePool = sequencePool ?? throw new ArgumentNullException(nameof(sequencePool));
-		this.rental = default;
-		this.output = null;
 
 		this.segment = new ArraySegment<byte>(array);
 		this.span = this.segment.AsSpan();
@@ -116,11 +125,19 @@ internal ref struct BufferWriter
 		int buffered = this.buffered;
 		if (buffered > 0)
 		{
-			this.MigrateToSequence();
+			if (!Unsafe.IsNullRef(ref this.memoryWriter))
+			{
+				this.memoryWriter.Advance(buffered);
+			}
+			else
+			{
+				this.MigrateToSequence();
+
+				Assumes.NotNull(this.output);
+				this.output.Advance(buffered);
+			}
 
 			this.buffered = 0;
-			Assumes.NotNull(this.output);
-			this.output.Advance(buffered);
 			this.span = default;
 		}
 	}
@@ -133,7 +150,7 @@ internal ref struct BufferWriter
 	internal void Advance(int count)
 	{
 		this.buffered += count;
-		this.span = this.span.Slice(count);
+		this.span = this.span[count..];
 	}
 
 	/// <summary>
@@ -161,7 +178,7 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Ensure(int count = 0)
 	{
-		if (this.span.Length < count)
+		if (this.span.Length < count || this.span.Length == 0)
 		{
 			this.EnsureMore(count);
 		}
@@ -187,9 +204,9 @@ internal ref struct BufferWriter
 	/// <summary>
 	/// Gets a fresh span to write to, with an optional minimum size.
 	/// </summary>
-	/// <param name="count">The minimum size for the next requested buffer.</param>
+	/// <param name="sizeHint">The minimum size for the next requested buffer.</param>
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private void EnsureMore(int count = 0)
+	private void EnsureMore(int sizeHint = 0)
 	{
 		if (this.buffered > 0)
 		{
@@ -200,10 +217,20 @@ internal ref struct BufferWriter
 			this.MigrateToSequence();
 		}
 
-		Assumes.NotNull(this.output);
-		Memory<byte> memory = this.output.GetMemoryCheckResult(count);
-		MemoryMarshal.TryGetArray(memory, out this.segment);
-		this.span = memory.Span;
+		if (!Unsafe.IsNullRef(ref this.memoryWriter))
+		{
+			this.span = this.memoryWriter.GetSpan(sizeHint);
+		}
+		else if (this.output is not null)
+		{
+			Memory<byte> memory = this.output.GetMemoryCheckResult(sizeHint);
+			MemoryMarshal.TryGetArray(memory, out this.segment);
+			this.span = memory.Span;
+		}
+		else
+		{
+			Assumes.NotReachable();
+		}
 	}
 
 	/// <summary>

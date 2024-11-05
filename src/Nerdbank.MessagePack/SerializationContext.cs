@@ -29,6 +29,12 @@ public struct SerializationContext
 	public int MaxDepth { get; set; } = 64;
 
 	/// <summary>
+	/// Gets a hint as to the number of bytes to write into the buffer before serialization will flush the output.
+	/// </summary>
+	/// <value>The default value is 64KB.</value>
+	public int UnflushedBytesThreshold { get; init; } = 64 * 1024;
+
+	/// <summary>
 	/// Decrements the depth remaining.
 	/// </summary>
 	/// <remarks>

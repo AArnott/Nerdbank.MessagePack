@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Pipelines;
 using System.Numerics;
 using System.Text;
 using Microsoft;
@@ -163,6 +164,52 @@ public record MessagePackSerializer
 	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader)"/>
 	public T? Deserialize<T>(byte[] buffer, ITypeShape<T> shape)
 		=> this.Deserialize(new ReadOnlySequence<byte>(buffer), shape);
+
+	/// <inheritdoc cref="SerializeAsync{T, TProvider}(PipeWriter, T, CancellationToken)"/>
+	public ValueTask SerializeAsync<T>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
+		where T : IShapeable<T> => this.SerializeAsync<T, T>(writer, value, cancellationToken);
+
+	/// <summary>
+	/// Serializes a value using the given <see cref="PipeWriter"/>.
+	/// </summary>
+	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
+	/// <param name="writer">The writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>A task that tracks the async serialization.</returns>
+	public async ValueTask SerializeAsync<T, TProvider>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
+		where TProvider : IShapeable<T>
+	{
+		Requires.NotNull(writer);
+		cancellationToken.ThrowIfCancellationRequested();
+#pragma warning disable NBMsgPackAsync
+		MessagePackAsyncWriter asyncWriter = new(writer);
+		await this.GetOrAddConverter(TProvider.GetShape()).SerializeAsync(asyncWriter, value, this.StartingContext, cancellationToken).ConfigureAwait(false);
+		asyncWriter.Flush();
+#pragma warning restore NBMsgPackAsync
+	}
+
+	/// <inheritdoc cref="DeserializeAsync{T, TProvider}(PipeReader, CancellationToken)"/>
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, CancellationToken cancellationToken = default)
+		where T : IShapeable<T> => this.DeserializeAsync<T, T>(reader, cancellationToken);
+
+	/// <summary>
+	/// Deserializes a value from a <see cref="PipeReader"/>.
+	/// </summary>
+	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, T)" path="/typeparam[@name='TProvider']"/></typeparam>
+	/// <param name="reader">The reader to deserialize from.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	public ValueTask<T?> DeserializeAsync<T, TProvider>(PipeReader reader, CancellationToken cancellationToken = default)
+		where TProvider : IShapeable<T>
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+#pragma warning disable NBMsgPackAsync
+		return this.GetOrAddConverter(TProvider.GetShape()).DeserializeAsync(new MessagePackAsyncReader(reader), this.StartingContext, cancellationToken);
+#pragma warning restore NBMsgPackAsync
+	}
 
 	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
 	public T? Deserialize<T>(ReadOnlySequence<byte> buffer)
