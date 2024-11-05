@@ -72,17 +72,9 @@ public record MessagePackSerializer
 	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat { get; init; } = MultiDimensionalArrayFormat.Nested;
 
 	/// <summary>
-	/// Gets the maximum depth of the object graph to serialize or deserialize.
+	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
-	/// <remarks>
-	/// Exceeding this depth will result in a <see cref="MessagePackSerializationException"/> being thrown.
-	/// </remarks>
-	public int MaxDepth { get; init; } = 64;
-
-	/// <summary>
-	/// Gets a new <see cref="SerializationContext"/> for a new serialization job.
-	/// </summary>
-	protected SerializationContext StartingContext => new(this.MaxDepth);
+	public SerializationContext StartingContext { get; init; } = new();
 
 	/// <summary>
 	/// Serializes a given value to a byte array.
