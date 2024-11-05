@@ -66,3 +66,6 @@ public partial class HashCollisionResistance : IEquatable<HashCollisionResistanc
     public HashSet<CustomType> HashSet { get; }
 }
 ```
+
+Note how the collection properties do *not* define a property setter.
+This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.
