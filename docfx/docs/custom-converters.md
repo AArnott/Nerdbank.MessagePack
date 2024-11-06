@@ -76,6 +76,49 @@ If you have more than one value to serialize or deserialize (e.g. multiple field
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Serialize*" method, use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader*.
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Deserialize*" method, use @Nerdbank.MessagePack.MessagePackReader.ReadMapHeader or @Nerdbank.MessagePack.MessagePackReader.ReadArrayHeader.
 
+### Delegating to sub-values
+
+The @Nerdbank.MessagePack.SerializationContext.GetConverter* method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
+
+```cs
+public override void Serialize(ref MessagePackWriter writer, ref Foo? value, SerializationContext context)
+{
+    if (value is null)
+    {
+        writer.WriteNil();
+        return;
+    }
+
+    writer.WriteMapHeader(2);
+
+    writer.WriteString("MyProperty");
+    SomeOtherType propertyValue = value.MyProperty;
+    context.GetConverter<SomeOtherType>().Serialize(ref writer, ref propertyValue, context);
+
+    writer.WriteString("MyProperty2");
+    writer.Write(value.MyProperty2);
+}
+```
+
+The above assumes that `SomeOtherType` is a type that you declare and can have @TypeShape.GenerateShapeAttribute`1 applied to it.
+If this is not the case, you may provide your own type shape and reference that.
+For convenience, you may want to apply it directly to your custom converter:
+
+```cs
+[GenerateShape<SomeOtherType>]
+class FooConverter : MessagePackConverter<Foo>
+{
+    public override void Serialize(ref MessagePackWriter writer, ref Foo? value, SerializationContext context)
+    {
+        // ...
+        context.GetConverter<SomeOtherType, FooConverter>().Serialize(ref writer, ref propertyValue, context);
+        // ...
+    }
+}
+```
+
+The @TypeShape.GenerateShapeAttribute`1 is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
+
 ### Version compatibility
 
 > [!IMPORTANT]

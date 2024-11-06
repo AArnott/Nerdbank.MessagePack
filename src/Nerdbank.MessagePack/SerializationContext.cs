@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -9,7 +10,7 @@ namespace Nerdbank.MessagePack;
 /// Context that flows through the serialization process.
 /// </summary>
 [DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
-public struct SerializationContext
+public record struct SerializationContext
 {
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SerializationContext"/> struct.
@@ -35,6 +36,11 @@ public struct SerializationContext
 	public int UnflushedBytesThreshold { get; init; } = 64 * 1024;
 
 	/// <summary>
+	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
+	/// </summary>
+	internal MessagePackSerializer? Owner { get; init; }
+
+	/// <summary>
 	/// Decrements the depth remaining.
 	/// </summary>
 	/// <remarks>
@@ -47,5 +53,38 @@ public struct SerializationContext
 		{
 			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
 		}
+	}
+
+	/// <summary>
+	/// Gets a converter for a specific type.
+	/// </summary>
+	/// <typeparam name="T">The type to be converted.</typeparam>
+	/// <returns>The converter.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
+	/// <remarks>
+	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
+	/// </remarks>
+	public MessagePackConverter<T> GetConverter<T>()
+		where T : IShapeable<T>
+	{
+		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
+		return this.Owner.GetOrAddConverter<T>();
+	}
+
+	/// <summary>
+	/// Gets a converter for a specific type.
+	/// </summary>
+	/// <typeparam name="T">The type to be converted.</typeparam>
+	/// <typeparam name="TProvider">The type that provides the shape of the type to be converted.</typeparam>
+	/// <returns>The converter.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
+	/// <remarks>
+	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
+	/// </remarks>
+	public MessagePackConverter<T> GetConverter<T, TProvider>()
+		where TProvider : IShapeable<T>
+	{
+		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
+		return this.Owner.GetOrAddConverter(TProvider.GetShape());
 	}
 }

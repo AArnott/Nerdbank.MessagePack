@@ -163,7 +163,7 @@ public record MessagePackSerializer
 	/// <param name="writer">The msgpack writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, T? value, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Serialize(ref writer, ref value, this.StartingContext);
+	public void Serialize<T>(ref MessagePackWriter writer, T? value, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Serialize(ref writer, ref value, this.CreateSerializationContext());
 
 	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
 	public T? Deserialize<T>(byte[] buffer)
@@ -200,7 +200,7 @@ public record MessagePackSerializer
 		cancellationToken.ThrowIfCancellationRequested();
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
-		await this.GetOrAddConverter(TProvider.GetShape()).SerializeAsync(asyncWriter, value, this.StartingContext, cancellationToken).ConfigureAwait(false);
+		await this.GetOrAddConverter(TProvider.GetShape()).SerializeAsync(asyncWriter, value, this.CreateSerializationContext(), cancellationToken).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -222,7 +222,7 @@ public record MessagePackSerializer
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(TProvider.GetShape()).DeserializeAsync(new MessagePackAsyncReader(reader), this.StartingContext, cancellationToken);
+		return this.GetOrAddConverter(TProvider.GetShape()).DeserializeAsync(new MessagePackAsyncReader(reader), this.CreateSerializationContext(), cancellationToken);
 #pragma warning restore NBMsgPackAsync
 	}
 
@@ -265,7 +265,7 @@ public record MessagePackSerializer
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Deserialize(ref reader, this.StartingContext);
+	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Deserialize(ref reader, this.CreateSerializationContext());
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
 	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
@@ -432,7 +432,7 @@ public record MessagePackSerializer
 	/// <returns>A msgpack converter.</returns>
 	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
 	{
-		if (this.TryGetConverter<T>(out MessagePackConverter<T>? converter))
+		if (this.TryGetConverter(out MessagePackConverter<T>? converter))
 		{
 			return converter;
 		}
@@ -509,6 +509,12 @@ public record MessagePackSerializer
 			this.cachedConverters.TryAdd(pair.Key, pair.Value);
 		}
 	}
+
+	/// <summary>
+	/// Creates a new serialization context that is ready to process a serialization job.
+	/// </summary>
+	/// <returns>The serialization context.</returns>
+	protected SerializationContext CreateSerializationContext() => this.StartingContext with { Owner = this };
 
 	/// <summary>
 	/// Synthesizes a <see cref="MessagePackConverter{T}"/> for a type with the given shape.
