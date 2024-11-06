@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using TypeShape.Roslyn;
+
 namespace Nerdbank.MessagePack.Analyzers;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -50,6 +52,13 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 
 		context.RegisterCompilationStartAction(context =>
 		{
+			TypeShape.Roslyn.KnownSymbols typeShapeSymbols = new(context.Compilation);
+			TypeDataModelGenerator typeDataModelGenerator = new(context.Compilation.Assembly, typeShapeSymbols, context.CancellationToken);
+			foreach (var model in typeDataModelGenerator.GeneratedModels)
+			{
+
+			}
+
 			if (!ReferenceSymbols.TryCreate(context.Compilation, out ReferenceSymbols? referenceSymbols))
 			{
 				return;

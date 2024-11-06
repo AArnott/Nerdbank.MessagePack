@@ -59,6 +59,7 @@
   </ItemGroup>
   <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup">
     <ItemGroup>
+      <!-- Add TypeShape.Roslyn.dll -->
       <TfmSpecificPackageFile Include="%(AnalyzerAssembly.Identity)" PackagePath="analyzers\cs\" />
     </ItemGroup>
   </Target>

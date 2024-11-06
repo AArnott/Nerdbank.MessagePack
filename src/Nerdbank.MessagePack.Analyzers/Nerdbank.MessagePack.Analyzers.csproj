@@ -4,6 +4,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="PolySharp" PrivateAssets="all" />
+    <PackageReference Include="TypeShape.Roslyn" />
   </ItemGroup>
 
   <ItemGroup>
