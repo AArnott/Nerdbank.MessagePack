@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Numerics;
@@ -76,6 +77,11 @@ public record MessagePackSerializer
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
+
+	/// <summary>
+	/// Gets the shape providers that may be called upon for types that must be serialized at runtime.
+	/// </summary>
+	public ImmutableArray<ITypeShapeProvider> ShapeProviders { get; init; } = [];
 
 	/// <summary>
 	/// Registers a converter for use with this serializer.
@@ -420,6 +426,30 @@ public record MessagePackSerializer
 
 			builder.Write('\"');
 		}
+	}
+
+	/// <summary>
+	/// Gets a converter for a given type.
+	/// </summary>
+	/// <typeparam name="T">The type that needs to be converted.</typeparam>
+	/// <returns>A converter for the given type.</returns>
+	/// <remarks>
+	/// This method is primarily intended to serve custom converters that need to delegate sub-values to other converters.
+	/// </remarks>
+	internal MessagePackConverter<T> GetConverterForCustomConverter<T>()
+	{
+		if (!this.cachedConverters.TryGetValue(typeof(T), out object? converter))
+		{
+			foreach (ITypeShapeProvider provider in this.ShapeProviders)
+			{
+				if (provider.GetShape(typeof(T)) is ITypeShape<T> typeShape)
+				{
+					converter = this.GetOrAddConverter(typeShape);
+				}
+			}
+		}
+
+		return (MessagePackConverter<T>?)converter ?? throw new MessagePackSerializationException($"No type shape available for {typeof(T).FullName}.");
 	}
 
 	/// <summary>
