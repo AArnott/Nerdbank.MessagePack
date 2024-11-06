@@ -4,7 +4,6 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-using System;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -233,7 +232,7 @@ internal class Int128Converter : MessagePackConverter<Int128>
 			}
 		}
 
-		throw new MessagePackSerializationException("Can't parse to Int123, input string was not in a correct format.");
+		throw new MessagePackSerializationException("Can't parse to Int128, input string was not in a correct format.");
 	}
 
 	/// <inheritdoc/>

@@ -64,7 +64,11 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	{
 		// This doesn't really test for hash collision resistance directly.
 		// But it ensures that a type that controls its own collection's hash function can be deserialized.
-		this.AssertRoundtrip(new HashCollisionResistance { Dictionary = { { "a", "b" }, { "c", "d" } } });
+		this.AssertRoundtrip(new HashCollisionResistance
+		{
+			Dictionary = { { "a", "b" }, { "c", "d" } },
+			HashSet = { "c" },
+		});
 	}
 
 	/// <summary>

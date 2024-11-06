@@ -365,7 +365,16 @@ public record MessagePackSerializer
 					jsonWriter.Write('}');
 					break;
 				case MessagePackType.Binary:
+					jsonWriter.Write("\"msgpack binary as base64: ");
+					jsonWriter.Write(Convert.ToBase64String(reader.ReadBytes()!.Value.ToArray()));
+					jsonWriter.Write('\"');
+					break;
 				case MessagePackType.Extension:
+					Extension extension = reader.ReadExtension();
+					jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
+					jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
+					jsonWriter.Write('\"');
+					break;
 				case MessagePackType.Unknown:
 					throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented.");
 			}
