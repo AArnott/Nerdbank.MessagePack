@@ -4,6 +4,7 @@
 #pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
+using System.Reflection;
 using System.Text;
 using Microsoft;
 
@@ -28,6 +29,11 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
+		if (this.GetCustomConverter(objectShape) is MessagePackConverter<T> customConverter)
+		{
+			return customConverter;
+		}
+
 		SubTypes? unionTypes = this.DiscoverUnionTypes(objectShape);
 
 		IConstructorShape? ctorShape = objectShape.GetConstructor();
@@ -379,5 +385,20 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			Deserializers = deserializerData.ToFrozenDictionary(),
 			Serializers = serializerData.ToFrozenDictionary(),
 		};
+	}
+
+	private MessagePackConverter<T>? GetCustomConverter<T>(ITypeShape<T> typeShape)
+	{
+		if (typeShape.AttributeProvider?.GetCustomAttributes(typeof(MessagePackConverterAttribute), false).FirstOrDefault() is not MessagePackConverterAttribute customConverterAttribute)
+		{
+			return null;
+		}
+
+		if (customConverterAttribute.ConverterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
+		{
+			throw new MessagePackSerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
+		}
+
+		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
 	}
 }

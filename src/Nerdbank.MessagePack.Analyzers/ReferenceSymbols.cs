@@ -7,6 +7,7 @@ namespace Nerdbank.MessagePack.Analyzers;
 
 internal record ReferenceSymbols(
 	INamedTypeSymbol MessagePackConverter,
+	INamedTypeSymbol MessagePackConverterAttribute,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol KnownSubTypeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute)
@@ -21,6 +22,13 @@ internal record ReferenceSymbols(
 
 		INamedTypeSymbol? messagePackConverter = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverter`1");
 		if (messagePackConverter is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? messagePackConverterAttribute = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverterAttribute");
+		if (messagePackConverterAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -47,7 +55,7 @@ internal record ReferenceSymbols(
 			return false;
 		}
 
-		referenceSymbols = new ReferenceSymbols(messagePackConverter, keyAttribute, knownSubTypeAttribute, propertyShapeAttribute);
+		referenceSymbols = new ReferenceSymbols(messagePackConverter, messagePackConverterAttribute, keyAttribute, knownSubTypeAttribute, propertyShapeAttribute);
 		return true;
 	}
 }
