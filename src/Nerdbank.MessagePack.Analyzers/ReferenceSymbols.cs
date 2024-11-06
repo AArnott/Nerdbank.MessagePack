@@ -5,7 +5,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Analyzers;
 
-internal record ReferenceSymbols(INamedTypeSymbol MessagePackConverter, INamedTypeSymbol KeyAttribute, INamedTypeSymbol PropertyShapeAttribute)
+internal record ReferenceSymbols(
+	INamedTypeSymbol MessagePackConverter,
+	INamedTypeSymbol KeyAttribute,
+	INamedTypeSymbol KnownSubTypeAttribute,
+	INamedTypeSymbol PropertyShapeAttribute)
 {
 	internal static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
 	{
@@ -29,6 +33,13 @@ internal record ReferenceSymbols(INamedTypeSymbol MessagePackConverter, INamedTy
 			return false;
 		}
 
+		INamedTypeSymbol? knownSubTypeAttribute = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.KnownSubTypeAttribute");
+		if (knownSubTypeAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? propertyShapeAttribute = compilation.GetTypeByMetadataName("TypeShape.PropertyShapeAttribute");
 		if (propertyShapeAttribute is null)
 		{
@@ -36,7 +47,7 @@ internal record ReferenceSymbols(INamedTypeSymbol MessagePackConverter, INamedTy
 			return false;
 		}
 
-		referenceSymbols = new ReferenceSymbols(messagePackConverter, keyAttribute, propertyShapeAttribute);
+		referenceSymbols = new ReferenceSymbols(messagePackConverter, keyAttribute, knownSubTypeAttribute, propertyShapeAttribute);
 		return true;
 	}
 }
