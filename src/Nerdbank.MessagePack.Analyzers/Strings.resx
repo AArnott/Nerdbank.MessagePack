@@ -135,4 +135,34 @@
   <data name="NBMsgPack003_Title" xml:space="preserve">
     <value>[Key] index must be unique</value>
   </data>
+  <data name="NBMsgPack010_MessageFormat" xml:space="preserve">
+    <value>[KnownSubType] should specify a type that is derived from or implements the type the attribute is applied to</value>
+  </data>
+  <data name="NBMsgPack010_Title" xml:space="preserve">
+    <value>[KnownSubType] should specify an assignable type</value>
+  </data>
+  <data name="NBMsgPack011_MessageFormat" xml:space="preserve">
+    <value>[KnownSubType] alias must be unique, within the scope of the type that the attribute is applied to</value>
+  </data>
+  <data name="NBMsgPack011_Title" xml:space="preserve">
+    <value>[KnownSubType] alias must be unique</value>
+  </data>
+  <data name="NBMsgPack012_MessageFormat" xml:space="preserve">
+    <value>[KnownSubType] type should be assigned just one alias but was already assigned {0}</value>
+  </data>
+  <data name="NBMsgPack012_Title" xml:space="preserve">
+    <value>[KnownSubType] type must be unique</value>
+  </data>
+  <data name="NBMsgPack013_MessageFormat" xml:space="preserve">
+    <value>[KnownSubType] type must be a non-generic or closed generic type</value>
+  </data>
+  <data name="NBMsgPack013_Title" xml:space="preserve">
+    <value>[KnownSubType] type must not be an open generic</value>
+  </data>
+  <data name="NBMsgPack014_MessageFormat" xml:space="preserve">
+    <value>[KnownSubType] type must be one with [GenerateShape] applied directly or indirectly</value>
+  </data>
+  <data name="NBMsgPack014_Title" xml:space="preserve">
+    <value>[KnownSubType] type must have a shape</value>
+  </data>
 </root>

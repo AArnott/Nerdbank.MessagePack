@@ -21,7 +21,7 @@ namespace Nerdbank.MessagePack;
 /// when using that attribute on the root of the serialization tree.
 /// </para>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
 [DebuggerDisplay($"Union: {{{nameof(Alias)}}}, {{{nameof(SubType.Name)},nq}}")]
 public class KnownSubTypeAttribute : Attribute
 {

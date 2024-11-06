@@ -44,6 +44,33 @@ internal static class AnalyzerUtilities
 		}
 	}
 
+	internal static bool IsAssignableTo(this ITypeSymbol subType, ITypeSymbol baseTypeOrInterface)
+	{
+		if (IsDerivedFrom(subType, baseTypeOrInterface))
+		{
+			return true;
+		}
+
+		return baseTypeOrInterface.TypeKind == TypeKind.Interface
+			&& subType.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, baseTypeOrInterface));
+	}
+
+	internal static bool IsDerivedFrom(this ITypeSymbol subType, ITypeSymbol baseType)
+	{
+		ITypeSymbol? current = subType;
+		while (current != null)
+		{
+			if (SymbolEqualityComparer.Default.Equals(current, baseType))
+			{
+				return true;
+			}
+
+			current = current.BaseType ?? current.OriginalDefinition.BaseType;
+		}
+
+		return false;
+	}
+
 	internal static bool IsInNamespace(ISymbol? symbol, ReadOnlySpan<string> namespaces)
 	{
 		if (symbol is null)
