@@ -165,6 +165,14 @@ public class MessagePackWriterTests
 		});
 	}
 
+	[Fact]
+	public void WriteVeryLargeData()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteRaw(new byte[1024 * 1024]);
+	}
+
 	/// <summary>
 	/// Besides being effectively a no-op, this <see cref="IBufferWriter{T}"/>
 	/// is buggy because it can return empty arrays, which should never happen.

@@ -5,6 +5,7 @@
 
 using System.Collections.Frozen;
 using System.Text;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -365,26 +366,12 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
 		{
 			ITypeShape? subtypeShape = objectShape.Provider.GetShape(unionAttribute.SubType);
-			if (subtypeShape is null)
-			{
-				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has a union attribute that references a type that is not known to the serializer: {unionAttribute.SubType.FullName}.");
-			}
-
-			if (!objectShape.Type.IsAssignableFrom(subtypeShape.Type))
-			{
-				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has a {nameof(KnownSubTypeAttribute)} that references non-derived {unionAttribute.SubType.FullName}.");
-			}
+			Verify.Operation(subtypeShape is not null, $"The type {objectShape.Type.FullName} has a union attribute that references a type that is not known to the serializer: {unionAttribute.SubType.FullName}.");
+			Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {nameof(KnownSubTypeAttribute)} that references non-derived {unionAttribute.SubType.FullName}.");
 
 			IMessagePackConverter converter = this.GetConverter(subtypeShape);
-			if (!deserializerData.TryAdd(unionAttribute.Alias, converter))
-			{
-				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has more than one {nameof(KnownSubTypeAttribute)} with a duplicate alias: {unionAttribute.Alias}.");
-			}
-
-			if (!serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter)))
-			{
-				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
-			}
+			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {nameof(KnownSubTypeAttribute)} with a duplicate alias: {unionAttribute.Alias}.");
+			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
 		}
 
 		return new SubTypes

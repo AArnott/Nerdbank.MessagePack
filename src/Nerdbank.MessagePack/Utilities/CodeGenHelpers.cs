@@ -3,6 +3,8 @@
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
 // with Yoshifumi Kawai getting credit for the original implementation.
+using Microsoft;
+
 namespace Nerdbank.MessagePack.Utilities;
 
 /// <summary>
@@ -22,45 +24,11 @@ internal static class CodeGenHelpers
 	internal static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 	{
 		int byteCount = StringEncoding.UTF8.GetByteCount(value);
-		if (byteCount <= MessagePackRange.MaxFixStringLength)
-		{
-			byte[] bytes = new byte[byteCount + 1];
-			bytes[0] = (byte)(MessagePackCode.MinFixStr | byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(1));
-			utf8Bytes = bytes[1..];
-			msgpackEncoded = bytes;
-		}
-		else if (byteCount <= byte.MaxValue)
-		{
-			byte[] bytes = new byte[byteCount + 2];
-			bytes[0] = MessagePackCode.Str8;
-			bytes[1] = unchecked((byte)byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(2));
-			utf8Bytes = bytes[2..];
-			msgpackEncoded = bytes;
-		}
-		else if (byteCount <= ushort.MaxValue)
-		{
-			byte[] bytes = new byte[byteCount + 3];
-			bytes[0] = MessagePackCode.Str16;
-			bytes[1] = unchecked((byte)(byteCount >> 8));
-			bytes[2] = unchecked((byte)byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(3));
-			utf8Bytes = bytes[3..];
-			msgpackEncoded = bytes;
-		}
-		else
-		{
-			byte[] bytes = new byte[byteCount + 5];
-			bytes[0] = MessagePackCode.Str32;
-			bytes[1] = unchecked((byte)(byteCount >> 24));
-			bytes[2] = unchecked((byte)(byteCount >> 16));
-			bytes[3] = unchecked((byte)(byteCount >> 8));
-			bytes[4] = unchecked((byte)byteCount);
-			StringEncoding.UTF8.GetBytes(value, bytes.AsSpan(5));
-			utf8Bytes = bytes[5..];
-			msgpackEncoded = bytes;
-		}
+		Memory<byte> bytes = new byte[byteCount + 5];
+		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(bytes.Span, (uint)byteCount, out int msgpackHeaderLength));
+		StringEncoding.UTF8.GetBytes(value, bytes.Span[msgpackHeaderLength..]);
+		utf8Bytes = bytes.Slice(msgpackHeaderLength, byteCount);
+		msgpackEncoded = bytes.Slice(0, byteCount + msgpackHeaderLength);
 	}
 
 	/// <summary>
@@ -105,11 +73,4 @@ internal static class CodeGenHelpers
 
 		return result;
 	}
-
-	/// <summary>
-	/// Creates a <see cref="byte"/> array for a given sequence, or <see langword="null" /> if the optional sequence is itself <see langword="null" />.
-	/// </summary>
-	/// <param name="sequence">The sequence.</param>
-	/// <returns>The byte array or <see langword="null" /> .</returns>
-	internal static byte[]? GetArrayFromNullableSequence(in ReadOnlySequence<byte>? sequence) => sequence?.ToArray();
 }

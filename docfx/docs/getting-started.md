@@ -82,5 +82,9 @@ It is important to note that not all msgpack is expressible as JSON.
 In particular the following limitations apply:
 
 * Msgpack maps allow for any type to serve as the key. JSON only supports strings. In such cases, the rendered JSON will emit the msgpack key as-is, and the result will be human-readable but not valid JSON.
-* Msgpack supports arbitrary binary extensions. In JSON this will be rendered as a base64-encoded string with an "Extension {typecode}: " prefix.
-* Msgpack supports binary blobs. In JSON this will be rendered as a base64-encoded string.
+* Msgpack supports arbitrary binary extensions. In JSON this will be rendered as a base64-encoded string with an "msgpack extension {typecode} as base64: " prefix.
+* Msgpack supports binary blobs. In JSON this will be rendered as a base64-encoded string with an "msgpack binary as base64: " prefix.
+
+The exact JSON emitted, especially for the msgpack-only tokens, is subject to change in future versions of this library.
+You should *not* write programs that are expected to parse the JSON produced by this diagnostic method.
+Use a JSON serialization library if you want interop-safe, machine-parseable JSON.

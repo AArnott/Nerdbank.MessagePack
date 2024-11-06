@@ -1,6 +1,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
+
 public partial class MessagePackSerializerTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	public enum SomeEnum
@@ -98,6 +100,53 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void SystemObject()
 	{
 		Assert.NotNull(this.Roundtrip(new object(), Witness.Default.GetShape<object>()!));
+	}
+
+	[Fact]
+	public async Task ReadOnlyCollectionProperties()
+	{
+		var testData = new ClassWithReadOnlyCollectionProperties
+		{
+			Dictionary = { { "a", "b" }, { "c", "d" } },
+			List = { "c" },
+		};
+		this.AssertRoundtrip(testData);
+		await this.AssertRoundtripAsync(testData);
+	}
+
+	/// <summary>
+	/// Verifies that an unexpected nil value doesn't disturb deserializing readonly collections.
+	/// </summary>
+	[Fact]
+	public async Task ReadOnlyCollectionProperties_Nil()
+	{
+		ReadOnlySequence<byte> sequence = PrepareSequence();
+		this.Serializer.Deserialize<ClassWithReadOnlyCollectionProperties>(sequence);
+		await this.Serializer.DeserializeAsync<ClassWithReadOnlyCollectionProperties>(PipeReader.Create(sequence));
+
+		Sequence<byte> PrepareSequence()
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteMapHeader(2);
+			writer.Write("List");
+			writer.WriteNil();
+			writer.Write("Dictionary");
+			writer.WriteNil();
+			writer.Flush();
+			return sequence;
+		}
+	}
+
+	[GenerateShape]
+	public partial class ClassWithReadOnlyCollectionProperties : IEquatable<ClassWithReadOnlyCollectionProperties>
+	{
+		public List<string> List { get; } = new();
+
+		public Dictionary<string, string> Dictionary { get; } = new();
+
+		public bool Equals(ClassWithReadOnlyCollectionProperties? other)
+			=> ByValueEquality.Equal(this.List, other?.List) && ByValueEquality.Equal(this.Dictionary, other?.Dictionary);
 	}
 
 	[GenerateShape]

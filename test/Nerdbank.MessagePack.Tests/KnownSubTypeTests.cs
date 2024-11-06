@@ -50,6 +50,45 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
 	}
 
+	[Fact]
+	public void Null() => this.AssertRoundtrip<BaseClass>(null);
+
+	[Fact]
+	public void UnrecognizedAlias()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(2);
+		writer.Write(100);
+		writer.WriteMapHeader(0);
+		writer.Flush();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence));
+		this.Logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
+	public void UnrecognizedArraySize()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(3);
+		writer.Write(100);
+		writer.WriteNil();
+		writer.WriteNil();
+		writer.Flush();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence));
+		this.Logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
+	public void UnknownDerivedType()
+	{
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new UnknownDerived()));
+		this.Logger.WriteLine(ex.Message);
+	}
+
 	[GenerateShape]
 	[KnownSubType(1, typeof(DerivedA))]
 	[KnownSubType(2, typeof(DerivedAA))]
@@ -83,4 +122,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
 	}
+
+	[GenerateShape]
+	public partial record UnknownDerived : BaseClass;
 }
