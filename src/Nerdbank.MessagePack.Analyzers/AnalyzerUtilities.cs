@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 namespace Nerdbank.MessagePack.Analyzers;
 
 internal static class AnalyzerUtilities
@@ -90,5 +92,15 @@ internal static class AnalyzerUtilities
 		}
 
 		return targetSymbol.ContainingNamespace.IsGlobalNamespace;
+	}
+
+	internal static Location? GetArgumentLocation(AttributeData att, int argumentIndex, CancellationToken cancellationToken)
+	{
+		if (att.ApplicationSyntaxReference?.GetSyntax(cancellationToken) is AttributeSyntax a && a.ArgumentList?.Arguments.Count >= argumentIndex)
+		{
+			return a.ArgumentList.Arguments[argumentIndex].GetLocation();
+		}
+
+		return null;
 	}
 }

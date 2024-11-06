@@ -138,13 +138,8 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 
 						Location? GetArgumentLocation(int argumentIndex)
 						{
-							Location? location = appliedSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
-							if (att.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken) is AttributeSyntax a && a.ArgumentList?.Arguments.Count >= argumentIndex)
-							{
-								location = a.ArgumentList.Arguments[argumentIndex].GetLocation();
-							}
-
-							return location;
+							return AnalyzerUtilities.GetArgumentLocation(att, argumentIndex, context.CancellationToken)
+								?? appliedSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
 						}
 					}
 				},

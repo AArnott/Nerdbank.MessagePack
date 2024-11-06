@@ -13,4 +13,6 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack010](NBMsgPack010.md) | Usage | Error | `[KnownSubType]` should specify an assignable type
 [NBMsgPack011](NBMsgPack011.md) | Usage | Error | `[KnownSubType]` alias must be unique
 [NBMsgPack012](NBMsgPack012.md) | Usage | Error | `[KnownSubType]` type must be unique
-[NBMsgPack012](NBMsgPack013.md) | Usage | Error | `[KnownSubType]` type must not be an open generic
+[NBMsgPack013](NBMsgPack013.md) | Usage | Error | `[KnownSubType]` type must not be an open generic
+[NBMsgPack020](NBMsgPack020.md) | Usage | Error | `[MessagePackConverter]` type must be compatible converter
+[NBMsgPack021](NBMsgPack021.md) | Usage | Error | `[MessagePackConverter]` type missing default constructor
