@@ -61,4 +61,115 @@ public class KnownSubTypeAnalyzersTests
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
+
+	[Fact]
+	public async Task NonUniqueAlias_AcrossTypes()
+	{
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType1))]
+			public class MyType
+			{
+			}
+
+			public class DerivedType1 : MyType
+			{
+			}
+
+			[KnownSubType(1, typeof(DerivedType2))]
+			public class MyType2
+			{
+			}
+
+			public class DerivedType2 : MyType2
+			{
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NonUniqueAlias()
+	{
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType1))]
+			[KnownSubType({|NBMsgPack011:1|}, typeof(DerivedType2))]
+			public class MyType
+			{
+			}
+
+			public class DerivedType1 : MyType
+			{
+			}
+
+			public class DerivedType2 : MyType
+			{
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NonUniqueSubType()
+	{
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType1))]
+			[KnownSubType(2, {|NBMsgPack012:typeof(DerivedType1)|})]
+			public class MyType
+			{
+			}
+
+			public class DerivedType1 : MyType
+			{
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task OpenGenericSubType()
+	{
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, {|NBMsgPack013:typeof(DerivedType<>)|})]
+			public class MyType
+			{
+			}
+
+			public class DerivedType<T> : MyType
+			{
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task ClosedGenericSubType()
+	{
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType<int>))]
+			[KnownSubType(2, typeof(DerivedType<bool>))]
+			public class MyType
+			{
+			}
+
+			public class DerivedType<T> : MyType
+			{
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
 }

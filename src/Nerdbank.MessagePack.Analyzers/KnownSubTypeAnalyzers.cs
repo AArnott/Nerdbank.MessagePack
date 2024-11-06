@@ -9,6 +9,10 @@ namespace Nerdbank.MessagePack.Analyzers;
 public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 {
 	public const string NonDerivedTypeDiagnosticId = "NBMsgPack010";
+	public const string NonUniqueAliasDiagnosticId = "NBMsgPack011";
+	public const string NonUniqueTypeDiagnosticId = "NBMsgPack012";
+	public const string OpenGenericTypeDiagnosticId = "NBMsgPack013";
+	public const string TypeIsMissingShapeDiagnosticId = "NBMsgPack014";
 
 	public static readonly DiagnosticDescriptor NonDerivedTypeDescriptor = new(
 		id: NonDerivedTypeDiagnosticId,
@@ -19,8 +23,48 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 		isEnabledByDefault: true,
 		helpLinkUri: AnalyzerUtilities.GetHelpLink(NonDerivedTypeDiagnosticId));
 
+	public static readonly DiagnosticDescriptor NonUniqueAliasDescriptor = new(
+		id: NonUniqueAliasDiagnosticId,
+		title: Strings.NBMsgPack011_Title,
+		messageFormat: Strings.NBMsgPack011_MessageFormat,
+		category: "Usage",
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(NonUniqueAliasDiagnosticId));
+
+	public static readonly DiagnosticDescriptor NonUniqueTypeDescriptor = new(
+		id: NonUniqueTypeDiagnosticId,
+		title: Strings.NBMsgPack012_Title,
+		messageFormat: Strings.NBMsgPack012_MessageFormat,
+		category: "Usage",
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(NonUniqueTypeDiagnosticId));
+
+	public static readonly DiagnosticDescriptor OpenGenericTypeDescriptor = new(
+		id: OpenGenericTypeDiagnosticId,
+		title: Strings.NBMsgPack013_Title,
+		messageFormat: Strings.NBMsgPack013_MessageFormat,
+		category: "Usage",
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(OpenGenericTypeDiagnosticId));
+
+	////public static readonly DiagnosticDescriptor TypeIsMissingShapeDescriptor = new(
+	////	id: TypeIsMissingShapeDiagnosticId,
+	////	title: Strings.NBMsgPack014_Title,
+	////	messageFormat: Strings.NBMsgPack014_MessageFormat,
+	////	category: "Usage",
+	////	defaultSeverity: DiagnosticSeverity.Error,
+	////	isEnabledByDefault: true,
+	////	helpLinkUri: AnalyzerUtilities.GetHelpLink(TypeIsMissingShapeDiagnosticId));
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		NonDerivedTypeDescriptor,
+		NonUniqueAliasDescriptor,
+		NonUniqueTypeDescriptor,
+		OpenGenericTypeDescriptor,
+		////TypeIsMissingShapeDescriptor,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -39,27 +83,68 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 				{
 					INamedTypeSymbol appliedSymbol = (INamedTypeSymbol)context.Symbol;
 					AttributeData[] attributeDatas = context.Symbol.FindAttributes(referenceSymbols.KnownSubTypeAttribute).ToArray();
+					Dictionary<int, ITypeSymbol?>? typesByAlias = null;
+					Dictionary<ITypeSymbol, int?>? aliasesByType = null;
 					foreach (AttributeData att in attributeDatas)
 					{
-						int? alias = att.ConstructorArguments[0].Value is int a ? a : null;
-						ITypeSymbol? subType = att.ConstructorArguments[1].Value as ITypeSymbol;
-						if (subType is null)
+						int? alias = att.ConstructorArguments is [{ Value: int a }, _] ? a : null;
+						ITypeSymbol? subType = att.ConstructorArguments is [_, { Value: ITypeSymbol t }] ? t : null;
+
+						if (alias is not null)
 						{
-							return;
+							typesByAlias ??= new();
+							if (typesByAlias.TryGetValue(alias.Value, out ITypeSymbol? existingAssignment))
+							{
+								context.ReportDiagnostic(Diagnostic.Create(
+									NonUniqueAliasDescriptor,
+									GetArgumentLocation(0)));
+							}
+							else
+							{
+								typesByAlias.Add(alias.Value, subType);
+							}
 						}
 
-						if (!subType.IsAssignableTo(appliedSymbol))
+						if (subType is not null)
 						{
-							Location? location = appliedSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
-							if (att.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken) is AttributeSyntax { ArgumentList.Arguments: [_, AttributeArgumentSyntax typeArgSyntax] })
+							aliasesByType ??= new(SymbolEqualityComparer.Default);
+							if (aliasesByType.TryGetValue(subType, out int? existingAlias))
 							{
-								location = typeArgSyntax.GetLocation();
+								context.ReportDiagnostic(Diagnostic.Create(
+									NonUniqueTypeDescriptor,
+									GetArgumentLocation(1),
+									existingAlias));
 							}
+							else
+							{
+								aliasesByType.Add(subType, alias);
+							}
+						}
 
+						if (subType?.IsAssignableTo(appliedSymbol) is false)
+						{
 							context.ReportDiagnostic(Diagnostic.Create(
 								NonDerivedTypeDescriptor,
-								location,
+								GetArgumentLocation(1),
 								subType.Name));
+						}
+
+						if (subType is INamedTypeSymbol { IsUnboundGenericType: true })
+						{
+							context.ReportDiagnostic(Diagnostic.Create(
+								OpenGenericTypeDescriptor,
+								GetArgumentLocation(1)));
+						}
+
+						Location? GetArgumentLocation(int argumentIndex)
+						{
+							Location? location = appliedSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
+							if (att.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken) is AttributeSyntax a && a.ArgumentList?.Arguments.Count >= argumentIndex)
+							{
+								location = a.ArgumentList.Arguments[argumentIndex].GetLocation();
+							}
+
+							return location;
 						}
 					}
 				},

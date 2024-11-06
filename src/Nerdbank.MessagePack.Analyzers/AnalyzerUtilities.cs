@@ -65,7 +65,7 @@ internal static class AnalyzerUtilities
 				return true;
 			}
 
-			current = current.BaseType;
+			current = current.BaseType ?? current.OriginalDefinition.BaseType;
 		}
 
 		return false;

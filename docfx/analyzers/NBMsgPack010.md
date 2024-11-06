@@ -2,10 +2,12 @@
 
 @Nerdbank.MessagePack.KnownSubTypeAttribute should specify a type that is assignable to the type the attribute is applied to.
 
+Learn more about [subtype unions](../docs/unions.md).
+
 ## Example violations
 
 ```cs
-[KnownSubType(typeof(DerivedType))] // DerivedType is not in fact derived from BaseType
+[KnownSubType(1, typeof(DerivedType))] // DerivedType is not in fact derived from BaseType
 class BaseType
 {
 }
@@ -22,7 +24,7 @@ Remove the attribute or specify a type that is actually derived from the applied
 In the fixed code below, the `DerivedType` is actually fixed to derive from `BaseType`.
 
 ```cs
-[KnownSubType(typeof(DerivedType))]
+[KnownSubType(1, typeof(DerivedType))]
 class BaseType
 {
 }
