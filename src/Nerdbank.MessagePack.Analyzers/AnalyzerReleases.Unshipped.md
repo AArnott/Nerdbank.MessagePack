@@ -7,3 +7,4 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 NBMsgPack001 | Usage | Error | Apply `[Key]` consistently across members
 NBMsgPack002 | Usage | Warning | Avoid `[Key]` on non-serialized members
+NBMsgPack003 | Usage | Error | `[Key]` index must be unique
