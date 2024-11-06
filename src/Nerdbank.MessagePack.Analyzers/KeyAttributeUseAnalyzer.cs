@@ -8,6 +8,7 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 {
 	public const string InconsistentUseDiagnosticId = "NBMsgPack001";
 	public const string KeyOnNonSerializedMemberDiagnosticId = "NBMsgPack002";
+	public const string NonUniqueKeysDiagnosticId = "NBMsgPack003";
 
 	public static readonly DiagnosticDescriptor InconsistentUseDescriptor = new(
 		id: InconsistentUseDiagnosticId,
@@ -27,9 +28,19 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 		isEnabledByDefault: true,
 		helpLinkUri: AnalyzerUtilities.GetHelpLink(KeyOnNonSerializedMemberDiagnosticId));
 
+	public static readonly DiagnosticDescriptor NonUniqueKeysDescriptor = new(
+		id: NonUniqueKeysDiagnosticId,
+		title: Strings.NBMsgPack003_Title,
+		messageFormat: Strings.NBMsgPack003_MessageFormat,
+		category: "Usage",
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(NonUniqueKeysDiagnosticId));
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		InconsistentUseDescriptor,
 		KeyOnNonSerializedMemberDescriptor,
+		NonUniqueKeysDescriptor,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -57,12 +68,13 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 	{
 		ITypeSymbol typeSymbol = (ITypeSymbol)context.Symbol;
 		bool? keyAttributeApplied = null;
+		Dictionary<int, ISymbol>? keysAssigned = null;
 		foreach (ISymbol memberSymbol in typeSymbol.GetMembers())
 		{
 			switch (memberSymbol)
 			{
-				case IPropertySymbol propertySymbol:
-				case IFieldSymbol fieldSymbol:
+				case IPropertySymbol:
+				case IFieldSymbol:
 					AttributeData? keyAttribute = memberSymbol.FindAttributes(referenceSymbols.KeyAttribute).FirstOrDefault();
 					if (!this.IsMemberSerialized(memberSymbol, referenceSymbols))
 					{
@@ -83,6 +95,33 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 					else if (keyAttributeApplied != keyAttribute is not null)
 					{
 						context.ReportDiagnostic(Diagnostic.Create(InconsistentUseDescriptor, memberSymbol.Locations.First()));
+					}
+
+					if (keyAttribute is not null)
+					{
+						keysAssigned ??= new();
+						if (keyAttribute.ConstructorArguments is [{ Value: int index }])
+						{
+							if (keysAssigned.TryGetValue(index, out ISymbol? priorUser))
+							{
+								Location? location = keyAttribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? memberSymbol.Locations.First();
+								Location[]? addlLocations = null;
+								if (priorUser.DeclaringSyntaxReferences is [SyntaxReference priorLocation, ..])
+								{
+									addlLocations = [priorLocation.GetSyntax(context.CancellationToken).GetLocation()];
+								}
+
+								context.ReportDiagnostic(Diagnostic.Create(
+									NonUniqueKeysDescriptor,
+									location,
+									addlLocations,
+									priorUser.Name));
+							}
+							else
+							{
+								keysAssigned.Add(index, memberSymbol);
+							}
+						}
 					}
 
 					break;

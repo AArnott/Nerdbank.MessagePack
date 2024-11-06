@@ -30,6 +30,52 @@ public class KeyAttributeUseAnalyzerTests
 	}
 
 	[Fact]
+	public async Task KeyReuseInOneClass()
+	{
+		string source = /* lang=c#-test */ """
+			using TypeShape;
+			using Nerdbank.MessagePack;
+
+			[GenerateShape]
+			public class MyType
+			{
+				[Key(0)]
+				public int MyProperty1 { get; set; }
+
+				[{|NBMsgPack003:Key(0)|}]
+				public int MyProperty2 { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact(Skip = "Not yet passing.")]
+	public async Task KeyReuseAcrossClassHierarchy()
+	{
+		string source = /* lang=c#-test */ """
+			using TypeShape;
+			using Nerdbank.MessagePack;
+
+			[GenerateShape]
+			public class MyBaseType
+			{
+				[Key(0)]
+				public int MyProperty1 { get; set; }
+			}
+
+			[GenerateShape]
+			public class MyType : MyBaseType
+			{
+				[{|NBMsgPack003:Key(0)|}]
+				public int MyProperty2 { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task MissingKey()
 	{
 		string source = /* lang=c#-test */ """
@@ -43,6 +89,30 @@ public class KeyAttributeUseAnalyzerTests
 				public int MyProperty1 { get; set; }
 
 				public int {|NBMsgPack001:MyProperty2|} { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact(Skip = "Not yet passing.")]
+	public async Task MissingKeyOnBaseType()
+	{
+		string source = /* lang=c#-test */ """
+			using TypeShape;
+			using Nerdbank.MessagePack;
+
+			[GenerateShape]
+			public class MyBaseType
+			{
+				public int MyProperty1 { get; set; }
+			}
+
+			[GenerateShape]
+			public class MyType : {|NBMsgPack001:MyBaseType|}
+			{
+				[Key(1)]
+				public int MyProperty2 { get; set; }
 			}
 			""";
 
