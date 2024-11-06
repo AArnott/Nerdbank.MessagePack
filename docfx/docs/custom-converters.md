@@ -132,4 +132,24 @@ The built-in converters, including those that serialize your custom data types b
 
 ## Register your custom converter
 
-Register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter*.
+There are two ways to get the serializer to use your custom converter.
+
+Note that if your custom type is used as the top-level data type to be serialized, it must still have @TypeShape.GenerateShapeAttribute applied as usual.
+
+### Attribute approach
+
+To get your converter to be automatically used wherever the data type that it formats needs to be serialized, apply a @Nerdbank.MessagePack.MessagePackConverterAttribute to your custom data type that points to your custom converter.
+
+```cs
+[MessagePackConverter(typeof(MyCustomTypeConverter))]
+public class MyCustomType { }
+```
+
+### Runtime registration
+
+For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter*.
+
+```cs
+MessagePackSerializer serializer = new();
+serializer.RegisterConverter(new MyCustomTypeConverter());
+```
