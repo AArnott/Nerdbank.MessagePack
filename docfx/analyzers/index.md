@@ -8,3 +8,4 @@ Some of these diagnostics will include a suggested code fix that can apply the c
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 [NBMsgPack001](NBMsgPack001.md) | Usage | Error | Apply `[Key]` consistently across members
+[NBMsgPack002](NBMsgPack002.md) | Usage | Warning | Avoid `[Key]` on non-serialized members

@@ -18,6 +18,32 @@ internal static class AnalyzerUtilities
 		}
 	}
 
+	internal static IEnumerable<AttributeData> FindAttributes(this ISymbol symbol, INamedTypeSymbol attributeSymbol)
+	{
+		foreach (AttributeData att in symbol.GetAttributes())
+		{
+			INamedTypeSymbol? attClass = att.AttributeClass;
+			if (attClass?.IsGenericType is true && attributeSymbol.IsUnboundGenericType)
+			{
+				attClass = attClass.ConstructUnboundGenericType();
+			}
+
+			if (SymbolEqualityComparer.Default.Equals(attClass, attributeSymbol))
+			{
+				yield return att;
+			}
+		}
+	}
+
+	internal static IEnumerable<INamedTypeSymbol> EnumerateBaseTypes(this ITypeSymbol symbol)
+	{
+		while (symbol.BaseType is not null)
+		{
+			yield return symbol.BaseType;
+			symbol = symbol.BaseType;
+		}
+	}
+
 	internal static bool IsInNamespace(ISymbol? symbol, ReadOnlySpan<string> namespaces)
 	{
 		if (symbol is null)

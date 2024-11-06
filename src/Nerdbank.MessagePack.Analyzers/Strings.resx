@@ -123,4 +123,10 @@
   <data name="NBMsgPack001_Title" xml:space="preserve">
     <value>Apply [Key] consistently across members</value>
   </data>
+  <data name="NBMsgPack002_MessageFormat" xml:space="preserve">
+    <value>Avoid [Key] on non-serialized member, or use [PropertyShape] to enable serialization.</value>
+  </data>
+  <data name="NBMsgPack002_Title" xml:space="preserve">
+    <value>Avoid [Key] on non-serialized members</value>
+  </data>
 </root>

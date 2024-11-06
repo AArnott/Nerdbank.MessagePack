@@ -5,9 +5,9 @@ namespace Nerdbank.MessagePack.Analyzers;
 
 public static class Constants
 {
-	public static class GenerateShapeAttribute
+	public static class PropertyShapeAttribute
 	{
-		public const string TypeName = "GenerateShapeAttribute";
+		public const string TypeName = "PropertyShapeAttribute";
 		public const string IgnoreProperty = "Ignore";
 		public static readonly ImmutableArray<string> Namespace = ["TypeShape"];
 	}
