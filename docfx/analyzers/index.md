@@ -16,3 +16,4 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack013](NBMsgPack013.md) | Usage | Error | `[KnownSubType]` type must not be an open generic
 [NBMsgPack020](NBMsgPack020.md) | Usage | Error | `[MessagePackConverter]` type must be compatible converter
 [NBMsgPack021](NBMsgPack021.md) | Usage | Error | `[MessagePackConverter]` type missing default constructor
+[NBMsgPack030](NBMsgPack030.md) | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods

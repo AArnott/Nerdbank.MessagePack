@@ -14,3 +14,4 @@ NBMsgPack012 | Usage | Error | `[KnownSubType]` type must be unique
 NBMsgPack013 | Usage | Error | `[KnownSubType]` type must not be an open generic
 NBMsgPack020 | Usage | Error | `[MessagePackConverter]` type must be compatible converter
 NBMsgPack021 | Usage | Error | `[MessagePackConverter]` type missing default constructor
+NBMsgPack030 | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods

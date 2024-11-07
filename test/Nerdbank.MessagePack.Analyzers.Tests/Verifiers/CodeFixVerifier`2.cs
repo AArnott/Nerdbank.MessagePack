@@ -85,7 +85,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 
 		protected override ParseOptions CreateParseOptions()
 		{
-			return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp10);
+			return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp12);
 		}
 
 		protected override CompilationOptions CreateCompilationOptions()

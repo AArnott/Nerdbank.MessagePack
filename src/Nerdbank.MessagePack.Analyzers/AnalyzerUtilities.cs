@@ -48,7 +48,7 @@ internal static class AnalyzerUtilities
 
 	internal static bool IsAssignableTo(this ITypeSymbol subType, ITypeSymbol baseTypeOrInterface)
 	{
-		if (IsDerivedFrom(subType, baseTypeOrInterface))
+		if (IsOrDerivedFrom(subType, baseTypeOrInterface))
 		{
 			return true;
 		}
@@ -57,12 +57,19 @@ internal static class AnalyzerUtilities
 			&& subType.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, baseTypeOrInterface));
 	}
 
-	internal static bool IsDerivedFrom(this ITypeSymbol subType, ITypeSymbol baseType)
+	internal static bool IsOrDerivedFrom(this ITypeSymbol subType, ITypeSymbol baseType)
 	{
 		ITypeSymbol? current = subType;
 		while (current != null)
 		{
 			if (SymbolEqualityComparer.Default.Equals(current, baseType))
+			{
+				return true;
+			}
+
+			if (current is INamedTypeSymbol { IsGenericType: true, IsUnboundGenericType: false } generic &&
+				baseType is INamedTypeSymbol { IsUnboundGenericType: true } &&
+				SymbolEqualityComparer.Default.Equals(generic.ConstructUnboundGenericType(), baseType))
 			{
 				return true;
 			}

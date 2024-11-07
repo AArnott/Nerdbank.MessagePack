@@ -58,7 +58,7 @@ public class MessagePackConverterAttributeAnalyzer : DiagnosticAnalyzer
 						return;
 					}
 
-					if (!converterType.IsDerivedFrom(referenceSymbols.MessagePackConverter.Construct(appliedType)))
+					if (!converterType.IsOrDerivedFrom(referenceSymbols.MessagePackConverter.Construct(appliedType)))
 					{
 						context.ReportDiagnostic(Diagnostic.Create(InvalidConverterTypeDescriptor, GetArgumentLocation(0), appliedType.Name));
 					}
