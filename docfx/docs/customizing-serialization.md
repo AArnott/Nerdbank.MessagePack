@@ -35,6 +35,23 @@ class MyType
 }
 ```
 
+Alternatively you can apply a consistent transformation policy for *all* property names by setting the @Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy property.
+
+For example, you can apply a camelCase transformation with @Nerdbank.MessagePack.MessagePackNamingPolicy.CamelCase like this:
+
+```cs
+var serializer = new MessagePackSerializer
+{
+    PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase,
+};
+```
+
+At which point all serialization/deserialization done with that instance will use camelCase for property names.
+
+A property name set explicitly with @TypeShape.PropertyShapeAttribute.Name?displayProperty=nameWithType will override the naming policy.
+
+You can use any of the naming policies provided with the @Nerdbank.MessagePack.MessagePackNamingPolicy class, or you can provide your own implementation by deriving from the class yourself.
+
 ## Serialize as an array of values
 
 By default, a type is serialized as a map of property name=value pairs.

@@ -54,6 +54,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				throw new InvalidOperationException($"The type {objectShape.Type.FullName} has fields/properties that are candidates for serialization but are inconsistently attributed with {nameof(KeyAttribute)}.");
 			}
 
+			string propertyName = owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 			PropertyAccessors<T> accessors = (PropertyAccessors<T>)property.Accept(this)!;
 			if (keyAttribute is not null)
 			{
@@ -63,14 +64,14 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 					propertyAccessors.Add(null);
 				}
 
-				propertyAccessors[keyAttribute.Index] = (property.Name, accessors);
+				propertyAccessors[keyAttribute.Index] = (propertyName, accessors);
 			}
 			else
 			{
 				serializable ??= new();
 				deserializable ??= new();
 
-				CodeGenHelpers.GetEncodedStringBytes(property.Name, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+				CodeGenHelpers.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 				if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 				{
 					serializable.Add(new(msgpackEncoded, serialize, serializeAsync));
@@ -195,19 +196,16 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
 						{
 							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
-							if (char.IsLower(p.Name[0]))
-							{
-								// Also allow a PascalCase match, since the property will probably have serialized that way.
-								Span<char> pascalCased = stackalloc char[p.Name.Length];
-								p.Name.AsSpan().CopyTo(pascalCased);
-								pascalCased[0] = char.ToUpperInvariant(pascalCased[0]);
-								return [(p.Name, prop), (new string(pascalCased), prop)];
-							}
-							else
-							{
-								// The parameter name isn't camelCased, so expect it to match the property name exactly.
-								return [(p.Name, prop)];
-							}
+
+							// Apply camelCase and PascalCase transformations and accept a serialized form that matches either one.
+							// If the parameter name is camelCased (as would typically happen in an ordinary constructor),
+							// we want it to match msgpack property names serialized in PascalCase (since the C# property will default to serializing that way).
+							// If the parameter name is PascalCased (as would typically happen in a record primary constructor),
+							// we want it to match camelCase property names in case the user has camelCase name policy applied.
+							// Ultimately we would probably do well to just match without case sensitivity, but we don't support that yet.
+							string camelCase = MessagePackNamingPolicy.CamelCase.ConvertName(p.Name);
+							string pascalCase = MessagePackNamingPolicy.PascalCase.ConvertName(p.Name);
+							return [(camelCase, prop), (pascalCase, prop)];
 						}).ToSpanDictionary(
 							p => Encoding.UTF8.GetBytes(p.Name),
 							p => p.Deserialize,

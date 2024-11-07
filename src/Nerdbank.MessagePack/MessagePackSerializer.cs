@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 using Microsoft;
 
@@ -71,6 +72,14 @@ public record MessagePackSerializer
 	/// Gets the format to use when serializing multi-dimensional arrays.
 	/// </summary>
 	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat { get; init; } = MultiDimensionalArrayFormat.Nested;
+
+	/// <summary>
+	/// Gets the transformation function to apply to property names before serializing them.
+	/// </summary>
+	/// <value>
+	/// The default value is null, indicating that property names should be persisted exactly as they are declared in .NET.
+	/// </value>
+	public MessagePackNamingPolicy? PropertyNamingPolicy { get; init; }
 
 	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
@@ -508,6 +517,28 @@ public record MessagePackSerializer
 		{
 			this.cachedConverters.TryAdd(pair.Key, pair.Value);
 		}
+	}
+
+	/// <summary>
+	/// Gets the property name that should be used when serializing a property.
+	/// </summary>
+	/// <param name="name">The original property name as given by <see cref="IPropertyShape"/>.</param>
+	/// <param name="attributeProvider">The attribute provider for the property.</param>
+	/// <returns>The serialized property name to use.</returns>
+	internal string GetSerializedPropertyName(string name, ICustomAttributeProvider? attributeProvider)
+	{
+		if (this.PropertyNamingPolicy is null)
+		{
+			return name;
+		}
+
+		// If the property was decorated with [PropertyShape(Name = "...")], do *not* meddle with the property name.
+		if (attributeProvider?.GetCustomAttributes(typeof(PropertyShapeAttribute), false).FirstOrDefault() is PropertyShapeAttribute { Name: not null })
+		{
+			return name;
+		}
+
+		return this.PropertyNamingPolicy.ConvertName(name);
 	}
 
 	/// <summary>
