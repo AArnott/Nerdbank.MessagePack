@@ -315,7 +315,7 @@ partial class MessagePackPrimitives
 	/// <param name="tokenSize">Receives the number of bytes read from the source, or the minimum length of <paramref name="source"/> required to read the data.</param>
 	/// <returns>The result classification of the read operation.</returns>
 	/// <remarks>
-	/// Reads a ushort value using <see cref="TryReadBigEndian(ReadOnlySpan{byte}, out ushort)"/> from the buffer and interprets it as a <see langword="char" />.
+	/// Reads a ushort value from the buffer and interprets it as a <see langword="char" />.
 	/// </remarks>
 	public static DecodeResult TryRead(ReadOnlySpan<byte> source, out char value, out int tokenSize)
 	{

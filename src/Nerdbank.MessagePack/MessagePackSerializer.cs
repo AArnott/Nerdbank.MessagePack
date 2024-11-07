@@ -134,15 +134,16 @@ public record MessagePackSerializer
 	public void Serialize<T>(IBufferWriter<byte> writer, T? value)
 		where T : IShapeable<T> => this.Serialize(writer, value, T.GetShape());
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)"/>
-	/// <param name="writer">The buffer writer to serialize to.</param>
-	/// <param name="value"><inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)" path="/param[@name='value']"/></param>
+	/// <inheritdoc cref="Serialize{T}(IBufferWriter{byte}, T, ITypeShape{T})"/>
 	public void Serialize<T, TProvider>(IBufferWriter<byte> writer, T? value)
 		where TProvider : IShapeable<T> => this.Serialize(writer, value, TProvider.GetShape());
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)"/>
-	/// <param name="writer">The buffer writer to serialize to.</param>
-	/// <param name="value"><inheritdoc cref="Serialize{T}(ref MessagePackWriter, T)" path="/param[@name='value']"/></param>
+	/// <summary>
+	/// Serializes a value.
+	/// </summary>
+	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <param name="writer">The writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	public void Serialize<T>(IBufferWriter<byte> writer, T? value, ITypeShape<T> shape)
 	{
@@ -156,11 +157,11 @@ public record MessagePackSerializer
 		where T : IShapeable<T> => this.Serialize(ref writer, value, T.GetShape());
 
 	/// <summary>
-	/// Serializes a value using the given <see cref="MessagePackWriter"/>.
+	/// Serializes a value.
 	/// </summary>
 	/// <typeparam name="T">The type to be serialized.</typeparam>
 	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
-	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	public void Serialize<T, TProvider>(ref MessagePackWriter writer, T? value)
 		where TProvider : IShapeable<T> => this.Serialize<T>(ref writer, value, TProvider.GetShape());
