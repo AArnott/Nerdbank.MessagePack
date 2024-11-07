@@ -177,4 +177,10 @@
   <data name="NBMsgPack021_Title" xml:space="preserve">
     <value>[MessagePackConverter] type missing default constructor</value>
   </data>
+  <data name="NBMsgPack030_MessageFormat" xml:space="preserve">
+    <value>Converters should not call top-level `MessagePackSerializer` methods such as Serialize or Deserialize. Call converters obtained from SerializationContext directly instead.</value>
+  </data>
+  <data name="NBMsgPack030_Title" xml:space="preserve">
+    <value>Converters should not call top-level `MessagePackSerializer` methods</value>
+  </data>
 </root>

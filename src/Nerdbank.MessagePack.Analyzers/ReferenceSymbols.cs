@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Nerdbank.MessagePack.Analyzers;
 
 internal record ReferenceSymbols(
+	INamedTypeSymbol MessagePackSerializer,
 	INamedTypeSymbol MessagePackConverter,
 	INamedTypeSymbol MessagePackConverterAttribute,
 	INamedTypeSymbol KeyAttribute,
@@ -15,6 +16,13 @@ internal record ReferenceSymbols(
 	internal static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
 	{
 		if (!compilation.ReferencedAssemblyNames.Any(id => id.Name == "Nerdbank.MessagePack"))
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? messagePackSerializer = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackSerializer");
+		if (messagePackSerializer is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -55,7 +63,7 @@ internal record ReferenceSymbols(
 			return false;
 		}
 
-		referenceSymbols = new ReferenceSymbols(messagePackConverter, messagePackConverterAttribute, keyAttribute, knownSubTypeAttribute, propertyShapeAttribute);
+		referenceSymbols = new ReferenceSymbols(messagePackSerializer, messagePackConverter, messagePackConverterAttribute, keyAttribute, knownSubTypeAttribute, propertyShapeAttribute);
 		return true;
 	}
 }
