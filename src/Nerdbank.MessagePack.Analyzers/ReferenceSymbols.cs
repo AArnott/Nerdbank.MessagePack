@@ -56,7 +56,7 @@ internal record ReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? propertyShapeAttribute = compilation.GetTypeByMetadataName("TypeShape.PropertyShapeAttribute");
+		INamedTypeSymbol? propertyShapeAttribute = compilation.GetTypeByMetadataName("PolyType.PropertyShapeAttribute");
 		if (propertyShapeAttribute is null)
 		{
 			referenceSymbols = null;

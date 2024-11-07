@@ -9,7 +9,7 @@ public class KeyAttributeUseAnalyzerTests
 	public async Task NoIssues()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
@@ -33,7 +33,7 @@ public class KeyAttributeUseAnalyzerTests
 	public async Task KeyReuseInOneClass()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
@@ -54,7 +54,7 @@ public class KeyAttributeUseAnalyzerTests
 	public async Task KeyReuseAcrossClassHierarchy()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
@@ -79,7 +79,7 @@ public class KeyAttributeUseAnalyzerTests
 	public async Task MissingKey()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
@@ -99,7 +99,7 @@ public class KeyAttributeUseAnalyzerTests
 	public async Task MissingKeyOnBaseType()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
@@ -123,7 +123,7 @@ public class KeyAttributeUseAnalyzerTests
 	public async Task KeyOnNonSerializedInternalProperty()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
@@ -144,7 +144,7 @@ public class KeyAttributeUseAnalyzerTests
 	public async Task KeyOnNonSerializedPublicProperty()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]

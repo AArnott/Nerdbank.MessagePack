@@ -6,5 +6,5 @@ global using BenchmarkDotNet.Attributes;
 global using BenchmarkDotNet.Jobs;
 global using Nerdbank.MessagePack;
 global using Nerdbank.Streams;
-global using TypeShape;
+global using PolyType;
 global using MsgPackCSharp = global::MessagePack;

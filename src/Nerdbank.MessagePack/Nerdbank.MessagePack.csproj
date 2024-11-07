@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
     <PackageReference Include="Nerdbank.Streams" />
-    <PackageReference Include="typeshape-csharp" />
+    <PackageReference Include="PolyType" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Converters\IntConverters.tt">

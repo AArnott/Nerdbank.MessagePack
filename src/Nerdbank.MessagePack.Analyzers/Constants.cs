@@ -9,7 +9,7 @@ public static class Constants
 	{
 		public const string TypeName = "PropertyShapeAttribute";
 		public const string IgnoreProperty = "Ignore";
-		public static readonly ImmutableArray<string> Namespace = ["TypeShape"];
+		public static readonly ImmutableArray<string> Namespace = ["PolyType"];
 	}
 
 	public static class KeyAttribute
