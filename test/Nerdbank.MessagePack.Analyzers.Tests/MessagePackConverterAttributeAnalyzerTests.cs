@@ -9,7 +9,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	public async Task NoIssues()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[MessagePackConverter(typeof(MyTypeConverter))]
@@ -31,7 +31,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	public async Task MissingPublicDefaultCtor()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[MessagePackConverter({|NBMsgPack021:typeof(MyTypeConverter)|})]
@@ -54,7 +54,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	public async Task TypeDoesNotDeriveFromConverter()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[MessagePackConverter({|NBMsgPack020:typeof(MyTypeConverter)|})]
@@ -76,7 +76,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	public async Task TypeDoesNotDeriveFromConverterOfMatchingType()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			[MessagePackConverter({|NBMsgPack020:typeof(IntConverter)|})]

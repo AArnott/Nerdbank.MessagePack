@@ -9,7 +9,7 @@ public class ConverterAnalyzersTests
 	public async Task NoIssues()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
@@ -28,8 +28,8 @@ public class ConverterAnalyzersTests
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
-			using TypeShape;
-			using TypeShape.Abstractions;
+			using PolyType;
+			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			public partial class MyType : IShapeable<MyType>

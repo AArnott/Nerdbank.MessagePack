@@ -5,6 +5,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <RoslynVersion>4.11.0</RoslynVersion>
+    <PolyTypeVersion>0.15.3-gdec65ec2a5</PolyTypeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
@@ -17,7 +18,7 @@
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.8.8" />
     <PackageVersion Include="Nerdbank.Streams" Version="2.11.79" />
     <PackageVersion Include="PolySharp" Version="1.14.1" />
-    <PackageVersion Include="typeshape-csharp" Version="0.14.1" />
+    <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="Xunit.Combinatorial" Version="1.6.24" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="xunit" Version="2.9.2" />
