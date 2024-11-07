@@ -53,6 +53,9 @@ jobs:
       run: dotnet format --verify-no-changes --no-restore
       shell: pwsh
       if: runner.os == 'Linux'
+    - name: 📚 Verify docfx build
+      run: dotnet docfx docfx/docfx.json --warningsAsErrors --disableGitFeatures
+      if: runner.os == 'Linux'
     - name: ⚙ Update pipeline variables based on build outputs
       run: azure-pipelines/variables/_pipelines.ps1
       shell: pwsh
