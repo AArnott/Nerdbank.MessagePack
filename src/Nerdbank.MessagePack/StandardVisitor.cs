@@ -256,7 +256,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 	/// <inheritdoc/>
 	public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
-		MessagePackConverter<TParameterType> converter = owner.GetOrAddConverter(parameterShape.ParameterType);
+		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType, state);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 		return new DeserializableProperty<TArgumentState>(
