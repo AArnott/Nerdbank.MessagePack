@@ -50,7 +50,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact(Skip = "Not yet passing.")]
+	[Fact]
 	public async Task KeyReuseAcrossClassHierarchy()
 	{
 		string source = /* lang=c#-test */ """
@@ -60,14 +60,14 @@ public class KeyAttributeUseAnalyzerTests
 			[GenerateShape]
 			public class MyBaseType
 			{
-				[Key(0)]
+				[{|NBMsgPack003:Key(0)|}]
 				public int MyProperty1 { get; set; }
 			}
 
 			[GenerateShape]
 			public class MyType : MyBaseType
 			{
-				[{|NBMsgPack003:Key(0)|}]
+				[Key(0)]
 				public int MyProperty2 { get; set; }
 			}
 			""";
@@ -95,7 +95,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact(Skip = "Not yet passing.")]
+	[Fact]
 	public async Task MissingKeyOnBaseType()
 	{
 		string source = /* lang=c#-test */ """
@@ -105,11 +105,11 @@ public class KeyAttributeUseAnalyzerTests
 			[GenerateShape]
 			public class MyBaseType
 			{
-				public int MyProperty1 { get; set; }
+				public int {|NBMsgPack001:MyProperty1|} { get; set; }
 			}
 
 			[GenerateShape]
-			public class MyType : {|NBMsgPack001:MyBaseType|}
+			public class MyType : MyBaseType
 			{
 				[Key(1)]
 				public int MyProperty2 { get; set; }
