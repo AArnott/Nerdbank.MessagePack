@@ -37,7 +37,11 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 	public override void Initialize(AnalysisContext context)
 	{
-		context.EnableConcurrentExecution();
+		if (!Debugger.IsAttached)
+		{
+			context.EnableConcurrentExecution();
+		}
+
 		context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
 
 		context.RegisterCompilationStartAction(context =>
@@ -98,30 +102,65 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 		int? GetVariableImpact(IInvocationOperation invocation) => invocation.Arguments.Length > 0 && invocation.Arguments[0].Value is ILiteralOperation { ConstantValue.Value: int count } ? -count : null;
 
-		INamedTypeSymbol applicableStruct;
 		Func<IInvocationOperation, (int? Impact, bool Unconditional)> relevantMethodTest;
 		switch (method.Name)
 		{
 			case "Serialize":
-				applicableStruct = referenceSymbols.MessagePackWriter;
-				relevantMethodTest = i => i.TargetMethod.Name switch
+				relevantMethodTest = i =>
 				{
-					"WriteArrayHeader" => (1 + GetVariableImpact(i), true),
-					"WriteMapHeader" => (1 + (GetVariableImpact(i) * 2), true),
-					string t when t.StartsWith("Write", StringComparison.Ordinal) => (1, true),
-					_ => (0, true),
+					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.MessagePackWriter, i.TargetMethod.ContainingSymbol))
+					{
+						return i.TargetMethod.Name switch
+						{
+							"WriteArrayHeader" => (1 + GetVariableImpact(i), true),
+							"WriteMapHeader" => (1 + (GetVariableImpact(i) * 2), true),
+							string t when t.StartsWith("Write", StringComparison.Ordinal) => (1, true),
+							_ => (0, true),
+						};
+					}
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound))
+					{
+						return i.TargetMethod.Name switch
+						{
+							"Serialize" or "SerializeAsync" => (1, true),
+							_ => (0, true),
+						};
+					}
+					else
+					{
+						return (0, true);
+					}
 				};
+
 				break;
 			case "Deserialize":
-				applicableStruct = referenceSymbols.MessagePackReader;
-				relevantMethodTest = i => i.TargetMethod.Name switch
+				relevantMethodTest = i =>
 				{
-					"ReadArrayHeader" or "ReadMapHeader" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
-					"TryReadArrayHeader" or "TryReadMapHeader" => (null, false), // Advanced case, which we'll just assume they're doing correctly.
-					"TryReadNil" => (1, false),
-					string t when t.StartsWith("Read", StringComparison.Ordinal) => (1, true),
-					_ => (0, true),
+					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.MessagePackReader, i.TargetMethod.ContainingSymbol))
+					{
+						return i.TargetMethod.Name switch
+						{
+							"ReadArrayHeader" or "ReadMapHeader" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
+							"TryReadArrayHeader" or "TryReadMapHeader" => (null, false), // Advanced case, which we'll just assume they're doing correctly.
+							"TryReadNil" => (1, false),
+							string t when t.StartsWith("Read", StringComparison.Ordinal) => (1, true),
+							_ => (0, true),
+						};
+					}
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound))
+					{
+						return i.TargetMethod.Name switch
+						{
+							"Deserialize" or "DeserializeAsync" => (1, true),
+							_ => (0, true),
+						};
+					}
+					else
+					{
+						return (0, true);
+					}
 				};
+
 				break;
 			default:
 				return;
@@ -149,31 +188,28 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 				{
 					if (op is IInvocationOperation invocation)
 					{
-						if (SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingSymbol, applicableStruct))
+						(int? impact, bool unconditional) = relevantMethodTest(invocation);
+						if (impact.HasValue)
 						{
-							(int? impact, bool unconditional) = relevantMethodTest(invocation);
-							if (impact.HasValue)
+							if (!unconditional)
 							{
-								if (!unconditional)
-								{
-									// The code doesn't care whether it is actually reading a token or not, which is a bug.
-									context.ReportDiagnostic(Diagnostic.Create(NotExactlyOneStructureDescriptor, op.Syntax.GetLocation()));
-									return;
-								}
-
-								ops += impact.Value;
-								if (ops > 1)
-								{
-									// Too many structures.
-									context.ReportDiagnostic(Diagnostic.Create(NotExactlyOneStructureDescriptor, op.Syntax.GetLocation()));
-									return;
-								}
-							}
-							else
-							{
-								// Non-deterministic situation. Skip testing.
+								// The code doesn't care whether it is actually reading a token or not, which is a bug.
+								context.ReportDiagnostic(Diagnostic.Create(NotExactlyOneStructureDescriptor, op.Syntax.GetLocation()));
 								return;
 							}
+
+							ops += impact.Value;
+							if (ops > 1)
+							{
+								// Too many structures.
+								context.ReportDiagnostic(Diagnostic.Create(NotExactlyOneStructureDescriptor, op.Syntax.GetLocation()));
+								return;
+							}
+						}
+						else
+						{
+							// Non-deterministic situation. Skip testing.
+							return;
 						}
 					}
 				}

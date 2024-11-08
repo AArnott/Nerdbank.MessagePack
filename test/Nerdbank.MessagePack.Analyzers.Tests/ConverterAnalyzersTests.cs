@@ -123,6 +123,57 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_DeferToOtherConverter()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			public class MyType
+			{
+				public SomeOtherType SomeField;
+			}
+
+			public class SomeOtherType : IShapeable<SomeOtherType>
+			{
+				public static ITypeShape<SomeOtherType> GetShape() => throw new System.NotImplementedException();
+			}
+
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+				{
+					if (reader.TryReadNil())
+					{
+						return null;
+					}
+					else
+					{
+						return new MyType
+						{
+							SomeField = context.GetConverter<SomeOtherType>().Deserialize(ref reader, context),
+						};
+					}
+				}
+
+				public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+				{
+					if (value is null)
+					{
+						writer.WriteNil();
+						return;
+					}
+
+					context.GetConverter<SomeOtherType>().Serialize(ref writer, ref value.SomeField, context);
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """

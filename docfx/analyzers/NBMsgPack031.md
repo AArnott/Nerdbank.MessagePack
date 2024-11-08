@@ -1,8 +1,10 @@
 # NBMsgPack031: Converters should read or write exactly one msgpack structure
 
-A value must be serialized with exactly one msgpack structure, whether that is a scalar value like an integer, or a vector like an array or a map.
+Custom converters (classes that derive from @"Nerdbank.MessagePack.MessagePackConverter`1") should serialize a given value with exactly one msgpack structure, whether that is a scalar value like an integer, or a vector like an array or a map.
 If there is nothing to write, you may write an empty array header.
 If there is more than one value to write, lead with an array header that exactly predicts the number of values that will follow.
+
+[Learn more about custom converters](../docs/custom-converters.md).
 
 ## Example violations
 
@@ -13,15 +15,35 @@ public class MyTypeConverter : MessagePackConverter<MyType>
 {
     public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
     {
-        reader.ReadInt32();
-        reader.ReadInt16();  // NBMsgPack031
-        return new MyType();
+        int a = reader.ReadInt32();
+        short b = reader.ReadInt16();  // NBMsgPack031
+        return new MyType(a, b);
     }
 
     public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
     {
-        writer.Write(1);
-        writer.Write(2);  // NBMsgPack031
+        writer.Write(value.A);
+        writer.Write(value.B);  // NBMsgPack031
+    }
+}
+```
+
+Each deferral of serialization to other converters counts as exactly one value each.
+
+```cs
+public class MyTypeConverter : MessagePackConverter<MyType>
+{
+    public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+    {
+        AnotherType a = context.GetConverter<AnotherType>().Deserialize(ref reader, context);
+        YetAnotherType b = context.GetConverter<YetAnotherType>().Deserialize(ref reader, context);  // NBMsgPack031
+        return new MyType(a, b);
+    }
+
+    public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+    {
+        AnotherType a = context.GetConverter<AnotherType>().Serialize(ref writer, ref value.A, context);
+        YetAnotherType b = context.GetConverter<YetAnotherType>().Serialize(ref writer, ref value.B, context);  // NBMsgPack031
     }
 }
 ```

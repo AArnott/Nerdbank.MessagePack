@@ -15,6 +15,8 @@ internal record ReferenceSymbols(
 	INamedTypeSymbol KnownSubTypeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute)
 {
+	public INamedTypeSymbol MessagePackConverterUnbound { get; } = MessagePackConverter.ConstructUnboundGenericType();
+
 	internal static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
 	{
 		if (!compilation.ReferencedAssemblyNames.Any(id => id.Name == "Nerdbank.MessagePack"))
