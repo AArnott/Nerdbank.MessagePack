@@ -41,7 +41,7 @@ Doing so dramatically increases the cost to the attacker to carry out this attac
 > The @System.HashCode type in particular does *not* offer collision resistance.
 > They must come from your own code or a library with cryptographic hash functions.
 
-This library does not (yet) have the capability to create collections during deserialization that have collision resistant hash functions, due to [a limitation in TypeShape](https://github.com/eiriktsarpalis/typeshape-csharp/issues/33), which it depends on.
+This library does not (yet) have the capability to create collections during deserialization that have collision resistant hash functions, due to [a limitation in PolyType](https://github.com/eiriktsarpalis/PolyType/issues/33), which it depends on.
 
 Instead, you can provide your own defense by initializing your collections with a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1 in your data type's constructor.
 

@@ -1,6 +1,6 @@
 # Custom converters
 
-While using the [`GenerateShapeAttribute`](xref:TypeShape.GenerateShapeAttribute) is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
+While using the [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
 In such cases, you can define and register your own custom converter for the incompatible type.
 
 ## Define your own converter
@@ -100,7 +100,7 @@ public override void Serialize(ref MessagePackWriter writer, ref Foo? value, Ser
 }
 ```
 
-The above assumes that `SomeOtherType` is a type that you declare and can have @TypeShape.GenerateShapeAttribute`1 applied to it.
+The above assumes that `SomeOtherType` is a type that you declare and can have @PolyType.GenerateShapeAttribute`1 applied to it.
 If this is not the case, you may provide your own type shape and reference that.
 For convenience, you may want to apply it directly to your custom converter:
 
@@ -117,7 +117,7 @@ class FooConverter : MessagePackConverter<Foo>
 }
 ```
 
-The @TypeShape.GenerateShapeAttribute`1 is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
+The @PolyType.GenerateShapeAttribute`1 is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
 
 ### Version compatibility
 
@@ -177,7 +177,7 @@ The built-in converters, including those that serialize your custom data types b
 
 There are two ways to get the serializer to use your custom converter.
 
-Note that if your custom type is used as the top-level data type to be serialized, it must still have @TypeShape.GenerateShapeAttribute applied as usual.
+Note that if your custom type is used as the top-level data type to be serialized, it must still have @PolyType.GenerateShapeAttribute applied as usual.
 
 ### Attribute approach
 

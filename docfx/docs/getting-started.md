@@ -9,7 +9,7 @@ Click on the badge to find its latest version and the instructions for consuming
 
 ## Usage
 
-Given a type annotated with [`GenerateShapeAttribute`](xref:TypeShape.GenerateShapeAttribute) like this:
+Given a type annotated with [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) like this:
 
 ```cs
 [GenerateShape]
