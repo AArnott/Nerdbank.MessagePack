@@ -101,6 +101,22 @@ internal static class AnalyzerUtilities
 		return targetSymbol.ContainingNamespace.IsGlobalNamespace;
 	}
 
+	internal static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol symbol)
+	{
+		foreach (ISymbol member in symbol.GetMembers())
+		{
+			yield return member;
+		}
+
+		foreach (INamedTypeSymbol baseType in symbol.EnumerateBaseTypes())
+		{
+			foreach (ISymbol member in baseType.GetMembers())
+			{
+				yield return member;
+			}
+		}
+	}
+
 	internal static Location? GetArgumentLocation(AttributeData att, int argumentIndex, CancellationToken cancellationToken)
 	{
 		if (att.ApplicationSyntaxReference?.GetSyntax(cancellationToken) is AttributeSyntax a && a.ArgumentList?.Arguments.Count >= argumentIndex)

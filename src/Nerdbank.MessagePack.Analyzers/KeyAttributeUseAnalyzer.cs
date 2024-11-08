@@ -69,7 +69,7 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 		ITypeSymbol typeSymbol = (ITypeSymbol)context.Symbol;
 		bool? keyAttributeApplied = null;
 		Dictionary<int, ISymbol>? keysAssigned = null;
-		foreach (ISymbol memberSymbol in typeSymbol.GetMembers())
+		foreach (ISymbol memberSymbol in typeSymbol.GetAllMembers())
 		{
 			switch (memberSymbol)
 			{
@@ -115,7 +115,7 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 									NonUniqueKeysDescriptor,
 									location,
 									addlLocations,
-									priorUser.Name));
+									$"{priorUser.ContainingSymbol.Name}.{priorUser.Name}"));
 							}
 							else
 							{
