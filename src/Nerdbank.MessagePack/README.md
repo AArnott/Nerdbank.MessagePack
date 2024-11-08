@@ -8,7 +8,7 @@
 
 * Serializes in the compact and fast [MessagePack format](https://msgpack.org/).
 * [Performance](https://aarnott.github.io/Nerdbank.MessagePack/docs/performance.html) is on par with the highly tuned and popular MessagePack-CSharp library.
-* Automatically serialize any type annotated with the [TypeShape-csharp](https://github.com/eiriktsarpalis/typeshape-csharp) `[GenerateShape]` attribute.
+* Automatically serialize any type annotated with the [PolyType](https://github.com/eiriktsarpalis/PolyType) `[GenerateShape]` attribute.
 * Automatically serialize non-annotated types by adding [a 'witness' type](https://aarnott.github.io/Nerdbank.MessagePack/docs/getting-started.html#witness-classes) with a similar annotation.
 * Fast `ref`-based serialization and deserialization minimizes copying of large structs.
 * NativeAOT and trimming compatible.

@@ -5,7 +5,7 @@ Parts of this library came from other parties, also under the MIT license.
 Notices appear in the individual source files, but are also listed here for convenience.
 
 - https://github.com/MessagePack-CSharp/MessagePack-CSharp/
-- https://github.com/eiriktsarpalis/typeshape-csharp/
+- https://github.com/eiriktsarpalis/PolyType/
 
 Copyright for the original work that was copied down (or derived from) belong to the original authors, including:
 

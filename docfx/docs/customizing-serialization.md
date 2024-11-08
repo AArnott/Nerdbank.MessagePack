@@ -1,6 +1,6 @@
 # Customizing serialization
 
-The [`GenerateShapeAttribute`](xref:TypeShape.GenerateShapeAttribute) applied to the root type of your serialized object graph is the quickest and easiest way to get serialization going.
+The [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) applied to the root type of your serialized object graph is the quickest and easiest way to get serialization going.
 It usually does a great job by default.
 When you need to tweak some aspects of serialization, several techniques are available.
 
@@ -8,9 +8,9 @@ When you need to tweak some aspects of serialization, several techniques are ava
 
 By default, only public properties and fields are included in serialization.
 
-Non-public fields and properties may be included by applying @TypeShape.PropertyShapeAttribute to the member.
+Non-public fields and properties may be included by applying @PolyType.PropertyShapeAttribute to the member.
 
-Public fields and properties may similarly be *excluded* from serialiation by applying @TypeShape.PropertyShapeAttribute to the member and settings its @TypeShape.PropertyShapeAttribute.Ignore property to `true`.
+Public fields and properties may similarly be *excluded* from serialiation by applying @PolyType.PropertyShapeAttribute to the member and settings its @PolyType.PropertyShapeAttribute.Ignore property to `true`.
 
 ```cs
 class MyType
@@ -25,7 +25,7 @@ class MyType
 
 ## Changing property name
 
-The serialized name for a property may be changed from its declared C# name by applying @TypeShape.PropertyShapeAttribute and settings its @TypeShape.PropertyShapeAttribute.Name property.
+The serialized name for a property may be changed from its declared C# name by applying @PolyType.PropertyShapeAttribute and settings its @PolyType.PropertyShapeAttribute.Name property.
 
 ```cs
 class MyType
@@ -48,7 +48,7 @@ var serializer = new MessagePackSerializer
 
 At which point all serialization/deserialization done with that instance will use camelCase for property names.
 
-A property name set explicitly with @TypeShape.PropertyShapeAttribute.Name?displayProperty=nameWithType will override the naming policy.
+A property name set explicitly with @PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType will override the naming policy.
 
 You can use any of the naming policies provided with the @Nerdbank.MessagePack.MessagePackNamingPolicy class, or you can provide your own implementation by deriving from the class yourself.
 
