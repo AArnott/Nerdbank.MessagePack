@@ -6,6 +6,8 @@ Such calls risk resetting the stack guard, unnecessary cache misses, etc.
 A custom converter will often find itself in a situation where the type it is serializing is made up of sub-values that themselves can be serialized automatically, without a custom converter.
 In such cases, @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nameWithType is the appropriate tool to delegate conversion of these sub-values.
 
+[Learn more about custom converters](../docs/custom-converters.md).
+
 ## Example violations
 
 ```cs
