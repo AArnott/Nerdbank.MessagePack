@@ -25,6 +25,104 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_MultipleStructuresWithArrayHeader()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public class MyType { }
+			
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+				{
+					if (reader.TryReadNil())
+					{
+						return null;
+					}
+
+					int count = reader.ReadArrayHeader();
+					for (int i = 0; i < count; i++)
+					{
+						reader.Skip(context);
+					}
+
+					return new MyType();
+				}
+
+				public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+				{
+					if (value is null)
+					{
+						writer.WriteNil();
+						return;
+					}
+
+					writer.WriteArrayHeader(3);
+					writer.Write(1);
+					writer.Write(2);
+					writer.Write(3);
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NoIssues_MultipleStructuresWithMapHeader()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public class MyType { }
+			
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+				{
+					if (!reader.TryReadNil())
+					{
+						int count = reader.ReadMapHeader();
+						for (int i = 0; i < count; i++)
+						{
+							reader.Skip(context);
+							reader.Skip(context);
+						}
+
+						return new MyType();
+					}
+					else
+					{
+						return null;
+					}
+				}
+
+				public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+				{
+					if (value is null)
+					{
+						writer.WriteNil();
+						return;
+					}
+
+					writer.WriteMapHeader(3);
+					writer.Write("p1");
+					writer.Write(1);
+					writer.Write("p2");
+					writer.Write(2);
+					writer.Write("p3");
+					writer.Write(3);
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
@@ -44,6 +142,69 @@ public class ConverterAnalyzersTests
 				{
 					var serializer = {|NBMsgPack030:new MessagePackSerializer()|};
 					{|NBMsgPack030:serializer.Serialize(value)|};
+					throw new System.NotImplementedException();
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task MultipleStructures()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public class MyType { }
+			
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+				{
+					reader.ReadInt32();
+					{|NBMsgPack031:reader.ReadInt16()|};
+					return new MyType();
+				}
+
+				public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+				{
+					writer.Write(1);
+					{|NBMsgPack031:writer.Write(2)|};
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task ZeroStructures()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public class MyType { }
+			
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType {|NBMsgPack031:Deserialize|}(ref MessagePackReader reader, SerializationContext context)
+				{
+					return new MyType();
+				}
+
+				public override void {|NBMsgPack031:Serialize|}(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+				{
+				}
+
+				// Not an error to not write things here.
+				void Helper()
+				{
+					if (true)
+					{
+					}
 				}
 			}
 			""";

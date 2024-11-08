@@ -9,6 +9,8 @@ internal record ReferenceSymbols(
 	INamedTypeSymbol MessagePackSerializer,
 	INamedTypeSymbol MessagePackConverter,
 	INamedTypeSymbol MessagePackConverterAttribute,
+	INamedTypeSymbol MessagePackReader,
+	INamedTypeSymbol MessagePackWriter,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol KnownSubTypeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute)
@@ -42,6 +44,20 @@ internal record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? messagePackReader = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackReader");
+		if (messagePackReader is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? messagePackWriter = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackWriter");
+		if (messagePackWriter is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? keyAttribute = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.KeyAttribute");
 		if (keyAttribute is null)
 		{
@@ -63,7 +79,15 @@ internal record ReferenceSymbols(
 			return false;
 		}
 
-		referenceSymbols = new ReferenceSymbols(messagePackSerializer, messagePackConverter, messagePackConverterAttribute, keyAttribute, knownSubTypeAttribute, propertyShapeAttribute);
+		referenceSymbols = new ReferenceSymbols(
+			messagePackSerializer,
+			messagePackConverter,
+			messagePackConverterAttribute,
+			messagePackReader,
+			messagePackWriter,
+			keyAttribute,
+			knownSubTypeAttribute,
+			propertyShapeAttribute);
 		return true;
 	}
 }

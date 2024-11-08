@@ -130,49 +130,49 @@
     <value>Avoid [Key] on non-serialized members</value>
   </data>
   <data name="NBMsgPack003_MessageFormat" xml:space="preserve">
-    <value>Each index specified in [Key(index)] must be unique, but this member's index collides with that of {0}</value>
+    <value>Each index specified in [Key(index)] must be unique, but this member's index collides with that of {0}.</value>
   </data>
   <data name="NBMsgPack003_Title" xml:space="preserve">
     <value>[Key] index must be unique</value>
   </data>
   <data name="NBMsgPack010_MessageFormat" xml:space="preserve">
-    <value>[KnownSubType] should specify a type that is derived from or implements the type the attribute is applied to</value>
+    <value>[KnownSubType] should specify a type that is derived from or implements the type the attribute is applied to.</value>
   </data>
   <data name="NBMsgPack010_Title" xml:space="preserve">
     <value>[KnownSubType] should specify an assignable type</value>
   </data>
   <data name="NBMsgPack011_MessageFormat" xml:space="preserve">
-    <value>[KnownSubType] alias must be unique, within the scope of the type that the attribute is applied to</value>
+    <value>[KnownSubType] alias must be unique, within the scope of the type that the attribute is applied to.</value>
   </data>
   <data name="NBMsgPack011_Title" xml:space="preserve">
     <value>[KnownSubType] alias must be unique</value>
   </data>
   <data name="NBMsgPack012_MessageFormat" xml:space="preserve">
-    <value>[KnownSubType] type should be assigned just one alias but was already assigned {0}</value>
+    <value>[KnownSubType] type should be assigned just one alias but was already assigned {0}.</value>
   </data>
   <data name="NBMsgPack012_Title" xml:space="preserve">
     <value>[KnownSubType] type must be unique</value>
   </data>
   <data name="NBMsgPack013_MessageFormat" xml:space="preserve">
-    <value>[KnownSubType] type must be a non-generic or closed generic type</value>
+    <value>[KnownSubType] type must be a non-generic or closed generic type.</value>
   </data>
   <data name="NBMsgPack013_Title" xml:space="preserve">
     <value>[KnownSubType] type must not be an open generic</value>
   </data>
   <data name="NBMsgPack014_MessageFormat" xml:space="preserve">
-    <value>[KnownSubType] type must be one with [GenerateShape] applied directly or indirectly</value>
+    <value>[KnownSubType] type must be one with [GenerateShape] applied directly or indirectly.</value>
   </data>
   <data name="NBMsgPack014_Title" xml:space="preserve">
     <value>[KnownSubType] type must have a shape</value>
   </data>
   <data name="NBMsgPack020_MessageFormat" xml:space="preserve">
-    <value>[MessagePackConverter] type must derive from MessagePackConverter&lt;T&gt; where T is the type the attribute is applied to</value>
+    <value>[MessagePackConverter] type must derive from MessagePackConverter&lt;T&gt; where T is the type the attribute is applied to.</value>
   </data>
   <data name="NBMsgPack020_Title" xml:space="preserve">
     <value>[MessagePackConverter] type must be compatible converter</value>
   </data>
   <data name="NBMsgPack021_MessageFormat" xml:space="preserve">
-    <value>[MessagePackConverter] type must declare a public constructor with no parameters</value>
+    <value>[MessagePackConverter] type must declare a public constructor with no parameters.</value>
   </data>
   <data name="NBMsgPack021_Title" xml:space="preserve">
     <value>[MessagePackConverter] type missing default constructor</value>
@@ -182,5 +182,11 @@
   </data>
   <data name="NBMsgPack030_Title" xml:space="preserve">
     <value>Converters should not call top-level `MessagePackSerializer` methods</value>
+  </data>
+  <data name="NBMsgPack031_MessageFormat" xml:space="preserve">
+    <value>A value must be serialized with exactly one msgpack structure, whether that is a scalar value like an integer, or a vector like an array or a map. If there is nothing to write, you may write an empty array header. If there is more than one value to write, lead with an array header that exactly predicts the number of values that will follow.</value>
+  </data>
+  <data name="NBMsgPack031_Title" xml:space="preserve">
+    <value>Converters should read or write exactly one msgpack structure</value>
   </data>
 </root>
