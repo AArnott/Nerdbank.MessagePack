@@ -1,5 +1,5 @@
 abstract Nerdbank.MessagePack.MessagePackConverter<T>.Deserialize(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> T?
-abstract Nerdbank.MessagePack.MessagePackConverter<T>.Serialize(ref Nerdbank.MessagePack.MessagePackWriter writer, ref T? value, Nerdbank.MessagePack.SerializationContext context) -> void
+abstract Nerdbank.MessagePack.MessagePackConverter<T>.Serialize(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value, Nerdbank.MessagePack.SerializationContext context) -> void
 abstract Nerdbank.MessagePack.MessagePackNamingPolicy.ConvertName(string! name) -> string!
 const Nerdbank.MessagePack.MessagePackCode.Array16 = 220 -> byte
 const Nerdbank.MessagePack.MessagePackCode.Array32 = 221 -> byte
@@ -171,14 +171,14 @@ Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.init -> v
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.get -> Nerdbank.MessagePack.MessagePackNamingPolicy?
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter<T>(Nerdbank.MessagePack.MessagePackConverter<T>! converter) -> void
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(ref Nerdbank.MessagePack.MessagePackWriter writer, T? value) -> void
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(System.Buffers.IBufferWriter<byte>! writer, T? value) -> void
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(ref Nerdbank.MessagePack.MessagePackWriter writer, T? value) -> void
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(ref Nerdbank.MessagePack.MessagePackWriter writer, T? value, PolyType.Abstractions.ITypeShape<T>! shape) -> void
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(System.Buffers.IBufferWriter<byte>! writer, T? value) -> void
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(System.Buffers.IBufferWriter<byte>! writer, T? value, PolyType.Abstractions.ITypeShape<T>! shape) -> void
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(T? value) -> byte[]!
-Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(T? value, PolyType.Abstractions.ITypeShape<T>! shape) -> byte[]!
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value) -> void
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(System.Buffers.IBufferWriter<byte>! writer, in T? value) -> void
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(in T? value) -> byte[]!
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(in T? value, PolyType.Abstractions.ITypeShape<T>! shape) -> byte[]!
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value) -> void
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value, PolyType.Abstractions.ITypeShape<T>! shape) -> void
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(System.Buffers.IBufferWriter<byte>! writer, in T? value) -> void
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(System.Buffers.IBufferWriter<byte>! writer, in T? value, PolyType.Abstractions.ITypeShape<T>! shape) -> void
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T, TProvider>(System.IO.Pipelines.PipeWriter! writer, T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Pipelines.PipeWriter! writer, T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.get -> Nerdbank.MessagePack.SerializationContext

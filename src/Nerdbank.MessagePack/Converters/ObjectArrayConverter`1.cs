@@ -47,7 +47,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -62,7 +62,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 		{
 			if (properties[i]?.MsgPackWriters is var (serialize, _))
 			{
-				serialize(ref value, ref writer, context);
+				serialize(value, ref writer, context);
 			}
 			else
 			{

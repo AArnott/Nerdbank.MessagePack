@@ -25,10 +25,9 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 				return new CustomType { InternalProperty = value };
 			}
 
-			public override void Serialize(ref MessagePackWriter writer, ref CustomType? value, SerializationContext context)
+			public override void Serialize(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
 			{
-				string? internalProperty = value?.InternalProperty;
-				context.GetConverter<string, CustomTypeConverter>().Serialize(ref writer, ref internalProperty, context);
+				context.GetConverter<string, CustomTypeConverter>().Serialize(ref writer, value?.InternalProperty, context);
 			}
 		}
 	}

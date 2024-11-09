@@ -46,7 +46,7 @@ class FooConverter : MessagePackConverter<Foo?>
         return new Foo(property1, property2);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, ref Foo? value, SerializationContext context)
+    public override void Serialize(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
     {
         if (value is null)
         {
@@ -81,7 +81,7 @@ In the @"Nerdbank.MessagePack.MessagePackConverter`1.Deserialize*" method, use @
 The @Nerdbank.MessagePack.SerializationContext.GetConverter* method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
 
 ```cs
-public override void Serialize(ref MessagePackWriter writer, ref Foo? value, SerializationContext context)
+public override void Serialize(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
 {
     if (value is null)
     {
@@ -108,7 +108,7 @@ For convenience, you may want to apply it directly to your custom converter:
 [GenerateShape<SomeOtherType>]
 class FooConverter : MessagePackConverter<Foo>
 {
-    public override void Serialize(ref MessagePackWriter writer, ref Foo? value, SerializationContext context)
+    public override void Serialize(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
     {
         // ...
         context.GetConverter<SomeOtherType, FooConverter>().Serialize(ref writer, ref propertyValue, context);

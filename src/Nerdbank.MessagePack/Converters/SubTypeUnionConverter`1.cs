@@ -41,7 +41,7 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TBase? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in TBase? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -56,7 +56,7 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 		{
 			// The runtime type of the value matches the base exactly. Use nil as the alias.
 			writer.WriteNil();
-			baseConverter.Serialize(ref writer, ref value, context);
+			baseConverter.Serialize(ref writer, value, context);
 		}
 		else if (subTypes.Serializers.TryGetValue(valueType, out (int Alias, IMessagePackConverter Converter) result))
 		{

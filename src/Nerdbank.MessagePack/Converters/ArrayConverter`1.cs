@@ -34,7 +34,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TElement[]? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -46,7 +46,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		writer.WriteArrayHeader(value.Length);
 		for (int i = 0; i < value.Length; i++)
 		{
-			elementConverter.Serialize(ref writer, ref value[i]!, context);
+			elementConverter.Serialize(ref writer, value[i], context);
 		}
 	}
 
@@ -97,7 +97,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 						break;
 					}
 
-					elementConverter.Serialize(ref syncWriter, ref value[progress]!, context);
+					elementConverter.Serialize(ref syncWriter, value[progress], context);
 					cancellationToken.ThrowIfCancellationRequested();
 				}
 

@@ -36,7 +36,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TDictionary? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in TDictionary? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -52,8 +52,8 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			TKey? entryKey = pair.Key;
 			TValue? entryValue = pair.Value;
 
-			keyConverter.Serialize(ref writer, ref entryKey, context);
-			valueConverter.Serialize(ref writer, ref entryValue, context);
+			keyConverter.Serialize(ref writer, entryKey, context);
+			valueConverter.Serialize(ref writer, entryValue, context);
 		}
 	}
 

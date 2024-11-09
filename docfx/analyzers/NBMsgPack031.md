@@ -20,7 +20,7 @@ public class MyTypeConverter : MessagePackConverter<MyType>
         return new MyType(a, b);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+    public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context)
     {
         writer.Write(value.A);
         writer.Write(value.B);  // NBMsgPack031
@@ -40,7 +40,7 @@ public class MyTypeConverter : MessagePackConverter<MyType>
         return new MyType(a, b);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+    public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context)
     {
         AnotherType a = context.GetConverter<AnotherType>().Serialize(ref writer, ref value.A, context);
         YetAnotherType b = context.GetConverter<YetAnotherType>().Serialize(ref writer, ref value.B, context);  // NBMsgPack031
@@ -73,7 +73,7 @@ public class MyTypeConverter : MessagePackConverter<MyType>
         return new MyType(property1, property2);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context)
+    public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context)
     {
         writer.WriteArrayHeader(2);
         writer.Write(value.Property1);

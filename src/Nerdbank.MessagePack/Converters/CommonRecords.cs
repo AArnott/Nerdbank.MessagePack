@@ -17,7 +17,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="writer">The means by which msgpack should be written.</param>
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Serialize" path="/param[@name='context']"/></param>
-internal delegate void SerializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
+internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
 
 /// <summary>
 /// A delegate that can asynchronously serialize a property to a <see cref="MessagePackAsyncWriter"/>.

@@ -20,7 +20,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-				public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -43,7 +43,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 			{
 				private MyTypeConverter() { }
 				public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-				public override void Serialize(ref MessagePackWriter writer, ref MyType value, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -87,7 +87,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 			public class IntConverter : MessagePackConverter<int>
 			{
 				public override int Deserialize(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-				public override void Serialize(ref MessagePackWriter writer, ref int value, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Serialize(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
 

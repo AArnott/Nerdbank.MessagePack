@@ -27,7 +27,7 @@ public partial class MessagePackConverterAttributeTests(ITestOutputHelper logger
 			return new() { InternalProperty = reader.ReadString() };
 		}
 
-		public override void Serialize(ref MessagePackWriter writer, ref CustomType? value, SerializationContext context)
+		public override void Serialize(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
 		{
 			writer.Write(value?.InternalProperty);
 		}
