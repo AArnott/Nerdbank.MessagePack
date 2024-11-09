@@ -74,12 +74,12 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				CodeGenHelpers.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 				if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 				{
-					serializable.Add(new(msgpackEncoded, serialize, serializeAsync));
+					serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.SuppressIfNoConstructorParameter));
 				}
 
 				if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
 				{
-					deserializable.Add(new(utf8Bytes, deserialize, deserializeAsync));
+					deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync));
 				}
 			}
 		}
@@ -108,6 +108,9 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			}
 			else
 			{
+				// Avoid serializing properties that cannot be deserialized.
+				serializableMap.Properties?.RemoveAll(p => p.SuppressIfNoConstructorParameter);
+
 				Func<T>? ctor = typeof(T) == typeof(object) ? (Func<T>)(object)new Func<object>(() => new object()) : null;
 				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor);
 			}
@@ -135,6 +138,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			msgpackWriters = (serialize, serializeAsync);
 		}
 
+		bool suppressIfNoConstructorParameter = true;
 		(DeserializeProperty<TDeclaringType>, DeserializePropertyAsync<TDeclaringType>)? msgpackReaders = null;
 		if (propertyShape.HasSetter)
 		{
@@ -146,12 +150,14 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				return container;
 			};
 			msgpackReaders = (deserialize, deserializeAsync);
+			suppressIfNoConstructorParameter = false;
 		}
 		else if (propertyShape.HasGetter && converter is IDeserializeInto<TPropertyType> inflater)
 		{
 			// The property has no setter, but it has a getter and the property type is a collection.
 			// So we'll assume the declaring type initializes the collection in its constructor,
 			// and we'll just deserialize into it.
+			suppressIfNoConstructorParameter = false;
 			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
 			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
 			{
@@ -177,7 +183,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			msgpackReaders = (deserialize, deserializeAsync);
 		}
 
-		return new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders);
+		return new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, suppressIfNoConstructorParameter);
 	}
 
 	/// <inheritdoc/>
@@ -189,13 +195,24 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				{
 					if (constructorShape.ParameterCount == 0)
 					{
+						// The constructor takes no inputs, so drop all readonly properties from serialization
+						// so we're not serializing values that are likely computed and certainly will never be deserialized.
+						inputs.Serializers.Properties?.RemoveAll(p => p.SuppressIfNoConstructorParameter);
 						return new ObjectMapConverter<TDeclaringType>(inputs.Serializers, inputs.Deserializers, constructorShape.GetDefaultConstructor());
 					}
+
+					HashSet<string>? readonlyPropertyNames = inputs.Serializers.Properties
+						?.Where(p => p.SuppressIfNoConstructorParameter)
+						.Select(p => p.Name)
+						.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
 					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = constructorShape.GetParameters()
 						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
 						{
 							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
+
+							// If this parameter appears as a property with only a getter, remove it from the readonly list.
+							readonlyPropertyNames?.Remove(prop.Name);
 
 							// Apply camelCase and PascalCase transformations and accept a serialized form that matches either one.
 							// If the parameter name is camelCased (as would typically happen in an ordinary constructor),
@@ -210,6 +227,12 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 							p => Encoding.UTF8.GetBytes(p.Name),
 							p => p.Deserialize,
 							ByteSpanEqualityComparer.Ordinal);
+
+					// Avoid serializing properties that cannot be deserialized.
+					if (readonlyPropertyNames is not null)
+					{
+						inputs.Serializers.Properties?.RemoveAll(p => readonlyPropertyNames.Contains(p.Name));
+					}
 
 					return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 						inputs.Serializers,
@@ -260,6 +283,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 		return new DeserializableProperty<TArgumentState>(
+			parameterShape.Name,
 			StringEncoding.UTF8.GetBytes(parameterShape.Name),
 			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Deserialize(ref reader, context)!),
 			async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken) =>
