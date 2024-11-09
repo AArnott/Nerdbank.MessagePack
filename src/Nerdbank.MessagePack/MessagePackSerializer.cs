@@ -191,7 +191,9 @@ public record MessagePackSerializer
 		=> this.Deserialize(new ReadOnlySequence<byte>(buffer), shape);
 
 	/// <inheritdoc cref="SerializeAsync{T, TProvider}(PipeWriter, T, CancellationToken)"/>
+#pragma warning disable RS0026 // Do not add multiple public overloads with optional parameters
 	public ValueTask SerializeAsync<T>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
+#pragma warning restore RS0026 // Do not add multiple public overloads with optional parameters
 		where T : IShapeable<T> => this.SerializeAsync<T, T>(writer, value, cancellationToken);
 
 	/// <summary>
@@ -203,7 +205,9 @@ public record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
+#pragma warning disable RS0026 // Do not add multiple public overloads with optional parameters
 	public async ValueTask SerializeAsync<T, TProvider>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
+#pragma warning restore RS0026 // Do not add multiple public overloads with optional parameters
 		where TProvider : IShapeable<T>
 	{
 		Requires.NotNull(writer);
