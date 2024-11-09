@@ -5,6 +5,7 @@
 
 using System.Collections.Frozen;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
 
@@ -128,10 +129,13 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		if (propertyShape.HasGetter)
 		{
 			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
-			SerializeProperty<TDeclaringType> serialize = (ref TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
+			SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
 			{
-				TPropertyType? value = getter(ref container);
-				converter.Serialize(ref writer, ref value, context);
+				// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
+				// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
+				// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
+				TPropertyType? value = getter(ref Unsafe.AsRef(in container));
+				converter.Serialize(ref writer, value, context);
 			};
 			SerializePropertyAsync<TDeclaringType> serializeAsync = (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context, CancellationToken cancellationToken)
 				=> converter.SerializeAsync(writer, getter(ref container), context, cancellationToken);

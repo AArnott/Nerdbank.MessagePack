@@ -15,7 +15,7 @@ public class MyTypeConverter : MessagePackConverter<MyType>
 {
     public override MyType? Deserialize(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
 
-    public override void Serialize(ref MessagePackWriter writer, ref MyType? value, SerializationContext context)
+    public override void Serialize(ref MessagePackWriter writer, in MyType? value, SerializationContext context)
     {
         var serializer = new MessagePackSerializer(); // NBMsgPack030
         serializer.Serialize(value.SomeProperty);     // NBMsgPack030
@@ -36,7 +36,7 @@ public class SomeOtherType {}
 Replace top-level calls to the serializer to direct calls to a converter, which may come from @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nameWithType.
 
 ```cs
-public override void Serialize(ref MessagePackWriter writer, ref MyType? value, SerializationContext context)
+public override void Serialize(ref MessagePackWriter writer, in MyType? value, SerializationContext context)
 {
     SomeOtherType? someProperty = value.SomeProperty;
     context.GetConverter<SomeOtherType>().Serialize(ref writer, ref someProperty, context);

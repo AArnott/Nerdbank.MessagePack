@@ -19,7 +19,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -34,7 +34,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			foreach (SerializableProperty<T> property in serializable.Properties)
 			{
 				writer.WriteRaw(property.RawPropertyNameString.Span);
-				property.Write(ref value, ref writer, context);
+				property.Write(value, ref writer, context);
 			}
 		}
 	}

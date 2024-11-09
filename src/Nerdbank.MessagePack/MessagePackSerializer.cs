@@ -107,7 +107,7 @@ public record MessagePackSerializer
 	/// <typeparam name="T">The type of value to be serialized. This must be able to disclose its own shape.</typeparam>
 	/// <param name="value">The value to be serialized.</param>
 	/// <returns>The byte array.</returns>
-	public byte[] Serialize<T>(T? value)
+	public byte[] Serialize<T>(in T? value)
 		where T : IShapeable<T> => this.Serialize(value, T.GetShape());
 
 	/// <summary>
@@ -117,7 +117,7 @@ public record MessagePackSerializer
 	/// <param name="value">The value to be serialized.</param>
 	/// <param name="shape">The shape of the type.</param>
 	/// <returns>The byte array.</returns>
-	public byte[] Serialize<T>(T? value, ITypeShape<T> shape)
+	public byte[] Serialize<T>(in T? value, ITypeShape<T> shape)
 	{
 		byte[]? array = scratchArray;
 		if (array == null)
@@ -130,12 +130,12 @@ public record MessagePackSerializer
 		return writer.FlushAndGetArray();
 	}
 
-	/// <inheritdoc cref="Serialize{T, TProvider}(IBufferWriter{byte}, T)"/>
-	public void Serialize<T>(IBufferWriter<byte> writer, T? value)
+	/// <inheritdoc cref="Serialize{T, TProvider}(IBufferWriter{byte}, in T)"/>
+	public void Serialize<T>(IBufferWriter<byte> writer, in T? value)
 		where T : IShapeable<T> => this.Serialize(writer, value, T.GetShape());
 
-	/// <inheritdoc cref="Serialize{T}(IBufferWriter{byte}, T, ITypeShape{T})"/>
-	public void Serialize<T, TProvider>(IBufferWriter<byte> writer, T? value)
+	/// <inheritdoc cref="Serialize{T}(IBufferWriter{byte}, in T, ITypeShape{T})"/>
+	public void Serialize<T, TProvider>(IBufferWriter<byte> writer, in T? value)
 		where TProvider : IShapeable<T> => this.Serialize(writer, value, TProvider.GetShape());
 
 	/// <summary>
@@ -145,15 +145,15 @@ public record MessagePackSerializer
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	public void Serialize<T>(IBufferWriter<byte> writer, T? value, ITypeShape<T> shape)
+	public void Serialize<T>(IBufferWriter<byte> writer, in T? value, ITypeShape<T> shape)
 	{
 		MessagePackWriter msgpackWriter = new(writer);
 		this.Serialize(ref msgpackWriter, value, shape);
 		msgpackWriter.Flush();
 	}
 
-	/// <inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, T)"/>
-	public void Serialize<T>(ref MessagePackWriter writer, T? value)
+	/// <inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, in T)"/>
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value)
 		where T : IShapeable<T> => this.Serialize(ref writer, value, T.GetShape());
 
 	/// <summary>
@@ -163,7 +163,7 @@ public record MessagePackSerializer
 	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
-	public void Serialize<T, TProvider>(ref MessagePackWriter writer, T? value)
+	public void Serialize<T, TProvider>(ref MessagePackWriter writer, in T? value)
 		where TProvider : IShapeable<T> => this.Serialize<T>(ref writer, value, TProvider.GetShape());
 
 	/// <summary>
@@ -173,7 +173,7 @@ public record MessagePackSerializer
 	/// <param name="writer">The msgpack writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, T? value, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Serialize(ref writer, ref value, this.CreateSerializationContext());
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Serialize(ref writer, value, this.CreateSerializationContext());
 
 	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
 	public T? Deserialize<T>(byte[] buffer)
@@ -227,7 +227,7 @@ public record MessagePackSerializer
 	/// Deserializes a value from a <see cref="PipeReader"/>.
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
-	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, T)" path="/typeparam[@name='TProvider']"/></typeparam>
+	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, in T)" path="/typeparam[@name='TProvider']"/></typeparam>
 	/// <param name="reader">The reader to deserialize from.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
@@ -266,7 +266,7 @@ public record MessagePackSerializer
 	/// Deserializes a value from a <see cref="MessagePackReader"/>.
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
-	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, T)" path="/typeparam[@name='TProvider']"/></typeparam>
+	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, in T)" path="/typeparam[@name='TProvider']"/></typeparam>
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
 	/// <returns>The deserialized value.</returns>
 	public T? Deserialize<T, TProvider>(ref MessagePackReader reader)

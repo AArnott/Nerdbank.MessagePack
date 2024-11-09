@@ -14,5 +14,5 @@ internal class DelayedConverter<T>(ResultBox<MessagePackConverter<T>> box) : Mes
 	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context) => box.Result.Deserialize(ref reader, context);
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context) => box.Result.Serialize(ref writer, ref value, context);
+	public override void Serialize(ref MessagePackWriter writer, in T? value, SerializationContext context) => box.Result.Serialize(ref writer, value, context);
 }

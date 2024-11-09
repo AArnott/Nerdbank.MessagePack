@@ -43,7 +43,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in TArray? value, SerializationContext context)
 	{
 		Array? array = (Array?)(object?)value;
 		if (array is null)
@@ -96,7 +96,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 		{
 			for (int i = 0; i < outerDimension; i++)
 			{
-				elementConverter.Serialize(ref writer, ref elements[i]!, context);
+				elementConverter.Serialize(ref writer, elements[i], context);
 			}
 		}
 	}

@@ -32,7 +32,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TEnumerable? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -47,8 +47,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			writer.WriteArrayHeader(count);
 			foreach (TElement element in enumerable)
 			{
-				TElement? el = element;
-				elementConverter.Serialize(ref writer, ref el, context);
+				elementConverter.Serialize(ref writer, element, context);
 			}
 		}
 		else
@@ -57,7 +56,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			writer.WriteArrayHeader(array.Length);
 			for (int i = 0; i < array.Length; i++)
 			{
-				elementConverter.Serialize(ref writer, ref array[i], context);
+				elementConverter.Serialize(ref writer, array[i], context);
 			}
 		}
 	}

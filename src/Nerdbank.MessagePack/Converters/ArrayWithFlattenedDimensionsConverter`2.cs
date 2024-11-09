@@ -62,7 +62,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TArray? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in TArray? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -87,7 +87,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 		writer.WriteArrayHeader(elements.Length);
 		for (int i = 0; i < elements.Length; i++)
 		{
-			elementConverter.Serialize(ref writer, ref elements[i]!, context);
+			elementConverter.Serialize(ref writer, elements[i], context);
 		}
 	}
 

@@ -28,7 +28,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
-	public abstract void Serialize(ref MessagePackWriter writer, ref T? value, SerializationContext context);
+	public abstract void Serialize(ref MessagePackWriter writer, in T? value, SerializationContext context);
 
 	/// <summary>
 	/// Deserializes an instance of <typeparamref name="T"/>.
@@ -65,7 +65,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 		cancellationToken.ThrowIfCancellationRequested();
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
-		this.Serialize(ref syncWriter, ref value, context);
+		this.Serialize(ref syncWriter, value, context);
 		syncWriter.Flush();
 
 		// On our way out, pause to flush the pipe if a lot of data has accumulated in the buffer.
@@ -108,8 +108,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <inheritdoc/>
 	void IMessagePackConverter.Serialize(ref MessagePackWriter writer, ref object? value, SerializationContext context)
 	{
-		T? typedValue = (T?)value;
-		this.Serialize(ref writer, ref typedValue, context);
+		this.Serialize(ref writer, (T?)value, context);
 	}
 
 	/// <inheritdoc/>

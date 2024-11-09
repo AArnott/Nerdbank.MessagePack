@@ -14,9 +14,8 @@ internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConvert
 	public override TEnum? Deserialize(ref MessagePackReader reader, SerializationContext context) => (TEnum?)(object?)primitiveConverter.Deserialize(ref reader, context);
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref TEnum? value, SerializationContext context)
+	public override void Serialize(ref MessagePackWriter writer, in TEnum? value, SerializationContext context)
 	{
-		TUnderlyingType? intValue = (TUnderlyingType?)(object?)value;
-		primitiveConverter.Serialize(ref writer, ref intValue, context);
+		primitiveConverter.Serialize(ref writer, (TUnderlyingType?)(object?)value, context);
 	}
 }

@@ -21,6 +21,6 @@ internal class <#=type#>Converter : MessagePackConverter<<#=type#>>
 	public override <#=type#> Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.Read<#=type#>();
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, ref <#=type#> value, SerializationContext context) => writer.Write(value);
+	public override void Serialize(ref MessagePackWriter writer, in <#=type#> value, SerializationContext context) => writer.Write(value);
 }
 <# } #>
