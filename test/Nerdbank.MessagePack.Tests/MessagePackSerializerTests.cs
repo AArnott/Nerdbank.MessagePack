@@ -97,6 +97,40 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void PrivateFields() => this.AssertRoundtrip(new InternalRecordWithPrivateField { PrivateFieldAccessor = 42, PrivatePropertyAccessor = 43 });
 
 	[Fact]
+	public void ReadOnlyPropertiesNotSerialized()
+	{
+		RecordWithReadOnlyProperties obj = new(1, 2);
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
+		MessagePackReader reader = new(msgpack);
+
+		// The Sum field should not be serialized.
+		Assert.Equal(2, reader.ReadMapHeader());
+	}
+
+	[Fact]
+	public void ReadOnlyPropertiesNotSerialized_NoCtor()
+	{
+		RecordWithReadOnlyProperties_NoConstructor obj = new(1, 2);
+		byte[] msgpack = this.Serializer.Serialize(obj);
+		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+		MessagePackReader reader = new(msgpack);
+
+		// The Sum field should not be serialized.
+		Assert.Equal(2, reader.ReadMapHeader());
+	}
+
+	[Fact]
+	public void ReadOnlyPropertiesNotSerialized_Keyed()
+	{
+		RecordWithReadOnlyPropertiesKeyed obj = new(1, 2);
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
+		MessagePackReader reader = new(msgpack);
+
+		// The Sum field should not be serialized.
+		Assert.Equal(2, reader.ReadArrayHeader());
+	}
+
+	[Fact]
 	public void SystemObject()
 	{
 		Assert.NotNull(this.Roundtrip(new object(), Witness.Default.GetShape<object>()!));
@@ -294,6 +328,35 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 		[PropertyShape]
 		private int PrivateProperty { get; set; }
+	}
+
+	[GenerateShape]
+	internal partial record RecordWithReadOnlyProperties(int A, int B)
+	{
+		public int Sum => this.A + this.B;
+	}
+
+	[GenerateShape]
+	internal partial class RecordWithReadOnlyProperties_NoConstructor
+	{
+		internal RecordWithReadOnlyProperties_NoConstructor(int a, int b)
+		{
+			this.A = a;
+			this.B = b;
+		}
+
+		public int A { get; set; }
+
+		public int B { get; set; }
+
+		public int Sum => this.A + this.B;
+	}
+
+	[GenerateShape]
+	internal partial record RecordWithReadOnlyPropertiesKeyed([property: Key(0)] int A, [property: Key(1)] int B)
+	{
+		[PropertyShape(Ignore = true)]
+		public int Sum => this.A + this.B;
 	}
 
 	[GenerateShape<UnannotatedPoco>]
