@@ -8,6 +8,7 @@
     <PackageDescription>A fast and more user-friendly MessagePack serialization library for .NET. With ground-up support for trimming and Native AOT.</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="PolyType" />
