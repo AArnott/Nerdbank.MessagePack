@@ -150,6 +150,7 @@ Nerdbank.MessagePack.MessagePackReader.TryReadMapHeader(out int count) -> bool
 Nerdbank.MessagePack.MessagePackReader.TryReadNil() -> bool
 Nerdbank.MessagePack.MessagePackReader.TryReadStringSpan(out System.ReadOnlySpan<byte> span) -> bool
 Nerdbank.MessagePack.MessagePackSerializationException
+Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationException() -> void
 Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationException(string? message) -> void
 Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationException(string? message, System.Exception? innerException) -> void
 Nerdbank.MessagePack.MessagePackSerializer

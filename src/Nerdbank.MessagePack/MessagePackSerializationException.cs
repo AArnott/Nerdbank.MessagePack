@@ -11,6 +11,13 @@ namespace Nerdbank.MessagePack;
 public class MessagePackSerializationException : Exception
 {
 	/// <summary>
+	/// Initializes a new instance of the <see cref="MessagePackSerializationException"/> class.
+	/// </summary>
+	public MessagePackSerializationException()
+	{
+	}
+
+	/// <summary>
 	/// Initializes a new instance of the <see cref="MessagePackSerializationException"/> class with a specified error message.
 	/// </summary>
 	/// <param name="message">The message that describes the error.</param>
