@@ -220,6 +220,8 @@ Nerdbank.MessagePack.MessagePackWriter.Write(float value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(in System.Buffers.ReadOnlySequence<byte> src) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(int value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(long value) -> void
+Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.Extension extensionData) -> void
+Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.ExtensionHeader extensionHeader) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(sbyte value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(short value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(string? value) -> void
@@ -232,8 +234,6 @@ Nerdbank.MessagePack.MessagePackWriter.Write(ushort value) -> void
 Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader(int count) -> void
 Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader(uint count) -> void
 Nerdbank.MessagePack.MessagePackWriter.WriteBinHeader(int length) -> void
-Nerdbank.MessagePack.MessagePackWriter.WriteExtensionFormat(Nerdbank.MessagePack.Extension extensionData) -> void
-Nerdbank.MessagePack.MessagePackWriter.WriteExtensionFormatHeader(Nerdbank.MessagePack.ExtensionHeader extensionHeader) -> void
 Nerdbank.MessagePack.MessagePackWriter.WriteInt16(short value) -> void
 Nerdbank.MessagePack.MessagePackWriter.WriteInt32(int value) -> void
 Nerdbank.MessagePack.MessagePackWriter.WriteInt64(long value) -> void
@@ -307,7 +307,7 @@ static Nerdbank.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> des
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, ushort value, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteArrayHeader(System.Span<byte> destination, uint count, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteBinHeader(System.Span<byte> destination, uint length, out int bytesWritten) -> bool
-static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteExtensionFormatHeader(System.Span<byte> destination, Nerdbank.MessagePack.ExtensionHeader extensionHeader, out int bytesWritten) -> bool
+static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteExtensionHeader(System.Span<byte> destination, Nerdbank.MessagePack.ExtensionHeader extensionHeader, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteInt16(System.Span<byte> destination, short value, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteInt32(System.Span<byte> destination, int value, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteInt64(System.Span<byte> destination, long value, out int bytesWritten) -> bool

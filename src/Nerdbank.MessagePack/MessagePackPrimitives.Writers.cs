@@ -960,7 +960,7 @@ public static partial class MessagePackPrimitives
 	/// <see cref="MessagePackCode.Ext16"/>, or
 	/// <see cref="MessagePackCode.Ext32"/>.
 	/// </remarks>
-	public static bool TryWriteExtensionFormatHeader(Span<byte> destination, ExtensionHeader extensionHeader, out int bytesWritten)
+	public static bool TryWriteExtensionHeader(Span<byte> destination, ExtensionHeader extensionHeader, out int bytesWritten)
 	{
 		int dataLength = (int)extensionHeader.Length;
 		byte typeCode = unchecked((byte)extensionHeader.TypeCode);

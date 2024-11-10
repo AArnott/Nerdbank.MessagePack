@@ -134,7 +134,7 @@ public partial class MessagePackReaderTests
 	{
 		var sequence = new Sequence<byte>();
 		var writer = new MessagePackWriter(sequence);
-		writer.WriteExtensionFormatHeader(new ExtensionHeader(3, 1));
+		writer.Write(new ExtensionHeader(3, 1));
 		writer.WriteRaw(new byte[1]);
 		writer.Flush();
 
@@ -154,7 +154,7 @@ public partial class MessagePackReaderTests
 		var sequence = new Sequence<byte>();
 		var writer = new MessagePackWriter(sequence);
 		var expectedExtensionHeader = new ExtensionHeader(4, 100);
-		writer.WriteExtensionFormatHeader(expectedExtensionHeader);
+		writer.Write(expectedExtensionHeader);
 		writer.Flush();
 
 		var reader = new MessagePackReader(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1));
@@ -304,8 +304,8 @@ public partial class MessagePackReaderTests
 		AssertIncomplete((ref MessagePackWriter writer) => writer.Write('c'), (ref MessagePackReader reader) => reader.ReadChar());
 		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(DateTime.Now), (ref MessagePackReader reader) => reader.ReadDateTime());
 		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(double.MaxValue), (ref MessagePackReader reader) => reader.ReadDouble());
-		AssertIncomplete((ref MessagePackWriter writer) => writer.WriteExtensionFormat(new Extension(5, new byte[3])), (ref MessagePackReader reader) => reader.ReadExtension());
-		AssertIncomplete((ref MessagePackWriter writer) => writer.WriteExtensionFormatHeader(new ExtensionHeader(5, 3)), (ref MessagePackReader reader) => reader.ReadExtensionHeader());
+		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(new Extension(5, new byte[3])), (ref MessagePackReader reader) => reader.ReadExtension());
+		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(new ExtensionHeader(5, 3)), (ref MessagePackReader reader) => reader.ReadExtensionHeader());
 		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(0xff), (ref MessagePackReader reader) => reader.ReadInt16());
 		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(0xff), (ref MessagePackReader reader) => reader.ReadInt32());
 		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(0xff), (ref MessagePackReader reader) => reader.ReadInt64());
