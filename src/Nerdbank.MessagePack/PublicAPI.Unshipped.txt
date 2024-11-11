@@ -95,6 +95,7 @@ Nerdbank.MessagePack.MessagePackAsyncWriter.WriteArrayHeader(uint count) -> void
 Nerdbank.MessagePack.MessagePackAsyncWriter.WriteMapHeader(int count) -> void
 Nerdbank.MessagePack.MessagePackAsyncWriter.WriteMapHeader(uint count) -> void
 Nerdbank.MessagePack.MessagePackAsyncWriter.WriteNil() -> void
+Nerdbank.MessagePack.MessagePackAsyncWriter.WriteRaw(System.Buffers.ReadOnlySequence<byte> bytes) -> void
 Nerdbank.MessagePack.MessagePackAsyncWriter.WriteRaw(System.ReadOnlySpan<byte> bytes) -> void
 Nerdbank.MessagePack.MessagePackCode
 Nerdbank.MessagePack.MessagePackConverter<T>
@@ -253,6 +254,13 @@ Nerdbank.MessagePack.MessagePackWriter.WriteUInt8(byte value) -> void
 Nerdbank.MessagePack.MultiDimensionalArrayFormat
 Nerdbank.MessagePack.MultiDimensionalArrayFormat.Flat = 1 -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
 Nerdbank.MessagePack.MultiDimensionalArrayFormat.Nested = 0 -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
+Nerdbank.MessagePack.RawMessagePack
+Nerdbank.MessagePack.RawMessagePack.Equals(Nerdbank.MessagePack.RawMessagePack other) -> bool
+Nerdbank.MessagePack.RawMessagePack.IsOwned.get -> bool
+Nerdbank.MessagePack.RawMessagePack.MsgPack.get -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.MessagePack.RawMessagePack.RawMessagePack() -> void
+Nerdbank.MessagePack.RawMessagePack.RawMessagePack(System.Buffers.ReadOnlySequence<byte> msgpack) -> void
+Nerdbank.MessagePack.RawMessagePack.ToOwned() -> Nerdbank.MessagePack.RawMessagePack
 Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.SerializationContext.DepthStep() -> void
 Nerdbank.MessagePack.SerializationContext.GetConverter<T, TProvider>() -> Nerdbank.MessagePack.MessagePackConverter<T>!
@@ -324,6 +332,11 @@ static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.Mes
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack) -> string!
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(long value) -> int
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(ulong value) -> int
+static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(byte[]! msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.Buffers.ReadOnlySequence<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.Memory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.ReadOnlyMemory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.implicit operator System.Buffers.ReadOnlySequence<byte>(Nerdbank.MessagePack.RawMessagePack msgpack) -> System.Buffers.ReadOnlySequence<byte>
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.PreferAsyncSerialization.get -> bool
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T?>
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
