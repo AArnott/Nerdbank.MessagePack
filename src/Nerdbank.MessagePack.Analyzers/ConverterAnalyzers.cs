@@ -105,7 +105,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 		Func<IInvocationOperation, (int? Impact, bool Unconditional)> relevantMethodTest;
 		switch (method.Name)
 		{
-			case "Serialize":
+			case "Write":
 				relevantMethodTest = i =>
 				{
 					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.MessagePackWriter, i.TargetMethod.ContainingSymbol))
@@ -122,7 +122,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					{
 						return i.TargetMethod.Name switch
 						{
-							"Serialize" or "SerializeAsync" => (1, true),
+							"Write" or "WriteAsync" => (1, true),
 							_ => (0, true),
 						};
 					}
@@ -133,7 +133,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 				};
 
 				break;
-			case "Deserialize":
+			case "Read":
 				relevantMethodTest = i =>
 				{
 					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.MessagePackReader, i.TargetMethod.ContainingSymbol))
@@ -151,7 +151,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					{
 						return i.TargetMethod.Name switch
 						{
-							"Deserialize" or "DeserializeAsync" => (1, true),
+							"Read" or "ReadAsync" => (1, true),
 							_ => (0, true),
 						};
 					}

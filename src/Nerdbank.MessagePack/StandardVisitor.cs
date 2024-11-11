@@ -135,10 +135,10 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
 				// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
 				TPropertyType? value = getter(ref Unsafe.AsRef(in container));
-				converter.Serialize(ref writer, value, context);
+				converter.Write(ref writer, value, context);
 			};
 			SerializePropertyAsync<TDeclaringType> serializeAsync = (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context, CancellationToken cancellationToken)
-				=> converter.SerializeAsync(writer, getter(ref container), context, cancellationToken);
+				=> converter.WriteAsync(writer, getter(ref container), context, cancellationToken);
 			msgpackWriters = (serialize, serializeAsync);
 		}
 
@@ -147,10 +147,10 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		if (propertyShape.HasSetter)
 		{
 			Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) => setter(ref container, converter.Deserialize(ref reader, context)!);
+			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) => setter(ref container, converter.Read(ref reader, context)!);
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken) =>
 			{
-				setter(ref container, (await converter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false))!);
+				setter(ref container, (await converter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false))!);
 				return container;
 			};
 			msgpackReaders = (deserialize, deserializeAsync);
@@ -289,10 +289,10 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 		return new DeserializableProperty<TArgumentState>(
 			parameterShape.Name,
 			StringEncoding.UTF8.GetBytes(parameterShape.Name),
-			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Deserialize(ref reader, context)!),
+			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Read(ref reader, context)!),
 			async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken) =>
 			{
-				setter(ref state, (await converter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false))!);
+				setter(ref state, (await converter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false))!);
 				return state;
 			});
 	}
