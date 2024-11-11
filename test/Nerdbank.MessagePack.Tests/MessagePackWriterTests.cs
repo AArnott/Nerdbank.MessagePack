@@ -125,13 +125,13 @@ public class MessagePackWriterTests
 	}
 
 	[Fact]
-	public void WriteExtensionFormatHeader_NegativeExtension()
+	public void WriteExtensionHeader_NegativeExtension()
 	{
 		var sequence = new Sequence<byte>();
 		var writer = new MessagePackWriter(sequence);
 
 		var header = new ExtensionHeader(-1, 10);
-		writer.WriteExtensionFormatHeader(header);
+		writer.Write(header);
 		writer.WriteRaw(new byte[10]);
 		writer.Flush();
 

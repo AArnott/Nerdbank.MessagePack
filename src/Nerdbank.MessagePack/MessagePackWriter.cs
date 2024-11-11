@@ -679,12 +679,12 @@ public ref struct MessagePackWriter
 	/// <see cref="MessagePackCode.Ext32"/>.
 	/// </summary>
 	/// <param name="extensionHeader">The extension header.</param>
-	public void WriteExtensionFormatHeader(ExtensionHeader extensionHeader)
+	public void Write(ExtensionHeader extensionHeader)
 	{
 		// When we write the header, we'll ask for all the space we need for the payload as well
 		// as that may help ensure we only allocate a buffer once.
 		Span<byte> span = this.writer.GetSpan((int)(extensionHeader.Length + 6));
-		Assumes.True(MessagePackPrimitives.TryWriteExtensionFormatHeader(span, extensionHeader, out int written));
+		Assumes.True(MessagePackPrimitives.TryWriteExtensionHeader(span, extensionHeader, out int written));
 		this.writer.Advance(written);
 	}
 
@@ -700,9 +700,9 @@ public ref struct MessagePackWriter
 	/// <see cref="MessagePackCode.Ext32"/>.
 	/// </summary>
 	/// <param name="extensionData">The extension data.</param>
-	public void WriteExtensionFormat(Extension extensionData)
+	public void Write(Extension extensionData)
 	{
-		this.WriteExtensionFormatHeader(extensionData.Header);
+		this.Write(extensionData.Header);
 		this.WriteRaw(extensionData.Data);
 	}
 
