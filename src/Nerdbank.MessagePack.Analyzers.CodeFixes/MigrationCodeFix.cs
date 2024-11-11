@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Immutable;
+using System.Data;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -57,7 +59,7 @@ public class MigrationCodeFix : CodeFixProvider
 				case MigrationAnalyzer.MessagePackObjectAttributeUsageDiagnosticId:
 					context.RegisterCodeFix(
 						CodeAction.Create(
-							title: "Remove MessagePackObjectAttribute",
+							title: "Remove MessagePackObjectAttribute and add GenerateShapeAttribute if necessary",
 							createChangedDocument: cancellationToken => this.RemoveMessagePackObjectAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
 							equivalenceKey: "Remove MessagePackObjectAttribute"),
 						diagnostic);
@@ -76,7 +78,9 @@ public class MigrationCodeFix : CodeFixProvider
 		return Task.CompletedTask;
 	}
 
-	private static NameSyntax NameInNamespace(SimpleNameSyntax name) => QualifiedName(Namespace, name).WithAdditionalAnnotations(Simplifier.AddImportsAnnotation, Simplifier.Annotation);
+	private static NameSyntax NameInNamespace(SimpleNameSyntax name) => NameInNamespace(name, Namespace);
+
+	private static NameSyntax NameInNamespace(SimpleNameSyntax name, NameSyntax @namespace) => QualifiedName(@namespace, name).WithAdditionalAnnotations(Simplifier.AddImportsAnnotation, Simplifier.Annotation);
 
 	private async Task<Document> MigrateToMessagePackConverterAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
 	{
@@ -142,10 +146,15 @@ public class MigrationCodeFix : CodeFixProvider
 			return document;
 		}
 
-		if (root.FindNode(sourceSpan) is not AttributeSyntax attribute)
+		if (root.FindNode(sourceSpan) is not AttributeSyntax originalAttribute)
 		{
 			return document;
 		}
+
+		BaseTypeDeclarationSyntax? originalAttributedTypeSyntax = originalAttribute.Parent?.Parent as BaseTypeDeclarationSyntax;
+
+		root = originalAttributedTypeSyntax is not null ? root.TrackNodes(originalAttribute, originalAttributedTypeSyntax) : root.TrackNodes(originalAttribute);
+		AttributeSyntax attribute = root.GetCurrentNode(originalAttribute) ?? throw new InvalidOperationException();
 
 		if (attribute.Parent is AttributeListSyntax { Attributes.Count: 1 })
 		{
@@ -158,7 +167,59 @@ public class MigrationCodeFix : CodeFixProvider
 			root = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia)!;
 		}
 
-		return document.WithSyntaxRoot(root);
+		// If this type appears in a call to MessagePackSerializer, make it partial and tack on [GenerateShape].
+		if (originalAttributedTypeSyntax is not null &&
+			await document.GetSemanticModelAsync(cancellationToken) is SemanticModel semanticModel &&
+			semanticModel?.GetDeclaredSymbol(originalAttributedTypeSyntax, cancellationToken) is INamedTypeSymbol attributedTypeSymbol)
+		{
+			Compilation? compilation = await document.Project.GetCompilationAsync(cancellationToken);
+			if (compilation is not null &&
+				MessagePackCSharpReferenceSymbols.TryCreate(compilation, out MessagePackCSharpReferenceSymbols? oldLibSymbols) &&
+				ReferenceSymbols.TryCreate(compilation, out ReferenceSymbols? referenceSymbols) &&
+				await this.IsTypeUsedInSerializerCallAsync(oldLibSymbols, attributedTypeSymbol, document.Project.Solution, cancellationToken) &&
+				root.GetCurrentNode(originalAttributedTypeSyntax) is BaseTypeDeclarationSyntax attributedTypeSyntax)
+			{
+				BaseTypeDeclarationSyntax modified = attributedTypeSyntax;
+				if (!modified.Modifiers.Any(SyntaxKind.PartialKeyword))
+				{
+					modified = modified.AddModifiers(Token(SyntaxKind.PartialKeyword));
+				}
+
+				if (!attributedTypeSymbol.FindAttributes(referenceSymbols.GenerateShapeAttribute).Any())
+				{
+					modified = modified.AddAttributeLists(AttributeList().AddAttributes(Attribute(NameInNamespace(IdentifierName("GenerateShape"), IdentifierName("PolyType")))));
+				}
+
+				root = root.ReplaceNode(attributedTypeSyntax, modified);
+			}
+		}
+
+		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+	}
+
+	private async Task<bool> IsTypeUsedInSerializerCallAsync(MessagePackCSharpReferenceSymbols oldLibSymbols, INamedTypeSymbol dataTypeSymbol, Solution solution, CancellationToken cancellationToken)
+	{
+		IEnumerable<ReferencedSymbol> references = await SymbolFinder.FindReferencesAsync(dataTypeSymbol, solution, cancellationToken);
+		foreach (ReferenceLocation referenceLocation in references.SelectMany(r => r.Locations))
+		{
+			foreach (DocumentId docId in solution.GetDocumentIdsWithFilePath(referenceLocation.Location.SourceTree?.FilePath))
+			{
+				if (solution.GetDocument(docId) is Document doc)
+				{
+					SemanticModel? docSemanticModel = await doc.GetSemanticModelAsync(cancellationToken);
+					SyntaxNode? docRoot = await doc.GetSyntaxRootAsync(cancellationToken);
+					if (docRoot is not null && docSemanticModel is not null &&
+						docRoot.FindNode(referenceLocation.Location.SourceSpan).FirstAncestorOrSelf<InvocationExpressionSyntax>() is { Expression: MemberAccessExpressionSyntax { Expression: { } receiver } } &&
+						docSemanticModel.GetSymbolInfo(receiver, cancellationToken).Symbol is INamedTypeSymbol receiverTypeSymbol &&
+						SymbolEqualityComparer.Default.Equals(receiverTypeSymbol, oldLibSymbols.MessagePackSerializer))
+					{
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	private async Task<Document> ReplaceKeyAttributeAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)

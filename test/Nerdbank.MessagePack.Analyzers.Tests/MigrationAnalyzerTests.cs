@@ -182,6 +182,55 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
+	/// <summary>
+	/// Verifies that [GenerateShape] is added when removing MessagePackObjectAttribute
+	/// when the class is used in a top level call to MessagePackSerializer.
+	/// </summary>
+	[Fact]
+	public async Task MessagePackObject_WithTopLevelUsage()
+	{
+		string source = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+
+			[{|NBMsgPack102:MessagePackObject(true)|}]
+			public class MyType
+			{
+				public string Name { get; set; }
+			}
+
+			class Other
+			{
+				void Foo()
+				{
+					MessagePackSerializer.Serialize(new MyType());
+				}
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+			using PolyType;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				public string Name { get; set; }
+			}
+			
+			class Other
+			{
+				void Foo()
+				{
+					MessagePackSerializer.Serialize(new MyType());
+				}
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource);
+	}
+
 	private Task VerifyCodeFixAsync([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string fixedSource)
 	{
 		return new VerifyCS.Test

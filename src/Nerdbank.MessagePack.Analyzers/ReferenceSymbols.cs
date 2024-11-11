@@ -13,6 +13,7 @@ public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackWriter,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol KnownSubTypeAttribute,
+	INamedTypeSymbol GenerateShapeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute)
 {
 	public INamedTypeSymbol MessagePackConverterUnbound { get; } = MessagePackConverter.ConstructUnboundGenericType();
@@ -74,6 +75,13 @@ public record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? generateShapeAttribute = compilation.GetTypeByMetadataName("PolyType.GenerateShapeAttribute");
+		if (generateShapeAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? propertyShapeAttribute = compilation.GetTypeByMetadataName("PolyType.PropertyShapeAttribute");
 		if (propertyShapeAttribute is null)
 		{
@@ -89,6 +97,7 @@ public record ReferenceSymbols(
 			messagePackWriter,
 			keyAttribute,
 			knownSubTypeAttribute,
+			generateShapeAttribute,
 			propertyShapeAttribute);
 		return true;
 	}
