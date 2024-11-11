@@ -126,11 +126,60 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
-	[Fact(Skip = "Not implemented")]
-	public void FormatterWithExtensionReferences()
+	[Fact]
+	public async Task MessagePackObject_Keys()
 	{
-		// Verify migration when the formatter accesses types and members with the old library's
-		// Extension*Format* naming pattern and update it to drop the 'Format' portion.
+		string source = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+
+			[{|NBMsgPack102:MessagePackObject|}]
+			public class MyType
+			{
+				[{|NBMsgPack103:Key(0)|}]
+				public string Name { get; set; }
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+			
+			public class MyType
+			{
+				[Nerdbank.MessagePack.Key(0)]
+				public string Name { get; set; }
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource);
+	}
+
+	[Fact]
+	public async Task MessagePackObject_Map()
+	{
+		string source = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+
+			[{|NBMsgPack102:MessagePackObject(true)|}]
+			public class MyType
+			{
+				public string Name { get; set; }
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+			
+			public class MyType
+			{
+				public string Name { get; set; }
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
 	private Task VerifyCodeFixAsync([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string fixedSource)

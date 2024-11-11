@@ -10,6 +10,8 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 {
 	public const string FormatterDiagnosticId = "NBMsgPack100";
 	public const string FormatterAttributeDiagnosticId = "NBMsgPack101";
+	public const string MessagePackObjectAttributeUsageDiagnosticId = "NBMsgPack102";
+	public const string KeyAttributeUsageDiagnosticId = "NBMsgPack103";
 
 	public static readonly DiagnosticDescriptor FormatterDiagnostic = new(
 		id: FormatterDiagnosticId,
@@ -29,9 +31,29 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 		isEnabledByDefault: true,
 		helpLinkUri: AnalyzerUtilities.GetHelpLink(FormatterDiagnosticId));
 
+	public static readonly DiagnosticDescriptor MessagePackObjectAttributeUsageDiagnostic = new(
+		id: MessagePackObjectAttributeUsageDiagnosticId,
+		title: Strings.NBMsgPack102_Title,
+		messageFormat: Strings.NBMsgPack102_MessageFormat,
+		category: "Migration",
+		defaultSeverity: DiagnosticSeverity.Info,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(MessagePackObjectAttributeUsageDiagnosticId));
+
+	public static readonly DiagnosticDescriptor KeyAttributeUsageDiagnostic = new(
+		id: KeyAttributeUsageDiagnosticId,
+		title: Strings.NBMsgPack103_Title,
+		messageFormat: Strings.NBMsgPack103_MessageFormat,
+		category: "Migration",
+		defaultSeverity: DiagnosticSeverity.Info,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(KeyAttributeUsageDiagnosticId));
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		FormatterDiagnostic,
 		FormatterAttributeDiagnostic,
+		MessagePackObjectAttributeUsageDiagnostic,
+		KeyAttributeUsageDiagnostic,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -50,6 +72,18 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 			context.RegisterSymbolAction(
 				context =>
 				{
+					// Look for applications of [Key]
+					if (context.Symbol.FindAttributes(oldLibrarySymbols.KeyAttribute).FirstOrDefault() is AttributeData keyAttribute)
+					{
+						context.ReportDiagnostic(Diagnostic.Create(KeyAttributeUsageDiagnostic, keyAttribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()));
+					}
+				},
+				SymbolKind.Property,
+				SymbolKind.Field);
+
+			context.RegisterSymbolAction(
+				context =>
+				{
 					// Look for implementations of IMessagePackFormatter<T>.
 					INamedTypeSymbol target = (INamedTypeSymbol)context.Symbol;
 					if (target.IsAssignableTo(oldLibrarySymbols.IMessagePackFormatterOfT))
@@ -61,13 +95,19 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 
 					// Look for applications of [MessagePackFormatter(typeof(...))]
 					// and report any that actually reference a type that derives from the newer MessagePackConverter<T>.
-					if (target.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, oldLibrarySymbols.MessagePackFormatterAttribute)) is
+					if (target.FindAttributes(oldLibrarySymbols.MessagePackFormatterAttribute).FirstOrDefault() is
 						{ ConstructorArguments: [{ Value: INamedTypeSymbol formatterType }] } attribute)
 					{
 						if (formatterType.IsAssignableTo(referenceSymbols.MessagePackConverterUnbound))
 						{
 							context.ReportDiagnostic(Diagnostic.Create(FormatterAttributeDiagnostic, attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()));
 						}
+					}
+
+					// Look for applications of [MessagePackObject]
+					if (target.FindAttributes(oldLibrarySymbols.MessagePackObjectAttribute).FirstOrDefault() is AttributeData msgpackObjectAttribute)
+					{
+						context.ReportDiagnostic(Diagnostic.Create(MessagePackObjectAttributeUsageDiagnostic, msgpackObjectAttribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()));
 					}
 				},
 				SymbolKind.NamedType);

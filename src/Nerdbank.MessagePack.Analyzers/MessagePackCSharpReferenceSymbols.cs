@@ -10,6 +10,8 @@ public record MessagePackCSharpReferenceSymbols(
 	IMethodSymbol IMessagePackFormatterSerialize,
 	IMethodSymbol IMessagePackFormatterDeserialize,
 	INamedTypeSymbol MessagePackFormatterAttribute,
+	INamedTypeSymbol MessagePackObjectAttribute,
+	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol MessagePackSecurity,
 	IMethodSymbol DepthStep,
 	INamedTypeSymbol MessagePackReader,
@@ -52,6 +54,20 @@ public record MessagePackCSharpReferenceSymbols(
 
 		INamedTypeSymbol? messagePackFormatterAttribute = compilation.GetTypeByMetadataName("MessagePack.MessagePackFormatterAttribute");
 		if (messagePackFormatterAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? messagePackObjectAttribute = compilation.GetTypeByMetadataName("MessagePack.MessagePackObjectAttribute");
+		if (messagePackObjectAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? keyAttribute = compilation.GetTypeByMetadataName("MessagePack.KeyAttribute");
+		if (keyAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -125,6 +141,8 @@ public record MessagePackCSharpReferenceSymbols(
 			formatterSerialize,
 			formatterDeserialize,
 			messagePackFormatterAttribute,
+			messagePackObjectAttribute,
+			keyAttribute,
 			messagePackSecurity,
 			depthStep,
 			reader,

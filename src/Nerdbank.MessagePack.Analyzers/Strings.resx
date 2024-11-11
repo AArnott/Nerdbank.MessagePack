@@ -201,4 +201,16 @@
   <data name="NBMsgPack101_Title" xml:space="preserve">
     <value>Migrate to MessagePackConverterAttribute</value>
   </data>
+  <data name="NBMsgPack102_MessageFormat" xml:space="preserve">
+    <value>MessagePackObjectAttribute is not required for Nerdbank.MessagePack.</value>
+  </data>
+  <data name="NBMsgPack102_Title" xml:space="preserve">
+    <value>Remove use of MessagePackObjectAttribute</value>
+  </data>
+  <data name="NBMsgPack103_MessageFormat" xml:space="preserve">
+    <value>Use Nerdbank.MessagePack.KeyAttribute instead of MessagePack.KeyAttribute.</value>
+  </data>
+  <data name="NBMsgPack103_Title" xml:space="preserve">
+    <value>Use newer KeyAttribute</value>
+  </data>
 </root>

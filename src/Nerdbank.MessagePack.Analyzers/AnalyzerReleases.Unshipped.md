@@ -18,3 +18,5 @@ NBMsgPack030 | Usage | Warning | Converters should not call top-level `MessagePa
 NBMsgPack031 | Usage | Warning | Converters should read or write exactly one msgpack structure
 NBMsgPack100 | Migration | Info | Migrate MessagePack-CSharp formatter
 NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute
+NBMsgPack102 | Migration | Info | Remove use of MessagePackObjectAttribute
+NBMsgPack103 | Migration | Info | Use newer KeyAttribute

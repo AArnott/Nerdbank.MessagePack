@@ -26,6 +26,8 @@ public class MigrationCodeFix : CodeFixProvider
 	public override ImmutableArray<string> FixableDiagnosticIds => [
 		MigrationAnalyzer.FormatterDiagnosticId,
 		MigrationAnalyzer.FormatterAttributeDiagnosticId,
+		MigrationAnalyzer.MessagePackObjectAttributeUsageDiagnosticId,
+		MigrationAnalyzer.KeyAttributeUsageDiagnosticId,
 	];
 
 	public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
@@ -50,6 +52,22 @@ public class MigrationCodeFix : CodeFixProvider
 							title: "Migrate to MessagePackConverterAttribute",
 							createChangedDocument: cancellationToken => this.MigrateToMessagePackConverterAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
 							equivalenceKey: "Migrate to MessagePackConverterAttribute"),
+						diagnostic);
+					break;
+				case MigrationAnalyzer.MessagePackObjectAttributeUsageDiagnosticId:
+					context.RegisterCodeFix(
+						CodeAction.Create(
+							title: "Remove MessagePackObjectAttribute",
+							createChangedDocument: cancellationToken => this.RemoveMessagePackObjectAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+							equivalenceKey: "Remove MessagePackObjectAttribute"),
+						diagnostic);
+					break;
+				case MigrationAnalyzer.KeyAttributeUsageDiagnosticId:
+					context.RegisterCodeFix(
+						CodeAction.Create(
+							title: "Use Nerdbank.MessagePack.KeyAttribute",
+							createChangedDocument: cancellationToken => this.ReplaceKeyAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+							equivalenceKey: "Use Nerdbank.MessagePack.KeyAttribute"),
 						diagnostic);
 					break;
 			}
@@ -114,6 +132,52 @@ public class MigrationCodeFix : CodeFixProvider
 			attribute.WithName(NameInNamespace(IdentifierName("MessagePackConverter"))));
 
 		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+	}
+
+	private async Task<Document> RemoveMessagePackObjectAttributeAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
+	{
+		CompilationUnitSyntax? root = (CompilationUnitSyntax?)await document.GetSyntaxRootAsync(cancellationToken);
+		if (root is null)
+		{
+			return document;
+		}
+
+		if (root.FindNode(sourceSpan) is not AttributeSyntax attribute)
+		{
+			return document;
+		}
+
+		if (attribute.Parent is AttributeListSyntax { Attributes.Count: 1 })
+		{
+			// Remove the whole list.
+			root = root.RemoveNode(attribute.Parent, SyntaxRemoveOptions.KeepEndOfLine)!;
+		}
+		else
+		{
+			// Remove just the attribute.
+			root = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia)!;
+		}
+
+		return document.WithSyntaxRoot(root);
+	}
+
+	private async Task<Document> ReplaceKeyAttributeAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
+	{
+		CompilationUnitSyntax? root = (CompilationUnitSyntax?)await document.GetSyntaxRootAsync(cancellationToken);
+		if (root is null)
+		{
+			return document;
+		}
+
+		if (root.FindNode(sourceSpan) is not AttributeSyntax attribute)
+		{
+			return document;
+		}
+
+		AttributeSyntax newAttribute = attribute.WithName(NameInNamespace(IdentifierName("Key")));
+		root = root.ReplaceNode(attribute, newAttribute);
+
+		return document.WithSyntaxRoot(root);
 	}
 
 	private async Task<Document> AddImportAndSimplifyAsync(Document document, CancellationToken cancellationToken)
