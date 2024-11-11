@@ -22,7 +22,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	DeserializableProperty<TArgumentState>?[] parameters) : ObjectArrayConverter<TDeclaringType>(properties, null)
 {
 	/// <inheritdoc/>
-	public override TDeclaringType? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -50,7 +50,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TDeclaringType?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<TDeclaringType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
 	{
 		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
 		{

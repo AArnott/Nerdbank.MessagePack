@@ -16,7 +16,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override T? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override T? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -47,7 +47,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -73,7 +73,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask SerializeAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
 	{
 		if (value is null)
 		{
@@ -99,7 +99,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<T?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
 	{
 		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
 		{

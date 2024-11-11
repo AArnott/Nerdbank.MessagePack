@@ -25,7 +25,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -36,7 +36,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, in TDictionary? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in TDictionary? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -52,8 +52,8 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			TKey? entryKey = pair.Key;
 			TValue? entryValue = pair.Value;
 
-			keyConverter.Serialize(ref writer, entryKey, context);
-			valueConverter.Serialize(ref writer, entryValue, context);
+			keyConverter.Write(ref writer, entryKey, context);
+			valueConverter.Write(ref writer, entryValue, context);
 		}
 	}
 
@@ -61,27 +61,27 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// Reads a key and value pair.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <param name="key">Receives the key.</param>
 	/// <param name="value">Receives the value.</param>
 	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey key, out TValue value)
 	{
-		key = keyConverter.Deserialize(ref reader, context)!;
-		value = valueConverter.Deserialize(ref reader, context)!;
+		key = keyConverter.Read(ref reader, context)!;
+		value = valueConverter.Read(ref reader, context)!;
 	}
 
 	/// <summary>
 	/// Reads a key and value pair.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The key=value pair.</returns>
 	[Experimental("NBMsgPackAsync")]
 	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
 	{
-		TKey? key = await keyConverter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false);
-		TValue? value = await valueConverter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false);
+		TKey? key = await keyConverter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false);
+		TValue? value = await valueConverter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false);
 		return new(key!, value!);
 	}
 }
@@ -103,7 +103,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -117,7 +117,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TDictionary?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
 	{
 		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
 		{
@@ -189,7 +189,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -231,7 +231,7 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 {
 	/// <inheritdoc/>
-	public override TDictionary? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

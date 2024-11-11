@@ -15,7 +15,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override TElement[]? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TElement[]? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -27,14 +27,14 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		TElement[] array = new TElement[count];
 		for (int i = 0; i < count; i++)
 		{
-			array[i] = elementConverter.Deserialize(ref reader, context)!;
+			array[i] = elementConverter.Read(ref reader, context)!;
 		}
 
 		return array;
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, in TElement[]? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -46,13 +46,13 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		writer.WriteArrayHeader(value.Length);
 		for (int i = 0; i < value.Length; i++)
 		{
-			elementConverter.Serialize(ref writer, value[i], context);
+			elementConverter.Write(ref writer, value[i], context);
 		}
 	}
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask SerializeAsync(MessagePackAsyncWriter writer, TElement[]? value, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TElement[]? value, SerializationContext context, CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
@@ -68,7 +68,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			writer.WriteArrayHeader(value.Length);
 			for (int i = 0; i < value.Length; i++)
 			{
-				await elementConverter.SerializeAsync(writer, value[i], context, cancellationToken).ConfigureAwait(false);
+				await elementConverter.WriteAsync(writer, value[i], context, cancellationToken).ConfigureAwait(false);
 				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
 			}
 		}
@@ -97,7 +97,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 						break;
 					}
 
-					elementConverter.Serialize(ref syncWriter, value[progress], context);
+					elementConverter.Write(ref syncWriter, value[progress], context);
 					cancellationToken.ThrowIfCancellationRequested();
 				}
 
@@ -108,7 +108,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TElement[]?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
 	{
 		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
 		{
@@ -123,7 +123,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			TElement[] array = new TElement[count];
 			for (int i = 0; i < count; i++)
 			{
-				array[i] = (await elementConverter.DeserializeAsync(reader, context, cancellationToken).ConfigureAwait(false))!;
+				array[i] = (await elementConverter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false))!;
 			}
 
 			return array;
@@ -141,7 +141,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 				TElement[] array = new TElement[count];
 				for (int i = 0; i < count; i++)
 				{
-					array[i] = elementConverter.Deserialize(ref syncReader, context)!;
+					array[i] = elementConverter.Read(ref syncReader, context)!;
 				}
 
 				return array;

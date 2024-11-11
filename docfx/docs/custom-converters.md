@@ -14,7 +14,7 @@ using Nerdbank.MessagePack;
 
 class FooConverter : MessagePackConverter<Foo?>
 {
-    public override Foo? Deserialize(ref MessagePackReader reader, SerializationContext context)
+    public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
     {
         if (reader.TryReadNil())
         {
@@ -46,7 +46,7 @@ class FooConverter : MessagePackConverter<Foo?>
         return new Foo(property1, property2);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+    public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
     {
         if (value is null)
         {
@@ -66,22 +66,22 @@ class FooConverter : MessagePackConverter<Foo?>
 ```
 
 > [!CAUTION]
-> It is imperative that each `Serialize` and `Deserialize` method write and read *exactly one* msgpack structure.
+> It is imperative that each `Write` and `Read` method write and read *exactly one* msgpack structure.
 
 A converter that reads or writes more than one msgpack structure may appear to work correctly, but will result in invalid, unparseable msgpack.
 Msgpack is a structured, self-describing format similar to JSON.
 In JSON, an individual array element or object property value must be described as a single element or the JSON would be invalid.
 
 If you have more than one value to serialize or deserialize (e.g. multiple fields on an object) you MUST use a map or array header with the appropriate number of elements you intend to serialize.
-In the @"Nerdbank.MessagePack.MessagePackConverter`1.Serialize*" method, use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader*.
-In the @"Nerdbank.MessagePack.MessagePackConverter`1.Deserialize*" method, use @Nerdbank.MessagePack.MessagePackReader.ReadMapHeader or @Nerdbank.MessagePack.MessagePackReader.ReadArrayHeader.
+In the @"Nerdbank.MessagePack.MessagePackConverter`1.Write*" method, use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader*.
+In the @"Nerdbank.MessagePack.MessagePackConverter`1.Read*" method, use @Nerdbank.MessagePack.MessagePackReader.ReadMapHeader or @Nerdbank.MessagePack.MessagePackReader.ReadArrayHeader.
 
 ### Delegating to sub-values
 
 The @Nerdbank.MessagePack.SerializationContext.GetConverter* method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
 
 ```cs
-public override void Serialize(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
 {
     if (value is null)
     {
@@ -93,7 +93,7 @@ public override void Serialize(ref MessagePackWriter writer, in Foo? value, Seri
 
     writer.WriteString("MyProperty");
     SomeOtherType propertyValue = value.MyProperty;
-    context.GetConverter<SomeOtherType>().Serialize(ref writer, ref propertyValue, context);
+    context.GetConverter<SomeOtherType>().Write(ref writer, ref propertyValue, context);
 
     writer.WriteString("MyProperty2");
     writer.Write(value.MyProperty2);
@@ -108,10 +108,10 @@ For convenience, you may want to apply it directly to your custom converter:
 [GenerateShape<SomeOtherType>]
 class FooConverter : MessagePackConverter<Foo>
 {
-    public override void Serialize(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+    public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
     {
         // ...
-        context.GetConverter<SomeOtherType, FooConverter>().Serialize(ref writer, ref propertyValue, context);
+        context.GetConverter<SomeOtherType, FooConverter>().Write(ref writer, ref propertyValue, context);
         // ...
     }
 }
@@ -164,7 +164,7 @@ Your custom converters *may* follow similar patterns if tuning performance for y
 
 ### Async converters
 
-@Nerdbank.MessagePack.MessagePackConverter`1 is an abstract class that requires a derived converter to implement synchronous @Nerdbank.MessagePack.MessagePackConverter`1.Serialize* and @Nerdbank.MessagePack.MessagePackConverter`1.Deserialize* methods.
+@Nerdbank.MessagePack.MessagePackConverter`1 is an abstract class that requires a derived converter to implement synchronous @Nerdbank.MessagePack.MessagePackConverter`1.Write* and @Nerdbank.MessagePack.MessagePackConverter`1.Read* methods.
 The base class also declares `virtual` async alternatives to these methods (@Nerdbank.MessagePack.MessagePackConverter`1.SerializeAsync* and @Nerdbank.MessagePack.MessagePackConverter`1.DeserializeAsync*, respectively) which a derived class may *optionally* override.
 These default async implementations are correct, and essentially buffer the whole msgpack representation while deferring the actual serialization work to the synchronous methods.
 

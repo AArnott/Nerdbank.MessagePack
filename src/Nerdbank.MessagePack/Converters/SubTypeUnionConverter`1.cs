@@ -12,7 +12,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConverter<TBase> baseConverter) : MessagePackConverter<TBase>
 {
 	/// <inheritdoc/>
-	public override TBase? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TBase? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -28,7 +28,7 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 		// The alias for the base type itself is simply nil.
 		if (reader.TryReadNil())
 		{
-			return baseConverter.Deserialize(ref reader, context);
+			return baseConverter.Read(ref reader, context);
 		}
 
 		int alias = reader.ReadInt32();
@@ -37,11 +37,11 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 			throw new MessagePackSerializationException($"Unknown alias {alias}.");
 		}
 
-		return (TBase?)converter.Deserialize(ref reader, context);
+		return (TBase?)converter.Read(ref reader, context);
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, in TBase? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in TBase? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -56,13 +56,13 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 		{
 			// The runtime type of the value matches the base exactly. Use nil as the alias.
 			writer.WriteNil();
-			baseConverter.Serialize(ref writer, value, context);
+			baseConverter.Write(ref writer, value, context);
 		}
 		else if (subTypes.Serializers.TryGetValue(valueType, out (int Alias, IMessagePackConverter Converter) result))
 		{
 			writer.Write(result.Alias);
 			object? untypedValue = value;
-			result.Converter.Serialize(ref writer, ref untypedValue, context);
+			result.Converter.Write(ref writer, ref untypedValue, context);
 		}
 		else
 		{

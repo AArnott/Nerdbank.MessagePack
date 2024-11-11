@@ -19,15 +19,15 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		[GenerateShape<string>]
 		private partial class CustomTypeConverter : MessagePackConverter<CustomType>
 		{
-			public override CustomType? Deserialize(ref MessagePackReader reader, SerializationContext context)
+			public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				string? value = context.GetConverter<string, CustomTypeConverter>().Deserialize(ref reader, context);
+				string? value = context.GetConverter<string, CustomTypeConverter>().Read(ref reader, context);
 				return new CustomType { InternalProperty = value };
 			}
 
-			public override void Serialize(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
+			public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
 			{
-				context.GetConverter<string, CustomTypeConverter>().Serialize(ref writer, value?.InternalProperty, context);
+				context.GetConverter<string, CustomTypeConverter>().Write(ref writer, value?.InternalProperty, context);
 			}
 		}
 	}
