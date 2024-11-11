@@ -64,13 +64,13 @@ These two APIs are very similar, but the method signatures are slightly differen
 +public class MyTypeFormatter : MessagePackConverter<MyType>
  {
 -    public MyType Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
-+    public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
++    public override MyType Read(ref MessagePackReader reader, SerializationContext context)
      {
          if (reader.TryReadNil())
          {
              return null;
          }
- 
+
          string name = null;
 -        options.Security.DepthStep(ref reader);
 +        context.DepthStep();
@@ -83,7 +83,7 @@ These two APIs are very similar, but the method signatures are slightly differen
                  {
                      case 0:
 -                        name = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
-+                        name = context.GetConverter<string>().Deserialize(ref reader, context);
++                        name = context.GetConverter<string>().Read(ref reader, context);
                          break;
                      default:
 -                        reader.Skip();
@@ -91,7 +91,7 @@ These two APIs are very similar, but the method signatures are slightly differen
                          break;
                      }
              }
- 
+
              return new MyType { Name = name };
 -        }
 -        finally
@@ -101,17 +101,17 @@ These two APIs are very similar, but the method signatures are slightly differen
      }
 
 -    public void Serialize(ref MessagePackWriter writer, MyType value, MessagePackSerializerOptions options)
-+    public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context)
++    public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
      {
          if (value is null)
          {
              writer.WriteNil();
              return;
          }
- 
+
          writer.WriteArrayHeader(1);
 -        options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, value.Name, options);
-+        context.GetConverter<string>().Serialize(ref writer, value.Name, context);
++        context.GetConverter<string>().Write(ref writer, value.Name, context);
      }
  }
 ```

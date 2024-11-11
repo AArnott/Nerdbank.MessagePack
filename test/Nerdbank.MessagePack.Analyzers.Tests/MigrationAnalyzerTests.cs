@@ -83,7 +83,7 @@ public class MigrationAnalyzerTests
 			[GenerateShape<string>]
 			public partial class MyTypeFormatter : MessagePackConverter<MyType>
 			{
-				public override MyType Deserialize(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
+				public override MyType Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
 				{
 					if (reader.TryReadNil())
 					{
@@ -109,7 +109,7 @@ public class MigrationAnalyzerTests
 					return new MyType { Name = name };
 				}
 
-				public override void Serialize(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType value, SerializationContext context)
+				public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType value, SerializationContext context)
 				{
 					if (value is null)
 					{

@@ -398,7 +398,7 @@ public class MigrationCodeFix : CodeFixProvider
 				MethodDeclarationSyntax result = (MethodDeclarationSyntax)base.VisitMethodDeclaration(node)!;
 
 				// - public void Serialize(ref MessagePackWriter writer, MyType value, MessagePackSerializerOptions options)
-				// + public override void Serialize(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType value, SerializationContext context)
+				// + public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType value, SerializationContext context)
 
 				// Add override modifier.
 				result = result.AddModifiers(Token(SyntaxKind.OverrideKeyword));
@@ -414,6 +414,9 @@ public class MigrationCodeFix : CodeFixProvider
 				// Qualify the first parameter type name if necessary.
 				result = QualifyParameterTypeNames(result);
 
+				// Rename the method
+				result = result.WithIdentifier(Identifier("Write"));
+
 				return result;
 			}
 			else if (node == this.DeserializeMethod)
@@ -421,7 +424,7 @@ public class MigrationCodeFix : CodeFixProvider
 				MethodDeclarationSyntax result = (MethodDeclarationSyntax)base.VisitMethodDeclaration(node)!;
 
 				// - public MyType Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
-				// + public override MyType Deserialize(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
+				// + public override MyType Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
 
 				// Add override modifier.
 				result = result.AddModifiers(Token(SyntaxKind.OverrideKeyword));
@@ -431,6 +434,9 @@ public class MigrationCodeFix : CodeFixProvider
 
 				// Qualify the first parameter type name if necessary.
 				result = QualifyParameterTypeNames(result);
+
+				// Rename the method
+				result = result.WithIdentifier(Identifier("Read"));
 
 				return result;
 			}
