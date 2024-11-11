@@ -355,21 +355,11 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	/// <inheritdoc/>
 	public override void Serialize(ref MessagePackWriter writer, in BigInteger value, SerializationContext context)
 	{
-		// try to get bin8 buffer.
-		Span<byte> span = writer.GetSpan(byte.MaxValue);
-		if (value.TryWriteBytes(span.Slice(2, byte.MaxValue), out var written))
-		{
-			span[0] = MessagePackCode.Bin8;
-			span[1] = (byte)written;
-
-			writer.Advance(written + 2);
-		}
-		else
-		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
-		}
+		int byteCount = value.GetByteCount();
+		writer.WriteBinHeader(byteCount);
+		Span<byte> span = writer.GetSpan(byteCount);
+		Assumes.True(value.TryWriteBytes(span, out int written));
+		writer.Advance(written);
 	}
 }
 
