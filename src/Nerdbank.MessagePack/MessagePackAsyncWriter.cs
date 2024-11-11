@@ -102,6 +102,14 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 		writer.Flush();
 	}
 
+	/// <inheritdoc cref="MessagePackWriter.WriteRaw(in ReadOnlySequence{byte})"/>
+	public void WriteRaw(ReadOnlySequence<byte> bytes)
+	{
+		MessagePackWriter writer = this.CreateWriter();
+		writer.WriteRaw(bytes);
+		writer.Flush();
+	}
+
 	/// <summary>
 	/// Flushes the pipe if the buffer is getting full.
 	/// </summary>
