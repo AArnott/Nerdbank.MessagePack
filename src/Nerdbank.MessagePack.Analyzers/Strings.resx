@@ -189,4 +189,16 @@
   <data name="NBMsgPack031_Title" xml:space="preserve">
     <value>Converters should read or write exactly one msgpack structure</value>
   </data>
+  <data name="NBMsgPack100_MessageFormat" xml:space="preserve">
+    <value>This is a formatter for the MessagePack-CSharp library. You may want to migrate this to a converter for the newer Nerdbank.MessagePack library.</value>
+  </data>
+  <data name="NBMsgPack100_Title" xml:space="preserve">
+    <value>Migrate to MessagePackConverter&lt;T&gt;</value>
+  </data>
+  <data name="NBMsgPack101_MessageFormat" xml:space="preserve">
+    <value>This old attribute refers to a new converter. Switch to the new MessagePackConverterAttribute.</value>
+  </data>
+  <data name="NBMsgPack101_Title" xml:space="preserve">
+    <value>Migrate to MessagePackConverterAttribute</value>
+  </data>
 </root>

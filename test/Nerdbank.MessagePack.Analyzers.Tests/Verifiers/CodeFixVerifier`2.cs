@@ -95,6 +95,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 				.WithWarningLevel(99)
 				.WithSpecificDiagnosticOptions(compilationOptions.SpecificDiagnosticOptions
 					.SetItem("CS1591", ReportDiagnostic.Suppress) // documentation required
+					.SetItem("CS1701", ReportDiagnostic.Suppress) // binding redirects
 					.SetItem("CS0169", ReportDiagnostic.Suppress) // unused field
 					.SetItem("CS0414", ReportDiagnostic.Suppress)); // field assigned but never used
 		}

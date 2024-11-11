@@ -16,3 +16,5 @@ NBMsgPack020 | Usage | Error | `[MessagePackConverter]` type must be compatible 
 NBMsgPack021 | Usage | Error | `[MessagePackConverter]` type missing default constructor
 NBMsgPack030 | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods
 NBMsgPack031 | Usage | Warning | Converters should read or write exactly one msgpack structure
+NBMsgPack100 | Migration | Info | Migrate MessagePack-CSharp formatter
+NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute

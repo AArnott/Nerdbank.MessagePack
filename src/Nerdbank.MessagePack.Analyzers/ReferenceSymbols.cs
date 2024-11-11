@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Analyzers;
 
-internal record ReferenceSymbols(
+public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackSerializer,
 	INamedTypeSymbol MessagePackConverter,
 	INamedTypeSymbol MessagePackConverterAttribute,
@@ -17,7 +17,7 @@ internal record ReferenceSymbols(
 {
 	public INamedTypeSymbol MessagePackConverterUnbound { get; } = MessagePackConverter.ConstructUnboundGenericType();
 
-	internal static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
+	public static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
 	{
 		if (!compilation.ReferencedAssemblyNames.Any(id => id.Name == "Nerdbank.MessagePack"))
 		{
