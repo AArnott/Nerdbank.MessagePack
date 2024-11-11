@@ -7,7 +7,7 @@ In such cases, you can define and register your own custom converter for the inc
 
 Consider class `Foo` that cannot be serialized automatically.
 
-Declare a class that derives from @"Nerdbank.MessagePack.MessagePackConverter``1":
+Declare a class that derives from @"Nerdbank.MessagePack.MessagePackConverter`1":
 
 ```cs
 using Nerdbank.MessagePack;
