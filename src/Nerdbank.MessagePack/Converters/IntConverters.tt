@@ -18,9 +18,9 @@ foreach (string type in types) { #>
 internal class <#=type#>Converter : MessagePackConverter<<#=type#>>
 {
 	/// <inheritdoc/>
-	public override <#=type#> Deserialize(ref MessagePackReader reader, SerializationContext context) => reader.Read<#=type#>();
+	public override <#=type#> Read(ref MessagePackReader reader, SerializationContext context) => reader.Read<#=type#>();
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, in <#=type#> value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref MessagePackWriter writer, in <#=type#> value, SerializationContext context) => writer.Write(value);
 }
 <# } #>

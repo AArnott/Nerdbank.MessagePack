@@ -17,8 +17,8 @@ public class MyType
 public class MyTypeConverter : MessagePackConverter<MyType>
 {
 	private MyTypeConverter() { }
-	public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-	public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
+	public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+	public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 }
 ```
 
@@ -34,7 +34,7 @@ public class MyType
 
 public class MyTypeConverter : MessagePackConverter<MyType>
 {
-	public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-	public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
+	public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+	public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 }
 ```

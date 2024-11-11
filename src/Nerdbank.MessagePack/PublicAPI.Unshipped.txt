@@ -1,5 +1,5 @@
-abstract Nerdbank.MessagePack.MessagePackConverter<T>.Deserialize(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> T?
-abstract Nerdbank.MessagePack.MessagePackConverter<T>.Serialize(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value, Nerdbank.MessagePack.SerializationContext context) -> void
+abstract Nerdbank.MessagePack.MessagePackConverter<T>.Read(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> T?
+abstract Nerdbank.MessagePack.MessagePackConverter<T>.Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value, Nerdbank.MessagePack.SerializationContext context) -> void
 abstract Nerdbank.MessagePack.MessagePackNamingPolicy.ConvertName(string! name) -> string!
 const Nerdbank.MessagePack.MessagePackCode.Array16 = 220 -> byte
 const Nerdbank.MessagePack.MessagePackCode.Array32 = 221 -> byte
@@ -324,6 +324,6 @@ static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.Mes
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack) -> string!
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(long value) -> int
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(ulong value) -> int
-virtual Nerdbank.MessagePack.MessagePackConverter<T>.DeserializeAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T?>
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.PreferAsyncSerialization.get -> bool
-virtual Nerdbank.MessagePack.MessagePackConverter<T>.SerializeAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T?>
+virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask

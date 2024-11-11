@@ -17,7 +17,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </summary>
 	/// <value>Unless overridden in a derived converter, this value is always <see langword="false"/>.</value>
 	/// <remarks>
-	/// Derived types that override the <see cref="SerializeAsync"/> and/or <see cref="DeserializeAsync"/> methods
+	/// Derived types that override the <see cref="WriteAsync"/> and/or <see cref="ReadAsync"/> methods
 	/// should also override this property and have it return <see langword="true" />.
 	/// </remarks>
 	public virtual bool PreferAsyncSerialization => false;
@@ -28,7 +28,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
-	public abstract void Serialize(ref MessagePackWriter writer, in T? value, SerializationContext context);
+	public abstract void Write(ref MessagePackWriter writer, in T? value, SerializationContext context);
 
 	/// <summary>
 	/// Deserializes an instance of <typeparamref name="T"/>.
@@ -36,7 +36,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <param name="reader">The reader to use.</param>
 	/// <param name="context">Context for the deserialization.</param>
 	/// <returns>The deserialized value.</returns>
-	public abstract T? Deserialize(ref MessagePackReader reader, SerializationContext context);
+	public abstract T? Read(ref MessagePackReader reader, SerializationContext context);
 
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
@@ -48,7 +48,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <returns>A task that tracks the async serialization.</returns>
 	/// <remarks>
 	/// <para>
-	/// The default implementation delegates to <see cref="Serialize"/> and then flushes the data to the pipe
+	/// The default implementation delegates to <see cref="Write"/> and then flushes the data to the pipe
 	/// if the buffers are getting relatively full.
 	/// </para>
 	/// <para>
@@ -59,13 +59,13 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </para>
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	public virtual ValueTask SerializeAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
+	public virtual ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
 	{
 		Requires.NotNull(writer);
 		cancellationToken.ThrowIfCancellationRequested();
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
-		this.Serialize(ref syncWriter, value, context);
+		this.Write(ref syncWriter, value, context);
 		syncWriter.Flush();
 
 		// On our way out, pause to flush the pipe if a lot of data has accumulated in the buffer.
@@ -80,7 +80,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	/// <remarks>
-	/// <para>The default implementation delegates to <see cref="Deserialize"/> after ensuring there is sufficient buffer to read the next structure.</para>
+	/// <para>The default implementation delegates to <see cref="Read"/> after ensuring there is sufficient buffer to read the next structure.</para>
 	/// <para>
 	/// Derived classes should only override this method if they may read a lot of data.
 	/// They should do so with the intent to be able to read some data then asynchronously wait for data before reading more
@@ -88,7 +88,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </para>
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	public virtual async ValueTask<T?> DeserializeAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public virtual async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
 	{
 		Requires.NotNull(reader);
 		cancellationToken.ThrowIfCancellationRequested();
@@ -101,19 +101,19 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 		T? Deserialize(ReadOnlySequence<byte> buffer, SerializationContext context)
 		{
 			MessagePackReader msgpackReader = new(buffer);
-			return this.Deserialize(ref msgpackReader, context);
+			return this.Read(ref msgpackReader, context);
 		}
 	}
 
 	/// <inheritdoc/>
-	void IMessagePackConverter.Serialize(ref MessagePackWriter writer, ref object? value, SerializationContext context)
+	void IMessagePackConverter.Write(ref MessagePackWriter writer, ref object? value, SerializationContext context)
 	{
-		this.Serialize(ref writer, (T?)value, context);
+		this.Write(ref writer, (T?)value, context);
 	}
 
 	/// <inheritdoc/>
-	object? IMessagePackConverter.Deserialize(ref MessagePackReader reader, SerializationContext context)
+	object? IMessagePackConverter.Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		return this.Deserialize(ref reader, context);
+		return this.Read(ref reader, context);
 	}
 }

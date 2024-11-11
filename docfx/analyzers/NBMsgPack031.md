@@ -13,14 +13,14 @@ The following converter reads and writes two distinct values, which is not allow
 ```cs
 public class MyTypeConverter : MessagePackConverter<MyType>
 {
-    public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+    public override MyType Read(ref MessagePackReader reader, SerializationContext context)
     {
         int a = reader.ReadInt32();
         short b = reader.ReadInt16();  // NBMsgPack031
         return new MyType(a, b);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context)
+    public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
     {
         writer.Write(value.A);
         writer.Write(value.B);  // NBMsgPack031
@@ -33,17 +33,17 @@ Each deferral of serialization to other converters counts as exactly one value e
 ```cs
 public class MyTypeConverter : MessagePackConverter<MyType>
 {
-    public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+    public override MyType Read(ref MessagePackReader reader, SerializationContext context)
     {
-        AnotherType a = context.GetConverter<AnotherType>().Deserialize(ref reader, context);
-        YetAnotherType b = context.GetConverter<YetAnotherType>().Deserialize(ref reader, context);  // NBMsgPack031
+        AnotherType a = context.GetConverter<AnotherType>().Read(ref reader, context);
+        YetAnotherType b = context.GetConverter<YetAnotherType>().Read(ref reader, context);  // NBMsgPack031
         return new MyType(a, b);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context)
+    public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
     {
-        AnotherType a = context.GetConverter<AnotherType>().Serialize(ref writer, ref value.A, context);
-        YetAnotherType b = context.GetConverter<YetAnotherType>().Serialize(ref writer, ref value.B, context);  // NBMsgPack031
+        AnotherType a = context.GetConverter<AnotherType>().Write(ref writer, ref value.A, context);
+        YetAnotherType b = context.GetConverter<YetAnotherType>().Write(ref writer, ref value.B, context);  // NBMsgPack031
     }
 }
 ```
@@ -60,7 +60,7 @@ In the following example, the deserializer throws if it does not encounter exact
 ```cs
 public class MyTypeConverter : MessagePackConverter<MyType>
 {
-    public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+    public override MyType Read(ref MessagePackReader reader, SerializationContext context)
     {
         int count = reader.ReadArrayHeader();
         if (count != 2)
@@ -73,7 +73,7 @@ public class MyTypeConverter : MessagePackConverter<MyType>
         return new MyType(property1, property2);
     }
 
-    public override void Serialize(ref MessagePackWriter writer, in MyType value, SerializationContext context)
+    public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
     {
         writer.WriteArrayHeader(2);
         writer.Write(value.Property1);
@@ -85,7 +85,7 @@ public class MyTypeConverter : MessagePackConverter<MyType>
 In this next example, the deserializer is flexible to forward/backward compatibility by reading any number of elements, and uses default values if fewer than 2 are encountered:
 
 ```cs
-public override MyType Deserialize(ref MessagePackReader reader, SerializationContext context)
+public override MyType Read(ref MessagePackReader reader, SerializationContext context)
 {
     int count = reader.ReadArrayHeader();
 

@@ -21,7 +21,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	protected bool ElementPrefersAsyncSerialization => elementConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -32,7 +32,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	public override void Serialize(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -47,7 +47,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			writer.WriteArrayHeader(count);
 			foreach (TElement element in enumerable)
 			{
-				elementConverter.Serialize(ref writer, element, context);
+				elementConverter.Write(ref writer, element, context);
 			}
 		}
 		else
@@ -56,7 +56,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			writer.WriteArrayHeader(array.Length);
 			for (int i = 0; i < array.Length; i++)
 			{
-				elementConverter.Serialize(ref writer, array[i], context);
+				elementConverter.Write(ref writer, array[i], context);
 			}
 		}
 	}
@@ -65,20 +65,20 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// Reads one element from the reader.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
-	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Deserialize(ref reader, context)!;
+	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Read(ref reader, context)!;
 
 	/// <summary>
 	/// Reads one element from the reader.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Deserialize" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The element.</returns>
 	[Experimental("NBMsgPackAsync")]
 	protected ValueTask<TElement> ReadElementAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
-		=> elementConverter.DeserializeAsync(reader, context, cancellationToken)!;
+		=> elementConverter.ReadAsync(reader, context, cancellationToken)!;
 }
 
 /// <summary>
@@ -96,7 +96,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -164,7 +164,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -203,7 +203,7 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Deserialize(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
