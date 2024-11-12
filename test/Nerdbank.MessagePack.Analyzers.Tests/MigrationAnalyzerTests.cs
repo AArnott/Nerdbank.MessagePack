@@ -102,7 +102,7 @@ public class MigrationAnalyzerTests
 						switch (i)
 						{
 							case 0:
-								name = context.GetConverter<string, MyTypeFormatter>().Deserialize(ref reader, context);
+								name = context.GetConverter<string, MyTypeFormatter>().Read(ref reader, context);
 								break;
 							default:
 								reader.Skip(context);
@@ -122,7 +122,7 @@ public class MigrationAnalyzerTests
 					}
 
 					writer.WriteArrayHeader(1);
-					context.GetConverter<string, MyTypeFormatter>().Serialize(ref writer, value.Name, context);
+					context.GetConverter<string, MyTypeFormatter>().Write(ref writer, value.Name, context);
 				}
 			}
 			""";

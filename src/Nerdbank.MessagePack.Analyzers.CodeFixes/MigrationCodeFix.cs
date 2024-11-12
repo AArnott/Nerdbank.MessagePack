@@ -319,18 +319,28 @@ public class MigrationCodeFix : CodeFixProvider
 						IMethodSymbol unboundMethod = containingSymbol.ConstructedFrom.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>().FirstOrDefault();
 
 						// - (formatter).Deserialize(ref reader, options)
-						// + (converter).Deserialize(ref reader, context)
+						// + (converter).Read(ref reader, context)
 						if (node.ArgumentList.Arguments.Count == 2 && SymbolEqualityComparer.Default.Equals(unboundMethod, oldLibrarySymbols.IMessagePackFormatterDeserialize))
 						{
 							node = (InvocationExpressionSyntax)base.VisitInvocationExpression(node)!;
+							if (node.Expression is MemberAccessExpressionSyntax memberAccess)
+							{
+								node = node.WithExpression(memberAccess.WithName(IdentifierName("Read")));
+							}
+
 							return node.ReplaceNode(node.ArgumentList.Arguments[1], Argument(ContextParameterName));
 						}
 
 						// - (formatter).Serialize(ref writer, value, options)
-						// + (converter).Serialize(ref writer, value, context)
+						// + (converter).Write(ref writer, value, context)
 						if (node.ArgumentList.Arguments.Count == 3 && SymbolEqualityComparer.Default.Equals(unboundMethod, oldLibrarySymbols.IMessagePackFormatterSerialize))
 						{
 							node = (InvocationExpressionSyntax)base.VisitInvocationExpression(node)!;
+							if (node.Expression is MemberAccessExpressionSyntax memberAccess)
+							{
+								node = node.WithExpression(memberAccess.WithName(IdentifierName("Write")));
+							}
+
 							return node.ReplaceNode(node.ArgumentList.Arguments[2], Argument(ContextParameterName));
 						}
 					}
