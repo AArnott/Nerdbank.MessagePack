@@ -2,14 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Immutable;
-using System.Data;
-using System.Diagnostics;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Formatting;
@@ -349,6 +345,11 @@ public class MigrationCodeFix : CodeFixProvider
 					{
 						if (node.Expression is MemberAccessExpressionSyntax { Name: GenericNameSyntax { TypeArgumentList: { Arguments: [TypeSyntax typeArg] } } })
 						{
+							if (typeArg is NullableTypeSyntax { ElementType: { } nullableElement })
+							{
+								typeArg = nullableElement;
+							}
+
 							string typeArgString = typeArg.ToString();
 							if (!this.requiredWitnesses.ContainsKey(typeArgString))
 							{
@@ -501,7 +502,7 @@ public class MigrationCodeFix : CodeFixProvider
 		{
 			foreach (BaseTypeSyntax baseType in node.Types)
 			{
-				if (baseType.Type is not GenericNameSyntax genericBaseType)
+				if (baseType.Type is not GenericNameSyntax { TypeArgumentList.Arguments: [TypeSyntax typeArg] } genericBaseType)
 				{
 					continue;
 				}
@@ -512,9 +513,15 @@ public class MigrationCodeFix : CodeFixProvider
 					// Remove IMessagePackFormatter<T>
 					node = node.RemoveNode(baseType, SyntaxRemoveOptions.KeepNoTrivia)!;
 
+					// We do not want the nullable annotation on the type argument for reference or value types.
+					if (typeArg is NullableTypeSyntax nullableType)
+					{
+						typeArg = nullableType.ElementType;
+					}
+
 					// Insert MessagePackConverter<T> as the first base type.
 					// It must be first because it's a derived class, whereas the interface we just removed could have appeared anywhere.
-					NameSyntax converterBaseType = NameInNamespace(GenericName("MessagePackConverter").WithTypeArgumentList(genericBaseType.TypeArgumentList));
+					NameSyntax converterBaseType = NameInNamespace(GenericName("MessagePackConverter").AddTypeArgumentListArguments(typeArg));
 					node = node.WithTypes(node.Types.Insert(0, SimpleBaseType(converterBaseType)));
 
 					break;

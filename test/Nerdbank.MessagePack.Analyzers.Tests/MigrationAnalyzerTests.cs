@@ -10,25 +10,27 @@ public class MigrationAnalyzerTests
 	public async Task Formatter()
 	{
 		string source = /* lang=c#-test */ """
+			#nullable enable
+
 			using MessagePack;
 			using MessagePack.Formatters;
 
 			[MessagePackFormatter(typeof(MyTypeFormatter))]
 			public class MyType
 			{
-				public string Name { get; set; }
+				public string? Name { get; set; }
 			}
 
-			public class {|NBMsgPack100:MyTypeFormatter|} : IMessagePackFormatter<MyType>
+			public class {|NBMsgPack100:MyTypeFormatter|} : IMessagePackFormatter<MyType?>
 			{
-				public MyType Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+				public MyType? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
 				{
 					if (reader.TryReadNil())
 					{
 						return null;
 					}
 
-					string name = null;
+					string? name = null;
 					options.Security.DepthStep(ref reader);
 					try
 					{
@@ -54,7 +56,7 @@ public class MigrationAnalyzerTests
 					}
 				}
 
-				public void Serialize(ref MessagePackWriter writer, MyType value, MessagePackSerializerOptions options)
+				public void Serialize(ref MessagePackWriter writer, MyType? value, MessagePackSerializerOptions options)
 				{
 					if (value is null)
 					{
@@ -63,12 +65,14 @@ public class MigrationAnalyzerTests
 					}
 
 					writer.WriteArrayHeader(1);
-					options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, value.Name, options);
+					options.Resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.Name, options);
 				}
 			}
 			""";
 
 		string fixedSource = /* lang=c#-test */ """
+			#nullable enable
+			
 			using MessagePack;
 			using MessagePack.Formatters;
 			using Nerdbank.MessagePack;
@@ -77,20 +81,20 @@ public class MigrationAnalyzerTests
 			[MessagePackConverter(typeof(MyTypeFormatter))]
 			public class MyType
 			{
-				public string Name { get; set; }
+				public string? Name { get; set; }
 			}
 
 			[GenerateShape<string>]
 			public partial class MyTypeFormatter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
+				public override MyType? Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
 				{
 					if (reader.TryReadNil())
 					{
 						return null;
 					}
 
-					string name = null;
+					string? name = null;
 					context.DepthStep();
 					int count = reader.ReadArrayHeader();
 					for (int i = 0; i < count; i++)
@@ -109,7 +113,7 @@ public class MigrationAnalyzerTests
 					return new MyType { Name = name };
 				}
 
-				public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType value, SerializationContext context)
+				public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType? value, SerializationContext context)
 				{
 					if (value is null)
 					{
