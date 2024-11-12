@@ -106,7 +106,7 @@ For convenience, you may want to apply it directly to your custom converter:
 
 ```cs
 [GenerateShape<SomeOtherType>]
-class FooConverter : MessagePackConverter<Foo>
+partial class FooConverter : MessagePackConverter<Foo>
 {
     public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
     {
@@ -124,7 +124,7 @@ So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1
 
 ```cs
 [GenerateShape<SomeOtherType[]>]
-class FooConverter : MessagePackConverter<Foo>
+partial class FooConverter : MessagePackConverter<Foo>
 {
     public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
     {

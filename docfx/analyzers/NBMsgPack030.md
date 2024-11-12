@@ -28,7 +28,7 @@ public class MyType
 }
 
 [GenerateShape]
-public class SomeOtherType {}
+public partial class SomeOtherType {}
 ```
 
 ## Resolution
