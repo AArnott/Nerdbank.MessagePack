@@ -20,69 +20,77 @@ public record ReferenceSymbols(
 
 	public static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
 	{
-		if (!compilation.ReferencedAssemblyNames.Any(id => id.Name == "Nerdbank.MessagePack"))
+		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "Nerdbank.MessagePack.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference libraryReference ||
+			compilation.GetAssemblyOrModuleSymbol(libraryReference) is not IAssemblySymbol libraryAssembly)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackSerializer = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackSerializer");
+		INamedTypeSymbol? messagePackSerializer = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackSerializer");
 		if (messagePackSerializer is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackConverter = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverter`1");
+		INamedTypeSymbol? messagePackConverter = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverter`1");
 		if (messagePackConverter is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackConverterAttribute = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverterAttribute");
+		INamedTypeSymbol? messagePackConverterAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverterAttribute");
 		if (messagePackConverterAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackReader = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackReader");
+		INamedTypeSymbol? messagePackReader = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackReader");
 		if (messagePackReader is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackWriter = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackWriter");
+		INamedTypeSymbol? messagePackWriter = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackWriter");
 		if (messagePackWriter is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? keyAttribute = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.KeyAttribute");
+		INamedTypeSymbol? keyAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.KeyAttribute");
 		if (keyAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? knownSubTypeAttribute = compilation.GetTypeByMetadataName("Nerdbank.MessagePack.KnownSubTypeAttribute");
+		INamedTypeSymbol? knownSubTypeAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.KnownSubTypeAttribute");
 		if (knownSubTypeAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? generateShapeAttribute = compilation.GetTypeByMetadataName("PolyType.GenerateShapeAttribute");
+		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "PolyType.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference polytypeReference ||
+			compilation.GetAssemblyOrModuleSymbol(polytypeReference) is not IAssemblySymbol polytypeAssembly)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? generateShapeAttribute = polytypeAssembly.GetTypeByMetadataName("PolyType.GenerateShapeAttribute");
 		if (generateShapeAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? propertyShapeAttribute = compilation.GetTypeByMetadataName("PolyType.PropertyShapeAttribute");
+		INamedTypeSymbol? propertyShapeAttribute = polytypeAssembly.GetTypeByMetadataName("PolyType.PropertyShapeAttribute");
 		if (propertyShapeAttribute is null)
 		{
 			referenceSymbols = null;

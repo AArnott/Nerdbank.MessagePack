@@ -26,20 +26,28 @@ public record MessagePackCSharpReferenceSymbols(
 
 	public static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out MessagePackCSharpReferenceSymbols? referenceSymbols)
 	{
-		if (!compilation.ReferencedAssemblyNames.Any(id => id.Name == "MessagePack"))
+		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "MessagePack.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference oldLibraryReference ||
+			compilation.GetAssemblyOrModuleSymbol(oldLibraryReference) is not IAssemblySymbol oldLibraryAssembly)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackSerializer = compilation.GetTypeByMetadataName("MessagePack.MessagePackSerializer");
+		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "MessagePack.Annotations.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference oldLibraryAnnotationsReference ||
+			compilation.GetAssemblyOrModuleSymbol(oldLibraryAnnotationsReference) is not IAssemblySymbol oldLibraryAnnotationsAssembly)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? messagePackSerializer = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.MessagePackSerializer");
 		if (messagePackSerializer is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackFormatterOfT = compilation.GetTypeByMetadataName("MessagePack.Formatters.IMessagePackFormatter`1");
+		INamedTypeSymbol? messagePackFormatterOfT = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.Formatters.IMessagePackFormatter`1");
 		if (messagePackFormatterOfT is null)
 		{
 			referenceSymbols = null;
@@ -60,28 +68,28 @@ public record MessagePackCSharpReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackFormatterAttribute = compilation.GetTypeByMetadataName("MessagePack.MessagePackFormatterAttribute");
+		INamedTypeSymbol? messagePackFormatterAttribute = oldLibraryAnnotationsAssembly.GetTypeByMetadataName("MessagePack.MessagePackFormatterAttribute");
 		if (messagePackFormatterAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackObjectAttribute = compilation.GetTypeByMetadataName("MessagePack.MessagePackObjectAttribute");
+		INamedTypeSymbol? messagePackObjectAttribute = oldLibraryAnnotationsAssembly.GetTypeByMetadataName("MessagePack.MessagePackObjectAttribute");
 		if (messagePackObjectAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? keyAttribute = compilation.GetTypeByMetadataName("MessagePack.KeyAttribute");
+		INamedTypeSymbol? keyAttribute = oldLibraryAnnotationsAssembly.GetTypeByMetadataName("MessagePack.KeyAttribute");
 		if (keyAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackSecurity = compilation.GetTypeByMetadataName("MessagePack.MessagePackSecurity");
+		INamedTypeSymbol? messagePackSecurity = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.MessagePackSecurity");
 		if (messagePackSecurity is null)
 		{
 			referenceSymbols = null;
@@ -95,7 +103,7 @@ public record MessagePackCSharpReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? reader = compilation.GetTypeByMetadataName("MessagePack.MessagePackReader");
+		INamedTypeSymbol? reader = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.MessagePackReader");
 		if (reader is null)
 		{
 			referenceSymbols = null;
@@ -116,7 +124,7 @@ public record MessagePackCSharpReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? resolver = compilation.GetTypeByMetadataName("MessagePack.IFormatterResolver");
+		INamedTypeSymbol? resolver = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.IFormatterResolver");
 		if (resolver is null)
 		{
 			referenceSymbols = null;
@@ -130,7 +138,7 @@ public record MessagePackCSharpReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? resolverExtensions = compilation.GetTypeByMetadataName("MessagePack.FormatterResolverExtensions");
+		INamedTypeSymbol? resolverExtensions = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.FormatterResolverExtensions");
 		if (resolverExtensions is null)
 		{
 			referenceSymbols = null;
