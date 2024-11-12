@@ -93,7 +93,7 @@ public override void Write(ref MessagePackWriter writer, in Foo? value, Serializ
 
     writer.WriteString("MyProperty");
     SomeOtherType propertyValue = value.MyProperty;
-    context.GetConverter<SomeOtherType>().Write(ref writer, ref propertyValue, context);
+    context.GetConverter<SomeOtherType>().Write(ref writer, propertyValue, context);
 
     writer.WriteString("MyProperty2");
     writer.Write(value.MyProperty2);
@@ -111,13 +111,29 @@ class FooConverter : MessagePackConverter<Foo>
     public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
     {
         // ...
-        context.GetConverter<SomeOtherType, FooConverter>().Write(ref writer, ref propertyValue, context);
+        context.GetConverter<SomeOtherType, FooConverter>().Write(ref writer, propertyValue, context);
         // ...
     }
 }
 ```
 
 The @PolyType.GenerateShapeAttribute`1 is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
+
+Arrays of a type require a shape of their own.
+So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1, serializing `MyType[]` would require a witness type and attribute. For example:
+
+```cs
+[GenerateShape<SomeOtherType[]>]
+class FooConverter : MessagePackConverter<Foo>
+{
+    public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+    {
+        // ...
+        context.GetConverter<SomeOtherType[], FooConverter>().Write(ref writer, arrayPropertyValue, context);
+        // ...
+    }
+}
+```
 
 ### Version compatibility
 
