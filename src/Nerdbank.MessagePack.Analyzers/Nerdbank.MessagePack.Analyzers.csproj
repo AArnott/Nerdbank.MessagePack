@@ -6,12 +6,4 @@
     <PackageReference Include="PolySharp" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EditorConfigFiles Remove="Q:\source\Nerdbank.MessagePack\src\Nerdbank.MessagePack.Analyzers\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Q:\source\Nerdbank.MessagePack\src\Nerdbank.MessagePack.Analyzers\.editorconfig" />
-  </ItemGroup>
-
 </Project>

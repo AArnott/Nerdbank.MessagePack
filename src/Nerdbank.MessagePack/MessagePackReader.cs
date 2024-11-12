@@ -157,7 +157,10 @@ public ref partial struct MessagePackReader
 	/// Reads a sequence of bytes without any decoding.
 	/// </summary>
 	/// <param name="length">The number of bytes to read.</param>
-	/// <returns>The sequence of bytes read.</returns>
+	/// <returns>
+	/// The raw MessagePack sequence, taken as a slice from the <see cref="Sequence"/>.
+	/// The caller should copy any data that must out-live its underlying buffers.
+	/// </returns>
 	public ReadOnlySequence<byte> ReadRaw(long length)
 	{
 		try
@@ -176,7 +179,10 @@ public ref partial struct MessagePackReader
 	/// Reads the next MessagePack structure.
 	/// </summary>
 	/// <param name="context">The serialization context. Used for the stack guard.</param>
-	/// <returns>The raw MessagePack sequence.</returns>
+	/// <returns>
+	/// The raw MessagePack sequence, taken as a slice from the <see cref="Sequence"/>.
+	/// The caller should copy any data that must out-live its underlying buffers.
+	/// </returns>
 	/// <remarks>
 	/// The entire structure is read, including content of maps or arrays, or any other type with payloads.
 	/// </remarks>
