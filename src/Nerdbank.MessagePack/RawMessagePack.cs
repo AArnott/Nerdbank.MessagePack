@@ -108,12 +108,10 @@ public struct RawMessagePack : IEquatable<RawMessagePack>
 			return this;
 		}
 
-		// Avoid using SequencePool since that is configured to use recycled buffers.
-		Sequence<byte> writer = new();
-		writer.Write(this.MsgPack);
-		this.MsgPack = writer.AsReadOnlySequence;
+		this.MsgPack = this.MsgPack.Clone();
 		this.IsOwned = true;
-		return new(writer) { IsOwned = true };
+
+		return this;
 	}
 
 	private static bool SequenceEqual<T>(in ReadOnlySequence<T> a, in ReadOnlySequence<T> b)
