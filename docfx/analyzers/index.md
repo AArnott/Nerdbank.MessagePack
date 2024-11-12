@@ -18,3 +18,7 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack021](NBMsgPack021.md) | Usage | Error | `[MessagePackConverter]` type missing default constructor
 [NBMsgPack030](NBMsgPack030.md) | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods
 [NBMsgPack031](NBMsgPack031.md) | Usage | Warning | Converters should read or write exactly one msgpack structure
+[NBMsgPack100](NBMsgPack100.md) | Migration | Info | Migrate MessagePack-CSharp formatter
+[NBMsgPack101](NBMsgPack101.md) | Migration | Info | Migrate to MessagePackConverterAttribute
+[NBMsgPack102](NBMsgPack102.md) | Migration | Info | Remove use of MessagePackObjectAttribute
+[NBMsgPack103](NBMsgPack103.md) | Migration | Info | Use newer KeyAttribute

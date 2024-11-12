@@ -12,3 +12,5 @@
   href: performance.md
 - name: Security
   href: security.md
+- name: Migrating
+  href: migrating.md

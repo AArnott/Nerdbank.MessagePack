@@ -5,11 +5,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Nerdbank.MessagePack.Analyzers;
 
-internal static class AnalyzerUtilities
+public static class AnalyzerUtilities
 {
-	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/Nerdbank.MessagePack/analyzers/{diagnosticId}.html";
-
-	internal static IEnumerable<AttributeData> FindAttributes(this ISymbol symbol, string name, ImmutableArray<string> containingNamespaces)
+	public static IEnumerable<AttributeData> FindAttributes(this ISymbol symbol, string name, ImmutableArray<string> containingNamespaces)
 	{
 		foreach (AttributeData att in symbol.GetAttributes())
 		{
@@ -20,7 +18,7 @@ internal static class AnalyzerUtilities
 		}
 	}
 
-	internal static IEnumerable<AttributeData> FindAttributes(this ISymbol symbol, INamedTypeSymbol attributeSymbol)
+	public static IEnumerable<AttributeData> FindAttributes(this ISymbol symbol, INamedTypeSymbol attributeSymbol)
 	{
 		foreach (AttributeData att in symbol.GetAttributes())
 		{
@@ -37,7 +35,7 @@ internal static class AnalyzerUtilities
 		}
 	}
 
-	internal static IEnumerable<INamedTypeSymbol> EnumerateBaseTypes(this ITypeSymbol symbol)
+	public static IEnumerable<INamedTypeSymbol> EnumerateBaseTypes(this ITypeSymbol symbol)
 	{
 		while (symbol.BaseType is not null)
 		{
@@ -46,18 +44,24 @@ internal static class AnalyzerUtilities
 		}
 	}
 
-	internal static bool IsAssignableTo(this ITypeSymbol subType, ITypeSymbol baseTypeOrInterface)
+	public static bool IsAssignableTo(this ITypeSymbol subType, INamedTypeSymbol baseTypeOrInterface)
 	{
 		if (IsOrDerivedFrom(subType, baseTypeOrInterface))
 		{
 			return true;
 		}
 
+		INamedTypeSymbol? unboundGenericBaseTypeOrInterface = baseTypeOrInterface.IsGenericType && !baseTypeOrInterface.IsUnboundGenericType ? baseTypeOrInterface.ConstructUnboundGenericType() : null;
+
 		return baseTypeOrInterface.TypeKind == TypeKind.Interface
-			&& subType.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, baseTypeOrInterface));
+			&& subType.AllInterfaces.Any(i =>
+				SymbolEqualityComparer.Default.Equals(i, baseTypeOrInterface) ||
+				(unboundGenericBaseTypeOrInterface is not null && SymbolEqualityComparer.Default.Equals(TryUnbindGeneric(i), unboundGenericBaseTypeOrInterface)));
+
+		static INamedTypeSymbol TryUnbindGeneric(INamedTypeSymbol type) => type.IsGenericType && !type.IsUnboundGenericType ? type.ConstructUnboundGenericType() : type;
 	}
 
-	internal static bool IsOrDerivedFrom(this ITypeSymbol subType, ITypeSymbol baseType)
+	public static bool IsOrDerivedFrom(this ITypeSymbol subType, ITypeSymbol baseType)
 	{
 		ITypeSymbol? current = subType;
 		while (current != null)
@@ -80,7 +84,7 @@ internal static class AnalyzerUtilities
 		return false;
 	}
 
-	internal static bool IsInNamespace(ISymbol? symbol, ReadOnlySpan<string> namespaces)
+	public static bool IsInNamespace(ISymbol? symbol, ReadOnlySpan<string> namespaces)
 	{
 		if (symbol is null)
 		{
@@ -101,7 +105,7 @@ internal static class AnalyzerUtilities
 		return targetSymbol.ContainingNamespace.IsGlobalNamespace;
 	}
 
-	internal static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol symbol)
+	public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol symbol)
 	{
 		foreach (ISymbol member in symbol.GetMembers())
 		{
@@ -117,7 +121,7 @@ internal static class AnalyzerUtilities
 		}
 	}
 
-	internal static Location? GetArgumentLocation(AttributeData att, int argumentIndex, CancellationToken cancellationToken)
+	public static Location? GetArgumentLocation(AttributeData att, int argumentIndex, CancellationToken cancellationToken)
 	{
 		if (att.ApplicationSyntaxReference?.GetSyntax(cancellationToken) is AttributeSyntax a && a.ArgumentList?.Arguments.Count >= argumentIndex)
 		{
@@ -126,4 +130,6 @@ internal static class AnalyzerUtilities
 
 		return null;
 	}
+
+	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/Nerdbank.MessagePack/analyzers/{diagnosticId}.html";
 }
