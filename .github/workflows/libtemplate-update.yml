@@ -26,9 +26,6 @@ jobs:
       shell: pwsh
       run: |
         $LibTemplateBranch = 'simpletest'
-        if ($LASTEXITCODE -ne 0) {
-          exit $LASTEXITCODE
-        }
 
         git fetch https://github.com/aarnott/Library.Template $LibTemplateBranch
         if ($LASTEXITCODE -ne 0) {
