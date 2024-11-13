@@ -57,6 +57,7 @@ jobs:
           }
 
           git -c http.extraheader="AUTHORIZATION: bearer $env:GH_TOKEN" push origin -u HEAD
+          Write-Host "Pushed auto/libtemplateUpdate branch with merge from Library.Template."
         } else {
           Write-Host "Changes to github workflows are included in this update. Please run tools/MergeFrom-Template.ps1 locally and push the result as a pull request."
           exit 1
