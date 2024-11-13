@@ -84,15 +84,61 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 		context.DepthStep();
 
 		writer.WriteArrayHeader(properties.Length);
-		for (int i = 0; i < properties.Length; i++)
+		int i = 0;
+		while (i < properties.Length)
 		{
-			if (properties[i]?.MsgPackWriters is var (_, serializeAsync))
+			// Do a batch of all the consecutive properties that should be written synchronously.
+			int syncBatchSize = NextSyncBatchSize();
+			int syncWriteEndExclusive = i + syncBatchSize;
+			while (i < syncWriteEndExclusive)
 			{
+				// We use a nested loop here because even during synchronous writing, we may need to occasionally yield to
+				// flush what we've written so far, but then we want to come right back to synchronous writing.
+				MessagePackWriter syncWriter = writer.CreateWriter();
+				for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context, syncWriter); i++)
+				{
+					if (properties[i] is { MsgPackWriters: var (serialize, _) })
+					{
+						serialize(value, ref syncWriter, context);
+					}
+					else
+					{
+						writer.WriteNil();
+					}
+				}
+
+				syncWriter.Flush();
+				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+			}
+
+			// Write all consecutive async properties.
+			for (; i < properties.Length; i++)
+			{
+				if (properties[i] is not PropertyAccessors<T> { PreferAsyncSerialization: true, MsgPackWriters: var (_, serializeAsync) })
+				{
+					break;
+				}
+
 				await serializeAsync(value, writer, context, cancellationToken).ConfigureAwait(false);
 			}
-			else
+
+			int NextSyncBatchSize()
 			{
-				writer.WriteNil();
+				// We want to count the number of array elements need to be written up to the next async property.
+				for (int j = i; j < properties.Length; j++)
+				{
+					if (properties.Length > j)
+					{
+						PropertyAccessors<T>? property = properties[j];
+						if (property?.PreferAsyncSerialization is true && property.Value.MsgPackWriters is not null)
+						{
+							return j - i;
+						}
+					}
+				}
+
+				// We didn't encounter any more async property readers.
+				return properties.Length - i;
 			}
 		}
 	}
@@ -113,16 +159,59 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 
 		context.DepthStep();
 		T value = constructor();
-		int count = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
-		for (int i = 0; i < count; i++)
+		int arrayLength = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
+		int i = 0;
+		while (i < arrayLength)
 		{
-			if (properties.Length > i && properties[i]?.MsgPackReaders is var (_, deserializeAsync))
+			// Do a batch of all the consecutive properties that should be read synchronously.
+			int syncBatchSize = NextSyncReadBatchSize();
+			if (syncBatchSize > 0)
 			{
+				ReadOnlySequence<byte> buffer = await reader.ReadNextStructuresAsync(syncBatchSize, context, cancellationToken).ConfigureAwait(false);
+				MessagePackReader syncReader = new(buffer);
+				for (int syncReadEndExclusive = i + syncBatchSize; i < syncReadEndExclusive; i++)
+				{
+					if (properties.Length > i && properties[i]?.MsgPackReaders is var (deserialize, _))
+					{
+						deserialize(ref value, ref syncReader, context);
+					}
+					else
+					{
+						syncReader.Skip(context);
+					}
+				}
+
+				reader.AdvanceTo(syncReader.Position);
+			}
+
+			// Read any consecutive async properties.
+			for (; i < arrayLength && properties.Length > i; i++)
+			{
+				if (properties[i] is not PropertyAccessors<T> { PreferAsyncSerialization: true, MsgPackReaders: (_, { } deserializeAsync) })
+				{
+					break;
+				}
+
 				value = await deserializeAsync(value, reader, context, cancellationToken).ConfigureAwait(false);
 			}
-			else
+
+			int NextSyncReadBatchSize()
 			{
-				await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+				// We want to count the number of array elements need to be read up to the next async property.
+				for (int j = i; j < arrayLength; j++)
+				{
+					if (properties.Length > j)
+					{
+						PropertyAccessors<T>? property = properties[j];
+						if (property?.PreferAsyncSerialization is true && property.Value.MsgPackReaders is not null)
+						{
+							return j - i;
+						}
+					}
+				}
+
+				// We didn't encounter any more async property readers.
+				return arrayLength - i;
 			}
 		}
 

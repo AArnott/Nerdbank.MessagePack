@@ -68,7 +68,8 @@ internal record struct MapSerializableProperties<TDeclaringType>(List<Serializab
 /// <param name="Write">A delegate that synchronously serializes the value of the property.</param>
 /// <param name="WriteAsync">A delegate that asynchonously serializes the value of the property.</param>
 /// <param name="SuppressIfNoConstructorParameter">A value indicating whether this property should <em>not</em> be serialized if no matching constructor parameter is discovered such that the value could be deserialized.</param>
-internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, bool SuppressIfNoConstructorParameter);
+/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
+internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, bool SuppressIfNoConstructorParameter, bool PreferAsyncSerialization);
 
 /// <summary>
 /// A map of deserializable properties.
@@ -85,7 +86,8 @@ internal record struct MapDeserializableProperties<TDeclaringType>(SpanDictionar
 /// <param name="PropertyNameUtf8">The UTF-8 encoding of the property name.</param>
 /// <param name="Read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
 /// <param name="ReadAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
-internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync);
+/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
+internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync, bool PreferAsyncSerialization);
 
 /// <summary>
 /// Encapsulates serializing accessors for a particular property of some data type.
@@ -94,10 +96,12 @@ internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadO
 /// <param name="MsgPackWriters">Delegates that can serialize the value of a property.</param>
 /// <param name="MsgPackReaders">Delegates that can initialize the property with a value deserialized from msgpack.</param>
 /// <param name="SuppressIfNoConstructorParameter">A value indicating whether this property should <em>not</em> be serialized if no matching constructor parameter is discovered such that the value could be deserialized.</param>
+/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
 internal record struct PropertyAccessors<TDeclaringType>(
 	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters,
 	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? MsgPackReaders,
-	bool SuppressIfNoConstructorParameter);
+	bool SuppressIfNoConstructorParameter,
+	bool PreferAsyncSerialization);
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments

@@ -158,18 +158,15 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		else
 		{
 			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
-			Read(new MessagePackReader(map));
-			reader.AdvanceTo(map.End);
-
-			void Read(MessagePackReader syncReader)
+			MessagePackReader syncReader = new(map);
+			int count = syncReader.ReadMapHeader();
+			for (int i = 0; i < count; i++)
 			{
-				int count = syncReader.ReadMapHeader();
-				for (int i = 0; i < count; i++)
-				{
-					this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
-					addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
-				}
+				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
+				addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
 			}
+
+			reader.AdvanceTo(map.End);
 		}
 	}
 }

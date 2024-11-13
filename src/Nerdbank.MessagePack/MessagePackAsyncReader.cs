@@ -28,6 +28,77 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	private ReadResult? lastReadResult;
 	private bool timeForAdvanceTo;
 
+	/// <summary>
+	/// Gets the fully-capable, synchronous reader.
+	/// </summary>
+	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The buffer, for use in creating a <see cref="MessagePackReader"/>. This buffer may be larger than needed to include <paramref name="minimumDesiredBufferedStructures"/>.</returns>
+	/// <remarks>
+	/// The caller must take care to call <see cref="AdvanceTo(SequencePosition)"/> with <see cref="MessagePackReader.Position"/> before any other methods on this class after this call.
+	/// </remarks>
+	/// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
+	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
+	public async ValueTask<ReadOnlySequence<byte>> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, SerializationContext context, CancellationToken cancellationToken)
+		=> (await this.ReadNextStructuresAsync(minimumDesiredBufferedStructures, minimumDesiredBufferedStructures, context, cancellationToken).ConfigureAwait(false)).Buffer;
+
+	/// <summary>
+	/// Gets the fully-capable, synchronous reader.
+	/// </summary>
+	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
+	/// <param name="countUpTo">The number of top-level structures to count and report on in the result.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>
+	/// The buffer, for use in creating a <see cref="MessagePackReader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
+	/// Also returns the number of top-level structures included in the buffer that were counted (up to <paramref name="countUpTo"/>).
+	/// </returns>
+	/// <remarks>
+	/// The caller must take care to call <see cref="AdvanceTo(SequencePosition)"/> with <see cref="MessagePackReader.Position"/> before any other methods on this class after this call.
+	/// </remarks>
+	/// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
+	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
+	public async ValueTask<(ReadOnlySequence<byte> Buffer, int IncludedStructures)> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context, CancellationToken cancellationToken)
+	{
+		Requires.Argument(minimumDesiredBufferedStructures >= 0, nameof(minimumDesiredBufferedStructures), "A non-negative integer is required.");
+		Requires.Argument(countUpTo >= minimumDesiredBufferedStructures, nameof(countUpTo), "Count must be at least as large as minimumDesiredBufferedStructures.");
+
+		ReadResult readResult = default;
+		int skipCount = 0;
+		while (skipCount < minimumDesiredBufferedStructures)
+		{
+			readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+			MessagePackReader reader = new(readResult.Buffer);
+			skipCount = 0;
+			for (; skipCount < countUpTo; skipCount++)
+			{
+				if (!reader.TrySkip(context))
+				{
+					if (skipCount >= minimumDesiredBufferedStructures)
+					{
+						// We got what we needed.
+						break;
+					}
+					else if (readResult.IsCompleted)
+					{
+						throw new EndOfStreamException();
+					}
+					else if (readResult.IsCanceled)
+					{
+						throw new OperationCanceledException();
+					}
+
+					// We need to read more data.
+					this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
+					break;
+				}
+			}
+		}
+
+		return (readResult.Buffer, skipCount);
+	}
+
 	/// <inheritdoc cref="MessagePackReader.TryReadNil"/>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	public async ValueTask<bool> TryReadNilAsync(CancellationToken cancellationToken)
@@ -38,17 +109,10 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 			throw new OperationCanceledException();
 		}
 
-		bool isNil = TryReadNil(readResult.Buffer, out SequencePosition readTo);
-		this.AdvanceTo(readTo);
+		MessagePackReader reader = new(readResult.Buffer);
+		bool isNil = reader.TryReadNil();
+		this.AdvanceTo(reader.Position);
 		return isNil;
-
-		bool TryReadNil(in ReadOnlySequence<byte> buffer, out SequencePosition readTo)
-		{
-			MessagePackReader reader = new(buffer);
-			bool result = reader.TryReadNil();
-			readTo = reader.Position;
-			return result;
-		}
 	}
 
 	/// <inheritdoc cref="MessagePackReader.ReadMapHeader"/>
@@ -131,7 +195,7 @@ retry:
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
 	/// <param name="cancellationToken">A cancellation tokne.</param>
-	/// <returns>The buffer containing the next structure.</returns>
+	/// <returns>The buffer containing exactly the next structure.</returns>
 	/// <remarks>
 	/// After a successful call to this method, the caller *must* call <see cref="AdvanceTo(SequencePosition, SequencePosition)"/>,
 	/// usually with <see cref="ReadOnlySequence{T}.End"/> to indicate that the next msgpack structure has been consumed.
@@ -147,9 +211,10 @@ retry:
 				throw new OperationCanceledException();
 			}
 
-			if (TryRead(readBuffer.Buffer, context, out SequencePosition position))
+			MessagePackReader msgpackReader = new(readBuffer.Buffer);
+			if (msgpackReader.TrySkip(context))
 			{
-				return readBuffer.Buffer.Slice(0, position);
+				return readBuffer.Buffer.Slice(0, msgpackReader.Position);
 			}
 			else
 			{
@@ -160,14 +225,6 @@ retry:
 					throw new EndOfStreamException();
 				}
 			}
-		}
-
-		bool TryRead(ReadOnlySequence<byte> buffer, SerializationContext context, out SequencePosition position)
-		{
-			MessagePackReader msgpackReader = new(buffer);
-			bool result = msgpackReader.TrySkip(context);
-			position = msgpackReader.Position;
-			return result;
 		}
 	}
 
@@ -250,6 +307,11 @@ retry:
 		this.timeForAdvanceTo = false;
 	}
 
+	/// <summary>
+	/// Immediately returns the last read result if non-empty, or pulls on the <see cref="PipeReader"/> for more data and returns that.
+	/// </summary>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The current or next buffer to read.</returns>
 	private async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken)
 	{
 		Verify.Operation(!this.timeForAdvanceTo, "Calls out of order. Call AdvanceTo first.");

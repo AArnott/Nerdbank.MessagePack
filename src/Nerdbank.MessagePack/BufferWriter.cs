@@ -84,6 +84,11 @@ internal ref struct BufferWriter
 	internal Span<byte> Span => this.span;
 
 	/// <summary>
+	/// Gets the number of bytes written but not yet <see cref="Commit">committed</see>.
+	/// </summary>
+	internal int UncommittedBytes => this.buffered;
+
+	/// <summary>
 	/// Gets the rental.
 	/// </summary>
 	internal SequencePool.Rental SequenceRental => this.rental;

@@ -60,6 +60,11 @@ public ref struct MessagePackWriter
 	public CancellationToken CancellationToken { get; set; }
 
 	/// <summary>
+	/// Gets the number of bytes that have been written but not yet committed <see cref="Flush">flushed</see> to the underlying <see cref="IBufferWriter{T}"/>.
+	/// </summary>
+	public int UnflushedBytes => this.writer.UncommittedBytes;
+
+	/// <summary>
 	/// Gets or sets a value indicating whether to write in <see href="https://github.com/msgpack/msgpack/blob/master/spec-old.md">old spec</see> compatibility mode.
 	/// </summary>
 	public bool OldSpec { get; set; }

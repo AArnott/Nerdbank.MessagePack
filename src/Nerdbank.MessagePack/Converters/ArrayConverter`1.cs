@@ -77,32 +77,18 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			int progress = 0;
 			do
 			{
-				SerializeStep(value, ref progress, context, cancellationToken);
-				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
-			}
-			while (progress < value.Length);
-
-			void SerializeStep(TElement[] value, ref int progress, SerializationContext context, CancellationToken cancellationToken)
-			{
 				MessagePackWriter syncWriter = writer.CreateWriter();
-				if (progress == 0)
+				syncWriter.WriteArrayHeader(value.Length);
+				for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
 				{
-					syncWriter.WriteArrayHeader(value.Length);
-				}
-
-				for (; progress < value.Length; progress++)
-				{
-					if (writer.IsTimeToFlush(context))
-					{
-						break;
-					}
-
 					elementConverter.Write(ref syncWriter, value[progress], context);
 					cancellationToken.ThrowIfCancellationRequested();
 				}
 
 				syncWriter.Flush();
+				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
 			}
+			while (progress < value.Length);
 		}
 	}
 
@@ -131,21 +117,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		else
 		{
 			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
-			TElement[] array = Read(new MessagePackReader(map));
+
+			MessagePackReader syncReader = new(map);
+			int count = syncReader.ReadArrayHeader();
+			TElement[] array = new TElement[count];
+			for (int i = 0; i < count; i++)
+			{
+				array[i] = elementConverter.Read(ref syncReader, context)!;
+			}
+
 			reader.AdvanceTo(map.End);
 			return array;
-
-			TElement[] Read(MessagePackReader syncReader)
-			{
-				int count = syncReader.ReadArrayHeader();
-				TElement[] array = new TElement[count];
-				for (int i = 0; i < count; i++)
-				{
-					array[i] = elementConverter.Read(ref syncReader, context)!;
-				}
-
-				return array;
-			}
 		}
 	}
 }

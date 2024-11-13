@@ -80,6 +80,8 @@ Nerdbank.MessagePack.MessagePackAsyncReader.MessagePackAsyncReader(System.IO.Pip
 Nerdbank.MessagePack.MessagePackAsyncReader.ReadArrayHeaderAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 Nerdbank.MessagePack.MessagePackAsyncReader.ReadMapHeaderAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 Nerdbank.MessagePack.MessagePackAsyncReader.ReadNextStructureAsync(Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Buffers.ReadOnlySequence<byte>>
+Nerdbank.MessagePack.MessagePackAsyncReader.ReadNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<(System.Buffers.ReadOnlySequence<byte> Buffer, int IncludedStructures)>
+Nerdbank.MessagePack.MessagePackAsyncReader.ReadNextStructuresAsync(int minimumDesiredBufferedStructures, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Buffers.ReadOnlySequence<byte>>
 Nerdbank.MessagePack.MessagePackAsyncReader.SkipAsync(Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackAsyncReader.TryReadNilAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 Nerdbank.MessagePack.MessagePackAsyncWriter
@@ -87,6 +89,7 @@ Nerdbank.MessagePack.MessagePackAsyncWriter.CreateWriter() -> Nerdbank.MessagePa
 Nerdbank.MessagePack.MessagePackAsyncWriter.Flush() -> void
 Nerdbank.MessagePack.MessagePackAsyncWriter.FlushIfAppropriateAsync(Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackAsyncWriter.IsTimeToFlush(Nerdbank.MessagePack.SerializationContext context) -> bool
+Nerdbank.MessagePack.MessagePackAsyncWriter.IsTimeToFlush(Nerdbank.MessagePack.SerializationContext context, in Nerdbank.MessagePack.MessagePackWriter syncWriter) -> bool
 Nerdbank.MessagePack.MessagePackAsyncWriter.MessagePackAsyncWriter(System.IO.Pipelines.PipeWriter! pipeWriter) -> void
 Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<T>
 Nerdbank.MessagePack.MessagePackAsyncWriter.Write<TState>(Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<TState>! writer, TState state) -> void
@@ -212,6 +215,7 @@ Nerdbank.MessagePack.MessagePackWriter.MessagePackWriter() -> void
 Nerdbank.MessagePack.MessagePackWriter.MessagePackWriter(System.Buffers.IBufferWriter<byte>! writer) -> void
 Nerdbank.MessagePack.MessagePackWriter.OldSpec.get -> bool
 Nerdbank.MessagePack.MessagePackWriter.OldSpec.set -> void
+Nerdbank.MessagePack.MessagePackWriter.UnflushedBytes.get -> int
 Nerdbank.MessagePack.MessagePackWriter.Write(bool value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(byte value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(byte[]? src) -> void
