@@ -11,18 +11,15 @@ namespace Nerdbank.MessagePack.Converters;
 internal class RawMessagePackConverter : MessagePackConverter<RawMessagePack>
 {
 	/// <inheritdoc/>
-	public override RawMessagePack Read(ref MessagePackReader reader, SerializationContext context) => new RawMessagePack(reader.ReadRaw(context));
+	/// <remarks>
+	/// We always copy the msgpack into another buffer from the buffer we're reading from
+	/// because we don't know how long that will last.
+	/// For async deserialization, the buffer literally may not even last through the end of deserialization.
+	/// And async deserialization may invoke this (synchronous) deserializing method as an optimization,
+	/// so we really have no idea whether this buffer will last till the user has a chance to read from it.
+	/// </remarks>
+	public override RawMessagePack Read(ref MessagePackReader reader, SerializationContext context) => new RawMessagePack(reader.ReadRaw(context)).ToOwned();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in RawMessagePack value, SerializationContext context) => writer.WriteRaw(value.MsgPack);
-
-	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<RawMessagePack> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
-	{
-		RawMessagePack raw = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
-
-		// It is imperative that we create a copy of the msgpack buffers immediately, because the underlying async reader reuses the buffers right away.
-		return raw.ToOwned();
-	}
 }

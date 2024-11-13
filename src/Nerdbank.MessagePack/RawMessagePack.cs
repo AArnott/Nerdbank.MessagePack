@@ -16,10 +16,8 @@ namespace Nerdbank.MessagePack;
 /// The envelope could use this <see cref="RawMessagePack"/> in order to facilitate this by allowing pre-serialization and deferred deserialization of user data.
 /// </para>
 /// <para>
-/// When synchronously deserialized, this struct uses bytes borrowed from the underlying <see cref="MessagePackReader.Sequence"/>
-/// and thus should either be used immediately or have <see cref="ToOwned"/> called to make a durable copy of the data.
-/// When <em>asynchronously</em> deserialized (e.g. using <see cref="MessagePackSerializer.DeserializeAsync{T}(System.IO.Pipelines.PipeReader, CancellationToken)"/>)
-/// the buffers are subject to recycling during deserialization itself, so this struct is deserialized with its own copy of the data.
+/// The <see cref="MessagePackConverter{T}"/> for this type will always copy the memory from the buffers being read so that this struct has
+/// an independent lifetime.
 /// </para>
 /// </remarks>
 [MessagePackConverter(typeof(RawMessagePackConverter))]

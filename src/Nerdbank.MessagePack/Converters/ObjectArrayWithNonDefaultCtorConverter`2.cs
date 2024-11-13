@@ -60,16 +60,59 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		int count = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
-		for (int i = 0; i < count; i++)
+		int arrayLength = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
+		int i = 0;
+		while (i < arrayLength)
 		{
-			if (parameters.Length > i && parameters[i] is { } deserialize)
+			// Do a batch of all the consecutive properties that should be read synchronously.
+			int syncBatchSize = NextSyncReadBatchSize();
+			if (syncBatchSize > 0)
 			{
-				argState = await deserialize.ReadAsync(argState, reader, context, cancellationToken).ConfigureAwait(false);
+				ReadOnlySequence<byte> buffer = await reader.ReadNextStructuresAsync(syncBatchSize, context, cancellationToken).ConfigureAwait(false);
+				MessagePackReader syncReader = new(buffer);
+				for (int syncReadEndExclusive = i + syncBatchSize; i < syncReadEndExclusive; i++)
+				{
+					if (parameters.Length > i && parameters[i] is { Read: { } deserialize })
+					{
+						deserialize(ref argState, ref syncReader, context);
+					}
+					else
+					{
+						syncReader.Skip(context);
+					}
+				}
+
+				reader.AdvanceTo(syncReader.Position);
 			}
-			else
+
+			// Read any consecutive async parameters.
+			for (; i < arrayLength && parameters.Length > i; i++)
 			{
-				await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+				if (parameters[i] is not DeserializableProperty<TArgumentState> { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync })
+				{
+					break;
+				}
+
+				argState = await deserializeAsync(argState, reader, context, cancellationToken).ConfigureAwait(false);
+			}
+
+			int NextSyncReadBatchSize()
+			{
+				// We want to count the number of array elements need to be read up to the next async property.
+				for (int j = i; j < arrayLength; j++)
+				{
+					if (parameters.Length > j)
+					{
+						DeserializableProperty<TArgumentState>? property = parameters[j];
+						if (property is { PreferAsyncSerialization: true })
+						{
+							return j - i;
+						}
+					}
+				}
+
+				// We didn't encounter any more async property readers.
+				return arrayLength - i;
 			}
 		}
 

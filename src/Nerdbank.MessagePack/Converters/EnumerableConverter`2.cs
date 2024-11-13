@@ -136,17 +136,14 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		else
 		{
 			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
-			Read(new MessagePackReader(map));
-			reader.AdvanceTo(map.End);
-
-			void Read(MessagePackReader syncReader)
+			MessagePackReader syncReader = new(map);
+			int count = syncReader.ReadArrayHeader();
+			for (int i = 0; i < count; i++)
 			{
-				int count = syncReader.ReadArrayHeader();
-				for (int i = 0; i < count; i++)
-				{
-					addElement(ref collection, this.ReadElement(ref syncReader, context));
-				}
+				addElement(ref collection, this.ReadElement(ref syncReader, context));
 			}
+
+			reader.AdvanceTo(map.End);
 		}
 	}
 }

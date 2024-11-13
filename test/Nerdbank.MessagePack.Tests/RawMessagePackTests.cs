@@ -29,7 +29,7 @@ public partial class RawMessagePackTests(ITestOutputHelper logger) : MessagePack
 
 		Assert.NotNull(deserializedEnvelope);
 		Assert.Equal(envelope, deserializedEnvelope);
-		Assert.False(deserializedEnvelope.Deferred.IsOwned);
+		Assert.True(deserializedEnvelope.Deferred.IsOwned);
 		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred);
 		Assert.Equal(userData, deserializedUserData);
 	}

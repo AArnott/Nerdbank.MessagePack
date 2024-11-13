@@ -52,17 +52,35 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		context.DepthStep();
-		writer.WriteMapHeader(serializable.Properties?.Count ?? 0);
+		MessagePackWriter syncWriter = writer.CreateWriter();
+		syncWriter.WriteMapHeader(serializable.Properties?.Count ?? 0);
 
 		if (serializable.Properties is not null)
 		{
 			foreach (SerializableProperty<T> property in serializable.Properties)
 			{
-				writer.WriteRaw(property.RawPropertyNameString.Span);
-				await property.WriteAsync(value, writer, context, cancellationToken).ConfigureAwait(false);
-				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+				syncWriter.WriteRaw(property.RawPropertyNameString.Span);
+				if (property.PreferAsyncSerialization)
+				{
+					syncWriter.Flush();
+					await property.WriteAsync(value, writer, context, cancellationToken).ConfigureAwait(false);
+					syncWriter = writer.CreateWriter();
+				}
+				else
+				{
+					property.Write(value, ref syncWriter, context);
+				}
+
+				if (writer.IsTimeToFlush(context, syncWriter))
+				{
+					syncWriter.Flush();
+					await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+					syncWriter = writer.CreateWriter();
+				}
 			}
 		}
+
+		syncWriter.Flush();
 	}
 
 	/// <inheritdoc/>
@@ -125,34 +143,66 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (deserializable.Value.Readers is not null)
 		{
-			int count = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
-			for (int i = 0; i < count; i++)
-			{
-				ReadOnlySequence<byte> buffer = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
-				bool matchedProperty = TryMatchProperty(buffer, out DeserializableProperty<T> propertyReader);
-				reader.AdvanceTo(buffer.End);
+			int mapEntries = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
 
-				if (matchedProperty)
+			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
+			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
+			int remainingEntries = mapEntries;
+			while (remainingEntries > 0)
+			{
+				(ReadOnlySequence<byte> buffer, int bufferedStructures) = await reader.ReadNextStructuresAsync(1, remainingEntries * 2, context, cancellationToken).ConfigureAwait(false);
+				MessagePackReader syncReader = new(buffer);
+				int bufferedEntries = bufferedStructures / 2;
+				for (int i = 0; i < bufferedEntries; i++)
 				{
-					value = await propertyReader.ReadAsync(value, reader, context, cancellationToken).ConfigureAwait(false);
+					ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref syncReader);
+					if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
+					{
+						propertyReader.Read(ref value, ref syncReader, context);
+					}
+					else
+					{
+						syncReader.Skip(context);
+					}
+
+					remainingEntries--;
 				}
-				else
+
+				if (remainingEntries > 0)
 				{
-					await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+					// To know whether the next property is async, we need to know its name.
+					// If its name isn't in the buffer, we'll just loop around and get it in the next buffer.
+					if (bufferedStructures % 2 == 1)
+					{
+						// The property name has already been buffered.
+						ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref syncReader);
+						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader) && propertyReader.PreferAsyncSerialization)
+						{
+							// The next property value is async, so turn in our sync reader and read it asynchronously.
+							reader.AdvanceTo(syncReader.Position);
+							value = await propertyReader.ReadAsync(value, reader, context, cancellationToken).ConfigureAwait(false);
+							remainingEntries--;
+
+							// Now loop around to see what else we can do with the next buffer.
+							continue;
+						}
+					}
+					else
+					{
+						// The property name isn't in the buffer, and thus whether it'll have an async reader.
+						// Advance the reader so it knows we need more buffer than we got last time.
+						reader.AdvanceTo(syncReader.Position, buffer.End);
+						continue;
+					}
 				}
+
+				reader.AdvanceTo(syncReader.Position);
 			}
 		}
 		else
 		{
 			// We have nothing to read into, so just skip any data in the object.
 			await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
-		}
-
-		bool TryMatchProperty(ReadOnlySequence<byte> propertyName, out DeserializableProperty<T> propertyReader)
-		{
-			MessagePackReader reader = new(propertyName);
-			ReadOnlySpan<byte> propertyNameSpan = CodeGenHelpers.ReadStringSpan(ref reader);
-			return deserializable.Value.Readers.TryGetValue(propertyNameSpan, out propertyReader);
 		}
 
 		return value;

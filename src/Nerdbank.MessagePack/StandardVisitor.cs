@@ -75,12 +75,12 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				CodeGenHelpers.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 				if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 				{
-					serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.SuppressIfNoConstructorParameter));
+					serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.SuppressIfNoConstructorParameter, accessors.PreferAsyncSerialization));
 				}
 
 				if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
 				{
-					deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync));
+					deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.PreferAsyncSerialization));
 				}
 			}
 		}
@@ -187,7 +187,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			msgpackReaders = (deserialize, deserializeAsync);
 		}
 
-		return new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, suppressIfNoConstructorParameter);
+		return new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, suppressIfNoConstructorParameter, converter.PreferAsyncSerialization);
 	}
 
 	/// <inheritdoc/>
@@ -294,7 +294,8 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 			{
 				setter(ref state, (await converter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false))!);
 				return state;
-			});
+			},
+			converter.PreferAsyncSerialization);
 	}
 
 	/// <inheritdoc/>
