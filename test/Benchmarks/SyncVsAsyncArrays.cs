@@ -2,31 +2,36 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO.Pipelines;
-using static Data;
 
-public class SyncVsAsyncArrays
+[GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
+[CategoriesColumn]
+[GenerateShape<PocoMapInit[]>]
+public partial class SyncVsAsyncArrays
 {
 	private readonly MessagePackSerializer serializer = new();
 	private readonly Sequence<byte> syncBuffer = new();
 	private Pipe pipe = new();
 
-	[Benchmark]
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("map-init", "Serialize")]
 	public void Sync_Serialize()
 	{
-		this.serializer.Serialize(this.syncBuffer, PocoArray);
+		this.serializer.Serialize<PocoMapInit[], SyncVsAsyncArrays>(this.syncBuffer, Data.PocoMapInit.Array);
 		this.syncBuffer.Reset();
 	}
 
-	[Benchmark]
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("map-init", "Deserialize")]
 	public void Sync_Deserialize()
 	{
-		PocoClass? result = this.serializer.Deserialize<PocoClass>(PocoArrayMsgpack);
+		PocoMapInit[]? result = this.serializer.Deserialize<PocoMapInit[], SyncVsAsyncArrays>(Data.PocoMapInit.ArrayMsgpack);
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("map-init", "Serialize")]
 	public async Task Async_Serialize()
 	{
-		await this.serializer.SerializeAsync(this.pipe.Writer, PocoArray, default);
+		await this.serializer.SerializeAsync<PocoMapInit[], SyncVsAsyncArrays>(this.pipe.Writer, Data.PocoMapInit.Array, default);
 
 		this.pipe.Writer.Complete();
 		this.pipe.Reader.Complete();
@@ -34,12 +39,11 @@ public class SyncVsAsyncArrays
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("map-init", "Deserialize")]
 	public async ValueTask Async_Deserialize()
 	{
-		// Setup.
-		this.pipe.Writer.Write(PocoArrayMsgpack);
-		await this.pipe.Writer.FlushAsync();
-
-		PocoClass? result = await this.serializer.DeserializeAsync<PocoClass>(this.pipe.Reader, default);
+		PocoMapInit[]? result = await this.serializer.DeserializeAsync<PocoMapInit[], SyncVsAsyncArrays>(
+			PipeReader.Create(Data.PocoMapInit.ArrayMsgpack),
+			default);
 	}
 }
