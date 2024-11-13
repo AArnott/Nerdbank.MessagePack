@@ -47,6 +47,8 @@ jobs:
         if ((git rev-list FETCH_HEAD ^HEAD --count -- .github/workflows) -eq 0) {
           # Indeed there are no changes in that area. So merge locally to try to appease GitHub.
           git checkout -b auto/libtemplateUpdate
+          git config user.name "Andrew Arnott"
+          git config user.email "andrewarnott@live.com"
           git merge FETCH_HEAD
           if ($LASTEXITCODE -ne 0) {
             Write-Host "Merge conflicts prevent creating the pull request. Please run tools/MergeFrom-Template.ps1 locally and push the result as a pull request."
