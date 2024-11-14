@@ -36,7 +36,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
-				ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref reader);
+				ReadOnlySpan<byte> propertyName = ReadStringSpan(ref reader);
 				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
 				{
 					deserializeArg.Read(ref argState, ref reader, context);
@@ -82,7 +82,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
-					ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref syncReader);
+					ReadOnlySpan<byte> propertyName = ReadStringSpan(ref syncReader);
 					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 					{
 						propertyReader.Read(ref argState, ref syncReader, context);
@@ -102,7 +102,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					if (bufferedStructures % 2 == 1)
 					{
 						// The property name has already been buffered.
-						ReadOnlySpan<byte> propertyName = CodeGenHelpers.ReadStringSpan(ref syncReader);
+						ReadOnlySpan<byte> propertyName = ReadStringSpan(ref syncReader);
 						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader) && propertyReader.PreferAsyncSerialization)
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
