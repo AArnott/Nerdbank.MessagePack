@@ -51,6 +51,9 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	}
 
 	[Fact]
+	public void ClosedGenericDerived_BaseType() => this.AssertRoundtrip<BaseClass>(new DerivedGeneric<int>(5) { BaseClassProperty = 10 });
+
+	[Fact]
 	public void Null() => this.AssertRoundtrip<BaseClass>(null);
 
 	[Fact]
@@ -89,11 +92,15 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		this.Logger.WriteLine(ex.Message);
 	}
 
+	[GenerateShape<DerivedGeneric<int>>]
+	internal partial class Witness;
+
 	[GenerateShape]
-	[KnownSubType(1, typeof(DerivedA))]
-	[KnownSubType(2, typeof(DerivedAA))]
-	[KnownSubType(3, typeof(DerivedB))]
-	[KnownSubType(4, typeof(EnumerableDerived))]
+	[KnownSubType<DerivedA>(1)]
+	[KnownSubType<DerivedAA>(2)]
+	[KnownSubType<DerivedB>(3)]
+	[KnownSubType<EnumerableDerived>(4)]
+	[KnownSubType<DerivedGeneric<int>, Witness>(5)]
 	public partial record BaseClass
 	{
 		public int BaseClassProperty { get; set; }
@@ -121,6 +128,10 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		public IEnumerator<int> GetEnumerator() => Enumerable.Range(0, this.Count).GetEnumerator();
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
+	}
+
+	public partial record DerivedGeneric<T>(T Value) : BaseClass
+	{
 	}
 
 	[GenerateShape]

@@ -68,10 +68,11 @@ Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetSecureHashCode() -> long
 Nerdbank.MessagePack.KeyAttribute
 Nerdbank.MessagePack.KeyAttribute.Index.get -> int
 Nerdbank.MessagePack.KeyAttribute.KeyAttribute(int index) -> void
-Nerdbank.MessagePack.KnownSubTypeAttribute
-Nerdbank.MessagePack.KnownSubTypeAttribute.Alias.get -> int
-Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(int alias, System.Type! subType) -> void
-Nerdbank.MessagePack.KnownSubTypeAttribute.SubType.get -> System.Type!
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.Alias.get -> int
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.KnownSubTypeAttribute(int alias) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>.KnownSubTypeAttribute(int alias) -> void
 Nerdbank.MessagePack.MessagePackAsyncReader
 Nerdbank.MessagePack.MessagePackAsyncReader.AdvanceTo(System.SequencePosition consumed) -> void
 Nerdbank.MessagePack.MessagePackAsyncReader.AdvanceTo(System.SequencePosition consumed, System.SequencePosition examined) -> void
