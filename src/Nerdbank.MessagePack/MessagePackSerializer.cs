@@ -66,7 +66,7 @@ public record MessagePackSerializer
 		{ typeof(byte[]), new ByteArrayConverter() },
 	}.ToFrozenDictionary();
 
-	private readonly ConcurrentDictionary<Type, object> cachedConverters = new();
+	private readonly ConcurrentDictionary<Type, object> cachedConverters = new(PrimitiveConverters);
 
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
@@ -92,13 +92,13 @@ public record MessagePackSerializer
 	/// <typeparam name="T">The convertible type.</typeparam>
 	/// <param name="converter">The converter.</param>
 	/// <remarks>
-	/// If a converter for the data type has already been cached, this method does nothing.
+	/// If a converter for the data type has already been cached, the new value takes its place.
 	/// Custom converters should be registered before serializing anything on this
 	/// instance of <see cref="MessagePackSerializer" />.
 	/// </remarks>
 	public void RegisterConverter<T>(MessagePackConverter<T> converter)
 	{
-		this.cachedConverters.TryAdd(typeof(T), converter);
+		this.cachedConverters[typeof(T)] = converter;
 	}
 
 	/// <summary>
@@ -475,33 +475,9 @@ public record MessagePackSerializer
 	/// <returns><see langword="true"/> if a converter was found to already exist; otherwise <see langword="false" />.</returns>
 	internal bool TryGetConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
-		if (this.TryGetConverter(typeof(T), out object? candidate))
+		if (this.cachedConverters.TryGetValue(typeof(T), out object? candidate))
 		{
 			converter = (MessagePackConverter<T>)candidate;
-			return true;
-		}
-
-		converter = null;
-		return false;
-	}
-
-	/// <summary>
-	/// Searches our static and instance cached converters for a converter for the given type.
-	/// </summary>
-	/// <param name="type">The data type to be converted.</param>
-	/// <param name="converter">Receives the converter instance if one exists.</param>
-	/// <returns><see langword="true"/> if a converter was found to already exist; otherwise <see langword="false" />.</returns>
-	internal bool TryGetConverter(Type type, [NotNullWhen(true)] out object? converter)
-	{
-		// Query our cache before the static converters to allow overrides of the built-in converters.
-		// For example this may allow for string interning or other optimizations.
-		if (this.cachedConverters.TryGetValue(type, out converter))
-		{
-			return true;
-		}
-
-		if (PrimitiveConverters.TryGetValue(type, out converter))
-		{
 			return true;
 		}
 
@@ -514,7 +490,7 @@ public record MessagePackSerializer
 	/// </summary>
 	/// <param name="converters">The converters to store.</param>
 	/// <remarks>
-	/// Any collisions with existing converters are resolved in favor of the original converters.
+	/// Any collisions with existing converters are resolved in favor of the new converters.
 	/// </remarks>
 	internal void RegisterConverters(IEnumerable<KeyValuePair<Type, object>> converters)
 	{
