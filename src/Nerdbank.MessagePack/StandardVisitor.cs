@@ -72,7 +72,7 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 				serializable ??= new();
 				deserializable ??= new();
 
-				CodeGenHelpers.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+				GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 				if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 				{
 					serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.SuppressIfNoConstructorParameter, accessors.PreferAsyncSerialization));
@@ -378,6 +378,25 @@ internal class StandardVisitor(MessagePackSerializer owner) : TypeShapeVisitor, 
 	{
 		ITypeShapeFunc self = this;
 		return (IMessagePackConverter)shape.Invoke(this, state)!;
+	}
+
+	/// <summary>
+	/// Gets the messagepack encoding for a given string.
+	/// </summary>
+	/// <param name="value">The string to encode.</param>
+	/// <param name="utf8Bytes">The UTF-8 encoded string.</param>
+	/// <param name="msgpackEncoded">The msgpack-encoded string.</param>
+	/// <remarks>
+	/// Because msgpack encodes with UTF-8 bytes, the two output parameter share most of the memory.
+	/// </remarks>
+	private static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
+	{
+		int byteCount = StringEncoding.UTF8.GetByteCount(value);
+		Memory<byte> bytes = new byte[byteCount + 5];
+		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(bytes.Span, (uint)byteCount, out int msgpackHeaderLength));
+		StringEncoding.UTF8.GetBytes(value, bytes.Span[msgpackHeaderLength..]);
+		utf8Bytes = bytes.Slice(msgpackHeaderLength, byteCount);
+		msgpackEncoded = bytes.Slice(0, byteCount + msgpackHeaderLength);
 	}
 
 	/// <summary>
