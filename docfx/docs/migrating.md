@@ -73,8 +73,32 @@ Learn more about this in our [Getting Started](getting-started.md) guide.
  }
 ```
 
+#### `KeyAttribute`
+
 Nerdbank.MessagePack also supports @Nerdbank.MessagePack.KeyAttribute, which serves the same function as in MessagePack-CSharp: to change the serialized schema from that of a map of property name=value to an array of values.
-Thus, you may keep the `[Key(0)]`, `[Key(1)]`, etc., attributes on your types if you wish to maintain the schema of the serialized data.
+Thus, you may keep the `[Key(0)]`, `[Key(1)]`, etc., attributes on your types if you wish to maintain the schema of the serialized data, provided you change the namespace.
+
+If using `[Key("name")]` attributes as a means to change the serialized property names, this must be replaced with @PolyType.PropertyShapeAttribute with @PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType set to the serialized name.
+
+```diff
+-[Key("name")]
++[PropertyShape(Name = "name")]
+ public string SomeProperty { get; set; }
+```
+
+#### `IgnoreMemberAttribute`
+
+The `[IgnoreMemberAttribute]` that comes from MessagePack-CSharp can be removed from non-public members, which are never considered for serialization by default.
+For public members that should be ignored, replace this attribute with @PolyType.PropertyShapeAttribute with @PolyType.PropertyShapeAttribute.Ignore?displayProperty=nameWithType set to `true`.
+
+```diff
+-[IgnoreMember]
++[PropertyShape(Ignore = true)]
+ public int SomeProperty { get; set; }
+
+-[IgnoreMember]
+ internal int AnotherProperty { get; set; }
+```
 
 ### `UnionAttribute`
 
