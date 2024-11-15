@@ -245,7 +245,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							// Ultimately we would probably do well to just match without case sensitivity, but we don't support that yet.
 							string camelCase = MessagePackNamingPolicy.CamelCase.ConvertName(p.Name);
 							string pascalCase = MessagePackNamingPolicy.PascalCase.ConvertName(p.Name);
-							return [(camelCase, prop), (pascalCase, prop)];
+							return camelCase != pascalCase
+								? [(camelCase, prop), (pascalCase, prop)]
+								: [(camelCase, prop)];
 						}).ToSpanDictionary(
 							p => Encoding.UTF8.GetBytes(p.Name),
 							p => p.Deserialize,
