@@ -3,6 +3,7 @@
 
 using System.IO.Pipelines;
 
+[MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
 [GenerateShape<PocoMapInit[]>]
