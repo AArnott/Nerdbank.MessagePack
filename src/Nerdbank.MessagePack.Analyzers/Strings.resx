@@ -213,4 +213,10 @@
   <data name="NBMsgPack103_Title" xml:space="preserve">
     <value>Use newer KeyAttribute</value>
   </data>
+  <data name="NBMsgPack104_MessageFormat" xml:space="preserve">
+    <value>Use PolyType.PropertyShape(Ignore = true) instead.</value>
+  </data>
+  <data name="NBMsgPack104_Title" xml:space="preserve">
+    <value>Avoid IgnoreMemberAttribute</value>
+  </data>
 </root>

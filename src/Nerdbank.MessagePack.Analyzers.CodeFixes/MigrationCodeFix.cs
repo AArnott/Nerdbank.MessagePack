@@ -26,11 +26,12 @@ public class MigrationCodeFix : CodeFixProvider
 		MigrationAnalyzer.FormatterAttributeDiagnosticId,
 		MigrationAnalyzer.MessagePackObjectAttributeUsageDiagnosticId,
 		MigrationAnalyzer.KeyAttributeUsageDiagnosticId,
+		MigrationAnalyzer.IgnoreMemberAttributeUsageDiagnosticId,
 	];
 
 	public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
-	public override Task RegisterCodeFixesAsync(CodeFixContext context)
+	public override async Task RegisterCodeFixesAsync(CodeFixContext context)
 	{
 		foreach (Diagnostic diagnostic in context.Diagnostics)
 		{
@@ -68,10 +69,34 @@ public class MigrationCodeFix : CodeFixProvider
 							equivalenceKey: "Use Nerdbank.MessagePack.KeyAttribute"),
 						diagnostic);
 					break;
+				case MigrationAnalyzer.IgnoreMemberAttributeUsageDiagnosticId:
+					// Determine whether to remove or replace the attribute and offer the appropriate code fix for it.
+					SyntaxNode? tree = await context.Document.GetSyntaxRootAsync(context.CancellationToken);
+					if (tree?.FindNode(context.Span) is AttributeSyntax { Parent.Parent: MemberDeclarationSyntax member } att)
+					{
+						if (member.Modifiers.Any(SyntaxKind.PublicKeyword))
+						{
+							context.RegisterCodeFix(
+								CodeAction.Create(
+									title: "Replace IgnoreMemberAttribute with PropertyShapeAttribute",
+									createChangedDocument: cancellationToken => this.ReplaceIgnoreMemberAttribute(context.Document, att, false, cancellationToken),
+									equivalenceKey: "Replace IgnoreMemberAttribute with PropertyShapeAttribute"),
+								diagnostic);
+						}
+						else
+						{
+							context.RegisterCodeFix(
+								CodeAction.Create(
+									title: "Remove IgnoreMemberAttribute",
+									createChangedDocument: cancellationToken => this.ReplaceIgnoreMemberAttribute(context.Document, att, true, cancellationToken),
+									equivalenceKey: "Remove IgnoreMemberAttribute"),
+								diagnostic);
+						}
+					}
+
+					break;
 			}
 		}
-
-		return Task.CompletedTask;
 	}
 
 	private static NameSyntax NameInNamespace(SimpleNameSyntax name) => NameInNamespace(name, Namespace);
@@ -237,11 +262,38 @@ public class MigrationCodeFix : CodeFixProvider
 		return document.WithSyntaxRoot(root);
 	}
 
+	private async Task<Document> ReplaceIgnoreMemberAttribute(Document document, AttributeSyntax attribute, bool remove, CancellationToken cancellationToken)
+	{
+		CompilationUnitSyntax? root = (CompilationUnitSyntax)await attribute.SyntaxTree.GetRootAsync(cancellationToken);
+
+		if (remove)
+		{
+			root = attribute.Parent is AttributeListSyntax { Attributes.Count: 1 }
+				? root.RemoveNode(attribute.Parent, SyntaxRemoveOptions.KeepEndOfLine)
+				: root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia);
+		}
+		else
+		{
+			AttributeSyntax propertyShapeAttribute = Attribute(NameInNamespace(IdentifierName("PropertyShape"), IdentifierName("PolyType")))
+				.AddArgumentListArguments(
+					AttributeArgument(LiteralExpression(SyntaxKind.TrueLiteralExpression)).WithNameEquals(NameEquals(IdentifierName("Ignore"))).WithAdditionalAnnotations(Formatter.Annotation));
+			root = root.ReplaceNode(attribute, propertyShapeAttribute);
+		}
+
+		if (root is null)
+		{
+			return document;
+		}
+
+		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+	}
+
 	private async Task<Document> AddImportAndSimplifyAsync(Document document, CancellationToken cancellationToken)
 	{
 		Document modifiedDocument = document;
 		modifiedDocument = await ImportAdder.AddImportsAsync(document, cancellationToken: cancellationToken);
 		modifiedDocument = await Simplifier.ReduceAsync(modifiedDocument, cancellationToken: cancellationToken);
+		modifiedDocument = await Formatter.FormatAsync(modifiedDocument, cancellationToken: cancellationToken);
 		return modifiedDocument;
 	}
 

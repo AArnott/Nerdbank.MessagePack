@@ -12,6 +12,7 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 	public const string FormatterAttributeDiagnosticId = "NBMsgPack101";
 	public const string MessagePackObjectAttributeUsageDiagnosticId = "NBMsgPack102";
 	public const string KeyAttributeUsageDiagnosticId = "NBMsgPack103";
+	public const string IgnoreMemberAttributeUsageDiagnosticId = "NBMsgPack104";
 
 	public static readonly DiagnosticDescriptor FormatterDiagnostic = new(
 		id: FormatterDiagnosticId,
@@ -49,11 +50,21 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 		isEnabledByDefault: true,
 		helpLinkUri: AnalyzerUtilities.GetHelpLink(KeyAttributeUsageDiagnosticId));
 
+	public static readonly DiagnosticDescriptor IgnoreMemberAttributeUsageDiagnostic = new(
+		id: IgnoreMemberAttributeUsageDiagnosticId,
+		title: Strings.NBMsgPack104_Title,
+		messageFormat: Strings.NBMsgPack104_MessageFormat,
+		category: "Migration",
+		defaultSeverity: DiagnosticSeverity.Info,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(IgnoreMemberAttributeUsageDiagnosticId));
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		FormatterDiagnostic,
 		FormatterAttributeDiagnostic,
 		MessagePackObjectAttributeUsageDiagnostic,
 		KeyAttributeUsageDiagnostic,
+		IgnoreMemberAttributeUsageDiagnostic,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -76,6 +87,12 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 					if (context.Symbol.FindAttributes(oldLibrarySymbols.KeyAttribute).FirstOrDefault() is AttributeData keyAttribute)
 					{
 						context.ReportDiagnostic(Diagnostic.Create(KeyAttributeUsageDiagnostic, keyAttribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()));
+					}
+
+					// Look for applications of [IgnoreMember]
+					if (context.Symbol.FindAttributes(oldLibrarySymbols.IgnoreMemberAttribute).FirstOrDefault() is AttributeData ignoreMemberAttribute)
+					{
+						context.ReportDiagnostic(Diagnostic.Create(IgnoreMemberAttributeUsageDiagnostic, ignoreMemberAttribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()));
 					}
 				},
 				SymbolKind.Property,

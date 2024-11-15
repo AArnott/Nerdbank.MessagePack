@@ -13,6 +13,7 @@ public record MessagePackCSharpReferenceSymbols(
 	INamedTypeSymbol MessagePackFormatterAttribute,
 	INamedTypeSymbol MessagePackObjectAttribute,
 	INamedTypeSymbol KeyAttribute,
+	INamedTypeSymbol IgnoreMemberAttribute,
 	INamedTypeSymbol MessagePackSecurity,
 	IMethodSymbol DepthStep,
 	INamedTypeSymbol MessagePackReader,
@@ -89,6 +90,13 @@ public record MessagePackCSharpReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? ignoreMemberAttribute = oldLibraryAnnotationsAssembly.GetTypeByMetadataName("MessagePack.IgnoreMemberAttribute");
+		if (ignoreMemberAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? messagePackSecurity = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.MessagePackSecurity");
 		if (messagePackSecurity is null)
 		{
@@ -160,6 +168,7 @@ public record MessagePackCSharpReferenceSymbols(
 			messagePackFormatterAttribute,
 			messagePackObjectAttribute,
 			keyAttribute,
+			ignoreMemberAttribute,
 			messagePackSecurity,
 			depthStep,
 			reader,

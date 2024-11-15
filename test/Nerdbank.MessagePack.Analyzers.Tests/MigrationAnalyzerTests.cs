@@ -142,17 +142,29 @@ public class MigrationAnalyzerTests
 			{
 				[{|NBMsgPack103:Key(0)|}]
 				public string Name { get; set; }
+
+				[{|NBMsgPack104:IgnoreMember|}]
+				public string PublicIgnored { get; set; }
+
+				[{|NBMsgPack104:IgnoreMember|}]
+				internal string NonPublicIgnored { get; set; }
 			}
 			""";
 
 		string fixedSource = /* lang=c#-test */ """
 			using MessagePack;
 			using MessagePack.Formatters;
+			using PolyType;
 
 			public class MyType
 			{
 				[Nerdbank.MessagePack.Key(0)]
 				public string Name { get; set; }
+
+				[PropertyShape(Ignore = true)]
+				public string PublicIgnored { get; set; }
+
+				internal string NonPublicIgnored { get; set; }
 			}
 			""";
 
