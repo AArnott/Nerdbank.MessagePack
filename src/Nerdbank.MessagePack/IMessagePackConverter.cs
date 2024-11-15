@@ -23,4 +23,10 @@ internal interface IMessagePackConverter
 	/// <param name="context">Context for the deserialization.</param>
 	/// <returns>The deserialized value.</returns>
 	object? Read(ref MessagePackReader reader, SerializationContext context);
+
+	/// <summary>
+	/// Wraps this converter with a reference preservation converter.
+	/// </summary>
+	/// <returns>A converter. Possibly <see langword="this"/> if this instance is already reference preserving.</returns>
+	IMessagePackConverter WrapWithReferencePreservation();
 }

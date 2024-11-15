@@ -35,6 +35,9 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	protected T? Roundtrip<T>(T? value)
 		where T : IShapeable<T> => this.Roundtrip(value, T.GetShape());
 
+	protected T? Roundtrip<T, TProvider>(T? value)
+		where TProvider : IShapeable<T> => this.Roundtrip(value, TProvider.GetShape());
+
 	protected T? Roundtrip<T>(T? value, ITypeShape<T> shape)
 	{
 		Sequence<byte> sequence = new();

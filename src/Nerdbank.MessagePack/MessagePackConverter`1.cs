@@ -116,4 +116,10 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	{
 		return this.Read(ref reader, context);
 	}
+
+	/// <inheritdoc/>
+	IMessagePackConverter IMessagePackConverter.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
+
+	/// <inheritdoc cref="IMessagePackConverter.WrapWithReferencePreservation" />
+	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
 }

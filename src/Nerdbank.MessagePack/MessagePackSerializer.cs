@@ -66,7 +66,13 @@ public record MessagePackSerializer
 		{ typeof(byte[]), new ByteArrayConverter() },
 	}.ToFrozenDictionary();
 
-	private readonly ConcurrentDictionary<Type, object> cachedConverters = new(PrimitiveConverters);
+	private static readonly FrozenDictionary<Type, object> PrimitiveReferencePreservingConverters = PrimitiveConverters.ToFrozenDictionary(
+		pair => pair.Key,
+		pair => (object)((IMessagePackConverter)pair.Value).WrapWithReferencePreservation());
+
+	private readonly object lazyInitCookie = new();
+
+	private ConcurrentDictionary<Type, object>? cachedConverters;
 
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
@@ -82,9 +88,55 @@ public record MessagePackSerializer
 	public MessagePackNamingPolicy? PropertyNamingPolicy { get; init; }
 
 	/// <summary>
+	/// Gets a value indicating whether to preserve reference equality when serializing objects.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <remarks>
+	/// <para>
+	/// When <see langword="false" />, if an object appears multiple times in a serialized object graph, it will be serialized at each location.
+	/// This has two outcomes: redundant data leading to larger serialized payloads and the loss of reference equality when deserialized.
+	/// This is the default behavior because it requires no msgpack extensions and is compatible with all msgpack readers.
+	/// </para>
+	/// <para>
+	/// When <see langword="true"/>, every object is serialized normally the first time it appears in the object graph.
+	/// Each subsequent type the object appears in the object graph, it is serialized as a reference to the first occurrence.
+	/// This reference requires between 3-6 bytes of overhead per reference instead of whatever the object's by-value representation would have required.
+	/// Upon deserialization, all objects that were shared across the object graph will also be shared across the deserialized object graph.
+	/// Of course there will not be reference equality between the original and deserialized objects, but the deserialized objects will have reference equality with each other.
+	/// This option utilizes a proprietary msgpack extension and can only be deserialized by libraries that understand this extension.
+	/// There is a small perf penalty for this feature, but depending on the object graph it may turn out to improve performance due to avoiding redundant serializations.
+	/// </para>
+	/// <para>
+	/// Reference cycles (where an object refers to itself or to another object that eventually refers back to it) are <em>not</em> supported in either mode.
+	/// When this property is <see langword="true" />, an exception will be thrown when a cycle is detected.
+	/// When this property is <see langword="false" />, a cycle will eventually result in a <see cref="StackOverflowException" /> being thrown.
+	/// </para>
+	/// </remarks>
+	public bool PreserveReferences { get; init; }
+
+	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
+
+	/// <summary>
+	/// Gets all the converters this instance knows about so far.
+	/// </summary>
+	private ConcurrentDictionary<Type, object> CachedConverters
+	{
+		get
+		{
+			if (this.cachedConverters is null)
+			{
+				lock (this.lazyInitCookie)
+				{
+					this.cachedConverters ??= this.PreserveReferences ? new(PrimitiveReferencePreservingConverters) : new(PrimitiveConverters);
+				}
+			}
+
+			return this.cachedConverters;
+		}
+	}
 
 	/// <summary>
 	/// Registers a converter for use with this serializer.
@@ -98,7 +150,8 @@ public record MessagePackSerializer
 	/// </remarks>
 	public void RegisterConverter<T>(MessagePackConverter<T> converter)
 	{
-		this.cachedConverters[typeof(T)] = converter;
+		Requires.NotNull(converter);
+		this.CachedConverters[typeof(T)] = this.PreserveReferences ? ((IMessagePackConverter)converter).WrapWithReferencePreservation() : converter;
 	}
 
 	/// <summary>
@@ -173,7 +226,11 @@ public record MessagePackSerializer
 	/// <param name="writer">The msgpack writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Write(ref writer, value, this.CreateSerializationContext());
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext();
+		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+	}
 
 	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
 	public T? Deserialize<T>(byte[] buffer)
@@ -212,9 +269,11 @@ public record MessagePackSerializer
 	{
 		Requires.NotNull(writer);
 		cancellationToken.ThrowIfCancellationRequested();
+
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
-		await this.GetOrAddConverter(TProvider.GetShape()).WriteAsync(asyncWriter, value, this.CreateSerializationContext(), cancellationToken).ConfigureAwait(false);
+		using DisposableSerializationContext context = this.CreateSerializationContext();
+		await this.GetOrAddConverter(TProvider.GetShape()).WriteAsync(asyncWriter, value, context.Value, cancellationToken).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -235,8 +294,9 @@ public record MessagePackSerializer
 		where TProvider : IShapeable<T>
 	{
 		cancellationToken.ThrowIfCancellationRequested();
+		using DisposableSerializationContext context = this.CreateSerializationContext();
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(TProvider.GetShape()).ReadAsync(new MessagePackAsyncReader(reader), this.CreateSerializationContext(), cancellationToken);
+		return this.GetOrAddConverter(TProvider.GetShape()).ReadAsync(new MessagePackAsyncReader(reader), context.Value, cancellationToken);
 #pragma warning restore NBMsgPackAsync
 	}
 
@@ -279,7 +339,11 @@ public record MessagePackSerializer
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Read(ref reader, this.CreateSerializationContext());
+	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext();
+		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
+	}
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
 	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
@@ -475,7 +539,7 @@ public record MessagePackSerializer
 	/// <returns><see langword="true"/> if a converter was found to already exist; otherwise <see langword="false" />.</returns>
 	internal bool TryGetConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
-		if (this.cachedConverters.TryGetValue(typeof(T), out object? candidate))
+		if (this.CachedConverters.TryGetValue(typeof(T), out object? candidate))
 		{
 			converter = (MessagePackConverter<T>)candidate;
 			return true;
@@ -496,7 +560,13 @@ public record MessagePackSerializer
 	{
 		foreach (KeyValuePair<Type, object> pair in converters)
 		{
-			this.cachedConverters.TryAdd(pair.Key, pair.Value);
+			IMessagePackConverter converter = (IMessagePackConverter)pair.Value;
+			if (this.PreserveReferences)
+			{
+				converter = converter.WrapWithReferencePreservation();
+			}
+
+			this.CachedConverters.TryAdd(pair.Key, converter);
 		}
 	}
 
@@ -526,7 +596,10 @@ public record MessagePackSerializer
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
 	/// <returns>The serialization context.</returns>
-	protected SerializationContext CreateSerializationContext() => this.StartingContext with { Owner = this };
+	/// <remarks>
+	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
+	/// </remarks>
+	protected DisposableSerializationContext CreateSerializationContext() => new(this.StartingContext.Start(this));
 
 	/// <summary>
 	/// Synthesizes a <see cref="MessagePackConverter{T}"/> for a type with the given shape.
@@ -536,12 +609,40 @@ public record MessagePackSerializer
 	/// <returns>The msgpack converter.</returns>
 	private MessagePackConverter<T> CreateConverter<T>(ITypeShape<T> typeShape)
 	{
-		StandardVisitor visitor = new(this);
+		StandardVisitor standardVisitor = new(this);
+		ITypeShapeVisitor visitor;
+		if (this.PreserveReferences)
+		{
+			visitor = new ReferencePreservingVisitor(standardVisitor);
+			standardVisitor.OutwardVisitor = visitor;
+		}
+		else
+		{
+			visitor = standardVisitor;
+		}
+
 		MessagePackConverter<T> result = (MessagePackConverter<T>)typeShape.Accept(visitor)!;
 
 		// Cache all the converters that have been generated to support the one that our caller wants.
-		this.RegisterConverters(visitor.GeneratedConverters.Where(kv => kv.Value is not null)!);
+		this.RegisterConverters(standardVisitor.GeneratedConverters.Where(kv => kv.Value is not null)!);
 
 		return result;
+	}
+
+	/// <summary>
+	/// A wrapper around <see cref="SerializationContext"/> that makes disposal easier.
+	/// </summary>
+	/// <param name="context">The <see cref="SerializationContext"/> to wrap.</param>
+	protected struct DisposableSerializationContext(SerializationContext context) : IDisposable
+	{
+		/// <summary>
+		/// Gets the actual <see cref="SerializationContext"/>.
+		/// </summary>
+		public SerializationContext Value => context;
+
+		/// <summary>
+		/// Disposes of any resources held by the serialization context.
+		/// </summary>
+		public void Dispose() => context.End();
 	}
 }

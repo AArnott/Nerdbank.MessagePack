@@ -38,7 +38,12 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
 	/// </summary>
-	internal MessagePackSerializer? Owner { get; init; }
+	internal MessagePackSerializer? Owner { get; private init; }
+
+	/// <summary>
+	/// Gets the reference equality tracker for this serialization operation.
+	/// </summary>
+	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
 
 	/// <summary>
 	/// Decrements the depth remaining.
@@ -68,7 +73,8 @@ public record struct SerializationContext
 		where T : IShapeable<T>
 	{
 		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		return this.Owner.GetOrAddConverter<T>();
+		MessagePackConverter<T> result = this.Owner.GetOrAddConverter<T>();
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
 	/// <summary>
@@ -85,6 +91,32 @@ public record struct SerializationContext
 		where TProvider : IShapeable<T>
 	{
 		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		return this.Owner.GetOrAddConverter(TProvider.GetShape());
+		MessagePackConverter<T> result = this.Owner.GetOrAddConverter(TProvider.GetShape());
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+	}
+
+	/// <summary>
+	/// Starts a new serialization operation.
+	/// </summary>
+	/// <param name="owner">The owning serializer.</param>
+	/// <returns>The new context for the operation.</returns>
+	internal SerializationContext Start(MessagePackSerializer owner)
+	{
+		return this with
+		{
+			Owner = owner,
+			ReferenceEqualityTracker = owner.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take() : null,
+		};
+	}
+
+	/// <summary>
+	/// Responds to the conclusion of a serialization operation by recycling any relevant objects.
+	/// </summary>
+	internal void End()
+	{
+		if (this.ReferenceEqualityTracker is not null)
+		{
+			ReusableObjectPool<ReferenceEqualityTracker>.Return(this.ReferenceEqualityTracker);
+		}
 	}
 }

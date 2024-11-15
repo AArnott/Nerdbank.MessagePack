@@ -9,6 +9,23 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
+	[Fact]
+	public void AttributedTypeWorksAfterFirstSerialization()
+	{
+		this.AssertRoundtrip(new Tree(3));
+		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
+	}
+
+	[Fact]
+	public void RegisterThrowsAfterFirstSerialization()
+	{
+		this.AssertRoundtrip(new Tree(3));
+		this.Serializer.RegisterConverter(new NoOpConverter());
+	}
+
+	[GenerateShape]
+	public partial record Tree(int FruitCount);
+
 	[GenerateShape, MessagePackConverter(typeof(CustomTypeConverter))]
 	public partial record CustomType
 	{
@@ -30,5 +47,12 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 				context.GetConverter<string, CustomTypeConverter>().Write(ref writer, value?.InternalProperty, context);
 			}
 		}
+	}
+
+	private class NoOpConverter : MessagePackConverter<CustomType>
+	{
+		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context) => throw new NotImplementedException();
 	}
 }

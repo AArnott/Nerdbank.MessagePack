@@ -71,6 +71,9 @@ I/O types (e.g. `Steam`) or types that are more about function that data (e.g. `
 Typeless serialization is not supported.
 For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time.
 
+Reference cycles in the object graph are not supported.
+[Reference equality preservation is an option](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) that can be turned on.
+
 ## Converting to JSON
 
 It can sometimes be useful to understand what msgpack is actually being serialized.
