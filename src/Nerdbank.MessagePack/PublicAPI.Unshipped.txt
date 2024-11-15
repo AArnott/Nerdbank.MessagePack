@@ -179,6 +179,8 @@ Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T, TProvider>(System
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Pipelines.PipeReader! reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.get -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.get -> Nerdbank.MessagePack.MessagePackNamingPolicy?
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter<T>(Nerdbank.MessagePack.MessagePackConverter<T>! converter) -> void

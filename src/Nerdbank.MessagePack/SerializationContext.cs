@@ -41,6 +41,11 @@ public record struct SerializationContext
 	internal MessagePackSerializer? Owner { get; init; }
 
 	/// <summary>
+	/// Gets the reference equality tracker for this serialization operation.
+	/// </summary>
+	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; init; }
+
+	/// <summary>
 	/// Decrements the depth remaining.
 	/// </summary>
 	/// <remarks>
@@ -68,7 +73,8 @@ public record struct SerializationContext
 		where T : IShapeable<T>
 	{
 		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		return this.Owner.GetOrAddConverter<T>();
+		MessagePackConverter<T> result = this.Owner.GetOrAddConverter<T>();
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
 	/// <summary>
@@ -85,6 +91,7 @@ public record struct SerializationContext
 		where TProvider : IShapeable<T>
 	{
 		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		return this.Owner.GetOrAddConverter(TProvider.GetShape());
+		MessagePackConverter<T> result = this.Owner.GetOrAddConverter(TProvider.GetShape());
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 }
