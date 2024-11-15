@@ -165,7 +165,7 @@ Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationE
 Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationException(string? message) -> void
 Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationException(string? message, System.Exception? innerException) -> void
 Nerdbank.MessagePack.MessagePackSerializer
-Nerdbank.MessagePack.MessagePackSerializer.CreateSerializationContext() -> Nerdbank.MessagePack.SerializationContext
+Nerdbank.MessagePack.MessagePackSerializer.CreateSerializationContext() -> Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.Deserialize<T, TProvider>(byte[]! buffer) -> T?
 Nerdbank.MessagePack.MessagePackSerializer.Deserialize<T, TProvider>(ref Nerdbank.MessagePack.MessagePackReader reader) -> T?
 Nerdbank.MessagePack.MessagePackSerializer.Deserialize<T, TProvider>(System.Buffers.ReadOnlySequence<byte> buffer) -> T?
@@ -177,6 +177,11 @@ Nerdbank.MessagePack.MessagePackSerializer.Deserialize<T>(System.Buffers.ReadOnl
 Nerdbank.MessagePack.MessagePackSerializer.Deserialize<T>(System.Buffers.ReadOnlySequence<byte> buffer, PolyType.Abstractions.ITypeShape<T>! shape) -> T?
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T, TProvider>(System.IO.Pipelines.PipeReader! reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Pipelines.PipeReader! reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
+Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext
+Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.DisposableSerializationContext() -> void
+Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.DisposableSerializationContext(Nerdbank.MessagePack.SerializationContext context) -> void
+Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.Dispose() -> void
+Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.Value.get -> Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.get -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.get -> bool

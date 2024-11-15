@@ -104,7 +104,7 @@ public record MessagePackSerializer
 	/// Upon deserialization, all objects that were shared across the object graph will also be shared across the deserialized object graph.
 	/// Of course there will not be reference equality between the original and deserialized objects, but the deserialized objects will have reference equality with each other.
 	/// This option utilizes a proprietary msgpack extension and can only be deserialized by libraries that understand this extension.
-	/// This option may incur several allocations at the start of a serialization/deserialization operation to track state.
+	/// There is a small perf penalty for this feature, but depending on the object graph it may turn out to improve performance due to avoiding redundant serializations.
 	/// </para>
 	/// <para>
 	/// Reference cycles (where an object refers to itself or to another object that eventually refers back to it) are <em>not</em> supported in either mode.
@@ -226,7 +226,11 @@ public record MessagePackSerializer
 	/// <param name="writer">The msgpack writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Write(ref writer, value, this.CreateSerializationContext());
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext();
+		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+	}
 
 	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
 	public T? Deserialize<T>(byte[] buffer)
@@ -265,9 +269,11 @@ public record MessagePackSerializer
 	{
 		Requires.NotNull(writer);
 		cancellationToken.ThrowIfCancellationRequested();
+
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
-		await this.GetOrAddConverter(TProvider.GetShape()).WriteAsync(asyncWriter, value, this.CreateSerializationContext(), cancellationToken).ConfigureAwait(false);
+		using DisposableSerializationContext context = this.CreateSerializationContext();
+		await this.GetOrAddConverter(TProvider.GetShape()).WriteAsync(asyncWriter, value, context.Value, cancellationToken).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -288,8 +294,9 @@ public record MessagePackSerializer
 		where TProvider : IShapeable<T>
 	{
 		cancellationToken.ThrowIfCancellationRequested();
+		using DisposableSerializationContext context = this.CreateSerializationContext();
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(TProvider.GetShape()).ReadAsync(new MessagePackAsyncReader(reader), this.CreateSerializationContext(), cancellationToken);
+		return this.GetOrAddConverter(TProvider.GetShape()).ReadAsync(new MessagePackAsyncReader(reader), context.Value, cancellationToken);
 #pragma warning restore NBMsgPackAsync
 	}
 
@@ -332,7 +339,11 @@ public record MessagePackSerializer
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape) => this.GetOrAddConverter(shape).Read(ref reader, this.CreateSerializationContext());
+	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext();
+		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
+	}
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
 	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
@@ -585,11 +596,10 @@ public record MessagePackSerializer
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
 	/// <returns>The serialization context.</returns>
-	protected SerializationContext CreateSerializationContext() => this.StartingContext with
-	{
-		Owner = this,
-		ReferenceEqualityTracker = this.PreserveReferences ? new() : null,
-	};
+	/// <remarks>
+	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
+	/// </remarks>
+	protected DisposableSerializationContext CreateSerializationContext() => new(this.StartingContext.Start(this));
 
 	/// <summary>
 	/// Synthesizes a <see cref="MessagePackConverter{T}"/> for a type with the given shape.
@@ -617,5 +627,22 @@ public record MessagePackSerializer
 		this.RegisterConverters(standardVisitor.GeneratedConverters.Where(kv => kv.Value is not null)!);
 
 		return result;
+	}
+
+	/// <summary>
+	/// A wrapper around <see cref="SerializationContext"/> that makes disposal easier.
+	/// </summary>
+	/// <param name="context">The <see cref="SerializationContext"/> to wrap.</param>
+	protected struct DisposableSerializationContext(SerializationContext context) : IDisposable
+	{
+		/// <summary>
+		/// Gets the actual <see cref="SerializationContext"/>.
+		/// </summary>
+		public SerializationContext Value => context;
+
+		/// <summary>
+		/// Disposes of any resources held by the serialization context.
+		/// </summary>
+		public void Dispose() => context.End();
 	}
 }

@@ -10,12 +10,20 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Tracks the state for a particular serialization/deserialization operation to preserve object references.
 /// </summary>
-internal class ReferenceEqualityTracker
+internal class ReferenceEqualityTracker : IPoolableObject
 {
 	private const sbyte ReferenceExtensionTypeCode = 1;
 	private readonly Dictionary<object, int> serializedObjects = new(ReferenceEqualityComparer.Instance);
 	private readonly List<object?> deserializedObjects = new();
 	private int serializingObjectCounter;
+
+	/// <inheritdoc/>
+	void IPoolableObject.Recycle()
+	{
+		this.serializingObjectCounter = 0;
+		this.serializedObjects.Clear();
+		this.deserializedObjects.Clear();
+	}
 
 	/// <summary>
 	/// Writes an object to the stream, replacing the object with a reference if the object has been seen in this serialization before.
