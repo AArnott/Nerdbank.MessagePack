@@ -4,6 +4,7 @@
 using K4os.Compression.LZ4;
 using K4os.Compression.LZ4.Encoders;
 using K4os.Compression.LZ4.Streams;
+using K4os.Compression.LZ4.Streams.Frames;
 
 public partial class LZ4Tests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
@@ -22,7 +23,7 @@ public partial class LZ4Tests(ITestOutputHelper logger) : MessagePackSerializerT
 		this.Logger.WriteLine($"LZ4 size:     {compressed.Length,8:N0} ({(double)compressed.Length / sequence.Length:P0})");
 
 		Sequence<byte> decompressed = new();
-		LZ4Frame.Decode(compressed, decompressed);
+		LZ4Frame.Decode(compressed.AsReadOnlySequence.ToArray(), decompressed);
 		Person[]? deserialized = this.Serializer.Deserialize<Person[], Witness>(decompressed);
 		Assert.NotNull(deserialized);
 		Assert.Equal(array.AsSpan(), deserialized.AsSpan());
