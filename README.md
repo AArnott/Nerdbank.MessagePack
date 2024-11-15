@@ -68,3 +68,5 @@ Here are some reasons a new library was created:
 * Nerdbank.MessagePack can dynamically create converters with various options that may vary from other uses within the same process, providing more flexibility than MessagePack-CSharp's strict generic type static storage mechanism.
 * Nerdbank.MessagePack is far simpler to use. One attribute at the base of an object graph is typically all you need. MessagePack-CSharp demands attributes on every single type and every single field or property (even members that will not be serialized).
 * Nerdbank.MessagePack makes adding some long-sought for features from MessagePack-CSharp far easier to implement.
+
+See [a feature comparison table](https://aarnott.github.io/Nerdbank.MessagePack/docs/migrating.html#feature-comparison) that compares the two libraries.

@@ -44,6 +44,11 @@
 			"_appTitle": "Nerdbank.MessagePack",
 			"_enableSearch": true,
 			"pdf": false
+		},
+		"markdownEngineProperties": {
+			"markdigExtensions": [
+				"footnotes"
+			]
 		}
 	}
 }

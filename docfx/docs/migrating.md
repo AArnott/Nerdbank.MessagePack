@@ -1,5 +1,45 @@
 # Migrating from MessagePack-CSharp
 
+If you are migrating from MessagePack-CSharp, or considering doing so, this document is for you.
+
+You should probably start by reviewing the features of each library to make sure that the transition has the possibility of being successful.
+If you see a feature is missing from Nerdbank.MessagePack that you need, look for an issue for it and give it a 👍🏻 vote, or file a new issue if you don't see one.
+
+## Feature comparison
+
+See how this library compares to other .NET MessagePack libraries.
+
+In many cases, the ✅ or ❌ in the table below are hyperlinks to the relevant documentation or an issue you can vote up to request the feature.
+
+Feature                   | Nerdbank.MessagePack | MessagePack-CSharp  |
+--------------------------|:--------------------:|:-------------------:|
+Optimized for high performance | [✅](performance.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#performance) |
+Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
+Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
+Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union) |
+Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
+Custom converters         | [✅](custom-converters.md) | ✅ |
+Deserialization callback  | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
+MsgPack extensions        | ✅ | ✅ |
+LZ4 compression           | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/34) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression) |
+NativeAOT                 | ✅ | ❌[^2] |
+Unity                     | ❓[^3] | ✅ |
+Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ |
+Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
+Secure defaults           | ✅ | ❌ |
+Automatic hash collection deserialization in secure mode | ❌ | ✅ |
+Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.ByValueEqualityComparer`1) | ❌ |
+Free of mutable statics   | ✅ | ❌ |
+
+Security is a complex subject, and an area where Nerdbank.MessagePack is actively evolving.
+[Learn more about how to secure your deserializer](security.md).
+
+[^1]: Nerdbank.MessagePack's approach is more likely to be correct by default and more flexible to fixing when it is not.
+[^2]: Although MessagePack-CSharp does not support .NET 8 flavor NativeAOT, it has long-supported Unity's il2cpp runtime, but it requires careful avoidance of dynamic features.
+[^3]: This hasn't been tested, and even if it works, the level of active support may be limited as the maintainers of Nerdbank.MessagePack do not use Unity. We may accept outside contributions to support it if it isn't onerous to maintain.
+
+## Migration process
+
 To migrate from MessagePack-CSharp to Nerdbank.MessagePack, begin by adding a package reference to Nerdbank.MessagePack as described in the [Getting Started](getting-started.md) guide.
 
 With the new package referenced, automated code fixes are immediately provided to aid in the mechanics of migration.
@@ -13,7 +53,7 @@ Sometimes after applying one migration code fix, a subsequent analyzer will repo
 The following sections demonstrate the changes that are required to migrate from MessagePack-CSharp to Nerdbank.MessagePack.
 Remember that automated code fixes can do most or all of this for you.
 
-## `MessagePackObjectAttribute`
+### `MessagePackObjectAttribute`
 
 MessagePack-CSharp recommends that every user data type be annotated with `[MessagePackObject]` to enable automatic serialization.
 In fact unless you use `[MessagePackObject(true)]`, you must also annotate every field or property with `[Key(0)]`, `[Key(1)]`, etc., and members that should *not* be serialized with `[IgnoreMember]`.
@@ -36,7 +76,7 @@ Learn more about this in our [Getting Started](getting-started.md) guide.
 Nerdbank.MessagePack also supports @Nerdbank.MessagePack.KeyAttribute, which serves the same function as in MessagePack-CSharp: to change the serialized schema from that of a map of property name=value to an array of values.
 Thus, you may keep the `[Key(0)]`, `[Key(1)]`, etc., attributes on your types if you wish to maintain the schema of the serialized data.
 
-## `UnionAttribute`
+### `UnionAttribute`
 
 MessagePack-CSharp defines a `UnionAttribute` by which you can serialize an object when you know its base type or interface at compile-time, but whose exact type is not known until runtime, provided you can predict the closed set of allowed runtime types in advance.
 Nerdbank.MessagePack supports this same use case via its @Nerdbank.MessagePack.KnownSubTypeAttribute, and migration is straightforward:
@@ -53,7 +93,7 @@ Nerdbank.MessagePack supports this same use case via its @Nerdbank.MessagePack.K
 
 Any types referenced by the @Nerdbank.MessagePack.KnownSubTypeAttribute must be annotated with @PolyType.GenerateShapeAttribute as described above.
 
-## `IMessagePackFormatter<T>`
+### `IMessagePackFormatter<T>`
 
 MessagePack-CSharp allows you to define custom formatters for types that it doesn't know how to serialize by default by implementing the `IMessagePackFormatter<T>` interface.
 In Nerdbank.MessagePack, that use case is addressed by deriving a class from the @Nerdbank.MessagePack.MessagePackConverter`1 class.
@@ -116,7 +156,7 @@ These two APIs are very similar, but the method signatures are slightly differen
  }
 ```
 
-## `MessagePackFormatterAttribute`
+### `MessagePackFormatterAttribute`
 
 A custom type may be annotated with the `MessagePackFormatterAttribute` to specify a custom formatter for that type.
 In Nerdbank.MessagePack, this attribute is replaced with the @Nerdbank.MessagePack.MessagePackConverterAttribute in a straightforward replacement.
@@ -130,13 +170,13 @@ In Nerdbank.MessagePack, this attribute is replaced with the @Nerdbank.MessagePa
  }
 ```
 
-## Security mitigations
+### Security mitigations
 
 In MessagePack-CSharp, security mitigations are provided by the `MessagePackSecurity` class, as referenced by the `MessagePackSerializerOptions` class.
 
 In Nerdbank.MessagePack, security mitigations are provided by the @Nerdbank.MessagePack.SerializationContext struct, as referenced by @Nerdbank.MessagePack.MessagePackSerializer.StartingContext?displayProperty=nameWithType.
 
-## Incompatibilities
+### Incompatibilities
 
 Some functionality in MessagePack-CSharp has no equivalent in Nerdbank.MessagePack, as follows:
 
@@ -144,7 +184,7 @@ Some functionality in MessagePack-CSharp has no equivalent in Nerdbank.MessagePa
   Nerdbank.MessagePack requires knowing at least something about the type (see [Unions](unions.md)) at compile time for security reasons and NativeAOT support.
   [Custom converters](custom-converters.md) can be written to overcome these limitations where required.
 
-## Other API changes
+### Other API changes
 
 Many APIs are exactly the same or very similar.
 In some cases, APIs offering equivalent or similar functionality have been renamed.
