@@ -12,7 +12,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 	public void ConvertToJson_Simple() => this.AssertConvertToJson(@"{""Seeds"":3,""Is"":true,""Number"":1.2}", new Primitives(3, true, 1.2));
 
 	[Fact]
-	public void ConvertToJson_Simple2() => this.AssertConvertToJson(@"{""Seeds"":-3,""Is"":false,""Number"":-0.3}", new Primitives(-3, false, -0.3));
+	public void ConvertToJson_Simple2() => this.AssertConvertToJson(@"{""Seeds"":-3,""Is"":true,""Number"":-0.3}", new Primitives(-3, true, -0.3));
 
 	[Fact]
 	public void ConvertToJson_Array() => this.AssertConvertToJson(@"{""IntArray"":[1,2,3]}", new ArrayWrapper(1, 2, 3));
