@@ -20,7 +20,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	public void RegisterThrowsAfterFirstSerialization()
 	{
 		this.AssertRoundtrip(new Tree(3));
-		this.Serializer.RegisterConverter(new NoOpConverter());
+		Assert.Throws<InvalidOperationException>(() => this.Serializer.RegisterConverter(new NoOpConverter()));
 	}
 
 	[GenerateShape]
