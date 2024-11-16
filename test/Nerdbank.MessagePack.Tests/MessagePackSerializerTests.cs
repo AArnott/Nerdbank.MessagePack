@@ -133,7 +133,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void SystemObject()
 	{
-		Assert.NotNull(this.Roundtrip(new object(), Witness.Default.GetShape<object>()!));
+		Assert.NotNull(this.Roundtrip<object, Witness>(new object()));
 	}
 
 	[Fact]
