@@ -107,6 +107,38 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.NotSame(deserializedArray[0], deserializedArray[1]);
 	}
 
+	/// <summary>
+	/// Verifies that the extension type code used for object references can be customized.
+	/// </summary>
+	[Fact]
+	public void CustomExtensionTypeCode()
+	{
+		this.Serializer = this.Serializer with
+		{
+			LibraryExtensionTypeCodes = this.Serializer.LibraryExtensionTypeCodes with
+			{
+				ObjectReference = 100,
+			},
+		};
+
+		object value = new();
+		RecordWithObjects root = new() { Value1 = value, Value2 = value };
+		Sequence<byte> sequence = new();
+		this.Serializer.Serialize(sequence, root);
+		this.LogMsgPack(sequence);
+
+		MessagePackReader reader = new(sequence);
+		reader.ReadMapHeader();
+		reader.Skip(this.Serializer.StartingContext); // Value1 name
+		reader.Skip(this.Serializer.StartingContext); // Value1 value
+		reader.Skip(this.Serializer.StartingContext); // Value2 name
+		Assert.Equal(100, reader.ReadExtensionHeader().TypeCode);
+
+		RecordWithObjects? deserializedRoot = this.Serializer.Deserialize<RecordWithObjects>(sequence);
+		Assert.NotNull(deserializedRoot);
+		Assert.Same(deserializedRoot.Value1, deserializedRoot.Value2);
+	}
+
 	[GenerateShape]
 	public partial record RecordWithStrings
 	{

@@ -18,8 +18,18 @@ internal static class ReusableObjectPool<T>
 	/// <summary>
 	/// Retrieves an object from the pool, or creates a new one if the pool is empty.
 	/// </summary>
+	/// <param name="serializer">The owner for this user.</param>
 	/// <returns>The object.</returns>
-	internal static T Take() => Pool.Value!.TryPop(out T? result) ? result : new T();
+	internal static T Take(MessagePackSerializer? serializer)
+	{
+		if (!Pool.Value!.TryPop(out T? result))
+		{
+			result = new();
+		}
+
+		result.Owner = serializer;
+		return result;
+	}
 
 	/// <summary>
 	/// Clears an object's state and returns it to the pool for reuse.
@@ -28,6 +38,7 @@ internal static class ReusableObjectPool<T>
 	internal static void Return(T item)
 	{
 		item.Recycle();
+		item.Owner = null;
 		Pool.Value!.Push(item);
 	}
 }

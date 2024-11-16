@@ -12,10 +12,12 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 internal class ReferenceEqualityTracker : IPoolableObject
 {
-	private const sbyte ReferenceExtensionTypeCode = 1;
 	private readonly Dictionary<object, int> serializedObjects = new(ReferenceEqualityComparer.Instance);
 	private readonly List<object?> deserializedObjects = new();
 	private int serializingObjectCounter;
+
+	/// <inheritdoc/>
+	public MessagePackSerializer? Owner { get; set; }
 
 	/// <inheritdoc/>
 	void IPoolableObject.Recycle()
@@ -36,12 +38,13 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	internal void WriteObject<T>(ref MessagePackWriter writer, T value, MessagePackConverter<T> inner, SerializationContext context)
 	{
 		Requires.NotNullAllowStructs(value);
+		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
 		if (this.serializedObjects.TryGetValue(value, out int referenceId))
 		{
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
-			writer.Write(new ExtensionHeader(ReferenceExtensionTypeCode, packLength));
+			writer.Write(new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			writer.Write(referenceId);
 		}
 		else
@@ -62,11 +65,13 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <exception cref="MessagePackSerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
 	internal T ReadObject<T>(ref MessagePackReader reader, MessagePackConverter<T> inner, SerializationContext context)
 	{
+		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
+
 		if (reader.NextMessagePackType == MessagePackType.Extension)
 		{
 			MessagePackReader provisionaryReader = reader.CreatePeekReader();
 			ExtensionHeader extensionHeader = provisionaryReader.ReadExtensionHeader();
-			if (extensionHeader.TypeCode == ReferenceExtensionTypeCode)
+			if (extensionHeader.TypeCode == this.Owner.LibraryExtensionTypeCodes.ObjectReference)
 			{
 				int id = provisionaryReader.ReadInt32();
 				reader = provisionaryReader;

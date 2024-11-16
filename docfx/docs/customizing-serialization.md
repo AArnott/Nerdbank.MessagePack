@@ -102,3 +102,13 @@ As a result, this library has chosen a default format for them.
 For interoperability with other libraries you may want to change this format to another option.
 
 Use the @Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat property to change the format.
+
+## Resolving extension type code conflicts
+
+The msgpack spec supports extensions.
+Each extension must define a type code in the range of [-128, 127].
+The negative values are all reserved for official extensions, leaving 0-127 for applications to use.
+
+This library defines its own extensions for certain features.
+These use type codes in the 0-127 range.
+If these conflict with extensions that your application defines or that other libraries your application uses defines, you can reassign type codes for this library's extensions by setting @Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.

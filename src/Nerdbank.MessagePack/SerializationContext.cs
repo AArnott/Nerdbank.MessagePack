@@ -105,7 +105,7 @@ public record struct SerializationContext
 		return this with
 		{
 			Owner = owner,
-			ReferenceEqualityTracker = owner.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take() : null,
+			ReferenceEqualityTracker = owner.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
 		};
 	}
 

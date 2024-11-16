@@ -9,6 +9,11 @@ namespace Nerdbank.MessagePack;
 internal interface IPoolableObject
 {
 	/// <summary>
+	/// Gets or sets the owner of this object, for the time it is in use.
+	/// </summary>
+	internal MessagePackSerializer? Owner { get; set; }
+
+	/// <summary>
 	/// Clears the object's state so that it can be reused.
 	/// </summary>
 	internal void Recycle();

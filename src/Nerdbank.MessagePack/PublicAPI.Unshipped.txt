@@ -43,6 +43,7 @@ const Nerdbank.MessagePack.MessagePackCode.UInt16 = 205 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt32 = 206 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt64 = 207 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt8 = 204 -> byte
+const Nerdbank.MessagePack.ReservedMessagePackExtensionTypeCode.DateTime = -1 -> sbyte
 Nerdbank.MessagePack.ByValueEqualityComparer<T, TProvider>
 Nerdbank.MessagePack.ByValueEqualityComparer<T>
 Nerdbank.MessagePack.Extension
@@ -73,6 +74,9 @@ Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.Alias.get -
 Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.KnownSubTypeAttribute(int alias) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>
 Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>.KnownSubTypeAttribute(int alias) -> void
+Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode
+Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.get -> sbyte
+Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.init -> void
 Nerdbank.MessagePack.MessagePackAsyncReader
 Nerdbank.MessagePack.MessagePackAsyncReader.AdvanceTo(System.SequencePosition consumed) -> void
 Nerdbank.MessagePack.MessagePackAsyncReader.AdvanceTo(System.SequencePosition consumed, System.SequencePosition examined) -> void
@@ -182,6 +186,8 @@ Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.Dispos
 Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.DisposableSerializationContext(Nerdbank.MessagePack.SerializationContext context) -> void
 Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.Dispose() -> void
 Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.Value.get -> Nerdbank.MessagePack.SerializationContext
+Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.get -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.get -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.get -> bool
@@ -273,6 +279,7 @@ Nerdbank.MessagePack.RawMessagePack.MsgPack.get -> System.Buffers.ReadOnlySequen
 Nerdbank.MessagePack.RawMessagePack.RawMessagePack() -> void
 Nerdbank.MessagePack.RawMessagePack.RawMessagePack(System.Buffers.ReadOnlySequence<byte> msgpack) -> void
 Nerdbank.MessagePack.RawMessagePack.ToOwned() -> Nerdbank.MessagePack.RawMessagePack
+Nerdbank.MessagePack.ReservedMessagePackExtensionTypeCode
 Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.SerializationContext.DepthStep() -> void
 Nerdbank.MessagePack.SerializationContext.GetConverter<T, TProvider>() -> Nerdbank.MessagePack.MessagePackConverter<T>!
@@ -349,6 +356,7 @@ static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePac
 static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.Memory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
 static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.ReadOnlyMemory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
 static Nerdbank.MessagePack.RawMessagePack.implicit operator System.Buffers.ReadOnlySequence<byte>(Nerdbank.MessagePack.RawMessagePack msgpack) -> System.Buffers.ReadOnlySequence<byte>
+static readonly Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Default -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.PreferAsyncSerialization.get -> bool
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T?>
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask

@@ -263,11 +263,40 @@ public static class MessagePackCode
 }
 
 /// <summary>
-/// The officially defined messagepack extension type codes.
+/// The officially defined msgpack extension type codes.
 /// </summary>
-internal static class ReservedMessagePackExtensionTypeCode
+/// <remarks>
+/// The msgpack spec reserves all negative values for official extensions.
+/// The spec allows applications to assign 0 to 127 for their own use.
+/// The extensions that this library defines are documented in <see cref="LibraryReservedMessagePackExtensionTypeCode"/>.
+/// </remarks>
+public static class ReservedMessagePackExtensionTypeCode
 {
+	/// <summary>
+	/// The extension used to record <see cref="DateTime"/> values.
+	/// </summary>
 	public const sbyte DateTime = -1;
+}
+
+/// <summary>
+/// Documents the library-reserved extension type codes and allows changing them
+/// to avoid conflicting with those defined by the application or another library.
+/// </summary>
+/// <remarks>
+/// All values must be non-negative to avoid conflicting with the official extension type codes as described in <see cref="ReservedMessagePackExtensionTypeCode"/>.
+/// </remarks>
+public record LibraryReservedMessagePackExtensionTypeCode
+{
+	/// <summary>
+	/// The default extension type code mapping.
+	/// </summary>
+	public static readonly LibraryReservedMessagePackExtensionTypeCode Default = new();
+
+	/// <summary>
+	/// Gets the extension type code for a reference to an object that has already been serialized in the same stream.
+	/// </summary>
+	/// <value>The default value is 1.</value>
+	public sbyte ObjectReference { get; init; } = 1;
 }
 
 internal static class MessagePackRange
