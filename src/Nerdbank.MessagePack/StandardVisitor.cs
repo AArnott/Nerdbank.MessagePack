@@ -323,7 +323,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
 
 	/// <inheritdoc/>
-	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
+	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 	{
 		// Serialization functions.
 		MessagePackConverter<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);

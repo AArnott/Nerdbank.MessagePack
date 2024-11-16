@@ -18,7 +18,7 @@ internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVi
 		=> inner.VisitNullable(nullableShape, state);
 
 	/// <inheritdoc/>
-	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
+	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 		=> ((IMessagePackConverter)inner.VisitDictionary(dictionaryShape, state)!).WrapWithReferencePreservation();
 
 	/// <inheritdoc/>
