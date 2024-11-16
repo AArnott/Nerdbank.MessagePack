@@ -11,6 +11,41 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 
 	protected ITestOutputHelper Logger => logger;
 
+	protected static void CapturePipe(PipeReader reader, PipeWriter forwardTo, Sequence<byte> logger)
+	{
+		_ = Task.Run(async delegate
+		{
+			while (true)
+			{
+				try
+				{
+					ReadResult read = await reader.ReadAsync();
+					if (!read.Buffer.IsEmpty)
+					{
+						foreach (ReadOnlyMemory<byte> segment in read.Buffer)
+						{
+							logger.Write(segment.Span);
+							forwardTo.Write(segment.Span);
+						}
+
+						await forwardTo.FlushAsync();
+					}
+
+					reader.AdvanceTo(read.Buffer.End);
+					if (read.IsCompleted)
+					{
+						await forwardTo.CompleteAsync();
+						return;
+					}
+				}
+				catch (Exception ex)
+				{
+					await forwardTo.CompleteAsync(ex);
+				}
+			}
+		});
+	}
+
 	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
 		where T : IShapeable<T> => this.AssertRoundtrip<T, T>(value);
 
@@ -22,14 +57,19 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 		return this.lastRoundtrippedMsgpack;
 	}
 
-	protected Task AssertRoundtripAsync<T>(T? value)
-		where T : IShapeable<T> => this.AssertRoundtripAsync<T, T>(value);
+	protected async Task<ReadOnlySequence<byte>> AssertRoundtripAsync<T>(T? value)
+		where T : IShapeable<T>
+	{
+		await this.AssertRoundtripAsync<T, T>(value);
+		return this.lastRoundtrippedMsgpack;
+	}
 
-	protected async Task AssertRoundtripAsync<T, TProvider>(T? value)
+	protected async Task<ReadOnlySequence<byte>> AssertRoundtripAsync<T, TProvider>(T? value)
 		where TProvider : IShapeable<T>
 	{
 		T? roundtripped = await this.RoundtripAsync<T, TProvider>(value);
 		Assert.Equal(value, roundtripped);
+		return this.lastRoundtrippedMsgpack;
 	}
 
 	protected T? Roundtrip<T>(T? value)
@@ -53,19 +93,26 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	protected async ValueTask<T?> RoundtripAsync<T, TProvider>(T? value)
 		where TProvider : IShapeable<T>
 	{
-		Pipe pipe = new();
+		Pipe pipeForSerializing = new();
+		Pipe pipeForDeserializing = new();
 
 		// Arrange the reader first to avoid deadlocks if the Pipe gets full.
-		ValueTask<T?> result = this.Serializer.DeserializeAsync<T, TProvider>(pipe.Reader);
+		ValueTask<T?> resultTask = this.Serializer.DeserializeAsync<T, TProvider>(pipeForDeserializing.Reader);
 
-		await this.Serializer.SerializeAsync<T, TProvider>(pipe.Writer, value);
-		await pipe.Writer.FlushAsync();
+		// Log along the way.
+		Sequence<byte> loggingSequence = new();
+		CapturePipe(pipeForSerializing.Reader, pipeForDeserializing.Writer, loggingSequence);
+
+		await this.Serializer.SerializeAsync<T, TProvider>(pipeForSerializing.Writer, value);
+		await pipeForSerializing.Writer.FlushAsync();
 
 		// The deserializer should complete even *without* our completing the writer.
 		// But if tests hang, enabling this can help turn them into EndOfStreamException.
 		////await pipe.Writer.CompleteAsync();
 
-		return await result;
+		T? result = await resultTask;
+		this.lastRoundtrippedMsgpack = loggingSequence;
+		return result;
 	}
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
