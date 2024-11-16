@@ -62,16 +62,31 @@ public class MigrationCodeFix : CodeFixProvider
 						diagnostic);
 					break;
 				case MigrationAnalyzer.KeyAttributeUsageDiagnosticId:
-					context.RegisterCodeFix(
-						CodeAction.Create(
-							title: "Use Nerdbank.MessagePack.KeyAttribute",
-							createChangedDocument: cancellationToken => this.ReplaceKeyAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-							equivalenceKey: "Use Nerdbank.MessagePack.KeyAttribute"),
-						diagnostic);
+					// Determine whether to replace with KeyAttribute or PropertyShapeAttribute.
+					SyntaxNode? tree = await context.Document.GetSyntaxRootAsync(context.CancellationToken);
+					if (tree?.FindNode(context.Span) is AttributeSyntax keyAttribute && IsStringKeyAttribute(keyAttribute))
+					{
+						context.RegisterCodeFix(
+							CodeAction.Create(
+								title: "Use PropertyShape(Name) instead",
+								createChangedDocument: cancellationToken => this.ReplaceKeyAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+								equivalenceKey: "Use PropertyShapeAttribute.Name"),
+							diagnostic);
+					}
+					else
+					{
+						context.RegisterCodeFix(
+							CodeAction.Create(
+								title: "Use Nerdbank.MessagePack.KeyAttribute",
+								createChangedDocument: cancellationToken => this.ReplaceKeyAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+								equivalenceKey: "Use Nerdbank.MessagePack.KeyAttribute"),
+							diagnostic);
+					}
+
 					break;
 				case MigrationAnalyzer.IgnoreMemberAttributeUsageDiagnosticId:
 					// Determine whether to remove or replace the attribute and offer the appropriate code fix for it.
-					SyntaxNode? tree = await context.Document.GetSyntaxRootAsync(context.CancellationToken);
+					tree = await context.Document.GetSyntaxRootAsync(context.CancellationToken);
 					if (tree?.FindNode(context.Span) is AttributeSyntax { Parent.Parent: MemberDeclarationSyntax member } att)
 					{
 						if (member.Modifiers.Any(SyntaxKind.PublicKeyword))
@@ -97,6 +112,11 @@ public class MigrationCodeFix : CodeFixProvider
 					break;
 			}
 		}
+	}
+
+	private static bool IsStringKeyAttribute(AttributeSyntax attribute)
+	{
+		return attribute is { ArgumentList.Arguments: [AttributeArgumentSyntax { Expression: LiteralExpressionSyntax { RawKind: (int)SyntaxKind.StringLiteralExpression } }] };
 	}
 
 	private static NameSyntax NameInNamespace(SimpleNameSyntax name) => NameInNamespace(name, Namespace);
@@ -256,10 +276,17 @@ public class MigrationCodeFix : CodeFixProvider
 			return document;
 		}
 
-		AttributeSyntax newAttribute = attribute.WithName(NameInNamespace(IdentifierName("Key")));
+		// One of:
+		// => PropertyShape(Name = "")
+		// => [Key(n)]
+		AttributeSyntax newAttribute = IsStringKeyAttribute(attribute)
+			? Attribute(NameInNamespace(IdentifierName("PropertyShape"), IdentifierName("PolyType")))
+				.AddArgumentListArguments(attribute.ArgumentList!.Arguments[0].WithNameEquals(NameEquals(IdentifierName("Name"))).WithAdditionalAnnotations(Formatter.Annotation))
+			: attribute.WithName(NameInNamespace(IdentifierName("Key")));
+
 		root = root.ReplaceNode(attribute, newAttribute);
 
-		return document.WithSyntaxRoot(root);
+		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private async Task<Document> ReplaceIgnoreMemberAttribute(Document document, AttributeSyntax attribute, bool remove, CancellationToken cancellationToken)

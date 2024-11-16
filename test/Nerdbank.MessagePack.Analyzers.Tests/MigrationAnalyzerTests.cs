@@ -130,7 +130,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
-	[Fact(Skip = "Not yet passing due to unexpected iteration count")]
+	[Fact]
 	public async Task MessagePackObject_Keys()
 	{
 		string source = /* lang=c#-test */ """
@@ -142,10 +142,37 @@ public class MigrationAnalyzerTests
 			{
 				[{|NBMsgPack103:Key(0)|}]
 				public string Name { get; set; }
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+
+			public class MyType
+			{
+				[Nerdbank.MessagePack.Key(0)]
+				public string Name { get; set; }
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource, 2);
+	}
+
+	[Fact]
+	public async Task MessagePackObject_IgnoreMember()
+	{
+		string source = /* lang=c#-test */ """
+			using MessagePack;
+			using MessagePack.Formatters;
+
+			public class MyType
+			{
+				public string Name { get; set; }
 
 				[{|NBMsgPack104:IgnoreMember|}]
 				public string PublicIgnored { get; set; }
-
+				
 				[{|NBMsgPack104:IgnoreMember|}]
 				internal string NonPublicIgnored { get; set; }
 			}
@@ -158,7 +185,6 @@ public class MigrationAnalyzerTests
 
 			public class MyType
 			{
-				[Nerdbank.MessagePack.Key(0)]
 				public string Name { get; set; }
 
 				[PropertyShape(Ignore = true)]
@@ -168,7 +194,7 @@ public class MigrationAnalyzerTests
 			}
 			""";
 
-		await this.VerifyCodeFixAsync(source, fixedSource);
+		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
 
 	[Fact]
@@ -182,20 +208,27 @@ public class MigrationAnalyzerTests
 			public class MyType
 			{
 				public string Name { get; set; }
+
+				[{|NBMsgPack103:Key("AnotherName")|}]
+				public string AnotherProperty { get; set; }
 			}
 			""";
 
 		string fixedSource = /* lang=c#-test */ """
 			using MessagePack;
 			using MessagePack.Formatters;
+			using PolyType;
 
 			public class MyType
 			{
 				public string Name { get; set; }
+			
+				[PropertyShape(Name = "AnotherName")]
+				public string AnotherProperty { get; set; }
 			}
 			""";
 
-		await this.VerifyCodeFixAsync(source, fixedSource);
+		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
 
 	/// <summary>
@@ -247,7 +280,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
-	private Task VerifyCodeFixAsync([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string fixedSource)
+	private Task VerifyCodeFixAsync([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string fixedSource, int iterations = 1)
 	{
 		return new VerifyCS.Test
 		{
@@ -256,6 +289,10 @@ public class MigrationAnalyzerTests
 			ReferenceAssemblies = ReferencesHelper.DefaultTargetFrameworkReferences.WithPackages([
 				new PackageIdentity("MessagePack", "2.5.187"),
 			]),
+			NumberOfFixAllInDocumentIterations = iterations,
+			NumberOfFixAllInProjectIterations = iterations,
+			NumberOfFixAllIterations = iterations,
+			NumberOfIncrementalIterations = iterations,
 		}.RunAsync();
 	}
 }
