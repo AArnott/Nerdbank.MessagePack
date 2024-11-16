@@ -72,6 +72,8 @@ public record MessagePackSerializer
 
 	private readonly object lazyInitCookie = new();
 
+	private bool configurationLocked;
+
 	private ConcurrentDictionary<Type, object>? cachedConverters;
 
 	/// <summary>
@@ -138,20 +140,13 @@ public record MessagePackSerializer
 		}
 	}
 
-	/// <summary>
-	/// Registers a converter for use with this serializer.
-	/// </summary>
-	/// <typeparam name="T">The convertible type.</typeparam>
-	/// <param name="converter">The converter.</param>
-	/// <remarks>
-	/// If a converter for the data type has already been cached, the new value takes its place.
-	/// Custom converters should be registered before serializing anything on this
-	/// instance of <see cref="MessagePackSerializer" />.
-	/// </remarks>
+	/// <inheritdoc cref="RegisterConverterCore{T}(MessagePackConverter{T})"/>
+	/// <exception cref="InvalidOperationException">Thrown if serialization has already occurred. All calls to this method should be made before anything is serialized.</exception>
 	public void RegisterConverter<T>(MessagePackConverter<T> converter)
 	{
 		Requires.NotNull(converter);
-		this.CachedConverters[typeof(T)] = this.PreserveReferences ? ((IMessagePackConverter)converter).WrapWithReferencePreservation() : converter;
+		this.VerifyConfigurationIsNotLocked();
+		this.RegisterConverterCore(converter);
 	}
 
 	/// <summary>
@@ -516,7 +511,7 @@ public record MessagePackSerializer
 		}
 
 		converter = this.CreateConverter(shape);
-		this.RegisterConverter(converter);
+		this.RegisterConverterCore(converter);
 
 		return converter;
 	}
@@ -593,13 +588,32 @@ public record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Registers a converter for use with this serializer.
+	/// </summary>
+	/// <typeparam name="T">The convertible type.</typeparam>
+	/// <param name="converter">The converter.</param>
+	/// <remarks>
+	/// If a converter for the data type has already been cached, the new value takes its place.
+	/// Custom converters should be registered before serializing anything on this
+	/// instance of <see cref="MessagePackSerializer" />.
+	/// </remarks>
+	internal void RegisterConverterCore<T>(MessagePackConverter<T> converter)
+	{
+		this.CachedConverters[typeof(T)] = this.PreserveReferences ? ((IMessagePackConverter)converter).WrapWithReferencePreservation() : converter;
+	}
+
+	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
 	/// <returns>The serialization context.</returns>
 	/// <remarks>
 	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
 	/// </remarks>
-	protected DisposableSerializationContext CreateSerializationContext() => new(this.StartingContext.Start(this));
+	protected DisposableSerializationContext CreateSerializationContext()
+	{
+		this.configurationLocked = true;
+		return new(this.StartingContext.Start(this));
+	}
 
 	/// <summary>
 	/// Synthesizes a <see cref="MessagePackConverter{T}"/> for a type with the given shape.
@@ -627,6 +641,15 @@ public record MessagePackSerializer
 		this.RegisterConverters(standardVisitor.GeneratedConverters.Where(kv => kv.Value is not null)!);
 
 		return result;
+	}
+
+	/// <summary>
+	/// Throws <see cref="InvalidOperationException"/> if this object should not be mutated any more
+	/// (because serializations have already happened, so mutating again can lead to unpredictable behavior).
+	/// </summary>
+	private void VerifyConfigurationIsNotLocked()
+	{
+		Verify.Operation(!this.configurationLocked, "This operation must be done before (de)serialization occurs.");
 	}
 
 	/// <summary>
