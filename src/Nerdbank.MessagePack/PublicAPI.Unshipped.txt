@@ -205,6 +205,8 @@ Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(System.Buffers.IBufferWr
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(System.Buffers.IBufferWriter<byte>! writer, in T? value, PolyType.Abstractions.ITypeShape<T>! shape) -> void
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T, TProvider>(System.IO.Pipelines.PipeWriter! writer, T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Pipelines.PipeWriter! writer, T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.get -> Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.init -> void
 Nerdbank.MessagePack.MessagePackType

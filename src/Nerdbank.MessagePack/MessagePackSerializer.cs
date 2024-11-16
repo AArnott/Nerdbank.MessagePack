@@ -90,6 +90,29 @@ public record MessagePackSerializer
 	public MessagePackNamingPolicy? PropertyNamingPolicy { get; init; }
 
 	/// <summary>
+	/// Gets a value indicating whether to serialize properties that are set to their default values.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <remarks>
+	/// <para>
+	/// By default, the serializer omits properties and fields that are set to their default values when serializing objects.
+	/// This property can be used to override that behavior and serialize all properties and fields, regardless of their value.
+	/// </para>
+	/// <para>
+	/// This property currently only impacts objects serialized as maps (i.e. types that are <em>not</em> using <see cref="KeyAttribute"/> on their members),
+	/// but this could be expanded to truncate value arrays as well.
+	/// </para>
+	/// <para>
+	/// Default values are assumed to be <c>default(TPropertyType)</c> except where overridden, as follows:
+	/// <list type="bullet">
+	///   <item><description>Primary constructor default parameter values. e.g. <c>record Person(int Age = 18)</c></description></item>
+	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] public int Age { get; set; }</c></description></item>
+	/// </list>
+	/// </para>
+	/// </remarks>
+	public bool SerializeDefaultValues { get; init; }
+
+	/// <summary>
 	/// Gets a value indicating whether to preserve reference equality when serializing objects.
 	/// </summary>
 	/// <value>The default value is <see langword="false" />.</value>

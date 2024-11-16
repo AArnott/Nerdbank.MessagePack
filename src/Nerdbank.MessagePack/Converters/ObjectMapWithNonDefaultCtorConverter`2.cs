@@ -15,11 +15,13 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Tools for deserializing individual property values.</param>
+/// <param name="callShouldSerialize"><see langword="true" /> if some of the properties should maybe be omitted; <see langword="false" /> to allow a fast path that assumes all properties are serialized.</param>
 internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	MapSerializableProperties<TDeclaringType> serializable,
 	Func<TArgumentState> argStateCtor,
 	Constructor<TArgumentState, TDeclaringType> ctor,
-	MapDeserializableProperties<TArgumentState> parameters) : ObjectMapConverter<TDeclaringType>(serializable, null, null)
+	MapDeserializableProperties<TArgumentState> parameters,
+	bool callShouldSerialize) : ObjectMapConverter<TDeclaringType>(serializable, null, null, callShouldSerialize)
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)

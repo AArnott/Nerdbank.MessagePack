@@ -13,7 +13,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="serializable">Tools for serializing individual property values.</param>
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="constructor">The default constructor, if present.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor) : MessagePackConverter<T>
+/// <param name="callShouldSerialize"><see langword="true" /> if some of the properties should maybe be omitted; <see langword="false" /> to allow a fast path that assumes all properties are serialized.</param>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, bool callShouldSerialize) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -28,10 +29,28 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		context.DepthStep();
-		writer.WriteMapHeader(serializable.Properties?.Count ?? 0);
-		if (serializable.Properties is not null)
+
+		if (callShouldSerialize && serializable.Properties.Length > 0)
 		{
-			foreach (SerializableProperty<T> property in serializable.Properties)
+			SerializableProperty<T>[] include = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
+			try
+			{
+				WriteProperties(ref writer, value, this.GetPropertiesToSerialize(value, include.AsMemory()).Span, context);
+			}
+			finally
+			{
+				ArrayPool<SerializableProperty<T>>.Shared.Return(include);
+			}
+		}
+		else
+		{
+			WriteProperties(ref writer, value, serializable.Properties.Span, context);
+		}
+
+		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, SerializationContext context)
+		{
+			writer.WriteMapHeader(properties.Length);
+			foreach (SerializableProperty<T> property in properties)
 			{
 				writer.WriteRaw(property.RawPropertyNameString.Span);
 				property.Write(value, ref writer, context);
@@ -52,13 +71,26 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		context.DepthStep();
-		MessagePackWriter syncWriter = writer.CreateWriter();
-		syncWriter.WriteMapHeader(serializable.Properties?.Count ?? 0);
-
-		if (serializable.Properties is not null)
+		ReadOnlyMemory<SerializableProperty<T>> propertiesToSerialize;
+		SerializableProperty<T>[]? borrowedArray = null;
+		try
 		{
-			foreach (SerializableProperty<T> property in serializable.Properties)
+			if (callShouldSerialize && serializable.Properties.Length > 0)
 			{
+				borrowedArray = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
+				propertiesToSerialize = this.GetPropertiesToSerialize(value, borrowedArray.AsMemory());
+			}
+			else
+			{
+				propertiesToSerialize = serializable.Properties;
+			}
+
+			MessagePackWriter syncWriter = writer.CreateWriter();
+			syncWriter.WriteMapHeader(propertiesToSerialize.Length);
+			for (int i = 0; i < propertiesToSerialize.Length; i++)
+			{
+				SerializableProperty<T> property = propertiesToSerialize.Span[i];
+
 				syncWriter.WriteRaw(property.RawPropertyNameString.Span);
 				if (property.PreferAsyncSerialization)
 				{
@@ -78,9 +110,16 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					syncWriter = writer.CreateWriter();
 				}
 			}
-		}
 
-		syncWriter.Flush();
+			syncWriter.Flush();
+		}
+		finally
+		{
+			if (borrowedArray is not null)
+			{
+				ArrayPool<SerializableProperty<T>>.Shared.Return(borrowedArray);
+			}
+		}
 	}
 
 	/// <inheritdoc/>
@@ -233,5 +272,24 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		return result;
+	}
+
+	private Memory<SerializableProperty<T>> GetPropertiesToSerialize(in T value, Memory<SerializableProperty<T>> include)
+	{
+		return include[..this.GetPropertiesToSerialize(value, include.Span)];
+	}
+
+	private int GetPropertiesToSerialize(in T value, Span<SerializableProperty<T>> include)
+	{
+		int propertyCount = 0;
+		foreach (SerializableProperty<T> property in serializable.Properties.Span)
+		{
+			if (property.ShouldSerialize?.Invoke(value) is not false)
+			{
+				include[propertyCount++] = property;
+			}
+		}
+
+		return propertyCount;
 	}
 }

@@ -4,6 +4,11 @@ The [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) applied to 
 It usually does a great job by default.
 When you need to tweak some aspects of serialization, several techniques are available.
 
+## Properties on MessagePackSerializer
+
+The @Nerdbank.MessagePack.MessagePackSerializer#properties class itself contains several properties that can easily customize serialization.
+Review the API documentation for each property to learn about them.
+
 ## Including/excluding members
 
 By default, only public properties and fields are included in serialization.
@@ -35,7 +40,7 @@ class MyType
 }
 ```
 
-Alternatively you can apply a consistent transformation policy for *all* property names by setting the @Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy property.
+Alternatively you can apply a consistent transformation policy for *all* property names by setting the @Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy?displayProperty=nameWithType property.
 
 For example, you can apply a camelCase transformation with @Nerdbank.MessagePack.MessagePackNamingPolicy.CamelCase like this:
 
@@ -51,6 +56,59 @@ At which point all serialization/deserialization done with that instance will us
 A property name set explicitly with @PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType will override the naming policy.
 
 You can use any of the naming policies provided with the @Nerdbank.MessagePack.MessagePackNamingPolicy class, or you can provide your own implementation by deriving from the class yourself.
+
+When using a deserializing constructor, the parameter names on the constructor should match the C# property name -- *not* the serialized name specified by @PolyType.PropertyShapeAttribute.Name or some @Nerdbank.MessagePack.MessagePackNamingPolicy.
+
+## Deserializing constructors
+
+The simplest deserialization is into a type with a default constructor and mutable fields and properties.
+When the type contains serializable, readonly fields or properties with only a getter, a non-default constructor may be required to set the values for those members.
+
+Consider this immutable type:
+
+```cs
+[GenerateShape]
+public partial class ImmutablePerson
+{
+    public ImmutablePerson(string? name)
+    {
+        this.Name = name;
+    }
+
+    public string? Name { get; }
+}
+```
+
+The intent is of course for `Name` to be serialized.
+Deserialization cannot be done into the `Name` property because there is no setter defined.
+And in fact there is no default constructor defined, so the deserializer must invoke the non-default constructor, having matched the parameters in it to values available to be deserialized.
+
+Important point to note is that the constructor parameter name matches the property name, modulo the PascalCase name to camelCase name.
+This is how the deserializer matches up.
+
+Let's consider a variant where the serialized name does not match the property name:
+
+```cs
+[GenerateShape]
+public partial class ImmutablePerson
+{
+    public ImmutablePerson(string? name)
+    {
+        this.Name = name;
+    }
+
+    [PropertyShape(Name = "person_name")]
+    public string? Name { get; }
+}
+```
+
+This will serialize the property with the name `person_name`.
+Note that the constructor parameter name is _still_ a case-variant of the `Name` property rather than being based on the renamed `person_name` string.
+
+### Constructor overload resolution
+
+When a type declares multiple constructors, the deserializer may need help to know which overload you intend for deserialization to use.
+To identify the intended constructor, apply the @PolyType.ConstructorShapeAttribute to it.
 
 ## Serialize as an array of values
 
@@ -101,7 +159,7 @@ The msgpack binary format does not specify how multi-dimensional arrays are to b
 As a result, this library has chosen a default format for them.
 For interoperability with other libraries you may want to change this format to another option.
 
-Use the @Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat property to change the format.
+Use the @Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat?displayProperty=nameWithType property to change the format.
 
 ## Resolving extension type code conflicts
 
@@ -111,4 +169,4 @@ The negative values are all reserved for official extensions, leaving 0-127 for 
 
 This library defines its own extensions for certain features.
 These use type codes in the 0-127 range.
-If these conflict with extensions that your application defines or that other libraries your application uses defines, you can reassign type codes for this library's extensions by setting @Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.
+If these conflict with extensions that your application defines or that other libraries your application uses defines, you can reassign type codes for this library's extensions by setting @Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes?displayProperty=nameWithType.
