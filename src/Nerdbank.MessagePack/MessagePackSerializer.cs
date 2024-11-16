@@ -117,6 +117,15 @@ public record MessagePackSerializer
 	public bool PreserveReferences { get; init; }
 
 	/// <summary>
+	/// Gets the extension type codes to use for library-reserved extension types.
+	/// </summary>
+	/// <remarks>
+	/// This property may be used to reassign the extension type codes for library-provided extension types
+	/// in order to avoid conflicts with other libraries the application is using.
+	/// </remarks>
+	public LibraryReservedMessagePackExtensionTypeCode LibraryExtensionTypeCodes { get; init; } = LibraryReservedMessagePackExtensionTypeCode.Default;
+
+	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
