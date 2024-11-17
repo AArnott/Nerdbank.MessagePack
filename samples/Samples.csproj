@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+    <ProjectReference Include="..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="..\src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EditorConfigFiles Remove="d:\source\Repos\Nerdbank.MessagePack\test\Samples\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="d:\source\Repos\Nerdbank.MessagePack\test\Samples\.editorconfig" />
+  </ItemGroup>
+
+</Project>

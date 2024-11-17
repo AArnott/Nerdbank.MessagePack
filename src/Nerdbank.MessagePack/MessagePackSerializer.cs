@@ -210,6 +210,16 @@ public record MessagePackSerializer
 		return writer.FlushAndGetArray();
 	}
 
+	/// <summary>
+	/// Serializes a given value to a byte array.
+	/// </summary>
+	/// <typeparam name="T">The type of value to be serialized. This must be able to disclose its own shape.</typeparam>
+	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
+	/// <param name="value">The value to be serialized.</param>
+	/// <returns>The byte array.</returns>
+	public byte[] Serialize<T, TProvider>(in T? value)
+		where TProvider : IShapeable<T> => this.Serialize(value, TProvider.GetShape());
+
 	/// <inheritdoc cref="Serialize{T, TProvider}(IBufferWriter{byte}, in T)"/>
 	public void Serialize<T>(IBufferWriter<byte> writer, in T? value)
 		where T : IShapeable<T> => this.Serialize(writer, value, T.GetShape());

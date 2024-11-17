@@ -2,10 +2,11 @@
 
 * Serializes in the compact and fast [MessagePack format](https://msgpack.org/).
 * [Performance](performance.md) is on par with the highly tuned and popular MessagePack-CSharp library.
-* Automatically serialize any type annotated with the [PolyType `[GenerateShape]`](xref:PolyType.GenerateShapeAttribute) attribute.
-* Automatically serialize non-annotated types by adding [a 'witness' type](getting-started.md#witness-classes) with a similar annotation.
+* Automatically serialize any type annotated with the [PolyType `[GenerateShape]`](xref:PolyType.GenerateShapeAttribute) attribute
+  or non-annotated types by adding [a 'witness' type](type-shapes.md#witness-classes) with a similar annotation.
 * Fast `ref`-based serialization and deserialization minimizes copying of large structs.
 * NativeAOT and trimming compatible.
+* Serialize only properties that have non-default values (optionally).
 * Keep memory pressure low by using async serialization directly to/from I/O like a network, IPC pipe or file.
 * Primitive msgpack reader and writer APIs for low-level scenarios.
 * Author custom converters for advanced scenarios.

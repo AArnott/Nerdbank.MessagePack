@@ -11,57 +11,17 @@ Click on the badge to find its latest version and the instructions for consuming
 
 Given a type annotated with [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) like this:
 
-```cs
-[GenerateShape]
-public partial record ARecord(string AString, bool ABoolean);
-```
+[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecord)]
 
 You can serialize and deserialize it like this:
 
-```cs
-// Construct a value.
-var value = new ARecord("hello", true);
-
-// Create a serializer instance.
-MessagePackSerializer serializer = new();
-
-// Serialize the value to the buffer.
-byte[] msgpack = serializer.Serialize(value);
-
-// Deserialize it back.
-var deserialized = serializer.Deserialize<ARecord>(msgpack);
-```
+[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecordRoundtrip)]
 
 Only the top-level types that you serialize need the attribute.
 All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.
 
-## Witness classes
-
 If you need to directly serialize a type that isn't declared in your project and is not annotated with `[GenerateShape]`, you can define another class in your own project to provide that shape.
-Doing so leads to default serialization rules being applied to the type (e.g. only public members are serialized).
-
-For this example, suppose you consume a `FamilyTree` type from a library that you don't control and did not annotate their type for serialization.
-In your own project, you can define this witness type:
-
-```cs
-[GenerateShape<FamilyTree>]
-partial class Witness;
-```
-
-You may then serialize a family tree like this:
-
-```cs
-var familyTree = new FamilyTree();
-var serializer = new MessagePackSerializer();
-byte[] msgpack = serializer.Serialize<FamilyTree, Witness>(buffer, familyTree);
-```
-
-Note the only special bit is providing the `Witness` class as a type argument to the `Serialize` method.
-The *name* of the witness class is completely inconsequential.
-A witness class may have any number of `GenerateShapeAttribute<T>` attributes on it.
-It is typical (but not required) for an assembly to have at most one witness class, with all the external types listed on it that you need to serialize as top-level objects.
-
-You do *not* need a witness class for an external type to reference that type from a graph that is already rooted in a type that *is* attributed.
+Learn more about [witness classes](type-shapes.md#witness-classes).
 
 ### Limitations
 

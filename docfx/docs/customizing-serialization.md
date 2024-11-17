@@ -17,39 +17,19 @@ Non-public fields and properties may be included by applying @PolyType.PropertyS
 
 Public fields and properties may similarly be *excluded* from serialiation by applying @PolyType.PropertyShapeAttribute to the member and settings its @PolyType.PropertyShapeAttribute.Ignore property to `true`.
 
-```cs
-class MyType
-{
-    [PropertyShape(Ignore = true)] // exclude this property from serialization
-    public string MyName { get; set; }
-
-    [PropertyShape] // include this non-public property in serialization
-    internal string InternalMember { get; set; }
-}
-```
+[!code-csharp[](../../samples/CustomizingSerialization.cs#IncludingExcludingMembers)]
 
 ## Changing property name
 
 The serialized name for a property may be changed from its declared C# name by applying @PolyType.PropertyShapeAttribute and settings its @PolyType.PropertyShapeAttribute.Name property.
 
-```cs
-class MyType
-{
-    [PropertyShape(Name = "myName")]
-    public string MyName { get; set; }
-}
-```
+[!code-csharp[](../../samples/CustomizingSerialization.cs#ChangingPropertyNames)]
 
 Alternatively you can apply a consistent transformation policy for *all* property names by setting the @Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy?displayProperty=nameWithType property.
 
 For example, you can apply a camelCase transformation with @Nerdbank.MessagePack.MessagePackNamingPolicy.CamelCase like this:
 
-```cs
-var serializer = new MessagePackSerializer
-{
-    PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase,
-};
-```
+[!code-csharp[](../../samples/CustomizingSerialization.cs#ApplyNamePolicy)]
 
 At which point all serialization/deserialization done with that instance will use camelCase for property names.
 
@@ -66,18 +46,7 @@ When the type contains serializable, readonly fields or properties with only a g
 
 Consider this immutable type:
 
-```cs
-[GenerateShape]
-public partial class ImmutablePerson
-{
-    public ImmutablePerson(string? name)
-    {
-        this.Name = name;
-    }
-
-    public string? Name { get; }
-}
-```
+[!code-csharp[](../../samples/CustomizingSerialization.cs#DeserializingConstructors)]
 
 The intent is of course for `Name` to be serialized.
 Deserialization cannot be done into the `Name` property because there is no setter defined.
@@ -88,19 +57,7 @@ This is how the deserializer matches up.
 
 Let's consider a variant where the serialized name does not match the property name:
 
-```cs
-[GenerateShape]
-public partial class ImmutablePerson
-{
-    public ImmutablePerson(string? name)
-    {
-        this.Name = name;
-    }
-
-    [PropertyShape(Name = "person_name")]
-    public string? Name { get; }
-}
-```
+[!code-csharp[](../../samples/CustomizingSerialization.cs#DeserializingConstructorsPropertyRenamed)]
 
 This will serialize the property with the name `person_name`.
 Note that the constructor parameter name is _still_ a case-variant of the `Name` property rather than being based on the renamed `person_name` string.
@@ -120,17 +77,7 @@ For example when javascript deserializes msgpack, the javascript object they get
 For even better serialization performance and more compact msgpack, you can opt your type into serializing as an array of values instead.
 To do this, apply @Nerdbank.MessagePack.KeyAttribute to each property and field that needs to be serialized on your type.
 
-```cs
-[GenerateShape]
-class MyType
-{
-    [Key(0)]
-    public string OneProperty { get; set; }
-
-    [Key(1)]
-    public string AnotherProperty { get; set; }
-}
-```
+[!code-csharp[](../../samples/CustomizingSerialization.cs#SerializeWithKey)]
 
 Using JSON for a readable representation, we can see that the msgpack changes when using these `Key` attributes from this:
 

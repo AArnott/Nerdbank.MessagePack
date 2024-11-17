@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyz
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyzers.CodeFixes", "src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj", "{B4123457-1704-46DF-BEC8-9F92D7A51C05}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples", "samples\Samples.csproj", "{8FCFC10B-A713-4EB6-9C68-3A082FD2BF31}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,10 @@ Global
 		{B4123457-1704-46DF-BEC8-9F92D7A51C05}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4123457-1704-46DF-BEC8-9F92D7A51C05}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4123457-1704-46DF-BEC8-9F92D7A51C05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FCFC10B-A713-4EB6-9C68-3A082FD2BF31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FCFC10B-A713-4EB6-9C68-3A082FD2BF31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FCFC10B-A713-4EB6-9C68-3A082FD2BF31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FCFC10B-A713-4EB6-9C68-3A082FD2BF31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -90,6 +96,7 @@ Global
 		{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07} = {D8954A17-45FA-4893-A5D6-83C0F6269631}
 		{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA} = {A9500399-3916-4C15-8456-E17FCA73EF9F}
 		{B4123457-1704-46DF-BEC8-9F92D7A51C05} = {D8954A17-45FA-4893-A5D6-83C0F6269631}
+		{8FCFC10B-A713-4EB6-9C68-3A082FD2BF31} = {A9500399-3916-4C15-8456-E17FCA73EF9F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3944F6A-384B-4B0F-B93F-3BD513DC57BD}

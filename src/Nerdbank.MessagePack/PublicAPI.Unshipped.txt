@@ -195,6 +195,7 @@ Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.get -> Nerdbank.MessagePack.MessagePackNamingPolicy?
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter<T>(Nerdbank.MessagePack.MessagePackConverter<T>! converter) -> void
+Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(in T? value) -> byte[]!
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value) -> void
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(System.Buffers.IBufferWriter<byte>! writer, in T? value) -> void
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(in T? value) -> byte[]!
