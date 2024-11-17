@@ -6,32 +6,12 @@ You can serialize instances of certain types derived from the declared type and 
 
 For instance, suppose you have this type to serialize:
 
-```cs
-public class Farm
-{
-    public List<Animal> Animals { get; set; }
-}
-```
+[!code-csharp[](../../samples/Unions.cs#Farm)]
 
 But there are many kinds of animals.
 You can get them to serialize and deserialize correctly like this:
 
-```cs
-[KnownSubType<Cow>(1)]
-[KnownSubType<Horse>(2)]
-[KnownSubType<Dog>(3)]
-public class Animal
-{
-    public string Name { get; set; }
-}
-
-[GenerateShape]
-public partial class Cow : Animal { }
-[GenerateShape]
-public partial class Horse : Animal { }
-[GenerateShape]
-public partial class Dog : Animal { }
-```
+[!code-csharp[](../../samples/Unions.cs#FarmAnimals)]
 
 This changes the schema of the serialized data to include a tag that indicates the type of the object.
 
@@ -57,12 +37,7 @@ If the serialized object were an instance of `Cow`, the first element would be `
 This special union schema is only used when the statically *declared* type is a class that has `KnownSubTypeAttribute` on it.
 It is *not* used when the derived type is statically known. For example, consider this collection of horses:
 
-```cs
-public class HorsePen
-{
-    public List<Horse> Horses { get; set; }
-}
-```
+[!code-csharp[](../../samples/Unions.cs#HorsePen)]
 
 This would serialize like this:
 
@@ -75,16 +50,7 @@ This is because the `Horse` type is statically known as the generic type argumen
 
 Now suppose you have different breeds of horses that each had their own subtype:
 
-```cs
-[KnownSubType<QuarterHorse>(1)]
-[KnownSubType<Thoroughbred>(2)]
-public class Horse : Animal { }
-
-[GenerateShape]
-public partial class QuarterHorse : Horse { }
-[GenerateShape]
-public partial class Thoroughbred : Horse { }
-```
+[!code-csharp[](../../samples/Unions.cs#HorseBreeds)]
 
 At this point your `HorsePen` *would* serialize with the union schema around each horse:
 ```json
@@ -102,30 +68,9 @@ To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1
 Sub-types may be generic types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
 You may close the generic type several times, assigning a unique alias to each one.
 
-Generic sub-types require a [witness class](getting-started.md#witness-classes) to provide their type shape.
+Generic sub-types require a [witness class](type-shapes.md#witness-classes) to provide their type shape.
 This witness type must be specified as a second type argument to @Nerdbank.MessagePack.KnownSubTypeAttribute`2.
 
 For example:
 
-```cs
-[KnownSubType<Horse>(1)]
-[KnownSubType<Cow<SolidHoof>, Witness>(2)]
-[KnownSubType<Cow<ClovenHoof>, Witness>(3)]
-class Animal
-{
-    public string? Name { get; set; }
-}
-
-[GenerateShape]
-partial class Horse : Animal { }
-
-partial class Cow<THoof> : Animal { }
-
-[GenerateShape<Cow<SolidHoof>>]
-[GenerateShape<Cow<ClovenHoof>>]
-partial class Witness;
-
-class SolidHoof { }
-
-class ClovenHoof { }
-```
+[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypes)]

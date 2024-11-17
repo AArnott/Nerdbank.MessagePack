@@ -1,12 +1,19 @@
 # Performance
 
+## Best practices
+
+Create, configure and reuse an instance of @Nerdbank.MessagePack.MessagePackSerializer rather than recreating it for each use.
+These objects have a startup cost as they build runtime models for converters that needn't be paid multiple times if you reuse the object.
+The object is thread-safe.
+The object is not entirely publicly immutable, since its @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter* method is allowed until it is used to serialize for the first time, so consider that when exposing the object to other code.
+
 ## Synchronous
 
 The synchronous (de)serialization APIs are the fastest.
 
 Memory allocations are minimal during serialization and deserialization.
 We strive for serialization to be allocation free.
-Obviously the @"Nerdbank.MessagePack.MessagePackSerializer.Serialize``1(``0)" method must allocate the `byte[]` that is returned to the caller, but such allocations can be avoided by using any of the other @Nerdbank.MessagePack.MessagePackSerializer.Serialize* overloads which allows serializing to pooled buffers.
+Obviously the @"Nerdbank.MessagePack.MessagePackSerializer.Serialize``1(``0@)" method must allocate the `byte[]` that is returned to the caller, but such allocations can be avoided by using any of the other @Nerdbank.MessagePack.MessagePackSerializer.Serialize* overloads which allows serializing to pooled buffers.
 
 ## Asynchronous
 

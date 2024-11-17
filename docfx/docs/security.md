@@ -16,15 +16,7 @@ Nerdbank.MessagePack protects against such attacks by artificially limiting the 
 This limit is set by @Nerdbank.MessagePack.SerializationContext.MaxDepth, which by default is set to a conservative default value that should prevent stack overflows.
 When the data to be deserialized has a legitimate need for deeper nesting than the default limit allows, this limit may be adjusted, like this:
 
-```cs
-var serializer = new MessagePackSerializer
-{
-    StartingContext = new SerializationContext
-    {
-        MaxDepth = 100,
-    },
-};
-```
+[!code-csharp[](../../samples/Security.cs#SetMaxDepth)]
 
 ## Hash collisions
 
@@ -51,21 +43,7 @@ Instead, you can provide your own defense by initializing your collections with 
 
 Here is an example of a defense against hash collisions:
 
-```cs
-[GenerateShape]
-public partial class HashCollisionResistance : IEquatable<HashCollisionResistance>
-{
-    public HashCollisionResistance()
-    {
-        this.Dictionary = new(ByValueEqualityComparer<CustomType>.HashResistant);
-        this.HashSet = new(ByValueEqualityComparer<CustomType>.HashResistant);
-    }
-
-    public Dictionary<CustomType, string> Dictionary { get; }
-
-    public HashSet<CustomType> HashSet { get; }
-}
-```
+[!code-csharp[](../../samples/Security.cs#SecureEqualityComparers)]
 
 Note how the collection properties do *not* define a property setter.
 This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.

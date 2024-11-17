@@ -14,3 +14,5 @@
   href: security.md
 - name: Migrating
   href: migrating.md
+- name: Type shapes
+  href: type-shapes.md
