@@ -103,7 +103,7 @@ internal class ObjectArrayConverter<T>(PropertyAccessors<T>?[] properties, Func<
 					}
 					else
 					{
-						writer.WriteNil();
+						syncWriter.WriteNil();
 					}
 				}
 
