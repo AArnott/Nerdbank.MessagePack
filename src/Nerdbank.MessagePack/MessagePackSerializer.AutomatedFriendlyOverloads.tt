@@ -28,6 +28,7 @@ public partial record MessagePackSerializer
         {
             ShapeSource.T => ("T","T : IShapeable<T>","T"),
             ShapeSource.TProvider => ("T, TProvider","TProvider : IShapeable<T>","TProvider"),
+            _ => throw new NotSupportedException(),
         };
 
         foreach (SerializeTransport transport in Enum.GetValues(typeof(SerializeTransport)))
@@ -37,6 +38,7 @@ public partial record MessagePackSerializer
                 SerializeTransport.ByteArray => ("byte[]", "", ""),
                 SerializeTransport.IBufferWriter => ("void", "IBufferWriter<byte>", "writer"),
                 SerializeTransport.Stream => ("void", "Stream", "stream"),
+                _ => throw new NotSupportedException(),
             };
             AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
@@ -55,6 +57,7 @@ public partial record MessagePackSerializer
                 DeserializeTransport.ReadOnlyMemory => ("ReadOnlyMemory<byte>", "bytes"),
                 DeserializeTransport.ReadOnlySequence => ("scoped in ReadOnlySequence<byte>", "bytes"),
                 DeserializeTransport.Stream => ("Stream", "stream"),
+                _ => throw new NotSupportedException(),
             };
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
@@ -72,6 +75,7 @@ public partial record MessagePackSerializer
             {
                 DeserializeAsyncTransport.PipeReader => ("PipeReader", "reader"),
                 DeserializeAsyncTransport.Stream => ("Stream", "stream"),
+                _ => throw new NotSupportedException(),
             };
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
@@ -93,6 +97,7 @@ public partial record MessagePackSerializer
             {
                 SerializeAsyncTransport.PipeWriter => ("PipeWriter", "writer"),
                 SerializeAsyncTransport.Stream => ("Stream", "stream"),
+                _ => throw new NotSupportedException(),
             };
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
