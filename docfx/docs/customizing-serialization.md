@@ -67,18 +67,19 @@ Note that the constructor parameter name is _still_ a case-variant of the `Name`
 When a type declares multiple constructors, the deserializer may need help to know which overload you intend for deserialization to use.
 To identify the intended constructor, apply the @PolyType.ConstructorShapeAttribute to it.
 
-## Serialize as an array of values
+## Serialize objects with indexes for keys
 
 By default, a type is serialized as a map of property name=value pairs.
 This is typically very safe for forward/backward version compatibility.
 This also leads to a great experience when other programs or platforms consume the msgpack that you serialize.
 For example when javascript deserializes msgpack, the javascript object they get will have properties and values similar to C#.
 
-For even better serialization performance and more compact msgpack, you can opt your type into serializing as an array of values instead.
+For even better serialization performance and more compact msgpack, you can opt your type into serializing with indexes instead of property names.
 To do this, apply @Nerdbank.MessagePack.KeyAttribute to each property and field that needs to be serialized on your type.
 
 [!code-csharp[](../../samples/CustomizingSerialization.cs#SerializeWithKey)]
 
+These attributes give the serializer a durable and more compact identifier for properties than their names.
 Using JSON for a readable representation, we can see that the msgpack changes when using these `Key` attributes from this:
 
 ```json
@@ -94,11 +95,88 @@ to this:
 ["value1", "value2"]
 ```
 
+or this:
+
+```json
+{
+    0: "value1",
+    1: "value2"
+}
+```
+
+When the array format is used, the indexes provided to the @Nerdbank.MessagePack.KeyAttribute become indexes into the array.
+When the map format is used, the indexes become keys in the map.
+
 > [!IMPORTANT]
 > When using @Nerdbank.MessagePack.KeyAttribute, keep version compatibility in mind across versions of your type.
 > Do not use the same key index for two different properties over time if older deserializers may read your newer data or they will assign the value to the wrong property.
 > It is OK to leave 'holes' in the array.
 > When you delete a property, reserve the `Key` index that it had been assigned so it is never reused, perhaps using a code comment.
+
+Note in the above "JSON" snippet that the keys are integers instead of strings.
+This is something that isn't actually allowed in JSON, but is perfectly valid in msgpack and helps with writing very compact maps.
+
+### Array or map?
+
+Whether the array or map is used depends on which format the serializer believes will produce a more compact result.
+When all values on an object are set to non-default values and there are no gaps due to undefined indexes, an array provides the most compact representation because the indexes are implicit.
+When some properties of the object would ideally be skipped because the values are their defaults and/or there are gaps in assigned indexes, a map may be more compact.
+A map has its own overhead because indexes are not implicit.
+
+When @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is `true`, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
+But when this property is left to its default value of `false`, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
+
+
+In the case above, the array format would have been chosen because there are two non-default values and no gaps.
+Let's now consider another case:
+
+[!code-csharp[](../../samples/CustomizingSerialization.cs#SerializeWithKeyAndGaps)]
+
+Note the large gap between assigned indexes 0 and 5 in this class.
+This could be justified by the removal of properties with indexes 1-4 and a desire to retain compatibility with previous versions of the serialized schema.
+
+Serializing this object with @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType set to `true`, we'd get a 6-element array.
+If both properties were set, the serialized form might look like this:
+
+```json
+["value1",null,null,null,null,"value2"]
+```
+
+For the rest of this section, let's assume @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is at its default `false` value.
+This immediately changes the binary representation of the serialized object above to just this:
+
+```json
+{
+    0: "value1",
+    5: "value2"
+}
+```
+
+When `OneProperty` is non-null and `AnotherProperty` is null, the most compact format is an array with only one element, since it saves the `0` key:
+
+```json
+["value1"]
+```
+
+But suppose now that `OneProperty` is null and `AnotherProperty` is non-null.
+This changes the dynamics because an array representation like this would waste 5 nil bytes:
+
+```json
+[null,null,null,null,null,"value2"]
+```
+
+So instead, we serialize as a map automatically, which pays only 1 byte to add the `5` key in the map:
+
+```json
+{
+    5: "value2"
+}
+```
+
+> [!NOTE]
+> The serializer chooses between an array and map based on a quick calculation that estimates which will be more compact.
+> This estimate will not always lead to the most compact outcome, but should generally be optimal when the difference is significant.
+> Calculating the precise length of both options would significantly slow serialization and is why we use a fairly accurate estimate instead.
 
 ## Multi-dimensional arrays
 
