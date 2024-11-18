@@ -26,14 +26,8 @@ namespace Nerdbank.MessagePack;
 /// because generated ones have already locked-in their dependencies.
 /// </para>
 /// </devremarks>
-public record MessagePackSerializer
+public partial record MessagePackSerializer
 {
-	/// <summary>
-	/// A thread-local, recyclable array that may be used for short bursts of code.
-	/// </summary>
-	[ThreadStatic]
-	private static byte[]? scratchArray;
-
 	private static readonly FrozenDictionary<Type, object> PrimitiveConverters = new Dictionary<Type, object>()
 	{
 		{ typeof(char), new CharConverter() },
@@ -182,82 +176,7 @@ public record MessagePackSerializer
 	}
 
 	/// <summary>
-	/// Serializes a given value to a byte array.
-	/// </summary>
-	/// <typeparam name="T">The type of value to be serialized. This must be able to disclose its own shape.</typeparam>
-	/// <param name="value">The value to be serialized.</param>
-	/// <returns>The byte array.</returns>
-	public byte[] Serialize<T>(in T? value)
-		where T : IShapeable<T> => this.Serialize(value, T.GetShape());
-
-	/// <summary>
-	/// Serializes a given value to a byte array.
-	/// </summary>
-	/// <typeparam name="T">The type of value to be serialized.</typeparam>
-	/// <param name="value">The value to be serialized.</param>
-	/// <param name="shape">The shape of the type.</param>
-	/// <returns>The byte array.</returns>
-	public byte[] Serialize<T>(in T? value, ITypeShape<T> shape)
-	{
-		byte[]? array = scratchArray;
-		if (array == null)
-		{
-			scratchArray = array = new byte[65536];
-		}
-
-		MessagePackWriter writer = new(SequencePool.Shared, array);
-		this.Serialize(ref writer, value, shape);
-		return writer.FlushAndGetArray();
-	}
-
-	/// <summary>
-	/// Serializes a given value to a byte array.
-	/// </summary>
-	/// <typeparam name="T">The type of value to be serialized. This must be able to disclose its own shape.</typeparam>
-	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
-	/// <param name="value">The value to be serialized.</param>
-	/// <returns>The byte array.</returns>
-	public byte[] Serialize<T, TProvider>(in T? value)
-		where TProvider : IShapeable<T> => this.Serialize(value, TProvider.GetShape());
-
-	/// <inheritdoc cref="Serialize{T, TProvider}(IBufferWriter{byte}, in T)"/>
-	public void Serialize<T>(IBufferWriter<byte> writer, in T? value)
-		where T : IShapeable<T> => this.Serialize(writer, value, T.GetShape());
-
-	/// <inheritdoc cref="Serialize{T}(IBufferWriter{byte}, in T, ITypeShape{T})"/>
-	public void Serialize<T, TProvider>(IBufferWriter<byte> writer, in T? value)
-		where TProvider : IShapeable<T> => this.Serialize(writer, value, TProvider.GetShape());
-
-	/// <summary>
 	/// Serializes a value.
-	/// </summary>
-	/// <typeparam name="T">The type to be serialized.</typeparam>
-	/// <param name="writer">The writer to use.</param>
-	/// <param name="value">The value to serialize.</param>
-	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	public void Serialize<T>(IBufferWriter<byte> writer, in T? value, ITypeShape<T> shape)
-	{
-		MessagePackWriter msgpackWriter = new(writer);
-		this.Serialize(ref msgpackWriter, value, shape);
-		msgpackWriter.Flush();
-	}
-
-	/// <inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, in T)"/>
-	public void Serialize<T>(ref MessagePackWriter writer, in T? value)
-		where T : IShapeable<T> => this.Serialize(ref writer, value, T.GetShape());
-
-	/// <summary>
-	/// Serializes a value.
-	/// </summary>
-	/// <typeparam name="T">The type to be serialized.</typeparam>
-	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
-	/// <param name="writer">The writer to use.</param>
-	/// <param name="value">The value to serialize.</param>
-	public void Serialize<T, TProvider>(ref MessagePackWriter writer, in T? value)
-		where TProvider : IShapeable<T> => this.Serialize<T>(ref writer, value, TProvider.GetShape());
-
-	/// <summary>
-	/// Serializes a value using the given <see cref="MessagePackWriter"/>.
 	/// </summary>
 	/// <typeparam name="T">The type to be serialized.</typeparam>
 	/// <param name="writer">The msgpack writer to use.</param>
@@ -269,40 +188,29 @@ public record MessagePackSerializer
 		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
 	}
 
-	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
-	public T? Deserialize<T>(byte[] buffer)
-		where T : IShapeable<T> => this.Deserialize(new ReadOnlySequence<byte>(buffer), T.GetShape());
-
-	/// <param name="buffer">The msgpack to deserialize from.</param>
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader)"/>
-	public T? Deserialize<T, TProvider>(byte[] buffer)
-		where TProvider : IShapeable<T> => this.Deserialize(new ReadOnlySequence<byte>(buffer), TProvider.GetShape());
-
-	/// <param name="buffer">The msgpack to deserialize from.</param>
-	/// <param name="shape">The shape of the type to deserialize.</param>
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader)"/>
-	public T? Deserialize<T>(byte[] buffer, ITypeShape<T> shape)
-		=> this.Deserialize(new ReadOnlySequence<byte>(buffer), shape);
-
-	/// <inheritdoc cref="SerializeAsync{T, TProvider}(PipeWriter, T, CancellationToken)"/>
-#pragma warning disable RS0026 // Do not add multiple public overloads with optional parameters
-	public ValueTask SerializeAsync<T>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
-#pragma warning restore RS0026 // Do not add multiple public overloads with optional parameters
-		where T : IShapeable<T> => this.SerializeAsync<T, T>(writer, value, cancellationToken);
+	/// <summary>
+	/// Deserializes a value.
+	/// </summary>
+	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <param name="reader">The msgpack reader to deserialize from.</param>
+	/// <param name="shape">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</param>
+	/// <returns>The deserialized value.</returns>
+	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext();
+		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
+	}
 
 	/// <summary>
 	/// Serializes a value using the given <see cref="PipeWriter"/>.
 	/// </summary>
 	/// <typeparam name="T">The type to be serialized.</typeparam>
-	/// <typeparam name="TProvider">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</typeparam>
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
+	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
-#pragma warning disable RS0026 // Do not add multiple public overloads with optional parameters
-	public async ValueTask SerializeAsync<T, TProvider>(PipeWriter writer, T? value, CancellationToken cancellationToken = default)
-#pragma warning restore RS0026 // Do not add multiple public overloads with optional parameters
-		where TProvider : IShapeable<T>
+	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken)
 	{
 		Requires.NotNull(writer);
 		cancellationToken.ThrowIfCancellationRequested();
@@ -310,76 +218,26 @@ public record MessagePackSerializer
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext();
-		await this.GetOrAddConverter(TProvider.GetShape()).WriteAsync(asyncWriter, value, context.Value, cancellationToken).ConfigureAwait(false);
+		await this.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value, cancellationToken).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
-
-	/// <inheritdoc cref="DeserializeAsync{T, TProvider}(PipeReader, CancellationToken)"/>
-	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, CancellationToken cancellationToken = default)
-		where T : IShapeable<T> => this.DeserializeAsync<T, T>(reader, cancellationToken);
 
 	/// <summary>
 	/// Deserializes a value from a <see cref="PipeReader"/>.
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
-	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, in T)" path="/typeparam[@name='TProvider']"/></typeparam>
 	/// <param name="reader">The reader to deserialize from.</param>
+	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public ValueTask<T?> DeserializeAsync<T, TProvider>(PipeReader reader, CancellationToken cancellationToken = default)
-		where TProvider : IShapeable<T>
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext();
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(TProvider.GetShape()).ReadAsync(new MessagePackAsyncReader(reader), context.Value, cancellationToken);
+		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader), context.Value, cancellationToken);
 #pragma warning restore NBMsgPackAsync
-	}
-
-	/// <inheritdoc cref="Deserialize{T, TProvider}(ReadOnlySequence{byte})"/>
-	public T? Deserialize<T>(ReadOnlySequence<byte> buffer)
-		where T : IShapeable<T> => this.Deserialize(buffer, T.GetShape());
-
-	/// <param name="buffer">The msgpack to deserialize from.</param>
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader)"/>
-	public T? Deserialize<T, TProvider>(ReadOnlySequence<byte> buffer)
-		where TProvider : IShapeable<T> => this.Deserialize(buffer, TProvider.GetShape());
-
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader)"/>
-	/// <param name="buffer">The msgpack to deserialize from.</param>
-	/// <param name="shape">The shape of the type to deserialize.</param>
-	public T? Deserialize<T>(ReadOnlySequence<byte> buffer, ITypeShape<T> shape)
-	{
-		MessagePackReader reader = new(buffer);
-		return this.Deserialize(ref reader, shape);
-	}
-
-	/// <inheritdoc cref="Deserialize{T, TProvider}(ref MessagePackReader)"/>
-	public T? Deserialize<T>(ref MessagePackReader reader)
-		where T : IShapeable<T> => this.Deserialize(ref reader, T.GetShape());
-
-	/// <summary>
-	/// Deserializes a value from a <see cref="MessagePackReader"/>.
-	/// </summary>
-	/// <typeparam name="T">The type of value to deserialize.</typeparam>
-	/// <typeparam name="TProvider"><inheritdoc cref="Serialize{T, TProvider}(ref MessagePackWriter, in T)" path="/typeparam[@name='TProvider']"/></typeparam>
-	/// <param name="reader">The msgpack reader to deserialize from.</param>
-	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T, TProvider>(ref MessagePackReader reader)
-		where TProvider : IShapeable<T> => this.Deserialize(ref reader, TProvider.GetShape());
-
-	/// <summary>
-	/// Deserializes a value from a <see cref="MessagePackReader"/>.
-	/// </summary>
-	/// <typeparam name="T">The type of value to deserialize.</typeparam>
-	/// <param name="reader">The msgpack reader to deserialize from.</param>
-	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape)
-	{
-		using DisposableSerializationContext context = this.CreateSerializationContext();
-		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
 	}
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>

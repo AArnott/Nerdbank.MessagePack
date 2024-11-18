@@ -1,0 +1,144 @@
+<#@ template debug="true" hostspecific="false" language="C#" #>
+// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics.CodeAnalysis;
+using System.IO.Pipelines;
+
+namespace Nerdbank.MessagePack;
+
+public partial record MessagePackSerializer
+{<#
+    static void AssembleInputs(string firstParameterType, string firstParameterName, bool moreParameters, out string firstParameter, out string firstArg, out string firstParameterDocId)
+    {
+        firstParameter = firstParameterType.Length == 0 ? "" : $"{firstParameterType} {firstParameterName}";
+        firstArg = firstParameterName.Length == 0 ? "" : $"{firstParameterName}";
+        firstParameterDocId = firstParameterType.Length == 0 ? "" : $"{firstParameterType.Replace("scoped ", "").Replace('<', '{').Replace('>', '}')}, ";
+
+        if (moreParameters)
+        {
+            if (firstParameter.Length > 0) firstParameter += ", ";
+            if (firstArg.Length > 0) firstArg += ", ";
+        }
+    }
+    
+    foreach (ShapeSource shapeSource in Enum.GetValues(typeof(ShapeSource)))
+    {
+        (string genericTypeParameters, string typeConstraint, string shapeProviderName) = shapeSource switch
+        {
+            ShapeSource.T => ("T","T : IShapeable<T>","T"),
+            ShapeSource.TProvider => ("T, TProvider","TProvider : IShapeable<T>","TProvider"),
+        };
+
+        foreach (SerializeTransport transport in Enum.GetValues(typeof(SerializeTransport)))
+        {
+            (string returnType, string firstParameterType, string firstParameterName) = transport switch
+            {
+                SerializeTransport.ByteArray => ("byte[]", "", ""),
+                SerializeTransport.IBufferWriter => ("void", "IBufferWriter<byte>", "writer"),
+                SerializeTransport.Stream => ("void", "Stream", "stream"),
+            };
+            AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
+#>
+
+	/// <inheritdoc cref="Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T})" />
+	[ExcludeFromCodeCoverage]
+	public <#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=firstParameter#>in T? value)
+		where <#=typeConstraint#> => this.Serialize(<#=firstArg#>value, <#=shapeProviderName#>.GetShape());
+<#
+        }
+
+        foreach (DeserializeTransport transport in Enum.GetValues(typeof(DeserializeTransport)))
+        {
+            (string firstParameterType, string firstParameterName) = transport switch
+            {
+                DeserializeTransport.ReadOnlyMemory => ("ReadOnlyMemory<byte>", "bytes"),
+                DeserializeTransport.ReadOnlySequence => ("scoped in ReadOnlySequence<byte>", "bytes"),
+                DeserializeTransport.Stream => ("Stream", "stream"),
+            };
+            AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
+#>
+
+	/// <inheritdoc cref="Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T})" />
+	[ExcludeFromCodeCoverage]
+	public T? Deserialize<<#=genericTypeParameters#>>(<#=firstParameter#>)
+		where <#=typeConstraint#> => this.Deserialize(<#=firstArg#>, <#=shapeProviderName#>.GetShape());
+<#
+        }
+
+        foreach (DeserializeAsyncTransport transport in Enum.GetValues(typeof(DeserializeAsyncTransport)))
+        {
+            (string firstParameterType, string firstParameterName) = transport switch
+            {
+                DeserializeAsyncTransport.PipeReader => ("PipeReader", "reader"),
+                DeserializeAsyncTransport.Stream => ("Stream", "stream"),
+            };
+            AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
+#>
+
+	/// <inheritdoc cref="DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0026 // optional parameter on a method with overloads
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask<T?> DeserializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+#pragma warning restore RS0026 // optional parameter on a method with overloads
+		where <#=typeConstraint#> => this.DeserializeAsync(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), cancellationToken);
+<#
+        }
+
+        foreach (SerializeAsyncTransport transport in Enum.GetValues(typeof(SerializeAsyncTransport)))
+        {
+            (string firstParameterType, string firstParameterName) = transport switch
+            {
+                SerializeAsyncTransport.PipeWriter => ("PipeWriter", "writer"),
+                SerializeAsyncTransport.Stream => ("Stream", "stream"),
+            };
+            AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
+#>
+
+	/// <inheritdoc cref="SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+#pragma warning disable RS0026 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, in T? value, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+#pragma warning restore RS0026 // optional parameter on a method with overloads
+		where <#=typeConstraint#> => this.SerializeAsync(<#=firstArg#>, value, <#=shapeProviderName#>.GetShape(), cancellationToken);
+<#
+        }
+    }
+#>
+}
+<#+
+  enum SerializeTransport
+  {
+      // MessagePackWriter, // this is hand-authored with intentionally limited overloads
+      ByteArray,
+      IBufferWriter,
+      Stream,
+  }
+  enum DeserializeTransport
+  {
+      // MessagePackReader, // this is hand-authored with intentionally limited overloads
+      ReadOnlyMemory,
+      ReadOnlySequence,
+      Stream,
+  }
+  enum SerializeAsyncTransport
+  {
+      PipeWriter,
+      Stream,
+  }
+  enum DeserializeAsyncTransport
+  {
+      PipeReader,
+      Stream,
+  }
+  enum ShapeSource
+  {
+      // Parameter, // This is hand-authored, and is what the automatically generated overloads forward to.
+      T,
+      TProvider,
+  }
+#>
