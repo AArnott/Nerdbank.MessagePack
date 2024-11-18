@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
-using Nerdbank.Streams;
-
 namespace Nerdbank.MessagePack;
 
 /// <summary>
