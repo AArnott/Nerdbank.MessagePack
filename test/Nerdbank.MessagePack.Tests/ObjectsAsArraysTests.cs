@@ -3,8 +3,19 @@
 
 public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
-	[Fact]
-	public void Person_Roundtrip() => this.AssertRoundtrip(new Person { FirstName = "Andrew", LastName = "Arnott" });
+	[Theory, PairwiseData]
+	public async Task Person_Roundtrip(bool async)
+	{
+		var person = new Person { FirstName = "Andrew", LastName = "Arnott" };
+		if (async)
+		{
+			await this.AssertRoundtripAsync(person);
+		}
+		else
+		{
+			this.AssertRoundtrip(person);
+		}
+	}
 
 	[Fact]
 	public void PersonWithDefaultConstructor_Roundtrip() => this.AssertRoundtrip(new PersonWithDefaultConstructor { FirstName = "Andrew", LastName = "Arnott" });
