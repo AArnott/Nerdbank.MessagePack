@@ -6,7 +6,7 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Describes a msgpack extension.
 /// </summary>
-/// <param name="TypeCode">A value that uniquely identifies the extension type. Negative values are reserved for official msgpack extensions. See <see cref="ReservedMessagePackExtensionTypeCode"/> for values already assigned from the reserved range.</param>
+/// <param name="TypeCode"><inheritdoc cref="ExtensionHeader(sbyte, uint)" path="/param[@name='TypeCode']"/></param>
 /// <param name="Data">The data payload, in whatever format is prescribed by the extension as per the <paramref name="TypeCode"/>.</param>
 public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data)
 {
