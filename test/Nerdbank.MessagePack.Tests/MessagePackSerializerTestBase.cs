@@ -110,9 +110,16 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 		// But if tests hang, enabling this can help turn them into EndOfStreamException.
 		////await pipe.Writer.CompleteAsync();
 
-		T? result = await resultTask;
-		this.lastRoundtrippedMsgpack = loggingSequence;
-		return result;
+		try
+		{
+			T? result = await resultTask;
+			return result;
+		}
+		finally
+		{
+			this.lastRoundtrippedMsgpack = loggingSequence;
+			this.LogMsgPack(loggingSequence);
+		}
 	}
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
