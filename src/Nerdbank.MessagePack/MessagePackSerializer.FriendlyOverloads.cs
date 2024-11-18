@@ -1,12 +1,16 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
 public partial record MessagePackSerializer
 {
+	private static readonly StreamPipeWriterOptions PipeWriterOptions = new(MemoryPool<byte>.Shared, leaveOpen: true);
+	private static readonly StreamPipeReaderOptions PipeReaderOptions = new(MemoryPool<byte>.Shared, leaveOpen: true);
+
 	/// <summary>
 	/// A thread-local, recyclable array that may be used for short bursts of code.
 	/// </summary>
@@ -42,6 +46,35 @@ public partial record MessagePackSerializer
 		msgpackWriter.Flush();
 	}
 
+	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T})"/>
+	/// <param name="stream">The stream to write to.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public void Serialize<T>(Stream stream, in T? value, ITypeShape<T> shape)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(stream);
+		this.Serialize(new StreamBufferWriter(stream), value, shape);
+	}
+
+	/// <inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/>
+	/// <param name="stream">The stream to write to.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public async ValueTask SerializeAsync<T>(Stream stream, T? value, ITypeShape<T> shape, CancellationToken cancellationToken)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		// Fast path for MemoryStream.
+		if (stream is MemoryStream ms)
+		{
+			this.Serialize(stream, value, shape);
+			return;
+		}
+
+		PipeWriter pipeWriter = PipeWriter.Create(stream, PipeWriterOptions);
+		await this.SerializeAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
+		await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		await pipeWriter.CompleteAsync().ConfigureAwait(false);
+	}
+
 	/// <inheritdoc cref="Deserialize{T}(in ReadOnlySequence{byte}, ITypeShape{T})"/>
 	public T? Deserialize<T>(ReadOnlyMemory<byte> buffer, ITypeShape<T> shape)
 	{
@@ -57,5 +90,58 @@ public partial record MessagePackSerializer
 	{
 		MessagePackReader reader = new(buffer);
 		return this.Deserialize(ref reader, shape);
+	}
+
+	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T})"/>
+	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
+	/// <remarks>
+	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
+	/// This is for simplicity and perf reasons.
+	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only msgpack content.
+	/// </remarks>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public T? Deserialize<T>(Stream stream, ITypeShape<T> shape)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(stream);
+
+		// Fast path for MemoryStream.
+		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
+		{
+			return this.Deserialize(buffer.AsMemory(), shape);
+		}
+		else
+		{
+			// We don't have a streaming msgpack reader, so buffer it all into memory instead and read from there.
+			using SequencePool.Rental rental = SequencePool.Shared.Rent();
+			int bytesLastRead;
+			do
+			{
+				Span<byte> span = rental.Value.GetSpan(0);
+				bytesLastRead = stream.Read(span);
+				rental.Value.Advance(bytesLastRead);
+			}
+			while (bytesLastRead > 0);
+
+			return this.Deserialize<T>(rental.Value, shape);
+		}
+	}
+
+	/// <inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>
+	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public async ValueTask<T?> DeserializeAsync<T>(Stream stream, ITypeShape<T> shape, CancellationToken cancellationToken)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		// Fast path for MemoryStream.
+		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
+		{
+			return this.Deserialize(buffer.AsMemory(), shape);
+		}
+
+		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
+		T? result = await this.DeserializeAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
+		await pipeReader.CompleteAsync().ConfigureAwait(false);
+		return result;
 	}
 }

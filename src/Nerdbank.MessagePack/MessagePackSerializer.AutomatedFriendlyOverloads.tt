@@ -2,6 +2,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 
 namespace Nerdbank.MessagePack;
@@ -35,12 +36,13 @@ public partial record MessagePackSerializer
             {
                 SerializeTransport.ByteArray => ("byte[]", "", ""),
                 SerializeTransport.IBufferWriter => ("void", "IBufferWriter<byte>", "writer"),
-                //SerializeTransport.Stream => ("void", "Stream", "stream"),
+                SerializeTransport.Stream => ("void", "Stream", "stream"),
             };
             AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
 	/// <inheritdoc cref="Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T})" />
+	[ExcludeFromCodeCoverage]
 	public <#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=firstParameter#>in T? value)
 		where <#=typeConstraint#> => this.Serialize(<#=firstArg#>value, <#=shapeProviderName#>.GetShape());
 <#
@@ -52,12 +54,13 @@ public partial record MessagePackSerializer
             {
                 DeserializeTransport.ReadOnlyMemory => ("ReadOnlyMemory<byte>", "bytes"),
                 DeserializeTransport.ReadOnlySequence => ("scoped in ReadOnlySequence<byte>", "bytes"),
-                //DeserializeTransport.Stream => ("Stream", "stream"),
+                DeserializeTransport.Stream => ("Stream", "stream"),
             };
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
 	/// <inheritdoc cref="Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T})" />
+	[ExcludeFromCodeCoverage]
 	public T? Deserialize<<#=genericTypeParameters#>>(<#=firstParameter#>)
 		where <#=typeConstraint#> => this.Deserialize(<#=firstArg#>, <#=shapeProviderName#>.GetShape());
 <#
@@ -68,7 +71,7 @@ public partial record MessagePackSerializer
             (string firstParameterType, string firstParameterName) = transport switch
             {
                 DeserializeAsyncTransport.PipeReader => ("PipeReader", "reader"),
-                //DeserializeAsyncTransport.Stream => ("Stream", "stream"),
+                DeserializeAsyncTransport.Stream => ("Stream", "stream"),
             };
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
@@ -76,6 +79,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 #pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
 	public ValueTask<T?> DeserializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 #pragma warning restore RS0026 // optional parameter on a method with overloads
@@ -88,7 +92,7 @@ public partial record MessagePackSerializer
             (string firstParameterType, string firstParameterName) = transport switch
             {
                 SerializeAsyncTransport.PipeWriter => ("PipeWriter", "writer"),
-                //SerializeAsyncTransport.Stream => ("Stream", "stream"),
+                SerializeAsyncTransport.Stream => ("Stream", "stream"),
             };
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
@@ -96,6 +100,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 #pragma warning disable RS0026 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
 	public ValueTask SerializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, in T? value, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 #pragma warning restore RS0026 // optional parameter on a method with overloads
@@ -111,24 +116,24 @@ public partial record MessagePackSerializer
       // MessagePackWriter, // this is hand-authored with intentionally limited overloads
       ByteArray,
       IBufferWriter,
-      //Stream,
+      Stream,
   }
   enum DeserializeTransport
   {
       // MessagePackReader, // this is hand-authored with intentionally limited overloads
       ReadOnlyMemory,
       ReadOnlySequence,
-      //Stream,
+      Stream,
   }
   enum SerializeAsyncTransport
   {
       PipeWriter,
-      //Stream,
+      Stream,
   }
   enum DeserializeAsyncTransport
   {
       PipeReader,
-      //Stream,
+      Stream,
   }
   enum ShapeSource
   {
