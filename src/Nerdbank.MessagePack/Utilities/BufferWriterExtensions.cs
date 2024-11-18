@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+using Microsoft;
+
 namespace Nerdbank.MessagePack.Utilities;
 
 /// <summary>
@@ -23,5 +25,21 @@ internal static class BufferWriterExtensions
 		}
 
 		return memory;
+	}
+
+	/// <summary>
+	/// Copies the content of a <see cref="ReadOnlySequence{T}"/> into an <see cref="IBufferWriter{T}"/>.
+	/// </summary>
+	/// <typeparam name="T">The type of element to copy.</typeparam>
+	/// <param name="writer">The <see cref="IBufferWriter{T}"/> to write to.</param>
+	/// <param name="sequence">The sequence to read from.</param>
+	internal static void Write<T>(this IBufferWriter<T> writer, ReadOnlySequence<T> sequence)
+	{
+		Requires.NotNull(writer, nameof(writer));
+
+		foreach (ReadOnlyMemory<T> memory in sequence)
+		{
+			writer.Write(memory.Span);
+		}
 	}
 }
