@@ -17,18 +17,26 @@ namespace Nerdbank.MessagePack;
 internal static class MessagePackPrimitiveSpanUtility
 {
 	/// <summary>
-	/// Read <see cref="bool"/> values.
+	/// Decodes a span of msgpack-encoded primitive values.
 	/// </summary>
-	/// <param name="output">The reference to the bool buffer which receives the values.</param>
-	/// <param name="input">The reference to the source byte buffer.</param>
-	/// <param name="length">The length of the input/output buffers.</param>
-	/// <returns><see langword="true" /> if <paramref name="input"/> were all valid; otherwise, <see langword="false" />.</returns>
-	public static bool Read(ref bool output, ref byte input, nuint length)
+	/// <param name="output">
+	/// The reference to the first element in a span where the decoded values should be written.
+	/// The buffer must be at least <paramref name="inputLength"/> elements long.
+	/// If the length of this exceeds that of <paramref name="msgpack"/>, this span may remain partially uninitialized.
+	/// </param>
+	/// <param name="msgpack">
+	/// A reference to the first msgpack byte to decode.
+	/// The buffer must be at least <paramref name="inputLength"/> bytes long.
+	/// </param>
+	/// <param name="inputLength">The number of elements to decode.</param>
+	/// <returns><see langword="true" /> if the values in <paramref name="msgpack"/> were all valid; otherwise, <see langword="false" />.</returns>
+	internal static bool Read(ref bool output, in byte msgpack, nuint inputLength)
 	{
+		ref byte input = ref Unsafe.AsRef(in msgpack);
 		nuint offset = 0;
-		if (Vector.IsHardwareAccelerated && length >= unchecked((nuint)Vector<byte>.Count))
+		if (Vector.IsHardwareAccelerated && inputLength >= unchecked((nuint)Vector<byte>.Count))
 		{
-			for (; offset + unchecked((nuint)Vector<byte>.Count) <= length; offset += unchecked((nuint)Vector<byte>.Count))
+			for (; offset + unchecked((nuint)Vector<byte>.Count) <= inputLength; offset += unchecked((nuint)Vector<byte>.Count))
 			{
 				var loaded = Vector.LoadUnsafe(ref input, offset);
 				var trues = Vector.Equals(loaded, new Vector<byte>(MessagePackCode.True));
@@ -42,7 +50,7 @@ internal static class MessagePackPrimitiveSpanUtility
 			}
 		}
 
-		for (; offset < length; offset++)
+		for (; offset < inputLength; offset++)
 		{
 			byte temp = Unsafe.Add(ref input, offset);
 			switch (temp)
@@ -62,46 +70,52 @@ internal static class MessagePackPrimitiveSpanUtility
 	}
 
 	/// <summary>
-	/// Write <see cref="bool"/> values.
+	/// Encodes a span of primitive values as msgpack.
 	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="bool"/> buffer.</param>
-	/// <param name="length">The length of the input/output buffers.</param>
-	public static void Write(ref byte output, ref bool input, nuint length)
+	/// <param name="output">
+	/// The location for the first msgpack encoded byte.
+	/// The buffer must be at least long enough to encode all the values in <paramref name="values"/>, assuming their maximum size representation including a leading byte that provides the messagepack code.
+	/// </param>
+	/// <param name="values">
+	/// The first element to encode.
+	/// All subsequence elements must be contiguous in memory after the first.
+	/// This buffer must be at least <paramref name="inputLength"/> elements long.
+	/// </param>
+	/// <param name="inputLength">The number of elements to encode.</param>
+	/// <returns>The number of msgpack bytes written.</returns>
+	internal static nuint Write(ref byte output, in bool values, nuint inputLength)
 	{
+		ref bool input = ref Unsafe.AsRef(in values);
 		nuint offset = 0;
-		if (Vector.IsHardwareAccelerated && length >= unchecked((nuint)Vector<sbyte>.Count))
+		if (Vector.IsHardwareAccelerated && inputLength >= unchecked((nuint)Vector<sbyte>.Count))
 		{
-			for (; offset + unchecked((nuint)Vector<sbyte>.Count) <= length; offset += unchecked((nuint)Vector<sbyte>.Count))
+			for (; offset + unchecked((nuint)Vector<sbyte>.Count) <= inputLength; offset += unchecked((nuint)Vector<sbyte>.Count))
 			{
 				Vector<sbyte> results = Vector.Equals(Vector.LoadUnsafe(ref Unsafe.As<bool, sbyte>(ref input), offset), Vector<sbyte>.Zero) + new Vector<sbyte>(unchecked((sbyte)MessagePackCode.True));
 				results.StoreUnsafe(ref Unsafe.As<byte, sbyte>(ref output), offset);
 			}
 
 			{
-				offset = length - unchecked((nuint)Vector<sbyte>.Count);
+				offset = inputLength - unchecked((nuint)Vector<sbyte>.Count);
 				Vector<sbyte> results = Vector.Equals(Vector.LoadUnsafe(ref Unsafe.As<bool, sbyte>(ref input), offset), Vector<sbyte>.Zero) + new Vector<sbyte>(unchecked((sbyte)MessagePackCode.True));
 				results.StoreUnsafe(ref Unsafe.As<byte, sbyte>(ref output), offset);
 			}
 		}
 		else
 		{
-			for (; offset < length; offset++)
+			for (; offset < inputLength; offset++)
 			{
 				Unsafe.Add(ref output, offset) = Unsafe.Add(ref input, offset) ? MessagePackCode.True : MessagePackCode.False;
 			}
 		}
+
+		return inputLength;
 	}
 
-	/// <summary>
-	/// Write <see cref="sbyte"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="sbyte"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref sbyte input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in sbyte values, nuint inputLength)
 	{
+		ref sbyte input = ref Unsafe.AsRef(in values);
 		nuint inputOffset = 0, outputOffset = 0;
 		if (Vector.IsHardwareAccelerated && inputLength >= unchecked((nuint)Vector<sbyte>.Count))
 		{
@@ -144,113 +158,73 @@ internal static class MessagePackPrimitiveSpanUtility
 		return outputOffset;
 	}
 
-	/// <summary>
-	/// Write <see cref="short"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="short"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref short input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in short values, nuint inputLength)
 	{
+		ref short input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);
 	}
 
-	/// <summary>
-	/// Write <see cref="int"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="int"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref int input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in int values, nuint inputLength)
 	{
+		ref int input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);
 	}
 
-	/// <summary>
-	/// Write <see cref="long"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="long"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref long input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in long values, nuint inputLength)
 	{
+		ref long input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);
 	}
 
-	/// <summary>
-	/// Write <see cref="ushort"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="ushort"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref ushort input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in ushort values, nuint inputLength)
 	{
+		ref ushort input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);
 	}
 
-	/// <summary>
-	/// Write <see cref="uint"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="uint"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref uint input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in uint values, nuint inputLength)
 	{
+		ref uint input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);
 	}
 
-	/// <summary>
-	/// Write <see cref="ulong"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="ulong"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref ulong input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in ulong values, nuint inputLength)
 	{
+		ref ulong input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);
 	}
 
-	/// <summary>
-	/// Write <see cref="float"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="float"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref float input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in float values, nuint inputLength)
 	{
+		ref float input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);
 	}
 
-	/// <summary>
-	/// Write <see cref="double"/> values.
-	/// </summary>
-	/// <param name="output">The reference to the <see cref="byte"/> buffer which receives the serialized values.</param>
-	/// <param name="input">The reference to the source <see cref="double"/> buffer.</param>
-	/// <param name="inputLength">The length of the input/output buffers.</param>
-	/// <returns>Written <see cref="byte"/> count.</returns>
-	public static nuint Write(ref byte output, ref double input, nuint inputLength)
+	/// <inheritdoc cref="Write(ref byte, in bool, nuint)"/>
+	internal static nuint Write(ref byte output, in double values, nuint inputLength)
 	{
+		ref double input = ref Unsafe.AsRef(in values);
 		return BitConverter.IsLittleEndian
 			? WriteLittleEndian(ref output, ref input, inputLength)
 			: WriteBigEndian(ref output, ref input, inputLength);

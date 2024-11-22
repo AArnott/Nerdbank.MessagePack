@@ -383,22 +383,34 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		if (enumerableShape.Type.IsArray)
 		{
-			return enumerableShape.Rank > 1
-				? this.owner.MultiDimensionalArrayFormat switch
+			if (enumerableShape.Rank > 1)
+			{
+				return this.owner.MultiDimensionalArrayFormat switch
 				{
 					MultiDimensionalArrayFormat.Nested => new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank),
 					MultiDimensionalArrayFormat.Flat => new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter),
 					_ => throw new NotSupportedException(),
-				}
-				: new ArrayConverter<TElement>(elementConverter);
+				};
+			}
+			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
+				HardwareAccelerated.TryGetConverter(enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter))
+			{
+				return converter;
+			}
+			else
+			{
+				return new ArrayConverter<TElement>(elementConverter);
+			}
 		}
 
+		Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
 		return enumerableShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter),
-			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
-			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter, enumerableShape.GetSpanConstructor()),
-			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(enumerableShape.GetGetEnumerable(), elementConverter, enumerableShape.GetEnumerableConstructor()),
+			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
+			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Span when HardwareAccelerated.TryGetConverter(enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
+			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
+			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
 			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
 		};
 	}
