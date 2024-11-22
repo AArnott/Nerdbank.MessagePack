@@ -3,7 +3,7 @@
 
 public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 {
-	private ReadOnlySequence<byte> lastRoundtrippedMsgpack;
+	protected ReadOnlySequence<byte> lastRoundtrippedMsgpack;
 
 	/// <summary>
 	/// Gets the time for a delay that is likely (but not guaranteed) to let concurrent work make progress in a way that is conducive to the test's intent.

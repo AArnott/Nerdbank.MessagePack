@@ -57,7 +57,9 @@ public partial record MessagePackSerializer
 		{ typeof(DateTimeOffset), new DateTimeOffsetConverter() },
 		{ typeof(TimeSpan), new TimeSpanConverter() },
 		{ typeof(Guid), new GuidConverter() },
-		{ typeof(byte[]), new ByteArrayConverter() },
+		{ typeof(byte[]), ByteArrayConverter.Instance },
+		{ typeof(Memory<byte>), new MemoryOfByteConverter() },
+		{ typeof(ReadOnlyMemory<byte>), new ReadOnlyMemoryOfByteConverter() },
 	}.ToFrozenDictionary();
 
 	private static readonly FrozenDictionary<Type, object> PrimitiveReferencePreservingConverters = PrimitiveConverters.ToFrozenDictionary(
