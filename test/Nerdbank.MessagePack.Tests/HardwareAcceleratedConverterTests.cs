@@ -9,18 +9,28 @@ public partial class HardwareAcceleratedConverterTests(ITestOutputHelper logger)
 	[Theory, PairwiseData]
 	public void BoolArray([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(byte))] int length)
 	{
-		byte[] random = new byte[length];
-		Random.Shared.NextBytes(random);
-		bool[] values = random.Select(b => b % 2 == 0).ToArray();
+		bool[]? values = null;
+		if (length >= 0)
+		{
+			byte[] random = new byte[length];
+			Random.Shared.NextBytes(random);
+			values = random.Select(b => b % 2 == 0).ToArray();
+		}
+
 		this.Roundtrip<bool[], Witness>(values);
 	}
 
 	[Theory, PairwiseData]
 	public void Boolean([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(byte))] int length)
 	{
-		byte[] random = new byte[length];
-		Random.Shared.NextBytes(random);
-		bool[] values = random.Select(b => b % 2 == 0).ToArray();
+		bool[]? values = null;
+		if (length >= 0)
+		{
+			byte[]? random = new byte[length];
+			Random.Shared.NextBytes(random);
+			values = random.Select(b => b % 2 == 0).ToArray();
+		}
+
 		this.Roundtrip<Memory<bool>, Witness>(values);
 	}
 
@@ -59,10 +69,14 @@ public partial class HardwareAcceleratedConverterTests(ITestOutputHelper logger)
 	[Theory, PairwiseData]
 	public void Single([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(float))] int length)
 	{
-		float[] values = new float[length];
-		for (int i = 0; i < values.Length; i++)
+		float[]? values = null;
+		if (length >= 0)
 		{
-			values[i] = Random.Shared.NextSingle();
+			values = new float[length];
+			for (int i = 0; i < values.Length; i++)
+			{
+				values[i] = Random.Shared.NextSingle();
+			}
 		}
 
 		this.Roundtrip<Memory<float>, Witness>(values);
@@ -71,18 +85,27 @@ public partial class HardwareAcceleratedConverterTests(ITestOutputHelper logger)
 	[Theory, PairwiseData]
 	public void Double([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(double))] int length)
 	{
-		double[] values = new double[length];
-		for (int i = 0; i < values.Length; i++)
+		double[]? values = null;
+		if (length >= 0)
 		{
-			values[i] = Random.Shared.NextDouble();
+			values = new double[length];
+			for (int i = 0; i < values.Length; i++)
+			{
+				values[i] = Random.Shared.NextDouble();
+			}
 		}
 
 		this.Roundtrip<Memory<double>, Witness>(values);
 	}
 
-	private static unsafe T[] GetRandomValues<T>(int length)
+	private static unsafe T[]? GetRandomValues<T>(int length)
 		where T : unmanaged
 	{
+		if (length < 0)
+		{
+			return null;
+		}
+
 		byte[] random = new byte[length * sizeof(T)];
 		Random.Shared.NextBytes(random);
 		T[] values = new T[length];
@@ -99,7 +122,7 @@ public partial class HardwareAcceleratedConverterTests(ITestOutputHelper logger)
 
 	private static int[] GetInterestingLengths(Type type) => (int[])typeof(HardwareAcceleratedConverterTests).GetMethod(nameof(GetInterestingLengthsHelper), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, null)!;
 
-	private static int[] GetInterestingLengthsHelper<T>() => [0, 4, Vector<T>.Count - 1, Vector<T>.Count, Vector<T>.Count + 1, (Vector<T>.Count * 2) + 2, 10_000];
+	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, Vector<T>.Count - 1, Vector<T>.Count, Vector<T>.Count + 1, (Vector<T>.Count * 2) + 2, 10_000];
 
 	[GenerateShape<bool[]>]
 	[GenerateShape<Memory<bool>>]
