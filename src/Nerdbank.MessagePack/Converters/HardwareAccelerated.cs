@@ -59,14 +59,14 @@ internal static class HardwareAccelerated
 					MessagePackPrimitiveSpanUtility.Write);
 				return true;
 			}
-			////else if (typeof(TElement) == typeof(int))
-			////{
-			////	converter = new PrimitiveArrayConverter<TEnumerable, int>(
-			////		(SpanConstructor<int, TEnumerable>?)spanConstructorToUse,
-			////		new Int32Converter(),
-			////		MessagePackPrimitiveSpanUtility.Write);
-			////	return true;
-			////}
+			else if (typeof(TElement) == typeof(int))
+			{
+				converter = new PrimitiveArrayConverter<TEnumerable, int>(
+					(SpanConstructor<int, TEnumerable>?)spanConstructorToUse,
+					new Int32Converter(),
+					MessagePackPrimitiveSpanUtility.Write);
+				return true;
+			}
 			else if (typeof(TElement) == typeof(long))
 			{
 				converter = new PrimitiveArrayConverter<TEnumerable, long>(

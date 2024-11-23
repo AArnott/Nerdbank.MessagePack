@@ -567,7 +567,7 @@ internal static class MessagePackPrimitiveSpanUtility
 					switch (temp)
 					{
 						case <= MessagePackRange.MaxFixPositiveInt:
-							Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)input);
+							Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)temp);
 							break;
 						case <= byte.MaxValue:
 							Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
