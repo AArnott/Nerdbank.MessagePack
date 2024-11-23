@@ -9,5 +9,5 @@ Notices appear in the individual source files, but are also listed here for conv
 
 Copyright for the original work that was copied down (or derived from) belong to the original authors, including:
 
-- Eirik Tsarpalis
-- Yoshifumi Kawai
+- Eirik Tsarpalis - https://github.com/eiriktsarpalis/
+- Yoshifumi Kawai - https://github.com/neuecc
