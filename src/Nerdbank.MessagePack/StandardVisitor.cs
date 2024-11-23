@@ -410,7 +410,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
 			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
-			CollectionConstructionStrategy.Span when HardwareAccelerated.TryGetConverter(enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
+			CollectionConstructionStrategy.Span when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter(enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
 			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
 			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
 			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
