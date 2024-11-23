@@ -1,25 +1,56 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
 public partial class HardwareAccelerated
 {
+	private const int Length = 10_000;
 	private static readonly MessagePackSerializer AcceleratedSerializer = new() { SerializeDefaultValues = true };
 	private static readonly MessagePackSerializer UnacceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = true };
-	private static readonly sbyte[] Int8Values = GetRandomValues<sbyte>(10_000);
-	private static readonly short[] Int16Values = GetRandomValues<short>(10_000);
-	private static readonly int[] Int32Values = GetRandomValues<int>(10_000);
-	private static readonly long[] Int64Values = GetRandomValues<long>(10_000);
-	private static readonly ushort[] UInt16Values = GetRandomValues<ushort>(10_000);
-	private static readonly uint[] UInt32Values = GetRandomValues<uint>(10_000);
-	private static readonly ulong[] UInt64Values = GetRandomValues<ulong>(10_000);
-	private static readonly float[] SingleValues = GetRandomFloats(10_000);
-	private static readonly double[] DoubleValues = GetRandomDoubles(10_000);
+	private static readonly bool[] BoolValues = GetRandomBools(Length);
+	private static readonly byte[] BoolValuesMsgPack = UnacceleratedSerializer.Serialize<bool[], Witness>(BoolValues);
+	private static readonly sbyte[] Int8Values = GetRandomValues<sbyte>(Length);
+	private static readonly short[] Int16Values = GetRandomValues<short>(Length);
+	private static readonly int[] Int32Values = GetRandomValues<int>(Length);
+	private static readonly long[] Int64Values = GetRandomValues<long>(Length);
+	private static readonly ushort[] UInt16Values = GetRandomValues<ushort>(Length);
+	private static readonly uint[] UInt32Values = GetRandomValues<uint>(Length);
+	private static readonly ulong[] UInt64Values = GetRandomValues<ulong>(Length);
+	private static readonly float[] SingleValues = GetRandomFloats(Length);
+	private static readonly double[] DoubleValues = GetRandomDoubles(Length);
 	private readonly Sequence buffer = new();
+
+	[Benchmark]
+	[BenchmarkCategory("bool", "deserialize")]
+	public void Bool_Deserialize()
+	{
+		AcceleratedSerializer.Deserialize<bool[], Witness>(BoolValuesMsgPack);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("bool", "deserialize")]
+	public void Bool_Deserialize_Unoptimized()
+	{
+		UnacceleratedSerializer.Deserialize<bool[], Witness>(BoolValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("bool", "serialize")]
+	public void Bool_Serialize()
+	{
+		AcceleratedSerializer.Serialize<bool[], Witness>(this.buffer, BoolValues);
+		this.buffer.Reset();
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("bool", "serialize")]
+	public void Bool_Serialize_Unoptimized()
+	{
+		UnacceleratedSerializer.Serialize<bool[], Witness>(this.buffer, BoolValues);
+		this.buffer.Reset();
+	}
 
 	[Benchmark]
 	[BenchmarkCategory("int8", "serialize")]
@@ -206,6 +237,15 @@ public partial class HardwareAccelerated
 		return values;
 	}
 
+	private static bool[] GetRandomBools(int length)
+	{
+		byte[] random = new byte[length];
+		new Random(123).NextBytes(random); // use a fixed seed for reproducibility
+		bool[] values = random.Select(b => b % 2 == 0).ToArray();
+		return values;
+	}
+
+	[GenerateShape<bool[]>]
 	[GenerateShape<sbyte[]>]
 	[GenerateShape<sbyte[]>]
 	[GenerateShape<short[]>]
