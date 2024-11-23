@@ -392,7 +392,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					_ => throw new NotSupportedException(),
 				};
 			}
-			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
+			else if (!this.owner.DisableHardwareAcceleration &&
+				enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
 				HardwareAccelerated.TryGetConverter(enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter))
 			{
 				return converter;

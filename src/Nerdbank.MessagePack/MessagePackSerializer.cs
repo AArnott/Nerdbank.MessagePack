@@ -148,6 +148,11 @@ public partial record MessagePackSerializer
 	public SerializationContext StartingContext { get; init; } = new();
 
 	/// <summary>
+	/// Gets a value indicating whether hardware accelerated converters should be avoided.
+	/// </summary>
+	internal bool DisableHardwareAcceleration { get; init; }
+
+	/// <summary>
 	/// Gets all the converters this instance knows about so far.
 	/// </summary>
 	private ConcurrentDictionary<Type, object> CachedConverters
