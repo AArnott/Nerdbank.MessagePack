@@ -136,26 +136,26 @@ internal static class HardwareAccelerated
 			enumerableType == typeof(Memory<TElement>);
 	}
 
-	private static bool TryGetSpan<TEnumerable, TElement>(TEnumerable enumerable, out ReadOnlySpan<TElement> span)
+	private static ref TElement TryGetReferenceAndLength<TEnumerable, TElement>(TEnumerable enumerable, out int length)
 	{
 		switch (enumerable)
 		{
 			case TElement[] array:
-				span = array;
-				return true;
+				length = array.Length;
+				return ref MemoryMarshal.GetArrayDataReference(array);
 			case List<TElement> list:
-				span = CollectionsMarshal.AsSpan(list);
-				return true;
+				length = list.Count;
+				return ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
 			case ReadOnlyMemory<TElement> rom:
-				span = rom.Span;
-				return true;
+				length = rom.Length;
+				return ref MemoryMarshal.GetReference(rom.Span);
 			case Memory<TElement> mem:
-				span = mem.Span;
-				return true;
+				length = mem.Length;
+				return ref MemoryMarshal.GetReference(mem.Span);
 		}
 
-		span = default;
-		return false;
+		Unsafe.SkipInit(out length);
+		return ref Unsafe.NullRef<TElement>();
 	}
 
 	/// <summary>
@@ -1966,7 +1966,9 @@ internal static class HardwareAccelerated
 		/// Booleans are unique in that they always take exactly one byte.
 		/// All other primitives are assumed to take a max of their own full memory size + a single byte for the msgpack header.
 		/// </remarks>
-		private static readonly int MsgPackBufferLengthFactor = typeof(TElement) == typeof(bool) ? 1 : (Unsafe.SizeOf<TElement>() + 1);
+		private static readonly unsafe int MsgPackBufferLengthFactor = typeof(TElement) == typeof(bool) ? 1 : (sizeof(TElement) + 1);
+
+		private static readonly unsafe int ElementMaxSerializableLength = Array.MaxLength / MsgPackBufferLengthFactor;
 
 		private readonly SpanConstructor<TElement, TEnumerable>? ctor;
 		private readonly AcceleratedRead<TElement>? acceleratedRead;
@@ -2031,7 +2033,7 @@ internal static class HardwareAccelerated
 					ReadOnlySequence<byte> sequence = reader.ReadRaw(count);
 					foreach (ReadOnlyMemory<byte> segment in sequence)
 					{
-						if (!this.acceleratedRead(ref remainingElements[0], in segment.Span[0], unchecked((nuint)segment.Length)))
+						if (!this.acceleratedRead(ref MemoryMarshal.GetReference(remainingElements), in MemoryMarshal.GetReference(segment.Span), unchecked((nuint)segment.Length)))
 						{
 							throw new MessagePackSerializationException("Not all elements were boolean msgpack values.");
 						}
@@ -2068,14 +2070,17 @@ internal static class HardwareAccelerated
 			}
 
 			context.DepthStep();
-
-			Assumes.True(TryGetSpan(value, out ReadOnlySpan<TElement> span));
-			writer.WriteArrayHeader(span.Length);
-			if (span.Length > 0)
+			ref TElement reference = ref TryGetReferenceAndLength<TEnumerable, TElement>(value, out int length);
+			Assumes.False(Unsafe.IsNullRef(ref reference));
+			writer.WriteArrayHeader(length);
+			while (length > 0)
 			{
-				Span<byte> buffer = writer.GetSpan(span.Length * MsgPackBufferLengthFactor);
-				nuint writtenBytes = this.write(ref buffer[0], in span[0], unchecked((nuint)span.Length));
-				writer.Advance(checked((int)writtenBytes));
+				int consumedSpanLength = length > ElementMaxSerializableLength ? ElementMaxSerializableLength : length;
+				Span<byte> buffer = writer.GetSpan(consumedSpanLength * MsgPackBufferLengthFactor);
+				nuint writtenBytes = this.write(ref MemoryMarshal.GetReference(buffer), in reference, unchecked((nuint)consumedSpanLength));
+				writer.Advance(unchecked((int)writtenBytes));
+				reference = ref Unsafe.Add(ref reference, consumedSpanLength);
+				length -= consumedSpanLength;
 			}
 		}
 	}
