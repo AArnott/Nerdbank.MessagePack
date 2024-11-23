@@ -852,7 +852,7 @@ internal static class HardwareAccelerated
 						switch (temp)
 						{
 							case <= MessagePackRange.MaxFixPositiveInt:
-								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)input);
+								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)temp);
 								break;
 							case <= byte.MaxValue:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
@@ -1025,7 +1025,7 @@ internal static class HardwareAccelerated
 						switch (temp)
 						{
 							case <= MessagePackRange.MaxFixPositiveInt:
-								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)input);
+								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)temp);
 								break;
 							case <= byte.MaxValue:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
@@ -1191,7 +1191,7 @@ internal static class HardwareAccelerated
 						switch (temp)
 						{
 							case <= MessagePackRange.MaxFixPositiveInt:
-								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)input);
+								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)temp);
 								break;
 							case <= byte.MaxValue:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
