@@ -57,7 +57,9 @@ public partial record MessagePackSerializer
 		{ typeof(DateTimeOffset), new DateTimeOffsetConverter() },
 		{ typeof(TimeSpan), new TimeSpanConverter() },
 		{ typeof(Guid), new GuidConverter() },
-		{ typeof(byte[]), new ByteArrayConverter() },
+		{ typeof(byte[]), ByteArrayConverter.Instance },
+		{ typeof(Memory<byte>), new MemoryOfByteConverter() },
+		{ typeof(ReadOnlyMemory<byte>), new ReadOnlyMemoryOfByteConverter() },
 	}.ToFrozenDictionary();
 
 	private static readonly FrozenDictionary<Type, object> PrimitiveReferencePreservingConverters = PrimitiveConverters.ToFrozenDictionary(
@@ -146,6 +148,11 @@ public partial record MessagePackSerializer
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
+
+	/// <summary>
+	/// Gets a value indicating whether hardware accelerated converters should be avoided.
+	/// </summary>
+	internal bool DisableHardwareAcceleration { get; init; }
 
 	/// <summary>
 	/// Gets all the converters this instance knows about so far.

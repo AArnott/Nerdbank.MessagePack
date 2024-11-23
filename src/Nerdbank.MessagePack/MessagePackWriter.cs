@@ -508,7 +508,7 @@ public ref struct MessagePackWriter
 	/// </remarks>
 	public void Write(ReadOnlySpan<byte> src)
 	{
-		int length = (int)src.Length;
+		int length = src.Length;
 		this.WriteBinHeader(length);
 		Span<byte> span = this.writer.GetSpan(length);
 		src.CopyTo(span);

@@ -118,7 +118,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
 			converter = ctorShape is not null
 				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null);
+				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null, !this.owner.SerializeDefaultValues);
 		}
 		else
 		{
@@ -304,7 +304,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				{
 					if (constructorShape.ParameterCount == 0)
 					{
-						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor());
+						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), !this.owner.SerializeDefaultValues);
 					}
 
 					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
@@ -327,7 +327,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						inputs.GetJustAccessors(),
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
-						parameters);
+						parameters,
+						!this.owner.SerializeDefaultValues);
 				}
 
 			default:
@@ -392,7 +393,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					_ => throw new NotSupportedException(),
 				};
 			}
-			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
+			else if (!this.owner.DisableHardwareAcceleration &&
+				enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
 				HardwareAccelerated.TryGetConverter(enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter))
 			{
 				return converter;

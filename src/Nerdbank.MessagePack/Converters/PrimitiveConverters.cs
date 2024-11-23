@@ -4,6 +4,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
+using System.ComponentModel;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -468,11 +469,58 @@ internal class CharConverter : MessagePackConverter<char>
 /// </summary>
 internal class ByteArrayConverter : MessagePackConverter<byte[]?>
 {
+	/// <summary>
+	/// A shareable instance of this converter.
+	/// </summary>
+	internal static readonly ByteArrayConverter Instance = new();
+
+	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter());
+
+	private ByteArrayConverter()
+	{
+	}
+
 	/// <inheritdoc/>
-	public override byte[]? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadBytes()?.ToArray();
+	public override byte[]? Read(ref MessagePackReader reader, SerializationContext context)
+	{
+		switch (reader.NextMessagePackType)
+		{
+			case MessagePackType.Nil:
+				reader.ReadNil();
+				return null;
+			case MessagePackType.Binary:
+				return reader.ReadBytes()?.ToArray();
+			default:
+				return Fallback.Read(ref reader, context);
+		}
+	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in byte[]? value, SerializationContext context) => writer.Write(value);
+}
+
+/// <summary>
+/// Serializes <see cref="byte"/> array values.
+/// </summary>
+internal class MemoryOfByteConverter : MessagePackConverter<Memory<byte>>
+{
+	/// <inheritdoc/>
+	public override Memory<byte> Read(ref MessagePackReader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in Memory<byte> value, SerializationContext context) => writer.Write(value.Span);
+}
+
+/// <summary>
+/// Serializes <see cref="byte"/> array values.
+/// </summary>
+internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemory<byte>>
+{
+	/// <inheritdoc/>
+	public override ReadOnlyMemory<byte> Read(ref MessagePackReader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in ReadOnlyMemory<byte> value, SerializationContext context) => writer.Write(value.Span);
 }
 
 /// <summary>

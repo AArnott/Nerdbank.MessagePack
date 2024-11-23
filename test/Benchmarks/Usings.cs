@@ -8,3 +8,4 @@ global using Nerdbank.MessagePack;
 global using Nerdbank.Streams;
 global using PolyType;
 global using MsgPackCSharp = global::MessagePack;
+global using Sequence = Nerdbank.Streams.Sequence<byte>;

@@ -87,14 +87,11 @@ public partial class HardwareAcceleratedConverterTests(ITestOutputHelper logger)
 		byte[] random = new byte[length * sizeof(T)];
 		Random.Shared.NextBytes(random);
 		T[] values = new T[length];
-		unsafe
+		fixed (byte* pSource = random)
 		{
-			fixed (byte* pSource = random)
+			fixed (T* pTarget = values)
 			{
-				fixed (T* pTarget = values)
-				{
-					Buffer.MemoryCopy(pSource, pTarget, values.Length * sizeof(T), random.Length);
-				}
+				Buffer.MemoryCopy(pSource, pTarget, values.Length * sizeof(T), random.Length);
 			}
 		}
 

@@ -52,7 +52,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		}
 		else
 		{
-			TElement?[] array = enumerable.ToArray();
+			TElement[] array = enumerable.ToArray();
 			writer.WriteArrayHeader(array.Length);
 			for (int i = 0; i < array.Length; i++)
 			{

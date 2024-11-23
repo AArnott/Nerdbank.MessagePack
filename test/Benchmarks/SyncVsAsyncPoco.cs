@@ -9,7 +9,7 @@ using System.IO.Pipelines;
 public class SyncVsAsyncPoco
 {
 	private readonly MessagePackSerializer serializer = new();
-	private readonly Sequence<byte> syncBuffer = new();
+	private readonly Sequence syncBuffer = new();
 	private readonly PipeWriter nullPipeWriter = PipeWriter.Create(Stream.Null);
 
 	[Benchmark(Baseline = true)]

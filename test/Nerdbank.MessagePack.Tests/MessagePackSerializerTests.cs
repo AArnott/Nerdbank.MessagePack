@@ -172,6 +172,80 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		}
 	}
 
+	[Fact]
+	public void ByteArraySerializedOptimally()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<byte[], Witness>([1, 2, 3]);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(MessagePackType.Binary, reader.NextMessagePackType);
+		Assert.NotNull(reader.ReadBytes());
+	}
+
+	[Fact]
+	public void ByteMemorySerializedOptimally()
+	{
+		Memory<byte> original = new byte[] { 1, 2, 3 };
+		Memory<byte> deserialized = this.Roundtrip<Memory<byte>, Witness>(original);
+		Assert.Equal(original, deserialized);
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(MessagePackType.Binary, reader.NextMessagePackType);
+		Assert.NotNull(reader.ReadBytes());
+	}
+
+	[Fact]
+	public void ByteReadOnlyMemorySerializedOptimally()
+	{
+		ReadOnlyMemory<byte> original = new byte[] { 1, 2, 3 };
+		ReadOnlyMemory<byte> deserialized = this.Roundtrip<ReadOnlyMemory<byte>, Witness>(original);
+		Assert.Equal(original, deserialized);
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(MessagePackType.Binary, reader.NextMessagePackType);
+		Assert.NotNull(reader.ReadBytes());
+	}
+
+	[Fact]
+	public void ByteArrayCanDeserializeSuboptimally()
+	{
+		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
+
+		byte[]? result = this.Serializer.Deserialize<byte[], Witness>(sequence);
+		Assert.NotNull(result);
+		Assert.Equal<byte>([1, 2, 3], result);
+	}
+
+	[Fact]
+	public void ByteMemoryCanDeserializeSuboptimally()
+	{
+		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
+
+		Memory<byte> result = this.Serializer.Deserialize<Memory<byte>, Witness>(sequence);
+		Assert.Equal<byte>([1, 2, 3], result.ToArray());
+	}
+
+	[Fact]
+	public void ByteReadOnlyMemoryCanDeserializeSuboptimally()
+	{
+		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
+
+		ReadOnlyMemory<byte> result = this.Serializer.Deserialize<ReadOnlyMemory<byte>, Witness>(sequence);
+		Assert.Equal<byte>([1, 2, 3], result.ToArray());
+	}
+
+	/// <summary>
+	/// Carefully writes a msgpack-encoded array of bytes.
+	/// </summary>
+	private static Sequence<byte> GetByteArrayAsActualMsgPackArray()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(3);
+		writer.Write(1);
+		writer.Write(2);
+		writer.Write(3);
+		writer.Flush();
+		return sequence;
+	}
+
 	[GenerateShape]
 	public partial class ClassWithReadOnlyCollectionProperties : IEquatable<ClassWithReadOnlyCollectionProperties>
 	{
@@ -361,5 +435,8 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 	[GenerateShape<UnannotatedPoco>]
 	[GenerateShape<object>]
+	[GenerateShape<byte[]>]
+	[GenerateShape<Memory<byte>>]
+	[GenerateShape<ReadOnlyMemory<byte>>]
 	internal partial class Witness;
 }

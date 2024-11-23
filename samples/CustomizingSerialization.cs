@@ -88,4 +88,16 @@ namespace SerializeWithKey
 		public string? AnotherProperty { get; set; }
 	}
 	#endregion
+
+	#region SerializeWithKeyAndGaps
+	[GenerateShape]
+	partial class MyTypeWithGaps
+	{
+		[Key(0)]
+		public string? OneProperty { get; set; }
+
+		[Key(5)]
+		public string? AnotherProperty { get; set; }
+	}
+	#endregion
 }
