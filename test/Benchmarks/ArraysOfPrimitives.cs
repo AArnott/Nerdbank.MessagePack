@@ -3,13 +3,13 @@
 
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
-public partial class HardwareAccelerated
+public partial class ArraysOfPrimitives
 {
 	private const int Length = 10_000;
 	private static readonly MessagePackSerializer AcceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = false };
 	private static readonly MessagePackSerializer UnacceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = true };
 	private static readonly bool[] BoolValues = GetRandomBools(Length);
-	private static readonly byte[] BoolValuesMsgPack = UnacceleratedSerializer.Serialize<bool[], Witness>(BoolValues);
+	private static readonly byte[] BoolValuesMsgPack = new MessagePackSerializer { SerializeDefaultValues = true }.Serialize<bool[], Witness>(BoolValues);
 	private static readonly sbyte[] Int8Values = GetRandomValues<sbyte>(Length);
 	private static readonly short[] Int16Values = GetRandomValues<short>(Length);
 	private static readonly int[] Int32Values = GetRandomValues<int>(Length);

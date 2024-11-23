@@ -4,7 +4,7 @@
 using System.Numerics;
 using System.Reflection;
 
-public partial class HardwareAcceleratedConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Theory, PairwiseData]
 	public void BoolArray([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(byte))] int length)
@@ -120,7 +120,7 @@ public partial class HardwareAcceleratedConverterTests(ITestOutputHelper logger)
 		return values;
 	}
 
-	private static int[] GetInterestingLengths(Type type) => (int[])typeof(HardwareAcceleratedConverterTests).GetMethod(nameof(GetInterestingLengthsHelper), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, null)!;
+	private static int[] GetInterestingLengths(Type type) => (int[])typeof(ArraysOfPrimitivesTests).GetMethod(nameof(GetInterestingLengthsHelper), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, null)!;
 
 	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, Vector<T>.Count - 1, Vector<T>.Count, Vector<T>.Count + 1, (Vector<T>.Count * 2) + 2, 10_000];
 
