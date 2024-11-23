@@ -115,6 +115,22 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		return isNil;
 	}
 
+	/// <inheritdoc cref="MessagePackReader.NextMessagePackType"/>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	public async ValueTask<MessagePackType> TryPeekNextMessagePackTypeAsync(CancellationToken cancellationToken)
+	{
+		ReadResult readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+		if (readResult.IsCanceled)
+		{
+			throw new OperationCanceledException();
+		}
+
+		MessagePackReader reader = new(readResult.Buffer);
+		MessagePackType result = reader.NextMessagePackType;
+		this.AdvanceTo(readResult.Buffer.Start); // this was a peek. Don't consume anything.
+		return result;
+	}
+
 	/// <inheritdoc cref="MessagePackReader.ReadMapHeader"/>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	public async ValueTask<int> ReadMapHeaderAsync(CancellationToken cancellationToken)

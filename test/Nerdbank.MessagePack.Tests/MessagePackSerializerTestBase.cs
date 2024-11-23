@@ -1,11 +1,14 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO.Pipelines;
-
 public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 {
-	private ReadOnlySequence<byte> lastRoundtrippedMsgpack;
+	protected ReadOnlySequence<byte> lastRoundtrippedMsgpack;
+
+	/// <summary>
+	/// Gets the time for a delay that is likely (but not guaranteed) to let concurrent work make progress in a way that is conducive to the test's intent.
+	/// </summary>
+	public static TimeSpan AsyncDelay => TimeSpan.FromMilliseconds(250);
 
 	protected MessagePackSerializer Serializer { get; set; } = new();
 
@@ -110,9 +113,16 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 		// But if tests hang, enabling this can help turn them into EndOfStreamException.
 		////await pipe.Writer.CompleteAsync();
 
-		T? result = await resultTask;
-		this.lastRoundtrippedMsgpack = loggingSequence;
-		return result;
+		try
+		{
+			T? result = await resultTask;
+			return result;
+		}
+		finally
+		{
+			this.lastRoundtrippedMsgpack = loggingSequence;
+			this.LogMsgPack(loggingSequence);
+		}
 	}
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
