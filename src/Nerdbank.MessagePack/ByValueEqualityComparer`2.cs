@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Nerdbank.MessagePack.SecureHash;
-
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -73,7 +71,7 @@ public static class ByValueEqualityComparer<T, TProvider>
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
-	public static IEqualityComparer<T> Default => defaultEqualityComparer ??= (IEqualityComparer<T>)TProvider.GetShape().Accept(new ByValueVisitor())!;
+	public static IEqualityComparer<T> Default => defaultEqualityComparer ??= (IEqualityComparer<T>)ByValueEqualityComparer.DefaultEqualityComparerCache.GetOrAdd(TProvider.GetShape())!;
 
 	/// <summary>
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, with hash collision resistance.
@@ -81,5 +79,5 @@ public static class ByValueEqualityComparer<T, TProvider>
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
-	public static IEqualityComparer<T> HashResistant => hashResistantEqualityComparer ??= (IEqualityComparer<T>)TProvider.GetShape().Accept(new SecureVisitor())!;
+	public static IEqualityComparer<T> HashResistant => hashResistantEqualityComparer ??= (IEqualityComparer<T>)ByValueEqualityComparer.HashResistantEqualityComparerCache.GetOrAdd(TProvider.GetShape())!;
 }

@@ -73,7 +73,7 @@ public record struct SerializationContext
 		where T : IShapeable<T>
 	{
 		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Owner.GetOrAddConverter<T>();
+		MessagePackConverter<T> result = this.Owner.GetOrAddConverter(T.GetShape());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 

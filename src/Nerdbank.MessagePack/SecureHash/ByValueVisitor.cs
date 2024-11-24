@@ -2,15 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack.SecureHash;
 
 /// <summary>
 /// A visitor that creates an <see cref="IEqualityComparer{T}"/> for a given type shape that compares values by value (deeply).
 /// </summary>
-internal class ByValueVisitor : TypeShapeVisitor
+internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
-	private readonly TypeDictionary equalityComparers = new();
+	/// <inheritdoc/>
+	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => typeShape.Accept(this);
 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
@@ -73,12 +75,22 @@ internal class ByValueVisitor : TypeShapeVisitor
 	/// <param name="state">An optional state object to pass to the equality comparer.</param>
 	/// <returns>The equality comparer.</returns>
 	protected IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape, object? state = null)
-		=> this.equalityComparers.GetOrAdd<IEqualityComparer<T>>(shape, this, box => new DelayedEqualityComparer<T>(box));
+		=> (IEqualityComparer<T>)context.GetOrAdd(shape, state)!;
 
-	private class DelayedEqualityComparer<T>(ResultBox<IEqualityComparer<T>> inner) : IEqualityComparer<T>
+	/// <summary>
+	/// A factory that creates delayed equality comparers.
+	/// </summary>
+	internal class DelayedEqualityComparerFactory : IDelayedValueFactory
 	{
-		public bool Equals(T? x, T? y) => inner.Result.Equals(x, y);
+		/// <inheritdoc/>
+		public DelayedValue Create<T>(ITypeShape<T> typeShape)
+			=> new DelayedValue<IEqualityComparer<T>>(self => new DelayedEqualityComparer<T>(self));
 
-		public int GetHashCode([DisallowNull] T obj) => inner.Result.GetHashCode(obj);
+		private class DelayedEqualityComparer<T>(DelayedValue<IEqualityComparer<T>> self) : IEqualityComparer<T>
+		{
+			public bool Equals(T? x, T? y) => self.Result.Equals(x, y);
+
+			public int GetHashCode([DisallowNull] T obj) => self.Result.GetHashCode(obj);
+		}
 	}
 }
