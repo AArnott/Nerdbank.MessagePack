@@ -22,82 +22,87 @@ internal static class HardwareAccelerated
 	/// </summary>
 	/// <typeparam name="TEnumerable">The type of enumerable.</typeparam>
 	/// <typeparam name="TElement">The type of element.</typeparam>
-	/// <param name="spanConstructor">The constructor for the enumerable type.</param>
 	/// <param name="converter">Receives the hardware-accelerated converter if one is available.</param>
 	/// <returns>A value indicating whether a converter is available.</returns>
-	internal static bool TryGetConverter<TEnumerable, TElement>(
-		SpanConstructor<TElement, TEnumerable> spanConstructor,
-		[NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
-	{
-		if (CanGetSpan<TEnumerable, TElement>(out bool assignableFromArray))
-		{
-			object? spanConstructorToUse = assignableFromArray ? null : spanConstructor;
-
-			if (typeof(TElement) == typeof(bool))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, bool>((SpanConstructor<bool, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(sbyte))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, sbyte>((SpanConstructor<sbyte, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(short))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, short>((SpanConstructor<short, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(int))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, int>((SpanConstructor<int, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(long))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, long>((SpanConstructor<long, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(ushort))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, ushort>((SpanConstructor<ushort, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(uint))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, uint>((SpanConstructor<uint, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(ulong))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, ulong>((SpanConstructor<ulong, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(float))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, float>((SpanConstructor<float, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-			else if (typeof(TElement) == typeof(double))
-			{
-				converter = new PrimitiveArrayConverter<TEnumerable, double>((SpanConstructor<double, TEnumerable>?)spanConstructorToUse);
-				return true;
-			}
-		}
-
-		converter = null;
-		return false;
-	}
-
-	private static bool CanGetSpan<TEnumerable, TElement>(out bool assignableFromArray)
+	internal static bool TryGetConverter<TEnumerable, TElement>([NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
 	{
 		Type enumerableType = typeof(TEnumerable);
-		assignableFromArray = typeof(TElement[]).IsAssignableTo(enumerableType);
-		return
-			enumerableType == typeof(TElement[]) ||
-			enumerableType == typeof(List<TElement>) ||
-			enumerableType == typeof(ReadOnlyMemory<TElement>) ||
-			enumerableType == typeof(Memory<TElement>);
+		SpanConstructorKind spanConstructorKind;
+		if (enumerableType == typeof(TElement[]))
+		{
+			spanConstructorKind = SpanConstructorKind.Array;
+		}
+		else if (enumerableType == typeof(List<TElement>))
+		{
+			spanConstructorKind = SpanConstructorKind.List;
+		}
+		else if (enumerableType == typeof(ReadOnlyMemory<TElement>))
+		{
+			spanConstructorKind = SpanConstructorKind.ReadOnlyMemory;
+		}
+		else if (enumerableType == typeof(Memory<TElement>))
+		{
+			spanConstructorKind = SpanConstructorKind.Memory;
+		}
+		else
+		{
+			goto FAIL;
+		}
+
+		if (typeof(TElement) == typeof(bool))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, bool>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(sbyte))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, sbyte>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(short))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, short>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(int))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, int>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(long))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, long>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(ushort))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, ushort>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(uint))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, uint>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(ulong))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, ulong>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(float))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, float>(spanConstructorKind);
+			return true;
+		}
+		else if (typeof(TElement) == typeof(double))
+		{
+			converter = new PrimitiveArrayConverter<TEnumerable, double>(spanConstructorKind);
+			return true;
+		}
+
+FAIL:
+		converter = null;
+		return false;
 	}
 
 	private static ref TElement TryGetReferenceAndLength<TEnumerable, TElement>(TEnumerable enumerable, out int length)
@@ -2263,6 +2268,14 @@ internal static class HardwareAccelerated
 		}
 	}
 
+	public enum SpanConstructorKind
+	{
+		Array,
+		List,
+		ReadOnlyMemory,
+		Memory,
+	}
+
 	/// <summary>
 	/// A hardware-accelerated converter for an array of <see cref="bool"/> values.
 	/// </summary>
@@ -2282,16 +2295,15 @@ internal static class HardwareAccelerated
 
 		private static readonly unsafe int ElementMaxSerializableLength = Array.MaxLength / MsgPackBufferLengthFactor;
 
-		private readonly SpanConstructor<TElement, TEnumerable>? ctor;
+		private readonly SpanConstructorKind spanConstructorKind;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="PrimitiveArrayConverter{TEnumerable, TElement}"/> class
 		/// with an accelerated encoder and decoder.
 		/// </summary>
-		/// <param name="ctor">The constructor to pass the span of values to, if an array isn't sufficient.</param>
-		internal PrimitiveArrayConverter(SpanConstructor<TElement, TEnumerable>? ctor)
+		internal PrimitiveArrayConverter(SpanConstructorKind spanConstructorKind)
 		{
-			this.ctor = ctor;
+			this.spanConstructorKind = spanConstructorKind;
 		}
 
 		/// <inheritdoc/>
@@ -2306,226 +2318,260 @@ internal static class HardwareAccelerated
 			int count = reader.ReadArrayHeader();
 			if (count == 0)
 			{
-				return this.ctor is null ? (TEnumerable)(object)Array.Empty<TElement>() : this.ctor(default);
+				switch (this.spanConstructorKind)
+				{
+					case SpanConstructorKind.Array:
+						return (TEnumerable)(object)Array.Empty<TElement>();
+					case SpanConstructorKind.List:
+						return (TEnumerable)(object)new List<TElement>();
+					case SpanConstructorKind.ReadOnlyMemory:
+						return (TEnumerable)(object)ReadOnlyMemory<TElement>.Empty;
+					default:
+						return (TEnumerable)(object)Memory<TElement>.Empty;
+				}
 			}
 
-			TElement[] elements = this.ctor is null ? new TElement[count] : ArrayPool<TElement>.Shared.Rent(count);
-			try
+			Span<byte> temp = stackalloc byte[sizeof(long) + 1];
+			int tempLength = 0;
+			TEnumerable enumerable;
+			Span<TElement> remainingElements;
+			switch (this.spanConstructorKind)
 			{
-				Span<byte> temp = stackalloc byte[sizeof(long) + 1];
-				int tempLength = 0;
-				Span<TElement> remainingElements = elements.AsSpan(0, count);
-				ReadOnlySequence<byte> sequence = reader.ReadRaw(count);
-				foreach (ReadOnlyMemory<byte> segment in sequence)
+				case SpanConstructorKind.Array:
+					{
+						var array = new TElement[count];
+						enumerable = (TEnumerable)(object)array;
+						remainingElements = array;
+					}
+
+					break;
+				case SpanConstructorKind.List:
+					var list = new List<TElement>(count);
+					enumerable = (TEnumerable)(object)list;
+					CollectionsMarshal.SetCount(list, count);
+					remainingElements = CollectionsMarshal.AsSpan(list);
+					break;
+				case SpanConstructorKind.ReadOnlyMemory:
+					{
+						var array = new TElement[count];
+						enumerable = (TEnumerable)(object)new ReadOnlyMemory<TElement>(array);
+						remainingElements = array;
+					}
+
+					break;
+				default:
+					{
+						var array = new TElement[count];
+						enumerable = (TEnumerable)(object)new Memory<TElement>(array);
+						remainingElements = array;
+					}
+
+					break;
+			}
+
+			ReadOnlySequence<byte> sequence = reader.ReadRaw(count);
+			foreach (ReadOnlyMemory<byte> segment in sequence)
+			{
+				if (typeof(TElement) == typeof(bool))
 				{
-					if (typeof(TElement) == typeof(bool))
+					if (!MessagePackPrimitiveSpanUtility.Read(ref Unsafe.As<TElement, bool>(ref MemoryMarshal.GetReference(remainingElements)), in MemoryMarshal.GetReference(segment.Span), segment.Length))
 					{
-						if (!MessagePackPrimitiveSpanUtility.Read(ref Unsafe.As<TElement, bool>(ref MemoryMarshal.GetReference(remainingElements)), in MemoryMarshal.GetReference(segment.Span), segment.Length))
-						{
-							throw new MessagePackSerializationException("Not all elements were boolean msgpack values.");
-						}
-
-						remainingElements = remainingElements[segment.Length..];
-						continue;
+						throw new MessagePackSerializationException("Not all elements were boolean msgpack values.");
 					}
 
-					ReadOnlySpan<byte> segmentSpan = segment.Span;
-					if (tempLength > 0)
+					remainingElements = remainingElements[segment.Length..];
+					continue;
+				}
+
+				ReadOnlySpan<byte> segmentSpan = segment.Span;
+				if (tempLength > 0)
+				{
+					switch (unchecked((sbyte)temp[0]))
 					{
-						switch (unchecked((sbyte)temp[0]))
-						{
-							case unchecked((sbyte)MessagePackCode.UInt8):
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<byte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
-								remainingElements = remainingElements[1..];
-								segmentSpan = segmentSpan[1..];
-								tempLength = 0;
-								break;
-							case unchecked((sbyte)MessagePackCode.Int8):
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<sbyte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
-								remainingElements = remainingElements[1..];
-								segmentSpan = segmentSpan[1..];
-								tempLength = 0;
-								break;
-							case unchecked((sbyte)MessagePackCode.UInt16):
-								{
-									int copyLength = sizeof(ushort) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ushort, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							case unchecked((sbyte)MessagePackCode.Int16):
-								{
-									int copyLength = sizeof(short) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<short, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							case unchecked((sbyte)MessagePackCode.Float32):
-								{
-									int copyLength = sizeof(float) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<float, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							case unchecked((sbyte)MessagePackCode.UInt32):
-								{
-									int copyLength = sizeof(uint) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<uint, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							case unchecked((sbyte)MessagePackCode.Int32):
-								{
-									int copyLength = sizeof(int) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<int, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							case unchecked((sbyte)MessagePackCode.Float64):
-								{
-									int copyLength = sizeof(double) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<double, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							case unchecked((sbyte)MessagePackCode.UInt64):
-								{
-									int copyLength = sizeof(ulong) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ulong, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							case unchecked((sbyte)MessagePackCode.Int64):
-								{
-									int copyLength = sizeof(long) + 1 - tempLength;
-									if (copyLength > segmentSpan.Length)
-									{
-										segmentSpan.CopyTo(temp[tempLength..]);
-										tempLength += copyLength;
-										continue;
-									}
-
-									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-									segmentSpan = segmentSpan[copyLength..];
-									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<long, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-									remainingElements = remainingElements[1..];
-									tempLength = 0;
-								}
-
-								break;
-							default:
-								throw new InvalidProgramException();
-						}
-
-						if (segmentSpan.IsEmpty)
-						{
-							continue;
-						}
-					}
-
-					switch (MessagePackPrimitiveSpanUtility.Read(ref MemoryMarshal.GetReference(remainingElements), remainingElements.Length, in MemoryMarshal.GetReference(segmentSpan), segmentSpan.Length, out var writtenLength, out var readLength))
-					{
-						case DecodeResult.Success:
+						case unchecked((sbyte)MessagePackCode.UInt8):
+							remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<byte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
+							remainingElements = remainingElements[1..];
+							segmentSpan = segmentSpan[1..];
 							tempLength = 0;
 							break;
-						case DecodeResult.InsufficientBuffer:
-							ReadOnlySpan<byte> restSpan = segmentSpan[readLength..];
-							tempLength = restSpan.Length < 9 ? restSpan.Length : 9;
-							restSpan[..tempLength].CopyTo(temp);
+						case unchecked((sbyte)MessagePackCode.Int8):
+							remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<sbyte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
+							remainingElements = remainingElements[1..];
+							segmentSpan = segmentSpan[1..];
+							tempLength = 0;
+							break;
+						case unchecked((sbyte)MessagePackCode.UInt16):
+							{
+								int copyLength = sizeof(ushort) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ushort, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
+							break;
+						case unchecked((sbyte)MessagePackCode.Int16):
+							{
+								int copyLength = sizeof(short) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<short, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
+							break;
+						case unchecked((sbyte)MessagePackCode.Float32):
+							{
+								int copyLength = sizeof(float) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<float, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
+							break;
+						case unchecked((sbyte)MessagePackCode.UInt32):
+							{
+								int copyLength = sizeof(uint) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<uint, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
+							break;
+						case unchecked((sbyte)MessagePackCode.Int32):
+							{
+								int copyLength = sizeof(int) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<int, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
+							break;
+						case unchecked((sbyte)MessagePackCode.Float64):
+							{
+								int copyLength = sizeof(double) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<double, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
+							break;
+						case unchecked((sbyte)MessagePackCode.UInt64):
+							{
+								int copyLength = sizeof(ulong) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ulong, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
+							break;
+						case unchecked((sbyte)MessagePackCode.Int64):
+							{
+								int copyLength = sizeof(long) + 1 - tempLength;
+								if (copyLength > segmentSpan.Length)
+								{
+									segmentSpan.CopyTo(temp[tempLength..]);
+									tempLength += copyLength;
+									continue;
+								}
+
+								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+								segmentSpan = segmentSpan[copyLength..];
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<long, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+								remainingElements = remainingElements[1..];
+								tempLength = 0;
+							}
+
 							break;
 						default:
-							throw new MessagePackSerializationException("Not all elements were numeric msgpack values.");
+							throw new InvalidProgramException();
 					}
 
-					remainingElements = remainingElements[writtenLength..];
+					if (segmentSpan.IsEmpty)
+					{
+						continue;
+					}
 				}
 
-				return this.ctor is null ? (TEnumerable)(object)elements : this.ctor(elements.AsSpan(0, count));
-			}
-			finally
-			{
-				if (this.ctor is not null)
+				switch (MessagePackPrimitiveSpanUtility.Read(ref MemoryMarshal.GetReference(remainingElements), remainingElements.Length, in MemoryMarshal.GetReference(segmentSpan), segmentSpan.Length, out var writtenLength, out var readLength))
 				{
-					ArrayPool<TElement>.Shared.Return(elements);
+					case DecodeResult.Success:
+						tempLength = 0;
+						break;
+					case DecodeResult.InsufficientBuffer:
+						ReadOnlySpan<byte> restSpan = segmentSpan[readLength..];
+						tempLength = restSpan.Length < 9 ? restSpan.Length : 9;
+						restSpan[..tempLength].CopyTo(temp);
+						break;
+					default:
+						throw new MessagePackSerializationException("Not all elements were numeric msgpack values.");
 				}
+
+				remainingElements = remainingElements[writtenLength..];
 			}
+
+			return enumerable;
 		}
 
 		/// <inheritdoc/>
