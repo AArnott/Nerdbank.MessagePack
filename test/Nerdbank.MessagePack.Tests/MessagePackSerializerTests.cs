@@ -231,6 +231,24 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Assert.Equal<byte>([1, 2, 3], result.ToArray());
 	}
 
+	[Fact]
+	public void CustomConverterVsBuiltIn_TopLevel()
+	{
+		this.Serializer.RegisterConverter(new CustomStringConverter());
+		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello");
+		this.LogMsgPack(new(msgpack));
+		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack));
+	}
+
+	[Fact]
+	public void CustomConverterVsBuiltIn_SubLevel()
+	{
+		this.Serializer.RegisterConverter(new CustomStringConverter());
+		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0));
+		this.LogMsgPack(new(msgpack));
+		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack)?.AString);
+	}
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
@@ -435,8 +453,18 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 	[GenerateShape<UnannotatedPoco>]
 	[GenerateShape<object>]
+	[GenerateShape<string>]
 	[GenerateShape<byte[]>]
 	[GenerateShape<Memory<byte>>]
 	[GenerateShape<ReadOnlyMemory<byte>>]
 	internal partial class Witness;
+
+	private class CustomStringConverter : MessagePackConverter<string>
+	{
+		public override string? Read(ref MessagePackReader reader, SerializationContext context)
+			=> reader.ReadString() + "R";
+
+		public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context)
+			=> writer.Write(value + "W");
+	}
 }
