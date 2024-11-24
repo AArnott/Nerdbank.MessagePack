@@ -184,7 +184,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 				recursionGuard = recursionGuard.Add(basicBlock);
 
-				foreach (IOperation op in basicBlock.Operations.SelectMany(op => op.DescendantsAndSelf()))
+				bool TestOperation(IOperation op)
 				{
 					if (op is IInvocationOperation invocation)
 					{
@@ -195,7 +195,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							{
 								// The code doesn't care whether it is actually reading a token or not, which is a bug.
 								context.ReportDiagnostic(Diagnostic.Create(NotExactlyOneStructureDescriptor, op.Syntax.GetLocation()));
-								return;
+								return true;
 							}
 
 							ops += impact.Value;
@@ -203,14 +203,24 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							{
 								// Too many structures.
 								context.ReportDiagnostic(Diagnostic.Create(NotExactlyOneStructureDescriptor, op.Syntax.GetLocation()));
-								return;
+								return true;
 							}
 						}
 						else
 						{
 							// Non-deterministic situation. Skip testing.
-							return;
+							return true;
 						}
+					}
+
+					return false;
+				}
+
+				foreach (IOperation op in basicBlock.Operations.SelectMany(op => op.DescendantsAndSelf()))
+				{
+					if (TestOperation(op))
+					{
+						return;
 					}
 				}
 
@@ -225,9 +235,18 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 				int? branchValueImpact = 0;
 				bool branchValueUnconditional = true;
-				if (basicBlock.BranchValue is IInvocationOperation conditionInvocation)
+				switch (basicBlock.BranchValue)
 				{
-					(branchValueImpact, branchValueUnconditional) = relevantMethodTest(conditionInvocation);
+					case IInvocationOperation conditionInvocation:
+						(branchValueImpact, branchValueUnconditional) = relevantMethodTest(conditionInvocation);
+						break;
+					case IBinaryOperation binaryOperation:
+						if (TestOperation(binaryOperation.LeftOperand) || TestOperation(binaryOperation.RightOperand))
+						{
+							return;
+						}
+
+						break;
 				}
 
 				if (branchValueImpact is null)
