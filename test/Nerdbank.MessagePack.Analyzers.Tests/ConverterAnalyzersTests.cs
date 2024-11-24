@@ -262,4 +262,42 @@ public class ConverterAnalyzersTests
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
+
+	[Fact]
+	public async Task ConvertReadsStringInBinaryExpression()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			
+			class CustomStringConverter : MessagePackConverter<string>
+			{
+				public override string Read(ref MessagePackReader reader, SerializationContext context)
+					=> reader.ReadString() + "R";
+
+				public override void Write(ref MessagePackWriter writer, in string value, SerializationContext context)
+					=> writer.Write(value + "W");
+			}
+			""";
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task ConvertReadsStringOnBothSidesOfBinaryExpression()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			
+			class CustomStringConverter : MessagePackConverter<string>
+			{
+				public override string Read(ref MessagePackReader reader, SerializationContext context)
+					=> reader.ReadString() + {|NBMsgPack031:reader.ReadString()|};
+
+				public override void Write(ref MessagePackWriter writer, in string value, SerializationContext context)
+					=> writer.Write(value);
+			}
+			""";
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
 }
