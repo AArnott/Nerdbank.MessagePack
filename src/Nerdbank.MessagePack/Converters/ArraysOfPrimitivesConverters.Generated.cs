@@ -35,6 +35,9 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<TElement, TEnumerable> spanConstructor,
 		[NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
 	{
+		// T[], Memory<T>, ReadOnlyMemory<T>, and possibly more types are all satisfiable by T[].
+		// So we avoid allocating or borrowing a temporary array only to copy from it to the span constructor
+		// for these types by just allocating an array up-front and returning it directly.
 		object? spanConstructorToUse = typeof(TElement[]).IsAssignableTo(typeof(TEnumerable)) ? null : spanConstructor;
 
 		if (typeof(TElement) == typeof(SByte))
