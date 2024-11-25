@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using CustomConverter;
-using Nerdbank.MessagePack;
-
 namespace CustomConverter
 {
 	#region YourOwnConverter
@@ -20,6 +17,7 @@ namespace CustomConverter
 				return null;
 			}
 
+			context.DepthStep();
 			int property1 = 0;
 			string? property2 = null;
 
@@ -53,6 +51,7 @@ namespace CustomConverter
 				return;
 			}
 
+			context.DepthStep();
 			writer.WriteMapHeader(2);
 
 			writer.Write("MyProperty");
@@ -74,6 +73,7 @@ namespace CustomConverter
 			}
 
 			#region ReadWholeArray
+			context.DepthStep();
 			int property1 = 0;
 			string? property2 = null;
 			int count = reader.ReadArrayHeader();
@@ -123,6 +123,7 @@ namespace SubValues
 				return null;
 			}
 
+			context.DepthStep();
 			SomeOtherType? property1 = null;
 			string? property2 = null;
 
@@ -157,6 +158,7 @@ namespace SubValues
 				return;
 			}
 
+			context.DepthStep();
 			writer.WriteMapHeader(2);
 
 			writer.Write("MyProperty");

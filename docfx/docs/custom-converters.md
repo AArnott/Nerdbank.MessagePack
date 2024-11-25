@@ -22,6 +22,19 @@ If you have more than one value to serialize or deserialize (e.g. multiple field
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Write*" method, use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader*.
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Read*" method, use @Nerdbank.MessagePack.MessagePackReader.ReadMapHeader or @Nerdbank.MessagePack.MessagePackReader.ReadArrayHeader.
 
+### Security considerations
+
+Any custom converter should call @Nerdbank.MessagePack.SerializationContext.DepthStep*?displayProperty=nameWithType on the @Nerdbank.MessagePack.SerializationContext argument provided to it to ensure that the depth of the msgpack structure is within acceptable bounds.
+This call should be made before reading or writing any msgpack structure (other than nil).
+
+This is important to prevent maliciously crafted msgpack from causing a stack overflow or other denial-of-service attack.
+A stack overflow tends to crash the process, whereas a call to @Nerdbank.MessagePack.SerializationContext.DepthStep* merely throws a typical @Nerdbank.MessagePack.MessagePackSerializationException which is catchable and more likely to be caught.
+
+While checking the depth only guards against exploits during *de*serialization, converters should call it during serialization as well to help an application avoid serializing a data structure that they will later be unable to deserialize.
+It also taps into the built-in cancellation token checks built into depth tracking.
+
+Applications that have a legitimate need to exceed the default stack depth limit can adjust it by setting @Nerdbank.MessagePack.SerializationContext.MaxDepth?displayProperty=nameWithType to a higher value.
+
 ### Delegating to sub-values
 
 The @Nerdbank.MessagePack.SerializationContext.GetConverter* method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
@@ -62,10 +75,17 @@ It also implicitly skips values in any unknown array index, such that reading *a
 
 ### Performance considerations
 
+#### Cancellation handling
+
 A custom converter should honor the @System.Threading.CancellationToken passed to it.
+This is mostly automatic because @Nerdbank.MessagePack.SerializationContext.DepthStep*?displayProperty=nameWithType will throw @System.OperationCanceledException if the token is canceled, and most converters should already be calling @Nerdbank.MessagePack.SerializationContext.DepthStep.
+
+For particularly expensive converters, it may be beneficial to check the token periodically through the conversion process.
 For typical synchronous converters, this means checking @Nerdbank.MessagePack.SerializationContext.CancellationToken?displayProperty=nameWithType before performing any significant work and periodically thereafter.
 Async converters can check the token at this same location or more simply use the token passed explicitly as a parameter.
 Async converters should always propagate the token to any async methods they call.
+
+#### Memory pressure
 
 The built-in converters take special considerations to avoid allocating, encoding and deallocating strings for property names.
 This reduces GC pressure and removes redundant CPU time spent repeatedly converting UTF-8 encoded property names as strings.

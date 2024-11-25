@@ -9,6 +9,11 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Context that flows through the serialization process.
 /// </summary>
+/// <example>
+/// The default values on this struct may be changed and the modified struct applied to <see cref="MessagePackSerializer.StartingContext"/>
+/// in order to serialize with the updated settings.
+/// <code source="../../samples/ApplyingSerializationContext.cs" region="ApplyingStartingContext" lang="C#" />
+/// </example>
 [DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
 public record struct SerializationContext
 {
@@ -56,14 +61,16 @@ public record struct SerializationContext
 	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
 
 	/// <summary>
-	/// Decrements the depth remaining.
+	/// Decrements the depth remaining and checks the cancellation token.
 	/// </summary>
 	/// <remarks>
 	/// Converters that (de)serialize nested objects should invoke this once <em>before</em> passing the context to nested (de)serializers.
 	/// </remarks>
 	/// <exception cref="MessagePackSerializationException">Thrown if the depth limit has been exceeded.</exception>
+	/// <exception cref="OperationCanceledException">Thrown if <see cref="CancellationToken"/> has been canceled.</exception>
 	public void DepthStep()
 	{
+		this.CancellationToken.ThrowIfCancellationRequested();
 		if (--this.MaxDepth < 0)
 		{
 			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
