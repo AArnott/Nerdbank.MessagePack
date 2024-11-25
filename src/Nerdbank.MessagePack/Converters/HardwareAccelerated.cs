@@ -2369,10 +2369,10 @@ FAIL:
 					break;
 			}
 
-			ReadOnlySequence<byte> sequence = reader.ReadRaw(count);
-			foreach (ReadOnlyMemory<byte> segment in sequence)
+			if (typeof(TElement) == typeof(bool))
 			{
-				if (typeof(TElement) == typeof(bool))
+				ReadOnlySequence<byte> sequence = reader.ReadRaw(count);
+				foreach (ReadOnlyMemory<byte> segment in sequence)
 				{
 					if (!MessagePackPrimitiveSpanUtility.Read(ref Unsafe.As<TElement, bool>(ref MemoryMarshal.GetReference(remainingElements)), in MemoryMarshal.GetReference(segment.Span), segment.Length))
 					{
@@ -2380,195 +2380,223 @@ FAIL:
 					}
 
 					remainingElements = remainingElements[segment.Length..];
-					continue;
 				}
-
-				ReadOnlySpan<byte> segmentSpan = segment.Span;
-				if (tempLength > 0)
+			}
+			else
+			{
+				ReadOnlySequence<byte> sequence = reader.Sequence.Slice(reader.Position);
+				long sliceLength = 0;
+				foreach (ReadOnlyMemory<byte> segment in sequence)
 				{
-					switch (unchecked((sbyte)temp[0]))
+					ReadOnlySpan<byte> segmentSpan = segment.Span;
+					if (tempLength > 0)
 					{
-						case unchecked((sbyte)MessagePackCode.UInt8):
-							remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<byte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
-							remainingElements = remainingElements[1..];
-							segmentSpan = segmentSpan[1..];
+						switch (unchecked((sbyte)temp[0]))
+						{
+							case unchecked((sbyte)MessagePackCode.UInt8):
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<byte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
+								remainingElements = remainingElements[1..];
+								sliceLength++;
+								segmentSpan = segmentSpan[1..];
+								tempLength = 0;
+								break;
+							case unchecked((sbyte)MessagePackCode.Int8):
+								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<sbyte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
+								remainingElements = remainingElements[1..];
+								sliceLength++;
+								segmentSpan = segmentSpan[1..];
+								tempLength = 0;
+								break;
+							case unchecked((sbyte)MessagePackCode.UInt16):
+								{
+									int copyLength = sizeof(ushort) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ushort, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							case unchecked((sbyte)MessagePackCode.Int16):
+								{
+									int copyLength = sizeof(short) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<short, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							case unchecked((sbyte)MessagePackCode.Float32):
+								{
+									int copyLength = sizeof(float) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<float, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							case unchecked((sbyte)MessagePackCode.UInt32):
+								{
+									int copyLength = sizeof(uint) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<uint, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							case unchecked((sbyte)MessagePackCode.Int32):
+								{
+									int copyLength = sizeof(int) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<int, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							case unchecked((sbyte)MessagePackCode.Float64):
+								{
+									int copyLength = sizeof(double) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<double, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							case unchecked((sbyte)MessagePackCode.UInt64):
+								{
+									int copyLength = sizeof(ulong) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ulong, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							case unchecked((sbyte)MessagePackCode.Int64):
+								{
+									int copyLength = sizeof(long) + 1 - tempLength;
+									if (copyLength > segmentSpan.Length)
+									{
+										segmentSpan.CopyTo(temp[tempLength..]);
+										tempLength += segmentSpan.Length;
+										sliceLength += segmentSpan.Length;
+										continue;
+									}
+
+									segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
+									segmentSpan = segmentSpan[copyLength..];
+									sliceLength += copyLength;
+									remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<long, TElement>(ref MemoryMarshal.GetReference(temp), 1);
+									remainingElements = remainingElements[1..];
+									tempLength = 0;
+								}
+
+								break;
+							default:
+								throw new InvalidProgramException();
+						}
+
+						if (segmentSpan.IsEmpty)
+						{
+							continue;
+						}
+					}
+
+					switch (MessagePackPrimitiveSpanUtility.Read(ref MemoryMarshal.GetReference(remainingElements), remainingElements.Length, in MemoryMarshal.GetReference(segmentSpan), segmentSpan.Length, out var writtenLength, out var readLength))
+					{
+						case DecodeResult.Success:
 							tempLength = 0;
 							break;
-						case unchecked((sbyte)MessagePackCode.Int8):
-							remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<sbyte, TElement>(ref MemoryMarshal.GetReference(segmentSpan), 0);
-							remainingElements = remainingElements[1..];
-							segmentSpan = segmentSpan[1..];
-							tempLength = 0;
-							break;
-						case unchecked((sbyte)MessagePackCode.UInt16):
-							{
-								int copyLength = sizeof(ushort) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ushort, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
-							break;
-						case unchecked((sbyte)MessagePackCode.Int16):
-							{
-								int copyLength = sizeof(short) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<short, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
-							break;
-						case unchecked((sbyte)MessagePackCode.Float32):
-							{
-								int copyLength = sizeof(float) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<float, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
-							break;
-						case unchecked((sbyte)MessagePackCode.UInt32):
-							{
-								int copyLength = sizeof(uint) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<uint, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
-							break;
-						case unchecked((sbyte)MessagePackCode.Int32):
-							{
-								int copyLength = sizeof(int) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<int, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
-							break;
-						case unchecked((sbyte)MessagePackCode.Float64):
-							{
-								int copyLength = sizeof(double) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<double, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
-							break;
-						case unchecked((sbyte)MessagePackCode.UInt64):
-							{
-								int copyLength = sizeof(ulong) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<ulong, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
-							break;
-						case unchecked((sbyte)MessagePackCode.Int64):
-							{
-								int copyLength = sizeof(long) + 1 - tempLength;
-								if (copyLength > segmentSpan.Length)
-								{
-									segmentSpan.CopyTo(temp[tempLength..]);
-									tempLength += copyLength;
-									continue;
-								}
-
-								segmentSpan[..copyLength].CopyTo(temp[tempLength..]);
-								segmentSpan = segmentSpan[copyLength..];
-								remainingElements[0] = MessagePackPrimitiveSpanUtility.Interpret<long, TElement>(ref MemoryMarshal.GetReference(temp), 1);
-								remainingElements = remainingElements[1..];
-								tempLength = 0;
-							}
-
+						case DecodeResult.InsufficientBuffer:
+							ReadOnlySpan<byte> restSpan = segmentSpan[readLength..];
+							tempLength = restSpan.Length < 9 ? restSpan.Length : 9;
+							sliceLength += tempLength;
+							restSpan[..tempLength].CopyTo(temp);
 							break;
 						default:
-							throw new InvalidProgramException();
+							throw new MessagePackSerializationException("Not all elements were numeric msgpack values.");
 					}
 
-					if (segmentSpan.IsEmpty)
-					{
-						continue;
-					}
+					sliceLength += readLength;
+					remainingElements = remainingElements[writtenLength..];
 				}
 
-				switch (MessagePackPrimitiveSpanUtility.Read(ref MemoryMarshal.GetReference(remainingElements), remainingElements.Length, in MemoryMarshal.GetReference(segmentSpan), segmentSpan.Length, out var writtenLength, out var readLength))
-				{
-					case DecodeResult.Success:
-						tempLength = 0;
-						break;
-					case DecodeResult.InsufficientBuffer:
-						ReadOnlySpan<byte> restSpan = segmentSpan[readLength..];
-						tempLength = restSpan.Length < 9 ? restSpan.Length : 9;
-						restSpan[..tempLength].CopyTo(temp);
-						break;
-					default:
-						throw new MessagePackSerializationException("Not all elements were numeric msgpack values.");
-				}
-
-				remainingElements = remainingElements[writtenLength..];
+				reader.ReadRaw(sliceLength);
 			}
 
 			return enumerable;
