@@ -2613,7 +2613,12 @@ FAIL:
 
 			context.DepthStep();
 			ref TElement reference = ref TryGetReferenceAndLength<TEnumerable, TElement>(value, out int length);
-			Assumes.False(Unsafe.IsNullRef(ref reference));
+			if (Unsafe.IsNullRef(ref reference))
+			{
+				writer.WriteArrayHeader(0);
+				return;
+			}
+
 			writer.WriteArrayHeader(length);
 			while (length > 0)
 			{
