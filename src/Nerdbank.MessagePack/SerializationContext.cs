@@ -44,8 +44,8 @@ public record struct SerializationContext
 	/// Gets a cancellation token that can be used to cancel the serialization operation.
 	/// </summary>
 	/// <remarks>
-	/// In <see cref="MessagePackConverter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext, CancellationToken)" />
-	/// or <see cref="MessagePackConverter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext, CancellationToken)"/> methods,
+	/// In <see cref="MessagePackConverter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext)" />
+	/// or <see cref="MessagePackConverter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext)"/> methods,
 	/// this will tend to be equivalent to the <c>cancellationToken</c> parameter passed to those methods.
 	/// </remarks>
 	public CancellationToken CancellationToken { get; init; }

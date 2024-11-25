@@ -60,10 +60,8 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 	{
-		cancellationToken.ThrowIfCancellationRequested();
-
 		if (value is null)
 		{
 			writer.WriteNil();
@@ -95,7 +93,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				if (property.PreferAsyncSerialization)
 				{
 					syncWriter.Flush();
-					await property.WriteAsync(value, writer, context, cancellationToken).ConfigureAwait(false);
+					await property.WriteAsync(value, writer, context).ConfigureAwait(false);
 					syncWriter = writer.CreateWriter();
 				}
 				else
@@ -106,7 +104,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				if (writer.IsTimeToFlush(context, syncWriter))
 				{
 					syncWriter.Flush();
-					await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 					syncWriter = writer.CreateWriter();
 				}
 			}
@@ -165,9 +163,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		if (await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
 		{
 			return default;
 		}
@@ -182,14 +180,14 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (deserializable.Value.Readers is not null)
 		{
-			int mapEntries = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
+			int mapEntries = await reader.ReadMapHeaderAsync(context.CancellationToken).ConfigureAwait(false);
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			int remainingEntries = mapEntries;
 			while (remainingEntries > 0)
 			{
-				(ReadOnlySequence<byte> buffer, int bufferedStructures) = await reader.ReadNextStructuresAsync(1, remainingEntries * 2, context, cancellationToken).ConfigureAwait(false);
+				(ReadOnlySequence<byte> buffer, int bufferedStructures) = await reader.ReadNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
 				MessagePackReader syncReader = new(buffer);
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
@@ -219,7 +217,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
 							reader.AdvanceTo(syncReader.Position);
-							value = await propertyReader.ReadAsync(value, reader, context, cancellationToken).ConfigureAwait(false);
+							value = await propertyReader.ReadAsync(value, reader, context).ConfigureAwait(false);
 							remainingEntries--;
 
 							// Now loop around to see what else we can do with the next buffer.
@@ -241,7 +239,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		else
 		{
 			// We have nothing to read into, so just skip any data in the object.
-			await reader.SkipAsync(context, cancellationToken).ConfigureAwait(false);
+			await reader.SkipAsync(context).ConfigureAwait(false);
 		}
 
 		return value;

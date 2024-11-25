@@ -37,7 +37,7 @@ Applications that have a legitimate need to exceed the default stack depth limit
 
 ### Delegating to sub-values
 
-The @Nerdbank.MessagePack.SerializationContext.GetConverter* method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
+The @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nameWithType method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
 
 [!code-csharp[](../../samples/CustomConverters.cs#DelegateSubValues)]
 
@@ -77,13 +77,10 @@ It also implicitly skips values in any unknown array index, such that reading *a
 
 #### Cancellation handling
 
-A custom converter should honor the @System.Threading.CancellationToken passed to it.
-This is mostly automatic because @Nerdbank.MessagePack.SerializationContext.DepthStep*?displayProperty=nameWithType will throw @System.OperationCanceledException if the token is canceled, and most converters should already be calling @Nerdbank.MessagePack.SerializationContext.DepthStep.
+A custom converter should honor the @Nerdbank.MessagePack.SerializationContext.CancellationToken?displayProperty=nameWithType.
+This is mostly automatic because most converters should already be calling @Nerdbank.MessagePack.SerializationContext.DepthStep?displayProperty=nameWithType, which will throw @System.OperationCanceledException if the token is canceled.
 
 For particularly expensive converters, it may be beneficial to check the token periodically through the conversion process.
-For typical synchronous converters, this means checking @Nerdbank.MessagePack.SerializationContext.CancellationToken?displayProperty=nameWithType before performing any significant work and periodically thereafter.
-Async converters can check the token at this same location or more simply use the token passed explicitly as a parameter.
-Async converters should always propagate the token to any async methods they call.
 
 #### Memory pressure
 

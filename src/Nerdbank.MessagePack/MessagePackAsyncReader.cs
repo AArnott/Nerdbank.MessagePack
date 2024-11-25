@@ -33,15 +33,14 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	/// </summary>
 	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
 	/// <param name="context">The serialization context.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The buffer, for use in creating a <see cref="MessagePackReader"/>. This buffer may be larger than needed to include <paramref name="minimumDesiredBufferedStructures"/>.</returns>
 	/// <remarks>
 	/// The caller must take care to call <see cref="AdvanceTo(SequencePosition)"/> with <see cref="MessagePackReader.Position"/> before any other methods on this class after this call.
 	/// </remarks>
-	/// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
+	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
 	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
-	public async ValueTask<ReadOnlySequence<byte>> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, SerializationContext context, CancellationToken cancellationToken)
-		=> (await this.ReadNextStructuresAsync(minimumDesiredBufferedStructures, minimumDesiredBufferedStructures, context, cancellationToken).ConfigureAwait(false)).Buffer;
+	public async ValueTask<ReadOnlySequence<byte>> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, SerializationContext context)
+		=> (await this.ReadNextStructuresAsync(minimumDesiredBufferedStructures, minimumDesiredBufferedStructures, context).ConfigureAwait(false)).Buffer;
 
 	/// <summary>
 	/// Gets the fully-capable, synchronous reader.
@@ -49,7 +48,6 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
 	/// <param name="countUpTo">The number of top-level structures to count and report on in the result.</param>
 	/// <param name="context">The serialization context.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>
 	/// The buffer, for use in creating a <see cref="MessagePackReader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
 	/// Also returns the number of top-level structures included in the buffer that were counted (up to <paramref name="countUpTo"/>).
@@ -57,9 +55,9 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	/// <remarks>
 	/// The caller must take care to call <see cref="AdvanceTo(SequencePosition)"/> with <see cref="MessagePackReader.Position"/> before any other methods on this class after this call.
 	/// </remarks>
-	/// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
+	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
 	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
-	public async ValueTask<(ReadOnlySequence<byte> Buffer, int IncludedStructures)> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context, CancellationToken cancellationToken)
+	public async ValueTask<(ReadOnlySequence<byte> Buffer, int IncludedStructures)> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
 	{
 		Requires.Argument(minimumDesiredBufferedStructures >= 0, nameof(minimumDesiredBufferedStructures), "A non-negative integer is required.");
 		Requires.Argument(countUpTo >= minimumDesiredBufferedStructures, nameof(countUpTo), "Count must be at least as large as minimumDesiredBufferedStructures.");
@@ -68,7 +66,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		int skipCount = 0;
 		while (skipCount < minimumDesiredBufferedStructures)
 		{
-			readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+			readResult = await this.ReadAsync(context.CancellationToken).ConfigureAwait(false);
 			MessagePackReader reader = new(readResult.Buffer);
 			skipCount = 0;
 			for (; skipCount < countUpTo; skipCount++)
@@ -195,14 +193,13 @@ retry:
 	/// Retrieves enough data from the pipe to read the next msgpack structure.
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
-	/// <param name="cancellationToken">A cancellation tokne.</param>
 	/// <returns>A task that completes when enough bytes have been retrieved into local buffers.</returns>
 	/// <remarks>
 	/// After awaiting this method, the next msgpack structure can be retrieved by a call to <see cref="PipeReader.ReadAsync(CancellationToken)"/>.
 	/// </remarks>
-	public async ValueTask BufferNextStructureAsync(SerializationContext context, CancellationToken cancellationToken)
+	public async ValueTask BufferNextStructureAsync(SerializationContext context)
 	{
-		ReadOnlySequence<byte> buffer = await this.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+		ReadOnlySequence<byte> buffer = await this.ReadNextStructureAsync(context).ConfigureAwait(false);
 		this.AdvanceTo(buffer.Start);
 	}
 
@@ -210,18 +207,17 @@ retry:
 	/// Retrieves enough data from the pipe to read the next msgpack structure.
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
-	/// <param name="cancellationToken">A cancellation tokne.</param>
 	/// <returns>The buffer containing exactly the next structure.</returns>
 	/// <remarks>
 	/// After a successful call to this method, the caller *must* call <see cref="AdvanceTo(SequencePosition, SequencePosition)"/>,
 	/// usually with <see cref="ReadOnlySequence{T}.End"/> to indicate that the next msgpack structure has been consumed.
 	/// After that call, the caller must *not* read the buffer again as it will have been recycled.
 	/// </remarks>
-	public async ValueTask<ReadOnlySequence<byte>> ReadNextStructureAsync(SerializationContext context, CancellationToken cancellationToken)
+	public async ValueTask<ReadOnlySequence<byte>> ReadNextStructureAsync(SerializationContext context)
 	{
 		while (true)
 		{
-			ReadResult readBuffer = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+			ReadResult readBuffer = await this.ReadAsync(context.CancellationToken).ConfigureAwait(false);
 			if (readBuffer.IsCanceled)
 			{
 				throw new OperationCanceledException();
@@ -248,13 +244,12 @@ retry:
 	/// Skips the next msgpack structure in the pipe.
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that completes when done reading past the next msgpack structure.</returns>
-	public async ValueTask SkipAsync(SerializationContext context, CancellationToken cancellationToken)
+	public async ValueTask SkipAsync(SerializationContext context)
 	{
 		while (true)
 		{
-			ReadResult readBuffer = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+			ReadResult readBuffer = await this.ReadAsync(context.CancellationToken).ConfigureAwait(false);
 			if (readBuffer.IsCanceled)
 			{
 				throw new OperationCanceledException();

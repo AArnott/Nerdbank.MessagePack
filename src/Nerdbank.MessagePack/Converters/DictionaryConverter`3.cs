@@ -75,13 +75,12 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// </summary>
 	/// <param name="reader">The reader.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The key=value pair.</returns>
 	[Experimental("NBMsgPackAsync")]
-	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		TKey? key = await keyConverter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false);
-		TValue? value = await valueConverter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false);
+		TKey? key = await keyConverter.ReadAsync(reader, context).ConfigureAwait(false);
+		TValue? value = await valueConverter.ReadAsync(reader, context).ConfigureAwait(false);
 		return new(key!, value!);
 	}
 }
@@ -117,15 +116,15 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		if (await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
 		{
 			return default;
 		}
 
 		TDictionary result = ctor();
-		await this.DeserializeIntoAsync(reader, result, context, cancellationToken).ConfigureAwait(false);
+		await this.DeserializeIntoAsync(reader, result, context).ConfigureAwait(false);
 		return result;
 	}
 
@@ -143,21 +142,21 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context, CancellationToken cancellationToken)
+	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context)
 	{
 		context.DepthStep();
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			int count = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
+			int count = await reader.ReadMapHeaderAsync(context.CancellationToken).ConfigureAwait(false);
 			for (int i = 0; i < count; i++)
 			{
-				addEntry(ref collection, await this.ReadEntryAsync(reader, context, cancellationToken).ConfigureAwait(false));
+				addEntry(ref collection, await this.ReadEntryAsync(reader, context).ConfigureAwait(false));
 			}
 		}
 		else
 		{
-			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = new(map);
 			int count = syncReader.ReadMapHeader();
 			for (int i = 0; i < count; i++)

@@ -212,7 +212,7 @@ public partial record MessagePackSerializer
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
-		await this.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value, cancellationToken).ConfigureAwait(false);
+		await this.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -230,7 +230,7 @@ public partial record MessagePackSerializer
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader), context.Value, cancellationToken);
+		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader), context.Value);
 #pragma warning restore NBMsgPackAsync
 	}
 

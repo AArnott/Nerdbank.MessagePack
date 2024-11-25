@@ -52,10 +52,8 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TElement[]? value, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TElement[]? value, SerializationContext context)
 	{
-		cancellationToken.ThrowIfCancellationRequested();
-
 		if (value is null)
 		{
 			writer.WriteNil();
@@ -68,8 +66,8 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			writer.WriteArrayHeader(value.Length);
 			for (int i = 0; i < value.Length; i++)
 			{
-				await elementConverter.WriteAsync(writer, value[i], context, cancellationToken).ConfigureAwait(false);
-				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+				await elementConverter.WriteAsync(writer, value[i], context).ConfigureAwait(false);
+				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 			}
 		}
 		else
@@ -82,11 +80,11 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 				for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
 				{
 					elementConverter.Write(ref syncWriter, value[progress], context);
-					cancellationToken.ThrowIfCancellationRequested();
+					context.CancellationToken.ThrowIfCancellationRequested();
 				}
 
 				syncWriter.Flush();
-				await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 			}
 			while (progress < value.Length);
 		}
@@ -94,9 +92,9 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		if (await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
 		{
 			return null;
 		}
@@ -105,18 +103,18 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 		if (elementConverter.PreferAsyncSerialization)
 		{
-			int count = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
+			int count = await reader.ReadArrayHeaderAsync(context.CancellationToken).ConfigureAwait(false);
 			TElement[] array = new TElement[count];
 			for (int i = 0; i < count; i++)
 			{
-				array[i] = (await elementConverter.ReadAsync(reader, context, cancellationToken).ConfigureAwait(false))!;
+				array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
 			}
 
 			return array;
 		}
 		else
 		{
-			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
 
 			MessagePackReader syncReader = new(map);
 			int count = syncReader.ReadArrayHeader();

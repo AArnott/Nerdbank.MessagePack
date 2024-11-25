@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -142,7 +141,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -159,7 +158,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			{
 				if (this.ShouldUseMap(value, ref indexesToIncludeArray, out ReadOnlyMemory<int> indexesToInclude, out _))
 				{
-					await WriteAsMapAsync(writer, value, indexesToInclude, properties, context, cancellationToken);
+					await WriteAsMapAsync(writer, value, indexesToInclude, properties, context);
 				}
 				else if (indexesToInclude.Length == 0)
 				{
@@ -169,7 +168,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					// Just serialize as an array, but truncate to the last index that *wanted* to be serialized.
 					// We +1 to the last index because the slice has an exclusive end index.
-					await WriteAsArrayAsync(writer, value, properties[..(indexesToInclude.Span[^1] + 1)], context, cancellationToken);
+					await WriteAsArrayAsync(writer, value, properties[..(indexesToInclude.Span[^1] + 1)], context);
 				}
 			}
 			finally
@@ -182,10 +181,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 		else
 		{
-			await WriteAsArrayAsync(writer, value, properties, context, cancellationToken);
+			await WriteAsArrayAsync(writer, value, properties, context);
 		}
 
-		static async ValueTask WriteAsMapAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context, CancellationToken cancellationToken)
+		static async ValueTask WriteAsMapAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
 		{
 			writer.WriteMapHeader(properties.Length);
 			int i = 0;
@@ -209,7 +208,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					}
 
 					syncWriter.Flush();
-					await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 
 				// Write all consecutive async properties.
@@ -221,7 +220,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					}
 
 					writer.Write(static (ref MessagePackWriter w, int i) => w.Write(i), properties.Span[i]);
-					await serializeAsync(value, writer, context, cancellationToken).ConfigureAwait(false);
+					await serializeAsync(value, writer, context).ConfigureAwait(false);
 				}
 
 				int NextSyncBatchSize()
@@ -245,7 +244,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			}
 		}
 
-		static async ValueTask WriteAsArrayAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<PropertyAccessors<T>?> properties, SerializationContext context, CancellationToken cancellationToken)
+		static async ValueTask WriteAsArrayAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
 			writer.WriteArrayHeader(properties.Length);
 			int i = 0;
@@ -272,7 +271,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					}
 
 					syncWriter.Flush();
-					await writer.FlushIfAppropriateAsync(context, cancellationToken).ConfigureAwait(false);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 
 				// Write all consecutive async properties.
@@ -283,7 +282,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						break;
 					}
 
-					await serializeAsync(value, writer, context, cancellationToken).ConfigureAwait(false);
+					await serializeAsync(value, writer, context).ConfigureAwait(false);
 				}
 
 				int NextSyncBatchSize()
@@ -310,9 +309,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync(cancellationToken).ConfigureAwait(false))
+		if (await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
 		{
 			return default;
 		}
@@ -324,16 +323,16 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
-		if (await reader.TryPeekNextMessagePackTypeAsync(cancellationToken) == MessagePackType.Map)
+		if (await reader.TryPeekNextMessagePackTypeAsync(context.CancellationToken) == MessagePackType.Map)
 		{
-			int mapEntries = await reader.ReadMapHeaderAsync(cancellationToken).ConfigureAwait(false);
+			int mapEntries = await reader.ReadMapHeaderAsync(context.CancellationToken).ConfigureAwait(false);
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			int remainingEntries = mapEntries;
 			while (remainingEntries > 0)
 			{
-				(ReadOnlySequence<byte> buffer, int bufferedStructures) = await reader.ReadNextStructuresAsync(1, remainingEntries * 2, context, cancellationToken).ConfigureAwait(false);
+				(ReadOnlySequence<byte> buffer, int bufferedStructures) = await reader.ReadNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
 				MessagePackReader syncReader = new(buffer);
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
@@ -363,7 +362,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
 							reader.AdvanceTo(syncReader.Position);
-							value = await propertyReader.DeserializeAsync(value, reader, context, cancellationToken).ConfigureAwait(false);
+							value = await propertyReader.DeserializeAsync(value, reader, context).ConfigureAwait(false);
 							remainingEntries--;
 
 							// Now loop around to see what else we can do with the next buffer.
@@ -384,7 +383,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 		else
 		{
-			int arrayLength = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
+			int arrayLength = await reader.ReadArrayHeaderAsync(context.CancellationToken).ConfigureAwait(false);
 			int i = 0;
 			while (i < arrayLength)
 			{
@@ -392,7 +391,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				int syncBatchSize = NextSyncReadBatchSize();
 				if (syncBatchSize > 0)
 				{
-					ReadOnlySequence<byte> buffer = await reader.ReadNextStructuresAsync(syncBatchSize, context, cancellationToken).ConfigureAwait(false);
+					ReadOnlySequence<byte> buffer = await reader.ReadNextStructuresAsync(syncBatchSize, context).ConfigureAwait(false);
 					MessagePackReader syncReader = new(buffer);
 					for (int syncReadEndExclusive = i + syncBatchSize; i < syncReadEndExclusive; i++)
 					{
@@ -417,7 +416,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						break;
 					}
 
-					value = await deserializeAsync(value, reader, context, cancellationToken).ConfigureAwait(false);
+					value = await deserializeAsync(value, reader, context).ConfigureAwait(false);
 				}
 
 				int NextSyncReadBatchSize()
