@@ -369,7 +369,8 @@ public class MigrationCodeFix : CodeFixProvider
 			}
 			else
 			{
-				return (SyntaxNode?)node;
+				// look for nested types that need to be marked with [GenerateShape]
+				return base.VisitClassDeclaration(node);
 			}
 		}
 
