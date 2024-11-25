@@ -332,13 +332,20 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	}
 
 	[Fact]
-	public void PropertyGetterWithCtorParam()
+	public void PropertyGetterWithCtorParamAndMissingKey()
 	{
-		ClassWithPropertyGettersWithCtorParam obj = new("hi") { Value = true };
+		ClassWithPropertyGettersWithCtorParamAndMissingKey obj = new("hi") { Value = true };
 
 		// We expect this to throw because a qualified property is not attributed with KeyAttribute.
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(obj));
 		this.Logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
+	public void PropertyGetterWithCtorParam()
+	{
+		ClassWithPropertyGettersWithCtorParam obj = new(true);
+		this.AssertRoundtrip(obj);
 	}
 
 	private static ITypeShape<T> GetShape<T>()
@@ -420,9 +427,9 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	}
 
 	[GenerateShape]
-	public partial record ClassWithPropertyGettersWithCtorParam
+	public partial record ClassWithPropertyGettersWithCtorParamAndMissingKey
 	{
-		public ClassWithPropertyGettersWithCtorParam(string propertyChanged) => this.PropertyChanged = propertyChanged;
+		public ClassWithPropertyGettersWithCtorParamAndMissingKey(string propertyChanged) => this.PropertyChanged = propertyChanged;
 
 		public string PropertyChanged { get; }
 
@@ -430,5 +437,14 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 #pragma warning disable NBMsgPack001 // We WANT this to verify runtime failure.
 		public bool Value { get; set; }
 #pragma warning restore NBMsgPack001
+	}
+
+	[GenerateShape]
+	public partial record ClassWithPropertyGettersWithCtorParam
+	{
+		public ClassWithPropertyGettersWithCtorParam(bool value) => this.Value = value;
+
+		[Key(0)]
+		public bool Value { get; set; }
 	}
 }

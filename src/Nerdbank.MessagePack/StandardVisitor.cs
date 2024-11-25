@@ -341,7 +341,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), !this.owner.SerializeDefaultValues);
 					}
 
-					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
+					Dictionary<string, int> propertyIndexesByName = new(StringComparer.OrdinalIgnoreCase);
 					for (int i = 0; i < inputs.Properties.Count; i++)
 					{
 						if (inputs.Properties[i] is { } property)
