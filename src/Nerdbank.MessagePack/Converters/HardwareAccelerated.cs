@@ -17,6 +17,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 internal static class HardwareAccelerated
 {
+	private enum SpanConstructorKind
+	{
+		Array,
+		List,
+		ReadOnlyMemory,
+		Memory,
+	}
+
 	/// <summary>
 	/// Creates a hardware-accelerated converter if one is available for the given enumerable and element type.
 	/// </summary>
@@ -2266,14 +2274,6 @@ FAIL:
 
 			return outputOffset;
 		}
-	}
-
-	public enum SpanConstructorKind
-	{
-		Array,
-		List,
-		ReadOnlyMemory,
-		Memory,
 	}
 
 	/// <summary>
