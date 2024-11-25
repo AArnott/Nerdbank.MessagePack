@@ -114,15 +114,14 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// Flushes the pipe if the buffer is getting full.
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task to await before writing further.</returns>
-	public ValueTask FlushIfAppropriateAsync(SerializationContext context, CancellationToken cancellationToken)
+	public ValueTask FlushIfAppropriateAsync(SerializationContext context)
 	{
 		if (this.IsTimeToFlush(context))
 		{
 			// We need to commit our own writer first or the PipeWriter may discard the buffer we've written to.
 			this.Flush();
-			return FlushAsync(pipeWriter, cancellationToken);
+			return FlushAsync(pipeWriter, context.CancellationToken);
 		}
 		else
 		{

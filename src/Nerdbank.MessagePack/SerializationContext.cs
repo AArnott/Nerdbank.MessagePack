@@ -9,6 +9,11 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Context that flows through the serialization process.
 /// </summary>
+/// <example>
+/// The default values on this struct may be changed and the modified struct applied to <see cref="MessagePackSerializer.StartingContext"/>
+/// in order to serialize with the updated settings.
+/// <code source="../../samples/ApplyingSerializationContext.cs" region="ApplyingStartingContext" lang="C#" />
+/// </example>
 [DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
 public record struct SerializationContext
 {
@@ -36,6 +41,16 @@ public record struct SerializationContext
 	public int UnflushedBytesThreshold { get; init; } = 64 * 1024;
 
 	/// <summary>
+	/// Gets a cancellation token that can be used to cancel the serialization operation.
+	/// </summary>
+	/// <remarks>
+	/// In <see cref="MessagePackConverter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext)" />
+	/// or <see cref="MessagePackConverter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext)"/> methods,
+	/// this will tend to be equivalent to the <c>cancellationToken</c> parameter passed to those methods.
+	/// </remarks>
+	public CancellationToken CancellationToken { get; init; }
+
+	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
 	/// </summary>
 	internal MessagePackSerializer? Owner { get; private init; }
@@ -46,14 +61,16 @@ public record struct SerializationContext
 	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
 
 	/// <summary>
-	/// Decrements the depth remaining.
+	/// Decrements the depth remaining and checks the cancellation token.
 	/// </summary>
 	/// <remarks>
 	/// Converters that (de)serialize nested objects should invoke this once <em>before</em> passing the context to nested (de)serializers.
 	/// </remarks>
 	/// <exception cref="MessagePackSerializationException">Thrown if the depth limit has been exceeded.</exception>
+	/// <exception cref="OperationCanceledException">Thrown if <see cref="CancellationToken"/> has been canceled.</exception>
 	public void DepthStep()
 	{
+		this.CancellationToken.ThrowIfCancellationRequested();
 		if (--this.MaxDepth < 0)
 		{
 			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
@@ -73,7 +90,7 @@ public record struct SerializationContext
 		where T : IShapeable<T>
 	{
 		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Owner.GetOrAddConverter<T>();
+		MessagePackConverter<T> result = this.Owner.GetOrAddConverter(T.GetShape());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
@@ -99,13 +116,15 @@ public record struct SerializationContext
 	/// Starts a new serialization operation.
 	/// </summary>
 	/// <param name="owner">The owning serializer.</param>
+	/// <param name="cancellationToken">A cancellation token to associate with this serialization operation.</param>
 	/// <returns>The new context for the operation.</returns>
-	internal SerializationContext Start(MessagePackSerializer owner)
+	internal SerializationContext Start(MessagePackSerializer owner, CancellationToken cancellationToken)
 	{
 		return this with
 		{
 			Owner = owner,
 			ReferenceEqualityTracker = owner.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
+			CancellationToken = cancellationToken,
 		};
 	}
 

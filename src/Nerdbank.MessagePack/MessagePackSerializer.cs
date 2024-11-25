@@ -1,14 +1,14 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable RS0026 // optional parameter on a method with overloads
+
 using System.Collections.Concurrent;
-using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
-using System.Numerics;
 using System.Reflection;
-using System.Text;
 using Microsoft;
+using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
 
@@ -28,49 +28,13 @@ namespace Nerdbank.MessagePack;
 /// </devremarks>
 public partial record MessagePackSerializer
 {
-	private static readonly FrozenDictionary<Type, object> PrimitiveConverters = new Dictionary<Type, object>()
-	{
-		{ typeof(char), new CharConverter() },
-		{ typeof(Rune), new RuneConverter() },
-		{ typeof(byte), new ByteConverter() },
-		{ typeof(ushort), new UInt16Converter() },
-		{ typeof(uint), new UInt32Converter() },
-		{ typeof(ulong), new UInt64Converter() },
-		{ typeof(sbyte), new SByteConverter() },
-		{ typeof(short), new Int16Converter() },
-		{ typeof(int), new Int32Converter() },
-		{ typeof(long), new Int64Converter() },
-		{ typeof(BigInteger), new BigIntegerConverter() },
-		{ typeof(Int128), new Int128Converter() },
-		{ typeof(UInt128), new UInt128Converter() },
-		{ typeof(string), new StringConverter() },
-		{ typeof(bool), new BooleanConverter() },
-		{ typeof(Version), new VersionConverter() },
-		{ typeof(Uri), new UriConverter() },
-		{ typeof(Half), new HalfConverter() },
-		{ typeof(float), new SingleConverter() },
-		{ typeof(double), new DoubleConverter() },
-		{ typeof(decimal), new DecimalConverter() },
-		{ typeof(TimeOnly), new TimeOnlyConverter() },
-		{ typeof(DateOnly), new DateOnlyConverter() },
-		{ typeof(DateTime), new DateTimeConverter() },
-		{ typeof(DateTimeOffset), new DateTimeOffsetConverter() },
-		{ typeof(TimeSpan), new TimeSpanConverter() },
-		{ typeof(Guid), new GuidConverter() },
-		{ typeof(byte[]), ByteArrayConverter.Instance },
-		{ typeof(Memory<byte>), new MemoryOfByteConverter() },
-		{ typeof(ReadOnlyMemory<byte>), new ReadOnlyMemoryOfByteConverter() },
-	}.ToFrozenDictionary();
-
-	private static readonly FrozenDictionary<Type, object> PrimitiveReferencePreservingConverters = PrimitiveConverters.ToFrozenDictionary(
-		pair => pair.Key,
-		pair => (object)((IMessagePackConverter)pair.Value).WrapWithReferencePreservation());
-
 	private readonly object lazyInitCookie = new();
+
+	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
 
 	private bool configurationLocked;
 
-	private ConcurrentDictionary<Type, object>? cachedConverters;
+	private MultiProviderTypeCache? cachedConverters;
 
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
@@ -157,7 +121,7 @@ public partial record MessagePackSerializer
 	/// <summary>
 	/// Gets all the converters this instance knows about so far.
 	/// </summary>
-	private ConcurrentDictionary<Type, object> CachedConverters
+	private MultiProviderTypeCache CachedConverters
 	{
 		get
 		{
@@ -165,7 +129,22 @@ public partial record MessagePackSerializer
 			{
 				lock (this.lazyInitCookie)
 				{
-					this.cachedConverters ??= this.PreserveReferences ? new(PrimitiveReferencePreservingConverters) : new(PrimitiveConverters);
+					this.cachedConverters ??= new()
+					{
+						DelayedValueFactory = new DelayedConverterFactory(),
+						ValueBuilderFactory = ctx =>
+						{
+							StandardVisitor standardVisitor = new StandardVisitor(this, ctx);
+							if (!this.PreserveReferences)
+							{
+								return standardVisitor;
+							}
+
+							ReferencePreservingVisitor visitor = new(standardVisitor);
+							standardVisitor.OutwardVisitor = visitor;
+							return standardVisitor;
+						},
+					};
 				}
 			}
 
@@ -173,13 +152,24 @@ public partial record MessagePackSerializer
 		}
 	}
 
-	/// <inheritdoc cref="RegisterConverterCore{T}(MessagePackConverter{T})"/>
+	/// <summary>
+	/// Registers a converter for use with this serializer.
+	/// </summary>
+	/// <typeparam name="T">The convertible type.</typeparam>
+	/// <param name="converter">The converter.</param>
+	/// <remarks>
+	/// If a converter for the data type has already been cached, the new value takes its place.
+	/// Custom converters should be registered before serializing anything on this
+	/// instance of <see cref="MessagePackSerializer" />.
+	/// </remarks>
 	/// <exception cref="InvalidOperationException">Thrown if serialization has already occurred. All calls to this method should be made before anything is serialized.</exception>
 	public void RegisterConverter<T>(MessagePackConverter<T> converter)
 	{
 		Requires.NotNull(converter);
 		this.VerifyConfigurationIsNotLocked();
-		this.RegisterConverterCore(converter);
+		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
+			? ((IMessagePackConverter)converter).WrapWithReferencePreservation()
+			: converter;
 	}
 
 	/// <summary>
@@ -189,9 +179,10 @@ public partial record MessagePackSerializer
 	/// <param name="writer">The msgpack writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape)
+	/// <param name="cancellationToken">A cancellation token.</param>
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext();
+		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
 		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
 	}
 
@@ -201,10 +192,11 @@ public partial record MessagePackSerializer
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
 	/// <param name="shape">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape)
+	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext();
+		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
 		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
 	}
 
@@ -217,15 +209,15 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
-	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken)
+	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(writer);
 		cancellationToken.ThrowIfCancellationRequested();
 
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
-		using DisposableSerializationContext context = this.CreateSerializationContext();
-		await this.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value, cancellationToken).ConfigureAwait(false);
+		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
+		await this.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -238,12 +230,12 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken)
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
-		using DisposableSerializationContext context = this.CreateSerializationContext();
+		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader), context.Value, cancellationToken);
+		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken }, context.Value);
 #pragma warning restore NBMsgPackAsync
 	}
 
@@ -411,65 +403,24 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
 	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
-	{
-		if (this.TryGetConverter(out MessagePackConverter<T>? converter))
-		{
-			return converter;
-		}
-
-		converter = this.CreateConverter(shape);
-		this.RegisterConverterCore(converter);
-
-		return converter;
-	}
+		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
-	/// Gets a converter for a type that self-describes its shape.
-	/// An existing converter is reused if one is found in the cache.
-	/// If a converter must be created, it is added to the cache for lookup next time.
+	/// Gets a user-defined converter for the specified type if one is available.
 	/// </summary>
-	/// <typeparam name="T">The data type to convert.</typeparam>
-	/// <returns>A msgpack converter.</returns>
-	internal MessagePackConverter<T> GetOrAddConverter<T>()
-		where T : IShapeable<T> => this.GetOrAddConverter(T.GetShape());
-
-	/// <summary>
-	/// Searches our static and instance cached converters for a converter for the given type.
-	/// </summary>
-	/// <typeparam name="T">The data type to be converted.</typeparam>
-	/// <param name="converter">Receives the converter instance if one exists.</param>
-	/// <returns><see langword="true"/> if a converter was found to already exist; otherwise <see langword="false" />.</returns>
-	internal bool TryGetConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
+	/// <param name="converter">Receives the converter, if the user provided one (e.g. via <see cref="RegisterConverter{T}(MessagePackConverter{T})"/>.</param>
+	/// <returns>A value indicating whether a customer converter exists.</returns>
+	internal bool TryGetUserDefinedConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
-		if (this.CachedConverters.TryGetValue(typeof(T), out object? candidate))
+		if (this.userProvidedConverters.TryGetValue(typeof(T), out object? value))
 		{
-			converter = (MessagePackConverter<T>)candidate;
+			converter = (MessagePackConverter<T>)value;
 			return true;
 		}
 
-		converter = null;
+		converter = default;
 		return false;
-	}
-
-	/// <summary>
-	/// Stores a set of converters in the cache for later reuse.
-	/// </summary>
-	/// <param name="converters">The converters to store.</param>
-	/// <remarks>
-	/// Any collisions with existing converters are resolved in favor of the new converters.
-	/// </remarks>
-	internal void RegisterConverters(IEnumerable<KeyValuePair<Type, object>> converters)
-	{
-		foreach (KeyValuePair<Type, object> pair in converters)
-		{
-			IMessagePackConverter converter = (IMessagePackConverter)pair.Value;
-			if (this.PreserveReferences)
-			{
-				converter = converter.WrapWithReferencePreservation();
-			}
-
-			this.CachedConverters.TryAdd(pair.Key, converter);
-		}
 	}
 
 	/// <summary>
@@ -495,59 +446,17 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
-	/// Registers a converter for use with this serializer.
-	/// </summary>
-	/// <typeparam name="T">The convertible type.</typeparam>
-	/// <param name="converter">The converter.</param>
-	/// <remarks>
-	/// If a converter for the data type has already been cached, the new value takes its place.
-	/// Custom converters should be registered before serializing anything on this
-	/// instance of <see cref="MessagePackSerializer" />.
-	/// </remarks>
-	internal void RegisterConverterCore<T>(MessagePackConverter<T> converter)
-	{
-		this.CachedConverters[typeof(T)] = this.PreserveReferences ? ((IMessagePackConverter)converter).WrapWithReferencePreservation() : converter;
-	}
-
-	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
+	/// <param name="cancellationToken">A cancellation token for the operation.</param>
 	/// <returns>The serialization context.</returns>
 	/// <remarks>
 	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
 	/// </remarks>
-	protected DisposableSerializationContext CreateSerializationContext()
+	protected DisposableSerializationContext CreateSerializationContext(CancellationToken cancellationToken = default)
 	{
 		this.configurationLocked = true;
-		return new(this.StartingContext.Start(this));
-	}
-
-	/// <summary>
-	/// Synthesizes a <see cref="MessagePackConverter{T}"/> for a type with the given shape.
-	/// </summary>
-	/// <typeparam name="T">The data type that should be serializable.</typeparam>
-	/// <param name="typeShape">The shape of the data type.</param>
-	/// <returns>The msgpack converter.</returns>
-	private MessagePackConverter<T> CreateConverter<T>(ITypeShape<T> typeShape)
-	{
-		StandardVisitor standardVisitor = new(this);
-		ITypeShapeVisitor visitor;
-		if (this.PreserveReferences)
-		{
-			visitor = new ReferencePreservingVisitor(standardVisitor);
-			standardVisitor.OutwardVisitor = visitor;
-		}
-		else
-		{
-			visitor = standardVisitor;
-		}
-
-		MessagePackConverter<T> result = (MessagePackConverter<T>)typeShape.Accept(visitor)!;
-
-		// Cache all the converters that have been generated to support the one that our caller wants.
-		this.RegisterConverters(standardVisitor.GeneratedConverters.Where(kv => kv.Value is not null)!);
-
-		return result;
+		return new(this.StartingContext.Start(this, cancellationToken));
 	}
 
 	/// <summary>

@@ -46,6 +46,9 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		CustomType[]? deserializedArray = this.Roundtrip<CustomType[], Witness>(array);
 		Assert.NotNull(deserializedArray);
 		Assert.Same(deserializedArray[0], deserializedArray[1]);
+
+		// Verify that the custom converter actually ran, by verifying that the internal member was serialized.
+		Assert.Equal(value, deserializedArray[0]);
 	}
 
 	[Fact]

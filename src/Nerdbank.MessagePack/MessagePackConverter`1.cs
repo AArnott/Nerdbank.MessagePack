@@ -10,6 +10,20 @@ namespace Nerdbank.MessagePack;
 /// An interface for all message pack converters.
 /// </summary>
 /// <typeparam name="T">The data type that can be converted by this object.</typeparam>
+/// <remarks>
+/// <para>
+/// Authors of derived types should review <see href="https://aarnott.github.io/Nerdbank.MessagePack/docs/custom-converters.html">this documentation</see>
+/// for important guidance on implementing a converter.
+/// </para>
+/// <para>
+/// Key points to remember about each <see cref="Write"/> or <see cref="Read"/> method (or their async equivalents):
+/// <list type="bullet">
+/// <item>Read or write exactly one msgpack structure. Use an array or map header for multiple values.</item>
+/// <item>Call <see cref="SerializationContext.DepthStep"/> before any significant work.</item>
+/// <item>Delegate serialization of sub-values to a converter obtained using <see cref="SerializationContext.GetConverter{T}()"/> rather than making a top-level call back to <see cref="MessagePackSerializer"/>.</item>
+/// </list>
+/// </para>
+/// </remarks>
 public abstract class MessagePackConverter<T> : IMessagePackConverter
 {
 	/// <summary>
@@ -28,6 +42,9 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
+	/// <remarks>
+	/// Implementations of this method should not flush the writer.
+	/// </remarks>
 	public abstract void Write(ref MessagePackWriter writer, in T? value, SerializationContext context);
 
 	/// <summary>
@@ -44,7 +61,6 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
 	/// <remarks>
 	/// <para>
@@ -59,17 +75,17 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </para>
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	public virtual ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context, CancellationToken cancellationToken)
+	public virtual ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 	{
 		Requires.NotNull(writer);
-		cancellationToken.ThrowIfCancellationRequested();
+		context.CancellationToken.ThrowIfCancellationRequested();
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
 		this.Write(ref syncWriter, value, context);
 		syncWriter.Flush();
 
 		// On our way out, pause to flush the pipe if a lot of data has accumulated in the buffer.
-		return writer.FlushIfAppropriateAsync(context, cancellationToken);
+		return writer.FlushIfAppropriateAsync(context);
 	}
 
 	/// <summary>
@@ -77,7 +93,6 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </summary>
 	/// <param name="reader">The reader to use.</param>
 	/// <param name="context">Context for the deserialization.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	/// <remarks>
 	/// <para>The default implementation delegates to <see cref="Read"/> after ensuring there is sufficient buffer to read the next structure.</para>
@@ -88,12 +103,12 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </para>
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	public virtual async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
+	public virtual async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		Requires.NotNull(reader);
-		cancellationToken.ThrowIfCancellationRequested();
+		context.CancellationToken.ThrowIfCancellationRequested();
 
-		ReadOnlySequence<byte> buffer = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+		ReadOnlySequence<byte> buffer = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
 		T? result = Deserialize(buffer, context);
 		reader.AdvanceTo(buffer.End);
 		return result;

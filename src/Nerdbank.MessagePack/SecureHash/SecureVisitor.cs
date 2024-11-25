@@ -5,6 +5,7 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Text;
+using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack.SecureHash;
 
@@ -12,7 +13,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// A visitor that creates a hash collision resistant <see cref="IEqualityComparer{T}"/> for a given type shape
 /// that compares values by value (deeply).
 /// </summary>
-internal class SecureVisitor : TypeShapeVisitor
+internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
 	/// <summary>
 	/// A dictionary of primitive types and their corresponding hash-resistant equality comparers.
@@ -48,7 +49,18 @@ internal class SecureVisitor : TypeShapeVisitor
 		{ typeof(Guid), new CollisionResistantHasherUnmanaged<Guid>() },
 	}.ToFrozenDictionary();
 
-	private readonly TypeDictionary equalityComparers = new();
+	/// <inheritdoc/>
+	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
+	{
+		// Check if the type has a built-in converter.
+		if (HashResistantPrimitiveEqualityComparers.TryGetValue(typeof(T), out object? defaultComparer))
+		{
+			return defaultComparer;
+		}
+
+		// Otherwise, build a converter using the visitor.
+		return typeShape.Accept(this);
+	}
 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
@@ -110,12 +122,24 @@ internal class SecureVisitor : TypeShapeVisitor
 	/// <param name="state">An optional state object to pass to the equality comparer.</param>
 	/// <returns>The equality comparer.</returns>
 	protected SecureEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape, object? state = null)
-		=> this.equalityComparers.GetOrAdd<SecureEqualityComparer<T>>(shape, this, box => new DelayedEqualityComparer<T>(box));
+		=> (SecureEqualityComparer<T>)context.GetOrAdd(shape, state)!;
 
-	private class DelayedEqualityComparer<T>(ResultBox<SecureEqualityComparer<T>> inner) : SecureEqualityComparer<T>
+	/// <summary>
+	/// A factory that creates delayed equality comparers.
+	/// </summary>
+	internal class DelayedEqualityComparerFactory : IDelayedValueFactory
 	{
-		public override bool Equals(T? x, T? y) => inner.Result.Equals(x, y);
+		/// <inheritdoc/>
+		public DelayedValue Create<T>(ITypeShape<T> typeShape)
+			=> new DelayedValue<SecureEqualityComparer<T>>(self => new DelayedEqualityComparer<T>(self));
 
-		public override long GetSecureHashCode([DisallowNull] T obj) => inner.Result.GetSecureHashCode(obj);
+		private class DelayedEqualityComparer<T>(DelayedValue<SecureEqualityComparer<T>> inner) : SecureEqualityComparer<T>
+		{
+			/// <inheritdoc/>
+			public override bool Equals(T? x, T? y) => inner.Result.Equals(x, y);
+
+			/// <inheritdoc/>
+			public override long GetSecureHashCode([DisallowNull] T obj) => inner.Result.GetSecureHashCode(obj);
+		}
 	}
 }

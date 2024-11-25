@@ -13,6 +13,25 @@ public partial class SerializationContextTests
 		Assert.Throws<InvalidOperationException>(() => context.GetConverter<MyType>());
 	}
 
+	[Fact]
+	public void DepthStep_ThrowsOnCancellation()
+	{
+		CancellationTokenSource cts = new();
+		SerializationContext context = new() { CancellationToken = cts.Token };
+		context.DepthStep();
+		cts.Cancel();
+		Assert.Throws<OperationCanceledException>(context.DepthStep);
+	}
+
+	[Fact]
+	public void DepthStep_ThrowsOnStackDepth()
+	{
+		SerializationContext context = new() { MaxDepth = 2 };
+		context.DepthStep();
+		context.DepthStep();
+		Assert.Throws<MessagePackSerializationException>(context.DepthStep);
+	}
+
 	[GenerateShape]
 	public partial class MyType;
 }
