@@ -40,11 +40,6 @@ public ref partial struct MessagePackReader
 	}
 
 	/// <summary>
-	/// Gets or sets the cancellation token for this deserialization operation.
-	/// </summary>
-	public CancellationToken CancellationToken { get; set; }
-
-	/// <summary>
 	/// Gets the <see cref="ReadOnlySequence{T}"/> originally supplied to the constructor.
 	/// </summary>
 	public ReadOnlySequence<byte> Sequence => this.reader.Sequence;
@@ -97,10 +92,7 @@ public ref partial struct MessagePackReader
 	/// </summary>
 	/// <param name="readOnlySequence">The sequence to read from.</param>
 	/// <returns>The new reader.</returns>
-	public MessagePackReader Clone(scoped in ReadOnlySequence<byte> readOnlySequence) => new MessagePackReader(readOnlySequence)
-	{
-		CancellationToken = this.CancellationToken,
-	};
+	public MessagePackReader Clone(scoped in ReadOnlySequence<byte> readOnlySequence) => new MessagePackReader(readOnlySequence);
 
 	/// <summary>
 	/// Creates a new <see cref="MessagePackReader"/> at this reader's current position.

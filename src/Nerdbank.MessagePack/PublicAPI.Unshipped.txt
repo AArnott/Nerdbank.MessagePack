@@ -121,8 +121,6 @@ Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult.InsufficientBuffer = 3 -
 Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult.Success = 0 -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult.TokenMismatch = 1 -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackReader
-Nerdbank.MessagePack.MessagePackReader.CancellationToken.get -> System.Threading.CancellationToken
-Nerdbank.MessagePack.MessagePackReader.CancellationToken.set -> void
 Nerdbank.MessagePack.MessagePackReader.Clone(scoped in System.Buffers.ReadOnlySequence<byte> readOnlySequence) -> Nerdbank.MessagePack.MessagePackReader
 Nerdbank.MessagePack.MessagePackReader.Consumed.get -> long
 Nerdbank.MessagePack.MessagePackReader.CreatePeekReader() -> Nerdbank.MessagePack.MessagePackReader
@@ -234,8 +232,6 @@ Nerdbank.MessagePack.MessagePackType.String = 5 -> Nerdbank.MessagePack.MessageP
 Nerdbank.MessagePack.MessagePackType.Unknown = 0 -> Nerdbank.MessagePack.MessagePackType
 Nerdbank.MessagePack.MessagePackWriter
 Nerdbank.MessagePack.MessagePackWriter.Advance(int length) -> void
-Nerdbank.MessagePack.MessagePackWriter.CancellationToken.get -> System.Threading.CancellationToken
-Nerdbank.MessagePack.MessagePackWriter.CancellationToken.set -> void
 Nerdbank.MessagePack.MessagePackWriter.Clone(System.Buffers.IBufferWriter<byte>! writer) -> Nerdbank.MessagePack.MessagePackWriter
 Nerdbank.MessagePack.MessagePackWriter.Flush() -> void
 Nerdbank.MessagePack.MessagePackWriter.GetSpan(int length) -> System.Span<byte>

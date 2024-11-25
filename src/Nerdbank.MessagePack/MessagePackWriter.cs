@@ -55,11 +55,6 @@ public ref struct MessagePackWriter
 	}
 
 	/// <summary>
-	/// Gets or sets the cancellation token for this serialization operation.
-	/// </summary>
-	public CancellationToken CancellationToken { get; set; }
-
-	/// <summary>
 	/// Gets the number of bytes that have been written but not yet committed <see cref="Flush">flushed</see> to the underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>
 	public int UnflushedBytes => this.writer.UncommittedBytes;
@@ -120,7 +115,6 @@ public ref struct MessagePackWriter
 	public MessagePackWriter Clone(IBufferWriter<byte> writer) => new MessagePackWriter(writer)
 	{
 		OldSpec = this.OldSpec,
-		CancellationToken = this.CancellationToken,
 	};
 
 	/// <summary>
