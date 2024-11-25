@@ -2,6 +2,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable RS0026 // optional parameter on a method with overloads
+
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 
@@ -43,10 +45,10 @@ public partial record MessagePackSerializer
             AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T})" />
+	/// <inheritdoc cref="Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
-	public <#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=firstParameter#>in T? value)
-		where <#=typeConstraint#> => this.Serialize(<#=firstArg#>value, <#=shapeProviderName#>.GetShape());
+	public <#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=firstParameter#>in T? value, CancellationToken cancellationToken = default)
+		where <#=typeConstraint#> => this.Serialize(<#=firstArg#>value, <#=shapeProviderName#>.GetShape(), cancellationToken);
 <#
         }
 
@@ -62,10 +64,10 @@ public partial record MessagePackSerializer
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T})" />
+	/// <inheritdoc cref="Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
-	public T? Deserialize<<#=genericTypeParameters#>>(<#=firstParameter#>)
-		where <#=typeConstraint#> => this.Deserialize(<#=firstArg#>, <#=shapeProviderName#>.GetShape());
+	public T? Deserialize<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
+		where <#=typeConstraint#> => this.Deserialize(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), cancellationToken);
 <#
         }
 
@@ -81,12 +83,10 @@ public partial record MessagePackSerializer
 #>
 
 	/// <inheritdoc cref="DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
-#pragma warning disable RS0026 // optional parameter on a method with overloads
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
 	public ValueTask<T?> DeserializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-#pragma warning restore RS0026 // optional parameter on a method with overloads
 		where <#=typeConstraint#> => this.DeserializeAsync(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), cancellationToken);
 <#
         }
@@ -104,11 +104,9 @@ public partial record MessagePackSerializer
 
 	/// <inheritdoc cref="SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads
-#pragma warning disable RS0026 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
 	public ValueTask SerializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, in T? value, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-#pragma warning restore RS0026 // optional parameter on a method with overloads
 		where <#=typeConstraint#> => this.SerializeAsync(<#=firstArg#>, value, <#=shapeProviderName#>.GetShape(), cancellationToken);
 <#
         }

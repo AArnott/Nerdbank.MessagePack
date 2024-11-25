@@ -144,18 +144,6 @@ public class MessagePackWriterTests
 	}
 
 	[Fact]
-	public void CancellationToken()
-	{
-		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
-		Assert.False(writer.CancellationToken.CanBeCanceled);
-
-		var cts = new CancellationTokenSource();
-		writer.CancellationToken = cts.Token;
-		Assert.Equal(cts.Token, writer.CancellationToken);
-	}
-
-	[Fact]
 	public void TryWriteWithBuggyWriter()
 	{
 		Assert.Throws<InvalidOperationException>(() =>

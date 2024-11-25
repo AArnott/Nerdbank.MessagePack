@@ -74,11 +74,10 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// </summary>
 	/// <param name="reader">The reader.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The element.</returns>
 	[Experimental("NBMsgPackAsync")]
-	protected ValueTask<TElement> ReadElementAsync(MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken)
-		=> elementConverter.ReadAsync(reader, context, cancellationToken)!;
+	protected ValueTask<TElement> ReadElementAsync(MessagePackAsyncReader reader, SerializationContext context)
+		=> elementConverter.ReadAsync(reader, context)!;
 }
 
 /// <summary>
@@ -121,21 +120,21 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context, CancellationToken cancellationToken)
+	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context)
 	{
 		context.DepthStep();
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			int count = await reader.ReadArrayHeaderAsync(cancellationToken).ConfigureAwait(false);
+			int count = await reader.ReadArrayHeaderAsync().ConfigureAwait(false);
 			for (int i = 0; i < count; i++)
 			{
-				addElement(ref collection, await this.ReadElementAsync(reader, context, cancellationToken).ConfigureAwait(false));
+				addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));
 			}
 		}
 		else
 		{
-			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context, cancellationToken).ConfigureAwait(false);
+			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = new(map);
 			int count = syncReader.ReadArrayHeader();
 			for (int i = 0; i < count; i++)

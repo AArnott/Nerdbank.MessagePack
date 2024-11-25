@@ -226,17 +226,6 @@ public partial class MessagePackReaderTests
 	}
 
 	[Fact]
-	public void CancellationToken()
-	{
-		var reader = new MessagePackReader(default);
-		Assert.False(reader.CancellationToken.CanBeCanceled);
-
-		var cts = new CancellationTokenSource();
-		reader.CancellationToken = cts.Token;
-		Assert.Equal(cts.Token, reader.CancellationToken);
-	}
-
-	[Fact]
 	public void ReadRaw()
 	{
 		var sequence = new Sequence<byte>();
@@ -327,13 +316,11 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void CreatePeekReader()
 	{
-		var cts = new CancellationTokenSource();
-		var reader = new MessagePackReader(StringEncodedAsFixStr) { CancellationToken = cts.Token };
+		var reader = new MessagePackReader(StringEncodedAsFixStr);
 		reader.ReadRaw(1); // advance to test that the peek reader starts from a non-initial position.
 		MessagePackReader peek = reader.CreatePeekReader();
 
 		// Verify equivalence
-		Assert.Equal(reader.CancellationToken, peek.CancellationToken);
 		Assert.Equal(reader.Position, peek.Position);
 		Assert.Equal(reader.Sequence, peek.Sequence);
 

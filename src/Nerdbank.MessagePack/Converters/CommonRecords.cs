@@ -26,10 +26,9 @@ internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType conta
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="writer">The means by which msgpack should be written.</param>
 /// <param name="context">The serialization context.</param>
-/// <param name="cancellationToken">A cancellation token.</param>
 /// <returns>A task that represents the asynchronous operation.</returns>
 [Experimental("NBMsgPackAsync")]
-internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context, CancellationToken cancellationToken);
+internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context);
 
 /// <summary>
 /// A delegate that can deserialize a value from a <see cref="MessagePackReader"/> and assign it to a property.
@@ -47,10 +46,9 @@ internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType co
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="reader">The means by which msgpack should be read.</param>
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
-/// <param name="cancellationToken">A cancellation token.</param>
 /// <returns>The <paramref name="container"/>, with the property initialized. This is useful when <typeparamref name="TDeclaringType"/> is a struct.</returns>
 [Experimental("NBMsgPackAsync")]
-internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context, CancellationToken cancellationToken);
+internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context);
 
 /// <summary>
 /// A map of serializable properties.
