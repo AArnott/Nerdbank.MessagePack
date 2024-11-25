@@ -137,9 +137,13 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using MessagePack.Formatters;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			[{|NBMsgPack102:MessagePackObject|}]
 			public class MyType
 			{
+				/// <summary>doc comment</summary>
 				[{|NBMsgPack103:Key(0)|}]
 				public string Name { get; set; }
 			}
@@ -149,8 +153,12 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using MessagePack.Formatters;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			public class MyType
 			{
+				/// <summary>doc comment</summary>
 				[Nerdbank.MessagePack.Key(0)]
 				public string Name { get; set; }
 			}
@@ -242,6 +250,9 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using MessagePack.Formatters;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			[{|NBMsgPack102:MessagePackObject(true)|}]
 			public class MyType
 			{
@@ -262,6 +273,9 @@ public class MigrationAnalyzerTests
 			using MessagePack.Formatters;
 			using PolyType;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			[GenerateShape]
 			public partial class MyType
 			{

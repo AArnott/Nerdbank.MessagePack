@@ -20,6 +20,7 @@ public class MigrationCodeFix : CodeFixProvider
 {
 	private static readonly QualifiedNameSyntax Namespace = QualifiedName(IdentifierName("Nerdbank"), IdentifierName("MessagePack"));
 	private static readonly IdentifierNameSyntax ContextParameterName = IdentifierName("context");
+	private static readonly AttributeSyntax GenerateShapeAttribute = Attribute(NameInNamespace(IdentifierName("GenerateShape"), IdentifierName("PolyType")));
 
 	public override ImmutableArray<string> FixableDiagnosticIds => [
 		MigrationAnalyzer.FormatterDiagnosticId,
@@ -197,18 +198,8 @@ public class MigrationCodeFix : CodeFixProvider
 		root = originalAttributedTypeSyntax is not null ? root.TrackNodes(originalAttribute, originalAttributedTypeSyntax) : root.TrackNodes(originalAttribute);
 		AttributeSyntax attribute = root.GetCurrentNode(originalAttribute) ?? throw new InvalidOperationException();
 
-		if (attribute.Parent is AttributeListSyntax { Attributes.Count: 1 })
-		{
-			// Remove the whole list.
-			root = root.RemoveNode(attribute.Parent, SyntaxRemoveOptions.KeepEndOfLine)!;
-		}
-		else
-		{
-			// Remove just the attribute.
-			root = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia)!;
-		}
-
 		// If this type appears in a call to MessagePackSerializer, make it partial and tack on [GenerateShape].
+		bool attributeRemoved = false;
 		if (originalAttributedTypeSyntax is not null &&
 			await document.GetSemanticModelAsync(cancellationToken) is SemanticModel semanticModel &&
 			semanticModel?.GetDeclaredSymbol(originalAttributedTypeSyntax, cancellationToken) is INamedTypeSymbol attributedTypeSymbol)
@@ -226,12 +217,27 @@ public class MigrationCodeFix : CodeFixProvider
 					modified = modified.AddModifiers(Token(SyntaxKind.PartialKeyword));
 				}
 
-				if (!attributedTypeSymbol.FindAttributes(referenceSymbols.GenerateShapeAttribute).Any())
-				{
-					modified = modified.AddAttributeLists(AttributeList().AddAttributes(Attribute(NameInNamespace(IdentifierName("GenerateShape"), IdentifierName("PolyType")))));
-				}
-
 				root = root.ReplaceNode(attributedTypeSyntax, modified);
+
+				if (!attributedTypeSymbol.FindAttributes(referenceSymbols.GenerateShapeAttribute).Any() && root.GetCurrentNode(originalAttribute) is { } attToReplace)
+				{
+					attributeRemoved = true;
+					root = root.ReplaceNode(attToReplace, GenerateShapeAttribute);
+				}
+			}
+		}
+
+		if (!attributeRemoved)
+		{
+			if (attribute.Parent is AttributeListSyntax { Attributes.Count: 1 })
+			{
+				// Remove the whole list.
+				root = root.RemoveNode(attribute.Parent, SyntaxRemoveOptions.KeepLeadingTrivia)!;
+			}
+			else
+			{
+				// Remove just the attribute.
+				root = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia)!;
 			}
 		}
 
