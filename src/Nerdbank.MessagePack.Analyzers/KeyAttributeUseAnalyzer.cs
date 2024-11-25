@@ -94,7 +94,13 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 					}
 					else if (keyAttributeApplied != keyAttribute is not null)
 					{
-						context.ReportDiagnostic(Diagnostic.Create(InconsistentUseDescriptor, memberSymbol.Locations.First()));
+						Location? location = memberSymbol.Locations.FirstOrDefault(l => l.SourceTree is not null) ??
+							typeSymbol.Locations.FirstOrDefault(l => l.SourceTree is not null);
+						context.ReportDiagnostic(
+							Diagnostic.Create(
+								InconsistentUseDescriptor,
+								location,
+								$"{typeSymbol.Name}.{memberSymbol.Name}"));
 					}
 
 					if (keyAttribute is not null)
