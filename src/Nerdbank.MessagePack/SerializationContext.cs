@@ -36,6 +36,16 @@ public record struct SerializationContext
 	public int UnflushedBytesThreshold { get; init; } = 64 * 1024;
 
 	/// <summary>
+	/// Gets a cancellation token that can be used to cancel the serialization operation.
+	/// </summary>
+	/// <remarks>
+	/// In <see cref="MessagePackConverter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext, CancellationToken)" />
+	/// or <see cref="MessagePackConverter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext, CancellationToken)"/> methods,
+	/// this will tend to be equivalent to the <c>cancellationToken</c> parameter passed to those methods.
+	/// </remarks>
+	public CancellationToken CancellationToken { get; init; }
+
+	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
 	/// </summary>
 	internal MessagePackSerializer? Owner { get; private init; }
@@ -99,13 +109,15 @@ public record struct SerializationContext
 	/// Starts a new serialization operation.
 	/// </summary>
 	/// <param name="owner">The owning serializer.</param>
+	/// <param name="cancellationToken">A cancellation token to associate with this serialization operation.</param>
 	/// <returns>The new context for the operation.</returns>
-	internal SerializationContext Start(MessagePackSerializer owner)
+	internal SerializationContext Start(MessagePackSerializer owner, CancellationToken cancellationToken)
 	{
 		return this with
 		{
 			Owner = owner,
 			ReferenceEqualityTracker = owner.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
+			CancellationToken = cancellationToken,
 		};
 	}
 

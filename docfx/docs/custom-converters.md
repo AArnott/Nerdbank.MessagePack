@@ -62,6 +62,11 @@ It also implicitly skips values in any unknown array index, such that reading *a
 
 ### Performance considerations
 
+A custom converter should honor the @System.Threading.CancellationToken passed to it.
+For typical synchronous converters, this means checking @Nerdbank.MessagePack.SerializationContext.CancellationToken?displayProperty=nameWithType before performing any significant work and periodically thereafter.
+Async converters can check the token at this same location or more simply use the token passed explicitly as a parameter.
+Async converters should always propagate the token to any async methods they call.
+
 The built-in converters take special considerations to avoid allocating, encoding and deallocating strings for property names.
 This reduces GC pressure and removes redundant CPU time spent repeatedly converting UTF-8 encoded property names as strings.
 Your custom converters *may* follow similar patterns if tuning performance for your particular type's serialization is important.
