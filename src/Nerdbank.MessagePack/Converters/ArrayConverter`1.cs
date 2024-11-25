@@ -94,7 +94,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
+		if (await reader.TryReadNilAsync().ConfigureAwait(false))
 		{
 			return null;
 		}
@@ -103,7 +103,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 		if (elementConverter.PreferAsyncSerialization)
 		{
-			int count = await reader.ReadArrayHeaderAsync(context.CancellationToken).ConfigureAwait(false);
+			int count = await reader.ReadArrayHeaderAsync().ConfigureAwait(false);
 			TElement[] array = new TElement[count];
 			for (int i = 0; i < count; i++)
 			{

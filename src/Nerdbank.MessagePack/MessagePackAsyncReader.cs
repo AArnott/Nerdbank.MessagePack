@@ -29,6 +29,11 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	private bool timeForAdvanceTo;
 
 	/// <summary>
+	/// Gets a cancellation token to consider for calls into this object.
+	/// </summary>
+	public required CancellationToken CancellationToken { get; init; }
+
+	/// <summary>
 	/// Gets the fully-capable, synchronous reader.
 	/// </summary>
 	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
@@ -66,7 +71,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		int skipCount = 0;
 		while (skipCount < minimumDesiredBufferedStructures)
 		{
-			readResult = await this.ReadAsync(context.CancellationToken).ConfigureAwait(false);
+			readResult = await this.ReadAsync().ConfigureAwait(false);
 			MessagePackReader reader = new(readResult.Buffer);
 			skipCount = 0;
 			for (; skipCount < countUpTo; skipCount++)
@@ -98,10 +103,9 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	}
 
 	/// <inheritdoc cref="MessagePackReader.TryReadNil"/>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	public async ValueTask<bool> TryReadNilAsync(CancellationToken cancellationToken)
+	public async ValueTask<bool> TryReadNilAsync()
 	{
-		ReadResult readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
 		if (readResult.IsCanceled)
 		{
 			throw new OperationCanceledException();
@@ -114,10 +118,9 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	}
 
 	/// <inheritdoc cref="MessagePackReader.NextMessagePackType"/>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	public async ValueTask<MessagePackType> TryPeekNextMessagePackTypeAsync(CancellationToken cancellationToken)
+	public async ValueTask<MessagePackType> TryPeekNextMessagePackTypeAsync()
 	{
-		ReadResult readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
 		if (readResult.IsCanceled)
 		{
 			throw new OperationCanceledException();
@@ -130,10 +133,9 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	}
 
 	/// <inheritdoc cref="MessagePackReader.ReadMapHeader"/>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	public async ValueTask<int> ReadMapHeaderAsync(CancellationToken cancellationToken)
+	public async ValueTask<int> ReadMapHeaderAsync()
 	{
-		ReadResult readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
 		if (readResult.IsCanceled)
 		{
 			throw new OperationCanceledException();
@@ -151,7 +153,7 @@ retry:
 			case MessagePackPrimitives.DecodeResult.InsufficientBuffer when !readResult.IsCompleted:
 				// Fetch more data.
 				this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
-				readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+				readResult = await this.ReadAsync().ConfigureAwait(false);
 				goto retry;
 			case MessagePackPrimitives.DecodeResult.EmptyBuffer or MessagePackPrimitives.DecodeResult.InsufficientBuffer:
 				throw new EndOfStreamException();
@@ -160,10 +162,9 @@ retry:
 	}
 
 	/// <inheritdoc cref="MessagePackReader.ReadArrayHeader"/>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	public async ValueTask<int> ReadArrayHeaderAsync(CancellationToken cancellationToken)
+	public async ValueTask<int> ReadArrayHeaderAsync()
 	{
-		ReadResult readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
 		if (readResult.IsCanceled)
 		{
 			throw new OperationCanceledException();
@@ -181,7 +182,7 @@ retry:
 			case MessagePackPrimitives.DecodeResult.InsufficientBuffer when !readResult.IsCompleted:
 				// Fetch more data.
 				this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
-				readResult = await this.ReadAsync(cancellationToken).ConfigureAwait(false);
+				readResult = await this.ReadAsync().ConfigureAwait(false);
 				goto retry;
 			case MessagePackPrimitives.DecodeResult.EmptyBuffer or MessagePackPrimitives.DecodeResult.InsufficientBuffer:
 				throw new EndOfStreamException();
@@ -217,7 +218,7 @@ retry:
 	{
 		while (true)
 		{
-			ReadResult readBuffer = await this.ReadAsync(context.CancellationToken).ConfigureAwait(false);
+			ReadResult readBuffer = await this.ReadAsync().ConfigureAwait(false);
 			if (readBuffer.IsCanceled)
 			{
 				throw new OperationCanceledException();
@@ -249,7 +250,7 @@ retry:
 	{
 		while (true)
 		{
-			ReadResult readBuffer = await this.ReadAsync(context.CancellationToken).ConfigureAwait(false);
+			ReadResult readBuffer = await this.ReadAsync().ConfigureAwait(false);
 			if (readBuffer.IsCanceled)
 			{
 				throw new OperationCanceledException();
@@ -321,9 +322,8 @@ retry:
 	/// <summary>
 	/// Immediately returns the last read result if non-empty, or pulls on the <see cref="PipeReader"/> for more data and returns that.
 	/// </summary>
-	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The current or next buffer to read.</returns>
-	private async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken)
+	private async ValueTask<ReadResult> ReadAsync()
 	{
 		Verify.Operation(!this.timeForAdvanceTo, "Calls out of order. Call AdvanceTo first.");
 
@@ -331,7 +331,7 @@ retry:
 		// Only pull on the pipeReader if we don't already have a buffer to read from.
 		if (this.lastReadResult is not { Buffer.IsEmpty: false })
 		{
-			this.lastReadResult = await pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+			this.lastReadResult = await pipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
 		}
 
 		this.timeForAdvanceTo = true;

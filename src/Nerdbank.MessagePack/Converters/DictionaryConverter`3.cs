@@ -118,7 +118,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
+		if (await reader.TryReadNilAsync().ConfigureAwait(false))
 		{
 			return default;
 		}
@@ -148,7 +148,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			int count = await reader.ReadMapHeaderAsync(context.CancellationToken).ConfigureAwait(false);
+			int count = await reader.ReadMapHeaderAsync().ConfigureAwait(false);
 			for (int i = 0; i < count; i++)
 			{
 				addEntry(ref collection, await this.ReadEntryAsync(reader, context).ConfigureAwait(false));

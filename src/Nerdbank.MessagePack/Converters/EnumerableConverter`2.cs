@@ -126,7 +126,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			int count = await reader.ReadArrayHeaderAsync(context.CancellationToken).ConfigureAwait(false);
+			int count = await reader.ReadArrayHeaderAsync().ConfigureAwait(false);
 			for (int i = 0; i < count; i++)
 			{
 				addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));

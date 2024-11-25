@@ -74,7 +74,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TDeclaringType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
+		if (await reader.TryReadNilAsync().ConfigureAwait(false))
 		{
 			return default;
 		}
@@ -82,9 +82,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		if (await reader.TryPeekNextMessagePackTypeAsync(context.CancellationToken) == MessagePackType.Map)
+		if (await reader.TryPeekNextMessagePackTypeAsync() == MessagePackType.Map)
 		{
-			int mapEntries = await reader.ReadMapHeaderAsync(context.CancellationToken).ConfigureAwait(false);
+			int mapEntries = await reader.ReadMapHeaderAsync().ConfigureAwait(false);
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
@@ -142,7 +142,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 		else
 		{
-			int arrayLength = await reader.ReadArrayHeaderAsync(context.CancellationToken).ConfigureAwait(false);
+			int arrayLength = await reader.ReadArrayHeaderAsync().ConfigureAwait(false);
 			int i = 0;
 			while (i < arrayLength)
 			{

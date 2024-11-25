@@ -230,7 +230,7 @@ public partial record MessagePackSerializer
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader), context.Value);
+		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken }, context.Value);
 #pragma warning restore NBMsgPackAsync
 	}
 

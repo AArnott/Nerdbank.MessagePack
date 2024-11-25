@@ -276,7 +276,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
-				if (!await reader.TryReadNilAsync(context.CancellationToken).ConfigureAwait(false))
+				if (!await reader.TryReadNilAsync().ConfigureAwait(false))
 				{
 					TPropertyType collection = propertyShape.GetGetter()(ref container);
 					await inflater.DeserializeIntoAsync(reader, collection, context).ConfigureAwait(false);
