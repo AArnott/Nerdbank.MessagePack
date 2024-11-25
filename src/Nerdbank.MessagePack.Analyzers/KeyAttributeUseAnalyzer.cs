@@ -67,6 +67,9 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 	private void SearchForInconsistentKeyUsage(SymbolAnalysisContext context, ReferenceSymbols referenceSymbols)
 	{
 		ITypeSymbol typeSymbol = (ITypeSymbol)context.Symbol;
+		IMethodSymbol? deserializingConstructor = this.GetDeserializingConstructor(typeSymbol as INamedTypeSymbol, referenceSymbols);
+		ImmutableHashSet<string> ctorParameterNames = deserializingConstructor?.Parameters.Select(p => p.Name).ToImmutableHashSet(StringComparer.OrdinalIgnoreCase) ?? ImmutableHashSet<string>.Empty;
+
 		bool? keyAttributeApplied = null;
 		Dictionary<int, ISymbol>? keysAssigned = null;
 		foreach (ISymbol memberSymbol in typeSymbol.GetAllMembers())
@@ -76,7 +79,7 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 				case IPropertySymbol:
 				case IFieldSymbol:
 					AttributeData? keyAttribute = memberSymbol.FindAttributes(referenceSymbols.KeyAttribute).FirstOrDefault();
-					if (!this.IsMemberSerialized(memberSymbol, referenceSymbols))
+					if (!this.IsMemberSerialized(memberSymbol, ctorParameterNames, referenceSymbols))
 					{
 						if (keyAttribute is not null)
 						{
@@ -135,11 +138,40 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 		}
 	}
 
-	private bool IsMemberSerialized(ISymbol member, ReferenceSymbols referenceSymbols)
+	private bool IsMemberSerialized(ISymbol member, ImmutableHashSet<string> ctorParameterNames, ReferenceSymbols referenceSymbols)
 	{
 		AttributeData? propertyShapeAttribute = member.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
 		bool? ignored = propertyShapeAttribute?.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.IgnoreProperty).Value.Value as bool?;
+		bool isReadOnly = !ctorParameterNames.Contains(member.Name) && member switch
+		{
+			IPropertySymbol p => p.IsReadOnly,
+			IFieldSymbol f => f.IsReadOnly,
+			_ => false,
+		};
 		return ignored is not true &&
-			(member.DeclaredAccessibility is Accessibility.Public || propertyShapeAttribute is not null);
+			((member.DeclaredAccessibility is Accessibility.Public && !isReadOnly) || propertyShapeAttribute is not null);
+	}
+
+	private IMethodSymbol? GetDeserializingConstructor(INamedTypeSymbol? typeSymbol, ReferenceSymbols referenceSymbols)
+	{
+		if (typeSymbol is null)
+		{
+			return null;
+		}
+
+		// Find the constructor with the appropriate attribute.
+		if (typeSymbol.InstanceConstructors.FirstOrDefault(ctor => ctor.FindAttributes(referenceSymbols.ConstructorShapeAttribute).Any()) is IMethodSymbol ctor)
+		{
+			return ctor;
+		}
+
+		// Fallback to the one acceptable constructor, if there is exactly one.
+		if (typeSymbol.InstanceConstructors.Where(ctor => ctor.DeclaredAccessibility == Accessibility.Public).ToArray() is [{ } candidate])
+		{
+			return candidate;
+		}
+
+		// There is not exactly one chosen constructor, so bail out.
+		return null;
 	}
 }

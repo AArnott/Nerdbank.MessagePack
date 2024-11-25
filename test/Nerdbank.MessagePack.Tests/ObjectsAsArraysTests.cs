@@ -322,6 +322,25 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal(expectedFamily, family);
 	}
 
+	[Fact]
+	public void PropertyGettersIgnored()
+	{
+		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadArrayHeader());
+	}
+
+	[Fact]
+	public void PropertyGetterWithCtorParam()
+	{
+		ClassWithPropertyGettersWithCtorParam obj = new("hi") { Value = true };
+
+		// We expect this to throw because a qualified property is not attributed with KeyAttribute.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(obj));
+		this.Logger.WriteLine(ex.Message);
+	}
+
 	private static ITypeShape<T> GetShape<T>()
 		where T : IShapeable<T> => T.GetShape();
 
@@ -387,5 +406,29 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		[Key(4)]
 		public Person? FirstChild { get; set; }
+	}
+
+	[GenerateShape]
+	public partial record ClassWithUnserializedPropertyGetters
+	{
+		// This property should never be serialized.
+		// And we don't Ignore it properly because it may be inherited where it cannot be attributed, say from ReactiveObject.
+		public string PropertyChanged => throw new NotImplementedException();
+
+		[Key(0)]
+		public bool Value { get; set; }
+	}
+
+	[GenerateShape]
+	public partial record ClassWithPropertyGettersWithCtorParam
+	{
+		public ClassWithPropertyGettersWithCtorParam(string propertyChanged) => this.PropertyChanged = propertyChanged;
+
+		public string PropertyChanged { get; }
+
+		[Key(0)]
+#pragma warning disable NBMsgPack001 // We WANT this to verify runtime failure.
+		public bool Value { get; set; }
+#pragma warning restore NBMsgPack001
 	}
 }

@@ -14,7 +14,8 @@ public record ReferenceSymbols(
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol IKnownSubTypeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
-	INamedTypeSymbol PropertyShapeAttribute)
+	INamedTypeSymbol PropertyShapeAttribute,
+	INamedTypeSymbol ConstructorShapeAttribute)
 {
 	public INamedTypeSymbol MessagePackConverterUnbound { get; } = MessagePackConverter.ConstructUnboundGenericType();
 
@@ -97,6 +98,13 @@ public record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? constructorShapeAttribute = polytypeAssembly.GetTypeByMetadataName("PolyType.ConstructorShapeAttribute");
+		if (constructorShapeAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		referenceSymbols = new ReferenceSymbols(
 			messagePackSerializer,
 			messagePackConverter,
@@ -106,7 +114,8 @@ public record ReferenceSymbols(
 			keyAttribute,
 			iknownSubTypeAttribute,
 			generateShapeAttribute,
-			propertyShapeAttribute);
+			propertyShapeAttribute,
+			constructorShapeAttribute);
 		return true;
 	}
 }

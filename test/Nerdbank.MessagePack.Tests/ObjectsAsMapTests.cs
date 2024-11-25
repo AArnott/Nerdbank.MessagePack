@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.ComponentModel;
+
 public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Fact]
@@ -24,6 +26,15 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void PropertyAndConstructorNameCaseMismatch() => this.AssertRoundtrip(new ClassWithConstructorParameterNameMatchTest("Andrew"));
 
+	[Fact]
+	public void PropertyGettersIgnored()
+	{
+		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+	}
+
 	[GenerateShape]
 	public partial record Person
 	{
@@ -42,5 +53,13 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		public string Name { get; set; }
 
 		public bool Equals(ClassWithConstructorParameterNameMatchTest? other) => other is not null && this.Name == other.Name;
+	}
+
+	[GenerateShape]
+	public partial record ClassWithUnserializedPropertyGetters
+	{
+		public IObservable<PropertyChangedEventArgs> PropertyChanged => throw new NotImplementedException();
+
+		public bool Value { get; set; }
 	}
 }
