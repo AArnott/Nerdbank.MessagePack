@@ -67,7 +67,14 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			}
 		}
 
-		return ctor(ref argState);
+		TDeclaringType value = ctor(ref argState);
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
+		}
+
+		return value;
 	}
 
 	/// <inheritdoc/>
@@ -199,6 +206,13 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			}
 		}
 
-		return ctor(ref argState);
+		TDeclaringType value = ctor(ref argState);
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
+		}
+
+		return value;
 	}
 }

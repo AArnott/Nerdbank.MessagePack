@@ -20,6 +20,7 @@ public class MigrationCodeFix : CodeFixProvider
 {
 	private static readonly QualifiedNameSyntax Namespace = QualifiedName(IdentifierName("Nerdbank"), IdentifierName("MessagePack"));
 	private static readonly IdentifierNameSyntax ContextParameterName = IdentifierName("context");
+	private static readonly AttributeSyntax GenerateShapeAttribute = Attribute(NameInNamespace(IdentifierName("GenerateShape"), IdentifierName("PolyType")));
 
 	public override ImmutableArray<string> FixableDiagnosticIds => [
 		MigrationAnalyzer.FormatterDiagnosticId,
@@ -27,6 +28,7 @@ public class MigrationCodeFix : CodeFixProvider
 		MigrationAnalyzer.MessagePackObjectAttributeUsageDiagnosticId,
 		MigrationAnalyzer.KeyAttributeUsageDiagnosticId,
 		MigrationAnalyzer.IgnoreMemberAttributeUsageDiagnosticId,
+		MigrationAnalyzer.CallbackReceiverDiagnosticId,
 	];
 
 	public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
@@ -109,6 +111,14 @@ public class MigrationCodeFix : CodeFixProvider
 						}
 					}
 
+					break;
+				case MigrationAnalyzer.CallbackReceiverDiagnosticId:
+					context.RegisterCodeFix(
+						CodeAction.Create(
+							title: "Implement IMessagePackSerializationCallbacks instead",
+							createChangedDocument: cancellationToken => this.ImplementSerializationCallbacksAsync(context.Document, diagnostic, cancellationToken),
+							equivalenceKey: "Implement IMessagePackSerializationCallbacks"),
+						diagnostic);
 					break;
 			}
 		}
@@ -197,18 +207,8 @@ public class MigrationCodeFix : CodeFixProvider
 		root = originalAttributedTypeSyntax is not null ? root.TrackNodes(originalAttribute, originalAttributedTypeSyntax) : root.TrackNodes(originalAttribute);
 		AttributeSyntax attribute = root.GetCurrentNode(originalAttribute) ?? throw new InvalidOperationException();
 
-		if (attribute.Parent is AttributeListSyntax { Attributes.Count: 1 })
-		{
-			// Remove the whole list.
-			root = root.RemoveNode(attribute.Parent, SyntaxRemoveOptions.KeepEndOfLine)!;
-		}
-		else
-		{
-			// Remove just the attribute.
-			root = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia)!;
-		}
-
 		// If this type appears in a call to MessagePackSerializer, make it partial and tack on [GenerateShape].
+		bool attributeRemoved = false;
 		if (originalAttributedTypeSyntax is not null &&
 			await document.GetSemanticModelAsync(cancellationToken) is SemanticModel semanticModel &&
 			semanticModel?.GetDeclaredSymbol(originalAttributedTypeSyntax, cancellationToken) is INamedTypeSymbol attributedTypeSymbol)
@@ -226,12 +226,27 @@ public class MigrationCodeFix : CodeFixProvider
 					modified = modified.AddModifiers(Token(SyntaxKind.PartialKeyword));
 				}
 
-				if (!attributedTypeSymbol.FindAttributes(referenceSymbols.GenerateShapeAttribute).Any())
-				{
-					modified = modified.AddAttributeLists(AttributeList().AddAttributes(Attribute(NameInNamespace(IdentifierName("GenerateShape"), IdentifierName("PolyType")))));
-				}
-
 				root = root.ReplaceNode(attributedTypeSyntax, modified);
+
+				if (!attributedTypeSymbol.FindAttributes(referenceSymbols.GenerateShapeAttribute).Any() && root.GetCurrentNode(originalAttribute) is { } attToReplace)
+				{
+					attributeRemoved = true;
+					root = root.ReplaceNode(attToReplace, GenerateShapeAttribute);
+				}
+			}
+		}
+
+		if (!attributeRemoved)
+		{
+			if (attribute.Parent is AttributeListSyntax { Attributes.Count: 1 })
+			{
+				// Remove the whole list.
+				root = root.RemoveNode(attribute.Parent, SyntaxRemoveOptions.KeepLeadingTrivia)!;
+			}
+			else
+			{
+				// Remove just the attribute.
+				root = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia)!;
 			}
 		}
 
@@ -315,6 +330,48 @@ public class MigrationCodeFix : CodeFixProvider
 		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
+	private async Task<Document> ImplementSerializationCallbacksAsync(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+	{
+		CompilationUnitSyntax? root = (CompilationUnitSyntax?)await document.GetSyntaxRootAsync(cancellationToken);
+		if (root is null)
+		{
+			return document;
+		}
+
+		if (root.FindNode(diagnostic.Location.SourceSpan) is BaseTypeSyntax baseType)
+		{
+			List<MethodDeclarationSyntax> methods = new();
+			foreach (Location addl in diagnostic.AdditionalLocations)
+			{
+				if (root.FindNode(addl.SourceSpan) is MethodDeclarationSyntax method)
+				{
+					methods.Add(method);
+				}
+			}
+
+			root = root.TrackNodes([baseType, .. methods]);
+
+			if (root.GetCurrentNode(baseType) is { } currentBaseType)
+			{
+				root = root.ReplaceNode(
+					currentBaseType,
+					SimpleBaseType(NameInNamespace(IdentifierName("IMessagePackSerializationCallbacks"), Namespace)));
+			}
+
+			foreach (MethodDeclarationSyntax oldMethod in methods)
+			{
+				if (root.GetCurrentNode(oldMethod) is MethodDeclarationSyntax currentMethod)
+				{
+					root = root.ReplaceNode(
+						currentMethod,
+						currentMethod.WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName("IMessagePackSerializationCallbacks"))));
+				}
+			}
+		}
+
+		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+	}
+
 	private async Task<Document> AddImportAndSimplifyAsync(Document document, CancellationToken cancellationToken)
 	{
 		Document modifiedDocument = document;
@@ -363,7 +420,8 @@ public class MigrationCodeFix : CodeFixProvider
 			}
 			else
 			{
-				return (SyntaxNode?)node;
+				// look for nested types that need to be marked with [GenerateShape]
+				return base.VisitClassDeclaration(node);
 			}
 		}
 

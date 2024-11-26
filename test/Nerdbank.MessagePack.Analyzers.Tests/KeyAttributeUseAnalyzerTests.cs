@@ -160,4 +160,46 @@ public class KeyAttributeUseAnalyzerTests
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
+
+	[Fact]
+	public async Task KeyNotOnPropertyWithOnlyGetter()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			
+			[GenerateShape]
+			public partial record ClassWithUnserializedPropertyGetters
+			{
+				public string PropertyChanged => throw new System.NotImplementedException();
+
+				[Key(0)]
+				public bool Value { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task KeyNotOnPropertyWithOnlyGetterButAlsoHasCtorParam()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			
+			[GenerateShape]
+			public partial record ClassWithUnserializedPropertyGetters
+			{
+				public ClassWithUnserializedPropertyGetters(string propertyChanged) => this.PropertyChanged = propertyChanged;
+
+				public string PropertyChanged { get; }
+
+				[Key(0)]
+				public bool {|NBMsgPack001:Value|} { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
 }

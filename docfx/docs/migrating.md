@@ -76,6 +76,8 @@ Learn more about this in our [Getting Started](getting-started.md) guide.
  }
 ```
 
+If your type implements `MessagePack.IMessagePackSerializationCallbackReceiver`, you should implement change this to implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks instead.
+
 #### `KeyAttribute`
 
 Nerdbank.MessagePack also supports @Nerdbank.MessagePack.KeyAttribute, which serves the same function as in MessagePack-CSharp: to change the serialized schema from that of a map of property name=value to an array of values.
@@ -224,3 +226,4 @@ MessagePack-CSharp | Nerdbank.MessagePack
 `MessagePackReader.ReadExtensionFormatHeader` | @Nerdbank.MessagePack.MessagePackReader.ReadExtensionHeader?displayProperty=nameWithType
 `MessagePackWriter.WriteExtensionFormat` | @Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.Extension)?displayProperty=nameWithType
 `MessagePackWriter.WriteExtensionFormatHeader` | @Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.ExtensionHeader)?displayProperty=nameWithType
+`IMessagePackSerializationCallbackReceiver` | @Nerdbank.MessagePack.IMessagePackSerializationCallbacks
