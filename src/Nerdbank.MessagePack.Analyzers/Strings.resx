@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="NBMsgPack001_MessageFormat" xml:space="preserve">
-    <value>Use [Key] on all serialized members or none of them. Application must be consistent across base and derived types as well.</value>
+    <value>Use [Key] on all serialized members or none of them. Application must be consistent across base and derived types as well. The member {0} is not consistent with others.</value>
   </data>
   <data name="NBMsgPack001_Title" xml:space="preserve">
     <value>Apply [Key] consistently across members</value>

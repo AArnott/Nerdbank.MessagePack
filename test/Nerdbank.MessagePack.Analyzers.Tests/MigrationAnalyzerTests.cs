@@ -19,53 +19,53 @@ public class MigrationAnalyzerTests
 			public class MyType
 			{
 				public string? Name { get; set; }
-			}
 
-			public class {|NBMsgPack100:MyTypeFormatter|} : IMessagePackFormatter<MyType?>
-			{
-				public MyType? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+				private class {|NBMsgPack100:MyTypeFormatter|} : IMessagePackFormatter<MyType?>
 				{
-					if (reader.TryReadNil())
+					public MyType? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
 					{
-						return null;
-					}
-
-					string? name = null;
-					options.Security.DepthStep(ref reader);
-					try
-					{
-						int count = reader.ReadArrayHeader();
-						for (int i = 0; i < count; i++)
+						if (reader.TryReadNil())
 						{
-							switch (i)
-							{
-								case 0:
-									name = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
-									break;
-								default:
-									reader.Skip();
-									break;
-								}
+							return null;
 						}
 
-						return new MyType { Name = name };
-					}
-					finally
-					{
-						reader.Depth--;
-					}
-				}
+						string? name = null;
+						options.Security.DepthStep(ref reader);
+						try
+						{
+							int count = reader.ReadArrayHeader();
+							for (int i = 0; i < count; i++)
+							{
+								switch (i)
+								{
+									case 0:
+										name = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
+										break;
+									default:
+										reader.Skip();
+										break;
+									}
+							}
 
-				public void Serialize(ref MessagePackWriter writer, MyType? value, MessagePackSerializerOptions options)
-				{
-					if (value is null)
-					{
-						writer.WriteNil();
-						return;
+							return new MyType { Name = name };
+						}
+						finally
+						{
+							reader.Depth--;
+						}
 					}
 
-					writer.WriteArrayHeader(1);
-					options.Resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.Name, options);
+					public void Serialize(ref MessagePackWriter writer, MyType? value, MessagePackSerializerOptions options)
+					{
+						if (value is null)
+						{
+							writer.WriteNil();
+							return;
+						}
+
+						writer.WriteArrayHeader(1);
+						options.Resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.Name, options);
+					}
 				}
 			}
 			""";
@@ -82,47 +82,47 @@ public class MigrationAnalyzerTests
 			public class MyType
 			{
 				public string? Name { get; set; }
-			}
 
-			[GenerateShape<string>]
-			public partial class MyTypeFormatter : MessagePackConverter<MyType>
-			{
-				public override MyType? Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
+				[GenerateShape<string>]
+				private partial class MyTypeFormatter : MessagePackConverter<MyType>
 				{
-					if (reader.TryReadNil())
+					public override MyType? Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
 					{
-						return null;
-					}
-
-					string? name = null;
-					context.DepthStep();
-					int count = reader.ReadArrayHeader();
-					for (int i = 0; i < count; i++)
-					{
-						switch (i)
+						if (reader.TryReadNil())
 						{
-							case 0:
-								name = context.GetConverter<string, MyTypeFormatter>().Read(ref reader, context);
-								break;
-							default:
-								reader.Skip(context);
-								break;
+							return null;
 						}
+
+						string? name = null;
+						context.DepthStep();
+						int count = reader.ReadArrayHeader();
+						for (int i = 0; i < count; i++)
+						{
+							switch (i)
+							{
+								case 0:
+									name = context.GetConverter<string, MyTypeFormatter>().Read(ref reader, context);
+									break;
+								default:
+									reader.Skip(context);
+									break;
+							}
+						}
+
+						return new MyType { Name = name };
 					}
 
-					return new MyType { Name = name };
-				}
-
-				public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType? value, SerializationContext context)
-				{
-					if (value is null)
+					public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType? value, SerializationContext context)
 					{
-						writer.WriteNil();
-						return;
-					}
+						if (value is null)
+						{
+							writer.WriteNil();
+							return;
+						}
 
-					writer.WriteArrayHeader(1);
-					context.GetConverter<string, MyTypeFormatter>().Write(ref writer, value.Name, context);
+						writer.WriteArrayHeader(1);
+						context.GetConverter<string, MyTypeFormatter>().Write(ref writer, value.Name, context);
+					}
 				}
 			}
 			""";
@@ -137,9 +137,13 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using MessagePack.Formatters;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			[{|NBMsgPack102:MessagePackObject|}]
 			public class MyType
 			{
+				/// <summary>doc comment</summary>
 				[{|NBMsgPack103:Key(0)|}]
 				public string Name { get; set; }
 			}
@@ -149,8 +153,12 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using MessagePack.Formatters;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			public class MyType
 			{
+				/// <summary>doc comment</summary>
 				[Nerdbank.MessagePack.Key(0)]
 				public string Name { get; set; }
 			}
@@ -242,6 +250,9 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using MessagePack.Formatters;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			[{|NBMsgPack102:MessagePackObject(true)|}]
 			public class MyType
 			{
@@ -262,6 +273,9 @@ public class MigrationAnalyzerTests
 			using MessagePack.Formatters;
 			using PolyType;
 
+			/// <summary>
+			/// Doc comment
+			/// </summary>
 			[GenerateShape]
 			public partial class MyType
 			{
