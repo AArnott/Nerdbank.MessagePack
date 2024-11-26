@@ -22,3 +22,4 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack102](NBMsgPack102.md) | Migration | Info | Remove use of MessagePackObjectAttribute
 [NBMsgPack103](NBMsgPack103.md) | Migration | Info | Use newer KeyAttribute
 [NBMsgPack104](NBMsgPack104.md) | Migration | Info | Remove use of IgnoreMemberAttribute
+[NBMsgPack105](NBMsgPack105.md) | Migration | Info | Implement IMessagePackSerializationCallbacks

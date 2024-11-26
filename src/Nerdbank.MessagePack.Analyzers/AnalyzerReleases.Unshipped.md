@@ -21,3 +21,4 @@ NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute
 NBMsgPack102 | Migration | Info | Remove use of MessagePackObjectAttribute
 NBMsgPack103 | Migration | Info | Use newer KeyAttribute
 NBMsgPack104 | Migration | Info | Remove use of IgnoreMemberAttribute
+NBMsgPack105 | Migration | Info | Implement IMessagePackSerializationCallbacks

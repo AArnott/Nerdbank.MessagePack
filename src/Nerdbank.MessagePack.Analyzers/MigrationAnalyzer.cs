@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Nerdbank.MessagePack.Analyzers;
@@ -13,6 +14,7 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 	public const string MessagePackObjectAttributeUsageDiagnosticId = "NBMsgPack102";
 	public const string KeyAttributeUsageDiagnosticId = "NBMsgPack103";
 	public const string IgnoreMemberAttributeUsageDiagnosticId = "NBMsgPack104";
+	public const string CallbackReceiverDiagnosticId = "NBMsgPack105";
 
 	public static readonly DiagnosticDescriptor FormatterDiagnostic = new(
 		id: FormatterDiagnosticId,
@@ -59,12 +61,22 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 		isEnabledByDefault: true,
 		helpLinkUri: AnalyzerUtilities.GetHelpLink(IgnoreMemberAttributeUsageDiagnosticId));
 
+	public static readonly DiagnosticDescriptor CallbackReceiverDiagnostic = new(
+		id: CallbackReceiverDiagnosticId,
+		title: Strings.NBMsgPack105_Title,
+		messageFormat: Strings.NBMsgPack105_MessageFormat,
+		category: "Migration",
+		defaultSeverity: DiagnosticSeverity.Info,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(CallbackReceiverDiagnosticId));
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		FormatterDiagnostic,
 		FormatterAttributeDiagnostic,
 		MessagePackObjectAttributeUsageDiagnostic,
 		KeyAttributeUsageDiagnostic,
 		IgnoreMemberAttributeUsageDiagnostic,
+		CallbackReceiverDiagnostic,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -125,6 +137,40 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 					if (target.FindAttributes(oldLibrarySymbols.MessagePackObjectAttribute).FirstOrDefault() is AttributeData msgpackObjectAttribute)
 					{
 						context.ReportDiagnostic(Diagnostic.Create(MessagePackObjectAttributeUsageDiagnostic, msgpackObjectAttribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation()));
+					}
+				},
+				SymbolKind.NamedType);
+
+			context.RegisterSymbolStartAction(
+				context =>
+				{
+					INamedTypeSymbol target = (INamedTypeSymbol)context.Symbol;
+
+					// Look for implementations of IMessagePackSerializationCallbackReceiver
+					if (target.IsAssignableTo(oldLibrarySymbols.IMessagePackSerializationCallbackReceiver))
+					{
+						List<Location> implementingMethodLocations = new();
+
+						foreach (ISymbol member in oldLibrarySymbols.IMessagePackSerializationCallbackReceiver.GetMembers())
+						{
+							if (target.FindImplementationForInterfaceMember(member) is IMethodSymbol { ExplicitInterfaceImplementations.IsEmpty: false, Locations: [Location implLocation, ..] })
+							{
+								implementingMethodLocations.Add(implLocation);
+							}
+						}
+
+						// Find the base type syntax node to report the diagnostic on.
+						context.RegisterSyntaxNodeAction(
+							context =>
+							{
+								SimpleBaseTypeSyntax baseType = (SimpleBaseTypeSyntax)context.Node;
+								SymbolInfo baseTypeSymbol = context.SemanticModel.GetSymbolInfo(baseType.Type, context.CancellationToken);
+								if (SymbolEqualityComparer.Default.Equals(baseTypeSymbol.Symbol, oldLibrarySymbols.IMessagePackSerializationCallbackReceiver))
+								{
+									context.ReportDiagnostic(Diagnostic.Create(CallbackReceiverDiagnostic, baseType.GetLocation(), implementingMethodLocations));
+								}
+							},
+							SyntaxKind.SimpleBaseType);
 					}
 				},
 				SymbolKind.NamedType);
