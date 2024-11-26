@@ -67,6 +67,10 @@ Note that the constructor parameter name is _still_ a case-variant of the `Name`
 When a type declares multiple constructors, the deserializer may need help to know which overload you intend for deserialization to use.
 To identify the intended constructor, apply the @PolyType.ConstructorShapeAttribute to it.
 
+## Callbacks
+
+A type may implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks in order to be notified of when it is about to be serialized or has just been deserialized.
+
 ## Serialize objects with indexes for keys
 
 By default, a type is serialized as a map of property name=value pairs.

@@ -63,6 +63,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			}
 		}
 
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
+		}
+
 		return value;
 	}
 
@@ -73,6 +78,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		{
 			writer.WriteNil();
 			return;
+		}
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnBeforeSerialize();
 		}
 
 		context.DepthStep();
@@ -147,6 +157,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		{
 			writer.WriteNil();
 			return;
+		}
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnBeforeSerialize();
 		}
 
 		context.DepthStep();
@@ -438,6 +453,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					return arrayLength - i;
 				}
 			}
+		}
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
 		}
 
 		return value;

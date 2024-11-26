@@ -294,6 +294,88 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
+	[Fact]
+	public async Task ClassImplementsOldCallbackInterface_ExplicitMethods()
+	{
+		string source = /* lang=c#-test */ """
+			using MessagePack;
+
+			class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
+			{
+				void IMessagePackSerializationCallbackReceiver.OnAfterDeserialize()
+				{
+					// deserialize
+				}
+
+				void IMessagePackSerializationCallbackReceiver.OnBeforeSerialize()
+				{
+					// serialize
+				}
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			using MessagePack;
+			using Nerdbank.MessagePack;
+
+			class A : IMessagePackSerializationCallbacks
+			{
+				void IMessagePackSerializationCallbacks.OnAfterDeserialize()
+				{
+					// deserialize
+				}
+
+				void IMessagePackSerializationCallbacks.OnBeforeSerialize()
+				{
+					// serialize
+				}
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource);
+	}
+
+	[Fact]
+	public async Task ClassImplementsOldCallbackInterface_PublicMethods()
+	{
+		string source = /* lang=c#-test */ """
+			using MessagePack;
+
+			class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
+			{
+				public void OnAfterDeserialize()
+				{
+					// deserialize
+				}
+
+				public void OnBeforeSerialize()
+				{
+					// serialize
+				}
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			using MessagePack;
+			using Nerdbank.MessagePack;
+
+			class A : IMessagePackSerializationCallbacks
+			{
+				public void OnAfterDeserialize()
+				{
+					// deserialize
+				}
+
+				public void OnBeforeSerialize()
+				{
+					// serialize
+				}
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource);
+	}
+
 	private Task VerifyCodeFixAsync([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string fixedSource, int iterations = 1)
 	{
 		return new VerifyCS.Test

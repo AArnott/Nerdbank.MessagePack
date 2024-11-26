@@ -28,6 +28,7 @@ public class MigrationCodeFix : CodeFixProvider
 		MigrationAnalyzer.MessagePackObjectAttributeUsageDiagnosticId,
 		MigrationAnalyzer.KeyAttributeUsageDiagnosticId,
 		MigrationAnalyzer.IgnoreMemberAttributeUsageDiagnosticId,
+		MigrationAnalyzer.CallbackReceiverDiagnosticId,
 	];
 
 	public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
@@ -110,6 +111,14 @@ public class MigrationCodeFix : CodeFixProvider
 						}
 					}
 
+					break;
+				case MigrationAnalyzer.CallbackReceiverDiagnosticId:
+					context.RegisterCodeFix(
+						CodeAction.Create(
+							title: "Implement IMessagePackSerializationCallbacks instead",
+							createChangedDocument: cancellationToken => this.ImplementSerializationCallbacksAsync(context.Document, diagnostic, cancellationToken),
+							equivalenceKey: "Implement IMessagePackSerializationCallbacks"),
+						diagnostic);
 					break;
 			}
 		}
@@ -316,6 +325,48 @@ public class MigrationCodeFix : CodeFixProvider
 		if (root is null)
 		{
 			return document;
+		}
+
+		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+	}
+
+	private async Task<Document> ImplementSerializationCallbacksAsync(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
+	{
+		CompilationUnitSyntax? root = (CompilationUnitSyntax?)await document.GetSyntaxRootAsync(cancellationToken);
+		if (root is null)
+		{
+			return document;
+		}
+
+		if (root.FindNode(diagnostic.Location.SourceSpan) is BaseTypeSyntax baseType)
+		{
+			List<MethodDeclarationSyntax> methods = new();
+			foreach (Location addl in diagnostic.AdditionalLocations)
+			{
+				if (root.FindNode(addl.SourceSpan) is MethodDeclarationSyntax method)
+				{
+					methods.Add(method);
+				}
+			}
+
+			root = root.TrackNodes([baseType, .. methods]);
+
+			if (root.GetCurrentNode(baseType) is { } currentBaseType)
+			{
+				root = root.ReplaceNode(
+					currentBaseType,
+					SimpleBaseType(NameInNamespace(IdentifierName("IMessagePackSerializationCallbacks"), Namespace)));
+			}
+
+			foreach (MethodDeclarationSyntax oldMethod in methods)
+			{
+				if (root.GetCurrentNode(oldMethod) is MethodDeclarationSyntax currentMethod)
+				{
+					root = root.ReplaceNode(
+						currentMethod,
+						currentMethod.WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName("IMessagePackSerializationCallbacks"))));
+				}
+			}
 		}
 
 		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
