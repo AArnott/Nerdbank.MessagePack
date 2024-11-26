@@ -28,6 +28,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			return;
 		}
 
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnBeforeSerialize();
+		}
+
 		context.DepthStep();
 
 		if (callShouldSerialize && serializable.Properties.Length > 0)
@@ -66,6 +71,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		{
 			writer.WriteNil();
 			return;
+		}
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnBeforeSerialize();
 		}
 
 		context.DepthStep();
@@ -158,6 +168,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			reader.Skip(context);
 		}
 
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
+		}
+
 		return value;
 	}
 
@@ -240,6 +255,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		{
 			// We have nothing to read into, so just skip any data in the object.
 			await reader.SkipAsync(context).ConfigureAwait(false);
+		}
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
 		}
 
 		return value;

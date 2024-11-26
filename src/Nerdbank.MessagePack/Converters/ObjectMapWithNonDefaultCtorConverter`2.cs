@@ -55,7 +55,14 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.Skip(context);
 		}
 
-		return ctor(ref argState);
+		TDeclaringType value = ctor(ref argState);
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
+		}
+
+		return value;
 	}
 
 	/// <inheritdoc/>
@@ -134,6 +141,13 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			await reader.SkipAsync(context).ConfigureAwait(false);
 		}
 
-		return ctor(ref argState);
+		TDeclaringType value = ctor(ref argState);
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
+		}
+
+		return value;
 	}
 }
