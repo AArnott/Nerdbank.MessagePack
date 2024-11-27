@@ -1,13 +1,23 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Nerdbank.MessagePack;
 
 /// <summary>
 /// Primitive msgpack encoding/decoding methods.
 /// </summary>
+/// <devremarks>
+/// This class makes aggressive use of `ref byte`-based APIs rather than the simpler and safer span-indexing based APIs.
+/// The reason for this is it makes an appreciable reduction in assembly code size and improved performance.
+/// We don't give up safety because we always check the buffer length ourselves first.
+/// See <see href="https://sharplab.io/#v2:EYLgtghglgdgNAFxBAzmAPgAQEwEYCwAUJgAwAEmuAdAEICuAZgwKYBOKtsErAngNxFSFagCU6MBFDDMqAYQD2YAA5QANmwDKbAG5QAxsxQDi5SlTESpMgJIS28pVta6DRwQGYK2MrLIBvIjIgik9KADYyYHl5VTIAFV4AdVYoBGYAOTUACg0lCBgAHmAeNIA+MgATQ0kYCEl5eDJ5OgQyWFbitJRk1LSYAEoiAMIASE7DHoQ+sgBeMlxjEagGMiyqlBq6qAaqABlmGABzBAALMgLIkomUqYPB0eGRkcwAdjIGCFUUZkWAXyIiCMALLMMDyXhA7goE6fKgAcWYCBEzBYrAOBjW1S49QGszIJAAHgAOYzBMgAenJ602OIA2iQALp4wkkwGvMgIVh0H5Ef6EMmYTxRGJkXL5WxVAnMCo0VDSnJ5QrjcrUuBtCRkbT9fyBMnBZaral7A7HM4XAAs2uGeptFDeHy+PP5tr5trIuptKAA7qk9GcslqPXrrW7gno5ecyHRoeCEFRIQSAGqfbkgIOh4KTZg0KCHACiMAqUHymI2tOoVAZavEfuYegA1vKstGTrH+lr+qSM3rgGiIPW+G708FXd2ycOguzOdyu0FR5OhdFYsiGLLvhUFfkilcVdU1e1NVaJ20VqW4/sjqdI5adc6M+yHd9Z3r53rj2iVuNKtUV3iP2QQTBCEoRhVR4URFc2HRZgz07Y9vV9f1AzvYNjzJcNvkjFtY3jCAkxTZg0xQscsxzfNC2LGAsn/ABVGAUAgFgqAAQQqDd/2pFc1VwfpqxgWsGybbDWAQdt+jg4ju17Zh+0HW1j1fMdjynLknTJPkRiUFJtDqZhhAiTBzTIUjcwLIsSzFJUd2/DZsW2RoDx01RuXuJ4ZnKQDwR4SF2FAqgszPOyGjVHMEAUGBtDYNJWCoawUF2Xp1DMyiyAAfjIHNal4AAFFIwFSKBIo4ZFIvYZhkvyGBDBQAMCO1EBNTqxYtMK3T9IoIyTPI8yqP/L9qSChyNSclzARGdyyDohimKzOjPlzKr2JRGyaXskLUnC0roti+LEvKij8jSjKuByvKCqK8xmFK74KpgKqUBqkbmHqxrnOe4xfiAA=">this sample code</see>
+/// to see how much smaller the code is by following these patterns.
+/// </devremarks>
 public static partial class MessagePackPrimitives
 {
 	/// <summary>
@@ -27,7 +37,7 @@ public static partial class MessagePackPrimitives
 			return false;
 		}
 
-		destination[0] = MessagePackCode.Nil;
+		MemoryMarshal.GetReference(destination) = MessagePackCode.Nil;
 		return true;
 	}
 
@@ -49,6 +59,7 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteArrayHeader(Span<byte> destination, uint count, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		switch (count)
 		{
 			case <= MessagePackRange.MaxFixArrayCount:
@@ -58,7 +69,7 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = (byte)(MessagePackCode.MinFixArray | count);
+				destinationRef = (byte)(MessagePackCode.MinFixArray | count);
 				return true;
 			case <= ushort.MaxValue:
 				bytesWritten = 3;
@@ -67,8 +78,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Array16;
-				WriteBigEndian(destination.Slice(1), (ushort)count);
+				destinationRef = MessagePackCode.Array16;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), (ushort)count);
 				return true;
 			default:
 				bytesWritten = 5;
@@ -77,8 +88,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Array32;
-				WriteBigEndian(destination.Slice(1), count);
+				destinationRef = MessagePackCode.Array32;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), count);
 				return true;
 		}
 	}
@@ -101,6 +112,7 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteMapHeader(Span<byte> destination, uint count, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		switch (count)
 		{
 			case <= MessagePackRange.MaxFixMapCount:
@@ -110,7 +122,7 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = (byte)(MessagePackCode.MinFixMap | count);
+				destinationRef = (byte)(MessagePackCode.MinFixMap | count);
 				return true;
 			case <= ushort.MaxValue:
 				bytesWritten = 3;
@@ -119,8 +131,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Map16;
-				WriteBigEndian(destination.Slice(1), (ushort)count);
+				destinationRef = MessagePackCode.Map16;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), (ushort)count);
 				return true;
 			default:
 				bytesWritten = 5;
@@ -129,8 +141,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Map32;
-				WriteBigEndian(destination.Slice(1), count);
+				destinationRef = MessagePackCode.Map32;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), count);
 				return true;
 		}
 	}
@@ -272,11 +284,11 @@ public static partial class MessagePackPrimitives
 		{
 			switch (value)
 			{
-				case >= 0: return TryWrite(destination, (ulong)value, out bytesWritten);
+				case >= 0: return TryWrite(destination, unchecked((ulong)value), out bytesWritten);
 				case >= MessagePackRange.MinFixNegativeInt: return TryWriteNegativeFixIntUnsafe(destination, unchecked((sbyte)value), out bytesWritten);
-				case >= sbyte.MinValue: return TryWriteInt8(destination, (sbyte)value, out bytesWritten);
-				case >= short.MinValue: return TryWriteInt16(destination, (short)value, out bytesWritten);
-				case >= int.MinValue: return TryWriteInt32(destination, (int)value, out bytesWritten);
+				case >= sbyte.MinValue: return TryWriteInt8(destination, unchecked((sbyte)value), out bytesWritten);
+				case >= short.MinValue: return TryWriteInt16(destination, unchecked((short)value), out bytesWritten);
+				case >= int.MinValue: return TryWriteInt32(destination, unchecked((int)value), out bytesWritten);
 				default: return TryWriteInt64(destination, value, out bytesWritten);
 			}
 		}
@@ -297,14 +309,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteInt8(Span<byte> destination, sbyte value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 2;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.Int8;
-		destination[1] = unchecked((byte)value);
+		destinationRef = MessagePackCode.Int8;
+		Unsafe.Add(ref destinationRef, 1) = unchecked((byte)value);
 		return true;
 	}
 
@@ -323,14 +336,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteInt16(Span<byte> destination, short value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 3;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.Int16;
-		WriteBigEndian(destination.Slice(1), value);
+		destinationRef = MessagePackCode.Int16;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), value);
 		return true;
 	}
 
@@ -349,14 +363,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteInt32(Span<byte> destination, int value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 5;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.Int32;
-		WriteBigEndian(destination.Slice(1), value);
+		destinationRef = MessagePackCode.Int32;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), value);
 		return true;
 	}
 
@@ -375,14 +390,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteInt64(Span<byte> destination, long value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 9;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.Int64;
-		WriteBigEndian(destination.Slice(1), value);
+		destinationRef = MessagePackCode.Int64;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), value);
 		return true;
 	}
 
@@ -407,7 +423,7 @@ public static partial class MessagePackPrimitives
 		switch (value)
 		{
 			case <= MessagePackRange.MaxFixPositiveInt:
-				return TryWriteFixIntUnsafe(destination, unchecked((byte)value), out bytesWritten);
+				return TryWriteFixIntUnsafe(destination, value, out bytesWritten);
 			default:
 				return TryWriteUInt8(destination, value, out bytesWritten);
 		}
@@ -535,14 +551,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteUInt8(Span<byte> destination, byte value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 2;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.UInt8;
-		destination[1] = value;
+		destinationRef = MessagePackCode.UInt8;
+		Unsafe.Add(ref destinationRef, 1) = value;
 		return true;
 	}
 
@@ -561,14 +578,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteUInt16(Span<byte> destination, ushort value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 3;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.UInt16;
-		WriteBigEndian(destination.Slice(1), value);
+		destinationRef = MessagePackCode.UInt16;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), value);
 		return true;
 	}
 
@@ -587,14 +605,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteUInt32(Span<byte> destination, uint value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 5;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.UInt32;
-		WriteBigEndian(destination.Slice(1), value);
+		destinationRef = MessagePackCode.UInt32;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), value);
 		return true;
 	}
 
@@ -613,14 +632,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteUInt64(Span<byte> destination, ulong value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 9;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.UInt64;
-		WriteBigEndian(destination.Slice(1), value);
+		destinationRef = MessagePackCode.UInt64;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), value);
 		return true;
 	}
 
@@ -639,14 +659,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static unsafe bool TryWrite(Span<byte> destination, float value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 5;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.Float32;
-		WriteBigEndian(destination.Slice(1), *(int*)&value);
+		destinationRef = MessagePackCode.Float32;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), Unsafe.BitCast<float, int>(value));
 		return true;
 	}
 
@@ -665,14 +686,15 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static unsafe bool TryWrite(Span<byte> destination, double value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 9;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = MessagePackCode.Float64;
-		WriteBigEndian(destination.Slice(1), *(long*)&value);
+		destinationRef = MessagePackCode.Float64;
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), Unsafe.BitCast<double, long>(value));
 		return true;
 	}
 
@@ -688,13 +710,14 @@ public static partial class MessagePackPrimitives
 	/// </returns>
 	public static bool TryWrite(Span<byte> destination, bool value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 1;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = value ? MessagePackCode.True : MessagePackCode.False;
+		destinationRef = value ? MessagePackCode.True : MessagePackCode.False;
 		return true;
 	}
 
@@ -728,6 +751,8 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWrite(Span<byte> destination, DateTime value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
+
 		// Timestamp spec
 		// https://github.com/msgpack/msgpack/pull/209
 		// FixExt4(-1) => seconds |  [1970-01-01 00:00:00 UTC, 2106-02-07 06:28:16 UTC) range
@@ -787,9 +812,9 @@ public static partial class MessagePackPrimitives
 
 				// timestamp 32(seconds in 32-bit unsigned int)
 				uint data32 = (uint)data64;
-				destination[0] = MessagePackCode.FixExt4;
-				destination[1] = unchecked((byte)ReservedMessagePackExtensionTypeCode.DateTime);
-				WriteBigEndian(destination.Slice(2), data32);
+				destinationRef = MessagePackCode.FixExt4;
+				Unsafe.Add(ref destinationRef, 1) = unchecked((byte)ReservedMessagePackExtensionTypeCode.DateTime);
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 2), data32);
 			}
 			else
 			{
@@ -800,9 +825,9 @@ public static partial class MessagePackPrimitives
 				}
 
 				// timestamp 64(nanoseconds in 30-bit unsigned int | seconds in 34-bit unsigned int)
-				destination[0] = MessagePackCode.FixExt8;
-				destination[1] = unchecked((byte)ReservedMessagePackExtensionTypeCode.DateTime);
-				WriteBigEndian(destination.Slice(2), data64);
+				destinationRef = MessagePackCode.FixExt8;
+				Unsafe.Add(ref destinationRef, 1) = unchecked((byte)ReservedMessagePackExtensionTypeCode.DateTime);
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 2), data64);
 			}
 		}
 		else
@@ -814,11 +839,11 @@ public static partial class MessagePackPrimitives
 			}
 
 			// timestamp 96( nanoseconds in 32-bit unsigned int | seconds in 64-bit signed int )
-			destination[0] = MessagePackCode.Ext8;
-			destination[1] = 12;
-			destination[2] = unchecked((byte)ReservedMessagePackExtensionTypeCode.DateTime);
-			WriteBigEndian(destination.Slice(3), (uint)nanoseconds);
-			WriteBigEndian(destination.Slice(7), seconds);
+			destinationRef = MessagePackCode.Ext8;
+			Unsafe.Add(ref destinationRef, 1) = 12;
+			Unsafe.Add(ref destinationRef, 2) = unchecked((byte)ReservedMessagePackExtensionTypeCode.DateTime);
+			WriteBigEndian(ref Unsafe.Add(ref destinationRef, 3), (uint)nanoseconds);
+			WriteBigEndian(ref Unsafe.Add(ref destinationRef, 7), seconds);
 		}
 
 		return true;
@@ -842,6 +867,7 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteBinHeader(Span<byte> destination, uint length, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		switch (length)
 		{
 			case <= byte.MaxValue:
@@ -851,8 +877,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Bin8;
-				destination[1] = (byte)length;
+				destinationRef = MessagePackCode.Bin8;
+				Unsafe.Add(ref destinationRef, 1) = (byte)length;
 				return true;
 			case <= ushort.MaxValue:
 				bytesWritten = 3;
@@ -861,8 +887,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Bin16;
-				WriteBigEndian(destination.Slice(1), (ushort)length);
+				destinationRef = MessagePackCode.Bin16;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), (ushort)length);
 				return true;
 			default:
 				bytesWritten = 5;
@@ -871,8 +897,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Bin32;
-				WriteBigEndian(destination.Slice(1), length);
+				destinationRef = MessagePackCode.Bin32;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), length);
 				return true;
 		}
 	}
@@ -896,6 +922,7 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteStringHeader(Span<byte> destination, uint byteCount, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		switch (byteCount)
 		{
 			case <= MessagePackRange.MaxFixStringLength:
@@ -905,7 +932,7 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = (byte)(MessagePackCode.MinFixStr | byteCount);
+				destinationRef = (byte)(MessagePackCode.MinFixStr | byteCount);
 				return true;
 			case <= byte.MaxValue:
 				bytesWritten = 2;
@@ -914,8 +941,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Str8;
-				destination[1] = unchecked((byte)byteCount);
+				destinationRef = MessagePackCode.Str8;
+				Unsafe.Add(ref destinationRef, 1) = unchecked((byte)byteCount);
 				return true;
 			case <= ushort.MaxValue:
 				bytesWritten = 3;
@@ -924,8 +951,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Str16;
-				WriteBigEndian(destination.Slice(1), (ushort)byteCount);
+				destinationRef = MessagePackCode.Str16;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), unchecked((ushort)byteCount));
 				return true;
 			default:
 				bytesWritten = 5;
@@ -934,8 +961,8 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Str32;
-				WriteBigEndian(destination.Slice(1), byteCount);
+				destinationRef = MessagePackCode.Str32;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), byteCount);
 				return true;
 		}
 	}
@@ -962,6 +989,7 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWriteExtensionHeader(Span<byte> destination, ExtensionHeader extensionHeader, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		int dataLength = (int)extensionHeader.Length;
 		byte typeCode = unchecked((byte)extensionHeader.TypeCode);
 		switch (dataLength)
@@ -973,7 +1001,7 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = dataLength switch
+				destinationRef = dataLength switch
 				{
 					1 => MessagePackCode.FixExt1,
 					2 => MessagePackCode.FixExt2,
@@ -982,7 +1010,7 @@ public static partial class MessagePackPrimitives
 					16 => MessagePackCode.FixExt16,
 					_ => throw ThrowUnreachable(),
 				};
-				destination[1] = unchecked(typeCode);
+				Unsafe.Add(ref destinationRef, 1) = typeCode;
 				return true;
 			case <= byte.MaxValue:
 				bytesWritten = 3;
@@ -991,9 +1019,9 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Ext8;
-				destination[1] = unchecked((byte)dataLength);
-				destination[2] = unchecked(typeCode);
+				destinationRef = MessagePackCode.Ext8;
+				Unsafe.Add(ref destinationRef, 1) = unchecked((byte)dataLength);
+				Unsafe.Add(ref destinationRef, 2) = typeCode;
 				return true;
 			case <= ushort.MaxValue:
 				bytesWritten = 4;
@@ -1002,9 +1030,9 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Ext16;
-				WriteBigEndian(destination.Slice(1), (ushort)dataLength);
-				destination[3] = unchecked(typeCode);
+				destinationRef = MessagePackCode.Ext16;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), unchecked((ushort)dataLength));
+				Unsafe.Add(ref destinationRef, 3) = typeCode;
 				return true;
 			default:
 				bytesWritten = 6;
@@ -1013,9 +1041,9 @@ public static partial class MessagePackPrimitives
 					return false;
 				}
 
-				destination[0] = MessagePackCode.Ext32;
-				WriteBigEndian(destination.Slice(1), dataLength);
-				destination[5] = unchecked(typeCode);
+				destinationRef = MessagePackCode.Ext32;
+				WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), dataLength);
+				Unsafe.Add(ref destinationRef, 5) = typeCode;
 				return true;
 		}
 	}
@@ -1034,13 +1062,14 @@ public static partial class MessagePackPrimitives
 	/// </returns>
 	private static bool TryWriteFixIntUnsafe(Span<byte> destination, byte value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 1;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = unchecked(value);
+		destinationRef = unchecked(value);
 		return true;
 	}
 
@@ -1059,13 +1088,14 @@ public static partial class MessagePackPrimitives
 	/// </returns>
 	private static bool TryWriteNegativeFixIntUnsafe(Span<byte> destination, sbyte value, out int bytesWritten)
 	{
+		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 1;
 		if (destination.Length < bytesWritten)
 		{
 			return false;
 		}
 
-		destination[0] = unchecked((byte)value);
+		destinationRef = unchecked((byte)value);
 		return true;
 	}
 
@@ -1077,72 +1107,46 @@ public static partial class MessagePackPrimitives
 	/// </summary>
 	/// <param name="destination">The buffer to write to.</param>
 	/// <param name="value">The value to write.</param>
-	private static void WriteBigEndian(Span<byte> destination, ushort value)
-	{
-		unchecked
-		{
-			// Write to highest index first so the JIT skips bounds checks on subsequent writes.
-			destination[1] = (byte)value;
-			destination[0] = (byte)(value >> 8);
-		}
-	}
+	private static void WriteBigEndian(ref byte destination, ushort value)
+		=> Unsafe.WriteUnaligned(ref destination, BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
 	/// <summary>
 	/// Writes an integer value in big-endian order to the specified buffer.
 	/// </summary>
 	/// <param name="destination">The buffer to write to.</param>
 	/// <param name="value">The value to write.</param>
-	private static void WriteBigEndian(Span<byte> destination, uint value)
-	{
-		unchecked
-		{
-			// Write to highest index first so the JIT skips bounds checks on subsequent writes.
-			destination[3] = (byte)value;
-			destination[2] = (byte)(value >> 8);
-			destination[1] = (byte)(value >> 16);
-			destination[0] = (byte)(value >> 24);
-		}
-	}
+	private static void WriteBigEndian(ref byte destination, uint value)
+		=> Unsafe.WriteUnaligned(ref destination, BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
 	/// <summary>
 	/// Writes an integer value in big-endian order to the specified buffer.
 	/// </summary>
 	/// <param name="destination">The buffer to write to.</param>
 	/// <param name="value">The value to write.</param>
-	private static void WriteBigEndian(Span<byte> destination, ulong value)
-	{
-		unchecked
-		{
-			// Write to highest index first so the JIT skips bounds checks on subsequent writes.
-			destination[7] = (byte)value;
-			destination[6] = (byte)(value >> 8);
-			destination[5] = (byte)(value >> 16);
-			destination[4] = (byte)(value >> 24);
-			destination[3] = (byte)(value >> 32);
-			destination[2] = (byte)(value >> 40);
-			destination[1] = (byte)(value >> 48);
-			destination[0] = (byte)(value >> 56);
-		}
-	}
+	private static void WriteBigEndian(ref byte destination, ulong value)
+		=> Unsafe.WriteUnaligned(ref destination, BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
 	/// <summary>
 	/// Writes an integer value in big-endian order to the specified buffer.
 	/// </summary>
 	/// <param name="destination">The buffer to write to.</param>
 	/// <param name="value">The value to write.</param>
-	private static void WriteBigEndian(Span<byte> destination, short value) => WriteBigEndian(destination, unchecked((ushort)value));
+	private static void WriteBigEndian(ref byte destination, short value)
+		=> Unsafe.WriteUnaligned(ref destination, BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
 	/// <summary>
 	/// Writes an integer value in big-endian order to the specified buffer.
 	/// </summary>
 	/// <param name="destination">The buffer to write to.</param>
 	/// <param name="value">The value to write.</param>
-	private static void WriteBigEndian(Span<byte> destination, int value) => WriteBigEndian(destination, unchecked((uint)value));
+	private static void WriteBigEndian(ref byte destination, int value)
+		=> Unsafe.WriteUnaligned(ref destination, BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 
 	/// <summary>
 	/// Writes an integer value in big-endian order to the specified buffer.
 	/// </summary>
 	/// <param name="destination">The buffer to write to.</param>
 	/// <param name="value">The value to write.</param>
-	private static void WriteBigEndian(Span<byte> destination, long value) => WriteBigEndian(destination, unchecked((ulong)value));
+	private static void WriteBigEndian(ref byte destination, long value)
+		=> Unsafe.WriteUnaligned(ref destination, BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
 }
