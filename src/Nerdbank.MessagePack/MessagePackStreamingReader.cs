@@ -7,7 +7,7 @@ using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
 namespace Nerdbank.MessagePack;
 
-public ref struct MessagePackStreamingReader
+public ref partial struct MessagePackStreamingReader
 {
 	private readonly GetMoreBytesAsync? getMoreBytesAsync;
 	private readonly object? getMoreBytesState;

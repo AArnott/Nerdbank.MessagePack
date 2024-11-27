@@ -34,6 +34,10 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackSerializer.AutomatedFriendlyOverloads.cs</LastGenOutput>
     </None>
+    <None Update="MessagePackStreamingReader.Integers.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MessagePackStreamingReader.Integers.cs</LastGenOutput>
+    </None>
     <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
@@ -74,6 +78,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackSerializer.AutomatedFriendlyOverloads.tt</DependentUpon>
+    </Compile>
+    <Compile Update="MessagePackStreamingReader.Integers.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>MessagePackStreamingReader.Integers.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup">

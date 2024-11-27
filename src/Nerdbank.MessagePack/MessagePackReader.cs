@@ -696,12 +696,8 @@ public ref partial struct MessagePackReader
 	/// if there is sufficient buffer to read it.
 	/// </summary>
 	/// <param name="extensionHeader">Receives the extension header if the remaining bytes in the <see cref="Sequence"/> fully describe the header.</param>
-	/// <returns>The number of key=value pairs in the map.</returns>
+	/// <returns>A value indicating whether an extension header is fully represented at the reader's position.</returns>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an extension format header is encountered.</exception>
-	/// <remarks>
-	/// When this method returns <see langword="false"/> the position of the reader is left in an undefined position.
-	/// The caller is expected to recreate the reader (presumably with a longer sequence to read from) before continuing.
-	/// </remarks>
 	public bool TryReadExtensionHeader(out ExtensionHeader extensionHeader)
 	{
 		switch (this.streamingReader.TryReadExtensionHeader(out extensionHeader))
@@ -712,7 +708,7 @@ public ref partial struct MessagePackReader
 				throw ThrowInvalidCode(this.NextCode);
 			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
 			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-				throw ThrowNotEnoughBytesException();
+				return false;
 			default:
 				throw ThrowUnreachable();
 		}
