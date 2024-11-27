@@ -164,15 +164,15 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public ReadOnlySequence<byte> ReadRaw(long length)
 	{
-		try
+		switch (this.streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> result))
 		{
-			ReadOnlySequence<byte> result = this.reader.Sequence.Slice(this.reader.Position, length);
-			this.reader.Advance(length);
-			return result;
-		}
-		catch (ArgumentOutOfRangeException ex)
-		{
-			throw ThrowNotEnoughBytesException(ex);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return result;
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -704,41 +704,17 @@ public ref partial struct MessagePackReader
 	/// </remarks>
 	public bool TryReadExtensionHeader(out ExtensionHeader extensionHeader)
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(this.reader.UnreadSpan, out extensionHeader, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryReadExtensionHeader(out extensionHeader))
 		{
-			this.reader.Advance(tokenSize);
-			return true;
-		}
-
-		return SlowPath(ref this, readResult, ref extensionHeader, ref tokenSize);
-
-		static bool SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return true;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryReadExtensionHeader(buffer, out extensionHeader, out tokenSize);
-						return SlowPath(ref self, readResult, ref extensionHeader, ref tokenSize);
-					}
-					else
-					{
-						extensionHeader = default;
-						return false;
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 

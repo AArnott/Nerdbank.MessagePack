@@ -186,6 +186,59 @@ public ref struct MessagePackStreamingReader
 		}
 	}
 
+	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawMsgPack)
+	{
+		if (this.reader.Remaining >= length)
+		{
+			rawMsgPack = this.reader.Sequence.Slice(this.reader.Position, length);
+			this.reader.Advance(length);
+			return DecodeResult.Success;
+		}
+
+		rawMsgPack = default;
+		return this.InsufficientBytes;
+	}
+
+	public DecodeResult TryReadExtensionHeader(out ExtensionHeader extensionHeader)
+	{
+		DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(this.reader.UnreadSpan, out extensionHeader, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			this.reader.Advance(tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref this, readResult, ref extensionHeader, ref tokenSize);
+
+		static DecodeResult SlowPath(ref MessagePackStreamingReader self, DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.reader.Advance(tokenSize);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (self.reader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryReadExtensionHeader(buffer, out extensionHeader, out tokenSize);
+						return SlowPath(ref self, readResult, ref extensionHeader, ref tokenSize);
+					}
+					else
+					{
+						extensionHeader = default;
+						return self.InsufficientBytes;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
+
 	/// <summary>
 	/// Gets the information to return from an async method that has been using this reader
 	/// so that the caller knows how to resume reading.
