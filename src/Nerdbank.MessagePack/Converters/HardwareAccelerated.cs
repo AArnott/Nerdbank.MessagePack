@@ -53,7 +53,8 @@ internal static class HardwareAccelerated
 		}
 		else
 		{
-			goto FAIL;
+			converter = null;
+			return false;
 		}
 
 		if (typeof(TElement) == typeof(bool))
@@ -107,7 +108,6 @@ internal static class HardwareAccelerated
 			return true;
 		}
 
-FAIL:
 		converter = null;
 		return false;
 	}
