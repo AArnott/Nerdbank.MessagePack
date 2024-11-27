@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using Microsoft;
 using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -519,36 +518,15 @@ FAIL:
 			}
 			else if (typeof(T) == typeof(ushort))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, ushort>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, ushort>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, ushort>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else if (typeof(T) == typeof(uint))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, uint>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, uint>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, uint>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else if (typeof(T) == typeof(ulong))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, ulong>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, ulong>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, ulong>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else if (typeof(T) == typeof(sbyte))
 			{
@@ -556,58 +534,23 @@ FAIL:
 			}
 			else if (typeof(T) == typeof(short))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, short>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, short>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, short>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else if (typeof(T) == typeof(int))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, int>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, int>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, int>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else if (typeof(T) == typeof(long))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, long>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, long>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, long>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else if (typeof(T) == typeof(float))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, float>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, float>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, float>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else if (typeof(T) == typeof(double))
 			{
-				if (BitConverter.IsLittleEndian)
-				{
-					return WriteLittleEndian(ref output, ref Unsafe.As<T, double>(ref Unsafe.AsRef(in values)), inputLength);
-				}
-				else
-				{
-					return WriteBigEndian(ref output, ref Unsafe.As<T, double>(ref Unsafe.AsRef(in values)), inputLength);
-				}
+				return Write(ref output, ref Unsafe.As<T, double>(ref Unsafe.AsRef(in values)), inputLength);
 			}
 			else
 			{
@@ -1713,7 +1656,7 @@ FAIL:
 			return DecodeResult.Success;
 		}
 
-		private static nuint WriteLittleEndian(ref byte output, ref short input, nuint inputLength)
+		private static nuint Write(ref byte output, ref short input, nuint inputLength)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
@@ -1734,7 +1677,7 @@ FAIL:
 								break;
 							default:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 								outputOffset += 3U;
 								break;
 						}
@@ -1747,7 +1690,7 @@ FAIL:
 						break;
 					default:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 						outputOffset += 3U;
 						break;
 				}
@@ -1756,50 +1699,7 @@ FAIL:
 			return outputOffset;
 		}
 
-		private static nuint WriteBigEndian(ref byte output, ref short input, nuint inputLength)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
-			{
-				short temp = Unsafe.Add(ref input, inputOffset);
-				switch (temp)
-				{
-					case >= MessagePackRange.MinFixNegativeInt:
-						switch (temp)
-						{
-							case <= MessagePackRange.MaxFixPositiveInt:
-								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)temp);
-								break;
-							case <= byte.MaxValue:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
-								Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)(sbyte)temp);
-								outputOffset += 2U;
-								break;
-							default:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-								outputOffset += 3U;
-								break;
-						}
-
-						break;
-					case >= sbyte.MinValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int8;
-						Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)(sbyte)temp);
-						outputOffset += 2U;
-						break;
-					default:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-						outputOffset += 3U;
-						break;
-				}
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteLittleEndian(ref byte output, ref int input, nuint inputLength)
+		private static nuint Write(ref byte output, ref int input, nuint inputLength)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
@@ -1820,12 +1720,12 @@ FAIL:
 								break;
 							case <= ushort.MaxValue:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((short)temp)));
+								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((ushort)temp)) : unchecked((ushort)temp));
 								outputOffset += 3U;
 								break;
 							default:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 								outputOffset += 5U;
 								break;
 						}
@@ -1838,12 +1738,12 @@ FAIL:
 						break;
 					case >= short.MinValue:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((short)temp)));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((short)temp)) : unchecked((short)temp));
 						outputOffset += 3U;
 						break;
 					default:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 						outputOffset += 5U;
 						break;
 				}
@@ -1852,60 +1752,7 @@ FAIL:
 			return outputOffset;
 		}
 
-		private static nuint WriteBigEndian(ref byte output, ref int input, nuint inputLength)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
-			{
-				int temp = Unsafe.Add(ref input, inputOffset);
-				switch (temp)
-				{
-					case >= MessagePackRange.MinFixNegativeInt:
-						switch (temp)
-						{
-							case <= MessagePackRange.MaxFixPositiveInt:
-								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)temp);
-								break;
-							case <= byte.MaxValue:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
-								Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)(sbyte)temp);
-								outputOffset += 2U;
-								break;
-							case <= ushort.MaxValue:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((short)temp));
-								outputOffset += 3U;
-								break;
-							default:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-								outputOffset += 5U;
-								break;
-						}
-
-						break;
-					case >= sbyte.MinValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int8;
-						Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)(sbyte)temp);
-						outputOffset += 2U;
-						break;
-					case >= short.MinValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((short)temp));
-						outputOffset += 3U;
-						break;
-					default:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-						outputOffset += 5U;
-						break;
-				}
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteLittleEndian(ref byte output, ref long input, nuint inputLength)
+		private static nuint Write(ref byte output, ref long input, nuint inputLength)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
@@ -1926,17 +1773,17 @@ FAIL:
 								break;
 							case <= ushort.MaxValue:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((short)temp)));
+								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((ushort)temp)) : unchecked((ushort)temp));
 								outputOffset += 3U;
 								break;
 							case <= uint.MaxValue:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((int)temp)));
+								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((uint)temp)) : unchecked((uint)temp));
 								outputOffset += 5U;
 								break;
 							default:
 								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt64;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 								outputOffset += 9U;
 								break;
 						}
@@ -1949,17 +1796,17 @@ FAIL:
 						break;
 					case >= short.MinValue:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((short)temp)));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((short)temp)) : unchecked((short)temp));
 						outputOffset += 3U;
 						break;
 					case >= int.MinValue:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((int)temp)));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((int)temp)) : unchecked((int)temp));
 						outputOffset += 5U;
 						break;
 					default:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int64;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 						outputOffset += 9U;
 						break;
 				}
@@ -1968,70 +1815,7 @@ FAIL:
 			return outputOffset;
 		}
 
-		private static nuint WriteBigEndian(ref byte output, ref long input, nuint inputLength)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
-			{
-				long temp = Unsafe.Add(ref input, inputOffset);
-				switch (temp)
-				{
-					case >= MessagePackRange.MinFixNegativeInt:
-						switch (temp)
-						{
-							case <= MessagePackRange.MaxFixPositiveInt:
-								Unsafe.Add(ref output, outputOffset++) = unchecked((byte)(sbyte)temp);
-								break;
-							case <= byte.MaxValue:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
-								Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)(sbyte)temp);
-								outputOffset += 2U;
-								break;
-							case <= ushort.MaxValue:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((short)temp));
-								outputOffset += 3U;
-								break;
-							case <= uint.MaxValue:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((int)temp));
-								outputOffset += 5U;
-								break;
-							default:
-								Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt64;
-								Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-								outputOffset += 9U;
-								break;
-						}
-
-						break;
-					case >= sbyte.MinValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int8;
-						Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)(sbyte)temp);
-						outputOffset += 2U;
-						break;
-					case >= short.MinValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((short)temp));
-						outputOffset += 3U;
-						break;
-					case >= int.MinValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((int)temp));
-						outputOffset += 5U;
-						break;
-					default:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.Int64;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-						outputOffset += 9U;
-						break;
-				}
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteLittleEndian(ref byte output, ref ushort input, nuint inputLength)
+		private static nuint Write(ref byte output, ref ushort input, nuint inputLength)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
@@ -2049,7 +1833,7 @@ FAIL:
 						break;
 					default:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 						outputOffset += 3U;
 						break;
 				}
@@ -2058,34 +1842,7 @@ FAIL:
 			return outputOffset;
 		}
 
-		private static nuint WriteBigEndian(ref byte output, ref ushort input, nuint inputLength)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
-			{
-				ushort temp = Unsafe.Add(ref input, inputOffset);
-				switch (temp)
-				{
-					case <= MessagePackRange.MaxFixPositiveInt:
-						Unsafe.Add(ref output, outputOffset++) = unchecked((byte)temp);
-						break;
-					case <= byte.MaxValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
-						Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)temp);
-						outputOffset += 2U;
-						break;
-					default:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-						outputOffset += 3U;
-						break;
-				}
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteLittleEndian(ref byte output, ref uint input, nuint inputLength)
+		private static nuint Write(ref byte output, ref uint input, nuint inputLength)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
@@ -2103,12 +1860,12 @@ FAIL:
 						break;
 					case <= ushort.MaxValue:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((ushort)temp)));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((ushort)temp)) : unchecked((ushort)temp));
 						outputOffset += 3U;
 						break;
 					default:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 						outputOffset += 5U;
 						break;
 				}
@@ -2117,39 +1874,7 @@ FAIL:
 			return outputOffset;
 		}
 
-		private static nuint WriteBigEndian(ref byte output, ref uint input, nuint inputLength)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
-			{
-				uint temp = Unsafe.Add(ref input, inputOffset);
-				switch (temp)
-				{
-					case <= MessagePackRange.MaxFixPositiveInt:
-						Unsafe.Add(ref output, outputOffset++) = unchecked((byte)temp);
-						break;
-					case <= byte.MaxValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
-						Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)temp);
-						outputOffset += 2U;
-						break;
-					case <= ushort.MaxValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((ushort)temp));
-						outputOffset += 3U;
-						break;
-					default:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-						outputOffset += 5U;
-						break;
-				}
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteLittleEndian(ref byte output, ref ulong input, nuint inputLength)
+		private static nuint Write(ref byte output, ref ulong input, nuint inputLength)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
@@ -2167,17 +1892,17 @@ FAIL:
 						break;
 					case <= ushort.MaxValue:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((ushort)temp)));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((ushort)temp)) : unchecked((ushort)temp));
 						outputOffset += 3U;
 						break;
 					case <= uint.MaxValue:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(unchecked((uint)temp)));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(unchecked((uint)temp)) : unchecked((uint)temp));
 						outputOffset += 5U;
 						break;
 					default:
 						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt64;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(temp));
+						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 						outputOffset += 9U;
 						break;
 				}
@@ -2186,89 +1911,28 @@ FAIL:
 			return outputOffset;
 		}
 
-		private static nuint WriteBigEndian(ref byte output, ref ulong input, nuint inputLength)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < inputLength; inputOffset++)
-			{
-				var temp = Unsafe.Add(ref input, inputOffset);
-				switch (temp)
-				{
-					case <= MessagePackRange.MaxFixPositiveInt:
-						Unsafe.Add(ref output, outputOffset++) = unchecked((byte)temp);
-						break;
-					case <= byte.MaxValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt8;
-						Unsafe.Add(ref output, outputOffset + 1U) = unchecked((byte)temp);
-						outputOffset += 2U;
-						break;
-					case <= ushort.MaxValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt16;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((ushort)temp));
-						outputOffset += 3U;
-						break;
-					case <= uint.MaxValue:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt32;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), unchecked((uint)temp));
-						outputOffset += 5U;
-						break;
-					default:
-						Unsafe.Add(ref output, outputOffset) = MessagePackCode.UInt64;
-						Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), temp);
-						outputOffset += 9U;
-						break;
-				}
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteLittleEndian(ref byte output, ref float input, nuint length)
+		private static nuint Write(ref byte output, ref float input, nuint length)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < length; inputOffset++)
 			{
 				Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float32;
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(Unsafe.BitCast<float, uint>(Unsafe.Add(ref input, inputOffset))));
+				uint temp = Unsafe.BitCast<float, uint>(Unsafe.Add(ref input, inputOffset));
+				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 				outputOffset += 5U;
 			}
 
 			return outputOffset;
 		}
 
-		private static nuint WriteBigEndian(ref byte output, ref float input, nuint length)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < length; inputOffset++)
-			{
-				Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float32;
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), Unsafe.Add(ref input, inputOffset));
-				outputOffset += 5U;
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteLittleEndian(ref byte output, ref double input, nuint length)
+		private static nuint Write(ref byte output, ref double input, nuint length)
 		{
 			nuint outputOffset = 0;
 			for (nuint inputOffset = 0; inputOffset < length; inputOffset++)
 			{
 				Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float64;
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BinaryPrimitives.ReverseEndianness(Unsafe.BitCast<double, ulong>(Unsafe.Add(ref input, inputOffset))));
-				outputOffset += 9U;
-			}
-
-			return outputOffset;
-		}
-
-		private static nuint WriteBigEndian(ref byte output, ref double input, nuint length)
-		{
-			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < length; inputOffset++)
-			{
-				Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float64;
-				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), Unsafe.Add(ref input, inputOffset));
+				ulong temp = Unsafe.BitCast<double, ulong>(Unsafe.Add(ref input, inputOffset));
+				Unsafe.WriteUnaligned(ref Unsafe.Add(ref output, outputOffset + 1U), BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(temp) : temp);
 				outputOffset += 9U;
 			}
 
