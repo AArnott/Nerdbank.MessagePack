@@ -396,40 +396,17 @@ public ref partial struct MessagePackReader
 	/// <returns>The value.</returns>
 	public DateTime ReadDateTime()
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out DateTime value, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(out DateTime value))
 		{
-			this.reader.Advance(tokenSize);
-			return value;
-		}
-
-		return SlowPath(ref this, readResult, value, ref tokenSize);
-
-		static DateTime SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, DateTime value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return value;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
-						return SlowPath(ref self, readResult, value, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowNotEnoughBytesException();
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -444,40 +421,17 @@ public ref partial struct MessagePackReader
 	/// <returns>The value.</returns>
 	public DateTime ReadDateTime(ExtensionHeader header)
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, header, out DateTime value, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(header, out DateTime value))
 		{
-			this.reader.Advance(tokenSize);
-			return value;
-		}
-
-		return SlowPath(ref this, header, readResult, value, ref tokenSize);
-
-		static DateTime SlowPath(ref MessagePackReader self, ExtensionHeader header, MessagePackPrimitives.DecodeResult readResult, DateTime value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return value;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, header, out value, out tokenSize);
-						return SlowPath(ref self, header, readResult, value, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowNotEnoughBytesException();
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
