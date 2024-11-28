@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
@@ -485,6 +486,124 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	public DecodeResult TrySkip(SerializationContext context)
+	{
+		DecodeResult result = this.TryPeekNextCode(out byte code);
+		if (result != DecodeResult.Success)
+		{
+			return result;
+		}
+
+		switch (code)
+		{
+			case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
+			case MessagePackCode.Nil:
+			case MessagePackCode.True:
+			case MessagePackCode.False:
+				return this.reader.TryAdvance(1) ? DecodeResult.Success : this.InsufficientBytes;
+			case MessagePackCode.Int8:
+			case MessagePackCode.UInt8:
+				return this.reader.TryAdvance(2) ? DecodeResult.Success : this.InsufficientBytes;
+			case MessagePackCode.Int16:
+			case MessagePackCode.UInt16:
+				return this.reader.TryAdvance(3) ? DecodeResult.Success : this.InsufficientBytes;
+			case MessagePackCode.Int32:
+			case MessagePackCode.UInt32:
+			case MessagePackCode.Float32:
+				return this.reader.TryAdvance(5) ? DecodeResult.Success : this.InsufficientBytes;
+			case MessagePackCode.Int64:
+			case MessagePackCode.UInt64:
+			case MessagePackCode.Float64:
+				return this.reader.TryAdvance(9) ? DecodeResult.Success : this.InsufficientBytes;
+			case byte x when MessagePackCode.IsFixMap(x):
+			case MessagePackCode.Map16:
+			case MessagePackCode.Map32:
+				context.DepthStep();
+				return TrySkipNextMap(ref this, context);
+			case byte x when MessagePackCode.IsFixArray(x):
+			case MessagePackCode.Array16:
+			case MessagePackCode.Array32:
+				context.DepthStep();
+				return TrySkipNextArray(ref this, context);
+			case byte x when MessagePackCode.IsFixStr(x):
+			case MessagePackCode.Str8:
+			case MessagePackCode.Str16:
+			case MessagePackCode.Str32:
+				result = this.TryGetStringLengthInBytes(out uint length);
+				if (result != DecodeResult.Success)
+				{
+					return result;
+				}
+
+				return this.reader.TryAdvance(length) ? DecodeResult.Success : this.InsufficientBytes;
+			case MessagePackCode.Bin8:
+			case MessagePackCode.Bin16:
+			case MessagePackCode.Bin32:
+				result = this.TryGetBytesLength(out length);
+				if (result != DecodeResult.Success)
+				{
+					return result;
+				}
+
+				return this.reader.TryAdvance(length) ? DecodeResult.Success : this.InsufficientBytes;
+			case MessagePackCode.FixExt1:
+			case MessagePackCode.FixExt2:
+			case MessagePackCode.FixExt4:
+			case MessagePackCode.FixExt8:
+			case MessagePackCode.FixExt16:
+			case MessagePackCode.Ext8:
+			case MessagePackCode.Ext16:
+			case MessagePackCode.Ext32:
+				result = this.TryRead(out ExtensionHeader header);
+				if (result != DecodeResult.Success)
+				{
+					return result;
+				}
+
+				return this.reader.TryAdvance(header.Length) ? DecodeResult.Success : this.InsufficientBytes;
+			default:
+				// We don't actually expect to ever hit this point, since every code is supported.
+				Debug.Fail("Missing handler for code: " + code);
+				throw MessagePackReader.ThrowInvalidCode(code);
+		}
+
+		DecodeResult TrySkipNextArray(ref MessagePackStreamingReader self, SerializationContext context)
+		{
+			DecodeResult result = self.TryReadArrayHeader(out int count);
+			if (result != DecodeResult.Success)
+			{
+				return result;
+			}
+
+			return TrySkip(ref self, count, context);
+		}
+
+		DecodeResult TrySkipNextMap(ref MessagePackStreamingReader self, SerializationContext context)
+		{
+			DecodeResult result = self.TryReadMapHeader(out int count);
+			if (result != DecodeResult.Success)
+			{
+				return result;
+			}
+
+			return TrySkip(ref self, count * 2, context);
+		}
+
+		DecodeResult TrySkip(ref MessagePackStreamingReader self, int count, SerializationContext context)
+		{
+			for (int i = 0; i < count; i++)
+			{
+				DecodeResult result = self.TrySkip(context);
+				if (result != DecodeResult.Success)
+				{
+					return result;
+				}
+			}
+
+			return DecodeResult.Success;
+		}
+	}
+
 	/// <summary>
 	/// Gets the information to return from an async method that has been using this reader
 	/// so that the caller knows how to resume reading.
@@ -539,6 +658,59 @@ public ref partial struct MessagePackStreamingReader
 
 	[DoesNotReturn]
 	private static DecodeResult ThrowUnreachable() => throw new Exception("Presumed unreachable point in code reached.");
+
+	private DecodeResult TryGetBytesLength(out uint length)
+	{
+		bool usingBinaryHeader = true;
+		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadBinHeader(this.reader.UnreadSpan, out length, out int tokenSize);
+		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		{
+			this.reader.Advance(tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref this, readResult, usingBinaryHeader, ref length, ref tokenSize);
+
+		static DecodeResult SlowPath(ref MessagePackStreamingReader self, MessagePackPrimitives.DecodeResult readResult, bool usingBinaryHeader, ref uint length, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case MessagePackPrimitives.DecodeResult.Success:
+					self.reader.Advance(tokenSize);
+					return DecodeResult.Success;
+				case MessagePackPrimitives.DecodeResult.TokenMismatch:
+					if (usingBinaryHeader)
+					{
+						usingBinaryHeader = false;
+						readResult = MessagePackPrimitives.TryReadStringHeader(self.reader.UnreadSpan, out length, out tokenSize);
+						return SlowPath(ref self, readResult, usingBinaryHeader, ref length, ref tokenSize);
+					}
+					else
+					{
+						return DecodeResult.TokenMismatch;
+					}
+
+				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (self.reader.TryCopyTo(buffer))
+					{
+						readResult = usingBinaryHeader
+							? MessagePackPrimitives.TryReadBinHeader(buffer, out length, out tokenSize)
+							: MessagePackPrimitives.TryReadStringHeader(buffer, out length, out tokenSize);
+						return SlowPath(ref self, readResult, usingBinaryHeader, ref length, ref tokenSize);
+					}
+					else
+					{
+						length = default;
+						return self.InsufficientBytes;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
 
 	private DecodeResult TryGetStringLengthInBytes(out uint length)
 	{

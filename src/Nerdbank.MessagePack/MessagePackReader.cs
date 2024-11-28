@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -664,65 +663,17 @@ public ref partial struct MessagePackReader
 	/// </remarks>
 	internal bool TrySkip(SerializationContext context)
 	{
-		if (this.reader.Remaining == 0)
+		switch (this.streamingReader.TrySkip(context))
 		{
-			return false;
-		}
-
-		byte code = this.NextCode;
-		switch (code)
-		{
-			case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
-			case MessagePackCode.Nil:
-			case MessagePackCode.True:
-			case MessagePackCode.False:
-				return this.reader.TryAdvance(1);
-			case MessagePackCode.Int8:
-			case MessagePackCode.UInt8:
-				return this.reader.TryAdvance(2);
-			case MessagePackCode.Int16:
-			case MessagePackCode.UInt16:
-				return this.reader.TryAdvance(3);
-			case MessagePackCode.Int32:
-			case MessagePackCode.UInt32:
-			case MessagePackCode.Float32:
-				return this.reader.TryAdvance(5);
-			case MessagePackCode.Int64:
-			case MessagePackCode.UInt64:
-			case MessagePackCode.Float64:
-				return this.reader.TryAdvance(9);
-			case byte x when MessagePackCode.IsFixMap(x):
-			case MessagePackCode.Map16:
-			case MessagePackCode.Map32:
-				context.DepthStep();
-				return this.TrySkipNextMap(context);
-			case byte x when MessagePackCode.IsFixArray(x):
-			case MessagePackCode.Array16:
-			case MessagePackCode.Array32:
-				context.DepthStep();
-				return this.TrySkipNextArray(context);
-			case byte x when MessagePackCode.IsFixStr(x):
-			case MessagePackCode.Str8:
-			case MessagePackCode.Str16:
-			case MessagePackCode.Str32:
-				return this.TryGetStringLengthInBytes(out uint length) && this.reader.TryAdvance(length);
-			case MessagePackCode.Bin8:
-			case MessagePackCode.Bin16:
-			case MessagePackCode.Bin32:
-				return this.TryGetBytesLength(out length) && this.reader.TryAdvance(length);
-			case MessagePackCode.FixExt1:
-			case MessagePackCode.FixExt2:
-			case MessagePackCode.FixExt4:
-			case MessagePackCode.FixExt8:
-			case MessagePackCode.FixExt16:
-			case MessagePackCode.Ext8:
-			case MessagePackCode.Ext16:
-			case MessagePackCode.Ext32:
-				return this.TryReadExtensionHeader(out ExtensionHeader header) && this.reader.TryAdvance(header.Length);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				return false;
 			default:
-				// We don't actually expect to ever hit this point, since every code is supported.
-				Debug.Fail("Missing handler for code: " + code);
-				throw ThrowInvalidCode(code);
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -867,22 +818,5 @@ public ref partial struct MessagePackReader
 	{
 		ThrowInsufficientBufferUnless(this.TryGetStringLengthInBytes(out uint length));
 		return length;
-	}
-
-	private bool TrySkipNextArray(SerializationContext context) => this.TryReadArrayHeader(out int count) && this.TrySkip(count, context);
-
-	private bool TrySkipNextMap(SerializationContext context) => this.TryReadMapHeader(out int count) && this.TrySkip(count * 2, context);
-
-	private bool TrySkip(int count, SerializationContext context)
-	{
-		for (int i = 0; i < count; i++)
-		{
-			if (!this.TrySkip(context))
-			{
-				return false;
-			}
-		}
-
-		return true;
 	}
 }
