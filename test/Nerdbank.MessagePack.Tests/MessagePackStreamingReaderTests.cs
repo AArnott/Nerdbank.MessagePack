@@ -13,9 +13,9 @@ public class MessagePackStreamingReaderTests
 		MessagePackStreamingReader incompleteReader = new(ArrayOf3Bools.Slice(0, 2));
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
 		Assert.Equal(3, count);
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadBoolean(out bool boolean));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);
-		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadBoolean(out boolean));
+		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryRead(out boolean));
 	}
 
 	[Fact]
@@ -29,13 +29,13 @@ public class MessagePackStreamingReaderTests
 
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
 		Assert.Equal(3, count);
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadBoolean(out bool boolean));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);
-		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadBoolean(out boolean));
+		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryRead(out boolean));
 		incompleteReader = new(await incompleteReader.ReplenishBufferAsync());
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadBoolean(out boolean));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.True(boolean);
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadBoolean(out boolean));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.False(boolean);
 
 		Assert.Equal(DecodeResult.EmptyBuffer, incompleteReader.TryReadNil());
@@ -53,13 +53,13 @@ public class MessagePackStreamingReaderTests
 
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
 		Assert.Equal(3, count);
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadBoolean(out bool boolean));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);
-		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadBoolean(out boolean));
+		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryRead(out boolean));
 		incompleteReader = new(await incompleteReader.ReplenishBufferAsync());
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadBoolean(out boolean));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.True(boolean);
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadBoolean(out boolean));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.False(boolean);
 
 		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNil());

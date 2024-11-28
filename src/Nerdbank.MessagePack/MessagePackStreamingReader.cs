@@ -75,7 +75,7 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
-	public DecodeResult TryReadBoolean(out bool value)
+	public DecodeResult TryRead(out bool value)
 	{
 		if (this.reader.TryPeek(out byte next))
 		{
@@ -99,6 +99,84 @@ public ref partial struct MessagePackStreamingReader
 		{
 			value = false;
 			return this.InsufficientBytes;
+		}
+	}
+
+	public DecodeResult TryRead(out float value)
+	{
+		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
+		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		{
+			this.reader.Advance(tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref this, readResult, ref value, ref tokenSize);
+
+		static DecodeResult SlowPath(ref MessagePackStreamingReader self, MessagePackPrimitives.DecodeResult readResult, ref float value, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case MessagePackPrimitives.DecodeResult.Success:
+					self.reader.Advance(tokenSize);
+					return DecodeResult.Success;
+				case MessagePackPrimitives.DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (self.reader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
+						return SlowPath(ref self, readResult, ref value, ref tokenSize);
+					}
+					else
+					{
+						return self.InsufficientBytes;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
+
+	public DecodeResult TryRead(out double value)
+	{
+		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
+		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		{
+			this.reader.Advance(tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref this, readResult, ref value, ref tokenSize);
+
+		static DecodeResult SlowPath(ref MessagePackStreamingReader self, MessagePackPrimitives.DecodeResult readResult, ref double value, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case MessagePackPrimitives.DecodeResult.Success:
+					self.reader.Advance(tokenSize);
+					return DecodeResult.Success;
+				case MessagePackPrimitives.DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (self.reader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
+						return SlowPath(ref self, readResult, ref value, ref tokenSize);
+					}
+					else
+					{
+						return self.InsufficientBytes;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
 		}
 	}
 
