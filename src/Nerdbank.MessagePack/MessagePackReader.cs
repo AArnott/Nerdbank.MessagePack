@@ -450,16 +450,23 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public ReadOnlySequence<byte>? ReadBytes()
 	{
-		if (this.TryReadNil())
+		switch (this.streamingReader.TryReadBinary(out ReadOnlySequence<byte> value))
 		{
-			return null;
-		}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				if (this.TryReadNil())
+				{
+					return null;
+				}
 
-		uint length = this.GetBytesLength();
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= length);
-		ReadOnlySequence<byte> result = this.reader.Sequence.Slice(this.reader.Position, length);
-		this.reader.Advance(length);
-		return result;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
 	}
 
 	/// <summary>
@@ -475,16 +482,23 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public ReadOnlySequence<byte>? ReadStringSequence()
 	{
-		if (this.TryReadNil())
+		switch (this.streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> value))
 		{
-			return null;
-		}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				if (this.TryReadNil())
+				{
+					return null;
+				}
 
-		uint length = this.GetStringLengthInBytes();
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= length);
-		ReadOnlySequence<byte> result = this.reader.Sequence.Slice(this.reader.Position, length);
-		this.reader.Advance(length);
-		return result;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
 	}
 
 	/// <summary>
@@ -682,12 +696,6 @@ public ref partial struct MessagePackReader
 	/// the promised data.
 	/// </summary>
 	private static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();
-
-	/// <summary>
-	/// Throws an exception indicating that there aren't enough bytes remaining in the buffer to store
-	/// the promised data.
-	/// </summary>
-	private static EndOfStreamException ThrowNotEnoughBytesException(Exception innerException) => throw new EndOfStreamException(new EndOfStreamException().Message, innerException);
 
 	/// <summary>
 	/// Throws <see cref="EndOfStreamException"/> if a condition is false.

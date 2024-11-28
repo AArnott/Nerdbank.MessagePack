@@ -391,6 +391,80 @@ public ref partial struct MessagePackStreamingReader
 		return this.InsufficientBytes;
 	}
 
+	public DecodeResult TryReadBinary(out ReadOnlySequence<byte> value)
+	{
+		DecodeResult result = this.TryGetBytesLength(out uint length);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			return result;
+		}
+
+		if (this.reader.Remaining < length)
+		{
+			value = default;
+			return this.InsufficientBytes;
+		}
+
+		value = this.reader.Sequence.Slice(this.reader.Position, length);
+		this.reader.Advance(length);
+		return DecodeResult.Success;
+	}
+
+	public DecodeResult TryReadStringSequence(out ReadOnlySequence<byte> value)
+	{
+		DecodeResult result = this.TryGetStringLengthInBytes(out uint length);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			return result;
+		}
+
+		if (this.reader.Remaining < length)
+		{
+			value = default;
+			return this.InsufficientBytes;
+		}
+
+		value = this.reader.Sequence.Slice(this.reader.Position, length);
+		this.reader.Advance(length);
+		return DecodeResult.Success;
+	}
+
+	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value)
+	{
+		SequenceReader<byte> oldReader = this.reader;
+		DecodeResult result = this.TryGetStringLengthInBytes(out uint length);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			contiguous = false;
+			return result;
+		}
+
+		if (this.reader.Remaining < length)
+		{
+			value = default;
+			contiguous = false;
+			return this.InsufficientBytes;
+		}
+
+		if (this.reader.CurrentSpanIndex + length <= this.reader.CurrentSpan.Length)
+		{
+			value = this.reader.CurrentSpan.Slice(this.reader.CurrentSpanIndex, checked((int)length));
+			this.reader.Advance(length);
+			contiguous = true;
+			return DecodeResult.Success;
+		}
+		else
+		{
+			this.reader = oldReader;
+			value = default;
+			contiguous = false;
+			return DecodeResult.Success;
+		}
+	}
+
 	public DecodeResult TryRead(out ExtensionHeader extensionHeader)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(this.reader.UnreadSpan, out extensionHeader, out int tokenSize);
@@ -450,40 +524,6 @@ public ref partial struct MessagePackStreamingReader
 		this.reader.Advance(header.Length);
 		extension = new Extension(header.TypeCode, data);
 		return DecodeResult.Success;
-	}
-
-	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value)
-	{
-		SequenceReader<byte> oldReader = this.reader;
-		DecodeResult result = this.TryGetStringLengthInBytes(out uint length);
-		if (result != DecodeResult.Success)
-		{
-			value = default;
-			contiguous = false;
-			return result;
-		}
-
-		if (this.reader.Remaining < length)
-		{
-			value = default;
-			contiguous = false;
-			return this.InsufficientBytes;
-		}
-
-		if (this.reader.CurrentSpanIndex + length <= this.reader.CurrentSpan.Length)
-		{
-			value = this.reader.CurrentSpan.Slice(this.reader.CurrentSpanIndex, checked((int)length));
-			this.reader.Advance(length);
-			contiguous = true;
-			return DecodeResult.Success;
-		}
-		else
-		{
-			this.reader = oldReader;
-			value = default;
-			contiguous = false;
-			return DecodeResult.Success;
-		}
 	}
 
 	public DecodeResult TrySkip(SerializationContext context)
