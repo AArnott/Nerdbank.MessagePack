@@ -596,7 +596,7 @@ public ref partial struct MessagePackReader
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an extension format header is encountered.</exception>
 	public bool TryReadExtensionHeader(out ExtensionHeader extensionHeader)
 	{
-		switch (this.streamingReader.TryReadExtensionHeader(out extensionHeader))
+		switch (this.streamingReader.TryRead(out extensionHeader))
 		{
 			case MessagePackPrimitives.DecodeResult.Success:
 				return true;
@@ -627,16 +627,17 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public Extension ReadExtension()
 	{
-		ExtensionHeader header = this.ReadExtensionHeader();
-		try
+		switch (this.streamingReader.TryRead(out Extension value))
 		{
-			ReadOnlySequence<byte> data = this.reader.Sequence.Slice(this.reader.Position, header.Length);
-			this.reader.Advance(header.Length);
-			return new Extension(header.TypeCode, data);
-		}
-		catch (ArgumentOutOfRangeException ex)
-		{
-			throw ThrowNotEnoughBytesException(ex);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 

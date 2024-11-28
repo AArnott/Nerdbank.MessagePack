@@ -390,7 +390,7 @@ public ref partial struct MessagePackStreamingReader
 		return this.InsufficientBytes;
 	}
 
-	public DecodeResult TryReadExtensionHeader(out ExtensionHeader extensionHeader)
+	public DecodeResult TryRead(out ExtensionHeader extensionHeader)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(this.reader.UnreadSpan, out extensionHeader, out int tokenSize);
 		if (readResult == DecodeResult.Success)
@@ -428,6 +428,27 @@ public ref partial struct MessagePackStreamingReader
 					return ThrowUnreachable();
 			}
 		}
+	}
+
+	public DecodeResult TryRead(out Extension extension)
+	{
+		DecodeResult result = this.TryRead(out ExtensionHeader header);
+		if (result != DecodeResult.Success)
+		{
+			extension = default;
+			return result;
+		}
+
+		if (this.reader.Remaining < header.Length)
+		{
+			extension = default;
+			return this.InsufficientBytes;
+		}
+
+		ReadOnlySequence<byte> data = this.reader.Sequence.Slice(this.reader.Position, header.Length);
+		this.reader.Advance(header.Length);
+		extension = new Extension(header.TypeCode, data);
+		return DecodeResult.Success;
 	}
 
 	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value)
