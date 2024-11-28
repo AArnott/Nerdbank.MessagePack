@@ -506,27 +506,24 @@ public ref partial struct MessagePackReader
 	/// </remarks>
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> span)
 	{
-		if (this.IsNil)
+		switch (this.streamingReader.TryReadStringSpan(out bool contiguous, out span))
 		{
-			span = default;
-			return false;
-		}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return contiguous;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				if (this.streamingReader.TryPeekNextCode(out byte code) == MessagePackPrimitives.DecodeResult.Success
+					&& code == MessagePackCode.Nil)
+				{
+					span = default;
+					return false;
+				}
 
-		long oldPosition = this.reader.Consumed;
-		int length = checked((int)this.GetStringLengthInBytes());
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= length);
-
-		if (this.reader.CurrentSpanIndex + length <= this.reader.CurrentSpan.Length)
-		{
-			span = this.reader.CurrentSpan.Slice(this.reader.CurrentSpanIndex, length);
-			this.reader.Advance(length);
-			return true;
-		}
-		else
-		{
-			this.reader.Rewind(this.reader.Consumed - oldPosition);
-			span = default;
-			return false;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -541,24 +538,17 @@ public ref partial struct MessagePackReader
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string? ReadString()
 	{
-		if (this.TryReadNil())
+		switch (this.streamingReader.TryRead(out string? value))
 		{
-			return null;
-		}
-
-		uint byteLength = this.GetStringLengthInBytes();
-
-		ReadOnlySpan<byte> unreadSpan = this.reader.UnreadSpan;
-		if (unreadSpan.Length >= byteLength)
-		{
-			// Fast path: all bytes to decode appear in the same span.
-			string value = StringEncoding.UTF8.GetString(unreadSpan.Slice(0, checked((int)byteLength)));
-			this.reader.Advance(byteLength);
-			return value;
-		}
-		else
-		{
-			return this.ReadStringSlow(byteLength);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -876,47 +866,6 @@ public ref partial struct MessagePackReader
 	{
 		ThrowInsufficientBufferUnless(this.TryGetStringLengthInBytes(out uint length));
 		return length;
-	}
-
-	/// <summary>
-	/// Reads a string assuming that it is spread across multiple spans in the <see cref="ReadOnlySequence{T}"/>.
-	/// </summary>
-	/// <param name="byteLength">The length of the string to be decoded, in bytes.</param>
-	/// <returns>The decoded string.</returns>
-	private string ReadStringSlow(uint byteLength)
-	{
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= byteLength);
-
-		// We need to decode bytes incrementally across multiple spans.
-		int remainingByteLength = checked((int)byteLength);
-		int maxCharLength = StringEncoding.UTF8.GetMaxCharCount(remainingByteLength);
-		char[] charArray = ArrayPool<char>.Shared.Rent(maxCharLength);
-		System.Text.Decoder decoder = StringEncoding.UTF8.GetDecoder();
-
-		int initializedChars = 0;
-		while (remainingByteLength > 0)
-		{
-			int bytesRead = Math.Min(remainingByteLength, this.reader.UnreadSpan.Length);
-			remainingByteLength -= bytesRead;
-			bool flush = remainingByteLength == 0;
-#if NETCOREAPP
-			initializedChars += decoder.GetChars(this.reader.UnreadSpan.Slice(0, bytesRead), charArray.AsSpan(initializedChars), flush);
-#else
-                unsafe
-                {
-                    fixed (byte* pUnreadSpan = this.reader.UnreadSpan)
-                    fixed (char* pCharArray = &charArray[initializedChars])
-                    {
-                        initializedChars += decoder.GetChars(pUnreadSpan, bytesRead, pCharArray, charArray.Length - initializedChars, flush);
-                    }
-                }
-#endif
-			this.reader.Advance(bytesRead);
-		}
-
-		string value = new string(charArray, 0, initializedChars);
-		ArrayPool<char>.Shared.Return(charArray);
-		return value;
 	}
 
 	private bool TrySkipNextArray(SerializationContext context) => this.TryReadArrayHeader(out int count) && this.TrySkip(count, context);

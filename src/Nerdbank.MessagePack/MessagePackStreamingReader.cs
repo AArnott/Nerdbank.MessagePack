@@ -57,6 +57,11 @@ public ref partial struct MessagePackStreamingReader
 
 	private DecodeResult InsufficientBytes => this.eof ? DecodeResult.EmptyBuffer : DecodeResult.InsufficientBuffer;
 
+	public DecodeResult TryPeekNextCode(out byte code)
+	{
+		return this.reader.TryPeek(out code) ? DecodeResult.Success : this.InsufficientBytes;
+	}
+
 	public DecodeResult TryReadNil()
 	{
 		if (this.reader.TryPeek(out byte next))
@@ -177,6 +182,36 @@ public ref partial struct MessagePackStreamingReader
 				default:
 					return ThrowUnreachable();
 			}
+		}
+	}
+
+	public DecodeResult TryRead(out string? value)
+	{
+		DecodeResult result = this.TryReadNil();
+		if (result != DecodeResult.TokenMismatch)
+		{
+			value = null;
+			return result;
+		}
+
+		result = this.TryGetStringLengthInBytes(out uint byteLength);
+		if (result != DecodeResult.Success)
+		{
+			value = null;
+			return result;
+		}
+
+		ReadOnlySpan<byte> unreadSpan = this.reader.UnreadSpan;
+		if (unreadSpan.Length >= byteLength)
+		{
+			// Fast path: all bytes to decode appear in the same span.
+			value = StringEncoding.UTF8.GetString(unreadSpan.Slice(0, checked((int)byteLength)));
+			this.reader.Advance(byteLength);
+			return DecodeResult.Success;
+		}
+		else
+		{
+			return this.ReadStringSlow(byteLength, out value);
 		}
 	}
 
@@ -395,6 +430,40 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value)
+	{
+		SequenceReader<byte> oldReader = this.reader;
+		DecodeResult result = this.TryGetStringLengthInBytes(out uint length);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			contiguous = false;
+			return result;
+		}
+
+		if (this.reader.Remaining < length)
+		{
+			value = default;
+			contiguous = false;
+			return this.InsufficientBytes;
+		}
+
+		if (this.reader.CurrentSpanIndex + length <= this.reader.CurrentSpan.Length)
+		{
+			value = this.reader.CurrentSpan.Slice(this.reader.CurrentSpanIndex, checked((int)length));
+			this.reader.Advance(length);
+			contiguous = true;
+			return DecodeResult.Success;
+		}
+		else
+		{
+			this.reader = oldReader;
+			value = default;
+			contiguous = false;
+			return DecodeResult.Success;
+		}
+	}
+
 	/// <summary>
 	/// Gets the information to return from an async method that has been using this reader
 	/// so that the caller knows how to resume reading.
@@ -449,6 +518,81 @@ public ref partial struct MessagePackStreamingReader
 
 	[DoesNotReturn]
 	private static DecodeResult ThrowUnreachable() => throw new Exception("Presumed unreachable point in code reached.");
+
+	private DecodeResult TryGetStringLengthInBytes(out uint length)
+	{
+		DecodeResult readResult = MessagePackPrimitives.TryReadStringHeader(this.reader.UnreadSpan, out length, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			this.reader.Advance(tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref this, readResult, ref length, ref tokenSize);
+
+		static DecodeResult SlowPath(ref MessagePackStreamingReader self, DecodeResult readResult, ref uint length, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.reader.Advance(tokenSize);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (self.reader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryReadStringHeader(buffer, out length, out tokenSize);
+						return SlowPath(ref self, readResult, ref length, ref tokenSize);
+					}
+					else
+					{
+						length = default;
+						return DecodeResult.InsufficientBuffer;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Reads a string assuming that it is spread across multiple spans in the <see cref="ReadOnlySequence{T}"/>.
+	/// </summary>
+	/// <param name="byteLength">The length of the string to be decoded, in bytes.</param>
+	/// <param name="value">Receives the decoded string.</param>
+	/// <returns>The result of the operation.</returns>
+	private DecodeResult ReadStringSlow(uint byteLength, out string? value)
+	{
+		if (this.reader.Remaining < byteLength)
+		{
+			value = null;
+			return this.InsufficientBytes;
+		}
+
+		// We need to decode bytes incrementally across multiple spans.
+		int remainingByteLength = checked((int)byteLength);
+		int maxCharLength = StringEncoding.UTF8.GetMaxCharCount(remainingByteLength);
+		char[] charArray = ArrayPool<char>.Shared.Rent(maxCharLength);
+		System.Text.Decoder decoder = StringEncoding.UTF8.GetDecoder();
+
+		int initializedChars = 0;
+		while (remainingByteLength > 0)
+		{
+			int bytesRead = Math.Min(remainingByteLength, this.reader.UnreadSpan.Length);
+			remainingByteLength -= bytesRead;
+			bool flush = remainingByteLength == 0;
+			initializedChars += decoder.GetChars(this.reader.UnreadSpan.Slice(0, bytesRead), charArray.AsSpan(initializedChars), flush);
+			this.reader.Advance(bytesRead);
+		}
+
+		value = new string(charArray, 0, initializedChars);
+		ArrayPool<char>.Shared.Return(charArray);
+		return DecodeResult.Success;
+	}
 
 	public struct BufferRefresh
 	{
