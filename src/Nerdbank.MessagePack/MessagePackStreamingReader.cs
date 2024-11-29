@@ -29,7 +29,6 @@ public ref partial struct MessagePackStreamingReader
 		this.reader = new SequenceReader<byte>(sequence);
 		this.getMoreBytesAsync = additionalBytesSource;
 		this.getMoreBytesState = getMoreBytesState;
-		;
 	}
 
 	public MessagePackStreamingReader(scoped in BufferRefresh refresh)
@@ -697,7 +696,7 @@ public ref partial struct MessagePackStreamingReader
 	}
 
 	[DoesNotReturn]
-	private static DecodeResult ThrowUnreachable() => throw new Exception("Presumed unreachable point in code reached.");
+	private static DecodeResult ThrowUnreachable() => throw new UnreachableException();
 
 	private DecodeResult TryGetBytesLength(out uint length)
 	{

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -712,5 +713,5 @@ public ref partial struct MessagePackReader
 	}
 
 	[DoesNotReturn]
-	private static Exception ThrowUnreachable() => throw new Exception("Presumed unreachable point in code reached.");
+	private static Exception ThrowUnreachable() => throw new UnreachableException();
 }
