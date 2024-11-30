@@ -837,5 +837,7 @@ public ref partial struct MessagePackStreamingReader
 		internal object? GetMoreBytesState { get; init; }
 
 		internal bool EndOfStream { get; init; }
+
+		public MessagePackStreamingReader CreateReader() => new(this);
 	}
 }
