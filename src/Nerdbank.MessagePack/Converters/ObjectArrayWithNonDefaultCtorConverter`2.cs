@@ -93,7 +93,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		{
 			int mapEntries = await reader.ReadMapHeaderAsync().ConfigureAwait(false);
 
-			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
+			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			int remainingEntries = mapEntries;
 			while (remainingEntries > 0)
