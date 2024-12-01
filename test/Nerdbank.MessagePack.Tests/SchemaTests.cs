@@ -126,6 +126,8 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[GenerateShape]
 	internal partial class BasicObject
 	{
+		public BasicObject(int intProperty = 5) => this.IntProperty = intProperty;
+
 		public string? StringProperty { get; set; }
 
 		public int IntProperty { get; set; }
@@ -156,6 +158,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 		public required Sex Sex { get; set; }
 
+		[DefaultValue(18)]
 		public int? Age { get; set; }
 
 		public Dictionary<string, int> PetsAndAges { get; } = [];

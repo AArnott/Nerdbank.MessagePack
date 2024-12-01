@@ -25,7 +25,8 @@
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "default": 18
         },
         "PetsAndAges": {
           "type": "object",

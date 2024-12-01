@@ -190,6 +190,7 @@ public partial record MessagePackSerializer
 							this.Push(prop.Name);
 							JsonObject propSchema = this.GenerateSchema(prop.PropertyType, allowNull: !isNonNullable);
 							ApplyDescription(prop.AttributeProvider, propSchema);
+							ApplyDefaultValue(prop.AttributeProvider, propSchema, associatedParameter);
 							this.Pop();
 
 							properties.Add(prop.Name, propSchema);
@@ -225,6 +226,41 @@ public partial record MessagePackSerializer
 			if (attributeProvider?.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute description)
 			{
 				propertySchema["description"] = description.Description;
+			}
+		}
+
+		private static void ApplyDefaultValue(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema, IConstructorParameterShape? parameterShape)
+		{
+			JsonValue? defaultValue =
+				parameterShape?.HasDefaultValue is true ? Create(parameterShape.DefaultValue) :
+				attributeProvider?.GetCustomAttribute<DefaultValueAttribute>() is DefaultValueAttribute att ? Create(att.Value) :
+				null;
+
+			if (defaultValue is not null)
+			{
+				propertySchema["default"] = defaultValue;
+			}
+
+			static JsonValue? Create(object? value)
+			{
+				return value switch
+				{
+					string v => JsonValue.Create(v),
+					short v => JsonValue.Create(v),
+					int v => JsonValue.Create(v),
+					long v => JsonValue.Create(v),
+					float v => JsonValue.Create(v),
+					double v => JsonValue.Create(v),
+					decimal v => JsonValue.Create(v),
+					bool v => JsonValue.Create(v),
+					byte v => JsonValue.Create(v),
+					sbyte v => JsonValue.Create(v),
+					ushort v => JsonValue.Create(v),
+					uint v => JsonValue.Create(v),
+					ulong v => JsonValue.Create(v),
+					char v => JsonValue.Create(v),
+					_ => null, // not supported.
+				};
 			}
 		}
 
