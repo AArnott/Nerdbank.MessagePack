@@ -43,6 +43,13 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	public void BasicObject_Map() => this.AssertSchema<BasicObject>();
 
 	[Fact]
+	public void BasicObject_Map_NamingPolicy()
+	{
+		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
+		this.AssertSchema<BasicObject>();
+	}
+
+	[Fact]
 	public void Recursive() => this.AssertSchema<RecursiveType>();
 
 	[Fact]
@@ -50,7 +57,9 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 	// More tests:
 	// * schema includes warnings for custom converters
-	// * schema accounts for property naming policy
+	// * notation for object references.
+	// * notation for msgpack extensions.
+	// * notation for [Key(int)] object properties, including both array and object serialized formats.
 
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 

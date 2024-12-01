@@ -39,12 +39,19 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(typeShape);
 
-		JsonObject schema = new JsonSchemaGenerator().GenerateSchema(typeShape);
+		if (this.PreserveReferences)
+		{
+			// This could be enhanced to support schema generation when PreserveReferences is enabled by changing every reference typed property
+			// to describe that it may be either a msgpack extension or the object itself.
+			throw new NotSupportedException($"Schema generation is not supported when {nameof(this.PreserveReferences)} is enabled.");
+		}
+
+		JsonObject schema = new JsonSchemaGenerator(this).GenerateSchema(typeShape);
 		schema.Add("$schema", "http://json-schema.org/draft-04/schema");
 		return schema;
 	}
 
-	private sealed class JsonSchemaGenerator
+	private sealed class JsonSchemaGenerator(MessagePackSerializer serializer)
 	{
 		private static readonly Dictionary<Type, SimpleTypeJsonSchema> SimpleTypeInfo = new()
 		{
@@ -187,16 +194,17 @@ public partial record MessagePackSerializer
 								(!prop.HasSetter || prop.IsSetterNonNullable) &&
 								(associatedParameter is null || associatedParameter.IsNonNullable);
 
-							this.Push(prop.Name);
+							string propertyName = serializer.GetSerializedPropertyName(prop.Name, prop.AttributeProvider);
+							this.Push(propertyName);
 							JsonObject propSchema = this.GenerateSchema(prop.PropertyType, allowNull: !isNonNullable);
 							ApplyDescription(prop.AttributeProvider, propSchema);
 							ApplyDefaultValue(prop.AttributeProvider, propSchema, associatedParameter);
 							this.Pop();
 
-							properties.Add(prop.Name, propSchema);
+							properties.Add(propertyName, propSchema);
 							if (associatedParameter?.IsRequired is true)
 							{
-								(required ??= []).Add((JsonNode)prop.Name);
+								(required ??= []).Add((JsonNode)propertyName);
 							}
 						}
 

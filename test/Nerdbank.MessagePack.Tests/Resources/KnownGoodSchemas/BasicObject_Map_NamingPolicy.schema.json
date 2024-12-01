@@ -1,0 +1,19 @@
+﻿{
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "stringProperty": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "intProperty": {
+      "type": "integer",
+      "default": 5
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}
