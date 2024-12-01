@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.ComponentModel;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -190,6 +192,7 @@ public static class MessagePackSchema
 
 							this.Push(prop.Name);
 							JsonObject propSchema = this.GenerateSchema(prop.PropertyType, allowNull: !isNonNullable);
+							ApplyDescription(prop.AttributeProvider, propSchema);
 							this.Pop();
 
 							properties.Add(prop.Name, propSchema);
@@ -209,6 +212,7 @@ public static class MessagePackSchema
 						}
 					}
 
+					ApplyDescription(objectShape.AttributeProvider, schema);
 					break;
 
 				default:
@@ -217,6 +221,14 @@ public static class MessagePackSchema
 			}
 
 			return ApplyNullability(schema, allowNull);
+		}
+
+		private static void ApplyDescription(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema)
+		{
+			if (attributeProvider?.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute description)
+			{
+				propertySchema["description"] = description.Description;
+			}
 		}
 
 		private static JsonObject ApplyNullability(JsonObject schema, bool allowNull)

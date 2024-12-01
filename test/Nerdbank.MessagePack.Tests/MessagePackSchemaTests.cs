@@ -8,6 +8,7 @@
 #warning "Recording mode is enabled. This should never be checked in."
 #endif
 
+using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -141,13 +142,16 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 	{
 		public Person? Mother { get; set; }
 
+		[Description("The father.")]
 		public Person? Father { get; set; }
 
 		public List<Person> Children { get; set; } = [];
 	}
 
+	[Description("A human person.")]
 	internal class Person
 	{
+		[Description("The name of the person.")]
 		public required string Name { get; set; }
 
 		public required Sex Sex { get; set; }
