@@ -13,12 +13,20 @@
         "Name": {
           "type": "string"
         },
+        "Sex": {
+          "type": "string",
+          "enum": [
+            "Male",
+            "Female"
+          ]
+        },
         "Age": {
           "type": "integer"
         }
       },
       "required": [
-        "Name"
+        "Name",
+        "Sex"
       ]
     },
     "Father": {

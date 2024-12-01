@@ -32,6 +32,12 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 
 	private static readonly string KnownGoodSchemasPath = typeof(MessagePackSchemaTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "ResourcesPath").Value!;
 
+	internal enum Sex
+	{
+		Male,
+		Female,
+	}
+
 	[Fact]
 	public void BasicObject_Map() => this.AssertSchema<BasicObject>();
 
@@ -143,6 +149,8 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 	internal class Person
 	{
 		public required string Name { get; set; }
+
+		public required Sex Sex { get; set; }
 
 		public int Age { get; set; }
 	}
