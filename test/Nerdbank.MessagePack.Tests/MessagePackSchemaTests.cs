@@ -152,6 +152,8 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 
 		public required Sex Sex { get; set; }
 
-		public int Age { get; set; }
+		public int? Age { get; set; }
+
+		public Dictionary<string, int> PetsAndAges { get; } = [];
 	}
 }

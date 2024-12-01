@@ -21,7 +21,16 @@
           ]
         },
         "Age": {
-          "type": "integer"
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "PetsAndAges": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
         }
       },
       "required": [
