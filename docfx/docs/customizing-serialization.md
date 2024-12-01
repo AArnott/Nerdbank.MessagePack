@@ -199,3 +199,19 @@ The negative values are all reserved for official extensions, leaving 0-127 for 
 This library defines its own extensions for certain features.
 These use type codes in the 0-127 range.
 If these conflict with extensions that your application defines or that other libraries your application uses defines, you can reassign type codes for this library's extensions by setting @Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes?displayProperty=nameWithType.
+
+## Understanding the schema
+
+It can be useful to periodically audit your data type graph to ensure that it is serializing what you expect.
+One way to do this is serialize an actual object graph and convert the msgpack to JSON using the @Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson*?displayProperty=nameWithType method.
+This will show you the serialized form of your object graph and help you understand how it is being serialized.
+But this approach will only show you data that actually got serialized.
+Optional values left to their default values may *not* be serialized, giving you an incomplete idea of what *might* be serialized.
+
+To see a full description of what will or might be serialized, use the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType method.
+Obtaining a JSON schema can be useful for aiding in publishing a formal spec for your data type for interoperability with other systems that may need to redefine the types in their native syntax.
+
+Consider that custom converters registered with an @Nerdbank.MessagePack.MessagePackSerializer instance and properties set on it can affect the schema.
+Be sure to set these properties before calling @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*.
+
+The schema generator has no insight into custom converters, so a warning will be included in the schema at locations where custom converters would be used, but the schema will attempt to represent what would typically be serialized without a custom converter.

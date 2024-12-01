@@ -21,7 +21,7 @@ using DiffPlex.DiffBuilder.Model;
 using Microsoft;
 using Newtonsoft.Json.Schema;
 
-public partial class MessagePackSchemaTests(ITestOutputHelper logger)
+public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	private const bool RecordMode =
 #if RECORD
@@ -31,7 +31,7 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 #endif
 		;
 
-	private static readonly string KnownGoodSchemasPath = typeof(MessagePackSchemaTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "ResourcesPath").Value!;
+	private static readonly string KnownGoodSchemasPath = typeof(SchemaTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "ResourcesPath").Value!;
 
 	internal enum Sex
 	{
@@ -62,7 +62,7 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 		string expected = File.ReadAllText(Path.Combine(KnownGoodSchemasPath, testName + ".schema.json"));
 		if (expected != actual)
 		{
-			logger.WriteLine("Schema does not match the known good schema. The diff is shown below with expected as baseline.");
+			this.Logger.WriteLine("Schema does not match the known good schema. The diff is shown below with expected as baseline.");
 
 			InlineDiffBuilder inlineBuilder = new(new Differ());
 			DiffPaneModel result = inlineBuilder.BuildDiffModel(expected, actual);
@@ -79,7 +79,7 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 						ChangeType.Deleted => "- ",
 						_ => "  ",
 					};
-					logger.WriteLine(lineNumberPrefix + diffPrefix + line.Text);
+					this.Logger.WriteLine(lineNumberPrefix + diffPrefix + line.Text);
 				}
 			}
 
@@ -94,14 +94,14 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 	{
 		Requires.NotNull(testName!);
 
-		JsonObject schema = MessagePackSchema.ToJsonSchema<T>();
+		JsonObject schema = this.Serializer.GetJsonSchema<T>();
 		string schemaString = SchemaToString(schema);
 
 #pragma warning disable CS0162 // Unreachable code detected
 		if (RecordMode)
 		{
 			// Log the schema in the test output and record it.
-			logger.WriteLine(schemaString);
+			this.Logger.WriteLine(schemaString);
 			Record(schema, testName);
 		}
 		else
@@ -109,7 +109,7 @@ public partial class MessagePackSchemaTests(ITestOutputHelper logger)
 			// Verify that the schema matches the LKG copy.
 			if (this.CheckMatchWithLKG(schema, testName))
 			{
-				logger.WriteLine(schemaString);
+				this.Logger.WriteLine(schemaString);
 			}
 			else
 			{

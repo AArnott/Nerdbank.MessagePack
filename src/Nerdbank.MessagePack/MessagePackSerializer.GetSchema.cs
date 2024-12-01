@@ -11,43 +11,40 @@ using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
 
-/// <summary>
-/// Creates documentation for a type shape's schema as it is serialized with this library.
-/// </summary>
-public static class MessagePackSchema
+public partial record MessagePackSerializer
 {
 	/// <summary>
-	/// <inheritdoc cref="ToJsonSchema(ITypeShape)" path="/summary"/>
+	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
 	/// </summary>
 	/// <typeparam name="T">The self-describing type whose schema should be produced.</typeparam>
-	/// <returns><inheritdoc cref="ToJsonSchema(ITypeShape)" path="/returns"/></returns>
-	public static JsonObject ToJsonSchema<T>()
-		where T : IShapeable<T> => ToJsonSchema(T.GetShape());
+	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
+	public JsonObject GetJsonSchema<T>()
+		where T : IShapeable<T> => this.GetJsonSchema(T.GetShape());
 
 	/// <summary>
-	/// <inheritdoc cref="ToJsonSchema(ITypeShape)" path="/summary"/>
+	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
 	/// </summary>
 	/// <typeparam name="T">The type whose schema should be produced.</typeparam>
 	/// <typeparam name="TProvider">The witness type that provides the shape for <typeparamref name="T"/>.</typeparam>
-	/// <returns><inheritdoc cref="ToJsonSchema(ITypeShape)" path="/returns"/></returns>
-	public static JsonObject ToJsonSchema<T, TProvider>()
-		where TProvider : IShapeable<T> => ToJsonSchema(TProvider.GetShape());
+	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
+	public JsonObject GetJsonSchema<T, TProvider>()
+		where TProvider : IShapeable<T> => this.GetJsonSchema(TProvider.GetShape());
 
 	/// <summary>
 	/// Creates a JSON Schema that describes the msgpack serialization of the given type's shape.
 	/// </summary>
 	/// <param name="typeShape">The shape of the type.</param>
 	/// <returns>The JSON Schema document.</returns>
-	public static JsonObject ToJsonSchema(ITypeShape typeShape)
+	public JsonObject GetJsonSchema(ITypeShape typeShape)
 	{
 		Requires.NotNull(typeShape);
 
-		JsonObject schema = new Generator().GenerateSchema(typeShape);
+		JsonObject schema = new JsonSchemaGenerator().GenerateSchema(typeShape);
 		schema.Add("$schema", "http://json-schema.org/draft-04/schema");
 		return schema;
 	}
 
-	private sealed class Generator
+	private sealed class JsonSchemaGenerator
 	{
 		private static readonly Dictionary<Type, SimpleTypeJsonSchema> SimpleTypeInfo = new()
 		{
