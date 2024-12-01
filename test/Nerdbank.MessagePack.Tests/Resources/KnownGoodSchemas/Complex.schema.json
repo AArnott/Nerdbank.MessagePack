@@ -45,7 +45,7 @@
       "$ref": "#/properties/Mother",
       "description": "The father."
     },
-    "Children": {
+    "progeny": {
       "type": "array",
       "items": {
         "$ref": "#/properties/Mother"

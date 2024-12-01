@@ -48,6 +48,10 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[Fact]
 	public void Complex() => this.AssertSchema<Family>();
 
+	// More tests:
+	// * schema includes warnings for custom converters
+	// * schema accounts for property naming policy
+
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
 	private static void Record(JsonObject schema, string testName)
@@ -147,6 +151,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		[Description("The father.")]
 		public Person? Father { get; set; }
 
+		[PropertyShape(Name = "progeny")]
 		public List<Person> Children { get; set; } = [];
 	}
 
