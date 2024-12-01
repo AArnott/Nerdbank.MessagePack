@@ -1,0 +1,12 @@
+﻿{
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "Child": {
+      "$ref": "#"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}

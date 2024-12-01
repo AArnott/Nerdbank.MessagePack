@@ -19,9 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DiffPlex" />
     <PackageReference Include="MessagePack" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="Newtonsoft.Json.Schema" />
     <PackageReference Include="PolyType.TestCases" />
     <PackageReference Include="Xunit.Combinatorial" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -46,6 +48,12 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackReaderTests.ReadInt.tt</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="ResourcesPath">
+      <Value>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)','Resources','KnownGoodSchemas'))</Value>
+    </AssemblyMetadata>
   </ItemGroup>
 
 </Project>

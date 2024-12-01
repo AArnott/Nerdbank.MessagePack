@@ -1,0 +1,35 @@
+﻿{
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "Mother": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "Name": {
+          "type": "string"
+        },
+        "Age": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "Name"
+      ]
+    },
+    "Father": {
+      "$ref": "#/properties/Mother"
+    },
+    "Children": {
+      "type": "array",
+      "items": {
+        "$ref": "#/properties/Mother"
+      }
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}

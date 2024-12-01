@@ -168,6 +168,7 @@ Nerdbank.MessagePack.MessagePackReader.TryReadExtensionHeader(out Nerdbank.Messa
 Nerdbank.MessagePack.MessagePackReader.TryReadMapHeader(out int count) -> bool
 Nerdbank.MessagePack.MessagePackReader.TryReadNil() -> bool
 Nerdbank.MessagePack.MessagePackReader.TryReadStringSpan(out System.ReadOnlySpan<byte> span) -> bool
+Nerdbank.MessagePack.MessagePackSchema
 Nerdbank.MessagePack.MessagePackSerializationException
 Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationException() -> void
 Nerdbank.MessagePack.MessagePackSerializationException.MessagePackSerializationException(string? message) -> void
@@ -363,6 +364,9 @@ static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt16(System.Span<byt
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt32(System.Span<byte> destination, uint value, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt64(System.Span<byte> destination, ulong value, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt8(System.Span<byte> destination, byte value, out int bytesWritten) -> bool
+static Nerdbank.MessagePack.MessagePackSchema.ToJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
+static Nerdbank.MessagePack.MessagePackSchema.ToJsonSchema<T, TProvider>() -> System.Text.Json.Nodes.JsonObject!
+static Nerdbank.MessagePack.MessagePackSchema.ToJsonSchema<T>() -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(in System.Buffers.ReadOnlySequence<byte> msgpack) -> string!
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.MessagePack.MessagePackReader reader, System.IO.TextWriter! jsonWriter) -> void
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack) -> string!
