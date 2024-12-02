@@ -81,7 +81,7 @@ public partial record MessagePackSerializer
 			[typeof(byte[])] = new("string"),
 			[typeof(Memory<byte>)] = new("string"),
 			[typeof(ReadOnlyMemory<byte>)] = new("string"),
-			[typeof(DateTime)] = new("string", format: "date-time"),
+			[typeof(DateTime)] = new("string", pattern: "^msgpack extension -1 as base64: "),
 			[typeof(DateTimeOffset)] = new("string", format: "date-time"),
 			[typeof(TimeSpan)] = new("string", pattern: @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$"),
 			[typeof(DateOnly)] = new("string", format: "date"),
@@ -101,12 +101,12 @@ public partial record MessagePackSerializer
 		private readonly List<string> path = [];
 		private bool referencedAnyType;
 
-		private JsonNode AnyTypeReference
+		private JsonObject AnyTypeReference
 		{
 			get
 			{
 				this.referencedAnyType = true;
-				return AnyTypeReferenceModel.DeepClone();
+				return (JsonObject)AnyTypeReferenceModel.DeepClone();
 			}
 		}
 
@@ -223,6 +223,16 @@ public partial record MessagePackSerializer
 				}
 			}
 
+			serializer.userProvidedConverters.TryGetValue(typeShape.Type, out object? customConverterInstance);
+			Type? customConverterType =
+				   typeShape.AttributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is { } converterAttribute ? converterAttribute.ConverterType : null;
+			if (customConverterInstance is not null || customConverterType is not null)
+			{
+				JsonObject unknownSchema = this.AnyTypeReference;
+				unknownSchema["description"] = $"The schema of this object is unknown as it is determined by the {(customConverterInstance?.GetType() ?? customConverterType)?.FullName} converter.";
+				return unknownSchema;
+			}
+
 			JsonObject schema;
 			switch (typeShape)
 			{
@@ -337,7 +347,7 @@ public partial record MessagePackSerializer
 
 								while (items.Count < keyAttribute.Index)
 								{
-									items.Add(this.AnyTypeReference);
+									items.Add((JsonNode)this.AnyTypeReference);
 								}
 
 								JsonObject itemSchema = this.GenerateSchemaCore(prop.PropertyType, allowNull: !isNonNullable);

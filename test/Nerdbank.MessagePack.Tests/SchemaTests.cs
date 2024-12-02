@@ -101,10 +101,11 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		},
 		]);
 
-	// More tests:
-	// * schema includes warnings for custom converters
-	// * notation for object references.
-	// * notation for msgpack extensions.
+	[Fact]
+	public void DateTimeExtension() => this.AssertSchema([new HasDateTime { Timestamp = DateTime.Now }]);
+
+	[Fact]
+	public void CustomConverterHasOpenSchema() => this.AssertSchema([new TypeWithCustomConverter()]);
 
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
@@ -250,5 +251,41 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 		[Key(3)]
 		public Person? Person { get; set; }
+	}
+
+	[GenerateShape]
+	internal partial class HasDateTime
+	{
+		public DateTime Timestamp { get; set; }
+	}
+
+	[GenerateShape, MessagePackConverter(typeof(CustomConverter))]
+	internal partial class TypeWithCustomConverter
+	{
+	}
+
+	internal class CustomConverter : MessagePackConverter<TypeWithCustomConverter>
+	{
+		public override TypeWithCustomConverter? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			reader.Skip(context);
+			return new TypeWithCustomConverter();
+		}
+
+		public override void Write(ref MessagePackWriter writer, in TypeWithCustomConverter? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteMapHeader(0);
+		}
 	}
 }

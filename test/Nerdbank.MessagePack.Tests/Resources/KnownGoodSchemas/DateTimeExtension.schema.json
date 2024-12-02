@@ -1,0 +1,13 @@
+﻿{
+  "type": [
+    "object",
+    "null"
+  ],
+  "properties": {
+    "Timestamp": {
+      "type": "string",
+      "pattern": "^msgpack extension -1 as base64: "
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}
