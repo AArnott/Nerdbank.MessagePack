@@ -7,7 +7,7 @@
 public partial class SimplePoco
 {
 	private readonly MessagePackSerializer serializer = new() { SerializeDefaultValues = true };
-	private readonly Sequence<byte> buffer = new();
+	private readonly Sequence buffer = new();
 
 	[Benchmark]
 	[BenchmarkCategory("map-init", "Serialize")]
