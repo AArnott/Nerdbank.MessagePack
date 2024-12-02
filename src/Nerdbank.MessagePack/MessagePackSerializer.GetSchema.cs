@@ -302,6 +302,7 @@ public partial record MessagePackSerializer
 								serializer.GetSerializedPropertyName(prop.Name, prop.AttributeProvider);
 							this.Push(propertyName);
 							JsonObject propSchema = this.GenerateSchemaCore(prop.PropertyType, allowNull: !isNonNullable);
+							this.Pop();
 							ApplyDescription(prop.AttributeProvider, propSchema);
 							ApplyDefaultValue(prop.AttributeProvider, propSchema, associatedParameter);
 
@@ -314,10 +315,10 @@ public partial record MessagePackSerializer
 									items.Add(this.AnyTypeReference);
 								}
 
-								items.Add(propSchema.DeepClone());
+								JsonObject itemSchema = this.GenerateSchemaCore(prop.PropertyType, allowNull: !isNonNullable);
+								ApplyDescription(prop.AttributeProvider, itemSchema);
+								items.Add((JsonNode)itemSchema);
 							}
-
-							this.Pop();
 
 							properties.Add(propertyName, propSchema);
 							if (associatedParameter?.IsRequired is true)

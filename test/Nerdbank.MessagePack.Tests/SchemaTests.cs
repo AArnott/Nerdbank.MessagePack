@@ -227,5 +227,8 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 		[Key(2)]
 		public bool GappedProperty { get; set; }
+
+		[Key(3)]
+		public Person? Person { get; set; }
 	}
 }

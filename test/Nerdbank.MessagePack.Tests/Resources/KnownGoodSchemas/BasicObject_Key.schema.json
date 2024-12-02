@@ -13,6 +13,43 @@
     },
     "2": {
       "type": "boolean"
+    },
+    "3": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "Name": {
+          "type": "string",
+          "description": "The name of the person."
+        },
+        "Sex": {
+          "type": "string",
+          "enum": [
+            "Male",
+            "Female"
+          ]
+        },
+        "Age": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": 18
+        },
+        "PetsAndAges": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "Name",
+        "Sex"
+      ],
+      "description": "A human person."
     }
   },
   "items": [
@@ -27,6 +64,9 @@
     },
     {
       "type": "boolean"
+    },
+    {
+      "$ref": "#/properties/3"
     }
   ],
   "$schema": "http://json-schema.org/draft-04/schema",
