@@ -230,6 +230,8 @@ Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Stream! s
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Stream! stream, T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.get -> bool
 Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.get -> Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.init -> void
 Nerdbank.MessagePack.MessagePackType

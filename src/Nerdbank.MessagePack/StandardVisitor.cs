@@ -142,7 +142,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					serializable ??= new();
 					deserializable ??= new();
 
-					GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+					StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
 						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize));
@@ -427,8 +427,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					_ => throw new NotSupportedException(),
 				};
 			}
+			else if (!this.owner.DisableHardwareAcceleration &&
+				enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
+				HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter))
+			{
+				return converter;
+			}
 			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
-				ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter))
+				ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetSpanConstructor(), out converter))
 			{
 				return converter;
 			}
@@ -443,6 +449,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
 			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Span when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
 			CollectionConstructionStrategy.Span when ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
 			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
 			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
@@ -452,7 +459,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
-		=> new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
+		=> this.owner.SerializeEnumValuesByName
+			? new EnumAsStringConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType))
+			: new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
 
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
@@ -476,25 +485,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		ITypeShapeFunc self = this;
 		return (IMessagePackConverter)shape.Invoke(this, state)!;
-	}
-
-	/// <summary>
-	/// Gets the messagepack encoding for a given string.
-	/// </summary>
-	/// <param name="value">The string to encode.</param>
-	/// <param name="utf8Bytes">The UTF-8 encoded string.</param>
-	/// <param name="msgpackEncoded">The msgpack-encoded string.</param>
-	/// <remarks>
-	/// Because msgpack encodes with UTF-8 bytes, the two output parameter share most of the memory.
-	/// </remarks>
-	private static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
-	{
-		int byteCount = StringEncoding.UTF8.GetByteCount(value);
-		Memory<byte> bytes = new byte[byteCount + 5];
-		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(bytes.Span, (uint)byteCount, out int msgpackHeaderLength));
-		StringEncoding.UTF8.GetBytes(value, bytes.Span[msgpackHeaderLength..]);
-		utf8Bytes = bytes.Slice(msgpackHeaderLength, byteCount);
-		msgpackEncoded = bytes.Slice(0, byteCount + msgpackHeaderLength);
 	}
 
 	/// <summary>

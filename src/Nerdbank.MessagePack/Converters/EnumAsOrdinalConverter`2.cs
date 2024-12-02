@@ -9,13 +9,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TEnum">The enum type.</typeparam>
 /// <typeparam name="TUnderlyingType">The underlying integer type.</typeparam>
 internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConverter<TUnderlyingType> primitiveConverter) : MessagePackConverter<TEnum>
+	where TEnum : struct, Enum
 {
 	/// <inheritdoc/>
-	public override TEnum? Read(ref MessagePackReader reader, SerializationContext context) => (TEnum?)(object?)primitiveConverter.Read(ref reader, context);
+	public override TEnum Read(ref MessagePackReader reader, SerializationContext context) => (TEnum)(object)primitiveConverter.Read(ref reader, context)!;
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TEnum? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in TEnum value, SerializationContext context)
 	{
-		primitiveConverter.Write(ref writer, (TUnderlyingType?)(object?)value, context);
+		primitiveConverter.Write(ref writer, (TUnderlyingType)(object)value, context);
 	}
 }

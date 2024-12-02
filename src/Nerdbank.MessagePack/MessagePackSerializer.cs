@@ -50,6 +50,21 @@ public partial record MessagePackSerializer
 	public MessagePackNamingPolicy? PropertyNamingPolicy { get; init; }
 
 	/// <summary>
+	/// Gets a value indicating whether enum values will be serialized by name rather than by their numeric value.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Serializing by name is a best effort.
+	/// Most enums do not define a name for every possible value, and flags enums may have complicated string representations when multiple named enum elements are combined to form a value.
+	/// When a simple string cannot be constructed for a given value, the numeric form is used.
+	/// </para>
+	/// <para>
+	/// When deserializing enums by name, name matching is case <em>insensitive</em> unless the enum type defines multiple values with names that are only distinguished by case.
+	/// </para>
+	/// </remarks>
+	public bool SerializeEnumValuesByName { get; init; }
+
+	/// <summary>
 	/// Gets a value indicating whether to serialize properties that are set to their default values.
 	/// </summary>
 	/// <value>The default value is <see langword="false" />.</value>
@@ -112,6 +127,11 @@ public partial record MessagePackSerializer
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
+
+	/// <summary>
+	/// Gets a value indicating whether hardware accelerated converters should be avoided.
+	/// </summary>
+	internal bool DisableHardwareAcceleration { get; init; }
 
 	/// <summary>
 	/// Gets all the converters this instance knows about so far.
