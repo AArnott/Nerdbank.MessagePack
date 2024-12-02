@@ -67,10 +67,13 @@ Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.DeepEquals(T? other) -> bool
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetHashCode() -> int
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetSecureHashCode() -> long
 Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider
-Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider.GetJsonSchema() -> System.Text.Json.Nodes.JsonObject!
+Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider.GetJsonSchema(Nerdbank.MessagePack.JsonSchemaContext! context) -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnAfterDeserialize() -> void
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnBeforeSerialize() -> void
+Nerdbank.MessagePack.JsonSchemaContext
+Nerdbank.MessagePack.JsonSchemaContext.GetJsonSchema<T>() -> System.Text.Json.Nodes.JsonObject!
+Nerdbank.MessagePack.JsonSchemaContext.GetJsonSchema<T>(PolyType.Abstractions.ITypeShape<T>! typeShape) -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.KeyAttribute
 Nerdbank.MessagePack.KeyAttribute.Index.get -> int
 Nerdbank.MessagePack.KeyAttribute.KeyAttribute(int index) -> void

@@ -23,6 +23,10 @@ namespace Nerdbank.MessagePack;
 /// <item>Delegate serialization of sub-values to a converter obtained using <see cref="SerializationContext.GetConverter{T}()"/> rather than making a top-level call back to <see cref="MessagePackSerializer"/>.</item>
 /// </list>
 /// </para>
+/// <para>
+/// Implementations are encouraged to implement <see cref="IMessagePackConverterJsonSchemaProvider"/> in order to support
+/// <see cref="MessagePackSerializer.GetJsonSchema(ITypeShape)"/>.
+/// </para>
 /// </remarks>
 public abstract class MessagePackConverter<T> : IMessagePackConverter
 {

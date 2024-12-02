@@ -305,7 +305,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 	internal class DocumentingCustomConverter : MessagePackConverter<CustomType>, IMessagePackConverterJsonSchemaProvider
 	{
-		public JsonObject GetJsonSchema()
+		public JsonObject GetJsonSchema(JsonSchemaContext context)
 		{
 			return new JsonObject
 			{

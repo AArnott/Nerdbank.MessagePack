@@ -51,7 +51,7 @@ public partial record MessagePackSerializer
 		return schema;
 	}
 
-	private sealed class JsonSchemaGenerator(MessagePackSerializer serializer)
+	private sealed class JsonSchemaGenerator : ITypeShapeFunc
 	{
 		private static readonly JsonObject AnyTypeReferenceModel = new JsonObject
 		{
@@ -99,7 +99,15 @@ public partial record MessagePackSerializer
 
 		private readonly Dictionary<(Type, bool AllowNull), string> locations = [];
 		private readonly List<string> path = [];
+		private readonly JsonSchemaContext context;
+		private readonly MessagePackSerializer serializer;
 		private bool referencedAnyType;
+
+		public JsonSchemaGenerator(MessagePackSerializer serializer)
+		{
+			this.serializer = serializer;
+			this.context = new JsonSchemaContext(serializer);
+		}
 
 		private JsonObject AnyTypeReference
 		{
@@ -110,13 +118,15 @@ public partial record MessagePackSerializer
 			}
 		}
 
+		object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => this.context.GetJsonSchema(typeShape);
+
 		public JsonObject GenerateSchema(ITypeShape typeShape)
 		{
 			JsonObject schema = this.GenerateSchemaCore(typeShape);
 
 			schema.Add("$schema", "http://json-schema.org/draft-04/schema");
 
-			if (this.referencedAnyType)
+			if (this.referencedAnyType || this.context.ReferencedAnyType)
 			{
 				JsonObject? definitions = (JsonObject?)schema["definitions"];
 				if (definitions is null)
@@ -223,7 +233,7 @@ public partial record MessagePackSerializer
 				}
 			}
 
-			serializer.userProvidedConverters.TryGetValue(typeShape.Type, out object? customConverterInstance);
+			this.serializer.userProvidedConverters.TryGetValue(typeShape.Type, out object? customConverterInstance);
 			Type? customConverterType =
 				   typeShape.AttributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is { } converterAttribute ? converterAttribute.ConverterType : null;
 			if (customConverterInstance is not null || customConverterType is not null)
@@ -235,13 +245,11 @@ public partial record MessagePackSerializer
 
 				if (customConverterInstance is IMessagePackConverterJsonSchemaProvider jsonSchemaProvider)
 				{
-					return jsonSchemaProvider.GetJsonSchema();
+					return jsonSchemaProvider.GetJsonSchema(this.context);
 				}
 				else
 				{
-					JsonObject unknownSchema = this.AnyTypeReference;
-					unknownSchema["description"] = $"The schema of this object is unknown as it is determined by the {(customConverterInstance?.GetType() ?? customConverterType)?.FullName} converter.";
-					return unknownSchema;
+					return (JsonObject)typeShape.Invoke(this)!;
 				}
 			}
 
@@ -346,7 +354,7 @@ public partial record MessagePackSerializer
 
 							KeyAttribute? keyAttribute = prop.AttributeProvider?.GetCustomAttribute<KeyAttribute>();
 							string propertyName = keyAttribute?.Index.ToString() ??
-								serializer.GetSerializedPropertyName(prop.Name, prop.AttributeProvider);
+								this.serializer.GetSerializedPropertyName(prop.Name, prop.AttributeProvider);
 							this.Push(propertyName);
 							JsonObject propSchema = this.GenerateSchemaCore(prop.PropertyType, allowNull: !isNonNullable);
 							this.Pop();

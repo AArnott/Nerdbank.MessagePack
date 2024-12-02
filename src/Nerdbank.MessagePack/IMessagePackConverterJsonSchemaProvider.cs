@@ -16,10 +16,17 @@ public interface IMessagePackConverterJsonSchemaProvider
 	/// <summary>
 	/// Gets the <see href="https://json-schema.org/">JSON schema</see> that resembles the data structure that this converter can serialize and deserialize.
 	/// </summary>
+	/// <param name="context">A means to obtain schema fragments for inclusion when your converter delegates to other converters.</param>
 	/// <returns>The fragment of JSON schema that describes the value written by this converter.</returns>
 	/// <remarks>
+	/// <para>
 	/// Implementations should return a new instance of <see cref="JsonObject"/> that represents the JSON schema fragment for every caller.
-	/// A shared instance may be used to call <see cref="JsonNode.DeepClone"/> and the result returned.
+	/// A shared instance <em>may</em> be used to call <see cref="JsonNode.DeepClone"/> and the result returned.
+	/// </para>
+	/// <para>
+	/// If the converter delegates to other converters, the schemas for those sub-values can be obtained for inclusion in the returned schema
+	/// by calling <see cref="JsonSchemaContext.GetJsonSchema{T}()"/> on the <paramref name="context"/>.
+	/// </para>
 	/// </remarks>
-	JsonObject GetJsonSchema();
+	JsonObject GetJsonSchema(JsonSchemaContext context);
 }
