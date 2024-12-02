@@ -33,5 +33,5 @@ internal interface IMessagePackConverter
 	IMessagePackConverter WrapWithReferencePreservation();
 
 	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext)"/>
-	JsonObject? GetJsonSchema(JsonSchemaContext context);
+	JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);
 }

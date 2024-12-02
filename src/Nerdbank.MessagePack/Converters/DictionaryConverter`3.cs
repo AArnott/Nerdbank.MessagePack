@@ -4,6 +4,7 @@
 #pragma warning disable SA1402 // File may only contain a single type
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -55,6 +56,22 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			keyConverter.Write(ref writer, entryKey, context);
 			valueConverter.Write(ref writer, entryValue, context);
 		}
+	}
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		JsonObject schema = new()
+		{
+			["type"] = "object",
+			["additionalProperties"] = context.GetJsonSchema(((IDictionaryTypeShape<TDictionary, TKey, TValue>)typeShape).ValueType),
+		};
+
+		if (typeof(TKey) != typeof(string))
+		{
+			schema["description"] = $"This object uses {typeof(TKey)} values as its keys instead of strings.";
+		}
+
+		return schema;
 	}
 
 	/// <summary>

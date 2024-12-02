@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -263,6 +264,35 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		return value;
+	}
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		JsonObject schema = new()
+		{
+			["type"] = "object",
+		};
+
+		JsonObject? properties = null;
+		JsonArray? required = null;
+		for (int i = 0; i < serializable.Properties.Length; i++)
+		{
+			properties ??= new JsonObject();
+			SerializableProperty<T> property = serializable.Properties.Span[i];
+			properties.Add(property.Name, context.GetJsonSchema(property.Shape.PropertyType));
+		}
+
+		if (properties is not null)
+		{
+			schema["properties"] = properties;
+		}
+
+		if (required is not null)
+		{
+			schema["required"] = required;
+		}
+
+		return schema;
 	}
 
 	/// <summary>

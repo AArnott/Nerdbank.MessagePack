@@ -67,7 +67,7 @@ internal record struct MapSerializableProperties<TDeclaringType>(ReadOnlyMemory<
 /// <param name="WriteAsync">A delegate that asynchonously serializes the value of the property.</param>
 /// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
 /// <param name="ShouldSerialize"><inheritdoc cref="PropertyAccessors{TDeclaringType}.ShouldSerialize"/></param>
-internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, bool PreferAsyncSerialization, Func<TDeclaringType, bool>? ShouldSerialize);
+internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, bool PreferAsyncSerialization, Func<TDeclaringType, bool>? ShouldSerialize, IPropertyShape Shape);
 
 /// <summary>
 /// A map of deserializable properties.

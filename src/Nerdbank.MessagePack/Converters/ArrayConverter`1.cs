@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -9,7 +10,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// Serializes and deserializes a 1-rank array.
 /// </summary>
 /// <typeparam name="TElement">The element type.</typeparam>
-internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TElement[]>
+internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter, ITypeShape<TElement> elementShape) : MessagePackConverter<TElement[]>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -127,5 +128,15 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			reader.AdvanceTo(map.End);
 			return array;
 		}
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		return new JsonObject
+		{
+			["type"] = "array",
+			["items"] = context.GetJsonSchema(((IEnumerableTypeShape<TElement[], TElement>)typeShape).ElementType),
+		};
 	}
 }

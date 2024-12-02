@@ -4,10 +4,10 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-using System.ComponentModel;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
+using System.Text.Json.Nodes;
 using Microsoft;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -467,14 +467,15 @@ internal class CharConverter : MessagePackConverter<char>
 /// <summary>
 /// Serializes <see cref="byte"/> array values.
 /// </summary>
-internal class ByteArrayConverter : MessagePackConverter<byte[]?>
+[GenerateShape<byte>]
+internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 {
 	/// <summary>
 	/// A shareable instance of this converter.
 	/// </summary>
 	internal static readonly ByteArrayConverter Instance = new();
 
-	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter());
+	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter(), PolyTypeUtilities.GetShape<byte, ByteArrayConverter>());
 
 	private ByteArrayConverter()
 	{
@@ -586,5 +587,26 @@ internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : 
 		}
 
 		return elementConverter.Read(ref reader, context);
+	}
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		JsonObject schema = context.GetJsonSchema(((INullableTypeShape<T>)typeShape).ElementType);
+
+		// Modify the schema of the object to indicate that null is an option.
+		// TODO: How does this work if the schema we get back is a $ref?
+		if (schema.TryGetPropertyValue("type", out JsonNode? typeValue))
+		{
+			if (schema["type"] is JsonArray types)
+			{
+				types.Add((JsonNode)"null");
+			}
+			else
+			{
+				schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
+			}
+		}
+
+		return schema;
 	}
 }

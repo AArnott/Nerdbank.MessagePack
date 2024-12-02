@@ -47,11 +47,11 @@ public class JsonSchemaContext
 	/// <typeparam name="T">The type whose schema is required.</typeparam>
 	/// <param name="typeShape">The shape for the type.</param>
 	/// <returns>The JSON schema.</returns>
-	public JsonObject GetJsonSchema<T>(ITypeShape<T> typeShape)
+	public JsonObject GetJsonSchema(ITypeShape typeShape)
 	{
 		// TODO: be willing to return a reference to where this schema was previously generated.
-		MessagePackConverter<T> converter = this.serializer.GetOrAddConverter(typeShape);
-		if (converter.GetJsonSchema(this) is JsonObject schema)
+		IMessagePackConverter converter = this.serializer.GetOrAddConverter(typeShape);
+		if (converter.GetJsonSchema(this, typeShape) is JsonObject schema)
 		{
 			return schema;
 		}
@@ -61,7 +61,7 @@ public class JsonSchemaContext
 		return unknownSchema;
 	}
 
-	/// <inheritdoc cref="GetJsonSchema{T}(ITypeShape{T})"/>
+	/// <inheritdoc cref="GetJsonSchema(ITypeShape)"/>
 	public JsonObject GetJsonSchema<T>()
 		where T : IShapeable<T> => this.GetJsonSchema(T.GetShape());
 }

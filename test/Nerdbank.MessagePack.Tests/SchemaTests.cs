@@ -303,13 +303,13 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 	}
 
-	internal class DocumentingCustomConverter : MessagePackConverter<CustomType>, IMessagePackConverterJsonSchemaProvider
+	internal class DocumentingCustomConverter : MessagePackConverter<CustomType>
 	{
-		public JsonObject GetJsonSchema(JsonSchemaContext context)
+		public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		{
 			return new JsonObject
 			{
-				["type"] = new JsonArray([JsonValue.Create("object"), JsonValue.Create("null")]),
+				["type"] = new JsonArray(["object", "null"]),
 				["properties"] = new JsonObject
 				{
 				},

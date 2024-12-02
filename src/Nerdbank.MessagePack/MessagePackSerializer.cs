@@ -421,6 +421,17 @@ public partial record MessagePackSerializer
 		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
+	/// Gets a converter for the given type shape.
+	/// An existing converter is reused if one is found in the cache.
+	/// If a converter must be created, it is added to the cache for lookup next time.
+	/// </summary>
+	/// <typeparam name="T">The data type to convert.</typeparam>
+	/// <param name="shape">The shape of the type to convert.</param>
+	/// <returns>A msgpack converter.</returns>
+	internal IMessagePackConverter GetOrAddConverter(ITypeShape shape)
+		=> (IMessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
+
+	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available.
 	/// </summary>
 	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>

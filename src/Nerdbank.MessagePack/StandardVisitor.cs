@@ -145,7 +145,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
-						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize));
+						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize, property));
 					}
 
 					if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
@@ -440,7 +440,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 			else
 			{
-				return new ArrayConverter<TElement>(elementConverter);
+				return new ArrayConverter<TElement>(elementConverter, enumerableShape.ElementType);
 			}
 		}
 
