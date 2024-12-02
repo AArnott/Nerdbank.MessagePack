@@ -19,6 +19,7 @@ using DiffPlex;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using Microsoft;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
 public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
@@ -50,6 +51,47 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[Fact]
+	public void BasicObject_Key_AcceptsNull()
+	{
+		JSchema schema = this.AssertSchema<ArrayOfValuesObject>("BasicObject_Key");
+
+		JToken.Parse("null").Validate(schema);
+	}
+
+	[Fact]
+	public void BasicObject_Key_AcceptsArrays()
+	{
+		JSchema schema = this.AssertSchema<ArrayOfValuesObject>("BasicObject_Key");
+
+		// Force additional array elements to be denied to verify that the indexes are explicitly allowed by the schema.
+		schema.AllowAdditionalItems = false;
+
+		JToken.Parse("""
+			["str1", null, true]
+			""").Validate(schema);
+
+		JToken.Parse("""
+			["str1", { "unknown": "object" }, true]
+			""").Validate(schema);
+	}
+
+	[Fact]
+	public void BasicObject_Key_AcceptsMaps()
+	{
+		JSchema schema = this.AssertSchema<ArrayOfValuesObject>("BasicObject_Key");
+
+		// Force additional properties to be denied to verify that the indexes are explicitly allowed by the schema.
+		schema.AllowAdditionalProperties = false;
+
+		JToken.Parse("""
+			{
+				"0": "str1",
+				"2": true
+			}
+			""").Validate(schema);
+	}
+
+	[Fact]
 	public void Recursive() => this.AssertSchema<RecursiveType>();
 
 	[Fact]
@@ -59,7 +101,6 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	// * schema includes warnings for custom converters
 	// * notation for object references.
 	// * notation for msgpack extensions.
-	// * notation for [Key(int)] object properties, including both array and object serialized formats.
 
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
@@ -176,5 +217,15 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		public int? Age { get; set; }
 
 		public Dictionary<string, int> PetsAndAges { get; } = [];
+	}
+
+	[GenerateShape]
+	internal partial class ArrayOfValuesObject
+	{
+		[Key(0)]
+		public string? Property0 { get; set; }
+
+		[Key(2)]
+		public bool GappedProperty { get; set; }
 	}
 }

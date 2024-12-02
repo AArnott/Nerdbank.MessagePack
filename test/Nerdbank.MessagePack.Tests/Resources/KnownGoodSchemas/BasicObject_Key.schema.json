@@ -1,0 +1,45 @@
+﻿{
+  "type": [
+    "object",
+    "array",
+    "null"
+  ],
+  "properties": {
+    "0": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "2": {
+      "type": "boolean"
+    }
+  },
+  "items": [
+    {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    {
+      "$ref": "#/definitions/any"
+    },
+    {
+      "type": "boolean"
+    }
+  ],
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "definitions": {
+    "any": {
+      "type": [
+        "number",
+        "string",
+        "boolean",
+        "object",
+        "array",
+        "null"
+      ]
+    }
+  }
+}
