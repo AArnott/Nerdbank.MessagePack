@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -143,36 +144,36 @@ public partial record MessagePackSerializer
 		private static void ApplyDefaultValue(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema, IConstructorParameterShape? parameterShape)
 		{
 			JsonValue? defaultValue =
-				parameterShape?.HasDefaultValue is true ? Create(parameterShape.DefaultValue) :
-				attributeProvider?.GetCustomAttribute<DefaultValueAttribute>() is DefaultValueAttribute att ? Create(att.Value) :
+				parameterShape?.HasDefaultValue is true ? CreateValue(parameterShape.DefaultValue) :
+				attributeProvider?.GetCustomAttribute<DefaultValueAttribute>() is DefaultValueAttribute att ? CreateValue(att.Value) :
 				null;
 
 			if (defaultValue is not null)
 			{
 				propertySchema["default"] = defaultValue;
 			}
+		}
 
-			static JsonValue? Create(object? value)
+		private static JsonValue? CreateValue(object? value)
+		{
+			return value switch
 			{
-				return value switch
-				{
-					string v => JsonValue.Create(v),
-					short v => JsonValue.Create(v),
-					int v => JsonValue.Create(v),
-					long v => JsonValue.Create(v),
-					float v => JsonValue.Create(v),
-					double v => JsonValue.Create(v),
-					decimal v => JsonValue.Create(v),
-					bool v => JsonValue.Create(v),
-					byte v => JsonValue.Create(v),
-					sbyte v => JsonValue.Create(v),
-					ushort v => JsonValue.Create(v),
-					uint v => JsonValue.Create(v),
-					ulong v => JsonValue.Create(v),
-					char v => JsonValue.Create(v),
-					_ => null, // not supported.
-				};
-			}
+				string v => JsonValue.Create(v),
+				short v => JsonValue.Create(v),
+				int v => JsonValue.Create(v),
+				long v => JsonValue.Create(v),
+				float v => JsonValue.Create(v),
+				double v => JsonValue.Create(v),
+				decimal v => JsonValue.Create(v),
+				bool v => JsonValue.Create(v),
+				byte v => JsonValue.Create(v),
+				sbyte v => JsonValue.Create(v),
+				ushort v => JsonValue.Create(v),
+				uint v => JsonValue.Create(v),
+				ulong v => JsonValue.Create(v),
+				char v => JsonValue.Create(v),
+				_ => null, // not supported.
+			};
 		}
 
 		private static JsonObject ApplyNullability(JsonObject schema, bool allowNull)
@@ -226,10 +227,34 @@ public partial record MessagePackSerializer
 			switch (typeShape)
 			{
 				case IEnumTypeShape enumShape:
-					schema = new JsonObject { ["type"] = "string" };
-					if (enumShape.Type.GetCustomAttribute<FlagsAttribute>() is null)
+					bool serializedByOrdinal = true; // https://github.com/AArnott/Nerdbank.MessagePack/issues/132
+					schema = new JsonObject { ["type"] = serializedByOrdinal ? "integer" : "string" };
+					if (serializedByOrdinal)
 					{
-						schema["enum"] = new JsonArray(Enum.GetNames(enumShape.Type).Select(name => (JsonNode)name).ToArray());
+						StringBuilder description = new();
+						Array enumValuesUntyped = enumShape.Type.GetEnumValuesAsUnderlyingType();
+						JsonNode[] enumValueNodes = new JsonNode[enumValuesUntyped.Length];
+						for (int i = 0; i < enumValueNodes.Length; i++)
+						{
+							object ordinalValue = enumValuesUntyped.GetValue(i)!;
+							if (description.Length > 0)
+							{
+								description.Append(", ");
+							}
+
+							description.Append($"{ordinalValue} = {Enum.GetName(enumShape.Type, ordinalValue)}");
+							enumValueNodes[i] = CreateValue(ordinalValue) ?? throw new NotSupportedException("Unrecognized ordinal value type.");
+						}
+
+						schema["enum"] = new JsonArray(enumValueNodes);
+						schema["description"] = description.ToString();
+					}
+					else
+					{
+						if (enumShape.Type.GetCustomAttribute<FlagsAttribute>() is null)
+						{
+							schema["enum"] = new JsonArray(Enum.GetNames(enumShape.Type).Select(name => (JsonNode)name).ToArray());
+						}
 					}
 
 					break;

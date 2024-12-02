@@ -41,27 +41,22 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[Fact]
-	public void BasicObject_Map() => this.AssertSchema<BasicObject>();
+	public void BasicObject_Map() => this.AssertSchema([new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
 
 	[Fact]
 	public void BasicObject_Map_NamingPolicy()
 	{
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
-		this.AssertSchema<BasicObject>();
+		this.AssertSchema([new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
 	}
 
 	[Fact]
-	public void BasicObject_Key_AcceptsNull()
-	{
-		JSchema schema = this.AssertSchema<ArrayOfValuesObject>("BasicObject_Key");
-
-		JToken.Parse("null").Validate(schema);
-	}
+	public void BasicObject_Key_AcceptsNull() => this.AssertSchema<ArrayOfValuesObject>([null], testName: "BasicObject_Key");
 
 	[Fact]
 	public void BasicObject_Key_AcceptsArrays()
 	{
-		JSchema schema = this.AssertSchema<ArrayOfValuesObject>("BasicObject_Key");
+		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
 
 		// Force additional array elements to be denied to verify that the indexes are explicitly allowed by the schema.
 		schema.AllowAdditionalItems = false;
@@ -78,7 +73,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[Fact]
 	public void BasicObject_Key_AcceptsMaps()
 	{
-		JSchema schema = this.AssertSchema<ArrayOfValuesObject>("BasicObject_Key");
+		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
 
 		// Force additional properties to be denied to verify that the indexes are explicitly allowed by the schema.
 		schema.AllowAdditionalProperties = false;
@@ -92,10 +87,19 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[Fact]
-	public void Recursive() => this.AssertSchema<RecursiveType>();
+	public void Recursive() => this.AssertSchema([new RecursiveType { Child = new RecursiveType() }]);
 
 	[Fact]
-	public void Complex() => this.AssertSchema<Family>();
+	public void Complex() => this.AssertSchema([
+		new Family
+		{
+			Father = new Person { Name = "Dad", Sex = Sex.Male },
+			Mother = new Person { Name = "Mom", Sex = Sex.Female },
+			Children = [
+				new Person { Name = "Bob", Sex = Sex.Male },
+			],
+		},
+		]);
 
 	// More tests:
 	// * schema includes warnings for custom converters
@@ -143,7 +147,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		return true;
 	}
 
-	private JSchema AssertSchema<T>([CallerMemberName] string? testName = null)
+	private JSchema AssertSchema<T>(T?[]? sampleData = null, [CallerMemberName] string? testName = null)
 		where T : IShapeable<T>
 	{
 		Requires.NotNull(testName!);
@@ -174,6 +178,22 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 		// Verify that the schema is valid by parsing it as one.
 		JSchema parsedSchema = JSchema.Parse(schemaString);
+
+		// Verify that the sample data actually serializes to the schema.
+		if (sampleData is not null)
+		{
+			int sampleCounter = 0;
+			foreach (T? item in sampleData)
+			{
+				byte[] msgpack = this.Serializer.Serialize(item);
+				string json = MessagePackSerializer.ConvertToJson(msgpack);
+				this.Logger.WriteLine($"Sample data {++sampleCounter}:");
+				var parsed = JsonNode.Parse(json);
+				this.Logger.WriteLine(parsed is null ? "null" : parsed.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+				JToken.Parse(json).Validate(parsedSchema);
+			}
+		}
+
 		return parsedSchema;
 	}
 
@@ -211,7 +231,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		[Description("The name of the person.")]
 		public required string Name { get; set; }
 
-		public required Sex Sex { get; set; }
+		public Sex Sex { get; set; }
 
 		[DefaultValue(18)]
 		public int? Age { get; set; }

@@ -15,11 +15,12 @@
           "description": "The name of the person."
         },
         "Sex": {
-          "type": "string",
+          "type": "integer",
           "enum": [
-            "Male",
-            "Female"
-          ]
+            0,
+            1
+          ],
+          "description": "0 = Male, 1 = Female"
         },
         "Age": {
           "type": [
@@ -36,8 +37,7 @@
         }
       },
       "required": [
-        "Name",
-        "Sex"
+        "Name"
       ],
       "description": "A human person."
     },
