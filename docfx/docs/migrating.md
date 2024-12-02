@@ -29,6 +29,7 @@ NativeAOT ready           | ✅ | ❌[^2] |
 Unity                     | ❓[^3] | ✅ |
 Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ |
 Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
+JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
 Secure defaults           | ✅ | ❌ |
 Automatic hash collection deserialization in secure mode | ❌ | ✅ |
 Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.ByValueEqualityComparer`1) | ❌ |
