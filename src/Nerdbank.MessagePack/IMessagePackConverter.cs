@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text.Json.Nodes;
+
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -29,4 +31,7 @@ internal interface IMessagePackConverter
 	/// </summary>
 	/// <returns>A converter. Possibly <see langword="this"/> if this instance is already reference preserving.</returns>
 	IMessagePackConverter WrapWithReferencePreservation();
+
+	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext)"/>
+	JsonObject? GetJsonSchema(JsonSchemaContext context);
 }

@@ -233,25 +233,7 @@ public partial record MessagePackSerializer
 				}
 			}
 
-			this.serializer.userProvidedConverters.TryGetValue(typeShape.Type, out object? customConverterInstance);
-			Type? customConverterType =
-				   typeShape.AttributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is { } converterAttribute ? converterAttribute.ConverterType : null;
-			if (customConverterInstance is not null || customConverterType is not null)
-			{
-				if (customConverterType is not null)
-				{
-					customConverterInstance = customConverterInstance = customConverterType.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes)?.Invoke(null);
-				}
-
-				if (customConverterInstance is IMessagePackConverterJsonSchemaProvider jsonSchemaProvider)
-				{
-					return jsonSchemaProvider.GetJsonSchema(this.context);
-				}
-				else
-				{
-					return (JsonObject)typeShape.Invoke(this)!;
-				}
-			}
+			return (JsonObject)typeShape.Invoke(this)!;
 
 			JsonObject schema;
 			switch (typeShape)

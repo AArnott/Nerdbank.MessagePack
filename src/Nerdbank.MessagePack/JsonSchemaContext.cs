@@ -51,13 +51,13 @@ public class JsonSchemaContext
 	{
 		// TODO: be willing to return a reference to where this schema was previously generated.
 		MessagePackConverter<T> converter = this.serializer.GetOrAddConverter(typeShape);
-		if (converter is IMessagePackConverterJsonSchemaProvider schemaProvider)
+		if (converter.GetJsonSchema(this) is JsonObject schema)
 		{
-			return schemaProvider.GetJsonSchema(this);
+			return schema;
 		}
 
 		JsonObject unknownSchema = this.AnyTypeReference;
-		unknownSchema["description"] = $"The schema of this object is unknown as it is determined by the {converter.GetType().FullName} converter which does not implement {typeof(IMessagePackConverterJsonSchemaProvider).FullName}.";
+		unknownSchema["description"] = $"The schema of this object is unknown as it is determined by the {converter.GetType().FullName} converter which does not override {nameof(MessagePackConverter<int>.GetJsonSchema)}.";
 		return unknownSchema;
 	}
 

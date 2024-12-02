@@ -16,7 +16,7 @@ NBMsgPack020 | Usage | Error | `[MessagePackConverter]` type must be compatible 
 NBMsgPack021 | Usage | Error | `[MessagePackConverter]` type missing default constructor
 NBMsgPack030 | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods
 NBMsgPack031 | Usage | Warning | Converters should read or write exactly one msgpack structure
-NBMsgPack032 | Usage | Info | Converters should implement IMessagePackConverterJsonSchemaProvider
+NBMsgPack032 | Usage | Info | Converters should override GetJsonSchema
 NBMsgPack100 | Migration | Info | Migrate MessagePack-CSharp formatter
 NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute
 NBMsgPack102 | Migration | Info | Remove use of MessagePackObjectAttribute

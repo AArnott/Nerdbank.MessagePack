@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text;
+using System.Text.Json.Nodes;
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -18,5 +21,31 @@ internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConvert
 	public override void Write(ref MessagePackWriter writer, in TEnum value, SerializationContext context)
 	{
 		primitiveConverter.Write(ref writer, (TUnderlyingType)(object)value, context);
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context)
+	{
+		JsonObject schema = new JsonObject { ["type"] = "integer" };
+
+		StringBuilder description = new();
+		Array enumValuesUntyped = typeof(TEnum).GetEnumValuesAsUnderlyingType();
+		JsonNode[] enumValueNodes = new JsonNode[enumValuesUntyped.Length];
+		for (int i = 0; i < enumValueNodes.Length; i++)
+		{
+			object ordinalValue = enumValuesUntyped.GetValue(i)!;
+			if (description.Length > 0)
+			{
+				description.Append(", ");
+			}
+
+			description.Append($"{ordinalValue} = {Enum.GetName(typeof(TEnum), ordinalValue)}");
+			enumValueNodes[i] = CreateJsonValue(ordinalValue) ?? throw new NotSupportedException("Unrecognized ordinal value type.");
+		}
+
+		schema["enum"] = new JsonArray(enumValueNodes);
+		schema["description"] = description.ToString();
+
+		return schema;
 	}
 }
