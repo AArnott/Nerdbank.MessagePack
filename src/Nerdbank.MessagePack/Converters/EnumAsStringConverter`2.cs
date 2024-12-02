@@ -1,0 +1,133 @@
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Text;
+using Microsoft;
+
+namespace Nerdbank.MessagePack.Converters;
+
+/// <summary>
+/// Serializes <see langword="enum" /> types as a string if possible.
+/// When no string is assigned to a particular value, the ordinal value is used.
+/// </summary>
+/// <typeparam name="TEnum">The enum type.</typeparam>
+/// <typeparam name="TUnderlyingType">The underlying integer type.</typeparam>
+/// <remarks>
+/// Upon deserialization, the enum value name match will be case insensitive
+/// unless the enum type defines multiple values with names that are only distinguished by case.
+/// </remarks>
+internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConverter<TEnum>
+	where TEnum : struct, Enum
+{
+	private readonly SpanDictionary<byte, TEnum> valueByUtf8Name;
+	private readonly Dictionary<string, TEnum> valueByName = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<TEnum, ReadOnlyMemory<byte>> msgpackEncodedNameByValue = new();
+	private readonly MessagePackConverter<TUnderlyingType> primitiveConverter;
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="EnumAsStringConverter{TEnum, TUnderlyingType}"/> class.
+	/// </summary>
+	/// <param name="primitiveConverter">The converter for the primitive underlying type.</param>
+	public EnumAsStringConverter(MessagePackConverter<TUnderlyingType> primitiveConverter)
+	{
+		this.primitiveConverter = primitiveConverter;
+
+		if (!TryPopulateDictionary())
+		{
+			// Fallback to case sensitive mode.
+			this.valueByName = new(StringComparer.Ordinal);
+			this.msgpackEncodedNameByValue.Clear();
+			Assumes.True(TryPopulateDictionary(), $"Failed to populate enum fields from {typeof(TEnum).FullName}.");
+		}
+
+		this.valueByUtf8Name = new SpanDictionary<byte, TEnum>(this.valueByName.Select(n => new KeyValuePair<ReadOnlyMemory<byte>, TEnum>(StringEncoding.UTF8.GetBytes(n.Key), n.Value)), ByteSpanEqualityComparer.Ordinal);
+
+		bool TryPopulateDictionary()
+		{
+			bool nonUniqueNameDetected = false;
+			foreach (TEnum value in Enum.GetValues<TEnum>())
+			{
+				if (Enum.GetName(value) is string name)
+				{
+					if (!this.valueByName.TryAdd(name, value))
+					{
+						if (!EqualityComparer<TEnum>.Default.Equals(this.valueByName[name], value))
+						{
+							// Unique values assigned to names that collided, apparently only by case.
+							return false;
+						}
+
+						nonUniqueNameDetected = true;
+					}
+
+					// Values may be assigned to multiple names, so we don't guarantee uniqueness.
+					StringEncoding.GetEncodedStringBytes(name, out _, out ReadOnlyMemory<byte> msgpackEncodedName);
+					this.msgpackEncodedNameByValue.TryAdd(value, msgpackEncodedName);
+				}
+			}
+
+			if (nonUniqueNameDetected)
+			{
+				// Enumerate values and ensure we have all the names indexed so we can deserialize them.
+				foreach (string name in Enum.GetNames<TEnum>())
+				{
+					this.valueByName.TryAdd(name, Enum.Parse<TEnum>(name));
+				}
+			}
+
+			return true;
+		}
+	}
+
+	/// <inheritdoc/>
+	public override TEnum Read(ref MessagePackReader reader, SerializationContext context)
+	{
+		if (reader.NextMessagePackType == MessagePackType.String)
+		{
+			string stringValue;
+			TEnum value;
+
+			// Try to avoid any allocations by reading the string as a span.
+			// This only works for case sensitive matches, so be prepared to fallback to string comparisons.
+			if (reader.TryReadStringSpan(out ReadOnlySpan<byte> span))
+			{
+				if (this.valueByUtf8Name.TryGetValue(span, out value))
+				{
+					return value;
+				}
+
+				stringValue = StringEncoding.UTF8.GetString(span);
+			}
+			else
+			{
+				stringValue = reader.ReadString()!;
+			}
+
+			if (this.valueByName.TryGetValue(stringValue, out value))
+			{
+				return value;
+			}
+			else
+			{
+				throw new MessagePackSerializationException($"Unrecognized enum value name: \"{stringValue}\".");
+			}
+		}
+		else
+		{
+			return (TEnum)(object)this.primitiveConverter.Read(ref reader, context)!;
+		}
+	}
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in TEnum value, SerializationContext context)
+	{
+		if (this.msgpackEncodedNameByValue.TryGetValue(value, out ReadOnlyMemory<byte> name))
+		{
+			writer.WriteRaw(name.Span);
+		}
+		else
+		{
+			this.primitiveConverter.Write(ref writer, (TUnderlyingType)(object)value, context);
+		}
+	}
+}
