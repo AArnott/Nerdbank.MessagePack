@@ -1,0 +1,17 @@
+﻿{
+  "$ref": "#/definitions/any",
+  "description": "The schema of this object is unknown as it is determined by the SchemaTests\u002BNonDocumentingCustomConverter converter.",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "definitions": {
+    "any": {
+      "type": [
+        "number",
+        "string",
+        "boolean",
+        "object",
+        "array",
+        "null"
+      ]
+    }
+  }
+}

@@ -105,7 +105,14 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	public void DateTimeExtension() => this.AssertSchema([new HasDateTime { Timestamp = DateTime.Now }]);
 
 	[Fact]
-	public void CustomConverterHasOpenSchema() => this.AssertSchema([new TypeWithCustomConverter()]);
+	public void CustomConverterHasUndocumentedSchema() => this.AssertSchema([new TypeWithNonDocumentingCustomConverter()]);
+
+	[Fact]
+	public void CustomConverterWithDocumentedSchema()
+	{
+		this.Serializer.RegisterConverter(new DocumentingCustomConverter());
+		this.AssertSchema([new CustomType(), null]);
+	}
 
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
@@ -259,14 +266,14 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		public DateTime Timestamp { get; set; }
 	}
 
-	[GenerateShape, MessagePackConverter(typeof(CustomConverter))]
-	internal partial class TypeWithCustomConverter
+	[GenerateShape, MessagePackConverter(typeof(NonDocumentingCustomConverter))]
+	internal partial class TypeWithNonDocumentingCustomConverter
 	{
 	}
 
-	internal class CustomConverter : MessagePackConverter<TypeWithCustomConverter>
+	internal class NonDocumentingCustomConverter : MessagePackConverter<TypeWithNonDocumentingCustomConverter>
 	{
-		public override TypeWithCustomConverter? Read(ref MessagePackReader reader, SerializationContext context)
+		public override TypeWithNonDocumentingCustomConverter? Read(ref MessagePackReader reader, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{
@@ -274,10 +281,51 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 			}
 
 			reader.Skip(context);
-			return new TypeWithCustomConverter();
+			return new TypeWithNonDocumentingCustomConverter();
 		}
 
-		public override void Write(ref MessagePackWriter writer, in TypeWithCustomConverter? value, SerializationContext context)
+		public override void Write(ref MessagePackWriter writer, in TypeWithNonDocumentingCustomConverter? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteMapHeader(0);
+		}
+	}
+
+	[GenerateShape]
+	internal partial class CustomType
+	{
+	}
+
+	internal class DocumentingCustomConverter : MessagePackConverter<CustomType>, IMessagePackConverterJsonSchemaProvider
+	{
+		public JsonObject GetJsonSchema()
+		{
+			return new JsonObject
+			{
+				["type"] = new JsonArray([JsonValue.Create("object"), JsonValue.Create("null")]),
+				["properties"] = new JsonObject
+				{
+				},
+			};
+		}
+
+		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			reader.Skip(context);
+			return new CustomType();
+		}
+
+		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
 		{
 			if (value is null)
 			{

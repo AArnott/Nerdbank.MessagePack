@@ -66,6 +66,8 @@ Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.DeepEquals(T? other) -> bool
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetHashCode() -> int
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetSecureHashCode() -> long
+Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider
+Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider.GetJsonSchema() -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnAfterDeserialize() -> void
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnBeforeSerialize() -> void

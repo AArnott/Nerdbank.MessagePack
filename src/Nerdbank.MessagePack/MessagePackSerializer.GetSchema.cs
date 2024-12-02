@@ -228,9 +228,21 @@ public partial record MessagePackSerializer
 				   typeShape.AttributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is { } converterAttribute ? converterAttribute.ConverterType : null;
 			if (customConverterInstance is not null || customConverterType is not null)
 			{
-				JsonObject unknownSchema = this.AnyTypeReference;
-				unknownSchema["description"] = $"The schema of this object is unknown as it is determined by the {(customConverterInstance?.GetType() ?? customConverterType)?.FullName} converter.";
-				return unknownSchema;
+				if (customConverterType is not null)
+				{
+					customConverterInstance = customConverterInstance = customConverterType.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes)?.Invoke(null);
+				}
+
+				if (customConverterInstance is IMessagePackConverterJsonSchemaProvider jsonSchemaProvider)
+				{
+					return jsonSchemaProvider.GetJsonSchema();
+				}
+				else
+				{
+					JsonObject unknownSchema = this.AnyTypeReference;
+					unknownSchema["description"] = $"The schema of this object is unknown as it is determined by the {(customConverterInstance?.GetType() ?? customConverterType)?.FullName} converter.";
+					return unknownSchema;
+				}
 			}
 
 			JsonObject schema;
