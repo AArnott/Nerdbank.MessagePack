@@ -114,6 +114,8 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		this.AssertSchema([new CustomType(), null]);
 	}
 
+	// TODO: add test for KnownSubTypeAttribute
+
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
 	private static void Record(JsonObject schema, string testName)
