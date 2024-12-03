@@ -22,6 +22,9 @@ internal class StringConverter : MessagePackConverter<string>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "string" };
 }
 
 /// <summary>
@@ -34,6 +37,9 @@ internal class BooleanConverter : MessagePackConverter<bool>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in bool value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "boolean" };
 }
 
 /// <summary>
@@ -374,6 +380,9 @@ internal class DateTimeConverter : MessagePackConverter<DateTime>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in DateTime value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateMsgPackExtensionSchema();
 }
 
 /// <summary>

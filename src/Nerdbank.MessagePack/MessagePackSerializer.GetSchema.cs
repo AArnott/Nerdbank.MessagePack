@@ -101,21 +101,11 @@ public partial record MessagePackSerializer
 		private readonly List<string> path = [];
 		private readonly JsonSchemaContext context;
 		private readonly MessagePackSerializer serializer;
-		private bool referencedAnyType;
 
 		public JsonSchemaGenerator(MessagePackSerializer serializer)
 		{
 			this.serializer = serializer;
 			this.context = new JsonSchemaContext(serializer);
-		}
-
-		private JsonObject AnyTypeReference
-		{
-			get
-			{
-				this.referencedAnyType = true;
-				return (JsonObject)AnyTypeReferenceModel.DeepClone();
-			}
 		}
 
 		object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => this.context.GetJsonSchema(typeShape);
@@ -124,199 +114,43 @@ public partial record MessagePackSerializer
 		{
 			JsonObject schema = this.GenerateSchemaCore(typeShape);
 
+			if (this.context.SchemaDefinitions.Count > 0)
+			{
+				schema["definitions"] = new JsonObject(this.context.SchemaDefinitions.Select(kv => new KeyValuePair<string, JsonNode?>(kv.Key, kv.Value)));
+			}
+
 			schema.Add("$schema", "http://json-schema.org/draft-04/schema");
 
-			if (this.referencedAnyType || this.context.ReferencedAnyType)
-			{
-				JsonObject? definitions = (JsonObject?)schema["definitions"];
-				if (definitions is null)
-				{
-					schema["definitions"] = definitions = new JsonObject();
-				}
+			return schema;
+		}
 
-				definitions["any"] = new JsonObject
+		private static bool IsNullableType(Type type) => !type.IsValueType || Nullable.GetUnderlyingType(type) is not null;
+
+		private JsonObject GenerateSchemaCore(ITypeShape typeShape)
+		{
+			bool allowNull = IsNullableType(typeShape.Type);
+
+			if (SimpleTypeInfo.TryGetValue(typeShape.Type, out SimpleTypeJsonSchema simpleType) && allowNull)
+			{
+				return MessagePackConverter<int>.ApplyJsonSchemaNullability(simpleType.ToSchemaDocument());
+			}
+
+			ref string? location = ref CollectionsMarshal.GetValueRefOrAddDefault(this.locations, (typeShape.Type, allowNull), out bool exists);
+			if (exists)
+			{
+				return new JsonObject
 				{
-					["type"] = new JsonArray("number", "string", "boolean", "object", "array", "null"),
+					["$ref"] = (JsonNode)location!,
 				};
 			}
-
-			return schema;
-		}
-
-		private static void ApplyDescription(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema)
-		{
-			if (attributeProvider?.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute description)
+			else
 			{
-				propertySchema["description"] = description.Description;
-			}
-		}
-
-		private static void ApplyDefaultValue(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema, IConstructorParameterShape? parameterShape)
-		{
-			JsonValue? defaultValue =
-				parameterShape?.HasDefaultValue is true ? CreateValue(parameterShape.DefaultValue) :
-				attributeProvider?.GetCustomAttribute<DefaultValueAttribute>() is DefaultValueAttribute att ? CreateValue(att.Value) :
-				null;
-
-			if (defaultValue is not null)
-			{
-				propertySchema["default"] = defaultValue;
-			}
-		}
-
-		private static JsonValue? CreateValue(object? value)
-		{
-			return value switch
-			{
-				string v => JsonValue.Create(v),
-				short v => JsonValue.Create(v),
-				int v => JsonValue.Create(v),
-				long v => JsonValue.Create(v),
-				float v => JsonValue.Create(v),
-				double v => JsonValue.Create(v),
-				decimal v => JsonValue.Create(v),
-				bool v => JsonValue.Create(v),
-				byte v => JsonValue.Create(v),
-				sbyte v => JsonValue.Create(v),
-				ushort v => JsonValue.Create(v),
-				uint v => JsonValue.Create(v),
-				ulong v => JsonValue.Create(v),
-				char v => JsonValue.Create(v),
-				_ => null, // not supported.
-			};
-		}
-
-		private static JsonObject ApplyNullability(JsonObject schema, bool allowNull)
-		{
-			if (allowNull && schema.TryGetPropertyValue("type", out JsonNode? typeValue))
-			{
-				if (schema["type"] is JsonArray types)
-				{
-					types.Add((JsonNode)"null");
-				}
-				else
-				{
-					schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
-				}
+				location = this.path.Count == 0 ? "#" : $"#/{string.Join("/", this.path)}";
 			}
 
-			return schema;
-		}
+			JsonObject schema = (JsonObject)typeShape.Invoke(this)!;
 
-		private static bool IsNullableType(Type type)
-		{
-			return !type.IsValueType || Nullable.GetUnderlyingType(type) is not null;
-		}
-
-		private JsonObject GenerateSchemaCore(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true)
-		{
-			allowNull = allowNull && IsNullableType(typeShape.Type);
-
-			if (SimpleTypeInfo.TryGetValue(typeShape.Type, out SimpleTypeJsonSchema simpleType))
-			{
-				return ApplyNullability(simpleType.ToSchemaDocument(), allowNull);
-			}
-
-			if (cacheLocation)
-			{
-				ref string? location = ref CollectionsMarshal.GetValueRefOrAddDefault(this.locations, (typeShape.Type, allowNull), out bool exists);
-				if (exists)
-				{
-					return new JsonObject
-					{
-						["$ref"] = (JsonNode)location!,
-					};
-				}
-				else
-				{
-					location = this.path.Count == 0 ? "#" : $"#/{string.Join("/", this.path)}";
-				}
-			}
-
-			return (JsonObject)typeShape.Invoke(this)!;
-
-			JsonObject schema;
-			switch (typeShape)
-			{
-				case IObjectTypeShape objectShape:
-					schema = [];
-
-					if (objectShape.HasProperties)
-					{
-						IConstructorShape? ctor = objectShape.GetConstructor();
-						Dictionary<string, IConstructorParameterShape>? ctorParams = ctor?.GetParameters()
-							.Where(p => p.Kind is ConstructorParameterKind.ConstructorParameter || p.IsRequired)
-							.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
-
-						JsonObject properties = [];
-						JsonArray? items = null;
-						JsonArray? required = null;
-
-						this.Push("properties");
-						foreach (IPropertyShape prop in objectShape.GetProperties())
-						{
-							IConstructorParameterShape? associatedParameter = null;
-							ctorParams?.TryGetValue(prop.Name, out associatedParameter);
-
-							bool isNonNullable =
-								(!prop.HasGetter || prop.IsGetterNonNullable) &&
-								(!prop.HasSetter || prop.IsSetterNonNullable) &&
-								(associatedParameter is null || associatedParameter.IsNonNullable);
-
-							KeyAttribute? keyAttribute = prop.AttributeProvider?.GetCustomAttribute<KeyAttribute>();
-							string propertyName = keyAttribute?.Index.ToString() ??
-								this.serializer.GetSerializedPropertyName(prop.Name, prop.AttributeProvider);
-							this.Push(propertyName);
-							JsonObject propSchema = this.GenerateSchemaCore(prop.PropertyType, allowNull: !isNonNullable);
-							this.Pop();
-							ApplyDescription(prop.AttributeProvider, propSchema);
-							ApplyDefaultValue(prop.AttributeProvider, propSchema, associatedParameter);
-
-							if (keyAttribute is not null)
-							{
-								items ??= new JsonArray();
-
-								while (items.Count < keyAttribute.Index)
-								{
-									items.Add((JsonNode)this.AnyTypeReference);
-								}
-
-								JsonObject itemSchema = this.GenerateSchemaCore(prop.PropertyType, allowNull: !isNonNullable);
-								ApplyDescription(prop.AttributeProvider, itemSchema);
-								items.Add((JsonNode)itemSchema);
-							}
-
-							properties.Add(propertyName, propSchema);
-							if (associatedParameter?.IsRequired is true)
-							{
-								(required ??= []).Add((JsonNode)propertyName);
-							}
-						}
-
-						this.Pop();
-
-						schema["type"] = items is not null ? new JsonArray(["object", "array"]) : "object";
-						schema["properties"] = properties;
-						if (items is not null)
-						{
-							schema["items"] = items;
-						}
-
-						if (required is not null)
-						{
-							schema["required"] = required;
-						}
-					}
-
-					ApplyDescription(objectShape.AttributeProvider, schema);
-					break;
-
-				default:
-					schema = [];
-					break;
-			}
-
-			return ApplyNullability(schema, allowNull);
+			return allowNull ? MessagePackConverter<int>.ApplyJsonSchemaNullability(schema) : schema;
 		}
 
 		private void Push(string name) => this.path.Add(name);

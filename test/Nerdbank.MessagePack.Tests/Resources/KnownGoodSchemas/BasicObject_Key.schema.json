@@ -1,36 +1,36 @@
 ﻿{
-  "type": [
-    "object",
-    "array",
-    "null"
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SchemaTests\u002BArrayOfValuesObject"
+    },
+    {
+      "type": "null"
+    }
   ],
-  "properties": {
-    "0": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "2": {
-      "type": "boolean"
-    },
-    "3": {
-      "type": [
-        "object",
-        "null"
+  "definitions": {
+    "SchemaTests\u002BSex": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
       ],
+      "description": "0 = Male, 1 = Female"
+    },
+    "System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "SchemaTests\u002BPerson": {
+      "type": "object",
       "properties": {
         "Name": {
           "type": "string",
           "description": "The name of the person."
         },
         "Sex": {
-          "type": "integer",
-          "enum": [
-            0,
-            1
-          ],
-          "description": "0 = Male, 1 = Female"
+          "$ref": "#/definitions/SchemaTests\u002BSex"
         },
         "Age": {
           "type": [
@@ -40,46 +40,74 @@
           "default": 18
         },
         "PetsAndAges": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "integer"
-          }
+          "$ref": "#/definitions/System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
         }
       },
       "required": [
         "Name"
       ],
       "description": "A human person."
+    },
+    "SchemaTests\u002BArrayOfValuesObject": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "properties": {
+        "0": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "2": {
+          "type": "boolean"
+        },
+        "3": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/SchemaTests\u002BPerson"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "items": [
+        {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "type": [
+            "number",
+            "integer",
+            "string",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ],
+          "description": "This is an undocumented element that is ignored by the deserializer and always serialized as null."
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/SchemaTests\u002BPerson"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      ]
     }
   },
-  "items": [
-    {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    {
-      "$ref": "#/definitions/any"
-    },
-    {
-      "type": "boolean"
-    },
-    {
-      "$ref": "#/properties/3"
-    }
-  ],
-  "$schema": "http://json-schema.org/draft-04/schema",
-  "definitions": {
-    "any": {
-      "type": [
-        "number",
-        "string",
-        "boolean",
-        "object",
-        "array",
-        "null"
-      ]
-    }
-  }
+  "$schema": "http://json-schema.org/draft-04/schema"
 }

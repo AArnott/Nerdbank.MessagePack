@@ -1,18 +1,27 @@
 ﻿{
-  "type": [
-    "object",
-    "null"
-  ],
-  "properties": {
-    "StringProperty": {
-      "type": [
-        "string",
-        "null"
-      ]
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SchemaTests\u002BBasicObject"
     },
-    "IntProperty": {
-      "type": "integer",
-      "default": 5
+    {
+      "type": "null"
+    }
+  ],
+  "definitions": {
+    "SchemaTests\u002BBasicObject": {
+      "type": "object",
+      "properties": {
+        "StringProperty": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "IntProperty": {
+          "type": "integer",
+          "default": 5
+        }
+      }
     }
   },
   "$schema": "http://json-schema.org/draft-04/schema"

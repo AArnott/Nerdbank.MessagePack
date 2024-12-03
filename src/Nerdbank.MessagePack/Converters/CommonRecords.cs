@@ -99,7 +99,8 @@ internal record struct PropertyAccessors<TDeclaringType>(
 	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters,
 	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? MsgPackReaders,
 	bool PreferAsyncSerialization,
-	Func<TDeclaringType, bool>? ShouldSerialize);
+	Func<TDeclaringType, bool>? ShouldSerialize,
+	IPropertyShape Shape);
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments

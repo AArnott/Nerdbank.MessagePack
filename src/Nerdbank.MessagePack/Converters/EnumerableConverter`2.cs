@@ -4,6 +4,7 @@
 #pragma warning disable SA1402 // File may only contain a single type
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -59,6 +60,15 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 				elementConverter.Write(ref writer, array[i], context);
 			}
 		}
+	}
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		return new JsonObject
+		{
+			["type"] = "array",
+			["items"] = elementConverter.GetJsonSchema(context, ((IEnumerableTypeShape<TEnumerable, TElement>)typeShape).ElementType),
+		};
 	}
 
 	/// <summary>

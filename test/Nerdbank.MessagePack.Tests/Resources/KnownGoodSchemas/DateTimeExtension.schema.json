@@ -1,12 +1,24 @@
 ﻿{
-  "type": [
-    "object",
-    "null"
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SchemaTests\u002BHasDateTime"
+    },
+    {
+      "type": "null"
+    }
   ],
-  "properties": {
-    "Timestamp": {
+  "definitions": {
+    "System.DateTime": {
       "type": "string",
       "pattern": "^msgpack extension -1 as base64: "
+    },
+    "SchemaTests\u002BHasDateTime": {
+      "type": "object",
+      "properties": {
+        "Timestamp": {
+          "$ref": "#/definitions/System.DateTime"
+        }
+      }
     }
   },
   "$schema": "http://json-schema.org/draft-04/schema"

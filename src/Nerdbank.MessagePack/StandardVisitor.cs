@@ -283,7 +283,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return suppressIfNoConstructorParameter && constructorParameterShape is null
 			? null
-			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize);
+			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize, propertyShape);
 	}
 
 	/// <inheritdoc/>

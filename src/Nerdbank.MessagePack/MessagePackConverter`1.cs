@@ -136,6 +136,10 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// A shared instance <em>may</em> be used to call <see cref="JsonNode.DeepClone"/> and the result returned.
 	/// </para>
 	/// <para>
+	/// The <c>type</c> property should <em>not</em> include "null" on account of the converted type being a reference type.
+	/// It is the <em>consumer</em> of the object that will determine whether <see langword="null" /> is an acceptable value of the object.
+	/// </para>
+	/// <para>
 	/// Custom converters that do <em>not</em> override this method will lead to a JSON schema that does not describe the written data, and allows any data as input.
 	/// </para>
 	/// <para>
@@ -163,6 +167,12 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <inheritdoc cref="IMessagePackConverter.WrapWithReferencePreservation" />
 	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
 
+	protected static JsonObject CreateMsgPackExtensionSchema() => new()
+	{
+		["type"] = "string",
+		["pattern"] = "^msgpack extension -1 as base64: ",
+	};
+
 	protected static JsonValue? CreateJsonValue(object? value)
 	{
 		return value switch
@@ -184,5 +194,33 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 			char v => JsonValue.Create(v),
 			_ => throw new NotSupportedException($"Unsupported object type: {value.GetType().FullName}"),
 		};
+	}
+
+	protected internal static JsonObject ApplyJsonSchemaNullability(JsonObject schema)
+	{
+		if (schema.TryGetPropertyValue("type", out JsonNode? typeValue))
+		{
+			if (schema["type"] is JsonArray types)
+			{
+				if (!types.Any(n => n.GetValueKind() == System.Text.Json.JsonValueKind.String && n.GetValue<string>() == "null"))
+				{
+					types.Add((JsonNode)"null");
+				}
+			}
+			else
+			{
+				schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
+			}
+		}
+		else
+		{
+			// This is probably a schema reference.
+			schema = new()
+			{
+				["oneOf"] = new JsonArray(schema, new JsonObject { ["type"] = "null" }),
+			};
+		}
+
+		return schema;
 	}
 }

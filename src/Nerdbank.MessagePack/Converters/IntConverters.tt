@@ -22,5 +22,8 @@ internal class <#=type#>Converter : MessagePackConverter<<#=type#>>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in <#=type#> value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 <# } #>

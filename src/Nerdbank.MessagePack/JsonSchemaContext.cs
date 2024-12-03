@@ -11,12 +11,10 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 public class JsonSchemaContext
 {
-	private static readonly JsonObject AnyTypeReferenceModel = new JsonObject
-	{
-		["$ref"] = "#/definitions/any",
-	};
-
 	private readonly MessagePackSerializer serializer;
+	private readonly Dictionary<Type, string> schemaReferences = new();
+	private readonly Dictionary<string, JsonObject> schemaDefinitions = new(StringComparer.Ordinal);
+	private readonly HashSet<Type> recursionGuard = new();
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="JsonSchemaContext"/> class.
@@ -27,19 +25,7 @@ public class JsonSchemaContext
 		this.serializer = serializer;
 	}
 
-	/// <summary>
-	/// Gets a value indicating whether the "#/definitions/any" schema was referenced.
-	/// </summary>
-	internal bool ReferencedAnyType { get; private set; }
-
-	private JsonObject AnyTypeReference
-	{
-		get
-		{
-			this.ReferencedAnyType = true;
-			return (JsonObject)AnyTypeReferenceModel.DeepClone();
-		}
-	}
+	internal IReadOnlyDictionary<string, JsonObject> SchemaDefinitions => this.schemaDefinitions;
 
 	/// <summary>
 	/// Obtains the JSON schema for a given type.
@@ -49,16 +35,53 @@ public class JsonSchemaContext
 	/// <returns>The JSON schema.</returns>
 	public JsonObject GetJsonSchema(ITypeShape typeShape)
 	{
-		// TODO: be willing to return a reference to where this schema was previously generated.
-		IMessagePackConverter converter = this.serializer.GetOrAddConverter(typeShape);
-		if (converter.GetJsonSchema(this, typeShape) is JsonObject schema)
+		if (this.schemaReferences.TryGetValue(typeShape.Type, out string? referenceId))
 		{
-			return schema;
+			return CreateReference(referenceId);
 		}
 
-		JsonObject unknownSchema = this.AnyTypeReference;
-		unknownSchema["description"] = $"The schema of this object is unknown as it is determined by the {converter.GetType().FullName} converter which does not override {nameof(MessagePackConverter<int>.GetJsonSchema)}.";
-		return unknownSchema;
+		string definitionName = typeShape.Type.FullName!;
+		string qualifiedReference = $"#/definitions/{definitionName}";
+		if (!this.recursionGuard.Add(typeShape.Type))
+		{
+			this.schemaReferences.Add(typeShape.Type, qualifiedReference);
+			return CreateReference(qualifiedReference);
+		}
+
+		IMessagePackConverter converter = this.serializer.GetOrAddConverter(typeShape);
+		if (converter.GetJsonSchema(this, typeShape) is not JsonObject schema)
+		{
+			schema = new JsonObject
+			{
+				["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
+				["description"] = $"The schema of this object is unknown as it is determined by the {converter.GetType().FullName} converter which does not override {nameof(MessagePackConverter<int>.GetJsonSchema)}.",
+			};
+		}
+
+		this.recursionGuard.Remove(typeShape.Type);
+		bool recursive = this.schemaReferences.ContainsKey(typeShape.Type);
+
+		// If the schema is non-trivial, store it as a definition and return a reference.
+		// We also store the schema as a definition if it was recursive.
+		if (recursive || schema is not JsonObject { Count: 1 })
+		{
+			this.schemaDefinitions[definitionName] = schema;
+
+			// Recursive types have already had their reference added to the schemaReferences dictionary.
+			if (!recursive)
+			{
+				this.schemaReferences[typeShape.Type] = qualifiedReference;
+			}
+
+			schema = CreateReference(qualifiedReference);
+		}
+
+		return schema;
+
+		static JsonObject CreateReference(string referencePath) => new()
+		{
+			["$ref"] = referencePath,
+		};
 	}
 
 	/// <inheritdoc cref="GetJsonSchema(ITypeShape)"/>

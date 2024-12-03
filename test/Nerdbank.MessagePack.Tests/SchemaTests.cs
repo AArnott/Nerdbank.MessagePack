@@ -59,7 +59,9 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
 
 		// Force additional array elements to be denied to verify that the indexes are explicitly allowed by the schema.
-		schema.AllowAdditionalItems = false;
+		DisallowAdditionalProperties(schema);
+
+		this.Logger.WriteLine("Modified schema:\n{0}", schema.ToString());
 
 		JToken.Parse("""
 			["str1", null, true]
@@ -76,7 +78,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
 
 		// Force additional properties to be denied to verify that the indexes are explicitly allowed by the schema.
-		schema.AllowAdditionalProperties = false;
+		DisallowAdditionalProperties(schema);
 
 		JToken.Parse("""
 			{
@@ -122,6 +124,29 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 		string schemaString = SchemaToString(schema);
 		File.WriteAllText(Path.Combine(KnownGoodSchemasPath, testName + ".schema.json"), schemaString, Encoding.UTF8);
+	}
+
+	private static void DisallowAdditionalProperties(JSchema schema)
+	{
+		// We always allow additional properties on types that are explicitly allowed to be anything.
+		const JSchemaType All = JSchemaType.Object | JSchemaType.Array | JSchemaType.String | JSchemaType.Integer | JSchemaType.Boolean | JSchemaType.Null | JSchemaType.Number;
+		if (schema.Type is JSchemaType type && type != All)
+		{
+			if (type.HasFlag(JSchemaType.Object) is true)
+			{
+				schema.AllowAdditionalProperties = false;
+			}
+
+			if (type.HasFlag(JSchemaType.Array) is true)
+			{
+				schema.AllowAdditionalItems = false;
+			}
+		}
+
+		foreach (JSchema sub in schema.OneOf.Concat(schema.AllOf).Concat(schema.AnyOf).Concat(schema.Items).Concat(schema.Properties.Values))
+		{
+			DisallowAdditionalProperties(sub);
+		}
 	}
 
 	private bool CheckMatchWithLKG(JsonObject schema, string testName)
@@ -200,7 +225,14 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 				this.Logger.WriteLine($"Sample data {++sampleCounter}:");
 				var parsed = JsonNode.Parse(json);
 				this.Logger.WriteLine(parsed is null ? "null" : parsed.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-				JToken.Parse(json).Validate(parsedSchema);
+				try
+				{
+					JToken.Parse(json).Validate(parsedSchema);
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"Failed while validating sample number {sampleCounter}.", ex);
+				}
 			}
 		}
 
@@ -309,7 +341,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		{
 			return new JsonObject
 			{
-				["type"] = new JsonArray(["object", "null"]),
+				["type"] = "object",
 				["properties"] = new JsonObject
 				{
 				},
