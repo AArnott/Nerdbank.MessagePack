@@ -215,6 +215,9 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </summary>
 	/// <param name="undocumentingConverter">The converter that has not provided a schema.</param>
 	/// <returns>The JSON schema fragment that permits anything and explains why.</returns>
+	/// <remarks>
+	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
+	/// </remarks>
 	protected internal static JsonObject CreateUndocumentedSchema(Type undocumentingConverter)
 	{
 		Requires.NotNull(undocumentingConverter);
