@@ -2,6 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.Serialization;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -10,7 +13,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// Only data types with default constructors may be deserialized.
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
-internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, Func<T>? constructor, bool callShouldSerialize) : MessagePackConverter<T>
+internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, Func<T>? constructor, bool callShouldSerialize) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -72,7 +75,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 	}
 
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
 	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+#pragma warning restore NBMsgPack031
 	{
 		if (value is null)
 		{
@@ -461,6 +466,72 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 
 		return value;
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		IObjectTypeShape<T> objectShape = (IObjectTypeShape<T>)typeShape;
+
+		JsonObject schema = new()
+		{
+			["type"] = new JsonArray(["object", "array"]),
+		};
+
+		if (objectShape.HasProperties)
+		{
+			Dictionary<string, IConstructorParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
+
+			JsonObject propertiesObject = [];
+			JsonArray? items = [];
+			JsonArray? required = null;
+			for (int i = 0; i < properties.Length; i++)
+			{
+				if (properties.Span[i] is not PropertyAccessors<T> property)
+				{
+					continue;
+				}
+
+				IConstructorParameterShape? associatedParameter = null;
+				ctorParams?.TryGetValue(property.Shape.Name, out associatedParameter);
+
+				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
+				ApplyDescription(property.Shape.AttributeProvider, propertySchema);
+				ApplyDefaultValue(property.Shape.AttributeProvider, propertySchema, associatedParameter);
+				if (!IsNonNullable(property.Shape, associatedParameter))
+				{
+					propertySchema = ApplyJsonSchemaNullability(propertySchema);
+				}
+
+				propertiesObject.Add(i.ToString(CultureInfo.InvariantCulture), propertySchema);
+
+				while (items.Count < i)
+				{
+					items.Add((JsonNode)new JsonObject
+					{
+						["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
+						["description"] = "This is an undocumented element that is ignored by the deserializer and always serialized as null.",
+					});
+				}
+
+				items.Add((JsonNode)propertySchema.DeepClone());
+
+				if (associatedParameter?.IsRequired is true)
+				{
+					(required ??= []).Add((JsonNode)property.Shape.Name);
+				}
+			}
+
+			schema["properties"] = propertiesObject;
+			schema["items"] = items;
+
+			if (required is not null)
+			{
+				schema["required"] = required;
+			}
+		}
+
+		return schema;
 	}
 
 	private Memory<int> GetPropertiesToSerialize(in T value, Memory<int> include)

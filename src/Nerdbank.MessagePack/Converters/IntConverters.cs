@@ -18,6 +18,9 @@ internal class SByteConverter : MessagePackConverter<SByte>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in SByte value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int16"/> as a MessagePack integer.</summary>
@@ -28,6 +31,9 @@ internal class Int16Converter : MessagePackConverter<Int16>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Int16 value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int32"/> as a MessagePack integer.</summary>
@@ -38,6 +44,9 @@ internal class Int32Converter : MessagePackConverter<Int32>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Int32 value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Int64"/> as a MessagePack integer.</summary>
@@ -48,6 +57,9 @@ internal class Int64Converter : MessagePackConverter<Int64>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Int64 value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
 /// <summary>Serializes the primitive integer type <see cref="Byte"/> as a MessagePack integer.</summary>
@@ -58,6 +70,9 @@ internal class ByteConverter : MessagePackConverter<Byte>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Byte value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt16"/> as a MessagePack integer.</summary>
@@ -68,6 +83,9 @@ internal class UInt16Converter : MessagePackConverter<UInt16>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in UInt16 value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt32"/> as a MessagePack integer.</summary>
@@ -78,6 +96,9 @@ internal class UInt32Converter : MessagePackConverter<UInt32>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in UInt32 value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
 /// <summary>Serializes the primitive integer type <see cref="UInt64"/> as a MessagePack integer.</summary>
@@ -88,4 +109,7 @@ internal class UInt64Converter : MessagePackConverter<UInt64>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in UInt64 value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }

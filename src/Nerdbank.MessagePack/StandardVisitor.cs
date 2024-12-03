@@ -142,10 +142,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					serializable ??= new();
 					deserializable ??= new();
 
-					GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+					StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
-						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize));
+						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize, property));
 					}
 
 					if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
@@ -283,7 +283,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return suppressIfNoConstructorParameter && constructorParameterShape is null
 			? null
-			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize);
+			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize, propertyShape);
 	}
 
 	/// <inheritdoc/>
@@ -427,8 +427,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					_ => throw new NotSupportedException(),
 				};
 			}
+			else if (!this.owner.DisableHardwareAcceleration &&
+				enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
+				HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter))
+			{
+				return converter;
+			}
 			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
-				ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter))
+				ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetSpanConstructor(), out converter))
 			{
 				return converter;
 			}
@@ -443,6 +449,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
 			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Span when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
 			CollectionConstructionStrategy.Span when ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
 			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
 			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
@@ -452,7 +459,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
-		=> new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
+		=> this.owner.SerializeEnumValuesByName
+			? new EnumAsStringConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType))
+			: new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
 
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
@@ -479,29 +488,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	}
 
 	/// <summary>
-	/// Gets the messagepack encoding for a given string.
-	/// </summary>
-	/// <param name="value">The string to encode.</param>
-	/// <param name="utf8Bytes">The UTF-8 encoded string.</param>
-	/// <param name="msgpackEncoded">The msgpack-encoded string.</param>
-	/// <remarks>
-	/// Because msgpack encodes with UTF-8 bytes, the two output parameter share most of the memory.
-	/// </remarks>
-	private static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
-	{
-		int byteCount = StringEncoding.UTF8.GetByteCount(value);
-		Memory<byte> bytes = new byte[byteCount + 5];
-		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(bytes.Span, (uint)byteCount, out int msgpackHeaderLength));
-		StringEncoding.UTF8.GetBytes(value, bytes.Span[msgpackHeaderLength..]);
-		utf8Bytes = bytes.Slice(msgpackHeaderLength, byteCount);
-		msgpackEncoded = bytes.Slice(0, byteCount + msgpackHeaderLength);
-	}
-
-	/// <summary>
 	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
 	/// </summary>
 	/// <param name="objectShape">The shape of the data type that may define derived types that are also allowed for serialization.</param>
-	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objets, keyed by the alias by which they will be identified in the data stream.</returns>
+	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
 	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
 	{
@@ -512,7 +502,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		Dictionary<int, IMessagePackConverter> deserializerData = new();
-		Dictionary<Type, (int Alias, IMessagePackConverter Converter)> serializerData = new();
+		Dictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
 		foreach (IKnownSubTypeAttribute unionAttribute in unionAttributes)
 		{
 			ITypeShape subtypeShape = unionAttribute.Shape;
@@ -520,7 +510,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			IMessagePackConverter converter = this.GetConverter(subtypeShape);
 			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
-			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
+			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter, subtypeShape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
 		}
 
 		return new SubTypes

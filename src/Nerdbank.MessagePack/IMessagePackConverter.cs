@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text.Json.Nodes;
+
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -14,7 +16,7 @@ internal interface IMessagePackConverter
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
-	void Write(ref MessagePackWriter writer, ref object? value, SerializationContext context);
+	void Write(ref MessagePackWriter writer, object? value, SerializationContext context);
 
 	/// <summary>
 	/// Deserializes an instance of an object.
@@ -29,4 +31,13 @@ internal interface IMessagePackConverter
 	/// </summary>
 	/// <returns>A converter. Possibly <see langword="this"/> if this instance is already reference preserving.</returns>
 	IMessagePackConverter WrapWithReferencePreservation();
+
+	/// <summary>
+	/// Removes the outer reference preserving converter, if present.
+	/// </summary>
+	/// <returns>The unwrapped converter.</returns>
+	IMessagePackConverter UnwrapReferencePreservation();
+
+	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
+	JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);
 }

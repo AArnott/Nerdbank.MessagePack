@@ -35,6 +35,7 @@ public partial record MessagePackSerializer
 	private bool configurationLocked;
 
 	private MultiProviderTypeCache? cachedConverters;
+	private bool preserveReferences;
 
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
@@ -48,6 +49,21 @@ public partial record MessagePackSerializer
 	/// The default value is null, indicating that property names should be persisted exactly as they are declared in .NET.
 	/// </value>
 	public MessagePackNamingPolicy? PropertyNamingPolicy { get; init; }
+
+	/// <summary>
+	/// Gets a value indicating whether enum values will be serialized by name rather than by their numeric value.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// Serializing by name is a best effort.
+	/// Most enums do not define a name for every possible value, and flags enums may have complicated string representations when multiple named enum elements are combined to form a value.
+	/// When a simple string cannot be constructed for a given value, the numeric form is used.
+	/// </para>
+	/// <para>
+	/// When deserializing enums by name, name matching is case <em>insensitive</em> unless the enum type defines multiple values with names that are only distinguished by case.
+	/// </para>
+	/// </remarks>
+	public bool SerializeEnumValuesByName { get; init; }
 
 	/// <summary>
 	/// Gets a value indicating whether to serialize properties that are set to their default values.
@@ -97,7 +113,18 @@ public partial record MessagePackSerializer
 	/// When this property is <see langword="false" />, a cycle will eventually result in a <see cref="StackOverflowException" /> being thrown.
 	/// </para>
 	/// </remarks>
-	public bool PreserveReferences { get; init; }
+	public bool PreserveReferences
+	{
+		get => this.preserveReferences;
+		init
+		{
+			if (this.preserveReferences != value)
+			{
+				this.preserveReferences = value;
+				this.ReconfigureUserProvidedConverters();
+			}
+		}
+	}
 
 	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.
@@ -112,6 +139,11 @@ public partial record MessagePackSerializer
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
+
+	/// <summary>
+	/// Gets a value indicating whether hardware accelerated converters should be avoided.
+	/// </summary>
+	internal bool DisableHardwareAcceleration { get; init; }
 
 	/// <summary>
 	/// Gets all the converters this instance knows about so far.
@@ -401,6 +433,16 @@ public partial record MessagePackSerializer
 		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
+	/// Gets a converter for the given type shape.
+	/// An existing converter is reused if one is found in the cache.
+	/// If a converter must be created, it is added to the cache for lookup next time.
+	/// </summary>
+	/// <param name="shape">The shape of the type to convert.</param>
+	/// <returns>A msgpack converter.</returns>
+	internal IMessagePackConverter GetOrAddConverter(ITypeShape shape)
+		=> (IMessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
+
+	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available.
 	/// </summary>
 	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
@@ -461,6 +503,15 @@ public partial record MessagePackSerializer
 	private void VerifyConfigurationIsNotLocked()
 	{
 		Verify.Operation(!this.configurationLocked, "This operation must be done before (de)serialization occurs.");
+	}
+
+	private void ReconfigureUserProvidedConverters()
+	{
+		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
+		{
+			IMessagePackConverter converter = (IMessagePackConverter)pair.Value;
+			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
+		}
 	}
 
 	/// <summary>

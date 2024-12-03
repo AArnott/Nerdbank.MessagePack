@@ -10,7 +10,7 @@ using System.IO.Pipelines;
 public partial class SyncVsAsyncArrays
 {
 	private readonly MessagePackSerializer serializer = new();
-	private readonly Sequence<byte> syncBuffer = new();
+	private readonly Sequence syncBuffer = new();
 	private Pipe pipe = new();
 
 	[Benchmark(Baseline = true)]

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -14,13 +15,15 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="constructor">The default constructor, if present.</param>
 /// <param name="callShouldSerialize"><see langword="true" /> if some of the properties should maybe be omitted; <see langword="false" /> to allow a fast path that assumes all properties are serialized.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, bool callShouldSerialize) : MessagePackConverter<T>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, bool callShouldSerialize) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
 	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+#pragma warning restore NBMsgPack031
 	{
 		if (value is null)
 		{
@@ -263,6 +266,59 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		return value;
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		IObjectTypeShape<T> objectShape = (IObjectTypeShape<T>)typeShape;
+
+		JsonObject schema = new()
+		{
+			["type"] = "object",
+		};
+
+		if (objectShape.HasProperties)
+		{
+			Dictionary<string, IConstructorParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
+
+			JsonObject properties = new();
+			JsonArray? required = null;
+			for (int i = 0; i < serializable.Properties.Length; i++)
+			{
+				SerializableProperty<T> property = serializable.Properties.Span[i];
+
+				IConstructorParameterShape? associatedParameter = null;
+				ctorParams?.TryGetValue(property.Name, out associatedParameter);
+
+				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
+				ApplyDescription(property.Shape.AttributeProvider, propertySchema);
+				ApplyDefaultValue(property.Shape.AttributeProvider, propertySchema, associatedParameter);
+
+				if (!IsNonNullable(property.Shape, associatedParameter))
+				{
+					propertySchema = ApplyJsonSchemaNullability(propertySchema);
+				}
+
+				properties.Add(property.Name, propertySchema);
+
+				if (associatedParameter?.IsRequired is true)
+				{
+					(required ??= []).Add((JsonNode)property.Name);
+				}
+			}
+
+			schema["properties"] = properties;
+
+			if (required is not null)
+			{
+				schema["required"] = required;
+			}
+		}
+
+		ApplyDescription(objectShape.AttributeProvider, schema);
+
+		return schema;
 	}
 
 	/// <summary>

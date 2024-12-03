@@ -2,29 +2,108 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 [MemoryDiagnoser]
+[GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
 public partial class ArraysOfPrimitives
 {
 	private const int Length = 10_000;
+	private static readonly MessagePackSerializer AcceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = false };
+	private static readonly MessagePackSerializer UnacceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = true };
+	private static readonly MessagePackSerializer TestSerializer = new() { SerializeDefaultValues = true };
 	private static readonly bool[] BoolValues = GetRandomBools(Length);
-	private static readonly byte[] BoolValuesMsgPack = new MessagePackSerializer { SerializeDefaultValues = true }.Serialize<bool[], Witness>(BoolValues);
+	private static readonly byte[] BoolValuesMsgPack = TestSerializer.Serialize<bool[], Witness>(BoolValues);
 	private static readonly sbyte[] Int8Values = GetRandomValues<sbyte>(Length);
+	private static readonly byte[] Int8ValuesMsgPack = TestSerializer.Serialize<sbyte[], Witness>(Int8Values);
 	private static readonly short[] Int16Values = GetRandomValues<short>(Length);
+	private static readonly byte[] Int16ValuesMsgPack = TestSerializer.Serialize<short[], Witness>(Int16Values);
 	private static readonly int[] Int32Values = GetRandomValues<int>(Length);
+	private static readonly byte[] Int32ValuesMsgPack = TestSerializer.Serialize<int[], Witness>(Int32Values);
 	private static readonly long[] Int64Values = GetRandomValues<long>(Length);
+	private static readonly byte[] Int64ValuesMsgPack = TestSerializer.Serialize<long[], Witness>(Int64Values);
 	private static readonly ushort[] UInt16Values = GetRandomValues<ushort>(Length);
+	private static readonly byte[] UInt16ValuesMsgPack = TestSerializer.Serialize<ushort[], Witness>(UInt16Values);
 	private static readonly uint[] UInt32Values = GetRandomValues<uint>(Length);
+	private static readonly byte[] UInt32ValuesMsgPack = TestSerializer.Serialize<uint[], Witness>(UInt32Values);
 	private static readonly ulong[] UInt64Values = GetRandomValues<ulong>(Length);
+	private static readonly byte[] UInt64ValuesMsgPack = TestSerializer.Serialize<ulong[], Witness>(UInt64Values);
 	private static readonly float[] SingleValues = GetRandomFloats(Length);
+	private static readonly byte[] SingleValuesMsgPack = TestSerializer.Serialize<float[], Witness>(SingleValues);
 	private static readonly double[] DoubleValues = GetRandomDoubles(Length);
-	private readonly Sequence<byte> buffer = new();
+	private static readonly byte[] DoubleValuesMsgPack = TestSerializer.Serialize<double[], Witness>(DoubleValues);
+	private readonly Sequence buffer = new();
 
-	public MessagePackSerializer Serializer { get; } = new() { SerializeDefaultValues = true };
+	[ParamsAllValues]
+	public bool Accelerated { get; set; }
+
+	public MessagePackSerializer Serializer => this.Accelerated ? AcceleratedSerializer : UnacceleratedSerializer;
 
 	[Benchmark]
 	[BenchmarkCategory("bool", "deserialize")]
-	public void Bool_Deserialize()
+	public bool[]? Bool_Deserialize()
 	{
-		this.Serializer.Deserialize<bool[], Witness>(BoolValuesMsgPack);
+		return this.Serializer.Deserialize<bool[], Witness>(BoolValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("sbyte", "deserialize")]
+	public sbyte[]? Int8_Deserialize()
+	{
+		return this.Serializer.Deserialize<sbyte[], Witness>(Int8ValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("short", "deserialize")]
+	public short[]? Int16_Deserialize()
+	{
+		return this.Serializer.Deserialize<short[], Witness>(Int16ValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("int", "deserialize")]
+	public int[]? Int32_Deserialize()
+	{
+		return this.Serializer.Deserialize<int[], Witness>(Int32ValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("long", "deserialize")]
+	public long[]? Int64_Deserialize()
+	{
+		return this.Serializer.Deserialize<long[], Witness>(Int64ValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("ushort", "deserialize")]
+	public ushort[]? UInt16_Deserialize()
+	{
+		return this.Serializer.Deserialize<ushort[], Witness>(UInt16ValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("uint", "deserialize")]
+	public uint[]? UInt32_Deserialize()
+	{
+		return this.Serializer.Deserialize<uint[], Witness>(UInt32ValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("ulong", "deserialize")]
+	public ulong[]? UInt64_Deserialize()
+	{
+		return this.Serializer.Deserialize<ulong[], Witness>(UInt64ValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("float", "deserialize")]
+	public float[]? Single_Deserialize()
+	{
+		return this.Serializer.Deserialize<float[], Witness>(SingleValuesMsgPack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("double", "deserialize")]
+	public double[]? Double_Deserialize()
+	{
+		return this.Serializer.Deserialize<double[], Witness>(DoubleValuesMsgPack);
 	}
 
 	[Benchmark]

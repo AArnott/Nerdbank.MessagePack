@@ -1,3 +1,4 @@
 [*.cs]
 
 dotnet_diagnostic.VSTHRD111.severity = warning # Use ConfigureAwait(bool)
+dotnet_diagnostic.NBMsgPack032.severity = warning # Converters should override GetJsonSchema

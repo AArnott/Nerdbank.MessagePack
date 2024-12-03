@@ -52,6 +52,23 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void CustomConverterByRegistrationSkippedByReferencePreservation_Reconfigured()
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = false };
+		this.Serializer.RegisterConverter(new CustomTypeConverter());
+		this.Serializer = this.Serializer with { PreserveReferences = true };
+
+		CustomType value = new() { Message = "test" };
+		CustomType[] array = [value, value];
+		CustomType[]? deserializedArray = this.Roundtrip<CustomType[], Witness>(array);
+		Assert.NotNull(deserializedArray);
+		Assert.Same(deserializedArray[0], deserializedArray[1]);
+
+		// Verify that the custom converter actually ran, by verifying that the internal member was serialized.
+		Assert.Equal(value, deserializedArray[0]);
+	}
+
+	[Fact]
 	public void CustomConverterGetsReferencePreservingPrimitiveConverter()
 	{
 		string stringValue = "test";
