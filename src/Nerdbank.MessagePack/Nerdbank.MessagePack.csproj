@@ -37,13 +37,15 @@
     <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj">
+    <AnalyzerProjectReference Include="..\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
+    <AnalyzerProjectReference Include="..\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj" />
+    <ProjectReference Include="@(AnalyzerProjectReference)">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>AnalyzerAssembly</OutputItemType>
     </ProjectReference>
-    <ProjectReference Include="..\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj">
+    <ProjectReference Include="@(AnalyzerProjectReference)">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>AnalyzerAssembly</OutputItemType>
+      <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

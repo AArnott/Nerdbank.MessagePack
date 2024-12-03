@@ -168,7 +168,6 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 		foreach (IOperation block in context.OperationBlocks)
 		{
-			Debug.Assert(context.OperationBlocks.Length == 1, $"{context.OperationBlocks.Length} == 1");
 			ControlFlowGraph flow = context.GetControlFlowGraph(block);
 			if (flow.Blocks[0].FallThroughSuccessor?.Destination is { } initialBlock)
 			{
