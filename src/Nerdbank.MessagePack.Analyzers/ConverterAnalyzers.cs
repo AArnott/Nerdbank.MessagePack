@@ -144,6 +144,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							"ReadArrayHeader" or "ReadMapHeader" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
 							"TryReadArrayHeader" or "TryReadMapHeader" => (null, false), // Advanced case, which we'll just assume they're doing correctly.
 							"TryReadNil" => (1, false),
+							"TryReadStringSpan" => (1, false),
 							"Skip" => (1, true),
 							string t when t.StartsWith("Read", StringComparison.Ordinal) => (1, true),
 							_ => (0, true),

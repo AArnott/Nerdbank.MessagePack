@@ -317,6 +317,50 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_TryReadStringSpan()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+			
+			internal class ArrayWithFlattenedDimensionsConverter(MessagePackConverter<int> primitiveConverter) : MessagePackConverter<int>
+			{
+				public override int Read(ref MessagePackReader reader, SerializationContext context)
+				{
+					if (reader.NextMessagePackType == MessagePackType.String)
+					{
+						string stringValue;
+
+						// Try to avoid any allocations by reading the string as a span.
+						// This only works for case sensitive matches, so be prepared to fallback to string comparisons.
+						if (reader.TryReadStringSpan(out ReadOnlySpan<byte> span))
+						{
+							return span.Length;
+						}
+						else
+						{
+							stringValue = reader.ReadString()!;
+						}
+
+						return stringValue.Length;
+					}
+					else
+					{
+						return primitiveConverter.Read(ref reader, context)!;
+					}
+				}
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
