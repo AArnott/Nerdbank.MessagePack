@@ -43,10 +43,6 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>AnalyzerAssembly</OutputItemType>
     </ProjectReference>
-    <ProjectReference Include="@(AnalyzerProjectReference)">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Analyzer</OutputItemType>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
@@ -78,6 +74,11 @@
       <DependentUpon>MessagePackSerializer.AutomatedFriendlyOverloads.tt</DependentUpon>
     </Compile>
   </ItemGroup>
+  <Target Name="ConsumeAnalyzersDirectly" AfterTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <Analyzer Include="%(AnalyzerAssembly.Identity)" />
+    </ItemGroup>
+  </Target>
   <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup">
     <ItemGroup>
       <TfmSpecificPackageFile Include="%(AnalyzerAssembly.Identity)" PackagePath="analyzers\cs\" />
