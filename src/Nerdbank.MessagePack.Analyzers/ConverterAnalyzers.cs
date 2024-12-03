@@ -13,6 +13,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 {
 	public const string CallbackToTopLevelSerializerDiagnosticId = "NBMsgPack030";
 	public const string NotExactlyOneStructureDiagnosticId = "NBMsgPack031";
+	public const string OverrideGetJsonSchemaDiagnosticId = "NBMsgPack032";
 
 	public static readonly DiagnosticDescriptor CallbackToTopLevelSerializerDescriptor = new(
 		CallbackToTopLevelSerializerDiagnosticId,
@@ -30,9 +31,18 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 		defaultSeverity: DiagnosticSeverity.Warning,
 		isEnabledByDefault: true);
 
+	public static readonly DiagnosticDescriptor OverrideGetJsonSchemaDescriptor = new(
+		OverrideGetJsonSchemaDiagnosticId,
+		title: Strings.NBMsgPack032_Title,
+		messageFormat: Strings.NBMsgPack032_MessageFormat,
+		category: "Usage",
+		defaultSeverity: DiagnosticSeverity.Info,
+		isEnabledByDefault: true);
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		CallbackToTopLevelSerializerDescriptor,
 		NotExactlyOneStructureDescriptor,
+		OverrideGetJsonSchemaDescriptor,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -87,6 +97,21 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 							context.RegisterOperationBlockEndAction(context => this.AnalyzeStructureCounts(context, referenceSymbols));
 						});
+
+						if (!SymbolEqualityComparer.Default.Equals(target, referenceSymbols.MessagePackConverter) && !target.IsAbstract)
+						{
+							context.RegisterSymbolEndAction(context =>
+							{
+								INamedTypeSymbol symbol = (INamedTypeSymbol)context.Symbol;
+								if (!symbol.GetAllMembers().Any(m => m is IMethodSymbol { Name: "GetJsonSchema", OverriddenMethod: not null }))
+								{
+									if (symbol.Locations.FirstOrDefault(l => l.IsInSource) is { } location)
+									{
+										context.ReportDiagnostic(Diagnostic.Create(OverrideGetJsonSchemaDescriptor, location));
+									}
+								}
+							});
+						}
 					}
 				},
 				SymbolKind.NamedType);
@@ -115,6 +140,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							"WriteArrayHeader" => (1 + GetVariableImpact(i), true),
 							"WriteMapHeader" => (1 + (GetVariableImpact(i) * 2), true),
 							string t when t.StartsWith("Write", StringComparison.Ordinal) => (1, true),
+							"GetSpan" or "Advance" => (null, true), // Advance case, which we'll just assume they're doing correctly.
 							_ => (0, true),
 						};
 					}
@@ -143,6 +169,8 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							"ReadArrayHeader" or "ReadMapHeader" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
 							"TryReadArrayHeader" or "TryReadMapHeader" => (null, false), // Advanced case, which we'll just assume they're doing correctly.
 							"TryReadNil" => (1, false),
+							"TryReadStringSpan" => (1, false),
+							"Skip" => (1, true),
 							string t when t.StartsWith("Read", StringComparison.Ordinal) => (1, true),
 							_ => (0, true),
 						};
@@ -168,7 +196,11 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 		foreach (IOperation block in context.OperationBlocks)
 		{
-			Debug.Assert(context.OperationBlocks.Length == 1, $"{context.OperationBlocks.Length} == 1");
+			if (block.Kind != OperationKind.Block)
+			{
+				continue;
+			}
+
 			ControlFlowGraph flow = context.GetControlFlowGraph(block);
 			if (flow.Blocks[0].FallThroughSuccessor?.Destination is { } initialBlock)
 			{
@@ -224,6 +256,22 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					}
 				}
 
+				if (basicBlock.ConditionKind == ControlFlowConditionKind.None && basicBlock.BranchValue is not null)
+				{
+					if (TestOperation(basicBlock.BranchValue))
+					{
+						return;
+					}
+
+					foreach (IOperation op in basicBlock.BranchValue.ChildOperations.SelectMany(op => op.DescendantsAndSelf()))
+					{
+						if (TestOperation(op))
+						{
+							return;
+						}
+					}
+				}
+
 				if (ops < 1 && basicBlock.Kind == BasicBlockKind.Exit)
 				{
 					// Insufficient structures.
@@ -235,18 +283,31 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 				int? branchValueImpact = 0;
 				bool branchValueUnconditional = true;
-				switch (basicBlock.BranchValue)
+				if (basicBlock.ConditionKind != ControlFlowConditionKind.None)
 				{
-					case IInvocationOperation conditionInvocation:
-						(branchValueImpact, branchValueUnconditional) = relevantMethodTest(conditionInvocation);
-						break;
-					case IBinaryOperation binaryOperation:
-						if (TestOperation(binaryOperation.LeftOperand) || TestOperation(binaryOperation.RightOperand))
-						{
-							return;
-						}
+					switch (basicBlock.BranchValue)
+					{
+						case IInvocationOperation conditionInvocation:
+							(branchValueImpact, branchValueUnconditional) = relevantMethodTest(conditionInvocation);
+							break;
+						case IBinaryOperation binaryOperation:
+							if (TestOperation(binaryOperation.LeftOperand) || TestOperation(binaryOperation.RightOperand))
+							{
+								return;
+							}
 
-						break;
+							break;
+						case IIsPatternOperation patternOperation:
+							foreach (IOperation op in basicBlock.BranchValue.ChildOperations.SelectMany(op => op.DescendantsAndSelf()))
+							{
+								if (TestOperation(op))
+								{
+									return;
+								}
+							}
+
+							break;
+					}
 				}
 
 				if (branchValueImpact is null)

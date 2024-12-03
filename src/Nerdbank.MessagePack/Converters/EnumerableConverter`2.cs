@@ -4,6 +4,7 @@
 #pragma warning disable SA1402 // File may only contain a single type
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -61,6 +62,16 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		}
 	}
 
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		return new JsonObject
+		{
+			["type"] = "array",
+			["items"] = elementConverter.GetJsonSchema(context, ((IEnumerableTypeShape<TEnumerable, TElement>)typeShape).ElementType),
+		};
+	}
+
 	/// <summary>
 	/// Reads one element from the reader.
 	/// </summary>
@@ -95,6 +106,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
@@ -106,6 +118,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		this.DeserializeInto(ref reader, ref result, context);
 		return result;
 	}
+#pragma warning restore NBMsgPack03
 
 	/// <inheritdoc/>
 	public void DeserializeInto(ref MessagePackReader reader, ref TEnumerable collection, SerializationContext context)

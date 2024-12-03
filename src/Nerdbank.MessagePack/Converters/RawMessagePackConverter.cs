@@ -8,6 +8,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <summary>
 /// Provides the raw msgpack transport intended for the <see cref="RawMessagePack"/> type.
 /// </summary>
+[SuppressMessage("Usage", "NBMsgPack032", Justification = "This converter by design has no idea what msgpack it reads or writes.")]
 internal class RawMessagePackConverter : MessagePackConverter<RawMessagePack>
 {
 	/// <inheritdoc/>

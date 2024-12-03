@@ -21,8 +21,17 @@ public record ReferenceSymbols(
 
 	public static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
 	{
-		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "Nerdbank.MessagePack.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference libraryReference ||
-			compilation.GetAssemblyOrModuleSymbol(libraryReference) is not IAssemblySymbol libraryAssembly)
+		IAssemblySymbol libraryAssembly;
+		if (compilation.AssemblyName == "Nerdbank.MessagePack")
+		{
+			libraryAssembly = compilation.Assembly;
+		}
+		else if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "Nerdbank.MessagePack.dll", StringComparison.OrdinalIgnoreCase)) is MetadataReference libraryReference &&
+			compilation.GetAssemblyOrModuleSymbol(libraryReference) is IAssemblySymbol assembly)
+		{
+			libraryAssembly = assembly;
+		}
+		else
 		{
 			referenceSymbols = null;
 			return false;

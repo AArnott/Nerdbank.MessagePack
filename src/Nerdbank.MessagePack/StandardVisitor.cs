@@ -145,7 +145,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
-						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize));
+						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize, property));
 					}
 
 					if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
@@ -283,7 +283,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return suppressIfNoConstructorParameter && constructorParameterShape is null
 			? null
-			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize);
+			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize, propertyShape);
 	}
 
 	/// <inheritdoc/>
@@ -491,7 +491,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
 	/// </summary>
 	/// <param name="objectShape">The shape of the data type that may define derived types that are also allowed for serialization.</param>
-	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objets, keyed by the alias by which they will be identified in the data stream.</returns>
+	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
 	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
 	{
@@ -502,7 +502,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		Dictionary<int, IMessagePackConverter> deserializerData = new();
-		Dictionary<Type, (int Alias, IMessagePackConverter Converter)> serializerData = new();
+		Dictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
 		foreach (IKnownSubTypeAttribute unionAttribute in unionAttributes)
 		{
 			ITypeShape subtypeShape = unionAttribute.Shape;
@@ -510,7 +510,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			IMessagePackConverter converter = this.GetConverter(subtypeShape);
 			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
-			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
+			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter, subtypeShape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
 		}
 
 		return new SubTypes

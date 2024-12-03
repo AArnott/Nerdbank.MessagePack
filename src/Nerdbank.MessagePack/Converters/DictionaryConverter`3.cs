@@ -4,6 +4,7 @@
 #pragma warning disable SA1402 // File may only contain a single type
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -18,6 +19,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="keyConverter">A converter for keys.</param>
 /// <param name="valueConverter">A converter for values.</param>
 internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter) : MessagePackConverter<TDictionary>
+	where TKey : notnull
 {
 	/// <summary>
 	/// Gets a value indicating whether the key or value converters prefer async serialization.
@@ -55,6 +57,23 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			keyConverter.Write(ref writer, entryKey, context);
 			valueConverter.Write(ref writer, entryValue, context);
 		}
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+	{
+		JsonObject schema = new()
+		{
+			["type"] = "object",
+			["additionalProperties"] = context.GetJsonSchema(((IDictionaryTypeShape<TDictionary, TKey, TValue>)typeShape).ValueType),
+		};
+
+		if (typeof(TKey) != typeof(string))
+		{
+			schema["description"] = $"This object uses {typeof(TKey)} values as its keys instead of strings.";
+		}
+
+		return schema;
 	}
 
 	/// <summary>
@@ -100,8 +119,10 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TValue> valueConverter,
 	Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry,
 	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
+	where TKey : notnull
 {
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
@@ -113,6 +134,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		this.DeserializeInto(ref reader, ref result, context);
 		return result;
 	}
+#pragma warning restore NBMsgPack03
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
@@ -183,6 +205,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	where TKey : notnull
 {
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
@@ -225,6 +248,7 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	where TKey : notnull
 {
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
