@@ -321,7 +321,7 @@ static Nerdbank.MessagePack.MessagePackCode.ToFormatName(byte code) -> string!
 static Nerdbank.MessagePack.MessagePackCode.ToMessagePackType(byte code) -> Nerdbank.MessagePack.MessagePackType
 static Nerdbank.MessagePack.MessagePackConverter<T>.ApplyJsonSchemaNullability(System.Text.Json.Nodes.JsonObject! schema) -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackConverter<T>.CreateJsonValue(object? value) -> System.Text.Json.Nodes.JsonValue?
-static Nerdbank.MessagePack.MessagePackConverter<T>.CreateMsgPackBinarySchema() -> System.Text.Json.Nodes.JsonObject!
+static Nerdbank.MessagePack.MessagePackConverter<T>.CreateMsgPackBinarySchema(string? description = null) -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackConverter<T>.CreateMsgPackExtensionSchema(sbyte extensionCode) -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackConverter<T>.CreateUndocumentedSchema(System.Type! undocumentingConverter) -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackNamingPolicy.CamelCase.get -> Nerdbank.MessagePack.MessagePackNamingPolicy!

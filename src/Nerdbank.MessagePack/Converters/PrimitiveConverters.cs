@@ -435,7 +435,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema();
+		=> CreateMsgPackBinarySchema("The binary representation of a BigInteger.");
 }
 
 /// <summary>
@@ -634,7 +634,7 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 		=> new()
 		{
 			["oneOf"] = new JsonArray(
-				CreateMsgPackBinarySchema(),
+				CreateMsgPackBinarySchema("The literal content of the buffer."),
 				new JsonObject
 				{
 					["type"] = "array",
@@ -709,7 +709,7 @@ internal class GuidConverter : MessagePackConverter<Guid>
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema();
+		=> CreateMsgPackBinarySchema("The binary representation of the GUID.");
 }
 
 /// <summary>
