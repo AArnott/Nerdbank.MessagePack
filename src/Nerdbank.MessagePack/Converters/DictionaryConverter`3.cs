@@ -119,6 +119,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 {
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
@@ -130,6 +131,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		this.DeserializeInto(ref reader, ref result, context);
 		return result;
 	}
+#pragma warning restore NBMsgPack03
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]

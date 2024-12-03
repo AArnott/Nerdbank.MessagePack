@@ -153,7 +153,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	public virtual JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
 
 	/// <inheritdoc/>
-	void IMessagePackConverter.Write(ref MessagePackWriter writer, ref object? value, SerializationContext context)
+	void IMessagePackConverter.Write(ref MessagePackWriter writer, object? value, SerializationContext context)
 	{
 		this.Write(ref writer, (T?)value, context);
 	}

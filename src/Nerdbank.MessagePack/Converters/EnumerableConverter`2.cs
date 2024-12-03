@@ -105,6 +105,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
@@ -116,6 +117,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		this.DeserializeInto(ref reader, ref result, context);
 		return result;
 	}
+#pragma warning restore NBMsgPack03
 
 	/// <inheritdoc/>
 	public void DeserializeInto(ref MessagePackReader reader, ref TEnumerable collection, SerializationContext context)

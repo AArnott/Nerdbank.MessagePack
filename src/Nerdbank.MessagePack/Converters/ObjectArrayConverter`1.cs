@@ -75,7 +75,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 	}
 
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
 	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+#pragma warning restore NBMsgPack031
 	{
 		if (value is null)
 		{
