@@ -115,6 +115,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							"WriteArrayHeader" => (1 + GetVariableImpact(i), true),
 							"WriteMapHeader" => (1 + (GetVariableImpact(i) * 2), true),
 							string t when t.StartsWith("Write", StringComparison.Ordinal) => (1, true),
+							"GetSpan" or "Advance" => (null, true), // Advance case, which we'll just assume they're doing correctly.
 							_ => (0, true),
 						};
 					}

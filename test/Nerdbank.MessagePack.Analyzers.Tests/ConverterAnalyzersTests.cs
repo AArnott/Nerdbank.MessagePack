@@ -240,6 +240,33 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_WriterUsesGetSpanAdvance()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			internal class VersionConverter : MessagePackConverter<Version>
+			{
+				/// <inheritdoc/>
+				public override Version Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Version(value) : null;
+
+				/// <inheritdoc/>
+				public override void Write(ref MessagePackWriter writer, in Version value, SerializationContext context)
+				{
+					Span<byte> span = writer.GetSpan(5);
+					// Assume something is written to the span.
+					writer.Advance(3);
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
