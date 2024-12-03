@@ -116,7 +116,8 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		this.AssertSchema([new CustomType(), null]);
 	}
 
-	// TODO: add test for KnownSubTypeAttribute
+	[Fact]
+	public void SubTypeSchema() => this.AssertSchema([new BaseType { Message = "hi" }, new SubType { Message = "hi", Value = 5 }]);
 
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
@@ -218,6 +219,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		if (sampleData is not null)
 		{
 			int sampleCounter = 0;
+			bool anyFailed = false;
 			foreach (T? item in sampleData)
 			{
 				byte[] msgpack = this.Serializer.Serialize(item);
@@ -231,9 +233,12 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 				}
 				catch (Exception ex)
 				{
-					throw new Exception($"Failed while validating sample number {sampleCounter}.", ex);
+					this.Logger.WriteLine("Failed: {0}", ex);
+					anyFailed = true;
 				}
 			}
+
+			Assert.False(anyFailed);
 		}
 
 		return parsedSchema;
@@ -298,6 +303,19 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	internal partial class HasDateTime
 	{
 		public DateTime Timestamp { get; set; }
+	}
+
+	[GenerateShape]
+	[KnownSubType<SubType>(1)]
+	internal partial class BaseType
+	{
+		public string? Message { get; set; }
+	}
+
+	[GenerateShape]
+	internal partial class SubType : BaseType
+	{
+		public int Value { get; set; }
 	}
 
 	[GenerateShape, MessagePackConverter(typeof(NonDocumentingCustomConverter))]

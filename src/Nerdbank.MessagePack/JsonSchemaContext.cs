@@ -40,31 +40,28 @@ public class JsonSchemaContext
 	{
 		Requires.NotNull(typeShape);
 
-		if (this.schemaReferences.TryGetValue(typeShape.Type, out string? referenceId))
+		Type type = typeShape.Type;
+		if (this.schemaReferences.TryGetValue(type, out string? referenceId))
 		{
 			return CreateReference(referenceId);
 		}
 
-		string definitionName = typeShape.Type.FullName!;
+		string definitionName = type.FullName!;
 		string qualifiedReference = $"#/definitions/{definitionName}";
-		if (!this.recursionGuard.Add(typeShape.Type))
+		if (!this.recursionGuard.Add(type))
 		{
-			this.schemaReferences.Add(typeShape.Type, qualifiedReference);
+			this.schemaReferences.Add(type, qualifiedReference);
 			return CreateReference(qualifiedReference);
 		}
 
 		IMessagePackConverter converter = this.serializer.GetOrAddConverter(typeShape);
 		if (converter.GetJsonSchema(this, typeShape) is not JsonObject schema)
 		{
-			schema = new JsonObject
-			{
-				["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
-				["description"] = $"The schema of this object is unknown as it is determined by the {converter.GetType().FullName} converter which does not override {nameof(MessagePackConverter<int>.GetJsonSchema)}.",
-			};
+			schema = MessagePackConverter<int>.CreateUndocumentedSchema(converter.GetType());
 		}
 
-		this.recursionGuard.Remove(typeShape.Type);
-		bool recursive = this.schemaReferences.ContainsKey(typeShape.Type);
+		this.recursionGuard.Remove(type);
+		bool recursive = this.schemaReferences.ContainsKey(type);
 
 		// If the schema is non-trivial, store it as a definition and return a reference.
 		// We also store the schema as a definition if it was recursive.
@@ -75,7 +72,7 @@ public class JsonSchemaContext
 			// Recursive types have already had their reference added to the schemaReferences dictionary.
 			if (!recursive)
 			{
-				this.schemaReferences[typeShape.Type] = qualifiedReference;
+				this.schemaReferences[type] = qualifiedReference;
 			}
 
 			schema = CreateReference(qualifiedReference);

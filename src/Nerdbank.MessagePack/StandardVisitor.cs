@@ -502,7 +502,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		Dictionary<int, IMessagePackConverter> deserializerData = new();
-		Dictionary<Type, (int Alias, IMessagePackConverter Converter)> serializerData = new();
+		Dictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
 		foreach (IKnownSubTypeAttribute unionAttribute in unionAttributes)
 		{
 			ITypeShape subtypeShape = unionAttribute.Shape;
@@ -510,7 +510,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			IMessagePackConverter converter = this.GetConverter(subtypeShape);
 			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
-			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
+			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter, subtypeShape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
 		}
 
 		return new SubTypes

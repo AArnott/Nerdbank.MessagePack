@@ -323,6 +323,7 @@ static Nerdbank.MessagePack.MessagePackConverter<T>.ApplyJsonSchemaNullability(S
 static Nerdbank.MessagePack.MessagePackConverter<T>.CreateJsonValue(object? value) -> System.Text.Json.Nodes.JsonValue?
 static Nerdbank.MessagePack.MessagePackConverter<T>.CreateMsgPackBinarySchema() -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackConverter<T>.CreateMsgPackExtensionSchema(sbyte extensionCode) -> System.Text.Json.Nodes.JsonObject!
+static Nerdbank.MessagePack.MessagePackConverter<T>.CreateUndocumentedSchema(System.Type! undocumentingConverter) -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackNamingPolicy.CamelCase.get -> Nerdbank.MessagePack.MessagePackNamingPolicy!
 static Nerdbank.MessagePack.MessagePackNamingPolicy.PascalCase.get -> Nerdbank.MessagePack.MessagePackNamingPolicy!
 static Nerdbank.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, Nerdbank.MessagePack.ExtensionHeader header, out System.DateTime value, out int tokenSize) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult

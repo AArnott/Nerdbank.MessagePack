@@ -142,5 +142,5 @@ internal record SubTypes
 	/// <summary>
 	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
 	/// </summary>
-	internal required FrozenDictionary<Type, (int Alias, IMessagePackConverter Converter)> Serializers { get; init; }
+	internal required FrozenDictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
 }

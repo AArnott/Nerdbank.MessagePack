@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -207,6 +208,22 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 		}
 
 		return schema;
+	}
+
+	/// <summary>
+	/// Creates a JSON schema fragment that describes a type that has no documented schema.
+	/// </summary>
+	/// <param name="undocumentingConverter">The converter that has not provided a schema.</param>
+	/// <returns>The JSON schema fragment that permits anything and explains why.</returns>
+	protected internal static JsonObject CreateUndocumentedSchema(Type undocumentingConverter)
+	{
+		Requires.NotNull(undocumentingConverter);
+
+		return new()
+		{
+			["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
+			["description"] = $"The schema of this object is unknown as it is determined by the {undocumentingConverter.FullName} converter which does not override {nameof(MessagePackConverter<int>.GetJsonSchema)}.",
+		};
 	}
 
 	/// <summary>
