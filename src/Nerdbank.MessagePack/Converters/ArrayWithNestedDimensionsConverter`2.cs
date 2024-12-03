@@ -24,6 +24,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	[ThreadStatic]
 	private static int[]? dimensionsReusable;
 
+#pragma warning disable NBMsgPack031 // Exactly one structure -- it can't see into this.method calls
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
 	public override TArray? Read(ref MessagePackReader reader, SerializationContext context)
@@ -62,6 +63,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 
 		this.WriteSubArray(ref writer, dimensions.AsSpan(), AsSpan(array), context);
 	}
+#pragma warning restore NBMsgPack031 // Exactly one structure
 
 	/// <summary>
 	/// Exposes an array of any rank as a flat span of elements.

@@ -14,7 +14,7 @@ internal interface IMessagePackConverter
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
-	void Write(ref MessagePackWriter writer, ref object? value, SerializationContext context);
+	void Write(ref MessagePackWriter writer, object? value, SerializationContext context);
 
 	/// <summary>
 	/// Deserializes an instance of an object.
