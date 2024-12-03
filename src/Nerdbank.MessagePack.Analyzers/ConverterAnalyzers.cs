@@ -170,6 +170,11 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 		foreach (IOperation block in context.OperationBlocks)
 		{
+			if (block.Kind != OperationKind.Block)
+			{
+				continue;
+			}
+
 			ControlFlowGraph flow = context.GetControlFlowGraph(block);
 			if (flow.Blocks[0].FallThroughSuccessor?.Destination is { } initialBlock)
 			{

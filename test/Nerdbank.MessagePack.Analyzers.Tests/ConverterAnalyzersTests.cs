@@ -292,6 +292,31 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_ReadHasAttribute()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+			
+			internal class ArrayWithFlattenedDimensionsConverter : MessagePackConverter<int>
+			{
+				[UnconditionalSuppressMessage("AOT", "IL3050")]
+				public override int Read(ref MessagePackReader reader, SerializationContext context)
+				{
+					return reader.ReadInt32();
+				}
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
