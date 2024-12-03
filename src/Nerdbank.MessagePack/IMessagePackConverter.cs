@@ -32,6 +32,12 @@ internal interface IMessagePackConverter
 	/// <returns>A converter. Possibly <see langword="this"/> if this instance is already reference preserving.</returns>
 	IMessagePackConverter WrapWithReferencePreservation();
 
+	/// <summary>
+	/// Removes the outer reference preserving converter, if present.
+	/// </summary>
+	/// <returns>The unwrapped converter.</returns>
+	IMessagePackConverter UnwrapReferencePreservation();
+
 	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
 	JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);
 }

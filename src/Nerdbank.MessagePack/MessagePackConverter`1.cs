@@ -168,8 +168,14 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <inheritdoc/>
 	IMessagePackConverter IMessagePackConverter.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
 
+	/// <inheritdoc/>
+	IMessagePackConverter IMessagePackConverter.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
+
 	/// <inheritdoc cref="IMessagePackConverter.WrapWithReferencePreservation" />
 	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
+
+	/// <inheritdoc cref="IMessagePackConverter.UnwrapReferencePreservation" />
+	internal virtual MessagePackConverter<T> UnwrapReferencePreservation() => this;
 
 	/// <summary>
 	/// Transforms a JSON schema to include "null" as a possible value for the schema.

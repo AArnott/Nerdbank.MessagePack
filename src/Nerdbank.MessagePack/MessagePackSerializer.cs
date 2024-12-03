@@ -35,6 +35,7 @@ public partial record MessagePackSerializer
 	private bool configurationLocked;
 
 	private MultiProviderTypeCache? cachedConverters;
+	private bool preserveReferences;
 
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
@@ -112,7 +113,18 @@ public partial record MessagePackSerializer
 	/// When this property is <see langword="false" />, a cycle will eventually result in a <see cref="StackOverflowException" /> being thrown.
 	/// </para>
 	/// </remarks>
-	public bool PreserveReferences { get; init; }
+	public bool PreserveReferences
+	{
+		get => this.preserveReferences;
+		init
+		{
+			if (this.preserveReferences != value)
+			{
+				this.preserveReferences = value;
+				this.ReconfigureUserProvidedConverters();
+			}
+		}
+	}
 
 	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.
@@ -491,6 +503,15 @@ public partial record MessagePackSerializer
 	private void VerifyConfigurationIsNotLocked()
 	{
 		Verify.Operation(!this.configurationLocked, "This operation must be done before (de)serialization occurs.");
+	}
+
+	private void ReconfigureUserProvidedConverters()
+	{
+		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
+		{
+			IMessagePackConverter converter = (IMessagePackConverter)pair.Value;
+			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
+		}
 	}
 
 	/// <summary>
