@@ -264,6 +264,16 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							}
 
 							break;
+						case IIsPatternOperation patternOperation:
+							foreach (IOperation op in basicBlock.BranchValue.ChildOperations.SelectMany(op => op.DescendantsAndSelf()))
+							{
+								if (TestOperation(op))
+								{
+									return;
+								}
+							}
+
+							break;
 					}
 				}
 

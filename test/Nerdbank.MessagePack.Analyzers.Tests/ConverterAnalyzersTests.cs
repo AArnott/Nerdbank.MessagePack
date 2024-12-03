@@ -218,6 +218,28 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_StructureIsReadWithinConditionalExpression()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			internal class VersionConverter : MessagePackConverter<Version>
+			{
+				/// <inheritdoc/>
+				public override Version Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Version(value) : null;
+
+				/// <inheritdoc/>
+				public override void Write(ref MessagePackWriter writer, in Version value, SerializationContext context) => writer.Write(value?.ToString());
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
