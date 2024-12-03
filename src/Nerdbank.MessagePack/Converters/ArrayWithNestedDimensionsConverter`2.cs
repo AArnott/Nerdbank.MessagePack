@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -64,6 +65,13 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 		this.WriteSubArray(ref writer, dimensions.AsSpan(), AsSpan(array), context);
 	}
 #pragma warning restore NBMsgPack031 // Exactly one structure
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "array", // We could go into more detail if needed.
+		};
 
 	/// <summary>
 	/// Exposes an array of any rank as a flat span of elements.

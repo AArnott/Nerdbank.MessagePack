@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -703,6 +704,16 @@ internal static class HardwareAccelerated
 			writer.Advance(unchecked((int)writtenBytes));
 			reference = ref Unsafe.Add(ref reference, length);
 		}
+
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject()
+				{
+					["type"] = "boolean",
+				},
+			};
 	}
 
 	/// <summary>
@@ -852,5 +863,12 @@ internal static class HardwareAccelerated
 				length -= consumedSpanLength;
 			}
 		}
+
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = context.GetJsonSchema(((IEnumerableTypeShape<TEnumerable, TElement>)typeShape).ElementType),
+			};
 	}
 }

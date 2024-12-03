@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
+using System.Text.Json.Nodes;
 using Microsoft;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -130,4 +131,17 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 			this.primitiveConverter.Write(ref writer, (TUnderlyingType)(object)value, context);
 		}
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new JsonObject
+		{
+			["oneOf"] = new JsonArray(
+				new JsonObject { ["type"] = "integer" },
+				new JsonObject
+				{
+					["type"] = "string",
+					["enum"] = new JsonArray([.. this.valueByName.Keys]),
+				}),
+		};
 }

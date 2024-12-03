@@ -5,6 +5,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
 using Microsoft;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -137,6 +138,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, SByte value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "integer",
+				},
+			};
 	}
 
 	/// <summary>
@@ -152,6 +164,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Int16 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "integer",
+				},
+			};
 	}
 
 	/// <summary>
@@ -167,6 +190,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Int32 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "integer",
+				},
+			};
 	}
 
 	/// <summary>
@@ -182,6 +216,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Int64 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "integer",
+				},
+			};
 	}
 
 	/// <summary>
@@ -197,6 +242,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, UInt16 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "integer",
+				},
+			};
 	}
 
 	/// <summary>
@@ -212,6 +268,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, UInt32 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "integer",
+				},
+			};
 	}
 
 	/// <summary>
@@ -227,6 +294,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, UInt64 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "integer",
+				},
+			};
 	}
 
 	/// <summary>
@@ -242,6 +320,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Single value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "number",
+				},
+			};
 	}
 
 	/// <summary>
@@ -257,6 +346,17 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Double value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "number",
+				},
+			};
 	}
 
 	/// <summary>
@@ -272,5 +372,16 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Boolean value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "boolean",
+				},
+			};
 	}
 }

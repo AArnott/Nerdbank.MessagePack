@@ -1,0 +1,65 @@
+﻿{
+  "oneOf": [
+    {
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "Message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": [
+            {
+              "type": "integer",
+              "enum": [
+                1
+              ]
+            },
+            {
+              "$ref": "#/definitions/SchemaTests\u002BSubType"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "definitions": {
+    "SchemaTests\u002BSubType": {
+      "type": "object",
+      "properties": {
+        "Value": {
+          "type": "integer"
+        },
+        "Message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}

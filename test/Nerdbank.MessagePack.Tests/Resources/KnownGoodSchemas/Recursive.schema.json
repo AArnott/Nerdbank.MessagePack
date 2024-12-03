@@ -1,0 +1,28 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SchemaTests\u002BRecursiveType"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "definitions": {
+    "SchemaTests\u002BRecursiveType": {
+      "type": "object",
+      "properties": {
+        "Child": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/SchemaTests\u002BRecursiveType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}

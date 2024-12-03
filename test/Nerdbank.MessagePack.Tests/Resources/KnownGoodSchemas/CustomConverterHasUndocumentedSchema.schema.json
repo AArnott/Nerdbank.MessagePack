@@ -1,0 +1,25 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SchemaTests\u002BTypeWithNonDocumentingCustomConverter"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "definitions": {
+    "SchemaTests\u002BTypeWithNonDocumentingCustomConverter": {
+      "type": [
+        "number",
+        "integer",
+        "string",
+        "boolean",
+        "object",
+        "array",
+        "null"
+      ],
+      "description": "The schema of this object is unknown as it is determined by the SchemaTests\u002BNonDocumentingCustomConverter converter which does not override GetJsonSchema."
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}

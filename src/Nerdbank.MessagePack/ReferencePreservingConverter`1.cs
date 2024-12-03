@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable NBMsgPack031 // NotExactlyOneStructure -- we're doing advanced stuff.
+#pragma warning disable NBMsgPack032 // Reference preservation isn't supported when producing a schema at this point.
 
 using Microsoft;
 
