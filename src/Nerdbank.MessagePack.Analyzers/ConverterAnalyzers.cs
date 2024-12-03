@@ -223,6 +223,22 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					}
 				}
 
+				if (basicBlock.ConditionKind == ControlFlowConditionKind.None && basicBlock.BranchValue is not null)
+				{
+					if (TestOperation(basicBlock.BranchValue))
+					{
+						return;
+					}
+
+					foreach (IOperation op in basicBlock.BranchValue.ChildOperations.SelectMany(op => op.DescendantsAndSelf()))
+					{
+						if (TestOperation(op))
+						{
+							return;
+						}
+					}
+				}
+
 				if (ops < 1 && basicBlock.Kind == BasicBlockKind.Exit)
 				{
 					// Insufficient structures.
@@ -234,18 +250,21 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 
 				int? branchValueImpact = 0;
 				bool branchValueUnconditional = true;
-				switch (basicBlock.BranchValue)
+				if (basicBlock.ConditionKind != ControlFlowConditionKind.None)
 				{
-					case IInvocationOperation conditionInvocation:
-						(branchValueImpact, branchValueUnconditional) = relevantMethodTest(conditionInvocation);
-						break;
-					case IBinaryOperation binaryOperation:
-						if (TestOperation(binaryOperation.LeftOperand) || TestOperation(binaryOperation.RightOperand))
-						{
-							return;
-						}
+					switch (basicBlock.BranchValue)
+					{
+						case IInvocationOperation conditionInvocation:
+							(branchValueImpact, branchValueUnconditional) = relevantMethodTest(conditionInvocation);
+							break;
+						case IBinaryOperation binaryOperation:
+							if (TestOperation(binaryOperation.LeftOperand) || TestOperation(binaryOperation.RightOperand))
+							{
+								return;
+							}
 
-						break;
+							break;
+					}
 				}
 
 				if (branchValueImpact is null)

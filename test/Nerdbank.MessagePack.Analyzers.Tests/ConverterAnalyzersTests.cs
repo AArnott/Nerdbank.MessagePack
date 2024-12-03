@@ -174,6 +174,50 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_StructureIsReadIntoReturnValueViaConstructor()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
+			{
+				/// <inheritdoc/>
+				public override TimeSpan Read(ref MessagePackReader reader, SerializationContext context) => new TimeSpan(reader.ReadInt64());
+
+				/// <inheritdoc/>
+				public override void Write(ref MessagePackWriter writer, in TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NoIssues_StructureIsReadDirectlyIntoReturnValue()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			internal class Int16Converter : MessagePackConverter<Int16>
+			{
+				/// <inheritdoc/>
+				public override Int16 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt16();
+
+				/// <inheritdoc/>
+				public override void Write(ref MessagePackWriter writer, in Int16 value, SerializationContext context) => writer.Write(value);
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
