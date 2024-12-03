@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text.Json.Nodes;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -25,16 +26,20 @@ public class JsonSchemaContext
 		this.serializer = serializer;
 	}
 
+	/// <summary>
+	/// Gets the referenceable schema definitions that should be included in the top-level schema.
+	/// </summary>
 	internal IReadOnlyDictionary<string, JsonObject> SchemaDefinitions => this.schemaDefinitions;
 
 	/// <summary>
 	/// Obtains the JSON schema for a given type.
 	/// </summary>
-	/// <typeparam name="T">The type whose schema is required.</typeparam>
 	/// <param name="typeShape">The shape for the type.</param>
 	/// <returns>The JSON schema.</returns>
 	public JsonObject GetJsonSchema(ITypeShape typeShape)
 	{
+		Requires.NotNull(typeShape);
+
 		if (this.schemaReferences.TryGetValue(typeShape.Type, out string? referenceId))
 		{
 			return CreateReference(referenceId);
@@ -83,8 +88,4 @@ public class JsonSchemaContext
 			["$ref"] = referencePath,
 		};
 	}
-
-	/// <inheritdoc cref="GetJsonSchema(ITypeShape)"/>
-	public JsonObject GetJsonSchema<T>()
-		where T : IShapeable<T> => this.GetJsonSchema(T.GetShape());
 }

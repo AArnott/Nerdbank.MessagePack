@@ -440,7 +440,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 			else
 			{
-				return new ArrayConverter<TElement>(elementConverter, enumerableShape.ElementType);
+				return new ArrayConverter<TElement>(elementConverter);
 			}
 		}
 

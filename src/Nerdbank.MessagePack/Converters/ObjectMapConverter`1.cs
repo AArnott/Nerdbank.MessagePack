@@ -268,6 +268,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		return value;
 	}
 
+	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
 		IObjectTypeShape<T> objectShape = (IObjectTypeShape<T>)typeShape;

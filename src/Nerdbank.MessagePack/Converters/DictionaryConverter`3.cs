@@ -19,6 +19,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="keyConverter">A converter for keys.</param>
 /// <param name="valueConverter">A converter for values.</param>
 internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter) : MessagePackConverter<TDictionary>
+	where TKey : notnull
 {
 	/// <summary>
 	/// Gets a value indicating whether the key or value converters prefer async serialization.
@@ -58,6 +59,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 		}
 	}
 
+	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
 		JsonObject schema = new()
@@ -117,6 +119,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TValue> valueConverter,
 	Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry,
 	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
+	where TKey : notnull
 {
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
@@ -202,6 +205,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	where TKey : notnull
 {
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
@@ -244,6 +248,7 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	where TKey : notnull
 {
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)

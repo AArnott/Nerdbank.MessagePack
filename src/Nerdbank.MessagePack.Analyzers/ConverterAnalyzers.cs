@@ -98,17 +98,20 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							context.RegisterOperationBlockEndAction(context => this.AnalyzeStructureCounts(context, referenceSymbols));
 						});
 
-						context.RegisterSymbolEndAction(context =>
+						if (!SymbolEqualityComparer.Default.Equals(target, referenceSymbols.MessagePackConverter) && !target.IsAbstract)
 						{
-							INamedTypeSymbol symbol = (INamedTypeSymbol)context.Symbol;
-							if (!symbol.GetMembers("GetJsonSchema").Any(m => m is IMethodSymbol { OverriddenMethod: not null }))
+							context.RegisterSymbolEndAction(context =>
 							{
-								if (symbol.Locations.FirstOrDefault(l => l.IsInSource) is { } location)
+								INamedTypeSymbol symbol = (INamedTypeSymbol)context.Symbol;
+								if (!symbol.GetAllMembers().Any(m => m is IMethodSymbol { Name: "GetJsonSchema", OverriddenMethod: not null }))
 								{
-									context.ReportDiagnostic(Diagnostic.Create(OverrideGetJsonSchemaDescriptor, location));
+									if (symbol.Locations.FirstOrDefault(l => l.IsInSource) is { } location)
+									{
+										context.ReportDiagnostic(Diagnostic.Create(OverrideGetJsonSchemaDescriptor, location));
+									}
 								}
-							}
-						});
+							});
+						}
 					}
 				},
 				SymbolKind.NamedType);

@@ -425,7 +425,6 @@ public partial record MessagePackSerializer
 	/// An existing converter is reused if one is found in the cache.
 	/// If a converter must be created, it is added to the cache for lookup next time.
 	/// </summary>
-	/// <typeparam name="T">The data type to convert.</typeparam>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
 	internal IMessagePackConverter GetOrAddConverter(ITypeShape shape)

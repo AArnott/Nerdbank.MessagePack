@@ -468,6 +468,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		return value;
 	}
 
+	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
 		IObjectTypeShape<T> objectShape = (IObjectTypeShape<T>)typeShape;

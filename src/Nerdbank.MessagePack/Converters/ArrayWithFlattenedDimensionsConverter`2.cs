@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -90,6 +91,27 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 			elementConverter.Write(ref writer, elements[i], context);
 		}
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "array",
+			["items"] = new JsonArray(
+				new JsonObject()
+				{
+					["type"] = "array",
+					["items"] = new JsonObject()
+					{
+						["type"] = "integer",
+					},
+				},
+				new JsonObject()
+				{
+					["type"] = "array",
+					["items"] = elementConverter.GetJsonSchema(context, typeShape),
+				}),
+		};
 
 	/// <summary>
 	/// Exposes an array of any rank as a flat span of elements.

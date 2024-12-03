@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text.Json.Nodes;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -28,5 +29,9 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 		/// <inheritdoc/>
 		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
 			=> self.Result.Write(ref writer, value, context);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> self.Result.GetJsonSchema(context, typeShape);
 	}
 }

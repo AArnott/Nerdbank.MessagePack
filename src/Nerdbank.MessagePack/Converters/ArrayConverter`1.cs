@@ -10,7 +10,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// Serializes and deserializes a 1-rank array.
 /// </summary>
 /// <typeparam name="TElement">The element type.</typeparam>
-internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter, ITypeShape<TElement> elementShape) : MessagePackConverter<TElement[]>
+internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TElement[]>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;

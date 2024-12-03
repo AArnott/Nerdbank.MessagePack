@@ -129,6 +129,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// Gets the <see href="https://json-schema.org/">JSON schema</see> that resembles the data structure that this converter can serialize and deserialize.
 	/// </summary>
 	/// <param name="context">A means to obtain schema fragments for inclusion when your converter delegates to other converters.</param>
+	/// <param name="typeShape">The shape of the type <typeparamref name="T"/>, in case it provides useful metadata for constructing the schema.</param>
 	/// <returns>The fragment of JSON schema that describes the value written by this converter, or <see langword="null" /> if this method has not been overridden.</returns>
 	/// <remarks>
 	/// <para>
@@ -144,7 +145,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// </para>
 	/// <para>
 	/// If the converter delegates to other converters, the schemas for those sub-values can be obtained for inclusion in the returned schema
-	/// by calling <see cref="JsonSchemaContext.GetJsonSchema{T}()"/> on the <paramref name="context"/>.
+	/// by calling <see cref="JsonSchemaContext.GetJsonSchema(ITypeShape)"/> on the <paramref name="context"/>.
 	/// </para>
 	/// </remarks>
 	/// <seealso cref="CreateMsgPackExtensionSchema"/>
@@ -170,12 +171,81 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <inheritdoc cref="IMessagePackConverter.WrapWithReferencePreservation" />
 	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
 
-	protected static JsonObject CreateMsgPackExtensionSchema() => new()
+	/// <summary>
+	/// Transforms a JSON schema to include "null" as a possible value for the schema.
+	/// </summary>
+	/// <param name="schema">The schema to transform. This value may be mutated.</param>
+	/// <returns>The result of the transformation, which may be a different root object than given in <paramref name="schema"/>.</returns>
+	/// <remarks>
+	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
+	/// </remarks>
+	protected internal static JsonObject ApplyJsonSchemaNullability(JsonObject schema)
+	{
+		Requires.NotNull(schema);
+
+		if (schema.TryGetPropertyValue("type", out JsonNode? typeValue))
+		{
+			if (schema["type"] is JsonArray types)
+			{
+				if (!types.Any(n => n?.GetValueKind() == System.Text.Json.JsonValueKind.String && n.GetValue<string>() == "null"))
+				{
+					types.Add((JsonNode)"null");
+				}
+			}
+			else
+			{
+				schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
+			}
+		}
+		else
+		{
+			// This is probably a schema reference.
+			schema = new()
+			{
+				["oneOf"] = new JsonArray(schema, new JsonObject { ["type"] = "null" }),
+			};
+		}
+
+		return schema;
+	}
+
+	/// <summary>
+	/// Creates a JSON schema fragment that provides a cursory description of a MessagePack extension.
+	/// </summary>
+	/// <param name="extensionCode">The extension code used.</param>
+	/// <returns>A JSON schema fragment.</returns>
+	/// <remarks>
+	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
+	/// </remarks>
+	protected static JsonObject CreateMsgPackExtensionSchema(sbyte extensionCode) => new()
 	{
 		["type"] = "string",
-		["pattern"] = "^msgpack extension -1 as base64: ",
+		["pattern"] = FormattableString.Invariant($"^msgpack extension {extensionCode} as base64: "),
 	};
 
+	/// <summary>
+	/// Creates a JSON schema fragment that provides a cursory description of a MessagePack binary blob.
+	/// </summary>
+	/// <returns>A JSON schema fragment.</returns>
+	/// <remarks>
+	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
+	/// </remarks>
+	protected static JsonObject CreateMsgPackBinarySchema() => new()
+	{
+		["type"] = "string",
+		["pattern"] = "^msgpack binary as base64: ",
+	};
+
+	/// <summary>
+	/// Wraps a boxed primitive as a <see cref="JsonValue"/>.
+	/// </summary>
+	/// <param name="value">The boxed primitive to wrap as a <see cref="JsonValue"/>. Only certain primitives are supported (roughly those supported by non-generic overloads of <c>JsonValue.Create</c>.</param>
+	/// <returns>The <see cref="JsonValue"/>, or <see langword="null" /> if <paramref name="value"/> is <see langword="null" /> because <see cref="JsonValue"/> does not represent null.</returns>
+	/// <exception cref="NotSupportedException">Thrown if <paramref name="value"/> is of a type that cannot be wrapped as a simple JSON value.</exception>
+	/// <remarks>
+	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
+	/// </remarks>
+	[return: NotNullIfNotNull(nameof(value))]
 	protected static JsonValue? CreateJsonValue(object? value)
 	{
 		return value switch
@@ -197,33 +267,5 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 			char v => JsonValue.Create(v),
 			_ => throw new NotSupportedException($"Unsupported object type: {value.GetType().FullName}"),
 		};
-	}
-
-	protected internal static JsonObject ApplyJsonSchemaNullability(JsonObject schema)
-	{
-		if (schema.TryGetPropertyValue("type", out JsonNode? typeValue))
-		{
-			if (schema["type"] is JsonArray types)
-			{
-				if (!types.Any(n => n.GetValueKind() == System.Text.Json.JsonValueKind.String && n.GetValue<string>() == "null"))
-				{
-					types.Add((JsonNode)"null");
-				}
-			}
-			else
-			{
-				schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
-			}
-		}
-		else
-		{
-			// This is probably a schema reference.
-			schema = new()
-			{
-				["oneOf"] = new JsonArray(schema, new JsonObject { ["type"] = "null" }),
-			};
-		}
-
-		return schema;
 	}
 }

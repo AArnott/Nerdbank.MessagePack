@@ -52,6 +52,14 @@ internal class VersionConverter : MessagePackConverter<Version?>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Version? value, SerializationContext context) => writer.Write(value?.ToString());
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["pattern"] = @"^\d+(\.\d+){0,3}$",
+		};
 }
 
 /// <summary>
@@ -64,6 +72,14 @@ internal class UriConverter : MessagePackConverter<Uri?>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Uri? value, SerializationContext context) => writer.Write(value?.OriginalString);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["format"] = "uri",
+		};
 }
 
 /// <summary>
@@ -76,6 +92,14 @@ internal class HalfConverter : MessagePackConverter<Half>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Half value, SerializationContext context) => writer.Write((float)value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "number",
+			["format"] = "float16",
+		};
 }
 
 /// <summary>
@@ -88,6 +112,14 @@ internal class SingleConverter : MessagePackConverter<float>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in float value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "number",
+			["format"] = "float32",
+		};
 }
 
 /// <summary>
@@ -100,6 +132,14 @@ internal class DoubleConverter : MessagePackConverter<double>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in double value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "number",
+			["format"] = "float64",
+		};
 }
 
 /// <summary>
@@ -189,6 +229,14 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 			writer.Write(value.ToString(CultureInfo.InvariantCulture));
 		}
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["pattern"] = @"^-?\d+(\.\d+)?$",
+		};
 }
 
 /// <summary>
@@ -259,6 +307,14 @@ internal class Int128Converter : MessagePackConverter<Int128>
 			writer.Write(value.ToString(CultureInfo.InvariantCulture));
 		}
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["pattern"] = @"^-?\d+$",
+		};
 }
 
 /// <summary>
@@ -329,6 +385,14 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 			writer.Write(value.ToString(CultureInfo.InvariantCulture));
 		}
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["pattern"] = @"^\d+$",
+		};
 }
 
 /// <summary>
@@ -368,6 +432,10 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 		Assumes.True(value.TryWriteBytes(span, out int written));
 		writer.Advance(written);
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> CreateMsgPackBinarySchema();
 }
 
 /// <summary>
@@ -382,7 +450,7 @@ internal class DateTimeConverter : MessagePackConverter<DateTime>
 	public override void Write(ref MessagePackWriter writer, in DateTime value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateMsgPackExtensionSchema();
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);
 }
 
 /// <summary>
@@ -411,6 +479,16 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 		writer.Write(new DateTime(value.Ticks, DateTimeKind.Utc));
 		writer.Write((short)value.Offset.TotalMinutes);
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "array",
+			["items"] = new JsonArray(
+				CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
+				new JsonObject { ["type"] = "integer" }),
+		};
 }
 
 /// <summary>
@@ -423,6 +501,15 @@ internal class DateOnlyConverter : MessagePackConverter<DateOnly>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in DateOnly value, SerializationContext context) => writer.Write(value.DayNumber);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "integer",
+			["minimum"] = DateOnly.MinValue.DayNumber,
+			["maximum"] = DateOnly.MaxValue.DayNumber,
+		};
 }
 
 /// <summary>
@@ -435,6 +522,15 @@ internal class TimeOnlyConverter : MessagePackConverter<TimeOnly>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TimeOnly value, SerializationContext context) => writer.Write(value.Ticks);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "integer",
+			["minimum"] = TimeOnly.MinValue.Ticks,
+			["maximum"] = TimeOnly.MaxValue.Ticks,
+		};
 }
 
 /// <summary>
@@ -447,6 +543,15 @@ internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "integer",
+			["minimum"] = TimeSpan.MinValue.Ticks,
+			["maximum"] = TimeSpan.MaxValue.Ticks,
+		};
 }
 
 /// <summary>
@@ -459,6 +564,13 @@ internal class RuneConverter : MessagePackConverter<Rune>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Rune value, SerializationContext context) => writer.Write(value.Value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "integer",
+		};
 }
 
 /// <summary>
@@ -471,6 +583,15 @@ internal class CharConverter : MessagePackConverter<char>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in char value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "integer",
+			["minimum"] = 0,
+			["maximum"] = ushort.MaxValue,
+		};
 }
 
 /// <summary>
@@ -484,7 +605,7 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 	/// </summary>
 	internal static readonly ByteArrayConverter Instance = new();
 
-	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter(), PolyTypeUtilities.GetShape<byte, ByteArrayConverter>());
+	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter());
 
 	private ByteArrayConverter()
 	{
@@ -507,6 +628,19 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in byte[]? value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["oneOf"] = new JsonArray(
+				CreateMsgPackBinarySchema(),
+				new JsonObject
+				{
+					["type"] = "array",
+					["items"] = new JsonObject { ["type"] = "integer", ["minimum"] = 0, ["maximum"] = byte.MaxValue },
+				}),
+		};
 }
 
 /// <summary>
@@ -519,6 +653,10 @@ internal class MemoryOfByteConverter : MessagePackConverter<Memory<byte>>
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Memory<byte> value, SerializationContext context) => writer.Write(value.Span);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> ByteArrayConverter.Instance.GetJsonSchema(context, typeShape);
 }
 
 /// <summary>
@@ -531,6 +669,10 @@ internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemo
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in ReadOnlyMemory<byte> value, SerializationContext context) => writer.Write(value.Span);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> ByteArrayConverter.Instance.GetJsonSchema(context, typeShape);
 }
 
 /// <summary>
@@ -564,6 +706,10 @@ internal class GuidConverter : MessagePackConverter<Guid>
 		Assumes.True(value.TryWriteBytes(writer.GetSpan(GuidLength)));
 		writer.Advance(GuidLength);
 	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> CreateMsgPackBinarySchema();
 }
 
 /// <summary>
@@ -598,24 +744,7 @@ internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : 
 		return elementConverter.Read(ref reader, context);
 	}
 
+	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-	{
-		JsonObject schema = context.GetJsonSchema(((INullableTypeShape<T>)typeShape).ElementType);
-
-		// Modify the schema of the object to indicate that null is an option.
-		// TODO: How does this work if the schema we get back is a $ref?
-		if (schema.TryGetPropertyValue("type", out JsonNode? typeValue))
-		{
-			if (schema["type"] is JsonArray types)
-			{
-				types.Add((JsonNode)"null");
-			}
-			else
-			{
-				schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
-			}
-		}
-
-		return schema;
-	}
+		=> ApplyJsonSchemaNullability(context.GetJsonSchema(((INullableTypeShape<T>)typeShape).ElementType));
 }

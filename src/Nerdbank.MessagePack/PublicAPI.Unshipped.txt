@@ -66,14 +66,11 @@ Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.DeepEquals(T? other) -> bool
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetHashCode() -> int
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetSecureHashCode() -> long
-Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider
-Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider.GetJsonSchema(Nerdbank.MessagePack.JsonSchemaContext! context) -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnAfterDeserialize() -> void
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnBeforeSerialize() -> void
 Nerdbank.MessagePack.JsonSchemaContext
-Nerdbank.MessagePack.JsonSchemaContext.GetJsonSchema<T>() -> System.Text.Json.Nodes.JsonObject!
-Nerdbank.MessagePack.JsonSchemaContext.GetJsonSchema<T>(PolyType.Abstractions.ITypeShape<T>! typeShape) -> System.Text.Json.Nodes.JsonObject!
+Nerdbank.MessagePack.JsonSchemaContext.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.KeyAttribute
 Nerdbank.MessagePack.KeyAttribute.Index.get -> int
 Nerdbank.MessagePack.KeyAttribute.KeyAttribute(int index) -> void
@@ -322,6 +319,10 @@ static Nerdbank.MessagePack.ByValueEqualityComparer<T>.Default.get -> System.Col
 static Nerdbank.MessagePack.ByValueEqualityComparer<T>.HashResistant.get -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.MessagePackCode.ToFormatName(byte code) -> string!
 static Nerdbank.MessagePack.MessagePackCode.ToMessagePackType(byte code) -> Nerdbank.MessagePack.MessagePackType
+static Nerdbank.MessagePack.MessagePackConverter<T>.ApplyJsonSchemaNullability(System.Text.Json.Nodes.JsonObject! schema) -> System.Text.Json.Nodes.JsonObject!
+static Nerdbank.MessagePack.MessagePackConverter<T>.CreateJsonValue(object? value) -> System.Text.Json.Nodes.JsonValue?
+static Nerdbank.MessagePack.MessagePackConverter<T>.CreateMsgPackBinarySchema() -> System.Text.Json.Nodes.JsonObject!
+static Nerdbank.MessagePack.MessagePackConverter<T>.CreateMsgPackExtensionSchema(sbyte extensionCode) -> System.Text.Json.Nodes.JsonObject!
 static Nerdbank.MessagePack.MessagePackNamingPolicy.CamelCase.get -> Nerdbank.MessagePack.MessagePackNamingPolicy!
 static Nerdbank.MessagePack.MessagePackNamingPolicy.PascalCase.get -> Nerdbank.MessagePack.MessagePackNamingPolicy!
 static Nerdbank.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, Nerdbank.MessagePack.ExtensionHeader header, out System.DateTime value, out int tokenSize) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
@@ -384,6 +385,7 @@ static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePac
 static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.ReadOnlyMemory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
 static Nerdbank.MessagePack.RawMessagePack.implicit operator System.Buffers.ReadOnlySequence<byte>(Nerdbank.MessagePack.RawMessagePack msgpack) -> System.Buffers.ReadOnlySequence<byte>
 static readonly Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Default -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+virtual Nerdbank.MessagePack.MessagePackConverter<T>.GetJsonSchema(Nerdbank.MessagePack.JsonSchemaContext! context, PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject?
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.PreferAsyncSerialization.get -> bool
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<T?>
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask

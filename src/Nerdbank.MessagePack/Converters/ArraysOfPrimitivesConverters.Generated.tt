@@ -5,13 +5,14 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
 using Microsoft;
 
 namespace Nerdbank.MessagePack.Converters;
 
 <#
-    // We don't bother with Byte because byte[] has a far superior encoding (binary) so we don't need to optimize it here.
-    string[] primitiveTypeNames = ["SByte", "Int16", "Int32", "Int64", /*"Byte",*/ "UInt16", "UInt32", "UInt64", "Single", "Double", "Boolean"];
+	// We don't bother with Byte because byte[] has a far superior encoding (binary) so we don't need to optimize it here.
+	string[] primitiveTypeNames = ["SByte", "Int16", "Int32", "Int64", /*"Byte",*/ "UInt16", "UInt32", "UInt64", "Single", "Double", "Boolean"];
 #>
 
 /// <summary>
@@ -45,8 +46,8 @@ internal static partial class ArraysOfPrimitivesConverters
 		object? spanConstructorToUse = typeof(TElement[]).IsAssignableTo(typeof(TEnumerable)) ? null : spanConstructor;
 
 <#
-    foreach (string primitive in primitiveTypeNames)
-    {
+	foreach (string primitive in primitiveTypeNames)
+	{
 #>
 		if (typeof(TElement) == typeof(<#=primitive#>))
 		{
@@ -57,14 +58,28 @@ internal static partial class ArraysOfPrimitivesConverters
 		}
 
 <#
-    }
+	}
 #>
 		converter = null;
 		return false;
 	}
 <#
-    foreach (string primitive in primitiveTypeNames)
-    {
+	foreach (string primitive in primitiveTypeNames)
+	{
+        string jsonSchemaType = primitive switch
+        {
+            "SByte" => "integer",
+            "Int16" => "integer",
+            "Int32" => "integer",
+            "Int64" => "integer",
+            "UInt16" => "integer",
+            "UInt32" => "integer",
+            "UInt64" => "integer",
+            "Single" => "number",
+            "Double" => "number",
+            "Boolean" => "boolean",
+            _ => throw new NotSupportedException(),
+        };
 #>
 
 	/// <summary>
@@ -80,8 +95,19 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, <#=primitive#> value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "<#=jsonSchemaType#>",
+				},
+			};
 	}
 <#
-    }
+	}
 #>
 }
