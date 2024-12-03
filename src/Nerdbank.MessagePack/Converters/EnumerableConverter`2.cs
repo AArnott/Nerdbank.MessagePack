@@ -68,7 +68,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		return new JsonObject
 		{
 			["type"] = "array",
-			["items"] = elementConverter.GetJsonSchema(context, ((IEnumerableTypeShape<TEnumerable, TElement>)typeShape).ElementType),
+			["items"] = context.GetJsonSchema(((IEnumerableTypeShape<TEnumerable, TElement>)typeShape).ElementType),
 		};
 	}
 
