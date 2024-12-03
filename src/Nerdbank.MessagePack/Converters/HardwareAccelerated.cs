@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -578,7 +579,68 @@ internal static class HardwareAccelerated
 		private static nuint Write(ref byte output, ref float input, nuint length)
 		{
 			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < length; inputOffset++)
+			nuint inputOffset = 0;
+			const byte B = byte.MaxValue;
+			const byte F = MessagePackCode.Float32;
+			if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported)
+			{
+				var indices = Vector512.Create(3, 2, 1, 0, B, 7, 6, 5, 4, B, 11, 10, 9, 8, B, 15, 14, 13, 12, B, 19, 18, 17, 16, B, 23, 22, 21, 20, B, 27, 26, 25, 24, B, 31, 30, 29, 28, B, 35, 34, 33, 32, B, 39, 38, 37, 36, B, 43, 42, 41, 40, B, 47, 46, 45, 44, B, 51, 50, 49, 48);
+				var mask = Vector512.Create(B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B);
+				var code = Vector512.Create(0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0);
+				for (; inputOffset + unchecked((nuint)Vector512<float>.Count) <= length; inputOffset += 13U, outputOffset += 65U)
+				{
+					Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float32;
+					Vector512<byte> loaded = Vector512.LoadUnsafe(ref Unsafe.As<float, int>(ref input), inputOffset).AsByte();
+					Vector512<byte> shuffled = Avx512Vbmi.PermuteVar64x8(loaded, indices);
+					Vector512<byte> result = (shuffled & mask) | code;
+					result.StoreUnsafe(ref output, outputOffset + 1U);
+				}
+			}
+			else if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+			{
+				var indices = Vector256.Create(B, 3, 2, 1, 0, B, 7, 6, 5, 4, B, 11, 10, 9, 8, B, 7, 6, 5, 4, B, 11, 10, 9, 8, B, 15, 14, 13, 12, B, B);
+				var code = Vector256.Create(F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0);
+				for (; inputOffset + unchecked((nuint)Vector256<float>.Count) <= length; inputOffset += 6U, outputOffset += 30U)
+				{
+					Vector256<byte> loaded = Vector256.LoadUnsafe(ref Unsafe.As<float, int>(ref input), inputOffset).AsByte();
+
+					// Permute4x64 allows cross-lane permutation.
+					Vector256<byte> permuted = Avx2.Permute4x64(loaded.AsUInt64(), 0b10_01_01_00).AsByte();
+					Vector256<byte> shuffled = Avx2.Shuffle(permuted, indices);
+					Vector256<byte> result = shuffled | code;
+					result.StoreUnsafe(ref output, outputOffset);
+				}
+			}
+			else if (Vector128.IsHardwareAccelerated)
+			{
+				Vector128<byte> indices = Ssse3.IsSupported
+					? Vector128.Create(B, 3, 2, 1, 0, B, 7, 6, 5, 4, B, 11, 10, 9, 8, B)
+					: BitConverter.IsLittleEndian
+						? Vector128.Create((byte)0, 3, 2, 1, 0, 0, 7, 6, 5, 4, 0, 11, 10, 9, 8, 0)
+						: Vector128.Create((byte)0, 0, 1, 2, 3, 0, 4, 6, 5, 7, 0, 8, 9, 10, 11, 0);
+				var code = Vector128.Create(F, 0, 0, 0, 0, F, 0, 0, 0, 0, F, 0, 0, 0, 0, 0);
+				for (; inputOffset + unchecked((nuint)Vector128<float>.Count) <= length; inputOffset += 3U, outputOffset += 15U)
+				{
+					Vector128<byte> loaded = Vector128.LoadUnsafe(ref Unsafe.As<float, int>(ref input), inputOffset).AsByte();
+					Vector128<byte> shuffled;
+					if (Ssse3.IsSupported)
+					{
+						// Ssse3.Shuffle can make the vector elements zeroed by shuffle value 0x80-0xff.
+						shuffled = Ssse3.Shuffle(loaded, indices);
+					}
+					else
+					{
+						// Vector128.Shuffle does not provide the functionality of zeroing the vector elements.
+						var mask = Vector128.Create(0, B, B, B, B, 0, B, B, B, B, 0, B, B, B, B, 0);
+						shuffled = Vector128.Shuffle(loaded, indices) & mask;
+					}
+
+					Vector128<byte> result = shuffled | code;
+					result.StoreUnsafe(ref output, outputOffset);
+				}
+			}
+
+			for (; inputOffset < length; inputOffset++)
 			{
 				Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float32;
 				uint temp = Unsafe.BitCast<float, uint>(Unsafe.Add(ref input, inputOffset));
@@ -592,7 +654,68 @@ internal static class HardwareAccelerated
 		private static nuint Write(ref byte output, ref double input, nuint length)
 		{
 			nuint outputOffset = 0;
-			for (nuint inputOffset = 0; inputOffset < length; inputOffset++)
+			nuint inputOffset = 0;
+			const byte B = byte.MaxValue;
+			const byte F = MessagePackCode.Float64;
+			if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported)
+			{
+				var indices = Vector512.Create(B, 7, 6, 5, 4, 3, 2, 1, 0, B, 15, 14, 13, 12, 11, 10, 9, 8, B, 23, 22, 21, 20, 19, 18, 17, 16, B, 31, 30, 29, 28, 27, 26, 25, 24, B, 39, 38, 37, 36, 35, 34, 33, 32, B, 47, 46, 45, 44, 43, 42, 41, 40, B, 55, 54, 53, 52, 51, 50, 49, 48, B);
+
+				// Avx512 provides mask register, but .NET does not provide such APIs which utilize mask register.
+				// This mask variable is required because of the above reason.
+				var mask = Vector512.Create(0, B, B, B, B, B, B, B, B, 0, B, B, B, B, B, B, B, B, 0, B, B, B, B, B, B, B, B, 0, B, B, B, B, B, B, B, B, 0, B, B, B, B, B, B, B, B, 0, B, B, B, B, B, B, B, B, 0, B, B, B, B, B, B, B, B, 0);
+				var code = Vector512.Create(F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, F);
+				for (; inputOffset + unchecked((nuint)Vector512<double>.Count) <= length; inputOffset += 7U, outputOffset += 63U)
+				{
+					Vector512<byte> loaded = Vector512.LoadUnsafe(ref Unsafe.As<double, ulong>(ref input), inputOffset).AsByte();
+					Vector512<byte> shuffled = Avx512Vbmi.PermuteVar64x8(loaded, indices);
+					Vector512<byte> result = (shuffled & mask) | code;
+					result.StoreUnsafe(ref output, outputOffset);
+				}
+			}
+			else if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+			{
+				var indices = Vector256.Create(B, 7, 6, 5, 4, 3, 2, 1, 0, B, 15, 14, 13, 12, 11, 10, 1, 0, B, 15, 14, 13, 12, 11, 10, 9, 8, B, B, B, B, B);
+				var code = Vector256.Create(F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+				for (; inputOffset + unchecked((nuint)Vector256<double>.Count) <= length; inputOffset += 3U, outputOffset += 27U)
+				{
+					var loaded = Vector256.LoadUnsafe(ref Unsafe.As<double, ulong>(ref input), inputOffset);
+					Vector256<byte> permuted = Avx2.Permute4x64(loaded, 0b10_01_01_00).AsByte();
+					Vector256<byte> shuffled = Avx2.Shuffle(permuted, indices);
+					Vector256<byte> result = shuffled | code;
+					result.StoreUnsafe(ref output, outputOffset);
+				}
+			}
+			else if (Vector128.IsHardwareAccelerated)
+			{
+				Vector128<byte> indices = Ssse3.IsSupported
+					? Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0, B, 15, 14, 13, 12, 11, 10, 9)
+					: BitConverter.IsLittleEndian
+						? Vector128.Create((byte)7, 6, 5, 4, 3, 2, 1, 0, 0, 15, 14, 13, 12, 11, 10, 9)
+						: Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 0, 8, 9, 10, 11, 12, 13, 14);
+				var code = Vector128.Create(0, 0, 0, 0, 0, 0, 0, 0, F, 0, 0, 0, 0, 0, 0, 0);
+				for (; inputOffset + unchecked((nuint)Vector128<double>.Count) <= length; inputOffset += 2U, outputOffset += 18U)
+				{
+					Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float64;
+					Unsafe.Add(ref output, outputOffset + 17U) = Unsafe.Add(ref Unsafe.As<double, byte>(ref input), BitConverter.IsLittleEndian ? 8 : 15);
+					Vector128<byte> loaded = Vector128.LoadUnsafe(ref Unsafe.As<double, ulong>(ref input), inputOffset).AsByte();
+					Vector128<byte> shuffled;
+					if (Ssse3.IsSupported)
+					{
+						shuffled = Ssse3.Shuffle(loaded, indices);
+					}
+					else
+					{
+						var mask = Vector128.Create(B, B, B, B, B, B, B, B, 0, B, B, B, B, B, B, B);
+						shuffled = Vector128.Shuffle(loaded, indices) & mask;
+					}
+
+					Vector128<byte> result = shuffled | code;
+					result.StoreUnsafe(ref output, outputOffset + 1U);
+				}
+			}
+
+			for (; inputOffset < length; inputOffset++)
 			{
 				Unsafe.Add(ref output, outputOffset) = MessagePackCode.Float64;
 				ulong temp = Unsafe.BitCast<double, ulong>(Unsafe.Add(ref input, inputOffset));
