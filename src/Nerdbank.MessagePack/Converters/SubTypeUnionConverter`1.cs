@@ -62,8 +62,7 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 		else if (subTypes.Serializers.TryGetValue(valueType, out (int Alias, IMessagePackConverter Converter) result))
 		{
 			writer.Write(result.Alias);
-			object? untypedValue = value;
-			result.Converter.Write(ref writer, ref untypedValue, context);
+			result.Converter.Write(ref writer, value, context);
 		}
 		else
 		{

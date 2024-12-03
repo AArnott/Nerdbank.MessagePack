@@ -121,7 +121,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	}
 
 	/// <inheritdoc/>
-	void IMessagePackConverter.Write(ref MessagePackWriter writer, ref object? value, SerializationContext context)
+	void IMessagePackConverter.Write(ref MessagePackWriter writer, object? value, SerializationContext context)
 	{
 		this.Write(ref writer, (T?)value, context);
 	}
