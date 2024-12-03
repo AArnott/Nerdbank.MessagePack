@@ -13,6 +13,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 {
 	public const string CallbackToTopLevelSerializerDiagnosticId = "NBMsgPack030";
 	public const string NotExactlyOneStructureDiagnosticId = "NBMsgPack031";
+	public const string OverrideGetJsonSchemaDiagnosticId = "NBMsgPack032";
 
 	public static readonly DiagnosticDescriptor CallbackToTopLevelSerializerDescriptor = new(
 		CallbackToTopLevelSerializerDiagnosticId,
@@ -30,9 +31,18 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 		defaultSeverity: DiagnosticSeverity.Warning,
 		isEnabledByDefault: true);
 
+	public static readonly DiagnosticDescriptor OverrideGetJsonSchemaDescriptor = new(
+		OverrideGetJsonSchemaDiagnosticId,
+		title: Strings.NBMsgPack032_Title,
+		messageFormat: Strings.NBMsgPack032_MessageFormat,
+		category: "Usage",
+		defaultSeverity: DiagnosticSeverity.Info,
+		isEnabledByDefault: true);
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		CallbackToTopLevelSerializerDescriptor,
 		NotExactlyOneStructureDescriptor,
+		OverrideGetJsonSchemaDescriptor,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -86,6 +96,18 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 								OperationKind.Invocation);
 
 							context.RegisterOperationBlockEndAction(context => this.AnalyzeStructureCounts(context, referenceSymbols));
+						});
+
+						context.RegisterSymbolEndAction(context =>
+						{
+							INamedTypeSymbol symbol = (INamedTypeSymbol)context.Symbol;
+							if (!symbol.GetMembers("GetJsonSchema").Any(m => m is IMethodSymbol { OverriddenMethod: not null }))
+							{
+								if (symbol.Locations.FirstOrDefault(l => l.IsInSource) is { } location)
+								{
+									context.ReportDiagnostic(Diagnostic.Create(OverrideGetJsonSchemaDescriptor, location));
+								}
+							}
 						});
 					}
 				},

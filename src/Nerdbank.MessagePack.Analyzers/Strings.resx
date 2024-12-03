@@ -189,6 +189,12 @@
   <data name="NBMsgPack031_Title" xml:space="preserve">
     <value>Converters should read or write exactly one msgpack structure</value>
   </data>
+  <data name="NBMsgPack032_MessageFormat" xml:space="preserve">
+    <value>A custom messagepack converter should document its schema by overridding the GetJsonSchema method.</value>
+  </data>
+  <data name="NBMsgPack032_Title" xml:space="preserve">
+    <value>Converters should override GetJsonSchema</value>
+  </data>
   <data name="NBMsgPack100_MessageFormat" xml:space="preserve">
     <value>This is a formatter for the MessagePack-CSharp library. You may want to migrate this to a converter for the newer Nerdbank.MessagePack library.</value>
   </data>

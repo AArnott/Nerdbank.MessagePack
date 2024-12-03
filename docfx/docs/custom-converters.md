@@ -22,7 +22,7 @@ If you have more than one value to serialize or deserialize (e.g. multiple field
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Write*" method, use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader*.
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Read*" method, use @Nerdbank.MessagePack.MessagePackReader.ReadMapHeader or @Nerdbank.MessagePack.MessagePackReader.ReadArrayHeader.
 
-Custom converters are encouraged to implement @Nerdbank.MessagePack.IMessagePackConverterJsonSchemaProvider to support the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema* methods.
+Custom converters are encouraged to override @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*?displayProperty=nameWithType to support the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType methods.
 
 ### Security considerations
 

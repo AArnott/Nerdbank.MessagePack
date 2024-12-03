@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// The context provided to <see cref="IMessagePackConverterJsonSchemaProvider.GetJsonSchema(JsonSchemaContext)"/>
+/// The context provided to <see cref="MessagePackConverter{T}.GetJsonSchema"/>
 /// to aid in the generation of JSON schemas for types.
 /// </summary>
 public class JsonSchemaContext

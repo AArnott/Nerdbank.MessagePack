@@ -25,7 +25,7 @@ namespace Nerdbank.MessagePack;
 /// </list>
 /// </para>
 /// <para>
-/// Implementations are encouraged to implement <see cref="IMessagePackConverterJsonSchemaProvider"/> in order to support
+/// Implementations are encouraged to override <see cref="GetJsonSchema(Nerdbank.MessagePack.JsonSchemaContext, ITypeShape)"/> in order to support
 /// <see cref="MessagePackSerializer.GetJsonSchema(ITypeShape)"/>.
 /// </para>
 /// </remarks>
@@ -147,6 +147,9 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// by calling <see cref="JsonSchemaContext.GetJsonSchema{T}()"/> on the <paramref name="context"/>.
 	/// </para>
 	/// </remarks>
+	/// <seealso cref="CreateMsgPackExtensionSchema"/>
+	/// <seealso cref="CreateJsonValue(object?)"/>
+	/// <seealso cref="ApplyJsonSchemaNullability(JsonObject)"/>
 	public virtual JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
 
 	/// <inheritdoc/>
