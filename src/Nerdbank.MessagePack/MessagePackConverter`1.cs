@@ -168,8 +168,14 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <inheritdoc/>
 	IMessagePackConverter IMessagePackConverter.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
 
+	/// <inheritdoc/>
+	IMessagePackConverter IMessagePackConverter.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
+
 	/// <inheritdoc cref="IMessagePackConverter.WrapWithReferencePreservation" />
 	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
+
+	/// <inheritdoc cref="IMessagePackConverter.UnwrapReferencePreservation" />
+	internal virtual MessagePackConverter<T> UnwrapReferencePreservation() => this;
 
 	/// <summary>
 	/// Transforms a JSON schema to include "null" as a possible value for the schema.
@@ -245,15 +251,26 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	/// <summary>
 	/// Creates a JSON schema fragment that provides a cursory description of a MessagePack binary blob.
 	/// </summary>
+	/// <param name="description">An optional description to include with the schema.</param>
 	/// <returns>A JSON schema fragment.</returns>
 	/// <remarks>
 	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
 	/// </remarks>
-	protected static JsonObject CreateMsgPackBinarySchema() => new()
+	protected static JsonObject CreateMsgPackBinarySchema(string? description = null)
 	{
-		["type"] = "string",
-		["pattern"] = "^msgpack binary as base64: ",
-	};
+		JsonObject schema = new()
+		{
+			["type"] = "string",
+			["pattern"] = "^msgpack binary as base64: ",
+		};
+
+		if (description is not null)
+		{
+			schema["description"] = description;
+		}
+
+		return schema;
+	}
 
 	/// <summary>
 	/// Wraps a boxed primitive as a <see cref="JsonValue"/>.

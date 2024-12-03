@@ -119,6 +119,23 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[Fact]
 	public void SubTypeSchema() => this.AssertSchema([new BaseType { Message = "hi" }, new SubType { Message = "hi", Value = 5 }]);
 
+	/// <summary>
+	/// Verify that registering converters while <see cref="MessagePackSerializer.PreserveReferences"/>
+	/// is <see langword="true"/> does not mess up the schema generation after it is turned off.
+	/// </summary>
+	[Fact]
+	public void ReferencePreservationGraphReset()
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = true };
+		this.Serializer.RegisterConverter(new DocumentingCustomConverter());
+		this.Serializer.RegisterConverter(new NonDocumentingCustomConverter());
+		this.Serializer = this.Serializer with { PreserveReferences = false };
+		JsonObject schema = this.Serializer.GetJsonSchema<CustomType>();
+		string schemaString = schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+		this.Logger.WriteLine(schemaString);
+		Assert.DoesNotContain("ReferencePreservingConverter", schemaString);
+	}
+
 	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 
 	private static void Record(JsonObject schema, string testName)

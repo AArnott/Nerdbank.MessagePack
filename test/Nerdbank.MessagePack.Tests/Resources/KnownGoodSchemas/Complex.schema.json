@@ -51,30 +51,7 @@
     "System.Collections.Generic.List\u00601[[SchemaTests\u002BPerson, Nerdbank.MessagePack.Tests, Version=0.2.0.0, Culture=neutral, PublicKeyToken=d4b172c8050bbbc3]]": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "Name": {
-            "type": "string",
-            "description": "The name of the person."
-          },
-          "Sex": {
-            "$ref": "#/definitions/SchemaTests\u002BSex"
-          },
-          "Age": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "default": 18
-          },
-          "PetsAndAges": {
-            "$ref": "#/definitions/System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
-          }
-        },
-        "required": [
-          "Name"
-        ],
-        "description": "A human person."
+        "$ref": "#/definitions/SchemaTests\u002BPerson"
       }
     },
     "SchemaTests\u002BFamily": {
