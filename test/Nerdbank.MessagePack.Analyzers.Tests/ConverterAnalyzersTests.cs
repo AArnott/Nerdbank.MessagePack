@@ -267,6 +267,31 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_SkipRead()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+			
+			internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement> : MessagePackConverter<TArray>
+			{
+				public override TArray Read(ref MessagePackReader reader, SerializationContext context)
+				{
+					reader.Skip(context);
+					return default;
+				}
+
+				public override void Write(ref MessagePackWriter writer, in TArray value, SerializationContext context) => throw new NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
