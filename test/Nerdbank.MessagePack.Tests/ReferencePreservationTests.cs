@@ -111,6 +111,29 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot.City, deserializedRoot.State);
 	}
 
+	[Theory, PairwiseData]
+	public void ReferenceConsolidationWhenInterningIsOn(bool interning)
+	{
+		this.Serializer = this.Serializer with { InternStrings = interning };
+
+		// Create two unique string objects with the same value.
+		string city = "New York";
+		string city2 = (city + "A")[..^1]; // construct a new instance with the same value.
+		Assert.NotSame(city, city2); // sanity check
+
+		string[]? deserialized = this.Roundtrip<string[], Witness>([city, city2]);
+		Assert.NotNull(deserialized);
+
+		// We expect equal string references after deserialization iff interning is on.
+		Assert.Equal(interning, ReferenceEquals(deserialized[0], deserialized[1]));
+
+		// Only interning should produce an object reference in the serialized form.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		reader.ReadString(); // city
+		Assert.Equal(interning ? MessagePackType.Extension : MessagePackType.String, reader.NextMessagePackType);
+	}
+
 	/// <summary>
 	/// Verifies that two distinct object whose by-value equality is considered equal are <em>combined</em> into just one reference.
 	/// </summary>
@@ -261,5 +284,6 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 	[GenerateShape<CustomTypeWrapper[]>]
 	[GenerateShape<CustomType[]>]
+	[GenerateShape<string[]>]
 	private partial class Witness;
 }

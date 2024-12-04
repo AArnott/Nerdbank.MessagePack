@@ -200,6 +200,8 @@ Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.Value.
 Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema<T, TProvider>() -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema<T>() -> System.Text.Json.Nodes.JsonObject!
+Nerdbank.MessagePack.MessagePackSerializer.InternStrings.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.InternStrings.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.get -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.get -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
