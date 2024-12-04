@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
+using Strings = Microsoft.NET.StringTools.Strings;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -19,6 +20,73 @@ internal class StringConverter : MessagePackConverter<string>
 {
 	/// <inheritdoc/>
 	public override string? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "string" };
+}
+
+/// <summary>
+/// Serializes a <see cref="string"/> and interns them during deserialization.
+/// </summary>
+internal class InterningStringConverter : MessagePackConverter<string>
+{
+	// The actual stack space taken will be up to 2X this value, because we're converting UTF-8 to UTF-16.
+	private const int MaxStackStringCharLength = 4096;
+
+	/// <inheritdoc/>
+	public override string? Read(ref MessagePackReader reader, SerializationContext context)
+	{
+		if (reader.TryReadNil())
+		{
+			return null;
+		}
+
+		ReadOnlySequence<byte> bytesSequence = default;
+		bool spanMode;
+		int byteLength;
+		if (reader.TryReadStringSpan(out ReadOnlySpan<byte> byteSpan))
+		{
+			if (byteSpan.IsEmpty)
+			{
+				return string.Empty;
+			}
+
+			spanMode = true;
+			byteLength = byteSpan.Length;
+		}
+		else
+		{
+			bytesSequence = reader.ReadStringSequence()!.Value;
+			spanMode = false;
+			byteLength = checked((int)bytesSequence.Length);
+		}
+
+		char[]? charArray = byteLength > MaxStackStringCharLength ? ArrayPool<char>.Shared.Rent(byteLength) : null;
+		try
+		{
+			Span<char> stackSpan = charArray ?? stackalloc char[byteLength];
+			if (spanMode)
+			{
+				int characterCount = StringEncoding.UTF8.GetChars(byteSpan, stackSpan);
+				return Strings.WeakIntern(stackSpan[..characterCount]);
+			}
+			else
+			{
+				int characterCount = StringEncoding.UTF8.GetChars(bytesSequence, stackSpan);
+				return Strings.WeakIntern(stackSpan[..characterCount]);
+			}
+		}
+		finally
+		{
+			if (charArray is not null)
+			{
+				ArrayPool<char>.Shared.Return(charArray);
+			}
+		}
+	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);

@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
+using Microsoft.NET.StringTools;
 
 namespace Nerdbank.MessagePack;
 
@@ -39,6 +40,11 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	{
 		Requires.NotNullAllowStructs(value);
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
+
+		if (this.Owner.InternStrings && value is string)
+		{
+			value = (T)(object)Strings.WeakIntern((string)(object)value);
+		}
 
 		if (this.serializedObjects.TryGetValue(value, out int referenceId))
 		{

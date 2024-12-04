@@ -127,6 +127,38 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Gets a value indicating whether to intern strings during deserialization.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// String interning means that a string that appears multiple times (within a single deserialization or across many)
+	/// in the msgpack data will be deserialized as the same <see cref="string"/> instance, reducing GC pressure.
+	/// </para>
+	/// <para>
+	/// When enabled, all deserialized are retained with a weak reference, allowing them to be garbage collected
+	/// while also being reusable for future deserializations as long as they are in memory.
+	/// </para>
+	/// <para>
+	/// This feature has a positive impact on memory usage but may have a negative impact on performance due to searching
+	/// through previously deserialized strings to find a match.
+	/// If your application is performance sensitive, you should measure the impact of this feature on your application.
+	/// </para>
+	/// <para>
+	/// This feature is orthogonal and complementary to <see cref="PreserveReferences"/>.
+	/// Preserving references impacts the serialized result and can hurt interoperability if the other party is not using the same feature.
+	/// Preserving references also does not guarantee that equal strings will be reused because the original serialization may have had
+	/// multiple string objects for the same value, so deserialization would produce the same result.
+	/// Preserving references alone will never reuse strings across top-level deserialization operations either.
+	/// Interning strings however, has no impact on the serialized result and is always safe to use.
+	/// Interning strings will guarantee string objects are reused within and across deserialization operations so long as their values are equal.
+	/// The combination of the two features will ensure the most compact msgpack, and will produce faster deserialization times than string interning alone.
+	/// Combining the two features also activates special behavior to ensure that serialization only writes a string once
+	/// and references that string later in that same serialization, even if the equal strings were unique objects.
+	/// </para>
+	/// </remarks>
+	public bool InternStrings { get; init; }
+
+	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.
 	/// </summary>
 	/// <remarks>
