@@ -56,6 +56,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		pair => pair.Key,
 		pair => (object)((IMessagePackConverter)pair.Value).WrapWithReferencePreservation());
 
+	private static readonly InterningStringConverter InterningStringConverter = new();
+	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
+
 	private readonly MessagePackSerializer owner;
 	private readonly TypeGenerationContext context;
 
@@ -87,6 +90,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (this.owner.TryGetUserDefinedConverter<T>(out MessagePackConverter<T>? userDefinedConverter))
 		{
 			return userDefinedConverter;
+		}
+
+		if (this.owner.InternStrings && typeof(T) == typeof(string))
+		{
+			return this.owner.PreserveReferences ? ReferencePreservingInterningStringConverter : InterningStringConverter;
 		}
 
 		// Check if the type has a built-in converter.
@@ -270,7 +278,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
-				if (!await reader.TryReadNilAsync().ConfigureAwait(false))
+				MessagePackStreamingReader streamingReader = reader.CreateReader();
+				bool isNil;
+				while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.ReplenishBufferAsync());
+				}
+
+				if (!isNil)
 				{
 					TPropertyType collection = propertyShape.GetGetter()(ref container);
 					await inflater.DeserializeIntoAsync(reader, collection, context).ConfigureAwait(false);

@@ -183,8 +183,16 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync().ConfigureAwait(false))
+		MessagePackStreamingReader streamingReader = reader.CreateReader();
+		bool success;
+		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
+			streamingReader = new(await streamingReader.ReplenishBufferAsync());
+		}
+
+		if (success)
+		{
+			reader.ReturnReader(ref streamingReader);
 			return default;
 		}
 
@@ -198,15 +206,20 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (deserializable.Value.Readers is not null)
 		{
-			int mapEntries = await reader.ReadMapHeaderAsync().ConfigureAwait(false);
+			int mapEntries;
+			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			}
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
+			reader.ReturnReader(ref streamingReader);
 			int remainingEntries = mapEntries;
 			while (remainingEntries > 0)
 			{
-				(ReadOnlySequence<byte> buffer, int bufferedStructures) = await reader.ReadNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = new(buffer);
+				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
+				MessagePackReader syncReader = reader.CreateReader2();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
@@ -234,7 +247,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader) && propertyReader.PreferAsyncSerialization)
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
-							reader.AdvanceTo(syncReader.Position);
+							reader.ReturnReader(ref syncReader);
 							value = await propertyReader.ReadAsync(value, reader, context).ConfigureAwait(false);
 							remainingEntries--;
 
@@ -246,18 +259,21 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					{
 						// The property name isn't in the buffer, and thus whether it'll have an async reader.
 						// Advance the reader so it knows we need more buffer than we got last time.
-						reader.AdvanceTo(syncReader.Position, buffer.End);
+						reader.ReturnReader(ref syncReader);
 						continue;
 					}
 				}
 
-				reader.AdvanceTo(syncReader.Position);
+				reader.ReturnReader(ref syncReader);
 			}
 		}
 		else
 		{
 			// We have nothing to read into, so just skip any data in the object.
-			await reader.SkipAsync(context).ConfigureAwait(false);
+			while (streamingReader.TrySkip(context).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			}
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)

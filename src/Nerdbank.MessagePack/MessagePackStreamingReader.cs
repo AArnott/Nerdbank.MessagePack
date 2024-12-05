@@ -48,9 +48,11 @@ public ref partial struct MessagePackStreamingReader
 	/// </param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The available buffer, which must contain more bytes than remained after <paramref name="consumed"/> if there are any more bytes to be had.</returns>
-	public delegate ValueTask<ReadResult> GetMoreBytesAsync(object? state, SequencePosition consumed, CancellationToken cancellationToken);
+	public delegate ValueTask<ReadResult> GetMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken);
 
 	public CancellationToken CancellationToken { get; init; }
+
+	public SequencePosition Position => this.SequenceReader.Position;
 
 	[UnscopedRef]
 	internal ref SequenceReader<byte> SequenceReader => ref this.reader;
@@ -60,6 +62,18 @@ public ref partial struct MessagePackStreamingReader
 	public DecodeResult TryPeekNextCode(out byte code)
 	{
 		return this.reader.TryPeek(out code) ? DecodeResult.Success : this.InsufficientBytes;
+	}
+
+	public DecodeResult TryPeekNextMessagePackType(out MessagePackType type)
+	{
+		if (this.reader.TryPeek(out byte code))
+		{
+			type = MessagePackCode.ToMessagePackType(code);
+			return DecodeResult.Success;
+		}
+
+		type = default;
+		return this.InsufficientBytes;
 	}
 
 	public DecodeResult TryReadNil()
@@ -78,6 +92,13 @@ public ref partial struct MessagePackStreamingReader
 		{
 			return this.InsufficientBytes;
 		}
+	}
+
+	public DecodeResult TryReadNil(out bool isNil)
+	{
+		DecodeResult result = this.TryReadNil();
+		isNil = result == DecodeResult.Success;
+		return result == DecodeResult.TokenMismatch ? DecodeResult.Success : result;
 	}
 
 	public DecodeResult TryRead(out bool value)
@@ -683,7 +704,7 @@ public ref partial struct MessagePackStreamingReader
 
 		static async ValueTask<BufferRefresh> Helper(GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken)
 		{
-			ReadResult moreBuffer = await getMoreBytes(getMoreBytesState, consumed, cancellationToken);
+			ReadResult moreBuffer = await getMoreBytes(getMoreBytesState, consumed, examined, cancellationToken);
 			return new BufferRefresh
 			{
 				CancellationToken = cancellationToken,

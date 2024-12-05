@@ -24,7 +24,7 @@ public class MessagePackStreamingReaderTests
 		// Arrange the reader to have an incomplete buffer and that upon request it will get the rest of it.
 		MessagePackStreamingReader incompleteReader = new(
 			ArrayOf3Bools.Slice(0, 2),
-			(_, pos, ct) => new(new ReadResult(ArrayOf3Bools.Slice(pos), false, isCompleted: true)),
+			(_, pos, examined, ct) => new(new ReadResult(ArrayOf3Bools.Slice(pos), false, isCompleted: true)),
 			null);
 
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
@@ -48,7 +48,7 @@ public class MessagePackStreamingReaderTests
 		int callCount = 0;
 		MessagePackStreamingReader incompleteReader = new(
 			ArrayOf3Bools.Slice(0, 2),
-			(_, pos, ct) => new(new ReadResult(ArrayOf3Bools.Slice(pos), false, isCompleted: ++callCount > 1)),
+			(_, pos, examined, ct) => new(new ReadResult(ArrayOf3Bools.Slice(pos), false, isCompleted: ++callCount > 1)),
 			null);
 
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));

@@ -331,7 +331,14 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync().ConfigureAwait(false))
+		MessagePackStreamingReader streamingReader = reader.CreateReader();
+		bool success;
+		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.ReplenishBufferAsync());
+		}
+
+		if (success)
 		{
 			return default;
 		}
@@ -343,17 +350,29 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
-		if (await reader.TryPeekNextMessagePackTypeAsync() == MessagePackType.Map)
+
+		MessagePackType peekType;
+		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
 		{
-			int mapEntries = await reader.ReadMapHeaderAsync().ConfigureAwait(false);
+			streamingReader = new(await streamingReader.ReplenishBufferAsync());
+		}
+
+		if (peekType == MessagePackType.Map)
+		{
+			int mapEntries;
+			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			}
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
+			reader.ReturnReader(ref streamingReader);
 			int remainingEntries = mapEntries;
 			while (remainingEntries > 0)
 			{
-				(ReadOnlySequence<byte> buffer, int bufferedStructures) = await reader.ReadNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = new(buffer);
+				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context);
+				MessagePackReader syncReader = reader.CreateReader2();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
@@ -381,7 +400,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader })
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
-							reader.AdvanceTo(syncReader.Position);
+							reader.ReturnReader(ref syncReader);
 							value = await propertyReader.DeserializeAsync(value, reader, context).ConfigureAwait(false);
 							remainingEntries--;
 
@@ -392,18 +411,25 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					else
 					{
 						// The property name isn't in the buffer, and thus whether it'll have an async reader.
-						// Advance the reader so it knows we need more buffer than we got last time.
-						reader.AdvanceTo(syncReader.Position, buffer.End);
+						reader.ReturnReader(ref syncReader);
+						await reader.ReadAsync();
+
 						continue;
 					}
 				}
 
-				reader.AdvanceTo(syncReader.Position);
+				reader.ReturnReader(ref syncReader);
 			}
 		}
 		else
 		{
-			int arrayLength = await reader.ReadArrayHeaderAsync().ConfigureAwait(false);
+			int arrayLength;
+			while (streamingReader.TryReadArrayHeader(out arrayLength).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			}
+
+			reader.ReturnReader(ref streamingReader);
 			int i = 0;
 			while (i < arrayLength)
 			{
@@ -411,8 +437,8 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				int syncBatchSize = NextSyncReadBatchSize();
 				if (syncBatchSize > 0)
 				{
-					ReadOnlySequence<byte> buffer = await reader.ReadNextStructuresAsync(syncBatchSize, context).ConfigureAwait(false);
-					MessagePackReader syncReader = new(buffer);
+					await reader.BufferNextStructuresAsync(syncBatchSize, syncBatchSize, context).ConfigureAwait(false);
+					MessagePackReader syncReader = reader.CreateReader2();
 					for (int syncReadEndExclusive = i + syncBatchSize; i < syncReadEndExclusive; i++)
 					{
 						if (properties.Length > i && properties.Span[i]?.MsgPackReaders is var (deserialize, _))
@@ -425,7 +451,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						}
 					}
 
-					reader.AdvanceTo(syncReader.Position);
+					reader.ReturnReader(ref syncReader);
 				}
 
 				// Read any consecutive async properties.

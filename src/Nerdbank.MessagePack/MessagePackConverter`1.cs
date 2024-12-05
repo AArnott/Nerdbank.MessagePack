@@ -113,16 +113,11 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 		Requires.NotNull(reader);
 		context.CancellationToken.ThrowIfCancellationRequested();
 
-		ReadOnlySequence<byte> buffer = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
-		T? result = Deserialize(buffer, context);
-		reader.AdvanceTo(buffer.End);
+		await reader.BufferNextStructureAsync(context);
+		MessagePackReader syncReader = reader.CreateReader2();
+		T? result = this.Read(ref syncReader, context);
+		reader.ReturnReader(ref syncReader);
 		return result;
-
-		T? Deserialize(ReadOnlySequence<byte> buffer, SerializationContext context)
-		{
-			MessagePackReader msgpackReader = new(buffer);
-			return this.Read(ref msgpackReader, context);
-		}
 	}
 
 	/// <summary>
