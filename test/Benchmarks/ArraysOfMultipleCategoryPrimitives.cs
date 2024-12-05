@@ -42,10 +42,10 @@ public partial class ArraysOfMultipleCategoryPrimitives
 	private static readonly byte[] UInt64ValuesMsgPackMultipleCategory = TestSerializer.Serialize<ulong[], Witness>(UInt64ValuesMultipleCategory);
 	private readonly Sequence buffer = new();
 
-	[ParamsAllValues]
+	[ParamsAllValues(Priority = 1)]
 	public bool Accelerated { get; set; }
 
-	[ParamsAllValues]
+	[ParamsAllValues(Priority = 0)]
 	public bool MultipleCategory { get; set; }
 
 	public MessagePackSerializer Serializer => this.Accelerated ? AcceleratedSerializer : UnacceleratedSerializer;
