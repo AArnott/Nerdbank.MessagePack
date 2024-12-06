@@ -4,6 +4,12 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+/// <summary>
+/// long, int, short, sbyte, ulong, uint, and ushort values are classified into multiple categories (UInt64, Fix and so on) and serialized into variable-length binary according to each of their values.
+/// Simple Random.GetBytes value generation tends to generate the values which is serialized into longest binary.
+/// Since such bias is bad because it leads to over-optimization, this benchmark class is introduced.
+/// Multiple category forces serializer code serializing all categories.
+/// </summary>
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
 public partial class ArraysOfMultipleCategoryPrimitives
