@@ -5,7 +5,15 @@ using PolyType;
 
 internal static class ReferencesHelper
 {
-	internal static ReferenceAssemblies DefaultTargetFrameworkReferences = ReferenceAssemblies.Net.Net80;
+#if NET
+	internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net80;
+#else
+	internal static ReferenceAssemblies References = ReferenceAssemblies.NetStandard.NetStandard20
+		.WithPackages([
+			new PackageIdentity("System.Memory", "4.6.0"),
+			new PackageIdentity("System.Text.Json", "9.0.0"),
+		]);
+#endif
 
 	internal static IEnumerable<MetadataReference> GetReferences()
 	{

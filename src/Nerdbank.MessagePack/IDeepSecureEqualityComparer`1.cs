@@ -12,7 +12,7 @@ namespace Nerdbank.MessagePack;
 /// <para>
 /// When a type implements this interface, <see cref="GetHashCode"/> and <see cref="DeepEquals(T?)"/>
 /// is used to determine equality and hash codes for the type by the
-/// <see cref="ByValueEqualityComparer{T, TProvider}"/> equality comparer
+/// <see cref="ByValueEqualityComparer"/> equality comparer
 /// instead of the deep by-value automatic implementation.
 /// </para>
 /// </remarks>
@@ -24,7 +24,7 @@ public interface IDeepSecureEqualityComparer<T>
 	/// <param name="other">The other object.</param>
 	/// <returns><see langword="true" /> if the two objects are deeply equal.</returns>
 	/// <remarks>
-	/// An implementation may use <see cref="ByValueEqualityComparer{T}.Default"/> to obtain equality comparers for any sub-values that must be tested.
+	/// An implementation may use <see cref="ByValueEqualityComparer.GetDefault{T}(ITypeShape{T})"/> to obtain equality comparers for any sub-values that must be tested.
 	/// </remarks>
 	bool DeepEquals(T? other);
 
@@ -42,5 +42,10 @@ public interface IDeepSecureEqualityComparer<T>
 	/// <remarks>
 	/// The default implementation of this method is to truncate the result of <see cref="GetSecureHashCode"/>.
 	/// </remarks>
-	int GetHashCode() => unchecked((int)this.GetSecureHashCode());
+	int GetHashCode()
+#if NET
+		=> unchecked((int)this.GetSecureHashCode());
+#else
+		;
+#endif
 }

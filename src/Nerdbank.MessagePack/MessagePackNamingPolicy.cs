@@ -39,11 +39,15 @@ public abstract class MessagePackNamingPolicy
 				return name;
 			}
 
+#if NET
 			return string.Create(name.Length, name, static (span, name) =>
 			{
 				span[0] = char.ToLowerInvariant(name[0]);
 				name.AsSpan(1).CopyTo(span.Slice(1));
 			});
+#else
+			return char.ToLowerInvariant(name[0]) + name.Substring(1);
+#endif
 		}
 	}
 
@@ -61,11 +65,15 @@ public abstract class MessagePackNamingPolicy
 				return name;
 			}
 
+#if NET
 			return string.Create(name.Length, name, static (span, name) =>
 			{
 				span[0] = char.ToUpperInvariant(name[0]);
 				name.AsSpan(1).CopyTo(span.Slice(1));
 			});
+#else
+			return char.ToUpperInvariant(name[0]) + name.Substring(1);
+#endif
 		}
 	}
 }

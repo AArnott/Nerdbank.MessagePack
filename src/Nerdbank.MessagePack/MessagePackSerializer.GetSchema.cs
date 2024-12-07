@@ -8,6 +8,7 @@ namespace Nerdbank.MessagePack;
 
 public partial record MessagePackSerializer
 {
+#if NET
 	/// <summary>
 	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
 	/// </summary>
@@ -24,6 +25,19 @@ public partial record MessagePackSerializer
 	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
 	public JsonObject GetJsonSchema<T, TProvider>()
 		where TProvider : IShapeable<T> => this.GetJsonSchema(TProvider.GetShape());
+#endif
+
+	/// <summary>
+	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
+	/// </summary>
+	/// <typeparam name="T">The type whose schema should be produced.</typeparam>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
+	public JsonObject GetJsonSchema<T>(ITypeShapeProvider provider)
+	{
+		Requires.NotNull(provider);
+		return this.GetJsonSchema(provider.GetShape(typeof(T)) ?? throw new ArgumentException($"This provider had no type shape for {typeof(T)}.", nameof(provider)));
+	}
 
 	/// <summary>
 	/// Creates a JSON Schema that describes the msgpack serialization of the given type's shape.

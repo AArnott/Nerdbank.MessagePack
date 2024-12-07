@@ -382,7 +382,7 @@ public class MigrationAnalyzerTests
 		{
 			TestCode = source.Replace("\t", "    "),
 			FixedCode = fixedSource.Replace("\t", "    "),
-			ReferenceAssemblies = ReferencesHelper.DefaultTargetFrameworkReferences.WithPackages([
+			ReferenceAssemblies = ReferencesHelper.References.WithPackages([
 				new PackageIdentity("MessagePack", "2.5.187"),
 			]),
 			NumberOfFixAllInDocumentIterations = iterations,

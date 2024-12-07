@@ -41,20 +41,43 @@ Applications that have a legitimate need to exceed the default stack depth limit
 
 The @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nameWithType method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
 
-[!code-csharp[](../../samples/CustomConverters.cs#DelegateSubValues)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/CustomConverters.cs#DelegateSubValuesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/CustomConverters.cs#DelegateSubValuesNETFX)]
+
+---
 
 The above assumes that `SomeOtherType` is a type that you declare and can have @PolyType.GenerateShapeAttribute`1 applied to it.
 If this is not the case, you may provide your own type shape and reference that.
 For convenience, you may want to apply it directly to your custom converter:
 
-[!code-csharp[](../../samples/CustomConverters.cs#WitnessOnFormatter)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/CustomConverters.cs#WitnessOnFormatterNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/CustomConverters.cs#WitnessOnFormatterNETFX)]
+
+---
 
 The @PolyType.GenerateShapeAttribute`1 is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
 
 Arrays of a type require a shape of their own.
 So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1, serializing `MyType[]` would require a witness type and attribute. For example:
 
-[!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatter)]
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatterNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatterNETFX)]
 
 ### Version compatibility
 

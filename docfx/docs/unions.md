@@ -11,7 +11,15 @@ For instance, suppose you have this type to serialize:
 But there are many kinds of animals.
 You can get them to serialize and deserialize correctly like this:
 
-[!code-csharp[](../../samples/Unions.cs#FarmAnimals)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#FarmAnimalsNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#FarmAnimalsNETFX)]
+
+---
 
 This changes the schema of the serialized data to include a tag that indicates the type of the object.
 
@@ -50,7 +58,15 @@ This is because the `Horse` type is statically known as the generic type argumen
 
 Now suppose you have different breeds of horses that each had their own subtype:
 
-[!code-csharp[](../../samples/Unions.cs#HorseBreeds)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#HorseBreedsNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#HorseBreedsNETFX)]
+
+---
 
 At this point your `HorsePen` *would* serialize with the union schema around each horse:
 ```json
@@ -73,4 +89,12 @@ This witness type must be specified as a second type argument to @Nerdbank.Messa
 
 For example:
 
-[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypes)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypesNETFX)]
+
+---

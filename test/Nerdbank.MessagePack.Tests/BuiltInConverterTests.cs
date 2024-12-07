@@ -8,11 +8,15 @@ public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePa
 	[Fact]
 	public void ImmutableDictionary() => this.AssertRoundtrip(new HasImmutableDictionary() { Map = { { "a", 1 } } });
 
+#if NET
+
 	[Fact]
 	public void Int128() => this.AssertRoundtrip(new HasInt128(new Int128(1, 2)));
 
 	[Fact]
 	public void UInt128() => this.AssertRoundtrip(new HasUInt128(new UInt128(1, 2)));
+
+#endif
 
 	[Fact]
 	public void Decimal() => this.AssertRoundtrip(new HasDecimal(1.2m));
@@ -37,11 +41,15 @@ public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePa
 		public bool Equals(HasImmutableDictionary? other) => ByValueEquality.Equal(this.Map, other?.Map);
 	}
 
+#if NET
+
 	[GenerateShape]
 	public partial record HasInt128(Int128 Value);
 
 	[GenerateShape]
 	public partial record HasUInt128(UInt128 Value);
+
+#endif
 
 	[GenerateShape]
 	public partial record HasDecimal(decimal Value);

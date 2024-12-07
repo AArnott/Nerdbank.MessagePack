@@ -105,7 +105,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				syncWriter.WriteRaw(property.RawPropertyNameString.Span);
 				if (property.PreferAsyncSerialization)
 				{
-					syncWriter.Flush();
+					writer.ReturnWriter(ref syncWriter);
 					await property.WriteAsync(value, writer, context).ConfigureAwait(false);
 					syncWriter = writer.CreateWriter();
 				}
@@ -116,13 +116,13 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 				if (writer.IsTimeToFlush(context, syncWriter))
 				{
-					syncWriter.Flush();
+					writer.ReturnWriter(ref syncWriter);
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 					syncWriter = writer.CreateWriter();
 				}
 			}
 
-			syncWriter.Flush();
+			writer.ReturnWriter(ref syncWriter);
 		}
 		finally
 		{

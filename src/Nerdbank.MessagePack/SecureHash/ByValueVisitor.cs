@@ -86,6 +86,11 @@ internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor,
 		public DelayedValue Create<T>(ITypeShape<T> typeShape)
 			=> new DelayedValue<IEqualityComparer<T>>(self => new DelayedEqualityComparer<T>(self));
 
+#if !NET
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8767 // null ref annotations
+#endif
+
 		private class DelayedEqualityComparer<T>(DelayedValue<IEqualityComparer<T>> self) : IEqualityComparer<T>
 		{
 			public bool Equals(T? x, T? y) => self.Result.Equals(x, y);

@@ -1,12 +1,13 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if !NET
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8767 // null ref annotations
+#endif
+
 using System.Collections;
-using System.Collections.Frozen;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Text;
 
 namespace Nerdbank.MessagePack.SecureHash;
 

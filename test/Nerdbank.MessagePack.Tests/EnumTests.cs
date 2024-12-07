@@ -92,7 +92,9 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 
 	private void AssertEnum<T, TWitness>(T value)
 		where T : struct, Enum
+#if NET
 		where TWitness : IShapeable<T>
+#endif
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<T, TWitness>(value);
 		this.AssertType(msgpack, this.ExpectedType);

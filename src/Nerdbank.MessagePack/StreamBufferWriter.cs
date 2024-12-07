@@ -23,7 +23,7 @@ internal class StreamBufferWriter(Stream stream) : IBufferWriter<byte>, IDisposa
 		Verify.NotDisposed(!this.disposed, this);
 		Assumes.NotNull(this.buffer);
 
-		stream.Write(this.buffer[..count]);
+		stream.Write(this.buffer, 0, count);
 		this.advanceNext = false;
 	}
 

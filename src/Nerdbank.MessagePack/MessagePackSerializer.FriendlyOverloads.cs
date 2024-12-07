@@ -84,6 +84,71 @@ public partial record MessagePackSerializer
 		await pipeWriter.CompleteAsync().ConfigureAwait(false);
 	}
 
+	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)" />
+	/// <returns>A byte array containing the serialized msgpack.</returns>
+	public byte[] Serialize<T>(in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(provider);
+
+		// Although the static array is thread-local, we still want to null it out while using it
+		// to avoid any potential issues with re-entrancy due to a converter that makes a (bad) top-level call to the serializer.
+		(byte[] array, scratchArray) = (scratchArray ?? new byte[65536], null);
+		try
+		{
+			MessagePackWriter writer = new(SequencePool.Shared, array);
+			this.Serialize(ref writer, value, provider, cancellationToken);
+			return writer.FlushAndGetArray();
+		}
+		finally
+		{
+			scratchArray = array;
+		}
+	}
+
+	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)"/>
+	public void Serialize<T>(IBufferWriter<byte> writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		MessagePackWriter msgpackWriter = new(writer);
+		this.Serialize(ref msgpackWriter, value, provider, cancellationToken);
+		msgpackWriter.Flush();
+	}
+
+	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)"/>
+	/// <param name="stream">The stream to write to.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public void Serialize<T>(Stream stream, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(stream);
+		this.Serialize(new StreamBufferWriter(stream), value, provider, cancellationToken);
+	}
+
+	/// <summary>
+	/// Serializes a value to a <see cref="Stream"/>.
+	/// </summary>
+	/// <typeparam name="T"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShapeProvider, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
+	/// <param name="stream">The stream to write to.</param>
+	/// <param name="value"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" path="/param[@name='value']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="cancellationToken"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
+	/// <returns><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public async ValueTask SerializeAsync<T>(Stream stream, T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		// Fast path for MemoryStream.
+		if (stream is MemoryStream ms)
+		{
+			this.Serialize(stream, value, provider, cancellationToken);
+			return;
+		}
+
+		PipeWriter pipeWriter = PipeWriter.Create(stream, PipeWriterOptions);
+		await this.SerializeAsync(pipeWriter, value, provider, cancellationToken).ConfigureAwait(false);
+		await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		await pipeWriter.CompleteAsync().ConfigureAwait(false);
+	}
+
 	/// <inheritdoc cref="Deserialize{T}(in ReadOnlySequence{byte}, ITypeShape{T}, CancellationToken)"/>
 	public T? Deserialize<T>(ReadOnlyMemory<byte> buffer, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
@@ -132,7 +197,7 @@ public partial record MessagePackSerializer
 			}
 			while (bytesLastRead > 0);
 
-			return this.Deserialize<T>(rental.Value, shape, cancellationToken);
+			return this.Deserialize(rental.Value, shape, cancellationToken);
 		}
 	}
 
@@ -156,6 +221,82 @@ public partial record MessagePackSerializer
 
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
 		T? result = await this.DeserializeAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
+		await pipeReader.CompleteAsync().ConfigureAwait(false);
+		return result;
+	}
+
+	/// <inheritdoc cref="Deserialize{T}(in ReadOnlySequence{byte}, ITypeShapeProvider, CancellationToken)"/>
+	public T? Deserialize<T>(ReadOnlyMemory<byte> buffer, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		MessagePackReader reader = new(buffer);
+		return this.Deserialize<T>(ref reader, provider, cancellationToken);
+	}
+
+	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)"/>
+	/// <param name="buffer">The msgpack to deserialize from.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public T? Deserialize<T>(scoped in ReadOnlySequence<byte> buffer, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		MessagePackReader reader = new(buffer);
+		return this.Deserialize<T>(ref reader, provider, cancellationToken);
+	}
+
+	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)"/>
+	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
+	/// <remarks>
+	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
+	/// This is for simplicity and perf reasons.
+	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only msgpack content.
+	/// </remarks>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public T? Deserialize<T>(Stream stream, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(stream);
+
+		// Fast path for MemoryStream.
+		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
+		{
+			return this.Deserialize<T>(buffer.AsMemory(), provider, cancellationToken);
+		}
+		else
+		{
+			// We don't have a streaming msgpack reader, so buffer it all into memory instead and read from there.
+			using SequencePool.Rental rental = SequencePool.Shared.Rent();
+			int bytesLastRead;
+			do
+			{
+				Span<byte> span = rental.Value.GetSpan(0);
+				bytesLastRead = stream.Read(span);
+				rental.Value.Advance(bytesLastRead);
+			}
+			while (bytesLastRead > 0);
+
+			return this.Deserialize<T>(rental.Value, provider, cancellationToken);
+		}
+	}
+
+	/// <summary>
+	/// Deserializes a value from a <see cref="Stream"/>.
+	/// </summary>
+	/// <typeparam name="T"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShapeProvider, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
+	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
+	/// <param name="provider"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="cancellationToken"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
+	/// <returns><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/returns"/></returns>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public async ValueTask<T?> DeserializeAsync<T>(Stream stream, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		// Fast path for MemoryStream.
+		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
+		{
+			return this.Deserialize<T>(buffer.AsMemory(), provider, cancellationToken);
+		}
+
+		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
+		T? result = await this.DeserializeAsync<T>(pipeReader, provider, cancellationToken).ConfigureAwait(false);
 		await pipeReader.CompleteAsync().ConfigureAwait(false);
 		return result;
 	}

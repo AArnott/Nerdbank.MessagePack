@@ -3,8 +3,15 @@
 
 #pragma warning disable SA1600 // Elements should be documented
 
+#if !NET
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8767 // null ref annotations
+#endif
+
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,7 +23,15 @@ internal static class HashResistantPrimitives
 {
 	private static int SecureHash<T>(T value)
 		where T : unmanaged
-		=> unchecked((int)SipHash.Default.Compute(MemoryMarshal.Cast<T, byte>(new Span<T>(ref value))));
+	{
+#if NET
+		Span<T> span = new Span<T>(ref value);
+#else
+		Span<T> span = stackalloc T[1] { value };
+#endif
+
+		return unchecked((int)SipHash.Default.Compute(MemoryMarshal.Cast<T, byte>(span)));
+	}
 
 	private static int SecureHash(ReadOnlySpan<byte> data) => unchecked((int)SipHash.Default.Compute(data));
 
@@ -27,6 +42,8 @@ internal static class HashResistantPrimitives
 		public override bool Equals(bool x, bool y) => x is true == y is true;
 	}
 
+#if NET
+
 	internal class HalfEqualityComparer : CollisionResistantHasherUnmanaged<Half>
 	{
 		/// <inheritdoc/>
@@ -36,6 +53,8 @@ internal static class HashResistantPrimitives
 				value == Half.NaN ? Half.NaN : // Standardize on the binary representation of NaN prior to hashing.
 				value);
 	}
+
+#endif
 
 	internal class SingleEqualityComparer : CollisionResistantHasherUnmanaged<float>
 	{
@@ -75,6 +94,8 @@ internal static class HashResistantPrimitives
 
 	internal class StringEqualityComparer : SecureEqualityComparer<string>
 	{
+		internal static readonly StringEqualityComparer Instance = new();
+
 		/// <inheritdoc/>
 		public override long GetSecureHashCode(string value)
 		{
@@ -106,9 +127,13 @@ internal static class HashResistantPrimitives
 		/// <inheritdoc/>
 		public override long GetSecureHashCode([DisallowNull] BigInteger obj)
 		{
+#if NET
 			Span<byte> bytes = stackalloc byte[obj.GetByteCount()];
 			Assumes.True(obj.TryWriteBytes(bytes, out _));
 			return SecureHash(bytes);
+#else
+			return SecureHash(obj.ToByteArray());
+#endif
 		}
 	}
 
@@ -120,6 +145,7 @@ internal static class HashResistantPrimitives
 		/// <inheritdoc/>
 		public override long GetSecureHashCode([DisallowNull] decimal obj)
 		{
+#if NET
 			Span<int> bytes = stackalloc int[500];
 			if (!decimal.TryGetBits(obj, bytes, out int length))
 			{
@@ -127,6 +153,9 @@ internal static class HashResistantPrimitives
 			}
 
 			return SecureHash(MemoryMarshal.Cast<int, byte>(bytes[..length]));
+#else
+			return StringEqualityComparer.Instance.GetSecureHashCode(obj.ToString(CultureInfo.InvariantCulture));
+#endif
 		}
 	}
 

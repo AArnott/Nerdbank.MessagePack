@@ -46,9 +46,17 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 		bool TryPopulateDictionary()
 		{
 			bool nonUniqueNameDetected = false;
+#if NET
 			foreach (TEnum value in Enum.GetValues<TEnum>())
+#else
+			foreach (TEnum value in Enum.GetValues(typeof(TEnum)))
+#endif
 			{
+#if NET
 				if (Enum.GetName(value) is string name)
+#else
+				if (Enum.GetName(typeof(TEnum), value) is string name)
+#endif
 				{
 					if (!this.valueByName.TryAdd(name, value))
 					{
@@ -70,10 +78,18 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 			if (nonUniqueNameDetected)
 			{
 				// Enumerate values and ensure we have all the names indexed so we can deserialize them.
+#if NET
 				foreach (string name in Enum.GetNames<TEnum>())
 				{
 					this.valueByName.TryAdd(name, Enum.Parse<TEnum>(name));
 				}
+#else
+				foreach (string name in Enum.GetNames(typeof(TEnum)))
+				{
+					Assumes.True(Enum.TryParse(name, out TEnum value));
+					this.valueByName.TryAdd(name, value);
+				}
+#endif
 			}
 
 			return true;

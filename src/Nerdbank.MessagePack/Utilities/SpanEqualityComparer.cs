@@ -6,6 +6,8 @@
 #pragma warning disable SA1402 // File may only contain a single type
 #pragma warning disable SA1649 // File name should match first type name
 
+using System.Globalization;
+
 namespace Nerdbank.MessagePack.Utilities;
 
 /// <summary>Defines a span-based equality comparer.</summary>
@@ -38,7 +40,14 @@ internal static class ByteSpanEqualityComparer
 		public int GetHashCode(ReadOnlySpan<byte> buffer)
 		{
 			var hc = default(HashCode);
+#if NET
 			hc.AddBytes(buffer);
+#else
+			for (int i = 0; i < buffer.Length; i++)
+			{
+				hc.Add(buffer[i]);
+			}
+#endif
 			return hc.ToHashCode();
 		}
 	}
@@ -56,7 +65,19 @@ internal static class CharSpanEqualityComparer
 	private sealed class StringComparisonEqualityComparer(StringComparison comparison) : ISpanEqualityComparer<char>
 	{
 		public int GetHashCode(ReadOnlySpan<char> buffer)
-			=> string.GetHashCode(buffer, comparison);
+		{
+#if NET
+			return string.GetHashCode(buffer, comparison);
+#else
+			var hc = default(HashCode);
+			foreach (char c in buffer)
+			{
+				hc.Add(comparison == StringComparison.OrdinalIgnoreCase ? char.ToLowerInvariant(c) : c);
+			}
+
+			return hc.ToHashCode();
+#endif
+		}
 
 		public bool Equals(ReadOnlySpan<char> x, ReadOnlySpan<char> y)
 			=> x.Equals(y, comparison);

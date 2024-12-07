@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Reflection;
+
 public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 {
 	protected ReadOnlySequence<byte> lastRoundtrippedMsgpack;
@@ -13,6 +15,27 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	protected MessagePackSerializer Serializer { get; set; } = new();
 
 	protected ITestOutputHelper Logger => logger;
+
+#if !NET
+	internal static ITypeShapeProvider GetShapeProvider<TProvider>()
+	{
+		PropertyInfo shapeProperty = typeof(TProvider).GetProperty("ShapeProvider", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException($"{typeof(TProvider).FullName} is not a witness class.");
+		Assert.NotNull(shapeProperty);
+		return (ITypeShapeProvider)shapeProperty.GetValue(null)!;
+	}
+#endif
+
+	internal static ITypeShape<T> GetShape<T, TProvider>()
+#if NET
+		where TProvider : IShapeable<T>
+#endif
+	{
+#if NET
+		return TProvider.GetShape();
+#else
+		return (ITypeShape<T>?)GetShapeProvider<TProvider>().GetShape(typeof(T)) ?? throw new InvalidOperationException("Shape not found.");
+#endif
+	}
 
 	protected static void CapturePipe(PipeReader reader, PipeWriter forwardTo, Sequence<byte> logger)
 	{
@@ -50,25 +73,44 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	}
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
-		where T : IShapeable<T> => this.AssertRoundtrip<T, T>(value);
+#if NET
+		where T : IShapeable<T>
+		=> this.AssertRoundtrip<T, T>(value);
+#else
+		=> this.AssertRoundtrip<T, MessagePackSerializerPolyfill.Witness>(value);
+#endif
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T, TProvider>(T? value)
+#if NET
 		where TProvider : IShapeable<T>
+#endif
 	{
+#if NET
 		T? roundtripped = this.Roundtrip(value, TProvider.GetShape());
+#else
+		T? roundtripped = this.Roundtrip(value, GetShape<T, TProvider>());
+#endif
 		Assert.Equal(value, roundtripped);
 		return this.lastRoundtrippedMsgpack;
 	}
 
 	protected async Task<ReadOnlySequence<byte>> AssertRoundtripAsync<T>(T? value)
+#if NET
 		where T : IShapeable<T>
+#endif
 	{
+#if NET
 		await this.AssertRoundtripAsync<T, T>(value);
+#else
+		await this.AssertRoundtripAsync<T, MessagePackSerializerPolyfill.Witness>(value);
+#endif
 		return this.lastRoundtrippedMsgpack;
 	}
 
 	protected async Task<ReadOnlySequence<byte>> AssertRoundtripAsync<T, TProvider>(T? value)
+#if NET
 		where TProvider : IShapeable<T>
+#endif
 	{
 		T? roundtripped = await this.RoundtripAsync<T, TProvider>(value);
 		Assert.Equal(value, roundtripped);
@@ -76,10 +118,19 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	}
 
 	protected T? Roundtrip<T>(T? value)
+#if NET
 		where T : IShapeable<T> => this.Roundtrip(value, T.GetShape());
+#else
+		=> this.Roundtrip(value, GetShape<T, MessagePackSerializerPolyfill.Witness>());
+#endif
 
 	protected T? Roundtrip<T, TProvider>(T? value)
-		where TProvider : IShapeable<T> => this.Roundtrip(value, TProvider.GetShape());
+#if NET
+		where TProvider : IShapeable<T>
+		=> this.Roundtrip(value, TProvider.GetShape());
+#else
+		=> this.Roundtrip(value, GetShape<T, TProvider>());
+#endif
 
 	protected T? Roundtrip<T>(T? value, ITypeShape<T> shape)
 	{
@@ -91,22 +142,34 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 	}
 
 	protected ValueTask<T?> RoundtripAsync<T>(T? value)
-		where T : IShapeable<T> => this.RoundtripAsync<T, T>(value);
+#if NET
+		where T : IShapeable<T>
+		=> this.RoundtripAsync(value, T.GetShape());
+#else
+		=> this.RoundtripAsync(value, GetShape<T, MessagePackSerializerPolyfill.Witness>());
+#endif
 
-	protected async ValueTask<T?> RoundtripAsync<T, TProvider>(T? value)
+	protected ValueTask<T?> RoundtripAsync<T, TProvider>(T? value)
+#if NET
 		where TProvider : IShapeable<T>
+		=> this.RoundtripAsync(value, TProvider.GetShape());
+#else
+		=> this.RoundtripAsync(value, GetShape<T, TProvider>());
+#endif
+
+	protected async ValueTask<T?> RoundtripAsync<T>(T? value, ITypeShape<T> shape)
 	{
 		Pipe pipeForSerializing = new();
 		Pipe pipeForDeserializing = new();
 
 		// Arrange the reader first to avoid deadlocks if the Pipe gets full.
-		ValueTask<T?> resultTask = this.Serializer.DeserializeAsync<T, TProvider>(pipeForDeserializing.Reader);
+		ValueTask<T?> resultTask = this.Serializer.DeserializeAsync(pipeForDeserializing.Reader, shape);
 
 		// Log along the way.
 		Sequence<byte> loggingSequence = new();
 		CapturePipe(pipeForSerializing.Reader, pipeForDeserializing.Writer, loggingSequence);
 
-		await this.Serializer.SerializeAsync<T, TProvider>(pipeForSerializing.Writer, value);
+		await this.Serializer.SerializeAsync(pipeForSerializing.Writer, value, shape);
 		await pipeForSerializing.Writer.FlushAsync();
 
 		// The deserializer should complete even *without* our completing the writer.

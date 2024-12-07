@@ -15,6 +15,8 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 	public const string NotExactlyOneStructureDiagnosticId = "NBMsgPack031";
 	public const string OverrideGetJsonSchemaDiagnosticId = "NBMsgPack032";
 
+	//// NBMsgPack033 | Usage | Error | Async converters should return the MessagePackWriter
+
 	public static readonly DiagnosticDescriptor CallbackToTopLevelSerializerDescriptor = new(
 		CallbackToTopLevelSerializerDiagnosticId,
 		title: Strings.NBMsgPack030_Title,

@@ -150,6 +150,8 @@ internal class UriConverter : MessagePackConverter<Uri?>
 		};
 }
 
+#if NET
+
 /// <summary>
 /// Serializes a <see cref="Half"/>.
 /// </summary>
@@ -169,6 +171,8 @@ internal class HalfConverter : MessagePackConverter<Half>
 			["format"] = "float16",
 		};
 }
+
+#endif
 
 /// <summary>
 /// Serializes a <see cref="float"/>.
@@ -306,6 +310,8 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 			["pattern"] = @"^-?\d+(\.\d+)?$",
 		};
 }
+
+#if NET
 
 /// <summary>
 /// Serializes a <see cref="Int128"/> value.
@@ -463,6 +469,8 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 		};
 }
 
+#endif
+
 /// <summary>
 /// Serializes a <see cref="BigInteger"/> value.
 /// </summary>
@@ -474,10 +482,15 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
 		if (bytes.IsSingleSegment)
 		{
+#if NET
 			return new BigInteger(bytes.First.Span);
+#else
+			return new BigInteger(bytes.First.ToArray());
+#endif
 		}
 		else
 		{
+#if NET
 			byte[] bytesArray = ArrayPool<byte>.Shared.Rent((int)bytes.Length);
 			try
 			{
@@ -488,17 +501,24 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			{
 				ArrayPool<byte>.Shared.Return(bytesArray);
 			}
+#else
+			return new BigInteger(bytes.ToArray());
+#endif
 		}
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in BigInteger value, SerializationContext context)
 	{
+#if NET
 		int byteCount = value.GetByteCount();
 		writer.WriteBinHeader(byteCount);
 		Span<byte> span = writer.GetSpan(byteCount);
 		Assumes.True(value.TryWriteBytes(span, out int written));
 		writer.Advance(written);
+#else
+		writer.Write(value.ToByteArray());
+#endif
 	}
 
 	/// <inheritdoc/>
@@ -559,6 +579,8 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 		};
 }
 
+#if NET
+
 /// <summary>
 /// Serializes <see cref="DateOnly"/> values.
 /// </summary>
@@ -601,6 +623,8 @@ internal class TimeOnlyConverter : MessagePackConverter<TimeOnly>
 		};
 }
 
+#endif
+
 /// <summary>
 /// Serializes <see cref="TimeSpan"/> values.
 /// </summary>
@@ -622,6 +646,8 @@ internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
 		};
 }
 
+#if NET
+
 /// <summary>
 /// Serializes <see cref="Rune"/> values.
 /// </summary>
@@ -640,6 +666,8 @@ internal class RuneConverter : MessagePackConverter<Rune>
 			["type"] = "integer",
 		};
 }
+
+#endif
 
 /// <summary>
 /// Serializes <see cref="char"/> values.
@@ -757,13 +785,21 @@ internal class GuidConverter : MessagePackConverter<Guid>
 
 		if (bytes.IsSingleSegment)
 		{
+#if NET
 			return new Guid(bytes.FirstSpan);
+#else
+			return PolyfillExtensions.CreateGuid(bytes.First.Span);
+#endif
 		}
 		else
 		{
 			Span<byte> guidValue = stackalloc byte[GuidLength];
 			bytes.CopyTo(guidValue);
+#if NET
 			return new Guid(guidValue);
+#else
+			return PolyfillExtensions.CreateGuid(guidValue);
+#endif
 		}
 	}
 
