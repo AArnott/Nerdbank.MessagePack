@@ -138,7 +138,9 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 	private static string SchemaToString(JsonObject schema)
 	{
-		string schemaString = schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+		string schemaString = schema
+			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+			.Replace("Nerdbank.MessagePack.Tests, Version=0.3.0.0", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
 
 #if NETFRAMEWORK
 		schemaString = schemaString.Replace("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
