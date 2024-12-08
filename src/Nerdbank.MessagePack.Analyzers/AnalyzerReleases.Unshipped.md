@@ -17,8 +17,6 @@ NBMsgPack021 | Usage | Error | `[MessagePackConverter]` type missing default con
 NBMsgPack030 | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods
 NBMsgPack031 | Usage | Warning | Converters should read or write exactly one msgpack structure
 NBMsgPack032 | Usage | Info | Converters should override GetJsonSchema
-NBMsgPack033 | Usage | Error | Async converters should return readers before any await (control flow analyzer)
-NBMsgPack034 | Usage | Error | Async converters should not reuse readers after returning them (control flow analyzer)
 NBMsgPack100 | Migration | Info | Migrate MessagePack-CSharp formatter
 NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute
 NBMsgPack102 | Migration | Info | Remove use of MessagePackObjectAttribute
