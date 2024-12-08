@@ -8,6 +8,7 @@ public class KnownSubTypeAnalyzersTests
 	[Fact]
 	public async Task NoIssues_Interface()
 	{
+#if NET
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
@@ -21,13 +22,27 @@ public class KnownSubTypeAnalyzersTests
 				static PolyType.Abstractions.ITypeShape<DerivedType> PolyType.IShapeable<DerivedType>.GetShape() => throw new System.NotImplementedException();
 			}
 			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
 
+			[KnownSubType(1, typeof(DerivedType))]
+			public interface IMyType
+			{
+			}
+
+			public class DerivedType : IMyType
+			{
+			}
+			""";
+#endif
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
 	[Fact]
 	public async Task NoIssues_Subclass()
 	{
+#if NET
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
@@ -41,6 +56,20 @@ public class KnownSubTypeAnalyzersTests
 				static PolyType.Abstractions.ITypeShape<DerivedType> PolyType.IShapeable<DerivedType>.GetShape() => throw new System.NotImplementedException();
 			}
 			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType))]
+			public class MyType
+			{
+			}
+
+			public class DerivedType : MyType
+			{
+			}
+			""";
+#endif
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
@@ -48,6 +77,7 @@ public class KnownSubTypeAnalyzersTests
 	[Fact]
 	public async Task NonDerivedType()
 	{
+#if NET
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
@@ -61,6 +91,20 @@ public class KnownSubTypeAnalyzersTests
 				static PolyType.Abstractions.ITypeShape<NonDerivedType> PolyType.IShapeable<NonDerivedType>.GetShape() => throw new System.NotImplementedException();
 			}
 			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, {|NBMsgPack010:typeof(NonDerivedType)|})]
+			public class MyType
+			{
+			}
+
+			public class NonDerivedType
+			{
+			}
+			""";
+#endif
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
@@ -68,6 +112,7 @@ public class KnownSubTypeAnalyzersTests
 	[Fact]
 	public async Task NoIssues_NonUniqueAlias_AcrossTypes()
 	{
+#if NET
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
@@ -91,6 +136,29 @@ public class KnownSubTypeAnalyzersTests
 				static PolyType.Abstractions.ITypeShape<DerivedType2> PolyType.IShapeable<DerivedType2>.GetShape() => throw new System.NotImplementedException();
 			}
 			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType1))]
+			public class MyType
+			{
+			}
+
+			public class DerivedType1 : MyType
+			{
+			}
+
+			[KnownSubType(1, typeof(DerivedType2))]
+			public class MyType2
+			{
+			}
+
+			public class DerivedType2 : MyType2
+			{
+			}
+			""";
+#endif
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
@@ -98,6 +166,7 @@ public class KnownSubTypeAnalyzersTests
 	[Fact]
 	public async Task NonUniqueAlias()
 	{
+#if NET
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
@@ -117,6 +186,25 @@ public class KnownSubTypeAnalyzersTests
 				static PolyType.Abstractions.ITypeShape<DerivedType2> PolyType.IShapeable<DerivedType2>.GetShape() => throw new System.NotImplementedException();
 			}
 			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType1))]
+			[KnownSubType({|NBMsgPack011:1|}, typeof(DerivedType2))]
+			public class MyType
+			{
+			}
+
+			public class DerivedType1 : MyType
+			{
+			}
+
+			public class DerivedType2 : MyType
+			{
+			}
+			""";
+#endif
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
@@ -124,6 +212,7 @@ public class KnownSubTypeAnalyzersTests
 	[Fact]
 	public async Task NonUniqueSubType()
 	{
+#if NET
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
@@ -138,6 +227,21 @@ public class KnownSubTypeAnalyzersTests
 				static PolyType.Abstractions.ITypeShape<DerivedType1> PolyType.IShapeable<DerivedType1>.GetShape() => throw new System.NotImplementedException();
 			}
 			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType1))]
+			[KnownSubType(2, {|NBMsgPack012:typeof(DerivedType1)|})]
+			public class MyType
+			{
+			}
+
+			public class DerivedType1 : MyType
+			{
+			}
+			""";
+#endif
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
@@ -145,6 +249,7 @@ public class KnownSubTypeAnalyzersTests
 	[Fact]
 	public async Task NoIssues_ClosedGenericSubType()
 	{
+#if NET
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
@@ -164,6 +269,25 @@ public class KnownSubTypeAnalyzersTests
 				static PolyType.Abstractions.ITypeShape<DerivedType<bool>> PolyType.IShapeable<DerivedType<bool>>.GetShape() => throw new System.NotImplementedException();
 			}
 			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(1, typeof(DerivedType<int>))]
+			[KnownSubType(2, typeof(DerivedType<bool>))]
+			public class MyType
+			{
+			}
+
+			public class DerivedType<T> : MyType
+			{
+			}
+
+			internal class Witness
+			{
+			}
+			""";
+#endif
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}

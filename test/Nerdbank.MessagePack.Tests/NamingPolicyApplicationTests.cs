@@ -43,7 +43,9 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 	}
 
 	private void PolicyAppliedToInferredPropertyNamesHelper<T>(T value)
+#if NET
 		where T : IShapeable<T>
+#endif
 	{
 		Sequence<byte> sequence = new();
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
@@ -58,7 +60,9 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 	}
 
 	private void PolicyNotAppliedToExplicitPropertyNamesHelper<T>(T value)
+#if NET
 		where T : IShapeable<T>
+#endif
 	{
 		Sequence<byte> sequence = new();
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };

@@ -136,7 +136,18 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		Assert.DoesNotContain("ReferencePreservingConverter", schemaString);
 	}
 
-	private static string SchemaToString(JsonObject schema) => schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+	private static string SchemaToString(JsonObject schema)
+	{
+		string schemaString = schema
+			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+			.Replace("Nerdbank.MessagePack.Tests, Version=0.3.0.0", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
+
+#if NETFRAMEWORK
+		schemaString = schemaString.Replace("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
+#endif
+
+		return schemaString;
+	}
 
 	private static void Record(JsonObject schema, string testName)
 	{
@@ -201,7 +212,9 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	private JSchema AssertSchema<T>(T?[]? sampleData = null, [CallerMemberName] string? testName = null)
+#if NET
 		where T : IShapeable<T>
+#endif
 	{
 		Requires.NotNull(testName!);
 
@@ -323,7 +336,11 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[GenerateShape]
+#if NET
 	[KnownSubType<SubType>(1)]
+#else
+	[KnownSubType(1, typeof(SubType))]
+#endif
 	internal partial class BaseType
 	{
 		public string? Message { get; set; }

@@ -149,7 +149,7 @@ retry:
 				this.AdvanceTo(readTo);
 				return (int)count;
 			case MessagePackPrimitives.DecodeResult.TokenMismatch:
-				throw MessagePackReader.ThrowInvalidCode(readResult.Buffer.FirstSpan[0]);
+				throw MessagePackReader.ThrowInvalidCode(readResult.Buffer.First.Span[0]);
 			case MessagePackPrimitives.DecodeResult.InsufficientBuffer when !readResult.IsCompleted:
 				// Fetch more data.
 				this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
@@ -178,7 +178,7 @@ retry:
 				this.AdvanceTo(readTo);
 				return (int)count;
 			case MessagePackPrimitives.DecodeResult.TokenMismatch:
-				throw MessagePackReader.ThrowInvalidCode(readResult.Buffer.FirstSpan[0]);
+				throw MessagePackReader.ThrowInvalidCode(readResult.Buffer.First.Span[0]);
 			case MessagePackPrimitives.DecodeResult.InsufficientBuffer when !readResult.IsCompleted:
 				// Fetch more data.
 				this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);

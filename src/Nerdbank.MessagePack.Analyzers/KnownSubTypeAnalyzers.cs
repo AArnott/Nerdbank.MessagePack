@@ -82,13 +82,16 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 				context =>
 				{
 					INamedTypeSymbol appliedSymbol = (INamedTypeSymbol)context.Symbol;
-					AttributeData[] attributeDatas = context.Symbol.FindAttributes(referenceSymbols.IKnownSubTypeAttribute).ToArray();
+					AttributeData[] attributeDatas = context.Symbol.FindAttributes(referenceSymbols.KnownSubTypeAttribute).ToArray();
 					Dictionary<int, ITypeSymbol?>? typesByAlias = null;
 					Dictionary<ITypeSymbol, int?>? aliasesByType = null;
 					foreach (AttributeData att in attributeDatas)
 					{
-						int? alias = att.ConstructorArguments is [{ Value: int a }] ? a : null;
-						ITypeSymbol? subType = att.AttributeClass?.TypeArguments[0];
+						int? alias = att.ConstructorArguments is [{ Value: int a }, ..] ? a : null;
+						(ITypeSymbol? subType, Location? subTypeLocation) =
+							att.AttributeClass?.TypeArguments.Length >= 1 ? (att.AttributeClass?.TypeArguments[0], GetTypeArgumentLocation(0)) :
+							att.ConstructorArguments.Length >= 2 ? ((ITypeSymbol?)att.ConstructorArguments[1].Value, GetArgumentLocation(1)) :
+							(null, null);
 
 						if (alias is not null)
 						{
@@ -112,7 +115,7 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 							{
 								context.ReportDiagnostic(Diagnostic.Create(
 									NonUniqueTypeDescriptor,
-									GetTypeArgumentLocation(0),
+									subTypeLocation,
 									existingAlias));
 							}
 							else
@@ -125,7 +128,7 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 						{
 							context.ReportDiagnostic(Diagnostic.Create(
 								NonDerivedTypeDescriptor,
-								GetTypeArgumentLocation(0),
+								subTypeLocation,
 								subType.Name));
 						}
 
@@ -133,7 +136,7 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 						{
 							context.ReportDiagnostic(Diagnostic.Create(
 								OpenGenericTypeDescriptor,
-								GetTypeArgumentLocation(0)));
+								subTypeLocation));
 						}
 
 						Location? GetArgumentLocation(int argumentIndex)

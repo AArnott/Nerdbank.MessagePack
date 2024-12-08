@@ -3,20 +3,16 @@
 
 partial class ApplyingSerializationContext
 {
-	void ApplyingContext()
-	{
-		#region ApplyingStartingContext
-		MessagePackSerializer serializer = new()
-		{
-			StartingContext = new SerializationContext
-			{
-				MaxDepth = 128,
-			},
-		};
-		serializer.Serialize(new SomeType());
-		#endregion
-	}
-
-	[GenerateShape]
-	internal partial record SomeType;
+    void ApplyingContext()
+    {
+        #region ApplyingStartingContext
+        MessagePackSerializer serializer = new()
+        {
+            StartingContext = new SerializationContext
+            {
+                MaxDepth = 128,
+            },
+        };
+        #endregion
+    }
 }

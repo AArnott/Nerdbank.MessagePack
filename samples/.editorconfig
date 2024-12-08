@@ -1,5 +1,7 @@
 [*.cs]
 
+indent_style = space
+
 # SA1123: Do not place regions within elements
 dotnet_diagnostic.SA1123.severity = none
 

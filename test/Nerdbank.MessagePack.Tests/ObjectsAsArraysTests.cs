@@ -349,7 +349,14 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	}
 
 	private static ITypeShape<T> GetShape<T>()
+#if NET
 		where T : IShapeable<T> => T.GetShape();
+#else
+		=> GetShape<T, Witness>();
+#endif
+
+	[GenerateShape<int>]
+	private partial class Witness;
 
 	[GenerateShape]
 	public partial record Person

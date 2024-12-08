@@ -37,10 +37,14 @@ public partial record MessagePackSerializer
 	private MultiProviderTypeCache? cachedConverters;
 	private bool preserveReferences;
 
+#if NET
+
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
 	/// </summary>
 	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat { get; init; } = MultiDimensionalArrayFormat.Nested;
+
+#endif
 
 	/// <summary>
 	/// Gets the transformation function to apply to property names before serializing them.
@@ -241,8 +245,23 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken">A cancellation token.</param>
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
+		Requires.NotNull(shape);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+	}
+
+	/// <summary>
+	/// Serializes a value.
+	/// </summary>
+	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+		this.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -250,13 +269,32 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
-	/// <param name="shape">The shape provider of <typeparamref name="T"/>. This may be the same as <typeparamref name="T"/> when the data type is attributed with <see cref="GenerateShapeAttribute"/>, or it may be another "witness" partial class that was annotated with <see cref="GenerateShapeAttribute{T}"/> where T for the attribute is the same as the <typeparamref name="T"/> used here.</param>
+	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
+		Requires.NotNull(shape);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
+	}
+
+	/// <summary>
+	/// Deserializes a value.
+	/// </summary>
+	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <param name="reader">The msgpack reader to deserialize from.</param>
+	/// <param name="provider">
+	/// The shape provider of <typeparamref name="T"/>.
+	/// This will typically be obtained by calling the <c>ShapeProvider</c> static property on a witness class
+	/// (a class on which <see cref="GenerateShapeAttribute{T}"/> has been applied).
+	/// </param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+		return this.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -271,12 +309,35 @@ public partial record MessagePackSerializer
 	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(writer);
+		Requires.NotNull(shape);
 		cancellationToken.ThrowIfCancellationRequested();
 
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
-		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		await this.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+		asyncWriter.Flush();
+#pragma warning restore NBMsgPackAsync
+	}
+
+	/// <summary>
+	/// Serializes a value using the given <see cref="PipeWriter"/>.
+	/// </summary>
+	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <param name="writer">The writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>A task that tracks the async serialization.</returns>
+	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(writer);
+		cancellationToken.ThrowIfCancellationRequested();
+
+#pragma warning disable NBMsgPackAsync
+		MessagePackAsyncWriter asyncWriter = new(writer);
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+		await this.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -291,10 +352,28 @@ public partial record MessagePackSerializer
 	/// <returns>The deserialized value.</returns>
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
+		Requires.NotNull(shape);
 		cancellationToken.ThrowIfCancellationRequested();
-		using DisposableSerializationContext context = this.CreateSerializationContext(cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 #pragma warning disable NBMsgPackAsync
 		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken }, context.Value);
+#pragma warning restore NBMsgPackAsync
+	}
+
+	/// <summary>
+	/// Deserializes a value from a <see cref="PipeReader"/>.
+	/// </summary>
+	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <param name="reader">The reader to deserialize from.</param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+#pragma warning disable NBMsgPackAsync
+		return this.GetOrAddConverter<T>(provider).ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken }, context.Value);
 #pragma warning restore NBMsgPackAsync
 	}
 
@@ -475,6 +554,17 @@ public partial record MessagePackSerializer
 		=> (IMessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
+	/// Gets a converter for the given type shape.
+	/// An existing converter is reused if one is found in the cache.
+	/// If a converter must be created, it is added to the cache for lookup next time.
+	/// </summary>
+	/// <typeparam name="T">The type to convert.</typeparam>
+	/// <param name="provider">The type shape provider.</param>
+	/// <returns>A msgpack converter.</returns>
+	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShapeProvider provider)
+		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
+
+	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available.
 	/// </summary>
 	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
@@ -517,15 +607,17 @@ public partial record MessagePackSerializer
 	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token for the operation.</param>
 	/// <returns>The serialization context.</returns>
 	/// <remarks>
 	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
 	/// </remarks>
-	protected DisposableSerializationContext CreateSerializationContext(CancellationToken cancellationToken = default)
+	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
+		Requires.NotNull(provider);
 		this.configurationLocked = true;
-		return new(this.StartingContext.Start(this, cancellationToken));
+		return new(this.StartingContext.Start(this, provider, cancellationToken));
 	}
 
 	/// <summary>

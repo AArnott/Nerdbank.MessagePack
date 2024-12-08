@@ -27,10 +27,10 @@ internal static class StringEncoding
 	/// </remarks>
 	internal static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 	{
-		int byteCount = StringEncoding.UTF8.GetByteCount(value);
+		int byteCount = UTF8.GetByteCount(value);
 		Memory<byte> bytes = new byte[byteCount + 5];
 		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(bytes.Span, (uint)byteCount, out int msgpackHeaderLength));
-		StringEncoding.UTF8.GetBytes(value, bytes.Span[msgpackHeaderLength..]);
+		UTF8.GetBytes(value.AsSpan(), bytes.Span[msgpackHeaderLength..]);
 		utf8Bytes = bytes.Slice(msgpackHeaderLength, byteCount);
 		msgpackEncoded = bytes.Slice(0, byteCount + msgpackHeaderLength);
 	}

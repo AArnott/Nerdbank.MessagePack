@@ -38,13 +38,13 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		{
 			public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				string? value = context.GetConverter<string, CustomTypeConverter>().Read(ref reader, context);
+				string? value = context.GetConverter<string>(ShapeProvider).Read(ref reader, context);
 				return new CustomType { InternalProperty = value };
 			}
 
 			public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
 			{
-				context.GetConverter<string, CustomTypeConverter>().Write(ref writer, value?.InternalProperty, context);
+				context.GetConverter<string>(ShapeProvider).Write(ref writer, value?.InternalProperty, context);
 			}
 		}
 	}

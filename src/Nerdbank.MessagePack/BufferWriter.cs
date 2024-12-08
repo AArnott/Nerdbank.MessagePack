@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft;
@@ -13,12 +14,18 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 internal ref struct BufferWriter
 {
+	private readonly bool usingBufferMemoryWriter;
+
+#if NET
+	private ref BufferMemoryWriter memoryWriter;
+#else
+	private BufferMemoryWriter memoryWriter;
+#endif
+
 	/// <summary>
 	/// The underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>
 	private IBufferWriter<byte>? output;
-
-	private ref BufferMemoryWriter memoryWriter;
 
 	/// <summary>
 	/// The result of the last call to <see cref="IBufferWriter{T}.GetSpan(int)"/>, less any bytes already "consumed" with <see cref="Advance(int)"/>.
@@ -60,8 +67,13 @@ internal ref struct BufferWriter
 	/// <param name="memoryWriter">The async compatible equivalent to this struct, that this struct will temporarily wrap.</param>
 	internal BufferWriter(ref BufferMemoryWriter memoryWriter)
 	{
+#if NET
 		this.memoryWriter = ref memoryWriter;
-		this.span = memoryWriter.GetSpan();
+#else
+		this.memoryWriter = memoryWriter;
+#endif
+		this.usingBufferMemoryWriter = true;
+		this.span = this.memoryWriter.GetSpan();
 	}
 
 	/// <summary>
@@ -92,6 +104,12 @@ internal ref struct BufferWriter
 	/// Gets the rental.
 	/// </summary>
 	internal SequencePool.Rental SequenceRental => this.rental;
+
+	/// <summary>
+	/// Gets the <see cref="BufferMemoryWriter"/> underlying this writer.
+	/// </summary>
+	[UnscopedRef]
+	internal ref BufferMemoryWriter BufferMemoryWriter => ref this.memoryWriter;
 
 	/// <inheritdoc cref="IBufferWriter{T}.GetSpan(int)"/>
 	internal Span<byte> GetSpan(int sizeHint = 0)
@@ -130,7 +148,7 @@ internal ref struct BufferWriter
 		int buffered = this.buffered;
 		if (buffered > 0)
 		{
-			if (!Unsafe.IsNullRef(ref this.memoryWriter))
+			if (this.usingBufferMemoryWriter)
 			{
 				this.memoryWriter.Advance(buffered);
 			}
@@ -222,7 +240,7 @@ internal ref struct BufferWriter
 			this.MigrateToSequence();
 		}
 
-		if (!Unsafe.IsNullRef(ref this.memoryWriter))
+		if (this.usingBufferMemoryWriter)
 		{
 			this.span = this.memoryWriter.GetSpan(sizeHint);
 		}

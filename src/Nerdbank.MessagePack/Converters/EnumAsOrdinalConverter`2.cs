@@ -29,11 +29,15 @@ internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConvert
 		JsonObject schema = new JsonObject { ["type"] = "integer" };
 
 		StringBuilder description = new();
+#if NET
 		Array enumValuesUntyped = typeof(TEnum).GetEnumValuesAsUnderlyingType();
+#else
+		Array enumValuesUntyped = typeof(TEnum).GetEnumValues();
+#endif
 		JsonNode[] enumValueNodes = new JsonNode[enumValuesUntyped.Length];
 		for (int i = 0; i < enumValueNodes.Length; i++)
 		{
-			object ordinalValue = enumValuesUntyped.GetValue(i)!;
+			TUnderlyingType ordinalValue = (TUnderlyingType)enumValuesUntyped.GetValue(i)!;
 			if (description.Length > 0)
 			{
 				description.Append(", ");

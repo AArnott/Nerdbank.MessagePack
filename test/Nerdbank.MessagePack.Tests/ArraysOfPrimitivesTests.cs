@@ -6,6 +6,12 @@ using System.Reflection;
 
 public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
+#if NET
+	private static readonly Random Random = Random.Shared;
+#else
+	private static readonly Random Random = new Random();
+#endif
+
 	[Theory, PairwiseData]
 	public void BoolArray([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(byte))] int length)
 	{
@@ -13,7 +19,7 @@ public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : Message
 		if (length >= 0)
 		{
 			byte[] random = new byte[length];
-			Random.Shared.NextBytes(random);
+			Random.NextBytes(random);
 			values = random.Select(b => b % 2 == 0).ToArray();
 		}
 
@@ -27,7 +33,7 @@ public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : Message
 		if (length >= 0)
 		{
 			byte[]? random = new byte[length];
-			Random.Shared.NextBytes(random);
+			Random.NextBytes(random);
 			values = random.Select(b => b % 2 == 0).ToArray();
 		}
 
@@ -75,7 +81,11 @@ public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : Message
 			values = new float[length];
 			for (int i = 0; i < values.Length; i++)
 			{
-				values[i] = Random.Shared.NextSingle();
+#if NET
+				values[i] = Random.NextSingle();
+#else
+				values[i] = (float)Random.NextDouble();
+#endif
 			}
 		}
 
@@ -91,7 +101,7 @@ public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : Message
 			values = new double[length];
 			for (int i = 0; i < values.Length; i++)
 			{
-				values[i] = Random.Shared.NextDouble();
+				values[i] = Random.NextDouble();
 			}
 		}
 
@@ -107,7 +117,7 @@ public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : Message
 		}
 
 		byte[] random = new byte[length * sizeof(T)];
-		Random.Shared.NextBytes(random);
+		Random.NextBytes(random);
 		T[] values = new T[length];
 		fixed (byte* pSource = random)
 		{
@@ -122,7 +132,11 @@ public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : Message
 
 	private static int[] GetInterestingLengths(Type type) => (int[])typeof(ArraysOfPrimitivesTests).GetMethod(nameof(GetInterestingLengthsHelper), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, null)!;
 
+#if NET
 	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, Vector<T>.Count - 1, Vector<T>.Count, Vector<T>.Count + 1, (Vector<T>.Count * 2) + 2, 10_000];
+#else
+	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, 100, 10_000];
+#endif
 
 	[GenerateShape<bool[]>]
 	[GenerateShape<Memory<bool>>]

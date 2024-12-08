@@ -21,7 +21,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private static readonly FrozenDictionary<Type, object> PrimitiveConverters = new Dictionary<Type, object>()
 	{
 		{ typeof(char), new CharConverter() },
-		{ typeof(Rune), new RuneConverter() },
 		{ typeof(byte), new ByteConverter() },
 		{ typeof(ushort), new UInt16Converter() },
 		{ typeof(uint), new UInt32Converter() },
@@ -31,18 +30,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{ typeof(int), new Int32Converter() },
 		{ typeof(long), new Int64Converter() },
 		{ typeof(BigInteger), new BigIntegerConverter() },
-		{ typeof(Int128), new Int128Converter() },
-		{ typeof(UInt128), new UInt128Converter() },
 		{ typeof(string), new StringConverter() },
 		{ typeof(bool), new BooleanConverter() },
 		{ typeof(Version), new VersionConverter() },
 		{ typeof(Uri), new UriConverter() },
-		{ typeof(Half), new HalfConverter() },
 		{ typeof(float), new SingleConverter() },
 		{ typeof(double), new DoubleConverter() },
 		{ typeof(decimal), new DecimalConverter() },
-		{ typeof(TimeOnly), new TimeOnlyConverter() },
-		{ typeof(DateOnly), new DateOnlyConverter() },
 		{ typeof(DateTime), new DateTimeConverter() },
 		{ typeof(DateTimeOffset), new DateTimeOffsetConverter() },
 		{ typeof(TimeSpan), new TimeSpanConverter() },
@@ -50,6 +44,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{ typeof(byte[]), ByteArrayConverter.Instance },
 		{ typeof(Memory<byte>), new MemoryOfByteConverter() },
 		{ typeof(ReadOnlyMemory<byte>), new ReadOnlyMemoryOfByteConverter() },
+#if NET
+		{ typeof(Rune), new RuneConverter() },
+		{ typeof(Int128), new Int128Converter() },
+		{ typeof(UInt128), new UInt128Converter() },
+		{ typeof(Half), new HalfConverter() },
+		{ typeof(TimeOnly), new TimeOnlyConverter() },
+		{ typeof(DateOnly), new DateOnlyConverter() },
+#endif
 	}.ToFrozenDictionary();
 
 	private static readonly FrozenDictionary<Type, object> PrimitiveReferencePreservingConverters = PrimitiveConverters.ToFrozenDictionary(
@@ -228,7 +230,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					defaultValue = attributeDefaultValue;
 				}
 
-				shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue);
+				shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
 			}
 
 			SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
@@ -426,21 +428,28 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		if (enumerableShape.Type.IsArray)
 		{
+			MessagePackConverter<TEnumerable>? converter;
 			if (enumerableShape.Rank > 1)
 			{
+#if NET
 				return this.owner.MultiDimensionalArrayFormat switch
 				{
 					MultiDimensionalArrayFormat.Nested => new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank),
 					MultiDimensionalArrayFormat.Flat => new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter),
 					_ => throw new NotSupportedException(),
 				};
+#else
+				throw PolyfillExtensions.ThrowNotSupportedOnNETFramework();
+#endif
 			}
+#if NET
 			else if (!this.owner.DisableHardwareAcceleration &&
 				enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
-				HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter))
+				HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out converter))
 			{
 				return converter;
 			}
+#endif
 			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
 				ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetSpanConstructor(), out converter))
 			{
@@ -457,7 +466,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
 			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
+#if NET
 			CollectionConstructionStrategy.Span when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
+#endif
 			CollectionConstructionStrategy.Span when ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
 			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
 			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
@@ -503,7 +514,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
 	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
 	{
-		IKnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(IKnownSubTypeAttribute), false).Cast<IKnownSubTypeAttribute>().ToArray();
+		KnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(KnownSubTypeAttribute), false).Cast<KnownSubTypeAttribute>().ToArray();
 		if (unionAttributes is null or { Length: 0 })
 		{
 			return null;
@@ -511,10 +522,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		Dictionary<int, IMessagePackConverter> deserializerData = new();
 		Dictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
-		foreach (IKnownSubTypeAttribute unionAttribute in unionAttributes)
+		foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
 		{
-			ITypeShape subtypeShape = unionAttribute.Shape;
-			Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {KnownSubTypeAttribute.TypeName} that references non-derived {unionAttribute.Shape.Type.FullName}.");
+			ITypeShape subtypeShape = unionAttribute.Shape ?? objectShape.Provider.GetShapeOrThrow(unionAttribute.SubType);
+			Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {KnownSubTypeAttribute.TypeName} that references non-derived {subtypeShape.Type.FullName}.");
 
 			IMessagePackConverter converter = this.GetConverter(subtypeShape);
 			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");

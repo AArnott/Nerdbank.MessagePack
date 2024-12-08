@@ -24,7 +24,9 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 	public void ConvertToJson_Sequence() => Assert.Equal("null", MessagePackSerializer.ConvertToJson(new([0xc0])));
 
 	private void AssertConvertToJson<T>([StringSyntax("json")] string expected, T? value)
+#if NET
 		where T : IShapeable<T>
+#endif
 	{
 		string json = this.ConvertToJson(value);
 		this.Logger.WriteLine(json);
@@ -32,10 +34,16 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 	}
 
 	private string ConvertToJson<T>(T? value)
+#if NET
 		where T : IShapeable<T>
+#endif
 	{
 		Sequence<byte> sequence = new();
+#if NET
 		this.Serializer.Serialize(sequence, value);
+#else
+		this.Serializer.Serialize(sequence, value, Witness.ShapeProvider);
+#endif
 		StringWriter jsonWriter = new();
 		MessagePackReader reader = new(sequence);
 		MessagePackSerializer.ConvertToJson(ref reader, jsonWriter);
@@ -47,4 +55,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 
 	[GenerateShape]
 	public partial record ArrayWrapper(params int[] IntArray);
+
+	[GenerateShape<Primitives>]
+	private partial class Witness;
 }

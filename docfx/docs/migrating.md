@@ -32,7 +32,7 @@ Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerialize
 JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
 Secure defaults           | ✅ | ❌ |
 Automatic hash collection deserialization in secure mode | ❌ | ✅ |
-Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.ByValueEqualityComparer`1) | ❌ |
+Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.ByValueEqualityComparer) | ❌ |
 Free of mutable statics   | ✅ | ❌ |
 
 Security is a complex subject, and an area where Nerdbank.MessagePack is actively evolving.

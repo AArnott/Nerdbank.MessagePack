@@ -1,6 +1,11 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if !NET
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8767 // null ref annotations
+#endif
+
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
@@ -28,8 +33,8 @@ internal class ByValueEnumerableEqualityComparer<TEnumerable, TElement>(
 		IEnumerable<TElement> enumerableX = getEnumerable(x);
 		IEnumerable<TElement> enumerableY = getEnumerable(y);
 
-		if (Enumerable.TryGetNonEnumeratedCount(enumerableX, out int countX) &&
-			Enumerable.TryGetNonEnumeratedCount(enumerableY, out int countY) &&
+		if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerableX, out int countX) &&
+			PolyfillExtensions.TryGetNonEnumeratedCount(enumerableY, out int countY) &&
 			countX != countY)
 		{
 			return false;
@@ -60,6 +65,11 @@ internal class ByValueEnumerableEqualityComparer<TEnumerable, TElement>(
 			hashes.Add(element is null ? 0 : equalityComparer.GetHashCode(element));
 		}
 
-		return unchecked((int)SipHash.Default.Compute(MemoryMarshal.Cast<int, byte>(CollectionsMarshal.AsSpan(hashes))));
+#if NET
+		Span<int> span = CollectionsMarshal.AsSpan(hashes);
+#else
+		Span<int> span = hashes.ToArray();
+#endif
+		return unchecked((int)SipHash.Default.Compute(MemoryMarshal.Cast<int, byte>(span)));
 	}
 }

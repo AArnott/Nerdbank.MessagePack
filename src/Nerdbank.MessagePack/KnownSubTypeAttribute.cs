@@ -8,21 +8,7 @@ using System.Diagnostics;
 
 namespace Nerdbank.MessagePack;
 
-/// <summary>
-/// A non-generic interface that allows access to the members of the generic attributes that implement it.
-/// </summary>
-internal interface IKnownSubTypeAttribute
-{
-	/// <summary>
-	/// Gets a value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.
-	/// </summary>
-	int Alias { get; }
-
-	/// <summary>
-	/// Gets the shape that describes the subtype.
-	/// </summary>
-	ITypeShape Shape { get; }
-}
+#if NET
 
 /// <summary>
 /// Specifies that where the class to which this attribute is applied is the declared type in an object graph
@@ -44,14 +30,13 @@ internal interface IKnownSubTypeAttribute
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
 [DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
-public class KnownSubTypeAttribute<TSubType, TShapeProvider>(int alias) : Attribute, IKnownSubTypeAttribute
+#pragma warning disable CS0618 // Type or member is obsolete
+public class KnownSubTypeAttribute<TSubType, TShapeProvider>(int alias) : KnownSubTypeAttribute(alias, typeof(TSubType))
+#pragma warning restore CS0618 // Type or member is obsolete
 	where TShapeProvider : IShapeable<TSubType>
 {
 	/// <inheritdoc/>
-	public int Alias => alias;
-
-	/// <inheritdoc/>
-	ITypeShape IKnownSubTypeAttribute.Shape => TShapeProvider.GetShape();
+	public override ITypeShape? Shape => TShapeProvider.GetShape();
 
 	/// <summary>
 	/// Gets the value for the <see cref="DebuggerDisplayAttribute"/>.
@@ -67,13 +52,57 @@ public class KnownSubTypeAttribute<TSubType>(int alias) : KnownSubTypeAttribute<
 {
 }
 
+#endif
+
 /// <summary>
-/// A non-generic type for getting the name of the attribute, for use in error messages.
+/// Specifies that where the class to which this attribute is applied is the declared type in an object graph
+/// that certain derived types are recorded in the serialized data as well and allowed to be deserialized back
+/// as their derived types.
 /// </summary>
-internal static class KnownSubTypeAttribute
+/// <remarks>
+/// <para>
+/// A type with one or more of these attributes applied serializes to a different schema than the same type
+/// without any attributes applied. The serialized data will include a special header that indicates the runtime type.
+/// Consider version compatibility issues when adding the first or removing the last attribute from a type.
+/// </para>
+/// <para>
+/// Each type referenced by this attribute must have <see cref="GenerateShapeAttribute"/> applied to it or a witness class.
+/// </para>
+/// </remarks>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
+public class KnownSubTypeAttribute : Attribute
 {
 	/// <summary>
 	/// The name of the <see cref="KnownSubTypeAttribute"/> type.
 	/// </summary>
 	internal const string TypeName = nameof(KnownSubTypeAttribute);
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute"/> class.
+	/// </summary>
+	/// <param name="alias">A value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.</param>
+	/// <param name="subType">The derived-type that the <paramref name="alias"/> represents.</param>
+#if NET
+	[Obsolete("Use the generic version of this attribute instead.")]
+#endif
+	public KnownSubTypeAttribute(int alias, Type subType)
+	{
+		this.Alias = alias;
+		this.SubType = subType;
+	}
+
+	/// <summary>
+	/// Gets a value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.
+	/// </summary>
+	public int Alias { get; }
+
+	/// <summary>
+	/// Gets the sub-type.
+	/// </summary>
+	public Type SubType { get; }
+
+	/// <summary>
+	/// Gets the shape that describes the subtype.
+	/// </summary>
+	public virtual ITypeShape? Shape => null;
 }

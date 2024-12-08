@@ -52,6 +52,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void Array_Null() => this.AssertRoundtrip(new ClassWithArray { IntArray = null });
 
+#if NET
 #pragma warning disable SA1500 // Braces for multi-line statements should not share line
 	[Theory, PairwiseData]
 	public void MultidimensionalArray(MultiDimensionalArrayFormat format)
@@ -72,8 +73,9 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		});
 	}
 #pragma warning restore SA1500 // Braces for multi-line statements should not share line
+#endif
 
-	[Fact]
+	[SkippableFact(typeof(PlatformNotSupportedException))]
 	public void MultidimensionalArray_Null() => this.AssertRoundtrip(new HasMultiDimensionalArray());
 
 	[Fact]
@@ -184,7 +186,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		Memory<byte> original = new byte[] { 1, 2, 3 };
 		Memory<byte> deserialized = this.Roundtrip<Memory<byte>, Witness>(original);
-		Assert.Equal(original, deserialized);
+		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
 		Assert.Equal(MessagePackType.Binary, reader.NextMessagePackType);
 		Assert.NotNull(reader.ReadBytes());
@@ -195,7 +197,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		ReadOnlyMemory<byte> original = new byte[] { 1, 2, 3 };
 		ReadOnlyMemory<byte> deserialized = this.Roundtrip<ReadOnlyMemory<byte>, Witness>(original);
-		Assert.Equal(original, deserialized);
+		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
 		Assert.Equal(MessagePackType.Binary, reader.NextMessagePackType);
 		Assert.NotNull(reader.ReadBytes());

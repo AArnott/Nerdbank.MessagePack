@@ -43,12 +43,20 @@ Instead, you can provide your own defense by initializing your collections with 
 
 Here is an example of a defense against hash collisions:
 
-[!code-csharp[](../../samples/Security.cs#SecureEqualityComparers)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Security.cs#SecureEqualityComparersNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Security.cs#SecureEqualityComparersNETFX)]
+
+---
 
 Note how the collection properties do *not* define a property setter.
 This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.
 
-In this example, we use @Nerdbank.MessagePack.ByValueEqualityComparer`1.HashResistant?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
+In this example, we use @Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
 This implementation uses the SIP hash algorithm, which is known for its high performance and collision resistance.
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
-Please review the documentation for @Nerdbank.MessagePack.ByValueEqualityComparer`1.HashResistant for more information.
+Please review the documentation for @Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant* for more information.

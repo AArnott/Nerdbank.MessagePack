@@ -667,7 +667,12 @@ public static partial class MessagePackPrimitives
 		}
 
 		destinationRef = MessagePackCode.Float32;
-		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), Unsafe.BitCast<float, int>(value));
+#if NET
+		int valueAsInt = Unsafe.BitCast<float, int>(value);
+#else
+		int valueAsInt = *(int*)&value;
+#endif
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), valueAsInt);
 		return true;
 	}
 
@@ -694,7 +699,12 @@ public static partial class MessagePackPrimitives
 		}
 
 		destinationRef = MessagePackCode.Float64;
-		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), Unsafe.BitCast<double, long>(value));
+#if NET
+		long valueAsLong = Unsafe.BitCast<double, long>(value);
+#else
+		long valueAsLong = *(long*)&value;
+#endif
+		WriteBigEndian(ref Unsafe.Add(ref destinationRef, 1), valueAsLong);
 		return true;
 	}
 

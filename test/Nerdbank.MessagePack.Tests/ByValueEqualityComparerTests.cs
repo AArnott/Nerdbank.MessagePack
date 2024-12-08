@@ -1,6 +1,11 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if !NET
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8767 // null ref annotations
+#endif
+
 using System.Numerics;
 using PolyType.Tests;
 
@@ -47,27 +52,33 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 
 	[SkippableTheory(typeof(NotSupportedException))]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+#if NET
 	public void Equals_Exhaustive<T, TProvider>(TestCase<T, TProvider> testCase)
 		where TProvider : IShapeable<T>
+#else
+	public void Equals_Exhaustive<T, TProvider>(TestCase<T> testCase)
+#endif
 	{
 		// We do not expect these cases to work.
 		Skip.If(typeof(T) == typeof(object));
 
-		ITypeShape<T> shape = TProvider.GetShape();
-		IEqualityComparer<T> equalityComparer = this.GetEqualityComparer<T, TProvider>();
-		Assert.True(equalityComparer.Equals(testCase.Value, testCase.Value));
+		IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
+		Assert.True(equalityComparer.Equals(testCase.Value!, testCase.Value!));
 	}
 
 	[SkippableTheory(typeof(NotSupportedException))]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+#if NET
 	public void GetHashCode_Exhaustive<T, TProvider>(TestCase<T, TProvider> testCase)
 		where TProvider : IShapeable<T>
+#else
+	public void GetHashCode_Exhaustive<T, TProvider>(TestCase<T> testCase)
+#endif
 	{
 		// We do not expect these cases to work.
 		Skip.If(typeof(T) == typeof(object));
 
-		ITypeShape<T> shape = TProvider.GetShape();
-		IEqualityComparer<T> equalityComparer = this.GetEqualityComparer<T, TProvider>();
+		IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
 
 		// We don't really have anything useful to check the return value against, but
 		// at least verify it doesn't throw.
@@ -77,13 +88,29 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		}
 	}
 
-	protected abstract IEqualityComparer<T> GetEqualityComparer<T, TProvider>()
-		where TProvider : IShapeable<T>;
+	protected IEqualityComparer<T> GetEqualityComparer<T, TProvider>()
+#if NET
+		where TProvider : IShapeable<T> => this.GetEqualityComparer(TProvider.GetShape());
+#else
+		=> this.GetEqualityComparer(MessagePackSerializerTestBase.GetShape<T, TProvider>());
+#endif
+
+	protected IEqualityComparer<T> GetEqualityComparer<T>()
+#if NET
+		where T : IShapeable<T> => this.GetEqualityComparer<T>(T.GetShape());
+#else
+		=> this.GetEqualityComparer(MessagePackSerializerPolyfill.Witness.ShapeProvider.GetShape<T>());
+#endif
+
+	protected abstract IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape);
 
 	/// <inheritdoc cref="AssertEqualityComparerBehavior{T, TProvider}(T[], T[])"/>
 	private void AssertEqualityComparerBehavior<T>(T[] equivalent, T[] different)
-		where T : notnull, IShapeable<T>
-		=> this.AssertEqualityComparerBehavior<T, T>(equivalent, different);
+#if NET
+		where T : notnull, IShapeable<T> => this.AssertEqualityComparerBehavior<T, T>(equivalent, different);
+#else
+		where T : notnull => this.AssertEqualityComparerBehavior<T, Witness>(equivalent, different);
+#endif
 
 	/// <summary>
 	/// Asserts that hash codes and equality checks match or mismatch for various values.
@@ -93,7 +120,9 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 	/// <param name="equivalent">An array of values that should all be considered equivalent.</param>
 	/// <param name="different">An array of values that are each distinct from any of the values in the <paramref name="equivalent"/> array.</param>
 	private void AssertEqualityComparerBehavior<T, TProvider>(T[] equivalent, T[] different)
+#if NET
 		where TProvider : IShapeable<T>
+#endif
 		where T : notnull
 	{
 		IEqualityComparer<T> eq = this.GetEqualityComparer<T, TProvider>();
@@ -128,11 +157,11 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		public override void CustomHash()
 		{
 			CustomHasher obj = new();
-			Assert.Equal(obj.SpecialCode, this.GetEqualityComparer<CustomHasher, CustomHasher>().GetHashCode(obj));
+			Assert.Equal(obj.SpecialCode, this.GetEqualityComparer<CustomHasher>().GetHashCode(obj));
 		}
 
-		protected override IEqualityComparer<T> GetEqualityComparer<T, TProvider>()
-			=> ByValueEqualityComparer<T, TProvider>.Default;
+		protected override IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape)
+			=> ByValueEqualityComparer.GetDefault(shape);
 	}
 
 	public class HashCollisionResistant(ITestOutputHelper logger) : ByValueEqualityComparerTests(logger)
@@ -141,15 +170,16 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		public override void CustomHash()
 		{
 			CustomHasher obj = new();
-			Assert.Equal(obj.SpecialCode * 2, this.GetEqualityComparer<CustomHasher, CustomHasher>().GetHashCode(obj));
+			Assert.Equal(obj.SpecialCode * 2, this.GetEqualityComparer<CustomHasher, Witness>().GetHashCode(obj));
 		}
 
-		protected override IEqualityComparer<T> GetEqualityComparer<T, TProvider>()
-			=> ByValueEqualityComparer<T, TProvider>.HashResistant;
+		protected override IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape)
+			=> ByValueEqualityComparer.GetHashResistant(shape);
 	}
 
 	[GenerateShape<bool>]
 	[GenerateShape<BigInteger>]
+	[GenerateShape<CustomHasher>]
 	internal partial class Witness;
 
 	[GenerateShape]

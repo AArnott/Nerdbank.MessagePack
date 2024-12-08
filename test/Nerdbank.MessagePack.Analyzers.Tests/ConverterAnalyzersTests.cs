@@ -140,10 +140,16 @@ public class ConverterAnalyzersTests
 				public SomeOtherType SomeField;
 			}
 
+			#if NET
 			public class SomeOtherType : IShapeable<SomeOtherType>
 			{
 				public static ITypeShape<SomeOtherType> GetShape() => throw new System.NotImplementedException();
 			}
+			#else
+			public class SomeOtherType
+			{
+			}
+			#endif
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
@@ -157,7 +163,11 @@ public class ConverterAnalyzersTests
 					{
 						return new MyType
 						{
+			#if NET
 							SomeField = context.GetConverter<SomeOtherType>().Read(ref reader, context),
+			#else
+							SomeField = context.GetConverter<SomeOtherType>(context.TypeShapeProvider).Read(ref reader, context),
+			#endif
 						};
 					}
 				}
@@ -170,7 +180,11 @@ public class ConverterAnalyzersTests
 						return;
 					}
 
+			#if NET
 					context.GetConverter<SomeOtherType>().Write(ref writer, value.SomeField, context);
+			#else
+					context.GetConverter<SomeOtherType>(context.TypeShapeProvider).Write(ref writer, value.SomeField, context);
+			#endif
 				}
 
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
@@ -311,7 +325,7 @@ public class ConverterAnalyzersTests
 			
 			internal class ArrayWithFlattenedDimensionsConverter : MessagePackConverter<int>
 			{
-				[UnconditionalSuppressMessage("AOT", "IL3050")]
+				[My]
 				public override int Read(ref MessagePackReader reader, SerializationContext context)
 				{
 					return reader.ReadInt32();
@@ -320,6 +334,9 @@ public class ConverterAnalyzersTests
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
+
+			[AttributeUsage(AttributeTargets.Method)]
+			internal class MyAttribute : Attribute { }
 			""";
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
@@ -422,18 +439,29 @@ public class ConverterAnalyzersTests
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
+			#if NET
 			public partial class MyType : IShapeable<MyType>
 			{
 				public static ITypeShape<MyType> GetShape() => throw new System.NotImplementedException();
 			}
-			
+			#else
+			public partial class MyType
+			{
+			}
+			#endif
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
 				{
 					var serializer = {|NBMsgPack030:new MessagePackSerializer()|};
-					{|NBMsgPack030:serializer.Serialize(value)|};
+					{|NBMsgPack030:serializer.Serialize(
+						value
+			#if !NET
+						, (ITypeShape<MyType>)null!
+			#endif
+						)|};
 					throw new System.NotImplementedException();
 				}
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();

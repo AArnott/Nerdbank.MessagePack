@@ -15,7 +15,15 @@ Given a type annotated with [`GenerateShapeAttribute`](xref:PolyType.GenerateSha
 
 You can serialize and deserialize it like this:
 
-[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecordRoundtrip)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecordRoundtripNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecordRoundtripNETFX)]
+
+---
 
 Only the top-level types that you serialize need the attribute.
 All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.

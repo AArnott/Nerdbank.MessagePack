@@ -227,7 +227,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						allProperties.Span[properties.Span[i]]!.Value.MsgPackWriters!.Value.Serialize(value, ref syncWriter, context);
 					}
 
-					syncWriter.Flush();
+					writer.ReturnWriter(ref syncWriter);
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 
@@ -290,7 +290,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						}
 					}
 
-					syncWriter.Flush();
+					writer.ReturnWriter(ref syncWriter);
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 

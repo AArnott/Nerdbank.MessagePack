@@ -61,7 +61,7 @@ internal static partial class ArraysOfPrimitivesConverters
 			else
 			{
 				IEnumerable<TElement> enumerable = getEnumerable(value);
-				if (Enumerable.TryGetNonEnumeratedCount(enumerable, out int count))
+				if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
 				{
 					writer.WriteArrayHeader(count);
 					Span<byte> span = writer.GetSpan(count * MsgPackBufferLengthFactor);
@@ -145,9 +145,11 @@ internal static partial class ArraysOfPrimitivesConverters
 				case TElement[] array:
 					span = array;
 					return true;
+#if NET
 				case List<TElement> list:
 					span = CollectionsMarshal.AsSpan(list);
 					return true;
+#endif
 				case ReadOnlyMemory<TElement> rom:
 					span = rom.Span;
 					return true;
