@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NET
+
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -118,6 +120,8 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 	/// </summary>
 	/// <param name="array">The array.</param>
 	/// <returns>The span of all elements.</returns>
-	private static Span<TElement> AsSpan(Array array) =>
-		MemoryMarshal.CreateSpan(ref Unsafe.As<byte, TElement>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length);
+	private static Span<TElement> AsSpan(Array array)
+		=> MemoryMarshal.CreateSpan(ref Unsafe.As<byte, TElement>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length);
 }
+
+#endif

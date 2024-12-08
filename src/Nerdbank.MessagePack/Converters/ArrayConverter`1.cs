@@ -84,7 +84,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 					context.CancellationToken.ThrowIfCancellationRequested();
 				}
 
-				syncWriter.Flush();
+				writer.ReturnWriter(ref syncWriter);
 				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 			}
 			while (progress < value.Length);

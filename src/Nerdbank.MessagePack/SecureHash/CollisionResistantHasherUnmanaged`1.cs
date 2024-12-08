@@ -1,6 +1,10 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if !NET
+#pragma warning disable CS1574 // unresolvable cref
+#endif
+
 using System.Runtime.InteropServices;
 
 namespace Nerdbank.MessagePack.SecureHash;
@@ -24,8 +28,25 @@ internal class CollisionResistantHasherUnmanaged<T> : SecureEqualityComparer<T>
 {
 	/// <inheritdoc/>
 	public override bool Equals(T x, T y)
-		=> MemoryMarshal.Cast<T, byte>(new Span<T>(ref x)).SequenceEqual(MemoryMarshal.Cast<T, byte>(new Span<T>(ref y)));
+	{
+#if NET
+		Span<T> ySpan = new(ref y);
+		Span<T> xSpan = new(ref x);
+#else
+		Span<T> ySpan = stackalloc T[1] { y };
+		Span<T> xSpan = stackalloc T[1] { x };
+#endif
+		return MemoryMarshal.Cast<T, byte>(xSpan).SequenceEqual(MemoryMarshal.Cast<T, byte>(ySpan));
+	}
 
 	/// <inheritdoc/>
-	public override long GetSecureHashCode(T value) => SipHash.Default.Compute(MemoryMarshal.Cast<T, byte>(new Span<T>(ref value)));
+	public override long GetSecureHashCode(T value)
+	{
+#if NET
+		Span<T> span = new(ref value);
+#else
+		Span<T> span = stackalloc T[1] { value };
+#endif
+		return SipHash.Default.Compute(MemoryMarshal.Cast<T, byte>(span));
+	}
 }

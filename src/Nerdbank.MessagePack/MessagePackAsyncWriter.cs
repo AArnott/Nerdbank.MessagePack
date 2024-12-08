@@ -37,11 +37,33 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// </summary>
 	/// <returns>The writer.</returns>
 	/// <remarks>
-	/// The caller must take care to call <see cref="MessagePackWriter.Flush"/> before discarding the writer.
+	/// The caller must take care to call <see cref="ReturnWriter(ref MessagePackWriter)"/> before discarding the writer.
 	/// </remarks>
 	public MessagePackWriter CreateWriter()
 	{
+#if !NET
+		// ref fields are not supported on .NET Framework, so we have to prepare to copy the struct.
+		this.bufferWriter.Commit();
+#endif
+
 		return new(new BufferWriter(ref this.bufferWriter));
+	}
+
+	/// <summary>
+	/// Applies the bytes written with a writer previously obtained from <see cref="CreateWriter"/> back to this object.
+	/// </summary>
+	/// <param name="writer">The writer to return. It should not be used after this.</param>
+	public void ReturnWriter(ref MessagePackWriter writer)
+	{
+		writer.Flush();
+
+#if !NET
+		// ref fields are not supported on .NET Framework, so we have to copy the struct since it'll disappear.
+		this.bufferWriter = writer.Writer.BufferMemoryWriter;
+#endif
+
+		// Help prevent misuse of the writer after it's been returned.
+		writer = default;
 	}
 
 	/// <summary>
@@ -61,7 +83,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 
 		MessagePackWriter syncWriter = this.CreateWriter();
 		writer(ref syncWriter, state);
-		syncWriter.Flush();
+		this.ReturnWriter(ref syncWriter);
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteNil"/>
@@ -69,7 +91,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	{
 		MessagePackWriter writer = this.CreateWriter();
 		writer.WriteNil();
-		writer.Flush();
+		this.ReturnWriter(ref writer);
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteArrayHeader(int)"/>
@@ -99,7 +121,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	{
 		MessagePackWriter writer = this.CreateWriter();
 		writer.WriteRaw(bytes);
-		writer.Flush();
+		this.ReturnWriter(ref writer);
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteRaw(in ReadOnlySequence{byte})"/>
@@ -107,7 +129,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	{
 		MessagePackWriter writer = this.CreateWriter();
 		writer.WriteRaw(bytes);
-		writer.Flush();
+		this.ReturnWriter(ref writer);
 	}
 
 	/// <summary>

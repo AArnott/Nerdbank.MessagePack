@@ -21,7 +21,6 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	internal static readonly FrozenDictionary<Type, object> HashResistantPrimitiveEqualityComparers = new Dictionary<Type, object>()
 	{
 		{ typeof(char), new CollisionResistantHasherUnmanaged<char>() },
-		{ typeof(Rune), new CollisionResistantHasherUnmanaged<Rune>() },
 		{ typeof(byte), new CollisionResistantHasherUnmanaged<byte>() },
 		{ typeof(ushort), new CollisionResistantHasherUnmanaged<ushort>() },
 		{ typeof(uint), new CollisionResistantHasherUnmanaged<uint>() },
@@ -31,22 +30,25 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		{ typeof(int), new CollisionResistantHasherUnmanaged<int>() },
 		{ typeof(long), new CollisionResistantHasherUnmanaged<long>() },
 		{ typeof(BigInteger), new HashResistantPrimitives.BigIntegerEqualityComparer() },
-		{ typeof(Int128), new CollisionResistantHasherUnmanaged<Int128>() },
-		{ typeof(UInt128), new CollisionResistantHasherUnmanaged<UInt128>() },
 		{ typeof(string), new HashResistantPrimitives.StringEqualityComparer() },
 		{ typeof(bool), new HashResistantPrimitives.BooleanEqualityComparer() },
 		{ typeof(Version), new HashResistantPrimitives.VersionEqualityComparer() },
 		{ typeof(Uri), new HashResistantPrimitives.AlreadySecureEqualityComparer<Uri>() },
-		{ typeof(Half), new HashResistantPrimitives.HalfEqualityComparer() },
 		{ typeof(float), new HashResistantPrimitives.SingleEqualityComparer() },
 		{ typeof(double), new HashResistantPrimitives.DoubleEqualityComparer() },
 		{ typeof(decimal), new HashResistantPrimitives.DecimalEqualityComparer() },
-		{ typeof(TimeOnly), new CollisionResistantHasherUnmanaged<TimeOnly>() },
-		{ typeof(DateOnly), new CollisionResistantHasherUnmanaged<DateOnly>() },
 		{ typeof(DateTime), new HashResistantPrimitives.DateTimeEqualityComparer() },
 		{ typeof(DateTimeOffset), new HashResistantPrimitives.DateTimeOffsetEqualityComparer() },
 		{ typeof(TimeSpan), new CollisionResistantHasherUnmanaged<TimeSpan>() },
 		{ typeof(Guid), new CollisionResistantHasherUnmanaged<Guid>() },
+#if NET
+		{ typeof(Int128), new CollisionResistantHasherUnmanaged<Int128>() },
+		{ typeof(UInt128), new CollisionResistantHasherUnmanaged<UInt128>() },
+		{ typeof(Rune), new CollisionResistantHasherUnmanaged<Rune>() },
+		{ typeof(Half), new HashResistantPrimitives.HalfEqualityComparer() },
+		{ typeof(TimeOnly), new CollisionResistantHasherUnmanaged<TimeOnly>() },
+		{ typeof(DateOnly), new CollisionResistantHasherUnmanaged<DateOnly>() },
+#endif
 	}.ToFrozenDictionary();
 
 	/// <inheritdoc/>

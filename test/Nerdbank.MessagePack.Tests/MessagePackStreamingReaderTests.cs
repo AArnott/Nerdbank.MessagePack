@@ -79,35 +79,4 @@ public class MessagePackStreamingReaderTests
 
 		return seq;
 	}
-
-	// TODO: Remove/move this sample
-	[MessagePackConverter(typeof(SomeTypeConverter))]
-	record SomeType(string Message, int Number);
-
-	class SomeTypeConverter
-	{
-		internal async ValueTask<(SomeType, MessagePackStreamingReader.BufferRefresh)> Read(MessagePackStreamingReader.BufferRefresh readerInputs)
-		{
-			MessagePackStreamingReader reader = new(readerInputs);
-
-			while (reader.TryReadArrayHeader(out int count).NeedsMoreBytes())
-			{
-				reader = new(await reader.ReplenishBufferAsync());
-			}
-
-			string? str;
-			while (reader.TryRead(out str).NeedsMoreBytes())
-			{
-				reader = new(await reader.ReplenishBufferAsync());
-			}
-
-			int num;
-			while (reader.TryRead(out num).NeedsMoreBytes())
-			{
-				reader = new(await reader.ReplenishBufferAsync());
-			}
-
-			return (new SomeType(str, num), reader.GetExchangeInfo());
-		}
-	}
 }

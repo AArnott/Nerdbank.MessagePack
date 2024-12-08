@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Security.AccessControl;
 
 namespace Nerdbank.MessagePack.SecureHash;
 
@@ -27,7 +26,14 @@ internal class ByValueByteArrayEqualityComparer : IEqualityComparer<byte[]>
 	public int GetHashCode([DisallowNull] byte[] obj)
 	{
 		HashCode hashCode = default;
+#if NET
 		hashCode.AddBytes(obj);
+#else
+		for (int i = 0; i < obj.Length; i++)
+		{
+			hashCode.Add(obj[i]);
+		}
+#endif
 		return hashCode.ToHashCode();
 	}
 }

@@ -43,7 +43,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 
 		context.DepthStep();
 		IEnumerable<TElement> enumerable = getEnumerable(value);
-		if (Enumerable.TryGetNonEnumeratedCount(enumerable, out int count))
+		if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
 		{
 			writer.WriteArrayHeader(count);
 			foreach (TElement element in enumerable)

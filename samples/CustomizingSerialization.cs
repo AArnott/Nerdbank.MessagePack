@@ -3,101 +3,101 @@
 
 partial class IncludingExcludingMembers
 {
-	#region IncludingExcludingMembers
-	class MyType
-	{
-		[PropertyShape(Ignore = true)] // exclude this property from serialization
-		public string? MyName { get; set; }
+    #region IncludingExcludingMembers
+    class MyType
+    {
+        [PropertyShape(Ignore = true)] // exclude this property from serialization
+        public string? MyName { get; set; }
 
-		[PropertyShape] // include this non-public property in serialization
-		internal string? InternalMember { get; set; }
-	}
-	#endregion
+        [PropertyShape] // include this non-public property in serialization
+        internal string? InternalMember { get; set; }
+    }
+    #endregion
 }
 
 partial class ChangingPropertyNames
 {
-	#region ChangingPropertyNames
-	class MyType
-	{
-		[PropertyShape(Name = "name")] // serialize this property as "name"
-		public string? MyName { get; set; }
-	}
-	#endregion
+    #region ChangingPropertyNames
+    class MyType
+    {
+        [PropertyShape(Name = "name")] // serialize this property as "name"
+        public string? MyName { get; set; }
+    }
+    #endregion
 }
 
 partial class ApplyNamePolicy
 {
-	class MyType
-	{
-		void Example()
-		{
-			#region ApplyNamePolicy
-			var serializer = new MessagePackSerializer
-			{
-				PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase,
-			};
-			#endregion
-		}
-	}
+    class MyType
+    {
+        void Example()
+        {
+            #region ApplyNamePolicy
+            var serializer = new MessagePackSerializer
+            {
+                PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase,
+            };
+            #endregion
+        }
+    }
 }
 
 namespace DeserializingConstructors
 {
-	#region DeserializingConstructors
-	[GenerateShape]
-	partial class ImmutablePerson
-	{
-		public ImmutablePerson(string? name)
-		{
-			this.Name = name;
-		}
+    #region DeserializingConstructors
+    [GenerateShape]
+    partial class ImmutablePerson
+    {
+        public ImmutablePerson(string? name)
+        {
+            this.Name = name;
+        }
 
-		public string? Name { get; }
-	}
-	#endregion
+        public string? Name { get; }
+    }
+    #endregion
 }
 
 namespace DeserializingConstructorsPropertyRenamed
 {
-	#region DeserializingConstructorsPropertyRenamed
-	[GenerateShape]
-	partial class ImmutablePerson
-	{
-		public ImmutablePerson(string? name)
-		{
-			this.Name = name;
-		}
+    #region DeserializingConstructorsPropertyRenamed
+    [GenerateShape]
+    partial class ImmutablePerson
+    {
+        public ImmutablePerson(string? name)
+        {
+            this.Name = name;
+        }
 
-		[PropertyShape(Name = "person_name")]
-		public string? Name { get; }
-	}
-	#endregion
+        [PropertyShape(Name = "person_name")]
+        public string? Name { get; }
+    }
+    #endregion
 }
 
 namespace SerializeWithKey
 {
-	#region SerializeWithKey
-	[GenerateShape]
-	partial class MyType
-	{
-		[Key(0)]
-		public string? OneProperty { get; set; }
+    #region SerializeWithKey
+    [GenerateShape]
+    partial class MyType
+    {
+        [Key(0)]
+        public string? OneProperty { get; set; }
 
-		[Key(1)]
-		public string? AnotherProperty { get; set; }
-	}
-	#endregion
+        [Key(1)]
+        public string? AnotherProperty { get; set; }
+    }
+    #endregion
 
-	#region SerializeWithKeyAndGaps
-	[GenerateShape]
-	partial class MyTypeWithGaps
-	{
-		[Key(0)]
-		public string? OneProperty { get; set; }
+    #region SerializeWithKeyAndGaps
+    [GenerateShape]
+    partial class MyTypeWithGaps
+    {
+        [Key(0)]
+        public string? OneProperty { get; set; }
 
-		[Key(5)]
-		public string? AnotherProperty { get; set; }
-	}
-	#endregion
+        [Key(5)]
+        public string? AnotherProperty { get; set; }
+    }
+    #endregion
 }

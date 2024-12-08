@@ -3,25 +3,47 @@
 
 partial class SimpleUsage
 {
-	#region SimpleRecord
-	[GenerateShape]
-	public partial record ARecord(string AString, bool ABoolean);
-	#endregion
+    #region SimpleRecord
+    [GenerateShape]
+    public partial record ARecord(string AString, bool ABoolean);
+    #endregion
 
-	void Roundtrip()
-	{
-		#region SimpleRecordRoundtrip
-		// Construct a value.
-		var value = new ARecord("hello", true);
+#if NET
+    #region SimpleRecordRoundtripNET
+    void Roundtrip()
+    {
+        // Construct a value.
+        var value = new ARecord("hello", true);
 
-		// Create a serializer instance.
-		MessagePackSerializer serializer = new();
+        // Create a serializer instance.
+        MessagePackSerializer serializer = new();
 
-		// Serialize the value to the buffer.
-		byte[] msgpack = serializer.Serialize(value);
+        // Serialize the value to the buffer.
+        byte[] msgpack = serializer.Serialize(value);
 
-		// Deserialize it back.
-		ARecord? deserialized = serializer.Deserialize<ARecord>(msgpack);
-		#endregion
-	}
+        // Deserialize it back.
+        ARecord? deserialized = serializer.Deserialize<ARecord>(msgpack);
+    }
+    #endregion
+#else
+    #region SimpleRecordRoundtripNETFX
+    void Roundtrip()
+    {
+        // Construct a value.
+        var value = new ARecord("hello", true);
+
+        // Create a serializer instance.
+        MessagePackSerializer serializer = new();
+
+        // Serialize the value to the buffer.
+        byte[] msgpack = serializer.Serialize(value, Witness.ShapeProvider);
+
+        // Deserialize it back.
+        ARecord? deserialized = serializer.Deserialize<ARecord>(msgpack, Witness.ShapeProvider);
+    }
+
+    [GenerateShape<ARecord>]
+    internal partial class Witness;
+    #endregion
+#endif
 }

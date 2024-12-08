@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
@@ -63,6 +64,12 @@ public ref struct MessagePackWriter
 	/// Gets or sets a value indicating whether to write in <see href="https://github.com/msgpack/msgpack/blob/master/spec-old.md">old spec</see> compatibility mode.
 	/// </summary>
 	public bool OldSpec { get; set; }
+
+	/// <summary>
+	/// Gets a reference to the <see cref="BufferWriter"/> behind this writer.
+	/// </summary>
+	[UnscopedRef]
+	internal ref BufferWriter Writer => ref this.writer;
 
 	/// <summary>
 	/// Get the number of bytes required to encode a value in msgpack.

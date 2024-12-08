@@ -48,7 +48,7 @@
       ],
       "description": "A human person."
     },
-    "System.Collections.Generic.List\u00601[[SchemaTests\u002BPerson, Nerdbank.MessagePack.Tests, Version=0.2.0.0, Culture=neutral, PublicKeyToken=d4b172c8050bbbc3]]": {
+    "System.Collections.Generic.List\u00601[[SchemaTests\u002BPerson, Nerdbank.MessagePack.Tests, Version=x.x.x.x, Culture=neutral, PublicKeyToken=d4b172c8050bbbc3]]": {
       "type": "array",
       "items": {
         "$ref": "#/definitions/SchemaTests\u002BPerson"
@@ -79,7 +79,7 @@
           ]
         },
         "progeny": {
-          "$ref": "#/definitions/System.Collections.Generic.List\u00601[[SchemaTests\u002BPerson, Nerdbank.MessagePack.Tests, Version=0.2.0.0, Culture=neutral, PublicKeyToken=d4b172c8050bbbc3]]"
+          "$ref": "#/definitions/System.Collections.Generic.List\u00601[[SchemaTests\u002BPerson, Nerdbank.MessagePack.Tests, Version=x.x.x.x, Culture=neutral, PublicKeyToken=d4b172c8050bbbc3]]"
         }
       }
     }

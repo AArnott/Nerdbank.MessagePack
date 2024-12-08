@@ -5,12 +5,16 @@ using PolyType.Tests;
 
 public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
-	[Theory]
+	[SkippableTheory(typeof(PlatformNotSupportedException))]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+#if NET
 	public void Roundtrip_Value<T, TProvider>(TestCase<T, TProvider> testCase)
 		where TProvider : IShapeable<T>
+#else
+	public void Roundtrip_Value<T, TProvider>(TestCase<T> testCase)
+#endif
 	{
-		ITypeShape<T> shape = TProvider.GetShape();
+		ITypeShape<T> shape = testCase.DefaultShape;
 		byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape);
 
 		if (IsDeserializable(testCase))

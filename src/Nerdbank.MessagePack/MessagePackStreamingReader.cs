@@ -838,7 +838,20 @@ public ref partial struct MessagePackStreamingReader
 			int bytesRead = Math.Min(remainingByteLength, this.reader.UnreadSpan.Length);
 			remainingByteLength -= bytesRead;
 			bool flush = remainingByteLength == 0;
+#if NET
 			initializedChars += decoder.GetChars(this.reader.UnreadSpan.Slice(0, bytesRead), charArray.AsSpan(initializedChars), flush);
+#else
+			unsafe
+			{
+				fixed (byte* pUnreadSpan = this.reader.UnreadSpan)
+				{
+					fixed (char* pCharArray = &charArray[initializedChars])
+					{
+						initializedChars += decoder.GetChars(pUnreadSpan, bytesRead, pCharArray, charArray.Length - initializedChars, flush);
+					}
+				}
+			}
+#endif
 			this.reader.Advance(bytesRead);
 		}
 

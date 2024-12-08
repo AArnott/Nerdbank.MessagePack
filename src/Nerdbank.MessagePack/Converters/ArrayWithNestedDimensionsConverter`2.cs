@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NET
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -78,8 +80,8 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	/// </summary>
 	/// <param name="array">The array.</param>
 	/// <returns>The span of all elements.</returns>
-	private static Span<TElement> AsSpan(Array array) =>
-		MemoryMarshal.CreateSpan(ref Unsafe.As<byte, TElement>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length);
+	private static Span<TElement> AsSpan(Array array)
+		=> MemoryMarshal.CreateSpan(ref Unsafe.As<byte, TElement>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length);
 
 	/// <summary>
 	/// Writes an array containing one dimension of an array, and its children, recursively.
@@ -155,3 +157,5 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 		}
 	}
 }
+
+#endif

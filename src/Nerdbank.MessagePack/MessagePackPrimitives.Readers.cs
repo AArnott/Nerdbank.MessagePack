@@ -141,7 +141,7 @@ partial class MessagePackPrimitives
 	public static DecodeResult TryReadArrayHeader(ReadOnlySequence<byte> source, out uint count, out SequencePosition readTo)
 	{
 		// Fast and preferred path is that we have enough data all in one contiguous buffer.
-		DecodeResult result = TryReadArrayHeader(source.FirstSpan, out count, out int tokenSize);
+		DecodeResult result = TryReadArrayHeader(source.First.Span, out count, out int tokenSize);
 		if (result == DecodeResult.Success)
 		{
 			readTo = source.GetPosition(tokenSize);
@@ -245,7 +245,7 @@ partial class MessagePackPrimitives
 	public static DecodeResult TryReadMapHeader(ReadOnlySequence<byte> source, out uint count, out SequencePosition readTo)
 	{
 		// Fast and preferred path is that we have enough data all in one contiguous buffer.
-		DecodeResult result = TryReadMapHeader(source.FirstSpan, out count, out int tokenSize);
+		DecodeResult result = TryReadMapHeader(source.First.Span, out count, out int tokenSize);
 		if (result == DecodeResult.Success)
 		{
 			readTo = source.GetPosition(tokenSize);

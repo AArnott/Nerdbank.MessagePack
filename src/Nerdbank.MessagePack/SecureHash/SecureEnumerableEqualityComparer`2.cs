@@ -28,8 +28,8 @@ internal class SecureEnumerableEqualityComparer<TEnumerable, TElement>(
 		IEnumerable<TElement> enumerableX = getEnumerable(x);
 		IEnumerable<TElement> enumerableY = getEnumerable(y);
 
-		if (Enumerable.TryGetNonEnumeratedCount(enumerableX, out int countX) &&
-			Enumerable.TryGetNonEnumeratedCount(enumerableY, out int countY) &&
+		if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerableX, out int countX) &&
+			PolyfillExtensions.TryGetNonEnumeratedCount(enumerableY, out int countY) &&
 			countX != countY)
 		{
 			return false;
@@ -54,12 +54,17 @@ internal class SecureEnumerableEqualityComparer<TEnumerable, TElement>(
 		IEnumerable<TElement> enumerable = getEnumerable(obj);
 
 		// Ideally we could switch this to a SIP hash implementation that can process additional data in chunks with a constant amount of memory.
-		List<long> hashes = Enumerable.TryGetNonEnumeratedCount(enumerable, out int count) ? new(count) : new();
+		List<long> hashes = PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count) ? new(count) : new();
 		foreach (TElement element in enumerable)
 		{
 			hashes.Add(element is null ? 0 : equalityComparer.GetSecureHashCode(element));
 		}
 
-		return SipHash.Default.Compute(MemoryMarshal.Cast<long, byte>(CollectionsMarshal.AsSpan(hashes)));
+#if NET
+		Span<long> span = CollectionsMarshal.AsSpan(hashes);
+#else
+		Span<long> span = hashes.ToArray();
+#endif
+		return SipHash.Default.Compute(MemoryMarshal.Cast<long, byte>(span));
 	}
 }

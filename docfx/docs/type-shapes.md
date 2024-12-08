@@ -16,7 +16,15 @@ Doing so leads to default serialization rules being applied to the type (e.g. on
 For this example, suppose you consume a `FamilyTree` type from a library that you don't control and did not annotate their type for serialization.
 In your own project, you can define this witness type and use it to serialize an external type.
 
-[!code-csharp[](../../samples/TypeShapePatterns.cs#Witness)]
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/TypeShapePatterns.cs#WitnessNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/TypeShapePatterns.cs#WitnessNETFX)]
+
+---
 
 Note the only special bit is providing the `Witness` class as a type argument to the `Serialize` method.
 The _name_ of the witness class is completely inconsequential.

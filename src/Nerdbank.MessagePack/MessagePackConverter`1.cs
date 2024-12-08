@@ -21,7 +21,7 @@ namespace Nerdbank.MessagePack;
 /// <list type="bullet">
 /// <item>Read or write exactly one msgpack structure. Use an array or map header for multiple values.</item>
 /// <item>Call <see cref="SerializationContext.DepthStep"/> before any significant work.</item>
-/// <item>Delegate serialization of sub-values to a converter obtained using <see cref="SerializationContext.GetConverter{T}()"/> rather than making a top-level call back to <see cref="MessagePackSerializer"/>.</item>
+/// <item>Delegate serialization of sub-values to a converter obtained using <see cref="SerializationContext.GetConverter{T}(ITypeShapeProvider)"/> rather than making a top-level call back to <see cref="MessagePackSerializer"/>.</item>
 /// </list>
 /// </para>
 /// <para>
@@ -87,7 +87,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
 		this.Write(ref syncWriter, value, context);
-		syncWriter.Flush();
+		writer.ReturnWriter(ref syncWriter);
 
 		// On our way out, pause to flush the pipe if a lot of data has accumulated in the buffer.
 		return writer.FlushIfAppropriateAsync(context);

@@ -112,6 +112,9 @@ public struct RawMessagePack : IEquatable<RawMessagePack>
 	}
 
 	private static bool SequenceEqual<T>(in ReadOnlySequence<T> a, in ReadOnlySequence<T> b)
+#if !NET
+		where T : IEquatable<T>
+#endif
 	{
 		if (a.Length != b.Length)
 		{
@@ -120,7 +123,11 @@ public struct RawMessagePack : IEquatable<RawMessagePack>
 
 		if (a.IsSingleSegment && b.IsSingleSegment)
 		{
+#if NET
 			return a.FirstSpan.SequenceEqual(b.FirstSpan);
+#else
+			return a.First.Span.SequenceEqual(b.First.Span);
+#endif
 		}
 
 		ReadOnlySequence<T>.Enumerator aEnumerator = a.GetEnumerator();

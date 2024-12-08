@@ -68,7 +68,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 	{
 		internal Test()
 		{
-			this.ReferenceAssemblies = ReferencesHelper.DefaultTargetFrameworkReferences;
+			this.ReferenceAssemblies = ReferencesHelper.References;
 			this.CompilerDiagnostics = CompilerDiagnostics.Warnings;
 			this.TestState.AdditionalReferences.AddRange(ReferencesHelper.GetReferences());
 			this.FixedState.AdditionalReferences.AddRange(ReferencesHelper.GetReferences());
@@ -85,7 +85,11 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 
 		protected override ParseOptions CreateParseOptions()
 		{
-			return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp12);
+			return ((CSharpParseOptions)base.CreateParseOptions())
+#if NET
+				.WithPreprocessorSymbols("NET")
+#endif
+				.WithLanguageVersion(LanguageVersion.CSharp12);
 		}
 
 		protected override CompilationOptions CreateCompilationOptions()
@@ -96,6 +100,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 				.WithSpecificDiagnosticOptions(compilationOptions.SpecificDiagnosticOptions
 					.SetItem("CS1591", ReportDiagnostic.Suppress) // documentation required
 					.SetItem("CS1701", ReportDiagnostic.Suppress) // binding redirects
+					.SetItem("CS1702", ReportDiagnostic.Suppress) // binding redirects
 					.SetItem("CS0169", ReportDiagnostic.Suppress) // unused field
 					.SetItem("CS0414", ReportDiagnostic.Suppress)); // field assigned but never used
 		}

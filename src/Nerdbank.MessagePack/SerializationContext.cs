@@ -51,6 +51,11 @@ public record struct SerializationContext
 	public CancellationToken CancellationToken { get; init; }
 
 	/// <summary>
+	/// Gets the type shape provider that applies to the serialization operation.
+	/// </summary>
+	public ITypeShapeProvider? TypeShapeProvider { get; internal init; }
+
+	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
 	/// </summary>
 	internal MessagePackSerializer? Owner { get; private init; }
@@ -77,15 +82,8 @@ public record struct SerializationContext
 		}
 	}
 
-	/// <summary>
-	/// Gets a converter for a specific type.
-	/// </summary>
-	/// <typeparam name="T">The type to be converted.</typeparam>
-	/// <returns>The converter.</returns>
-	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
-	/// <remarks>
-	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
-	/// </remarks>
+#if NET
+	/// <inheritdoc cref="GetConverter{T, TProvider}()"/>
 	public MessagePackConverter<T> GetConverter<T>()
 		where T : IShapeable<T>
 	{
@@ -111,19 +109,43 @@ public record struct SerializationContext
 		MessagePackConverter<T> result = this.Owner.GetOrAddConverter(TProvider.GetShape());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
+#endif
+
+	/// <summary>
+	/// Gets a converter for a specific type.
+	/// </summary>
+	/// <typeparam name="T">The type to be converted.</typeparam>
+	/// <param name="provider">
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/>
+	/// It can also come from <see cref="TypeShapeProvider"/>.
+	/// A null value will be filled in with <see cref="TypeShapeProvider"/>.
+	/// </param>
+	/// <returns>The converter.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
+	/// <remarks>
+	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
+	/// </remarks>
+	public MessagePackConverter<T> GetConverter<T>(ITypeShapeProvider? provider)
+	{
+		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
+		MessagePackConverter<T> result = this.Owner.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+	}
 
 	/// <summary>
 	/// Starts a new serialization operation.
 	/// </summary>
 	/// <param name="owner">The owning serializer.</param>
+	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token to associate with this serialization operation.</param>
 	/// <returns>The new context for the operation.</returns>
-	internal SerializationContext Start(MessagePackSerializer owner, CancellationToken cancellationToken)
+	internal SerializationContext Start(MessagePackSerializer owner, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
 		return this with
 		{
 			Owner = owner,
 			ReferenceEqualityTracker = owner.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
+			TypeShapeProvider = provider,
 			CancellationToken = cancellationToken,
 		};
 	}

@@ -1,6 +1,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NET
+
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
 using System.Diagnostics.CodeAnalysis;
@@ -126,3 +128,6 @@ public partial record MessagePackSerializer
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where TProvider : IShapeable<T> => this.SerializeAsync(stream, value, TProvider.GetShape(), cancellationToken);
 }
+
+#endif
+

@@ -96,11 +96,19 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	internal partial class Witness;
 
 	[GenerateShape]
+#if NET
 	[KnownSubType<DerivedA>(1)]
 	[KnownSubType<DerivedAA>(2)]
 	[KnownSubType<DerivedB>(3)]
 	[KnownSubType<EnumerableDerived>(4)]
 	[KnownSubType<DerivedGeneric<int>, Witness>(5)]
+#else
+	[KnownSubType(1, typeof(DerivedA))]
+	[KnownSubType(2, typeof(DerivedAA))]
+	[KnownSubType(3, typeof(DerivedB))]
+	[KnownSubType(4, typeof(EnumerableDerived))]
+	[KnownSubType(5, typeof(DerivedGeneric<int>))]
+#endif
 	public partial record BaseClass
 	{
 		public int BaseClassProperty { get; set; }
