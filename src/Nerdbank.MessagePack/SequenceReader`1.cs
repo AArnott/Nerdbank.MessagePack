@@ -107,17 +107,17 @@ internal ref struct SequenceReader<T>
 	/// <summary>
 	/// Gets the underlying <see cref="ReadOnlySequence{T}"/> for the reader.
 	/// </summary>
-	public ReadOnlySequence<T> Sequence
+	public readonly ReadOnlySequence<T> Sequence
 	{
 		get
 		{
 			if (this.sequence.IsEmpty && !this.memory.IsEmpty)
 			{
 				// We're in memory mode (instead of sequence mode).
-				// Lazily fill in the sequence data.
-				this.sequence = new ReadOnlySequence<T>(this.memory);
-				this.currentPosition = this.sequence.Start;
-				this.nextPosition = this.sequence.End;
+				// Cast-away readonly to initialize lazy field
+				Unsafe.AsRef(in this.sequence) = new ReadOnlySequence<T>(this.memory);
+				Unsafe.AsRef(in this.currentPosition) = this.sequence.Start;
+				Unsafe.AsRef(in this.nextPosition) = this.sequence.End;
 			}
 
 			return this.sequence;
@@ -125,9 +125,17 @@ internal ref struct SequenceReader<T>
 	}
 
 	/// <summary>
+	/// Gets the unread portion of the <see cref="Sequence"/>.
+	/// </summary>
+	/// <value>
+	/// The unread portion of the <see cref="Sequence"/>.
+	/// </value>
+	public readonly ReadOnlySequence<T> UnreadSequence => this.Sequence.Slice(this.Position);
+
+	/// <summary>
 	/// Gets the current position in the <see cref="Sequence"/>.
 	/// </summary>
-	public SequencePosition Position
+	public readonly SequencePosition Position
 		=> this.Sequence.GetPosition(this.CurrentSpanIndex, this.currentPosition);
 
 	/// <summary>
@@ -157,12 +165,12 @@ internal ref struct SequenceReader<T>
 	/// <summary>
 	/// Gets remaining <typeparamref name="T"/>'s in the reader's <see cref="Sequence"/>.
 	/// </summary>
-	public long Remaining => this.Length - this.Consumed;
+	public readonly long Remaining => this.Length - this.Consumed;
 
 	/// <summary>
 	/// Gets count of <typeparamref name="T"/> in the reader's <see cref="Sequence"/>.
 	/// </summary>
-	public long Length
+	public readonly long Length
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
@@ -170,7 +178,8 @@ internal ref struct SequenceReader<T>
 			if (this.length < 0)
 			{
 				// Cache the length
-				this.length = this.Sequence.Length;
+				// Cast-away readonly to initialize lazy field
+				Unsafe.AsRef(in this.length) = this.Sequence.Length;
 			}
 
 			return this.length;
@@ -183,7 +192,7 @@ internal ref struct SequenceReader<T>
 	/// <param name="value">The next value or default if at the end.</param>
 	/// <returns>False if at the end of the reader.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryPeek(out T value)
+	public readonly bool TryPeek(out T value)
 	{
 		if (this.moreData)
 		{

@@ -139,7 +139,13 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			int count = await reader.ReadArrayHeaderAsync().ConfigureAwait(false);
+			MessagePackStreamingReader streamingReader = reader.CreateReader();
+			int count;
+			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			}
+
 			for (int i = 0; i < count; i++)
 			{
 				addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));
@@ -147,15 +153,15 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		}
 		else
 		{
-			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
-			MessagePackReader syncReader = new(map);
+			await reader.BufferNextStructureAsync(context);
+			MessagePackReader syncReader = reader.CreateReader2();
 			int count = syncReader.ReadArrayHeader();
 			for (int i = 0; i < count; i++)
 			{
 				addElement(ref collection, this.ReadElement(ref syncReader, context));
 			}
 
-			reader.AdvanceTo(map.End);
+			reader.ReturnReader(ref syncReader);
 		}
 	}
 }

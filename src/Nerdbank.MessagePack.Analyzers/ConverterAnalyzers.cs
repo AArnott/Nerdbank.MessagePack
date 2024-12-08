@@ -16,6 +16,9 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 	public const string OverrideGetJsonSchemaDiagnosticId = "NBMsgPack032";
 
 	//// NBMsgPack033 | Usage | Error | Async converters should return the MessagePackWriter
+	//// NBMsgPack034 | Usage | Error | Async converters should not reuse MessagePackWriter after returning it
+	//// NBMsgPack035 | Usage | Error | Async converters should return readers before any await(control flow analyzer)
+	//// NBMsgPack036 | Usage | Error | Async converters should not reuse readers after returning them (control flow analyzer)/
 
 	public static readonly DiagnosticDescriptor CallbackToTopLevelSerializerDescriptor = new(
 		CallbackToTopLevelSerializerDiagnosticId,
