@@ -42,7 +42,8 @@ foreach (var intType in allTypes) {
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out <#=intType.Name#> value)
 	{

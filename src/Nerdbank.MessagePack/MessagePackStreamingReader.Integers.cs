@@ -21,7 +21,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out Byte value)
 	{
@@ -68,7 +69,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out UInt16 value)
 	{
@@ -115,7 +117,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out UInt32 value)
 	{
@@ -162,7 +165,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out UInt64 value)
 	{
@@ -209,7 +213,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out SByte value)
 	{
@@ -256,7 +261,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out Int16 value)
 	{
@@ -303,7 +309,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out Int32 value)
 	{
@@ -350,7 +357,8 @@ public ref partial struct MessagePackStreamingReader
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
-	/// <returns>The value.</returns>
+	/// <param name="value">Receives the decoded value.</param>
+	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public DecodeResult TryRead(out Int64 value)
 	{

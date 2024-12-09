@@ -45,6 +45,7 @@ const Nerdbank.MessagePack.MessagePackCode.UInt64 = 207 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt8 = 204 -> byte
 const Nerdbank.MessagePack.ReservedMessagePackExtensionTypeCode.DateTime = -1 -> sbyte
 Nerdbank.MessagePack.ByValueEqualityComparer
+Nerdbank.MessagePack.DecodeResultExtensions
 Nerdbank.MessagePack.Extension
 Nerdbank.MessagePack.Extension.Data.get -> System.Buffers.ReadOnlySequence<byte>
 Nerdbank.MessagePack.Extension.Data.set -> void
@@ -262,12 +263,20 @@ Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextCode(out byte code) -
 Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextMessagePackType(out Nerdbank.MessagePack.MessagePackType type) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(Nerdbank.MessagePack.ExtensionHeader extensionHeader, out System.DateTime value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out bool value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out byte value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out double value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out float value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out int value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out long value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out Nerdbank.MessagePack.Extension extension) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out Nerdbank.MessagePack.ExtensionHeader extensionHeader) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out sbyte value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out short value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out string? value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out System.DateTime value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out uint value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out ulong value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out ushort value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryReadArrayHeader(out int count) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryReadBinary(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryReadMapHeader(out int count) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
@@ -370,6 +379,7 @@ static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T, TProvide
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T>() -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.DecodeResultExtensions.NeedsMoreBytes(this Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult result) -> bool
 static Nerdbank.MessagePack.MessagePackCode.ToFormatName(byte code) -> string!
 static Nerdbank.MessagePack.MessagePackCode.ToMessagePackType(byte code) -> Nerdbank.MessagePack.MessagePackType
 static Nerdbank.MessagePack.MessagePackConverter<T>.ApplyJsonSchemaNullability(System.Text.Json.Nodes.JsonObject! schema) -> System.Text.Json.Nodes.JsonObject!
