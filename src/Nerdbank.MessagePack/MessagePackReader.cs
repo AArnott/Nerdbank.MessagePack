@@ -21,7 +21,9 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// The reader over the sequence.
 	/// </summary>
+#pragma warning disable NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 	private MessagePackStreamingReader streamingReader;
+#pragma warning restore NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 	/// <inheritdoc cref="MessagePackReader(in ReadOnlySequence{byte})"/>
 	public MessagePackReader(ReadOnlyMemory<byte> msgpack)
@@ -244,7 +246,6 @@ public ref partial struct MessagePackReader
 			default:
 				throw ThrowUnreachable();
 		}
-
 	}
 
 	/// <summary>

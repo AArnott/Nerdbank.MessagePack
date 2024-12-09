@@ -280,7 +280,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
-				MessagePackStreamingReader streamingReader = reader.CreateReader();
+				MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 				bool isNil;
 				while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
 				{

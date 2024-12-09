@@ -139,7 +139,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateReader();
+			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 			int count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
@@ -154,7 +154,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		else
 		{
 			await reader.BufferNextStructureAsync(context);
-			MessagePackReader syncReader = reader.CreateReader2();
+			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadArrayHeader();
 			for (int i = 0; i < count; i++)
 			{

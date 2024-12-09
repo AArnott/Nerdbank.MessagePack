@@ -140,7 +140,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateReader();
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
@@ -178,7 +178,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateReader();
+			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 			int count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
 			{
@@ -194,7 +194,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		else
 		{
 			await reader.BufferNextStructureAsync(context);
-			MessagePackReader syncReader = reader.CreateReader2();
+			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{

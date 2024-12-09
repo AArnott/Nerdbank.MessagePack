@@ -8,6 +8,23 @@ using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
 namespace Nerdbank.MessagePack;
 
+/// <summary>
+/// A msgpack decoder that returns error codes rather than throws exceptions
+/// when the buffer is incomplete or the token type does not match expectations.
+/// </summary>
+/// <remarks>
+/// All decoding methods on this struct return <see cref="DecodeResult"/>.
+/// Callers <em>must</em> take care to observe this value and take appropriate action.
+/// A common calling pattern is to call the decoding method within a <see langword="while"/> loop's expression
+/// and use the <see cref="DecodeResultExtensions.NeedsMoreBytes(DecodeResult)"/>
+/// extension method on the result.
+/// The content of the loop should be a call to <see cref="ReplenishBufferAsync"/> and to reconstruct
+/// the reader using <see cref="MessagePackStreamingReader(in BufferRefresh)"/>.
+/// </remarks>
+/// <example>
+/// <code source="../../samples/CustomConverters.cs" region="GetMoreBytesPattern" lang="C#" />
+/// </example>
+[Experimental("NBMsgPackAsync")]
 public ref partial struct MessagePackStreamingReader
 {
 	private readonly GetMoreBytesAsync? getMoreBytesAsync;
@@ -19,11 +36,26 @@ public ref partial struct MessagePackStreamingReader
 	/// </summary>
 	private bool eof;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MessagePackStreamingReader"/> struct
+	/// that decodes from a complete buffer.
+	/// </summary>
+	/// <param name="sequence">The buffer to decode msgpack from. This buffer should be complete.</param>
 	public MessagePackStreamingReader(scoped in ReadOnlySequence<byte> sequence)
 		: this(sequence, null, null)
 	{
 	}
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MessagePackStreamingReader"/> struct
+	/// that decodes from a buffer that may be initially incomplete.
+	/// </summary>
+	/// <param name="sequence">The buffer we have so far.</param>
+	/// <param name="additionalBytesSource">A means to obtain more msgpack bytes when necessary.</param>
+	/// <param name="getMoreBytesState">
+	/// A value to provide to the <paramref name="getMoreBytesState"/> delegate.
+	/// This facilitates reuse of a particular delegate across deserialization operations.
+	/// </param>
 	public MessagePackStreamingReader(scoped in ReadOnlySequence<byte> sequence, GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState)
 	{
 		this.reader = new SequenceReader<byte>(sequence);
@@ -31,6 +63,11 @@ public ref partial struct MessagePackStreamingReader
 		this.getMoreBytesState = getMoreBytesState;
 	}
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MessagePackStreamingReader"/> struct
+	/// that resumes after an <see langword="await" /> operation.
+	/// </summary>
+	/// <param name="refresh">The data to reinitialize this ref struct.</param>
 	public MessagePackStreamingReader(scoped in BufferRefresh refresh)
 		: this(refresh.Buffer, refresh.GetMoreBytes, refresh.GetMoreBytesState)
 	{
@@ -46,24 +83,51 @@ public ref partial struct MessagePackStreamingReader
 	/// The position after the last consumed byte (i.e. the last byte from the original buffer that is not expected to be included to the new buffer).
 	/// Any bytes at or following this position that were in the original buffer must be included to the buffer returned from this method.
 	/// </param>
+	/// <param name="examined">
+	/// The position of the last examined byte.
+	/// This should be passed to <see cref="PipeReader.AdvanceTo(SequencePosition, SequencePosition)"/>
+	/// when applicable to ensure that the request to get more bytes is filled with actual more bytes rather than the existing buffer.
+	/// </param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The available buffer, which must contain more bytes than remained after <paramref name="consumed"/> if there are any more bytes to be had.</returns>
 	public delegate ValueTask<ReadResult> GetMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken);
 
+	/// <summary>
+	/// Gets a token that may cancel deserialization.
+	/// </summary>
 	public CancellationToken CancellationToken { get; init; }
 
+	/// <summary>
+	/// Gets the reader's position within the current buffer.
+	/// </summary>
 	public SequencePosition Position => this.SequenceReader.Position;
 
+	/// <summary>
+	/// Gets the underlying <see cref="SequenceReader{T}"/>.
+	/// </summary>
 	[UnscopedRef]
 	internal ref SequenceReader<byte> SequenceReader => ref this.reader;
 
+	/// <summary>
+	/// Gets the error code to return when the buffer has insufficient bytes to finish a decode request.
+	/// </summary>
 	private DecodeResult InsufficientBytes => this.eof ? DecodeResult.EmptyBuffer : DecodeResult.InsufficientBuffer;
 
+	/// <summary>
+	/// Peeks at the next msgpack byte without advancing the reader.
+	/// </summary>
+	/// <param name="code">When successful, receives the next msgpack byte.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryPeekNextCode(out byte code)
 	{
 		return this.reader.TryPeek(out code) ? DecodeResult.Success : this.InsufficientBytes;
 	}
 
+	/// <summary>
+	/// Peeks at the next msgpack token type without advancing the reader.
+	/// </summary>
+	/// <param name="type">When successful, receives the next msgpack token type.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryPeekNextMessagePackType(out MessagePackType type)
 	{
 		if (this.reader.TryPeek(out byte code))
@@ -76,6 +140,14 @@ public ref partial struct MessagePackStreamingReader
 		return this.InsufficientBytes;
 	}
 
+	/// <summary>
+	/// Reads the next token if it is <see cref="MessagePackType.Nil"/>.
+	/// </summary>
+	/// <returns>
+	/// <see cref="DecodeResult.Success"/> if the token was nil and was read,
+	/// <see cref="DecodeResult.TokenMismatch"/> if the token was not nil,
+	/// or other error codes if the buffer is incomplete.
+	/// </returns>
 	public DecodeResult TryReadNil()
 	{
 		if (this.reader.TryPeek(out byte next))
@@ -94,6 +166,14 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads the next token if it is <see cref="MessagePackType.Nil"/>.
+	/// </summary>
+	/// <param name="isNil">A value indicating whether the next token was nil.</param>
+	/// <returns>
+	/// <see cref="DecodeResult.Success"/> if the next token can be decoded whether or not it was nil,
+	/// or other error codes if the buffer is incomplete.
+	/// </returns>
 	public DecodeResult TryReadNil(out bool isNil)
 	{
 		DecodeResult result = this.TryReadNil();
@@ -101,6 +181,11 @@ public ref partial struct MessagePackStreamingReader
 		return result == DecodeResult.TokenMismatch ? DecodeResult.Success : result;
 	}
 
+	/// <summary>
+	/// Reads a <see cref="bool"/> value from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The decoded value if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out bool value)
 	{
 		if (this.reader.TryPeek(out byte next))
@@ -128,6 +213,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads a <see cref="float"/> value from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The decoded value if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out float value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
@@ -167,6 +257,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads a <see cref="double"/> value from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The decoded value if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out double value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
@@ -206,6 +301,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads a <see cref="string"/> or <see langword="null" /> value from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The decoded value if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out string? value)
 	{
 		DecodeResult result = this.TryReadNil();
@@ -236,6 +336,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads a <see cref="DateTime"/> value from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The decoded value if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out DateTime value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
@@ -275,6 +380,13 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads a <see cref="DateTime"/> value from the msgpack stream,
+	/// assuming the given <see cref="ExtensionHeader"/>.
+	/// </summary>
+	/// <param name="extensionHeader">The extension header that was previously read.</param>
+	/// <param name="value">The decoded value if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(ExtensionHeader extensionHeader, out DateTime value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, extensionHeader, out value, out int tokenSize);
@@ -314,6 +426,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads an array header from the msgpack stream.
+	/// </summary>
+	/// <param name="count">The number of elements in the array, if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadArrayHeader(out int count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(this.reader.UnreadSpan, out uint uintCount, out int tokenSize);
@@ -356,6 +473,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads a map header from the msgpack stream.
+	/// </summary>
+	/// <param name="count">The number of elements in the map, if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadMapHeader(out int count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadMapHeader(this.reader.UnreadSpan, out uint uintCount, out int tokenSize);
@@ -398,6 +520,12 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads a given number of bytes from the msgpack stream without decoding them.
+	/// </summary>
+	/// <param name="length">The number of bytes to read.</param>
+	/// <param name="rawMsgPack">The bytes if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawMsgPack)
 	{
 		if (this.reader.Remaining >= length)
@@ -411,6 +539,11 @@ public ref partial struct MessagePackStreamingReader
 		return this.InsufficientBytes;
 	}
 
+	/// <summary>
+	/// Reads a binary sequence with an appropriate msgpack header from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The byte sequence if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadBinary(out ReadOnlySequence<byte> value)
 	{
 		DecodeResult result = this.TryGetBytesLength(out uint length);
@@ -431,6 +564,11 @@ public ref partial struct MessagePackStreamingReader
 		return DecodeResult.Success;
 	}
 
+	/// <summary>
+	/// Reads a byte sequence backing a UTF-8 encoded string with an appropriate msgpack header from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The byte sequence if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadStringSequence(out ReadOnlySequence<byte> value)
 	{
 		DecodeResult result = this.TryGetStringLengthInBytes(out uint length);
@@ -451,6 +589,13 @@ public ref partial struct MessagePackStreamingReader
 		return DecodeResult.Success;
 	}
 
+	/// <summary>
+	/// Reads a span backing a UTF-8 encoded string with an appropriate msgpack header from the msgpack stream,
+	/// if the string is contiguous in memory.
+	/// </summary>
+	/// <param name="contiguous">Receives a value indicating whether the string was present and contiguous in memory.</param>
+	/// <param name="value">The span of bytes if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value)
 	{
 		SequenceReader<byte> oldReader = this.reader;
@@ -485,6 +630,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads an extension header from the msgpack stream.
+	/// </summary>
+	/// <param name="extensionHeader">Receives the extension header if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out ExtensionHeader extensionHeader)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(this.reader.UnreadSpan, out extensionHeader, out int tokenSize);
@@ -525,6 +675,11 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reads an extension from the msgpack stream.
+	/// </summary>
+	/// <param name="extension">Receives the extension if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out Extension extension)
 	{
 		DecodeResult result = this.TryRead(out ExtensionHeader header);
@@ -546,6 +701,11 @@ public ref partial struct MessagePackStreamingReader
 		return DecodeResult.Success;
 	}
 
+	/// <summary>
+	/// Advances the reader past the next msgpack structure.
+	/// </summary>
+	/// <param name="context">The context of the deserialization operation.</param>
+	/// <returns>The success or error code.</returns>
 	public DecodeResult TrySkip(SerializationContext context)
 	{
 		DecodeResult result = this.TryPeekNextCode(out byte code);
@@ -860,18 +1020,33 @@ public ref partial struct MessagePackStreamingReader
 		return DecodeResult.Success;
 	}
 
+	/// <summary>
+	/// A non-<see langword="ref" /> structure that can be used to recreate a <see cref="MessagePackStreamingReader"/> after
+	/// an <see langword="await" /> expression.
+	/// </summary>
 	public struct BufferRefresh
 	{
+		/// <inheritdoc cref="MessagePackStreamingReader.CancellationToken" />
 		internal CancellationToken CancellationToken { get; init; }
 
+		/// <summary>
+		/// Gets the buffer of msgpack already obtained.
+		/// </summary>
 		internal ReadOnlySequence<byte> Buffer { get; init; }
 
+		/// <summary>
+		/// Gets the delegate that can obtain more bytes.
+		/// </summary>
 		internal GetMoreBytesAsync? GetMoreBytes { get; init; }
 
+		/// <summary>
+		/// Gets the state object to supply to the <see cref="GetMoreBytes"/> delegate.
+		/// </summary>
 		internal object? GetMoreBytesState { get; init; }
 
+		/// <summary>
+		/// Gets a value indicating whether the <see cref="Buffer"/> contains all remaining bytes and <see cref="GetMoreBytes"/> will not provide more.
+		/// </summary>
 		internal bool EndOfStream { get; init; }
-
-		public MessagePackStreamingReader CreateReader() => new(this);
 	}
 }

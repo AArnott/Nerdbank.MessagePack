@@ -33,6 +33,8 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	/// </summary>
 	public required CancellationToken CancellationToken { get; init; }
 
+	private MessagePackStreamingReader.BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
+
 	/// <summary>
 	/// Gets the fully-capable, synchronous reader.
 	/// </summary>
@@ -43,9 +45,6 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	/// The buffer, for use in creating a <see cref="MessagePackReader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
 	/// Also returns the number of top-level structures included in the buffer that were counted (up to <paramref name="countUpTo"/>).
 	/// </returns>
-	/// <remarks>
-	/// The caller must take care to call <see cref="AdvanceTo(SequencePosition)"/> with <see cref="MessagePackReader.Position"/> before any other methods on this class after this call.
-	/// </remarks>
 	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
 	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
 	public async ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
@@ -98,6 +97,12 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	/// </remarks>
 	public async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 
+	/// <summary>
+	/// Fills the buffer with msgpack bytes to decode.
+	/// If the buffer already has bytes, <em>more</em> will be retrieved and added.
+	/// </summary>
+	/// <returns>An async task.</returns>
+	/// <exception cref="OperationCanceledException">Thrown if <see cref="CancellationToken"/> is canceled.</exception>
 	public async ValueTask ReadAsync()
 	{
 		this.ThrowIfReaderNotReturned();
@@ -129,20 +134,44 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		}
 	}
 
-	public MessagePackStreamingReader CreateReader()
+	/// <summary>
+	/// Retrieves a <see cref="MessagePackStreamingReader"/>, which is suitable for
+	/// decoding msgpack from a buffer without throwing any exceptions, even if the buffer is incomplete.
+	/// </summary>
+	/// <returns>A <see cref="MessagePackStreamingReader"/>.</returns>
+	/// <remarks>
+	/// The result must be returned with <see cref="ReturnReader(ref MessagePackStreamingReader)"/>
+	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// </remarks>
+	public MessagePackStreamingReader CreateStreamingReader()
 	{
-		ThrowIfReaderNotReturned();
+		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
 		return new(this.Refresh);
 	}
 
-	public MessagePackReader CreateReader2()
+	/// <summary>
+	/// Retrieves a <see cref="MessagePackReader"/>, which is suitable for
+	/// decoding msgpack from a buffer that is known to have enough bytes for the decoding.
+	/// </summary>
+	/// <returns>A <see cref="MessagePackReader"/>.</returns>
+	/// <remarks>
+	/// The result must be returned with <see cref="ReturnReader(ref MessagePackReader)"/>
+	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// </remarks>
+	public MessagePackReader CreateBufferedReader()
 	{
-		ThrowIfReaderNotReturned();
+		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
 		return new(this.Refresh.Buffer);
 	}
 
+	/// <summary>
+	/// Returns a previously obtained reader when the caller is done using it,
+	/// and applies the given reader's position to <em>this</em> reader so that
+	/// future reads move continuously forward in the msgpack stream.
+	/// </summary>
+	/// <param name="reader">The reader to return.</param>
 	public void ReturnReader(ref MessagePackStreamingReader reader)
 	{
 		this.refresh = reader.GetExchangeInfo();
@@ -150,9 +179,10 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
 
-		readerReturned = true;
+		this.readerReturned = true;
 	}
 
+	/// <inheritdoc cref="ReturnReader(ref MessagePackStreamingReader)"/>
 	public void ReturnReader(ref MessagePackReader reader)
 	{
 		MessagePackStreamingReader.BufferRefresh refresh = this.Refresh;
@@ -162,10 +192,8 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
 
-		readerReturned = true;
+		this.readerReturned = true;
 	}
-
-	private MessagePackStreamingReader.BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
 
 	private void ThrowIfReaderNotReturned()
 	{

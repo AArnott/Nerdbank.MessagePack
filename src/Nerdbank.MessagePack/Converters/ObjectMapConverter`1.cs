@@ -183,7 +183,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateReader();
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
@@ -219,7 +219,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			while (remainingEntries > 0)
 			{
 				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = reader.CreateReader2();
+				MessagePackReader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{

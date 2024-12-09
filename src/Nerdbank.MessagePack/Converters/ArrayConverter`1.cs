@@ -95,7 +95,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateReader();
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
@@ -130,7 +130,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		{
 			reader.ReturnReader(ref streamingReader);
 			await reader.BufferNextStructureAsync(context);
-			MessagePackReader syncReader = reader.CreateReader2();
+			MessagePackReader syncReader = reader.CreateBufferedReader();
 
 			int count = syncReader.ReadArrayHeader();
 			TElement[] array = new TElement[count];

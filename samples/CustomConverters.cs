@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace CustomConverter
 {
     #region YourOwnConverter
@@ -326,6 +328,51 @@ namespace CustomConverterRegistration
             MessagePackSerializer serializer = new();
             serializer.RegisterConverter(new MyCustomTypeConverter());
             #endregion
+        }
+    }
+}
+
+namespace AsyncConverters
+{
+    [MessagePackConverter(typeof(MyCustomTypeConverter))]
+    public class MyCustomType { }
+
+    public class MyCustomTypeConverter : MessagePackConverter<MyCustomType>
+    {
+        public override MyCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Write(ref MessagePackWriter writer, in MyCustomType? value, SerializationContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        [Experimental("NBMsgPack")]
+        public override async ValueTask<MyCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+        {
+            MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+
+            #region GetMoreBytesPattern
+            int count;
+            while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+            {
+                streamingReader = new(await streamingReader.ReplenishBufferAsync());
+            }
+            #endregion
+
+            for (int i = 0; i < count; i++)
+            {
+                while (streamingReader.TrySkip(context).NeedsMoreBytes())
+                {
+                    streamingReader = new(await streamingReader.ReplenishBufferAsync());
+                }
+            }
+
+            reader.ReturnReader(ref streamingReader);
+
+            return new MyCustomType();
         }
     }
 }
