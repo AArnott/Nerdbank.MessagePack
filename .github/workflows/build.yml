@@ -5,8 +5,6 @@ on:
     branches:
     - main
     - validate/*
-    tags:
-    - v*.*
   pull_request:
   workflow_dispatch:
 
@@ -69,38 +67,3 @@ jobs:
       timeout-minutes: 3
       continue-on-error: true
       if: env.codecov_token != ''
-
-  ship:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
-
-    - name: 🔻 Download deployables artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: deployables-Linux
-        path: ${{ runner.temp }}/deployables
-
-    - name: 🔏 Code sign
-      run: >
-        rm global.json # avoid a need to install a particular SDK version
-
-        dotnet tool install --tool-path obj SignClient
-
-        obj/SignClient sign
-        --baseDirectory '${{ runner.temp }}/deployables'
-        --input '**/*'
-        --config '${{ github.workspace }}/azure-pipelines/SignClient.json'
-        --filelist '${{ github.workspace }}/azure-pipelines/signfiles.txt'
-        --user '${{ secrets.CODESIGN_USERNAME }}'
-        --secret '${{ secrets.CODESIGN_SECRET }}'
-        --name 'Nerdbank.MessagePack'
-        --descriptionUrl 'https://github.com/AArnott/Nerdbank.MessagePack'
-      shell: pwsh
-
-    - name: 🚀 Push NuGet packages
-      run: dotnet nuget push ${{ runner.temp }}/deployables/*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ secrets.NUGET_API_KEY }}'

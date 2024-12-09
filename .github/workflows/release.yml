@@ -19,6 +19,10 @@ jobs:
   release:
     runs-on: ubuntu-22.04
     steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
     - name: ⚙️ Initialization
       shell: pwsh
       run: |
@@ -70,6 +74,23 @@ jobs:
         path: ${{ runner.temp }}/deployables
         run-id: ${{ steps.findrunid.outputs.runid }}
         github-token: ${{ github.token }}
+
+    - name: 🔏 Code sign
+      run: >
+        rm global.json # avoid a need to install a particular SDK version
+
+        dotnet tool install --tool-path obj SignClient
+
+        obj/SignClient sign
+        --baseDirectory '${{ runner.temp }}/deployables'
+        --input '**/*'
+        --config '${{ github.workspace }}/azure-pipelines/SignClient.json'
+        --filelist '${{ github.workspace }}/azure-pipelines/signfiles.txt'
+        --user '${{ secrets.CODESIGN_USERNAME }}'
+        --secret '${{ secrets.CODESIGN_SECRET }}'
+        --name 'Nerdbank.MessagePack'
+        --descriptionUrl 'https://github.com/AArnott/Nerdbank.MessagePack'
+      shell: pwsh
 
     - name: 💽 Upload artifacts to release
       shell: pwsh
