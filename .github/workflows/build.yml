@@ -1,13 +1,12 @@
-name: CI
+name: 🏭 Build
 
 on:
   push:
     branches:
     - main
     - validate/*
-    tags:
-    - v*.*
   pull_request:
+  workflow_dispatch:
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -17,6 +16,7 @@ env:
 
 jobs:
   build:
+    name: 🏭 Build
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -59,101 +59,11 @@ jobs:
     - name: ⚙ Update pipeline variables based on build outputs
       run: azure-pipelines/variables/_pipelines.ps1
       shell: pwsh
-    - name: 📥 Collect artifacts
-      run: azure-pipelines/artifacts/_stage_all.ps1
-      shell: pwsh
-      if: always()
-    - name: 📢 Upload project.assets.json files
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: projectAssetsJson-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/projectAssetsJson
-      continue-on-error: true
-    - name: 📢 Upload variables
-      uses: actions/upload-artifact@v4
-      with:
-        name: variables-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/Variables
-      continue-on-error: true
-    - name: 📢 Upload build_logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build_logs-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/build_logs
-      continue-on-error: true
-    - name: 📢 Upload test_logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test_logs-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/test_logs
-      continue-on-error: true
-    - name: 📢 Upload testResults
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: testResults-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/testResults
-      continue-on-error: true
-    - name: 📢 Upload coverageResults
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverageResults-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/coverageResults
-      continue-on-error: true
-    - name: 📢 Upload symbols
-      uses: actions/upload-artifact@v4
-      with:
-        name: symbols-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/symbols
-      continue-on-error: true
-    - name: 📢 Upload deployables
-      uses: actions/upload-artifact@v4
-      with:
-        name: deployables-${{ runner.os }}
-        path: ${{ runner.temp }}/_artifacts/deployables
-      if: always()
+    - name: 📢 Publish artifacts
+      uses: ./.github/actions/publish-artifacts
     - name: 📢 Publish code coverage results to codecov.io
       run: ./azure-pipelines/publish-CodeCov.ps1 -CodeCovToken "${{ env.codecov_token }}" -PathToCodeCoverage "${{ runner.temp }}/_artifacts/coverageResults" -Name "${{ runner.os }} Coverage Results" -Flags "${{ runner.os }}"
       shell: pwsh
       timeout-minutes: 3
       continue-on-error: true
       if: env.codecov_token != ''
-
-  ship:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
-
-    - name: 🔻 Download deployables artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: deployables-Linux
-        path: ${{ runner.temp }}/deployables
-
-    - name: 🔏 Code sign
-      run: >
-        rm global.json # avoid a need to install a particular SDK version
-
-        dotnet tool install --tool-path obj SignClient
-
-        obj/SignClient sign
-        --baseDirectory '${{ runner.temp }}/deployables'
-        --input '**/*'
-        --config '${{ github.workspace }}/azure-pipelines/SignClient.json'
-        --filelist '${{ github.workspace }}/azure-pipelines/signfiles.txt'
-        --user '${{ secrets.CODESIGN_USERNAME }}'
-        --secret '${{ secrets.CODESIGN_SECRET }}'
-        --name 'Nerdbank.MessagePack'
-        --descriptionUrl 'https://github.com/AArnott/Nerdbank.MessagePack'
-      shell: pwsh
-
-    - name: 🚀 Push NuGet packages
-      run: dotnet nuget push ${{ runner.temp }}/deployables/*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ secrets.NUGET_API_KEY }}'
