@@ -151,7 +151,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		else
 		{
 			// We have nothing to read into, so just skip any data in the object.
-			while (streamingReader.TrySkip(context).NeedsMoreBytes())
+			while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync());
 			}

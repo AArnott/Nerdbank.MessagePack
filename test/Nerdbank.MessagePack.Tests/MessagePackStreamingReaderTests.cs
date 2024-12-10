@@ -75,16 +75,25 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
 
+		// For an exhaustive test, we must use at least one of every msgpack token type (at least, one for interesting branch of the internal switch statement).
+		// 0. array
 		writer.WriteArrayHeader(3);
-		writer.Write(5);
 
+		// 1. map
 		writer.WriteMapHeader(2);
-		writer.Write("key1");
-		writer.Write(1);
+		writer.Write("key1");   // String!
+		writer.Write(1);        // Integer!
 		writer.Write("key2");
-		writer.Write(2);
+		writer.Write(true);           // Boolean!
 
-		writer.Write(true);
+		// 2. extension
+		writer.Write(new Extension(35, new byte[] { 1, 2, 3 }));
+
+		// 3. binary
+		writer.Write([6, 8]);
+
+		// One extra msgpack element that should *not* be skipped.
+		writer.Write(false);
 
 		writer.Flush();
 
@@ -92,12 +101,20 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		MessagePackStreamingReader reader = new(ros.Slice(0, 1), FetchMoreBytesAsync, ros);
 		SerializationContext context = new();
 		int fetchCount = 0;
-		while (reader.TrySkip(context).NeedsMoreBytes())
+		while (reader.TrySkip(ref context).NeedsMoreBytes())
 		{
 			reader = new(await reader.FetchMoreBytesAsync());
 			fetchCount++;
 		}
 
+		bool boolValue;
+		while (reader.TryRead(out boolValue).NeedsMoreBytes())
+		{
+			reader = new(await reader.FetchMoreBytesAsync());
+			fetchCount++;
+		}
+
+		Assert.False(boolValue);
 		Assert.Equal(ros.End, reader.Position);
 		logger.WriteLine($"Fetched {fetchCount} times (for a sequence that is {ros.Length} bytes long.)");
 	}

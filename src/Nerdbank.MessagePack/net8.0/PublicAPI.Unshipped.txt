@@ -285,7 +285,7 @@ Nerdbank.MessagePack.MessagePackStreamingReader.TryReadNil(out bool isNil) -> Ne
 Nerdbank.MessagePack.MessagePackStreamingReader.TryReadRaw(long length, out System.Buffers.ReadOnlySequence<byte> rawMsgPack) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringSequence(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringSpan(out bool contiguous, out System.ReadOnlySpan<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TrySkip(Nerdbank.MessagePack.SerializationContext context) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+Nerdbank.MessagePack.MessagePackStreamingReader.TrySkip(ref Nerdbank.MessagePack.SerializationContext context) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackType
 Nerdbank.MessagePack.MessagePackType.Array = 7 -> Nerdbank.MessagePack.MessagePackType
 Nerdbank.MessagePack.MessagePackType.Binary = 6 -> Nerdbank.MessagePack.MessagePackType

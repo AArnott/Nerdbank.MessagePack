@@ -679,7 +679,7 @@ public ref partial struct MessagePackReader
 	/// </remarks>
 	internal bool TrySkip(SerializationContext context)
 	{
-		switch (this.streamingReader.TrySkip(context))
+		switch (this.streamingReader.TrySkip(ref context))
 		{
 			case MessagePackPrimitives.DecodeResult.Success:
 				return true;
