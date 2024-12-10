@@ -95,7 +95,14 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync().ConfigureAwait(false))
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool success;
+		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+		}
+
+		if (success)
 		{
 			return null;
 		}
@@ -104,7 +111,13 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 		if (elementConverter.PreferAsyncSerialization)
 		{
-			int count = await reader.ReadArrayHeaderAsync().ConfigureAwait(false);
+			int count;
+			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+			}
+
+			reader.ReturnReader(ref streamingReader);
 			TElement[] array = new TElement[count];
 			for (int i = 0; i < count; i++)
 			{
@@ -115,9 +128,10 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		}
 		else
 		{
-			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
+			reader.ReturnReader(ref streamingReader);
+			await reader.BufferNextStructureAsync(context);
+			MessagePackReader syncReader = reader.CreateBufferedReader();
 
-			MessagePackReader syncReader = new(map);
 			int count = syncReader.ReadArrayHeader();
 			TElement[] array = new TElement[count];
 			for (int i = 0; i < count; i++)
@@ -125,7 +139,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 				array[i] = elementConverter.Read(ref syncReader, context)!;
 			}
 
-			reader.AdvanceTo(map.End);
+			reader.ReturnReader(ref syncReader);
 			return array;
 		}
 	}

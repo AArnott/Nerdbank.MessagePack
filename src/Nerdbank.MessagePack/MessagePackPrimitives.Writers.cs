@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -1110,7 +1111,7 @@ public static partial class MessagePackPrimitives
 	}
 
 	[DoesNotReturn]
-	private static Exception ThrowUnreachable() => throw new Exception("Presumed unreachable point in code reached.");
+	private static Exception ThrowUnreachable() => throw new UnreachableException();
 
 	/// <summary>
 	/// Writes an integer value in big-endian order to the specified buffer.

@@ -21,7 +21,9 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// The reader over the sequence.
 	/// </summary>
-	private SequenceReader<byte> reader;
+#pragma warning disable NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+	private MessagePackStreamingReader streamingReader;
+#pragma warning restore NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 	/// <inheritdoc cref="MessagePackReader(in ReadOnlySequence{byte})"/>
 	public MessagePackReader(ReadOnlyMemory<byte> msgpack)
@@ -36,28 +38,28 @@ public ref partial struct MessagePackReader
 	public MessagePackReader(scoped in ReadOnlySequence<byte> msgpack)
 		: this()
 	{
-		this.reader = new SequenceReader<byte>(msgpack);
+		this.streamingReader = new(msgpack, null, null);
 	}
 
 	/// <summary>
 	/// Gets the <see cref="ReadOnlySequence{T}"/> originally supplied to the constructor.
 	/// </summary>
-	public ReadOnlySequence<byte> Sequence => this.reader.Sequence;
+	public ReadOnlySequence<byte> Sequence => this.streamingReader.SequenceReader.Sequence;
 
 	/// <summary>
 	/// Gets the current position of the reader within <see cref="Sequence"/>.
 	/// </summary>
-	public SequencePosition Position => this.reader.Position;
+	public SequencePosition Position => this.streamingReader.SequenceReader.Position;
 
 	/// <summary>
 	/// Gets the number of bytes consumed by the reader.
 	/// </summary>
-	public long Consumed => this.reader.Consumed;
+	public long Consumed => this.streamingReader.SequenceReader.Consumed;
 
 	/// <summary>
 	/// Gets a value indicating whether the reader is at the end of the sequence.
 	/// </summary>
-	public bool End => this.reader.End;
+	public bool End => this.streamingReader.SequenceReader.End;
 
 	/// <summary>
 	/// Gets a value indicating whether the reader position is pointing at a nil value.
@@ -81,8 +83,12 @@ public ref partial struct MessagePackReader
 	{
 		get
 		{
-			ThrowInsufficientBufferUnless(this.reader.TryPeek(out byte code));
-			return code;
+			return this.streamingReader.TryPeekNextCode(out byte code) switch
+			{
+				MessagePackPrimitives.DecodeResult.Success => code,
+				MessagePackPrimitives.DecodeResult.EmptyBuffer or MessagePackPrimitives.DecodeResult.InsufficientBuffer => throw ThrowNotEnoughBytesException(),
+				_ => throw ThrowUnreachable(),
+			};
 		}
 	}
 
@@ -120,11 +126,14 @@ public ref partial struct MessagePackReader
 	/// </summary>
 	public void ReadNil()
 	{
-		ThrowInsufficientBufferUnless(this.reader.TryRead(out byte code));
-
-		if (code != MessagePackCode.Nil)
+		switch (this.streamingReader.TryReadNil())
 		{
-			throw ThrowInvalidCode(code);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			default:
+				throw ThrowNotEnoughBytesException();
 		}
 	}
 
@@ -136,13 +145,16 @@ public ref partial struct MessagePackReader
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool TryReadNil()
 	{
-		if (this.NextCode == MessagePackCode.Nil)
+		switch (this.streamingReader.TryReadNil())
 		{
-			this.reader.Advance(1);
-			return true;
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				return false;
 		}
-
-		return false;
 	}
 
 	/// <summary>
@@ -155,15 +167,15 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public ReadOnlySequence<byte> ReadRaw(long length)
 	{
-		try
+		switch (this.streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> result))
 		{
-			ReadOnlySequence<byte> result = this.reader.Sequence.Slice(this.reader.Position, length);
-			this.reader.Advance(length);
-			return result;
-		}
-		catch (ArgumentOutOfRangeException ex)
-		{
-			throw ThrowNotEnoughBytesException(ex);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return result;
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -204,7 +216,7 @@ public ref partial struct MessagePackReader
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
 		// We allow for each primitive to be the minimal 1 byte in size.
 		// Formatters that know each element is larger can optionally add a stronger check.
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= count);
+		ThrowInsufficientBufferUnless(this.streamingReader.SequenceReader.Remaining >= count);
 
 		return count;
 	}
@@ -222,43 +234,17 @@ public ref partial struct MessagePackReader
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool TryReadArrayHeader(out int count)
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(this.reader.UnreadSpan, out uint uintCount, out int tokenSize);
-		count = checked((int)uintCount);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryReadArrayHeader(out count))
 		{
-			this.reader.Advance(tokenSize);
-			return true;
-		}
-
-		return SlowPath(ref this, readResult, ref count, ref tokenSize);
-
-		static bool SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, ref int count, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return true;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryReadArrayHeader(buffer, out uint uintCount, out tokenSize);
-						count = checked((int)uintCount);
-						return SlowPath(ref self, readResult, ref count, ref tokenSize);
-					}
-					else
-					{
-						count = 0;
-						return false;
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				return false;
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -281,7 +267,7 @@ public ref partial struct MessagePackReader
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
 		// We allow for each primitive to be the minimal 1 byte in size, and we have a key=value map, so that's 2 bytes.
 		// Formatters that know each element is larger can optionally add a stronger check.
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= count * 2);
+		ThrowInsufficientBufferUnless(this.streamingReader.SequenceReader.Remaining >= count * 2);
 
 		return count;
 	}
@@ -298,43 +284,17 @@ public ref partial struct MessagePackReader
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an map header is encountered.</exception>
 	public bool TryReadMapHeader(out int count)
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadMapHeader(this.reader.UnreadSpan, out uint uintCount, out int tokenSize);
-		count = checked((int)uintCount);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryReadMapHeader(out count))
 		{
-			this.reader.Advance(tokenSize);
-			return true;
-		}
-
-		return SlowPath(ref this, readResult, ref count, ref tokenSize);
-
-		static bool SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, ref int count, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return true;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryReadMapHeader(buffer, out uint uintCount, out tokenSize);
-						count = checked((int)uintCount);
-						return SlowPath(ref self, readResult, ref count, ref tokenSize);
-					}
-					else
-					{
-						count = 0;
-						return false;
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				return false;
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -344,15 +304,17 @@ public ref partial struct MessagePackReader
 	/// <returns>The value.</returns>
 	public bool ReadBoolean()
 	{
-		ThrowInsufficientBufferUnless(this.reader.TryRead(out byte code));
-		switch (code)
+		switch (this.streamingReader.TryRead(out bool value))
 		{
-			case MessagePackCode.True:
-				return true;
-			case MessagePackCode.False:
-				return false;
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
 			default:
-				throw ThrowInvalidCode(code);
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -382,40 +344,16 @@ public ref partial struct MessagePackReader
 	/// <returns>The value.</returns>
 	public unsafe float ReadSingle()
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out float value, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(out float value))
 		{
-			this.reader.Advance(tokenSize);
-			return value;
-		}
-
-		return SlowPath(ref this, readResult, value, ref tokenSize);
-
-		static float SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, float value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return value;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
-						return SlowPath(ref self, readResult, value, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowNotEnoughBytesException();
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -437,40 +375,16 @@ public ref partial struct MessagePackReader
 	/// <returns>The value.</returns>
 	public unsafe double ReadDouble()
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out double value, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(out double value))
 		{
-			this.reader.Advance(tokenSize);
-			return value;
-		}
-
-		return SlowPath(ref this, readResult, value, ref tokenSize);
-
-		static double SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, double value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return value;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
-						return SlowPath(ref self, readResult, value, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowNotEnoughBytesException();
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -484,40 +398,17 @@ public ref partial struct MessagePackReader
 	/// <returns>The value.</returns>
 	public DateTime ReadDateTime()
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out DateTime value, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(out DateTime value))
 		{
-			this.reader.Advance(tokenSize);
-			return value;
-		}
-
-		return SlowPath(ref this, readResult, value, ref tokenSize);
-
-		static DateTime SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, DateTime value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return value;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
-						return SlowPath(ref self, readResult, value, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowNotEnoughBytesException();
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -532,40 +423,17 @@ public ref partial struct MessagePackReader
 	/// <returns>The value.</returns>
 	public DateTime ReadDateTime(ExtensionHeader header)
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, header, out DateTime value, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(header, out DateTime value))
 		{
-			this.reader.Advance(tokenSize);
-			return value;
-		}
-
-		return SlowPath(ref this, header, readResult, value, ref tokenSize);
-
-		static DateTime SlowPath(ref MessagePackReader self, ExtensionHeader header, MessagePackPrimitives.DecodeResult readResult, DateTime value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return value;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, header, out value, out tokenSize);
-						return SlowPath(ref self, header, readResult, value, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowNotEnoughBytesException();
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -585,16 +453,23 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public ReadOnlySequence<byte>? ReadBytes()
 	{
-		if (this.TryReadNil())
+		switch (this.streamingReader.TryReadBinary(out ReadOnlySequence<byte> value))
 		{
-			return null;
-		}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				if (this.TryReadNil())
+				{
+					return null;
+				}
 
-		uint length = this.GetBytesLength();
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= length);
-		ReadOnlySequence<byte> result = this.reader.Sequence.Slice(this.reader.Position, length);
-		this.reader.Advance(length);
-		return result;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
 	}
 
 	/// <summary>
@@ -610,16 +485,23 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public ReadOnlySequence<byte>? ReadStringSequence()
 	{
-		if (this.TryReadNil())
+		switch (this.streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> value))
 		{
-			return null;
-		}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				if (this.TryReadNil())
+				{
+					return null;
+				}
 
-		uint length = this.GetStringLengthInBytes();
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= length);
-		ReadOnlySequence<byte> result = this.reader.Sequence.Slice(this.reader.Position, length);
-		this.reader.Advance(length);
-		return result;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
 	}
 
 	/// <summary>
@@ -640,27 +522,24 @@ public ref partial struct MessagePackReader
 	/// </remarks>
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> span)
 	{
-		if (this.IsNil)
+		switch (this.streamingReader.TryReadStringSpan(out bool contiguous, out span))
 		{
-			span = default;
-			return false;
-		}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return contiguous;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				if (this.streamingReader.TryPeekNextCode(out byte code) == MessagePackPrimitives.DecodeResult.Success
+					&& code == MessagePackCode.Nil)
+				{
+					span = default;
+					return false;
+				}
 
-		long oldPosition = this.reader.Consumed;
-		int length = checked((int)this.GetStringLengthInBytes());
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= length);
-
-		if (this.reader.CurrentSpanIndex + length <= this.reader.CurrentSpan.Length)
-		{
-			span = this.reader.CurrentSpan.Slice(this.reader.CurrentSpanIndex, length);
-			this.reader.Advance(length);
-			return true;
-		}
-		else
-		{
-			this.reader.Rewind(this.reader.Consumed - oldPosition);
-			span = default;
-			return false;
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -675,24 +554,17 @@ public ref partial struct MessagePackReader
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string? ReadString()
 	{
-		if (this.TryReadNil())
+		switch (this.streamingReader.TryRead(out string? value))
 		{
-			return null;
-		}
-
-		uint byteLength = this.GetStringLengthInBytes();
-
-		ReadOnlySpan<byte> unreadSpan = this.reader.UnreadSpan;
-		if (unreadSpan.Length >= byteLength)
-		{
-			// Fast path: all bytes to decode appear in the same span.
-			string value = StringEncoding.UTF8.GetString(unreadSpan.Slice(0, checked((int)byteLength)));
-			this.reader.Advance(byteLength);
-			return value;
-		}
-		else
-		{
-			return this.ReadStringSlow(byteLength);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -718,7 +590,7 @@ public ref partial struct MessagePackReader
 		ThrowInsufficientBufferUnless(this.TryReadExtensionHeader(out ExtensionHeader header));
 
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= header.Length);
+		ThrowInsufficientBufferUnless(this.streamingReader.SequenceReader.Remaining >= header.Length);
 
 		return header;
 	}
@@ -736,49 +608,21 @@ public ref partial struct MessagePackReader
 	/// if there is sufficient buffer to read it.
 	/// </summary>
 	/// <param name="extensionHeader">Receives the extension header if the remaining bytes in the <see cref="Sequence"/> fully describe the header.</param>
-	/// <returns>The number of key=value pairs in the map.</returns>
+	/// <returns>A value indicating whether an extension header is fully represented at the reader's position.</returns>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an extension format header is encountered.</exception>
-	/// <remarks>
-	/// When this method returns <see langword="false"/> the position of the reader is left in an undefined position.
-	/// The caller is expected to recreate the reader (presumably with a longer sequence to read from) before continuing.
-	/// </remarks>
 	public bool TryReadExtensionHeader(out ExtensionHeader extensionHeader)
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(this.reader.UnreadSpan, out extensionHeader, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(out extensionHeader))
 		{
-			this.reader.Advance(tokenSize);
-			return true;
-		}
-
-		return SlowPath(ref this, readResult, ref extensionHeader, ref tokenSize);
-
-		static bool SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return true;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryReadExtensionHeader(buffer, out extensionHeader, out tokenSize);
-						return SlowPath(ref self, readResult, ref extensionHeader, ref tokenSize);
-					}
-					else
-					{
-						extensionHeader = default;
-						return false;
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				return false;
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -799,16 +643,17 @@ public ref partial struct MessagePackReader
 	/// </returns>
 	public Extension ReadExtension()
 	{
-		ExtensionHeader header = this.ReadExtensionHeader();
-		try
+		switch (this.streamingReader.TryRead(out Extension value))
 		{
-			ReadOnlySequence<byte> data = this.reader.Sequence.Slice(this.reader.Position, header.Length);
-			this.reader.Advance(header.Length);
-			return new Extension(header.TypeCode, data);
-		}
-		catch (ArgumentOutOfRangeException ex)
-		{
-			throw ThrowNotEnoughBytesException(ex);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -835,65 +680,17 @@ public ref partial struct MessagePackReader
 	/// </remarks>
 	internal bool TrySkip(SerializationContext context)
 	{
-		if (this.reader.Remaining == 0)
+		switch (this.streamingReader.TrySkip(context))
 		{
-			return false;
-		}
-
-		byte code = this.NextCode;
-		switch (code)
-		{
-			case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
-			case MessagePackCode.Nil:
-			case MessagePackCode.True:
-			case MessagePackCode.False:
-				return this.reader.TryAdvance(1);
-			case MessagePackCode.Int8:
-			case MessagePackCode.UInt8:
-				return this.reader.TryAdvance(2);
-			case MessagePackCode.Int16:
-			case MessagePackCode.UInt16:
-				return this.reader.TryAdvance(3);
-			case MessagePackCode.Int32:
-			case MessagePackCode.UInt32:
-			case MessagePackCode.Float32:
-				return this.reader.TryAdvance(5);
-			case MessagePackCode.Int64:
-			case MessagePackCode.UInt64:
-			case MessagePackCode.Float64:
-				return this.reader.TryAdvance(9);
-			case byte x when MessagePackCode.IsFixMap(x):
-			case MessagePackCode.Map16:
-			case MessagePackCode.Map32:
-				context.DepthStep();
-				return this.TrySkipNextMap(context);
-			case byte x when MessagePackCode.IsFixArray(x):
-			case MessagePackCode.Array16:
-			case MessagePackCode.Array32:
-				context.DepthStep();
-				return this.TrySkipNextArray(context);
-			case byte x when MessagePackCode.IsFixStr(x):
-			case MessagePackCode.Str8:
-			case MessagePackCode.Str16:
-			case MessagePackCode.Str32:
-				return this.TryGetStringLengthInBytes(out uint length) && this.reader.TryAdvance(length);
-			case MessagePackCode.Bin8:
-			case MessagePackCode.Bin16:
-			case MessagePackCode.Bin32:
-				return this.TryGetBytesLength(out length) && this.reader.TryAdvance(length);
-			case MessagePackCode.FixExt1:
-			case MessagePackCode.FixExt2:
-			case MessagePackCode.FixExt4:
-			case MessagePackCode.FixExt8:
-			case MessagePackCode.FixExt16:
-			case MessagePackCode.Ext8:
-			case MessagePackCode.Ext16:
-			case MessagePackCode.Ext32:
-				return this.TryReadExtensionHeader(out ExtensionHeader header) && this.reader.TryAdvance(header.Length);
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				return false;
 			default:
-				// We don't actually expect to ever hit this point, since every code is supported.
-				Debug.Fail("Missing handler for code: " + code);
-				throw ThrowInvalidCode(code);
+				throw ThrowUnreachable();
 		}
 	}
 
@@ -902,12 +699,6 @@ public ref partial struct MessagePackReader
 	/// the promised data.
 	/// </summary>
 	private static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();
-
-	/// <summary>
-	/// Throws an exception indicating that there aren't enough bytes remaining in the buffer to store
-	/// the promised data.
-	/// </summary>
-	private static EndOfStreamException ThrowNotEnoughBytesException(Exception innerException) => throw new EndOfStreamException(new EndOfStreamException().Message, innerException);
 
 	/// <summary>
 	/// Throws <see cref="EndOfStreamException"/> if a condition is false.
@@ -923,180 +714,5 @@ public ref partial struct MessagePackReader
 	}
 
 	[DoesNotReturn]
-	private static Exception ThrowUnreachable() => throw new Exception("Presumed unreachable point in code reached.");
-
-	private uint GetBytesLength()
-	{
-		ThrowInsufficientBufferUnless(this.TryGetBytesLength(out uint length));
-		return length;
-	}
-
-	private bool TryGetBytesLength(out uint length)
-	{
-		bool usingBinaryHeader = true;
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadBinHeader(this.reader.UnreadSpan, out length, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
-		{
-			this.reader.Advance(tokenSize);
-			return true;
-		}
-
-		return SlowPath(ref this, readResult, usingBinaryHeader, ref length, ref tokenSize);
-
-		static bool SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, bool usingBinaryHeader, ref uint length, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return true;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					if (usingBinaryHeader)
-					{
-						usingBinaryHeader = false;
-						readResult = MessagePackPrimitives.TryReadStringHeader(self.reader.UnreadSpan, out length, out tokenSize);
-						return SlowPath(ref self, readResult, usingBinaryHeader, ref length, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-					}
-
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = usingBinaryHeader
-							? MessagePackPrimitives.TryReadBinHeader(buffer, out length, out tokenSize)
-							: MessagePackPrimitives.TryReadStringHeader(buffer, out length, out tokenSize);
-						return SlowPath(ref self, readResult, usingBinaryHeader, ref length, ref tokenSize);
-					}
-					else
-					{
-						length = default;
-						return false;
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
-		}
-	}
-
-	/// <summary>
-	/// Gets the length of the next string.
-	/// </summary>
-	/// <param name="length">Receives the length of the next string, if there were enough bytes to read it.</param>
-	/// <returns><see langword="true"/> if there were enough bytes to read the length of the next string; <see langword="false"/> otherwise.</returns>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private bool TryGetStringLengthInBytes(out uint length)
-	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadStringHeader(this.reader.UnreadSpan, out length, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
-		{
-			this.reader.Advance(tokenSize);
-			return true;
-		}
-
-		return SlowPath(ref this, readResult, ref length, ref tokenSize);
-
-		static bool SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, ref uint length, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return true;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryReadStringHeader(buffer, out length, out tokenSize);
-						return SlowPath(ref self, readResult, ref length, ref tokenSize);
-					}
-					else
-					{
-						length = default;
-						return false;
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
-		}
-	}
-
-	/// <summary>
-	/// Gets the length of the next string.
-	/// </summary>
-	/// <returns>The length of the next string.</returns>
-	private uint GetStringLengthInBytes()
-	{
-		ThrowInsufficientBufferUnless(this.TryGetStringLengthInBytes(out uint length));
-		return length;
-	}
-
-	/// <summary>
-	/// Reads a string assuming that it is spread across multiple spans in the <see cref="ReadOnlySequence{T}"/>.
-	/// </summary>
-	/// <param name="byteLength">The length of the string to be decoded, in bytes.</param>
-	/// <returns>The decoded string.</returns>
-	private string ReadStringSlow(uint byteLength)
-	{
-		ThrowInsufficientBufferUnless(this.reader.Remaining >= byteLength);
-
-		// We need to decode bytes incrementally across multiple spans.
-		int remainingByteLength = checked((int)byteLength);
-		int maxCharLength = StringEncoding.UTF8.GetMaxCharCount(remainingByteLength);
-		char[] charArray = ArrayPool<char>.Shared.Rent(maxCharLength);
-		System.Text.Decoder decoder = StringEncoding.UTF8.GetDecoder();
-
-		int initializedChars = 0;
-		while (remainingByteLength > 0)
-		{
-			int bytesRead = Math.Min(remainingByteLength, this.reader.UnreadSpan.Length);
-			remainingByteLength -= bytesRead;
-			bool flush = remainingByteLength == 0;
-#if NET
-			initializedChars += decoder.GetChars(this.reader.UnreadSpan.Slice(0, bytesRead), charArray.AsSpan(initializedChars), flush);
-#else
-			unsafe
-			{
-				fixed (byte* pUnreadSpan = this.reader.UnreadSpan)
-				{
-					fixed (char* pCharArray = &charArray[initializedChars])
-					{
-						initializedChars += decoder.GetChars(pUnreadSpan, bytesRead, pCharArray, charArray.Length - initializedChars, flush);
-					}
-				}
-			}
-#endif
-			this.reader.Advance(bytesRead);
-		}
-
-		string value = new string(charArray, 0, initializedChars);
-		ArrayPool<char>.Shared.Return(charArray);
-		return value;
-	}
-
-	private bool TrySkipNextArray(SerializationContext context) => this.TryReadArrayHeader(out int count) && this.TrySkip(count, context);
-
-	private bool TrySkipNextMap(SerializationContext context) => this.TryReadMapHeader(out int count) && this.TrySkip(count * 2, context);
-
-	private bool TrySkip(int count, SerializationContext context)
-	{
-		for (int i = 0; i < count; i++)
-		{
-			if (!this.TrySkip(context))
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
+	private static Exception ThrowUnreachable() => throw new UnreachableException();
 }

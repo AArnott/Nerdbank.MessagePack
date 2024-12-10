@@ -350,13 +350,15 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+	public async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter(shape).ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken }, context.Value);
+		var asyncReader = new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken };
+		await asyncReader.ReadAsync();
+		return await this.GetOrAddConverter(shape).ReadAsync(asyncReader, context.Value);
 #pragma warning restore NBMsgPackAsync
 	}
 
@@ -368,12 +370,14 @@ public partial record MessagePackSerializer
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	public async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 #pragma warning disable NBMsgPackAsync
-		return this.GetOrAddConverter<T>(provider).ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken }, context.Value);
+		var asyncReader = new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken };
+		await asyncReader.ReadAsync();
+		return await this.GetOrAddConverter<T>(provider).ReadAsync(asyncReader, context.Value);
 #pragma warning restore NBMsgPackAsync
 	}
 

@@ -140,7 +140,15 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (await reader.TryReadNilAsync().ConfigureAwait(false))
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool success;
+		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		if (success)
 		{
 			return default;
 		}
@@ -170,7 +178,14 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			int count = await reader.ReadMapHeaderAsync().ConfigureAwait(false);
+			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			int count;
+			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+			}
+
+			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
 				addEntry(ref collection, await this.ReadEntryAsync(reader, context).ConfigureAwait(false));
@@ -178,8 +193,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		}
 		else
 		{
-			ReadOnlySequence<byte> map = await reader.ReadNextStructureAsync(context).ConfigureAwait(false);
-			MessagePackReader syncReader = new(map);
+			await reader.BufferNextStructureAsync(context);
+			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
@@ -187,7 +202,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 				addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
 			}
 
-			reader.AdvanceTo(map.End);
+			reader.ReturnReader(ref syncReader);
 		}
 	}
 }

@@ -44,40 +44,17 @@ foreach (var intType in allTypes) {
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public <#=intType.Name#> Read<#=intType.Name#>()
 	{
-		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out <#= intType.Name #> value, out int tokenSize);
-		if (readResult == MessagePackPrimitives.DecodeResult.Success)
+		switch (this.streamingReader.TryRead(out <#=intType.Name#> value))
 		{
-			this.reader.Advance(tokenSize);
-			return value;
-		}
-
-		return SlowPath(ref this, readResult, value, ref tokenSize);
-
-		static <#= intType.Name #> SlowPath(ref MessagePackReader self, MessagePackPrimitives.DecodeResult readResult, <#= intType.Name #> value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
-					return value;
-				case MessagePackPrimitives.DecodeResult.TokenMismatch:
-					throw ThrowInvalidCode(self.reader.UnreadSpan[0]);
-				case MessagePackPrimitives.DecodeResult.EmptyBuffer:
-				case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
-						return SlowPath(ref self, readResult, value, ref tokenSize);
-					}
-					else
-					{
-						throw ThrowNotEnoughBytesException();
-					}
-
-				default:
-					throw ThrowUnreachable();
-			}
+			case MessagePackPrimitives.DecodeResult.Success:
+				return value;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
 	}
 <# } #>

@@ -25,27 +25,15 @@ namespace Nerdbank.MessagePack;
 [Experimental("NBMsgPackAsync")]
 public class MessagePackAsyncReader(PipeReader pipeReader)
 {
-	private ReadResult? lastReadResult;
-	private bool timeForAdvanceTo;
+	private MessagePackStreamingReader.BufferRefresh? refresh;
+	private bool readerReturned = true;
 
 	/// <summary>
 	/// Gets a cancellation token to consider for calls into this object.
 	/// </summary>
 	public required CancellationToken CancellationToken { get; init; }
 
-	/// <summary>
-	/// Gets the fully-capable, synchronous reader.
-	/// </summary>
-	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
-	/// <param name="context">The serialization context.</param>
-	/// <returns>The buffer, for use in creating a <see cref="MessagePackReader"/>. This buffer may be larger than needed to include <paramref name="minimumDesiredBufferedStructures"/>.</returns>
-	/// <remarks>
-	/// The caller must take care to call <see cref="AdvanceTo(SequencePosition)"/> with <see cref="MessagePackReader.Position"/> before any other methods on this class after this call.
-	/// </remarks>
-	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
-	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
-	public async ValueTask<ReadOnlySequence<byte>> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, SerializationContext context)
-		=> (await this.ReadNextStructuresAsync(minimumDesiredBufferedStructures, minimumDesiredBufferedStructures, context).ConfigureAwait(false)).Buffer;
+	private MessagePackStreamingReader.BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
 
 	/// <summary>
 	/// Gets the fully-capable, synchronous reader.
@@ -57,137 +45,46 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	/// The buffer, for use in creating a <see cref="MessagePackReader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
 	/// Also returns the number of top-level structures included in the buffer that were counted (up to <paramref name="countUpTo"/>).
 	/// </returns>
-	/// <remarks>
-	/// The caller must take care to call <see cref="AdvanceTo(SequencePosition)"/> with <see cref="MessagePackReader.Position"/> before any other methods on this class after this call.
-	/// </remarks>
 	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
 	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
-	public async ValueTask<(ReadOnlySequence<byte> Buffer, int IncludedStructures)> ReadNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
+	public async ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
 	{
 		Requires.Argument(minimumDesiredBufferedStructures >= 0, nameof(minimumDesiredBufferedStructures), "A non-negative integer is required.");
 		Requires.Argument(countUpTo >= minimumDesiredBufferedStructures, nameof(countUpTo), "Count must be at least as large as minimumDesiredBufferedStructures.");
+		this.ThrowIfReaderNotReturned();
 
-		ReadResult readResult = default;
 		int skipCount = 0;
 		while (skipCount < minimumDesiredBufferedStructures)
 		{
-			readResult = await this.ReadAsync().ConfigureAwait(false);
-			MessagePackReader reader = new(readResult.Buffer);
+			if (this.refresh is null)
+			{
+				await this.ReadAsync().ConfigureAwait(false);
+			}
+
+			MessagePackStreamingReader reader = new(this.Refresh);
 			skipCount = 0;
 			for (; skipCount < countUpTo; skipCount++)
 			{
-				if (!reader.TrySkip(context))
+				if (reader.TrySkip(context) is MessagePackPrimitives.DecodeResult.InsufficientBuffer or MessagePackPrimitives.DecodeResult.EmptyBuffer)
 				{
 					if (skipCount >= minimumDesiredBufferedStructures)
 					{
-						// We got what we needed.
-						break;
-					}
-					else if (readResult.IsCompleted)
-					{
-						throw new EndOfStreamException();
-					}
-					else if (readResult.IsCanceled)
-					{
-						throw new OperationCanceledException();
+						return skipCount;
 					}
 
-					// We need to read more data.
-					this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
 					break;
 				}
 			}
+
+			if (skipCount == countUpTo)
+			{
+				break;
+			}
+
+			await this.ReadAsync().ConfigureAwait(false);
 		}
 
-		return (readResult.Buffer, skipCount);
-	}
-
-	/// <inheritdoc cref="MessagePackReader.TryReadNil"/>
-	public async ValueTask<bool> TryReadNilAsync()
-	{
-		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
-		if (readResult.IsCanceled)
-		{
-			throw new OperationCanceledException();
-		}
-
-		MessagePackReader reader = new(readResult.Buffer);
-		bool isNil = reader.TryReadNil();
-		this.AdvanceTo(reader.Position);
-		return isNil;
-	}
-
-	/// <inheritdoc cref="MessagePackReader.NextMessagePackType"/>
-	public async ValueTask<MessagePackType> TryPeekNextMessagePackTypeAsync()
-	{
-		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
-		if (readResult.IsCanceled)
-		{
-			throw new OperationCanceledException();
-		}
-
-		MessagePackReader reader = new(readResult.Buffer);
-		MessagePackType result = reader.NextMessagePackType;
-		this.AdvanceTo(readResult.Buffer.Start); // this was a peek. Don't consume anything.
-		return result;
-	}
-
-	/// <inheritdoc cref="MessagePackReader.ReadMapHeader"/>
-	public async ValueTask<int> ReadMapHeaderAsync()
-	{
-		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
-		if (readResult.IsCanceled)
-		{
-			throw new OperationCanceledException();
-		}
-
-retry:
-		MessagePackPrimitives.DecodeResult decodeResult = MessagePackPrimitives.TryReadMapHeader(readResult.Buffer, out uint count, out SequencePosition readTo);
-		switch (decodeResult)
-		{
-			case MessagePackPrimitives.DecodeResult.Success:
-				this.AdvanceTo(readTo);
-				return (int)count;
-			case MessagePackPrimitives.DecodeResult.TokenMismatch:
-				throw MessagePackReader.ThrowInvalidCode(readResult.Buffer.First.Span[0]);
-			case MessagePackPrimitives.DecodeResult.InsufficientBuffer when !readResult.IsCompleted:
-				// Fetch more data.
-				this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
-				readResult = await this.ReadAsync().ConfigureAwait(false);
-				goto retry;
-			case MessagePackPrimitives.DecodeResult.EmptyBuffer or MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-				throw new EndOfStreamException();
-			default: throw new UnreachableException();
-		}
-	}
-
-	/// <inheritdoc cref="MessagePackReader.ReadArrayHeader"/>
-	public async ValueTask<int> ReadArrayHeaderAsync()
-	{
-		ReadResult readResult = await this.ReadAsync().ConfigureAwait(false);
-		if (readResult.IsCanceled)
-		{
-			throw new OperationCanceledException();
-		}
-
-retry:
-		MessagePackPrimitives.DecodeResult decodeResult = MessagePackPrimitives.TryReadArrayHeader(readResult.Buffer, out uint count, out SequencePosition readTo);
-		switch (decodeResult)
-		{
-			case MessagePackPrimitives.DecodeResult.Success:
-				this.AdvanceTo(readTo);
-				return (int)count;
-			case MessagePackPrimitives.DecodeResult.TokenMismatch:
-				throw MessagePackReader.ThrowInvalidCode(readResult.Buffer.First.Span[0]);
-			case MessagePackPrimitives.DecodeResult.InsufficientBuffer when !readResult.IsCompleted:
-				// Fetch more data.
-				this.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
-				readResult = await this.ReadAsync().ConfigureAwait(false);
-				goto retry;
-			case MessagePackPrimitives.DecodeResult.EmptyBuffer or MessagePackPrimitives.DecodeResult.InsufficientBuffer:
-				throw new EndOfStreamException();
-			default: throw new UnreachableException();
-		}
+		return skipCount;
 	}
 
 	/// <summary>
@@ -198,143 +95,108 @@ retry:
 	/// <remarks>
 	/// After awaiting this method, the next msgpack structure can be retrieved by a call to <see cref="PipeReader.ReadAsync(CancellationToken)"/>.
 	/// </remarks>
-	public async ValueTask BufferNextStructureAsync(SerializationContext context)
-	{
-		ReadOnlySequence<byte> buffer = await this.ReadNextStructureAsync(context).ConfigureAwait(false);
-		this.AdvanceTo(buffer.Start);
-	}
+	public async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 
 	/// <summary>
-	/// Retrieves enough data from the pipe to read the next msgpack structure.
+	/// Fills the buffer with msgpack bytes to decode.
+	/// If the buffer already has bytes, <em>more</em> will be retrieved and added.
 	/// </summary>
-	/// <param name="context">The serialization context.</param>
-	/// <returns>The buffer containing exactly the next structure.</returns>
-	/// <remarks>
-	/// After a successful call to this method, the caller *must* call <see cref="AdvanceTo(SequencePosition, SequencePosition)"/>,
-	/// usually with <see cref="ReadOnlySequence{T}.End"/> to indicate that the next msgpack structure has been consumed.
-	/// After that call, the caller must *not* read the buffer again as it will have been recycled.
-	/// </remarks>
-	public async ValueTask<ReadOnlySequence<byte>> ReadNextStructureAsync(SerializationContext context)
+	/// <returns>An async task.</returns>
+	/// <exception cref="OperationCanceledException">Thrown if <see cref="CancellationToken"/> is canceled.</exception>
+	public async ValueTask ReadAsync()
 	{
-		while (true)
+		this.ThrowIfReaderNotReturned();
+
+		MessagePackStreamingReader reader;
+		if (this.refresh.HasValue)
 		{
-			ReadResult readBuffer = await this.ReadAsync().ConfigureAwait(false);
-			if (readBuffer.IsCanceled)
-			{
-				throw new OperationCanceledException();
-			}
-
-			MessagePackReader msgpackReader = new(readBuffer.Buffer);
-			if (msgpackReader.TrySkip(context))
-			{
-				return readBuffer.Buffer.Slice(0, msgpackReader.Position);
-			}
-			else
-			{
-				// Indicate that we haven't got enough buffer so that the next ReadAsync will guarantee us more.
-				this.AdvanceTo(readBuffer.Buffer.Start, readBuffer.Buffer.End);
-				if (readBuffer.IsCompleted)
-				{
-					throw new EndOfStreamException();
-				}
-			}
-		}
-	}
-
-	/// <summary>
-	/// Skips the next msgpack structure in the pipe.
-	/// </summary>
-	/// <param name="context">The serialization context.</param>
-	/// <returns>A task that completes when done reading past the next msgpack structure.</returns>
-	public async ValueTask SkipAsync(SerializationContext context)
-	{
-		while (true)
-		{
-			ReadResult readBuffer = await this.ReadAsync().ConfigureAwait(false);
-			if (readBuffer.IsCanceled)
-			{
-				throw new OperationCanceledException();
-			}
-
-			if (TrySkip(readBuffer.Buffer, context, out SequencePosition newPosition))
-			{
-				this.AdvanceTo(newPosition);
-				return;
-			}
-			else
-			{
-				// Indicate that we haven't got enough buffer so that the next ReadAsync will guarantee us more.
-				this.AdvanceTo(readBuffer.Buffer.Start, readBuffer.Buffer.End);
-				if (readBuffer.IsCompleted)
-				{
-					throw new EndOfStreamException();
-				}
-			}
-		}
-
-		bool TrySkip(ReadOnlySequence<byte> buffer, SerializationContext context, out SequencePosition newPosition)
-		{
-			MessagePackReader msgpackReader = new(buffer);
-			if (msgpackReader.TrySkip(context))
-			{
-				newPosition = msgpackReader.Position;
-				return true;
-			}
-			else
-			{
-				newPosition = buffer.Start;
-				return false;
-			}
-		}
-	}
-
-	/// <summary>
-	/// Follows up on a prior call to <see cref="ReadNextStructureAsync"/> to report some subset of the sequence as consumed.
-	/// </summary>
-	/// <param name="consumed">The position that was consumed. Should be <see cref="ReadOnlySequence{T}.End"/> on the value returned from <see cref="ReadNextStructureAsync"/> if the whole sequence was deserialize.</param>
-	public void AdvanceTo(SequencePosition consumed) => this.AdvanceTo(consumed, consumed);
-
-	/// <summary>
-	/// Follows up on a prior call to <see cref="ReadNextStructureAsync"/> to report some subset of the sequence as consumed.
-	/// </summary>
-	/// <param name="consumed">The position that was consumed. Should be <see cref="ReadOnlySequence{T}.End"/> on the value returned from <see cref="ReadNextStructureAsync"/> if the whole sequence was deserialize.</param>
-	/// <param name="examined">The position that was examined up to. Should always be no earlier in the sequence than <paramref name="consumed" />.</param>
-	public void AdvanceTo(SequencePosition consumed, SequencePosition examined)
-	{
-		Verify.Operation(this.timeForAdvanceTo && this.lastReadResult.HasValue, "Call ReadAsync first.");
-		ReadResult lastReadResult = this.lastReadResult.Value;
-
-		if (lastReadResult.Buffer.End.Equals(examined))
-		{
-			// The caller has examined everything we have.
-			pipeReader.AdvanceTo(consumed, examined);
-			this.lastReadResult = null;
+			reader = new(this.refresh.Value);
+			this.refresh = await reader.FetchMoreBytesAsync().ConfigureAwait(false);
 		}
 		else
 		{
-			// We still have data left to read in our local buffer.
-			this.lastReadResult = new(lastReadResult.Buffer.Slice(consumed), lastReadResult.IsCanceled, lastReadResult.IsCompleted);
-		}
+			ReadResult readResult = await pipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
+			if (readResult.IsCanceled)
+			{
+				throw new OperationCanceledException();
+			}
 
-		this.timeForAdvanceTo = false;
+			reader = new(
+				readResult.Buffer,
+				static (state, consumed, examined, ct) =>
+				{
+					PipeReader pipeReader = (PipeReader)state!;
+					pipeReader.AdvanceTo(consumed, examined);
+					return pipeReader.ReadAsync(ct);
+				},
+				pipeReader);
+			this.refresh = reader.GetExchangeInfo();
+		}
 	}
 
 	/// <summary>
-	/// Immediately returns the last read result if non-empty, or pulls on the <see cref="PipeReader"/> for more data and returns that.
+	/// Retrieves a <see cref="MessagePackStreamingReader"/>, which is suitable for
+	/// decoding msgpack from a buffer without throwing any exceptions, even if the buffer is incomplete.
 	/// </summary>
-	/// <returns>The current or next buffer to read.</returns>
-	private async ValueTask<ReadResult> ReadAsync()
+	/// <returns>A <see cref="MessagePackStreamingReader"/>.</returns>
+	/// <remarks>
+	/// The result must be returned with <see cref="ReturnReader(ref MessagePackStreamingReader)"/>
+	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// </remarks>
+	public MessagePackStreamingReader CreateStreamingReader()
 	{
-		Verify.Operation(!this.timeForAdvanceTo, "Calls out of order. Call AdvanceTo first.");
+		this.ThrowIfReaderNotReturned();
+		this.readerReturned = false;
+		return new(this.Refresh);
+	}
 
-		// PipeReader.ReadAsync is *slow*.
-		// Only pull on the pipeReader if we don't already have a buffer to read from.
-		if (this.lastReadResult is not { Buffer.IsEmpty: false })
-		{
-			this.lastReadResult = await pipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
-		}
+	/// <summary>
+	/// Retrieves a <see cref="MessagePackReader"/>, which is suitable for
+	/// decoding msgpack from a buffer that is known to have enough bytes for the decoding.
+	/// </summary>
+	/// <returns>A <see cref="MessagePackReader"/>.</returns>
+	/// <remarks>
+	/// The result must be returned with <see cref="ReturnReader(ref MessagePackReader)"/>
+	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// </remarks>
+	public MessagePackReader CreateBufferedReader()
+	{
+		this.ThrowIfReaderNotReturned();
+		this.readerReturned = false;
+		return new(this.Refresh.Buffer);
+	}
 
-		this.timeForAdvanceTo = true;
-		return this.lastReadResult.Value;
+	/// <summary>
+	/// Returns a previously obtained reader when the caller is done using it,
+	/// and applies the given reader's position to <em>this</em> reader so that
+	/// future reads move continuously forward in the msgpack stream.
+	/// </summary>
+	/// <param name="reader">The reader to return.</param>
+	public void ReturnReader(ref MessagePackStreamingReader reader)
+	{
+		this.refresh = reader.GetExchangeInfo();
+
+		// Clear the reader to prevent accidental reuse by the caller.
+		reader = default;
+
+		this.readerReturned = true;
+	}
+
+	/// <inheritdoc cref="ReturnReader(ref MessagePackStreamingReader)"/>
+	public void ReturnReader(ref MessagePackReader reader)
+	{
+		MessagePackStreamingReader.BufferRefresh refresh = this.Refresh;
+		refresh = refresh with { Buffer = refresh.Buffer.Slice(reader.Position) };
+		this.refresh = refresh;
+
+		// Clear the reader to prevent accidental reuse by the caller.
+		reader = default;
+
+		this.readerReturned = true;
+	}
+
+	private void ThrowIfReaderNotReturned()
+	{
+		Verify.Operation(this.readerReturned, "The previous reader must be returned before creating a new one.");
 	}
 }
