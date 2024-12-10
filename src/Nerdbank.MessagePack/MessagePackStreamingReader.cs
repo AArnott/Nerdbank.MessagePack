@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using Microsoft;
 using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
 namespace Nerdbank.MessagePack;
@@ -709,121 +710,158 @@ public ref partial struct MessagePackStreamingReader
 	/// </summary>
 	/// <param name="context">The context of the deserialization operation.</param>
 	/// <returns>The success or error code.</returns>
-	public DecodeResult TrySkip(SerializationContext context)
+	/// <remarks>
+	/// The reader position is changed when the return value is <see cref="DecodeResult.Success"/>.
+	/// The reader position and the <paramref name="context"/> may also be changed when the return value is <see cref="DecodeResult.InsufficientBuffer"/>,
+	/// such that after fetching more bytes, a follow-up call to this method can resume skipping.
+	/// </remarks>
+	public DecodeResult TrySkip(ref SerializationContext context)
 	{
-		DecodeResult result = this.TryPeekNextCode(out byte code);
-		if (result != DecodeResult.Success)
+		int count = Math.Max(1, context.MidSkipRemainingCount);
+
+		// Skip as many structures as we have already predicted we must skip to complete this or a previously suspended skip operation.
+		for (int i = 0; i < count; i++)
 		{
-			return result;
+			switch (TrySkipOne(ref this, out int skipMore))
+			{
+				case DecodeResult.Success:
+					count += skipMore;
+					break;
+				case DecodeResult.InsufficientBuffer:
+					context.MidSkipRemainingCount = count - i;
+					return DecodeResult.InsufficientBuffer;
+				case DecodeResult other:
+					return other;
+			}
 		}
 
-		switch (code)
+		context.MidSkipRemainingCount = 0;
+		return DecodeResult.Success;
+
+		static DecodeResult TrySkipOne(ref MessagePackStreamingReader self, out int skipMore)
 		{
-			case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
-			case MessagePackCode.Nil:
-			case MessagePackCode.True:
-			case MessagePackCode.False:
-				return this.reader.TryAdvance(1) ? DecodeResult.Success : this.InsufficientBytes;
-			case MessagePackCode.Int8:
-			case MessagePackCode.UInt8:
-				return this.reader.TryAdvance(2) ? DecodeResult.Success : this.InsufficientBytes;
-			case MessagePackCode.Int16:
-			case MessagePackCode.UInt16:
-				return this.reader.TryAdvance(3) ? DecodeResult.Success : this.InsufficientBytes;
-			case MessagePackCode.Int32:
-			case MessagePackCode.UInt32:
-			case MessagePackCode.Float32:
-				return this.reader.TryAdvance(5) ? DecodeResult.Success : this.InsufficientBytes;
-			case MessagePackCode.Int64:
-			case MessagePackCode.UInt64:
-			case MessagePackCode.Float64:
-				return this.reader.TryAdvance(9) ? DecodeResult.Success : this.InsufficientBytes;
-			case byte x when MessagePackCode.IsFixMap(x):
-			case MessagePackCode.Map16:
-			case MessagePackCode.Map32:
-				context.DepthStep();
-				return TrySkipNextMap(ref this, context);
-			case byte x when MessagePackCode.IsFixArray(x):
-			case MessagePackCode.Array16:
-			case MessagePackCode.Array32:
-				context.DepthStep();
-				return TrySkipNextArray(ref this, context);
-			case byte x when MessagePackCode.IsFixStr(x):
-			case MessagePackCode.Str8:
-			case MessagePackCode.Str16:
-			case MessagePackCode.Str32:
-				result = this.TryGetStringLengthInBytes(out uint length);
-				if (result != DecodeResult.Success)
-				{
-					return result;
-				}
-
-				return this.reader.TryAdvance(length) ? DecodeResult.Success : this.InsufficientBytes;
-			case MessagePackCode.Bin8:
-			case MessagePackCode.Bin16:
-			case MessagePackCode.Bin32:
-				result = this.TryGetBytesLength(out length);
-				if (result != DecodeResult.Success)
-				{
-					return result;
-				}
-
-				return this.reader.TryAdvance(length) ? DecodeResult.Success : this.InsufficientBytes;
-			case MessagePackCode.FixExt1:
-			case MessagePackCode.FixExt2:
-			case MessagePackCode.FixExt4:
-			case MessagePackCode.FixExt8:
-			case MessagePackCode.FixExt16:
-			case MessagePackCode.Ext8:
-			case MessagePackCode.Ext16:
-			case MessagePackCode.Ext32:
-				result = this.TryRead(out ExtensionHeader header);
-				if (result != DecodeResult.Success)
-				{
-					return result;
-				}
-
-				return this.reader.TryAdvance(header.Length) ? DecodeResult.Success : this.InsufficientBytes;
-			default:
-				// We don't actually expect to ever hit this point, since every code is supported.
-				Debug.Fail("Missing handler for code: " + code);
-				throw MessagePackReader.ThrowInvalidCode(code);
-		}
-
-		DecodeResult TrySkipNextArray(ref MessagePackStreamingReader self, SerializationContext context)
-		{
-			DecodeResult result = self.TryReadArrayHeader(out int count);
+			skipMore = 0;
+			DecodeResult result = self.TryPeekNextCode(out byte code);
 			if (result != DecodeResult.Success)
 			{
 				return result;
 			}
 
-			return TrySkip(ref self, count, context);
-		}
-
-		DecodeResult TrySkipNextMap(ref MessagePackStreamingReader self, SerializationContext context)
-		{
-			DecodeResult result = self.TryReadMapHeader(out int count);
-			if (result != DecodeResult.Success)
+			switch (code)
 			{
-				return result;
-			}
+				case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
+				case MessagePackCode.Nil:
+				case MessagePackCode.True:
+				case MessagePackCode.False:
+					return self.reader.TryAdvance(1) ? DecodeResult.Success : self.InsufficientBytes;
+				case MessagePackCode.Int8:
+				case MessagePackCode.UInt8:
+					return self.reader.TryAdvance(2) ? DecodeResult.Success : self.InsufficientBytes;
+				case MessagePackCode.Int16:
+				case MessagePackCode.UInt16:
+					return self.reader.TryAdvance(3) ? DecodeResult.Success : self.InsufficientBytes;
+				case MessagePackCode.Int32:
+				case MessagePackCode.UInt32:
+				case MessagePackCode.Float32:
+					return self.reader.TryAdvance(5) ? DecodeResult.Success : self.InsufficientBytes;
+				case MessagePackCode.Int64:
+				case MessagePackCode.UInt64:
+				case MessagePackCode.Float64:
+					return self.reader.TryAdvance(9) ? DecodeResult.Success : self.InsufficientBytes;
+				case byte x when MessagePackCode.IsFixMap(x):
+				case MessagePackCode.Map16:
+				case MessagePackCode.Map32:
+					result = self.TryReadMapHeader(out int count);
+					if (result == DecodeResult.Success)
+					{
+						skipMore = count * 2;
+					}
 
-			return TrySkip(ref self, count * 2, context);
-		}
-
-		DecodeResult TrySkip(ref MessagePackStreamingReader self, int count, SerializationContext context)
-		{
-			for (int i = 0; i < count; i++)
-			{
-				DecodeResult result = self.TrySkip(context);
-				if (result != DecodeResult.Success)
-				{
 					return result;
-				}
-			}
+				case byte x when MessagePackCode.IsFixArray(x):
+				case MessagePackCode.Array16:
+				case MessagePackCode.Array32:
+					result = self.TryReadArrayHeader(out count);
+					if (result == DecodeResult.Success)
+					{
+						skipMore = count;
+					}
 
-			return DecodeResult.Success;
+					return result;
+				case byte x when MessagePackCode.IsFixStr(x):
+				case MessagePackCode.Str8:
+				case MessagePackCode.Str16:
+				case MessagePackCode.Str32:
+					SequenceReader<byte> peekBackup = self.SequenceReader;
+					result = self.TryGetStringLengthInBytes(out uint length);
+					if (result != DecodeResult.Success)
+					{
+						return result;
+					}
+
+					if (self.reader.TryAdvance(length))
+					{
+						return DecodeResult.Success;
+					}
+					else
+					{
+						// Rewind so we can read the string header again next time.
+						self.reader = peekBackup;
+						return self.InsufficientBytes;
+					}
+
+				case MessagePackCode.Bin8:
+				case MessagePackCode.Bin16:
+				case MessagePackCode.Bin32:
+					peekBackup = self.SequenceReader;
+					result = self.TryGetBytesLength(out length);
+					if (result != DecodeResult.Success)
+					{
+						return result;
+					}
+
+					if (self.reader.TryAdvance(length))
+					{
+						return DecodeResult.Success;
+					}
+					else
+					{
+						// Rewind so we can read the string header again next time.
+						self.reader = peekBackup;
+						return self.InsufficientBytes;
+					}
+
+				case MessagePackCode.FixExt1:
+				case MessagePackCode.FixExt2:
+				case MessagePackCode.FixExt4:
+				case MessagePackCode.FixExt8:
+				case MessagePackCode.FixExt16:
+				case MessagePackCode.Ext8:
+				case MessagePackCode.Ext16:
+				case MessagePackCode.Ext32:
+					peekBackup = self.SequenceReader;
+					result = self.TryRead(out ExtensionHeader header);
+					if (result != DecodeResult.Success)
+					{
+						return result;
+					}
+
+					if (self.reader.TryAdvance(header.Length))
+					{
+						return DecodeResult.Success;
+					}
+					else
+					{
+						// Rewind so we can read the string header again next time.
+						self.reader = peekBackup;
+						return self.InsufficientBytes;
+					}
+
+				default:
+					// We don't actually expect to ever hit this point, since every code is supported.
+					Debug.Fail("Missing handler for code: " + code);
+					throw MessagePackReader.ThrowInvalidCode(code);
+			}
 		}
 	}
 

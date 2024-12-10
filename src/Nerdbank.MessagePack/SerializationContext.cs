@@ -66,6 +66,12 @@ public record struct SerializationContext
 	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
 
 	/// <summary>
+	/// Gets or sets the number of elements that must still be skipped to complete a skip operation.
+	/// </summary>
+	/// <value>0 when no skip operation was suspended and is still incomplete.</value>
+	internal int MidSkipRemainingCount { get; set; }
+
+	/// <summary>
 	/// Decrements the depth remaining and checks the cancellation token.
 	/// </summary>
 	/// <remarks>

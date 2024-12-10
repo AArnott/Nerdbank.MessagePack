@@ -364,7 +364,7 @@ namespace AsyncConverters
 
             for (int i = 0; i < count; i++)
             {
-                while (streamingReader.TrySkip(context).NeedsMoreBytes())
+                while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
                 {
                     streamingReader = new(await streamingReader.FetchMoreBytesAsync());
                 }

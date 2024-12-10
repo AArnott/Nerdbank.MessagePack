@@ -676,11 +676,10 @@ public ref partial struct MessagePackReader
 	/// <remarks>
 	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
 	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw(SerializationContext)"/> instead.
-	/// WARNING: when false is returned, the position of the reader is undefined.
 	/// </remarks>
 	internal bool TrySkip(SerializationContext context)
 	{
-		switch (this.streamingReader.TrySkip(context))
+		switch (this.streamingReader.TrySkip(ref context))
 		{
 			case MessagePackPrimitives.DecodeResult.Success:
 				return true;
