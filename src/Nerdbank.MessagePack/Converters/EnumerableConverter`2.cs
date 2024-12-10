@@ -143,7 +143,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			int count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+				streamingReader = new(await streamingReader.ReadMoreBytes());
 			}
 
 			for (int i = 0; i < count; i++)

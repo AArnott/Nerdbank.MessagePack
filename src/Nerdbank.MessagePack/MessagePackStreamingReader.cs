@@ -18,10 +18,13 @@ namespace Nerdbank.MessagePack;
 /// A common calling pattern is to call the decoding method within a <see langword="while"/> loop's expression
 /// and use the <see cref="DecodeResultExtensions.NeedsMoreBytes(DecodeResult)"/>
 /// extension method on the result.
-/// The content of the loop should be a call to <see cref="ReplenishBufferAsync"/> and to reconstruct
+/// The content of the loop should be a call to <see cref="ReadMoreBytes"/> and to reconstruct
 /// the reader using <see cref="MessagePackStreamingReader(in BufferRefresh)"/>.
 /// </remarks>
 /// <example>
+/// <para>
+/// The following snippet demonstrates a common pattern for properly reading with this type.
+/// </para>
 /// <code source="../../samples/CustomConverters.cs" region="GetMoreBytesPattern" lang="C#" />
 /// </example>
 [Experimental("NBMsgPackAsync")]
@@ -848,7 +851,7 @@ public ref partial struct MessagePackStreamingReader
 	/// It must not be used after calling this method.
 	/// Instead, the result can use the result of this method to recreate a new <see cref="MessagePackStreamingReader"/> value.
 	/// </remarks>
-	public ValueTask<BufferRefresh> ReplenishBufferAsync()
+	public ValueTask<BufferRefresh> ReadMoreBytes()
 	{
 		if (this.getMoreBytesAsync is null || this.eof)
 		{

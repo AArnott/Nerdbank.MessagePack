@@ -34,7 +34,7 @@ public class MessagePackStreamingReaderTests
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);
 		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryRead(out boolean));
-		incompleteReader = new(await incompleteReader.ReplenishBufferAsync());
+		incompleteReader = new(await incompleteReader.ReadMoreBytes());
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.True(boolean);
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
@@ -58,14 +58,14 @@ public class MessagePackStreamingReaderTests
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);
 		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryRead(out boolean));
-		incompleteReader = new(await incompleteReader.ReplenishBufferAsync());
+		incompleteReader = new(await incompleteReader.ReadMoreBytes());
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.True(boolean);
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.False(boolean);
 
 		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNil());
-		incompleteReader = new(await incompleteReader.ReplenishBufferAsync());
+		incompleteReader = new(await incompleteReader.ReadMoreBytes());
 		Assert.Equal(DecodeResult.EmptyBuffer, incompleteReader.TryReadNil());
 	}
 

@@ -284,7 +284,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				bool isNil;
 				while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
 				{
-					streamingReader = new(await streamingReader.ReplenishBufferAsync());
+					streamingReader = new(await streamingReader.ReadMoreBytes());
 				}
 
 				if (!isNil)

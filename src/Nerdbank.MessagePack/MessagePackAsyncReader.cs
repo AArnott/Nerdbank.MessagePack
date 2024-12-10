@@ -111,7 +111,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		if (this.refresh.HasValue)
 		{
 			reader = new(this.refresh.Value);
-			this.refresh = await reader.ReplenishBufferAsync().ConfigureAwait(false);
+			this.refresh = await reader.ReadMoreBytes().ConfigureAwait(false);
 		}
 		else
 		{

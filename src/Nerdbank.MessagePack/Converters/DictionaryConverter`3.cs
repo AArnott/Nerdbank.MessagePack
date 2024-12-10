@@ -144,7 +144,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			streamingReader = new(await streamingReader.ReadMoreBytes());
 		}
 
 		reader.ReturnReader(ref streamingReader);
@@ -182,7 +182,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			int count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+				streamingReader = new(await streamingReader.ReadMoreBytes());
 			}
 
 			reader.ReturnReader(ref streamingReader);

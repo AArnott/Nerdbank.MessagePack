@@ -177,7 +177,7 @@ namespace SubValues
 
         #endregion
 #else
-#region DelegateSubValuesNETFX
+        #region DelegateSubValuesNETFX
         public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
         {
             if (value is null)
@@ -195,7 +195,7 @@ namespace SubValues
             writer.Write("MyProperty2");
             writer.Write(value.MyProperty2);
         }
-#endregion
+        #endregion
 #endif
     }
 }
@@ -230,7 +230,7 @@ namespace SubValuesWithWitness
         }
     }
 #else
-#region WitnessOnFormatterNETFX
+    #region WitnessOnFormatterNETFX
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
@@ -242,7 +242,7 @@ namespace SubValuesWithWitness
             // ...
             context.GetConverter<SomeOtherType>(ShapeProvider).Read(ref reader, context);
             // ...
-#endregion
+            #endregion
 
             throw new NotImplementedException();
         }
@@ -276,7 +276,7 @@ namespace WitnessForArray
             // ...
             #endregion
 #else
-#region ArrayWitnessOnFormatterNETFX
+    #region ArrayWitnessOnFormatterNETFX
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
@@ -288,7 +288,7 @@ namespace WitnessForArray
             // ...
             context.GetConverter<SomeOtherType[]>(ShapeProvider).Read(ref reader, context);
             // ...
-#endregion
+            #endregion
 #endif
             throw new NotImplementedException();
         }
@@ -358,7 +358,7 @@ namespace AsyncConverters
             int count;
             while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
             {
-                streamingReader = new(await streamingReader.ReplenishBufferAsync());
+                streamingReader = new(await streamingReader.ReadMoreBytes());
             }
             #endregion
 
@@ -366,7 +366,7 @@ namespace AsyncConverters
             {
                 while (streamingReader.TrySkip(context).NeedsMoreBytes())
                 {
-                    streamingReader = new(await streamingReader.ReplenishBufferAsync());
+                    streamingReader = new(await streamingReader.ReadMoreBytes());
                 }
             }
 

@@ -335,7 +335,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			streamingReader = new(await streamingReader.ReadMoreBytes());
 		}
 
 		if (success)
@@ -354,7 +354,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		MessagePackType peekType;
 		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.ReplenishBufferAsync());
+			streamingReader = new(await streamingReader.ReadMoreBytes());
 		}
 
 		if (peekType == MessagePackType.Map)
@@ -362,7 +362,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+				streamingReader = new(await streamingReader.ReadMoreBytes());
 			}
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
@@ -426,7 +426,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			int arrayLength;
 			while (streamingReader.TryReadArrayHeader(out arrayLength).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.ReplenishBufferAsync());
+				streamingReader = new(await streamingReader.ReadMoreBytes());
 			}
 
 			reader.ReturnReader(ref streamingReader);
