@@ -18,7 +18,7 @@ namespace Nerdbank.MessagePack;
 /// A common calling pattern is to call the decoding method within a <see langword="while"/> loop's expression
 /// and use the <see cref="DecodeResultExtensions.NeedsMoreBytes(DecodeResult)"/>
 /// extension method on the result.
-/// The content of the loop should be a call to <see cref="ReadMoreBytesAsync"/> and to reconstruct
+/// The content of the loop should be a call to <see cref="FetchMoreBytesAsync"/> and to reconstruct
 /// the reader using <see cref="MessagePackStreamingReader(in BufferRefresh)"/>.
 /// </remarks>
 /// <example>
@@ -851,7 +851,7 @@ public ref partial struct MessagePackStreamingReader
 	/// It must not be used after calling this method.
 	/// Instead, the result can use the result of this method to recreate a new <see cref="MessagePackStreamingReader"/> value.
 	/// </remarks>
-	public ValueTask<BufferRefresh> ReadMoreBytesAsync()
+	public ValueTask<BufferRefresh> FetchMoreBytesAsync()
 	{
 		if (this.getMoreBytesAsync is null || this.eof)
 		{
