@@ -85,7 +85,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.ReadMoreBytes());
+			streamingReader = new(await streamingReader.ReadMoreBytesAsync());
 		}
 
 		if (success)
@@ -100,7 +100,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		MessagePackType peekType;
 		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.ReadMoreBytes());
+			streamingReader = new(await streamingReader.ReadMoreBytesAsync());
 		}
 
 		if (peekType == MessagePackType.Map)
@@ -108,7 +108,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.ReadMoreBytes());
+				streamingReader = new(await streamingReader.ReadMoreBytesAsync());
 			}
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
@@ -171,7 +171,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			int arrayLength;
 			while (streamingReader.TryReadArrayHeader(out arrayLength).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.ReadMoreBytes());
+				streamingReader = new(await streamingReader.ReadMoreBytesAsync());
 			}
 
 			reader.ReturnReader(ref streamingReader);

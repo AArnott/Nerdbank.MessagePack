@@ -258,7 +258,7 @@ Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scope
 Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence) -> void
 Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence, Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState) -> void
 Nerdbank.MessagePack.MessagePackStreamingReader.Position.get -> System.SequencePosition
-Nerdbank.MessagePack.MessagePackStreamingReader.ReadMoreBytes() -> System.Threading.Tasks.ValueTask<Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh>
+Nerdbank.MessagePack.MessagePackStreamingReader.ReadMoreBytesAsync() -> System.Threading.Tasks.ValueTask<Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh>
 Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextCode(out byte code) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextMessagePackType(out Nerdbank.MessagePack.MessagePackType type) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(Nerdbank.MessagePack.ExtensionHeader extensionHeader, out System.DateTime value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult

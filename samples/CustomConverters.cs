@@ -358,7 +358,7 @@ namespace AsyncConverters
             int count;
             while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
             {
-                streamingReader = new(await streamingReader.ReadMoreBytes());
+                streamingReader = new(await streamingReader.ReadMoreBytesAsync());
             }
             #endregion
 
@@ -366,7 +366,7 @@ namespace AsyncConverters
             {
                 while (streamingReader.TrySkip(context).NeedsMoreBytes())
                 {
-                    streamingReader = new(await streamingReader.ReadMoreBytes());
+                    streamingReader = new(await streamingReader.ReadMoreBytesAsync());
                 }
             }
 
