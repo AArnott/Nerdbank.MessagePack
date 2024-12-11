@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
@@ -14,6 +14,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 	public const string CallbackToTopLevelSerializerDiagnosticId = "NBMsgPack030";
 	public const string NotExactlyOneStructureDiagnosticId = "NBMsgPack031";
 	public const string OverrideGetJsonSchemaDiagnosticId = "NBMsgPack032";
+	public const string AsyncConverterShouldOverridePreferAsyncSerializationDiagnosticId = "NBMsgPack037";
 
 	//// NBMsgPack033 | Usage | Error | Async converters should return the MessagePackWriter
 	//// NBMsgPack034 | Usage | Error | Async converters should not reuse MessagePackWriter after returning it
@@ -44,10 +45,19 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 		defaultSeverity: DiagnosticSeverity.Info,
 		isEnabledByDefault: true);
 
+	public static readonly DiagnosticDescriptor AsyncConverterShouldOverridePreferAsyncSerializationDescriptor = new(
+		AsyncConverterShouldOverridePreferAsyncSerializationDiagnosticId,
+		title: Strings.NBMsgPack037_Title,
+		messageFormat: Strings.NBMsgPack037_MessageFormat,
+		category: "Usage",
+		defaultSeverity: DiagnosticSeverity.Warning,
+		isEnabledByDefault: true);
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		CallbackToTopLevelSerializerDescriptor,
 		NotExactlyOneStructureDescriptor,
 		OverrideGetJsonSchemaDescriptor,
+		AsyncConverterShouldOverridePreferAsyncSerializationDescriptor,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -113,6 +123,16 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 									if (symbol.Locations.FirstOrDefault(l => l.IsInSource) is { } location)
 									{
 										context.ReportDiagnostic(Diagnostic.Create(OverrideGetJsonSchemaDescriptor, location));
+									}
+								}
+
+								if (symbol.GetAllMembers().Any(m => m is IMethodSymbol { Name: "ReadAsync" or "WriteAsync", OverriddenMethod: not null }))
+								{
+									// This converter specifically implements async functionality.
+									IPropertySymbol? prefersAsyncSerialization = symbol.GetAllMembers().OfType<IPropertySymbol>().FirstOrDefault(p => p is { Name: "PreferAsyncSerialization", OverriddenProperty: not null });
+									if (prefersAsyncSerialization is null)
+									{
+										context.ReportDiagnostic(Diagnostic.Create(AsyncConverterShouldOverridePreferAsyncSerializationDescriptor, symbol.Locations.FirstOrDefault(l => l.IsInSource)));
 									}
 								}
 							});

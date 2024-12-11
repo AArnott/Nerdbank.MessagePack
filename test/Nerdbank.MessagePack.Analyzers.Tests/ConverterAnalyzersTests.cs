@@ -597,4 +597,33 @@ public class ConverterAnalyzersTests
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
+
+	[Fact]
+	public async Task AsyncConverter_ShouldOverridePreferAsyncSerialization()
+	{
+		string source = /* lang=c#-test */ """
+			#pragma warning disable NBMsgPackAsync
+
+			using System;
+			using System.Text.Json.Nodes;
+			using System.Threading.Tasks;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			class {|NBMsgPack037:MyConverter|} : MessagePackConverter<int>
+			{
+				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+
+				public override ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => throw new NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
 }
