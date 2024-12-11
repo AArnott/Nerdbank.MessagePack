@@ -33,6 +33,28 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	[Fact]
 	public async Task ObjectAsArrayOfValues_DefaultCtor_Null() => await this.AssertRoundtripAsync<PocoAsArrayWithDefaultCtor>(null);
 
+	[Fact]
+	public async Task WithPreBuffering()
+	{
+		SpecialRecordConverter converter = new();
+		this.Serializer.RegisterConverter(converter);
+		var msgpack = new ReadOnlySequence<byte>(
+			this.Serializer.Serialize(new SpecialRecord { Property = 446 }));
+
+		// Verify that with a sufficiently low async buffer, the async paths are taken.
+		this.Serializer = new() { MaxAsyncBuffer = 1 };
+		this.Serializer.RegisterConverter(converter);
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack));
+		Assert.Equal(1, converter.AsyncDeserializationCounter);
+
+		// Verify that with a sufficiently high async buffer, the sync paths are taken.
+		converter.AsyncDeserializationCounter = 0;
+		this.Serializer = new() { MaxAsyncBuffer = 15 };
+		this.Serializer.RegisterConverter(converter);
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack));
+		Assert.Equal(0, converter.AsyncDeserializationCounter);
+	}
+
 	[GenerateShape]
 	public partial record Poco(int X, int Y);
 
@@ -68,5 +90,36 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	{
 		[Key(0)]
 		public int Value { get; set; }
+	}
+
+	[GenerateShape]
+	internal partial record SpecialRecord
+	{
+		internal int Property { get; set; }
+	}
+
+	internal class SpecialRecordConverter : MessagePackConverter<SpecialRecord>
+	{
+		public override bool PreferAsyncSerialization => true;
+
+		internal int AsyncDeserializationCounter { get; set; }
+
+		public override SpecialRecord? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			return new SpecialRecord { Property = reader.ReadInt32() };
+		}
+
+		public override void Write(ref MessagePackWriter writer, in SpecialRecord? value, SerializationContext context)
+		{
+			writer.Write(value!.Property);
+		}
+
+#pragma warning disable NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+		public override ValueTask<SpecialRecord?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+		{
+			this.AsyncDeserializationCounter++;
+			return base.ReadAsync(reader, context);
+		}
+#pragma warning restore NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 	}
 }
