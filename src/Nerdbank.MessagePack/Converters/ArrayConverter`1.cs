@@ -104,6 +104,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 		if (success)
 		{
+			reader.ReturnReader(ref streamingReader);
 			return null;
 		}
 

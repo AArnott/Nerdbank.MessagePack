@@ -17,10 +17,15 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack021](NBMsgPack021.md) | Usage | Error | `[MessagePackConverter]` type missing default constructor
 [NBMsgPack030](NBMsgPack030.md) | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods
 [NBMsgPack031](NBMsgPack031.md) | Usage | Warning | Converters should read or write exactly one msgpack structure
-[NBMsgPack032](NBMsgPack032.md) | Usage | Info | Converters should override GetJsonSchema
+[NBMsgPack032](NBMsgPack032.md) | Usage | Info | Converters should override @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*
+[NBMsgPack033](NBMsgPack033.md) | Usage | Error | Async converters should return writers
+[NBMsgPack034](NBMsgPack034.md) | Usage | Error | Async converters should not reuse MessagePackWriter after returning it
+[NBMsgPack035](NBMsgPack035.md) | Usage | Error | Async converters should return readers
+[NBMsgPack036](NBMsgPack036.md) | Usage | Error | Async converters should not reuse readers after returning them
+[NBMsgPack037](NBMsgPack037.md) | Usage | Warning | Async converters should override @Nerdbank.MessagePack.MessagePackConverter`1.PreferAsyncSerialization
 [NBMsgPack100](NBMsgPack100.md) | Migration | Info | Migrate MessagePack-CSharp formatter
-[NBMsgPack101](NBMsgPack101.md) | Migration | Info | Migrate to MessagePackConverterAttribute
+[NBMsgPack101](NBMsgPack101.md) | Migration | Info | Migrate to @Nerdbank.MessagePack.MessagePackConverterAttribute
 [NBMsgPack102](NBMsgPack102.md) | Migration | Info | Remove use of MessagePackObjectAttribute
-[NBMsgPack103](NBMsgPack103.md) | Migration | Info | Use newer KeyAttribute
+[NBMsgPack103](NBMsgPack103.md) | Migration | Info | Use newer @Nerdbank.MessagePack.KeyAttribute
 [NBMsgPack104](NBMsgPack104.md) | Migration | Info | Remove use of IgnoreMemberAttribute
-[NBMsgPack105](NBMsgPack105.md) | Migration | Info | Implement IMessagePackSerializationCallbacks
+[NBMsgPack105](NBMsgPack105.md) | Migration | Info | Implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks

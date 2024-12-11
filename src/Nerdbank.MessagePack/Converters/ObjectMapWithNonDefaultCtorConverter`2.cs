@@ -155,6 +155,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
+
+			reader.ReturnReader(ref streamingReader);
 		}
 
 		TDeclaringType value = ctor(ref argState);

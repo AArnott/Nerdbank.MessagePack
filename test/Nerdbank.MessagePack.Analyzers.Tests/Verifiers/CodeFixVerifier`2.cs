@@ -89,7 +89,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 #if NET
 				.WithPreprocessorSymbols("NET")
 #endif
-				.WithLanguageVersion(LanguageVersion.CSharp12);
+				.WithLanguageVersion(LanguageVersion.CSharp13);
 		}
 
 		protected override CompilationOptions CreateCompilationOptions()

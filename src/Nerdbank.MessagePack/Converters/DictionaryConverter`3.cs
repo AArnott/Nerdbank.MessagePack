@@ -122,6 +122,9 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	where TKey : notnull
 {
 	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => this.ElementPrefersAsyncSerialization;
+
+	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{

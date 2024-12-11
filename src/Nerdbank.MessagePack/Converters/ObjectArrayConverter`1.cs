@@ -340,6 +340,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		if (success)
 		{
+			reader.ReturnReader(ref streamingReader);
 			return default;
 		}
 
