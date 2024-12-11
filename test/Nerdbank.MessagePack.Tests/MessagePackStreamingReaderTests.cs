@@ -98,7 +98,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		writer.Flush();
 
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
-		MessagePackStreamingReader reader = new(ros.Slice(0, 1), FetchMoreBytesAsync, ros);
+		MessagePackStreamingReader reader = new(ros.Slice(0, 1), MessagePackSerializerTestBase.FetchOneByteAtATimeAsync, ros);
 		SerializationContext context = new();
 		int fetchCount = 0;
 		while (reader.TrySkip(ref context).NeedsMoreBytes())
@@ -130,14 +130,5 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		writer.Flush();
 
 		return seq;
-	}
-
-	private static ValueTask<ReadResult> FetchMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken)
-	{
-		ReadOnlySequence<byte> wholeBuffer = (ReadOnlySequence<byte>)state!;
-
-		// Always provide just one more byte.
-		ReadOnlySequence<byte> slice = wholeBuffer.Slice(consumed, wholeBuffer.GetPosition(1, examined));
-		return new(new ReadResult(slice, isCanceled: false, isCompleted: slice.End.Equals(wholeBuffer.End)));
 	}
 }

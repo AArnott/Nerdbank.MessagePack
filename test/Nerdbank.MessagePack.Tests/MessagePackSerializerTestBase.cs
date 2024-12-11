@@ -37,6 +37,15 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 #endif
 	}
 
+	internal static ValueTask<ReadResult> FetchOneByteAtATimeAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken)
+	{
+		ReadOnlySequence<byte> wholeBuffer = (ReadOnlySequence<byte>)state!;
+
+		// Always provide just one more byte.
+		ReadOnlySequence<byte> slice = wholeBuffer.Slice(consumed, wholeBuffer.GetPosition(1, examined));
+		return new(new ReadResult(slice, isCanceled: false, isCompleted: slice.End.Equals(wholeBuffer.End)));
+	}
+
 	protected static void CapturePipe(PipeReader reader, PipeWriter forwardTo, Sequence<byte> logger)
 	{
 		_ = Task.Run(async delegate

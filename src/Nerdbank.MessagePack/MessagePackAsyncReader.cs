@@ -65,7 +65,8 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 			skipCount = 0;
 			for (; skipCount < countUpTo; skipCount++)
 			{
-				if (reader.TrySkip(ref context) is MessagePackPrimitives.DecodeResult.InsufficientBuffer or MessagePackPrimitives.DecodeResult.EmptyBuffer)
+				SerializationContext contextCopy = context; // We don't want the context changed to track partial skips
+				if (reader.TrySkip(ref contextCopy) is MessagePackPrimitives.DecodeResult.InsufficientBuffer or MessagePackPrimitives.DecodeResult.EmptyBuffer)
 				{
 					if (skipCount >= minimumDesiredBufferedStructures)
 					{
