@@ -144,7 +144,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
 		reader.ReturnReader(ref streamingReader);
@@ -182,7 +182,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			int count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
@@ -193,7 +193,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		}
 		else
 		{
-			await reader.BufferNextStructureAsync(context);
+			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadMapHeader();
 			for (int i = 0; i < count; i++)

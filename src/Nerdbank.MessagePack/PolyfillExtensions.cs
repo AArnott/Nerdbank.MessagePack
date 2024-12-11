@@ -184,7 +184,9 @@ namespace Nerdbank.MessagePack
 				{
 					try
 					{
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks -- it's actually from our parent context.
 						int result = await readTask.ConfigureAwait(false);
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
 						new Span<byte>(localBuffer, 0, result).CopyTo(localDestination.Span);
 						return result;
 					}

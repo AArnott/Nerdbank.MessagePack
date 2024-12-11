@@ -859,15 +859,15 @@ public ref partial struct MessagePackStreamingReader
 		}
 
 		this.CancellationToken.ThrowIfCancellationRequested();
-		ValueTask<BufferRefresh> result = Helper(this.getMoreBytesAsync, this.getMoreBytesState, this.reader.Position, this.reader.Sequence.End, this.CancellationToken);
+		ValueTask<BufferRefresh> result = HelperAsync(this.getMoreBytesAsync, this.getMoreBytesState, this.reader.Position, this.reader.Sequence.End, this.CancellationToken);
 
 		// Having made the call to request more bytes, our caller can no longer use this struct because the buffers it had are assumed to have been recycled.
 		this.reader = default;
 		return result;
 
-		static async ValueTask<BufferRefresh> Helper(GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken)
+		static async ValueTask<BufferRefresh> HelperAsync(GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken)
 		{
-			ReadResult moreBuffer = await getMoreBytes(getMoreBytesState, consumed, examined, cancellationToken);
+			ReadResult moreBuffer = await getMoreBytes(getMoreBytesState, consumed, examined, cancellationToken).ConfigureAwait(false);
 			return new BufferRefresh
 			{
 				CancellationToken = cancellationToken,

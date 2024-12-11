@@ -99,7 +99,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
 		if (success)
@@ -114,7 +114,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			int count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
@@ -129,7 +129,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		else
 		{
 			reader.ReturnReader(ref streamingReader);
-			await reader.BufferNextStructureAsync(context);
+			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 
 			int count = syncReader.ReadArrayHeader();
