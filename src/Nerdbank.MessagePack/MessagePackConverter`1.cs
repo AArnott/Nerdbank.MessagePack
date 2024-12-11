@@ -113,7 +113,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 		Requires.NotNull(reader);
 		context.CancellationToken.ThrowIfCancellationRequested();
 
-		await reader.BufferNextStructureAsync(context);
+		await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 		MessagePackReader syncReader = reader.CreateBufferedReader();
 		T? result = this.Read(ref syncReader, context);
 		reader.ReturnReader(ref syncReader);

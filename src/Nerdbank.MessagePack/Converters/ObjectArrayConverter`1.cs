@@ -178,7 +178,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			{
 				if (this.ShouldUseMap(value, ref indexesToIncludeArray, out ReadOnlyMemory<int> indexesToInclude, out _))
 				{
-					await WriteAsMapAsync(writer, value, indexesToInclude, properties, context);
+					await WriteAsMapAsync(writer, value, indexesToInclude, properties, context).ConfigureAwait(false);
 				}
 				else if (indexesToInclude.Length == 0)
 				{
@@ -188,7 +188,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					// Just serialize as an array, but truncate to the last index that *wanted* to be serialized.
 					// We +1 to the last index because the slice has an exclusive end index.
-					await WriteAsArrayAsync(writer, value, properties[..(indexesToInclude.Span[^1] + 1)], context);
+					await WriteAsArrayAsync(writer, value, properties[..(indexesToInclude.Span[^1] + 1)], context).ConfigureAwait(false);
 				}
 			}
 			finally
@@ -201,7 +201,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 		else
 		{
-			await WriteAsArrayAsync(writer, value, properties, context);
+			await WriteAsArrayAsync(writer, value, properties, context).ConfigureAwait(false);
 		}
 
 		static async ValueTask WriteAsMapAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
@@ -335,7 +335,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
 		if (success)
@@ -354,7 +354,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		MessagePackType peekType;
 		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
 		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
 		if (peekType == MessagePackType.Map)
@@ -362,7 +362,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
@@ -371,7 +371,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			int remainingEntries = mapEntries;
 			while (remainingEntries > 0)
 			{
-				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context);
+				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
 				MessagePackReader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
@@ -412,7 +412,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					{
 						// The property name isn't in the buffer, and thus whether it'll have an async reader.
 						reader.ReturnReader(ref syncReader);
-						await reader.ReadAsync();
+						await reader.ReadAsync().ConfigureAwait(false);
 
 						continue;
 					}
@@ -426,7 +426,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			int arrayLength;
 			while (streamingReader.TryReadArrayHeader(out arrayLength).NeedsMoreBytes())
 			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
