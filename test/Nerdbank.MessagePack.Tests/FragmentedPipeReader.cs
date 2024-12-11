@@ -9,16 +9,29 @@ using Microsoft;
 internal class FragmentedPipeReader : PipeReader
 {
 	private readonly ReadOnlySequence<byte> buffer;
-	private readonly int chunkSize;
+
+	private readonly int? chunkSize;
+
+	private readonly SequencePosition[]? chunkPositions;
+
 	private SequencePosition consumed;
 	private SequencePosition examined;
 	private bool expectAdvance;
+	private SequencePosition? lastReadReturnedPosition;
 
 	public FragmentedPipeReader(ReadOnlySequence<byte> buffer, int chunkSize = 1)
 	{
 		this.buffer = buffer;
-		this.chunkSize = chunkSize;
 		this.consumed = this.examined = buffer.Start;
+		this.chunkSize = chunkSize;
+	}
+
+	public FragmentedPipeReader(ReadOnlySequence<byte> buffer, params SequencePosition[] chunkPositions)
+	{
+		Requires.Argument(chunkPositions.Length > 0, nameof(chunkPositions), "Must provide at least one chunk position.");
+		this.buffer = buffer;
+		this.consumed = this.examined = buffer.Start;
+		this.chunkPositions = chunkPositions;
 	}
 
 	public override void AdvanceTo(SequencePosition consumed) => this.AdvanceTo(consumed, consumed);
@@ -39,11 +52,33 @@ internal class FragmentedPipeReader : PipeReader
 	public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
 	{
 		Verify.Operation(!this.expectAdvance, "Out of order operations. AdvanceTo call is missing.");
-		SequencePosition chunkEnd = this.buffer.GetPosition(this.chunkSize, this.examined);
+		SequencePosition chunkEnd;
+		if (this.chunkSize.HasValue)
+		{
+			chunkEnd = this.buffer.GetPosition(this.chunkSize.Value, this.examined);
+		}
+		else
+		{
+			Assumes.NotNull(this.chunkPositions);
+			if (this.lastReadReturnedPosition.HasValue && this.examined.Equals(this.lastReadReturnedPosition.Value))
+			{
+				// The caller has examined everything we gave them. Give them more.
+				int lastChunkGivenIndex = Array.IndexOf(this.chunkPositions, this.examined);
+				Assumes.True(lastChunkGivenIndex >= 0);
+				chunkEnd = this.chunkPositions.Length > lastChunkGivenIndex + 1 ? this.chunkPositions[lastChunkGivenIndex + 1] : this.buffer.End;
+			}
+			else
+			{
+				// The caller hasn't finished processing the last chunk we gave them.
+				// Give them the same chunk again.
+				chunkEnd = this.lastReadReturnedPosition ?? this.chunkPositions[0];
+			}
+		}
 
 		ReadOnlySequence<byte> chunk = this.buffer.Slice(this.consumed, chunkEnd);
 		bool complete = chunk.End.Equals(this.buffer.End);
 		this.expectAdvance = true;
+		this.lastReadReturnedPosition = chunk.End;
 		return new(new ReadResult(chunk, isCanceled: false, complete));
 	}
 
