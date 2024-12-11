@@ -3,18 +3,32 @@
 
 using System.Reflection;
 
-public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
+public abstract class MessagePackSerializerTestBase
 {
 	protected ReadOnlySequence<byte> lastRoundtrippedMsgpack;
+	private readonly ITestOutputHelper logger;
+
+	public MessagePackSerializerTestBase(ITestOutputHelper logger)
+	{
+		this.logger = logger;
+
+		this.Serializer = new MessagePackSerializer
+		{
+			// Most async tests primarily mean to exercise the async code paths,
+			// so disable the buffer that would lead it down the synchronous paths since we have
+			// small test data sizes.
+			MaxAsyncBuffer = 0,
+		};
+	}
 
 	/// <summary>
 	/// Gets the time for a delay that is likely (but not guaranteed) to let concurrent work make progress in a way that is conducive to the test's intent.
 	/// </summary>
 	public static TimeSpan AsyncDelay => TimeSpan.FromMilliseconds(250);
 
-	protected MessagePackSerializer Serializer { get; set; } = new();
+	protected MessagePackSerializer Serializer { get; set; }
 
-	protected ITestOutputHelper Logger => logger;
+	protected ITestOutputHelper Logger => this.logger;
 
 #if !NET
 	internal static ITypeShapeProvider GetShapeProvider<TProvider>()
@@ -181,9 +195,7 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 		await this.Serializer.SerializeAsync(pipeForSerializing.Writer, value, shape);
 		await pipeForSerializing.Writer.FlushAsync();
 
-		// The deserializer should complete even *without* our completing the writer.
-		// But if tests hang, enabling this can help turn them into EndOfStreamException.
-		////await pipe.Writer.CompleteAsync();
+		await pipeForSerializing.Writer.CompleteAsync();
 
 		try
 		{
@@ -199,6 +211,6 @@ public abstract class MessagePackSerializerTestBase(ITestOutputHelper logger)
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
 	{
-		logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));
+		this.logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));
 	}
 }

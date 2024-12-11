@@ -259,15 +259,10 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		sequence.Append(secondSegment);
 
 		// Deserialize, through a pipe that lets us control the buffer segments.
-		Pipe pipe = new();
+		FragmentedPipeReader pipeReader = new(sequence, sequence.AsReadOnlySequence.GetPosition(splitPosition));
 
-		ValueTask<FamilyWithAsyncProperties?> familyTask = this.Serializer.DeserializeAsync<FamilyWithAsyncProperties>(pipe.Reader);
+		FamilyWithAsyncProperties? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncProperties>(pipeReader);
 
-		await pipe.Writer.WriteAsync(firstSegment);
-		await Task.Delay(AsyncDelay); // give the deserializer time to run.
-		await pipe.Writer.WriteAsync(secondSegment);
-
-		FamilyWithAsyncProperties? family = await familyTask;
 		Assert.Equal(expectedFamily, family);
 	}
 
@@ -310,15 +305,10 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		sequence.Append(secondSegment);
 
 		// Deserialize, through a pipe that lets us control the buffer segments.
-		Pipe pipe = new();
+		FragmentedPipeReader pipeReader = new(sequence, sequence.AsReadOnlySequence.GetPosition(splitPosition));
 
-		ValueTask<FamilyWithAsyncPropertiesWithDefaultCtor?> familyTask = this.Serializer.DeserializeAsync<FamilyWithAsyncPropertiesWithDefaultCtor>(pipe.Reader);
+		FamilyWithAsyncPropertiesWithDefaultCtor? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncPropertiesWithDefaultCtor>(pipeReader);
 
-		await pipe.Writer.WriteAsync(firstSegment);
-		await Task.Delay(AsyncDelay); // give the deserializer time to run.
-		await pipe.Writer.WriteAsync(secondSegment);
-
-		FamilyWithAsyncPropertiesWithDefaultCtor? family = await familyTask;
 		Assert.Equal(expectedFamily, family);
 	}
 

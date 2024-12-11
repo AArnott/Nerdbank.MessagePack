@@ -17,19 +17,10 @@ public class MessagePackAsyncReaderTests
 		writer.Flush();
 
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
-
-		Pipe pipe = new();
-		pipe.Writer.Write(ros.Slice(0, 1));
-		await pipe.Writer.FlushAsync();
+		FragmentedPipeReader pipeReader = new(ros, ros.GetPosition(1));
 
 		SerializationContext context = new();
-		MessagePackAsyncReader reader = new(pipe.Reader) { CancellationToken = default };
-		Task bufferTask = reader.BufferNextStructureAsync(context).AsTask();
-
-		await Task.Delay(MessagePackSerializerTestBase.AsyncDelay);
-		pipe.Writer.Write(ros.Slice(1));
-		await pipe.Writer.CompleteAsync();
-
-		await bufferTask;
+		MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = default };
+		await reader.BufferNextStructureAsync(context);
 	}
 }

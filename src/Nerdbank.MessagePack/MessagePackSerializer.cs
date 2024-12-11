@@ -36,6 +36,7 @@ public partial record MessagePackSerializer
 
 	private MultiProviderTypeCache? cachedConverters;
 	private bool preserveReferences;
+	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
 #if NET
 
@@ -175,6 +176,33 @@ public partial record MessagePackSerializer
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
+
+	/// <summary>
+	/// Gets the maximum length of msgpack to buffer before beginning deserialization.
+	/// </summary>
+	/// <value>
+	/// May be set to any non-negative integer.
+	/// The default value is 1MB and is subject to change.
+	/// </value>
+	/// <remarks>
+	/// <para>
+	/// Larger values are more likely to lead to async buffering followed by synchronous deserialization, which is significantly faster than <em>async</em> deserialization.
+	/// Smaller values are useful for limiting memory usage since deserialization can happen while pulling in more msgpack bytes, allowing release of the buffers containing earlier bytes to make room for subsequent ones.
+	/// </para>
+	/// <para>
+	/// This value has no impact once deserialization has begun.
+	/// The msgpack structure to be deserialized and converters used during deserialization may result in buffering any amount of msgpack beyond this value.
+	/// </para>
+	/// </remarks>
+	public int MaxAsyncBuffer
+	{
+		get => this.maxAsyncBuffer;
+		init
+		{
+			Requires.Range(value >= 0, nameof(value));
+			this.maxAsyncBuffer = value;
+		}
+	}
 
 	/// <summary>
 	/// Gets a value indicating whether hardware accelerated converters should be avoided.
@@ -350,17 +378,8 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
-	{
-		Requires.NotNull(shape);
-		cancellationToken.ThrowIfCancellationRequested();
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-#pragma warning disable NBMsgPackAsync
-		var asyncReader = new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken };
-		await asyncReader.ReadAsync().ConfigureAwait(false);
-		return await this.GetOrAddConverter(shape).ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
-#pragma warning restore NBMsgPackAsync
-	}
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.GetOrAddConverter(shape), cancellationToken);
 
 	/// <summary>
 	/// Deserializes a value from a <see cref="PipeReader"/>.
@@ -370,16 +389,8 @@ public partial record MessagePackSerializer
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-	{
-		cancellationToken.ThrowIfCancellationRequested();
-		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-#pragma warning disable NBMsgPackAsync
-		var asyncReader = new MessagePackAsyncReader(reader) { CancellationToken = cancellationToken };
-		await asyncReader.ReadAsync().ConfigureAwait(false);
-		return await this.GetOrAddConverter<T>(provider).ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
-#pragma warning restore NBMsgPackAsync
-	}
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.GetOrAddConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
 	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
@@ -640,6 +651,46 @@ public partial record MessagePackSerializer
 			IMessagePackConverter converter = (IMessagePackConverter)pair.Value;
 			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
 		}
+	}
+
+	/// <summary>
+	/// Deserializes a value from a <see cref="PipeReader"/>.
+	/// </summary>
+	/// <typeparam name="T">The type of value to be deserialized.</typeparam>
+	/// <param name="reader">The <see cref="PipeReader"/> to read from.</param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="converter">The msgpack converter for the root data type.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	private async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter<T> converter, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+
+		// Buffer up to some threshold before starting deserialization.
+		// Only engage with the async code path (which is slower) if we reach our threshold
+		// and more bytes are still to come.
+		if (this.MaxAsyncBuffer > 0)
+		{
+			ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
+			if (readResult.IsCompleted)
+			{
+				MessagePackReader msgpackReader = new(readResult.Buffer);
+				T? result = converter.Read(ref msgpackReader, context.Value);
+				reader.AdvanceTo(msgpackReader.Position);
+				return result;
+			}
+			else
+			{
+				reader.AdvanceTo(readResult.Buffer.Start);
+			}
+		}
+
+#pragma warning disable NBMsgPackAsync
+		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		await asyncReader.ReadAsync().ConfigureAwait(false);
+		return await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+#pragma warning restore NBMsgPackAsync
 	}
 
 	/// <summary>

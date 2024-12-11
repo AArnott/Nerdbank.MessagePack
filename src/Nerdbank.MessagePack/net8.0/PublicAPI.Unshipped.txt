@@ -211,6 +211,8 @@ Nerdbank.MessagePack.MessagePackSerializer.InternStrings.get -> bool
 Nerdbank.MessagePack.MessagePackSerializer.InternStrings.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.get -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.MaxAsyncBuffer.get -> int
+Nerdbank.MessagePack.MessagePackSerializer.MaxAsyncBuffer.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.get -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.get -> bool
