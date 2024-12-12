@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
@@ -14,12 +14,11 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 	public const string CallbackToTopLevelSerializerDiagnosticId = "NBMsgPack030";
 	public const string NotExactlyOneStructureDiagnosticId = "NBMsgPack031";
 	public const string OverrideGetJsonSchemaDiagnosticId = "NBMsgPack032";
+	public const string AsyncConverterShouldReturnWriterDiagnosticId = "NBMsgPack033";
+	public const string AsyncConverterShouldNotReuseWriterDiagnosticId = "NBMsgPack034";
+	public const string AsyncConverterShouldReturnReaderDiagnosticId = "NBMsgPack035";
+	public const string AsyncConverterShouldNotReuseReaderDiagnosticId = "NBMsgPack036";
 	public const string AsyncConverterShouldOverridePreferAsyncSerializationDiagnosticId = "NBMsgPack037";
-
-	//// NBMsgPack033 | Usage | Error | Async converters should return the MessagePackWriter
-	//// NBMsgPack034 | Usage | Error | Async converters should not reuse MessagePackWriter after returning it
-	//// NBMsgPack035 | Usage | Error | Async converters should return readers before any await(control flow analyzer)
-	//// NBMsgPack036 | Usage | Error | Async converters should not reuse readers after returning them (control flow analyzer)/
 
 	public static readonly DiagnosticDescriptor CallbackToTopLevelSerializerDescriptor = new(
 		CallbackToTopLevelSerializerDiagnosticId,
