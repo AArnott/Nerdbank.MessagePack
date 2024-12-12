@@ -2,6 +2,9 @@
 
 indent_style = space
 
+# SA1108: Block statements should not contain embedded comments
+dotnet_diagnostic.SA1108.severity = none
+
 # SA1123: Do not place regions within elements
 dotnet_diagnostic.SA1123.severity = none
 

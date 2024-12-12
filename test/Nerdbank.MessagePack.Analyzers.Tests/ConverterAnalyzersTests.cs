@@ -13,7 +13,7 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
@@ -33,7 +33,7 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
@@ -81,7 +81,7 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
@@ -296,7 +296,7 @@ public class ConverterAnalyzersTests
 			using PolyType;
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
-			
+
 			internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement> : MessagePackConverter<TArray>
 			{
 				public override TArray Read(ref MessagePackReader reader, SerializationContext context)
@@ -322,7 +322,7 @@ public class ConverterAnalyzersTests
 			using PolyType;
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
-			
+
 			internal class ArrayWithFlattenedDimensionsConverter : MessagePackConverter<int>
 			{
 				[My]
@@ -351,7 +351,7 @@ public class ConverterAnalyzersTests
 			using PolyType;
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
-			
+
 			internal class ArrayWithFlattenedDimensionsConverter(MessagePackConverter<int> primitiveConverter) : MessagePackConverter<int>
 			{
 				public override int Read(ref MessagePackReader reader, SerializationContext context)
@@ -396,7 +396,7 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public abstract class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
@@ -415,7 +415,7 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
@@ -479,7 +479,7 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
@@ -510,7 +510,7 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType {|NBMsgPack031:Read|}(ref MessagePackReader reader, SerializationContext context)
@@ -543,7 +543,7 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using Nerdbank.MessagePack;
-			
+
 			class CustomStringConverter : MessagePackConverter<string>
 			{
 				public override string Read(ref MessagePackReader reader, SerializationContext context)
@@ -564,7 +564,7 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using Nerdbank.MessagePack;
-			
+
 			class CustomStringConverter : MessagePackConverter<string>
 			{
 				public override string Read(ref MessagePackReader reader, SerializationContext context)
@@ -587,11 +587,210 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			public class MyType { }
-			
+
 			public class {|NBMsgPack032:MyTypeConverter|} : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task AsyncConverter_ShouldOverridePreferAsyncSerialization()
+	{
+		string source = /* lang=c#-test */ """
+			#pragma warning disable NBMsgPackAsync
+
+			using System;
+			using System.Text.Json.Nodes;
+			using System.Threading.Tasks;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			class {|NBMsgPack037:MyConverter|} : MessagePackConverter<int>
+			{
+				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+
+				public override ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => throw new NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task AsyncConverter_ReturnsReaderWriter()
+	{
+		string source = /* lang=c#-test */ """
+			#pragma warning disable NBMsgPackAsync
+
+			using System;
+			using System.Text.Json.Nodes;
+			using System.Threading.Tasks;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			class MyConverter : MessagePackConverter<int>
+			{
+				public override bool PreferAsyncSerialization => true;
+
+				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+
+				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				{
+					MessagePackWriter syncWriter = writer.CreateWriter();
+					syncWriter.Write(value);
+					writer.ReturnWriter(ref syncWriter);
+
+					await Task.Yield();
+
+					syncWriter = writer.CreateWriter();
+					writer.ReturnWriter(ref syncWriter);
+
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				}
+
+				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				{
+					MessagePackReader bufferedReader = reader.CreateBufferedReader();
+					bufferedReader.ReadInt32();
+					reader.ReturnReader(ref bufferedReader);
+
+					MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
+					{
+						streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+					}
+
+					reader.ReturnReader(ref streamingReader);
+
+					return 5;
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task AsyncConverter_UsesReaderWriterAfterReturn()
+	{
+		string source = /* lang=c#-test */ """
+			#pragma warning disable NBMsgPackAsync
+
+			using System;
+			using System.Text.Json.Nodes;
+			using System.Threading.Tasks;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			class MyConverter : MessagePackConverter<int>
+			{
+				public override bool PreferAsyncSerialization => true;
+
+				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+
+				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				{
+					MessagePackWriter syncWriter = writer.CreateWriter();
+					syncWriter.Write(value);
+					writer.ReturnWriter(ref syncWriter);
+					writer.ReturnWriter(ref {|NBMsgPack034:syncWriter|});
+					{|NBMsgPack034:syncWriter|}.Write(value);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				}
+
+				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				{
+					MessagePackReader bufferedReader = reader.CreateBufferedReader();
+					bufferedReader.ReadInt32();
+					reader.ReturnReader(ref bufferedReader);
+					reader.ReturnReader(ref {|NBMsgPack036:bufferedReader|});
+					{|NBMsgPack036:bufferedReader|}.ReadInt32();
+
+					MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
+					{
+						streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+					}
+
+					reader.ReturnReader(ref streamingReader);
+					reader.ReturnReader(ref {|NBMsgPack036:streamingReader|});
+					{|NBMsgPack036:streamingReader|}.TryRead(out int value2);
+
+					return 5;
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task AsyncConverter_DoesNotReturnReaderWriter()
+	{
+		string source = /* lang=c#-test */ """
+			#pragma warning disable NBMsgPackAsync
+
+			using System;
+			using System.Text.Json.Nodes;
+			using System.Threading.Tasks;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			class MyConverter : MessagePackConverter<int>
+			{
+				public override bool PreferAsyncSerialization => true;
+
+				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+
+				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				{
+					MessagePackWriter syncWriter = writer.CreateWriter();
+					syncWriter.Write(value);
+					//writer.ReturnWriter(ref syncWriter);
+
+					{|NBMsgPack033:await|} writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+					{|NBMsgPack033:writer.CreateWriter()|};
+				{|NBMsgPack033:}|}
+
+				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				{
+					MessagePackReader bufferedReader = reader.CreateBufferedReader();
+					bufferedReader.ReadInt32();
+					//reader.ReturnReader(ref bufferedReader);
+
+					MessagePackStreamingReader streamingReader = {|NBMsgPack035:reader.CreateStreamingReader()|};
+					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
+					{
+						streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+					}
+
+					//reader.ReturnReader(ref streamingReader);
+
+					{|NBMsgPack035:return|} 5;
+				}
 			}
 			""";
 

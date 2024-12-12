@@ -5,6 +5,7 @@
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsPackable>false</IsPackable>
     <IsAnalyzerProject>true</IsAnalyzerProject>
+    <IsRoslynComponent>true</IsRoslynComponent>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 

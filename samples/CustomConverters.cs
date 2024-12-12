@@ -339,6 +339,8 @@ namespace AsyncConverters
 
     public class MyCustomTypeConverter : MessagePackConverter<MyCustomType>
     {
+        public override bool PreferAsyncSerialization => true;
+
         public override MyCustomType? Read(ref MessagePackReader reader, SerializationContext context)
         {
             throw new NotImplementedException();

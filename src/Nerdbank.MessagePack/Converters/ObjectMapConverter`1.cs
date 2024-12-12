@@ -274,6 +274,8 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
+
+			reader.ReturnReader(ref streamingReader);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
