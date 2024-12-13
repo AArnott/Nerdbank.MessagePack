@@ -10,6 +10,7 @@ public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackConverter,
 	INamedTypeSymbol MessagePackConverterAttribute,
 	INamedTypeSymbol MessagePackReader,
+	INamedTypeSymbol MessagePackStreamingReader,
 	INamedTypeSymbol MessagePackWriter,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol KnownSubTypeAttribute,
@@ -60,6 +61,13 @@ public record ReferenceSymbols(
 
 		INamedTypeSymbol? messagePackReader = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackReader");
 		if (messagePackReader is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? messagePackStreamingReader = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackStreamingReader");
+		if (messagePackStreamingReader is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -119,6 +127,7 @@ public record ReferenceSymbols(
 			messagePackConverter,
 			messagePackConverterAttribute,
 			messagePackReader,
+			messagePackStreamingReader,
 			messagePackWriter,
 			keyAttribute,
 			knownSubTypeAttribute,

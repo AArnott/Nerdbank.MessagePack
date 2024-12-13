@@ -23,6 +23,7 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack035](NBMsgPack035.md) | Usage | Error | Async converters should return readers
 [NBMsgPack036](NBMsgPack036.md) | Usage | Error | Async converters should not reuse readers after returning them
 [NBMsgPack037](NBMsgPack037.md) | Usage | Warning | Async converters should override @Nerdbank.MessagePack.MessagePackConverter`1.PreferAsyncSerialization
+[NBMsgPack050](NBMsgPack050.md) | Usage | Warning | Use ref parameters for ref structs
 [NBMsgPack100](NBMsgPack100.md) | Migration | Info | Migrate MessagePack-CSharp formatter
 [NBMsgPack101](NBMsgPack101.md) | Migration | Info | Migrate to @Nerdbank.MessagePack.MessagePackConverterAttribute
 [NBMsgPack102](NBMsgPack102.md) | Migration | Info | Remove use of MessagePackObjectAttribute
