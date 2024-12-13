@@ -22,6 +22,7 @@ NBMsgPack034 | Usage | Error | Async converters should not reuse MessagePackWrit
 NBMsgPack035 | Usage | Error | Async converters should return readers
 NBMsgPack036 | Usage | Error | Async converters should not reuse readers after returning them
 NBMsgPack037 | Usage | Warning | Async converters should override PreferAsyncSerialization
+NBMsgPack050 | Usage | Warning | Use ref parameters for ref structs
 NBMsgPack100 | Migration | Info | Migrate MessagePack-CSharp formatter
 NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute
 NBMsgPack102 | Migration | Info | Remove use of MessagePackObjectAttribute

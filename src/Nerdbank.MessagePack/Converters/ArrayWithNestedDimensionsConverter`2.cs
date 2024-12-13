@@ -149,7 +149,9 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	/// </summary>
 	/// <param name="reader">The reader. This is <em>not</em> a <see langword="ref" /> so as to not impact the caller's read position.</param>
 	/// <param name="dimensions">The dimensional array to initialize.</param>
+#pragma warning disable NBMsgPack050 // use "ref MessagePackReader" for parameter type
 	private void PeekDimensionsLength(MessagePackReader reader, int[] dimensions)
+#pragma warning restore NBMsgPack050 // use "ref MessagePackReader" for parameter type
 	{
 		for (int i = 0; i < dimensions.Length; i++)
 		{
