@@ -60,6 +60,11 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 			return false;
 		}
 
+		if (testCase.CustomKind == TypeShapeKind.None)
+		{
+			return false;
+		}
+
 		return true;
 	}
 }
