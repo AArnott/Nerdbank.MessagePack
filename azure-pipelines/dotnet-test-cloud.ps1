@@ -55,6 +55,9 @@ if ($x86) {
     -bl:"$ArtifactStagingFolder/build_logs/test.binlog" `
     --diag "$ArtifactStagingFolder/test_logs/diag.log;TraceLevel=info" `
     --logger trx `
+    --logger GitHubActions `
+    -- `
+    RunConfiguration.CollectSourceInformation=true `
 
 $unknownCounter = 0
 Get-ChildItem -Recurse -Path $RepoRoot\test\*.trx |% {
