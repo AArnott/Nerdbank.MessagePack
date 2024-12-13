@@ -14,6 +14,7 @@ public record MessagePackCSharpReferenceSymbols(
 	INamedTypeSymbol MessagePackObjectAttribute,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol IgnoreMemberAttribute,
+	INamedTypeSymbol SerializationConstructorAttribute,
 	INamedTypeSymbol IMessagePackSerializationCallbackReceiver,
 	INamedTypeSymbol MessagePackSecurity,
 	IMethodSymbol DepthStep,
@@ -98,6 +99,13 @@ public record MessagePackCSharpReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? serializationConstructorAttribute = oldLibraryAnnotationsAssembly.GetTypeByMetadataName("MessagePack.SerializationConstructorAttribute");
+		if (serializationConstructorAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? messagePackSerializationCallbackReceiver = oldLibraryAnnotationsAssembly.GetTypeByMetadataName("MessagePack.IMessagePackSerializationCallbackReceiver");
 		if (messagePackSerializationCallbackReceiver is null)
 		{
@@ -177,6 +185,7 @@ public record MessagePackCSharpReferenceSymbols(
 			messagePackObjectAttribute,
 			keyAttribute,
 			ignoreMemberAttribute,
+			serializationConstructorAttribute,
 			messagePackSerializationCallbackReceiver,
 			messagePackSecurity,
 			depthStep,

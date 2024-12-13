@@ -29,3 +29,4 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack103](NBMsgPack103.md) | Migration | Info | Use newer @Nerdbank.MessagePack.KeyAttribute
 [NBMsgPack104](NBMsgPack104.md) | Migration | Info | Remove use of IgnoreMemberAttribute
 [NBMsgPack105](NBMsgPack105.md) | Migration | Info | Implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks
+[NBMsgPack106](NBMsgPack106.md) | Migration | Info | Use @PolyType.ConstructorShapeAttribute

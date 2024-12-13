@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -21,6 +22,7 @@ public class MigrationCodeFix : CodeFixProvider
 	private static readonly QualifiedNameSyntax Namespace = QualifiedName(IdentifierName("Nerdbank"), IdentifierName("MessagePack"));
 	private static readonly IdentifierNameSyntax ContextParameterName = IdentifierName("context");
 	private static readonly AttributeSyntax GenerateShapeAttribute = Attribute(NameInNamespace(IdentifierName("GenerateShape"), IdentifierName("PolyType")));
+	private static readonly AttributeSyntax ConstructorShapeAttribute = Attribute(NameInNamespace(IdentifierName("ConstructorShape"), IdentifierName("PolyType")));
 
 	public override ImmutableArray<string> FixableDiagnosticIds => [
 		MigrationAnalyzer.FormatterDiagnosticId,
@@ -29,6 +31,7 @@ public class MigrationCodeFix : CodeFixProvider
 		MigrationAnalyzer.KeyAttributeUsageDiagnosticId,
 		MigrationAnalyzer.IgnoreMemberAttributeUsageDiagnosticId,
 		MigrationAnalyzer.CallbackReceiverDiagnosticId,
+		MigrationAnalyzer.SerializationConstructorDiagnosticId,
 	];
 
 	public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
@@ -119,6 +122,14 @@ public class MigrationCodeFix : CodeFixProvider
 							createChangedDocument: cancellationToken => this.ImplementSerializationCallbacksAsync(context.Document, diagnostic, cancellationToken),
 							equivalenceKey: "Implement IMessagePackSerializationCallbacks"),
 						diagnostic);
+					break;
+				case MigrationAnalyzer.SerializationConstructorDiagnosticId:
+					context.RegisterCodeFix(
+					CodeAction.Create(
+						title: "Use ConstructorShape instead",
+						createChangedDocument: cancellationToken => this.ReplaceSerializationConstructorAttribute(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+						equivalenceKey: "Use ConstructorShape instead"),
+					diagnostic);
 					break;
 			}
 		}
@@ -368,6 +379,26 @@ public class MigrationCodeFix : CodeFixProvider
 				}
 			}
 		}
+
+		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+	}
+
+	private async Task<Document> ReplaceSerializationConstructorAttribute(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
+	{
+		CompilationUnitSyntax? root = (CompilationUnitSyntax?)await document.GetSyntaxRootAsync(cancellationToken);
+		if (root is null)
+		{
+			return document;
+		}
+
+		if (root.FindNode(sourceSpan) is not AttributeSyntax originalAttribute)
+		{
+			return document;
+		}
+
+		root = root.ReplaceNode(
+			originalAttribute,
+			ConstructorShapeAttribute);
 
 		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}

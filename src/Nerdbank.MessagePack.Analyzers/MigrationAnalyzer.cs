@@ -15,6 +15,7 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 	public const string KeyAttributeUsageDiagnosticId = "NBMsgPack103";
 	public const string IgnoreMemberAttributeUsageDiagnosticId = "NBMsgPack104";
 	public const string CallbackReceiverDiagnosticId = "NBMsgPack105";
+	public const string SerializationConstructorDiagnosticId = "NBMsgPack106";
 
 	public static readonly DiagnosticDescriptor FormatterDiagnostic = new(
 		id: FormatterDiagnosticId,
@@ -70,6 +71,15 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 		isEnabledByDefault: true,
 		helpLinkUri: AnalyzerUtilities.GetHelpLink(CallbackReceiverDiagnosticId));
 
+	public static readonly DiagnosticDescriptor SerializationConstructorDiagnostic = new(
+		id: SerializationConstructorDiagnosticId,
+		title: Strings.NBMsgPack106_Title,
+		messageFormat: Strings.NBMsgPack106_MessageFormat,
+		category: "Migration",
+		defaultSeverity: DiagnosticSeverity.Info,
+		isEnabledByDefault: true,
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(SerializationConstructorDiagnosticId));
+
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		FormatterDiagnostic,
 		FormatterAttributeDiagnostic,
@@ -77,6 +87,7 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 		KeyAttributeUsageDiagnostic,
 		IgnoreMemberAttributeUsageDiagnostic,
 		CallbackReceiverDiagnostic,
+		SerializationConstructorDiagnostic,
 	];
 
 	public override void Initialize(AnalysisContext context)
@@ -172,6 +183,19 @@ public class MigrationAnalyzer : DiagnosticAnalyzer
 							},
 							SyntaxKind.SimpleBaseType);
 					}
+
+					// Look for constructors with SerializationConstructorAttribute applied.
+					context.RegisterOperationAction(
+						context =>
+						{
+							AttributeData? oldAttribute = context.ContainingSymbol.FindAttributes(oldLibrarySymbols.SerializationConstructorAttribute).FirstOrDefault();
+							Location? location = oldAttribute?.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation();
+							if (location is not null)
+							{
+								context.ReportDiagnostic(Diagnostic.Create(SerializationConstructorDiagnostic, location));
+							}
+						},
+						OperationKind.ConstructorBody);
 				},
 				SymbolKind.NamedType);
 		});
