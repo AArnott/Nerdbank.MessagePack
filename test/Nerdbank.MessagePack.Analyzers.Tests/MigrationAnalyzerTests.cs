@@ -376,6 +376,37 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
+	[Fact]
+	public async Task SerializationConstructor()
+	{
+		string source = /* lang=c#-test */ """
+			using MessagePack;
+
+			class A
+			{
+				[{|NBMsgPack106:SerializationConstructor|}]
+				public A(int x)
+				{
+				}
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			using MessagePack;
+			using PolyType;
+
+			class A
+			{
+				[ConstructorShape]
+				public A(int x)
+				{
+				}
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource);
+	}
+
 	private Task VerifyCodeFixAsync([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string fixedSource, int iterations = 1)
 	{
 		return new VerifyCS.Test
