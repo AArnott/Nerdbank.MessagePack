@@ -93,6 +93,23 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	}
 
 	[Fact]
+	public void RecursiveSubTypes()
+	{
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived()));
+		this.Logger.WriteLine(ex.Message);
+
+#if false
+		// If it were to work, this is how we expect it to work:
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<RecursiveBase>(new RecursiveDerivedDerived());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(13, reader.ReadInt32());
+#endif
+	}
+
+	[Fact]
 	public void RuntimeRegistration()
 	{
 		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
@@ -211,4 +228,23 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 
 	[GenerateShape]
 	public partial record DynamicallyRegisteredDerivedB : DynamicallyRegisteredBase;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<RecursiveDerived>(1)]
+#else
+	[KnownSubType(1, typeof(RecursiveDerived))]
+#endif
+	public partial record RecursiveBase;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<RecursiveDerivedDerived>(13)]
+#else
+	[KnownSubType(13, typeof(RecursiveDerivedDerived))]
+#endif
+	public partial record RecursiveDerived : RecursiveBase;
+
+	[GenerateShape]
+	public partial record RecursiveDerivedDerived : RecursiveDerived;
 }

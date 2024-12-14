@@ -79,6 +79,15 @@ The `Animal` class only knows about `Horse` as a subtype and designates `2` as t
 As such, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects, not `QuarterHorse` or `Thoroughbred`.
 To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1 to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
 
+### Nested sub-types
+
+Suppose you had the following type hierarchy:
+
+Animal <- Horse <- Quarterback
+
+The `Animal` class _must_ have the whole set of transitive derived types listed as known sub-types directly on itself.
+It will not do for `Animal` to merely mention `Horse` and for `Horse` to listed `Quarterback` as a sub-type, as this is not currently supported.
+
 ### Generic sub-types
 
 Sub-types may be generic types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
