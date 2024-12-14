@@ -4,6 +4,7 @@
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Reflection;
@@ -31,6 +32,8 @@ public partial record MessagePackSerializer
 	private readonly object lazyInitCookie = new();
 
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
+
+	private readonly ConcurrentDictionary<Type, IKnownSubTypeMapping> userProvidedKnownSubTypes = new();
 
 	private bool configurationLocked;
 
@@ -261,6 +264,33 @@ public partial record MessagePackSerializer
 		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
 			? ((IMessagePackConverter)converter).WrapWithReferencePreservation()
 			: converter;
+	}
+
+	/// <summary>
+	/// Registers a known sub-type mapping for a base type.
+	/// </summary>
+	/// <typeparam name="TBase"><inheritdoc cref="KnownSubTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
+	/// <param name="mapping">The mapping.</param>
+	/// <remarks>
+	/// <para>
+	/// This method provides a runtime dynamic alternative to the otherwise simpler but static
+	/// <see cref="KnownSubTypeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
+	/// </para>
+	/// <para>
+	/// This is also the only way to force the serialized schema to <em>support</em> sub-types in the future when
+	/// no sub-types are defined yet, such that they can be added later without a schema-breaking change.
+	/// </para>
+	/// <para>
+	/// A mapping provided for a given <typeparamref name="TBase"/> will completely replace any mapping from
+	/// <see cref="KnownSubTypeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
+	/// </para>
+	/// </remarks>
+	/// <exception cref="InvalidOperationException">Thrown if serialization has already occurred. All calls to this method should be made before anything is serialized.</exception>
+	public void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping)
+	{
+		Requires.NotNull(mapping);
+		this.VerifyConfigurationIsNotLocked();
+		this.userProvidedKnownSubTypes[typeof(TBase)] = mapping;
 	}
 
 	/// <summary>
@@ -617,6 +647,24 @@ public partial record MessagePackSerializer
 		}
 
 		return this.PropertyNamingPolicy.ConvertName(name);
+	}
+
+	/// <summary>
+	/// Gets the runtime registered sub-types for a given base type, if any.
+	/// </summary>
+	/// <param name="baseType">The base type.</param>
+	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
+	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
+	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<int, ITypeShape>? subTypes)
+	{
+		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownSubTypeMapping? mapping))
+		{
+			subTypes = mapping.CreateSubTypesMapping();
+			return true;
+		}
+
+		subTypes = null;
+		return false;
 	}
 
 	/// <summary>

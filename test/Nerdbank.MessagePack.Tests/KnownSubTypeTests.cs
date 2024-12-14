@@ -92,6 +92,64 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		this.Logger.WriteLine(ex.Message);
 	}
 
+	[Fact]
+	public void RuntimeRegistration()
+	{
+		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>(1);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2);
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.ShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.ShapeProvider);
+#endif
+		this.Serializer.RegisterKnownSubTypes(mapping);
+
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredBase());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedB());
+	}
+
+	[Fact]
+	public void RuntimeRegistration_OverridesStatic()
+	{
+		KnownSubTypeMapping<BaseClass> mapping = new();
+		mapping.Add<DerivedB>(1, Witness.ShapeProvider);
+		this.Serializer.RegisterKnownSubTypes(mapping);
+
+		// Verify that the base type has just one header.
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<BaseClass>(new BaseClass { BaseClassProperty = 5 });
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		reader.ReadNil();
+		Assert.Equal(1, reader.ReadMapHeader());
+
+		// Verify that the header type value is the runtime-specified 1 instead of the static 3.
+		msgpack = this.AssertRoundtrip<BaseClass>(new DerivedB(13));
+		reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+
+		// Verify that statically set subtypes are not recognized if no runtime equivalents are registered.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new DerivedA()));
+		this.Logger.WriteLine(ex.Message);
+	}
+
+	/// <summary>
+	/// Verify that an empty mapping is allowed and produces the schema that allows for sub-types to be added in the future.
+	/// </summary>
+	[Fact]
+	public void RuntimeRegistration_EmptyMapping()
+	{
+		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		this.Serializer.RegisterKnownSubTypes(mapping);
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		reader.ReadNil();
+		Assert.Equal(0, reader.ReadMapHeader());
+	}
+
 	[GenerateShape<DerivedGeneric<int>>]
 	internal partial class Witness;
 
@@ -144,4 +202,13 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 
 	[GenerateShape]
 	public partial record UnknownDerived : BaseClass;
+
+	[GenerateShape]
+	public partial record DynamicallyRegisteredBase;
+
+	[GenerateShape]
+	public partial record DynamicallyRegisteredDerivedA : DynamicallyRegisteredBase;
+
+	[GenerateShape]
+	public partial record DynamicallyRegisteredDerivedB : DynamicallyRegisteredBase;
 }

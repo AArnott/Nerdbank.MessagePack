@@ -128,3 +128,62 @@ namespace GenericSubTypes
     #endregion
 #endif
 }
+
+namespace RuntimeSubTypes
+{
+#if NET
+    #region RuntimeSubTypesNET
+    class Animal
+    {
+        public string? Name { get; set; }
+    }
+
+    [GenerateShape]
+    partial class Horse : Animal { }
+
+    [GenerateShape]
+    partial class Cow : Animal { }
+
+    class SerializationConfigurator
+    {
+        internal void ConfigureAnimalsMapping(MessagePackSerializer serializer)
+        {
+            KnownSubTypeMapping<Animal> mapping = new();
+            mapping.Add<Horse>(1);
+            mapping.Add<Cow>(2);
+
+            serializer.RegisterKnownSubTypes(mapping);
+        }
+    }
+    #endregion
+#else
+    #region RuntimeSubTypesNETFX
+    class Animal
+    {
+        public string? Name { get; set; }
+    }
+
+    [GenerateShape]
+    partial class Horse : Animal { }
+
+    [GenerateShape]
+    partial class Cow : Animal { }
+
+    [GenerateShape<Horse>]
+    [GenerateShape<Cow>]
+    partial class Witness;
+
+    class SerializationConfigurator
+    {
+        internal void ConfigureAnimalsMapping(MessagePackSerializer serializer)
+        {
+            KnownSubTypeMapping<Animal> mapping = new();
+            mapping.Add<Horse>(1, Witness.ShapeProvider);
+            mapping.Add<Cow>(2, Witness.ShapeProvider);
+
+            serializer.RegisterKnownSubTypes(mapping);
+        }
+    }
+    #endregion
+#endif
+}

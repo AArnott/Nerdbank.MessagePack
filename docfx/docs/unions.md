@@ -98,3 +98,25 @@ For example:
 [!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypesNETFX)]
 
 ---
+
+### Runtime subtype registration
+
+Static registration via attributes is not always possible.
+For instance, you may want to serialize types from a third-party library that you cannot modify.
+Or you may have an extensible plugin system where new types are added at runtime.
+Or most simply, the derived types may not be declared in the same assembly as the base type.
+
+In such cases, runtime registration of subtypes is possible to allow you to run any custom logic you may require to discover and register subtypes.
+Your code is still responsible to ensure unique aliases are assigned to each subtype.
+
+Consider the following example where a type hierarchy is registered without using the attribute approach:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#RuntimeSubTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#RuntimeSubTypesNETFX)]
+
+---

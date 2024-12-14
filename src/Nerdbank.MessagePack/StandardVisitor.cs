@@ -521,22 +521,39 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
 	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
 	{
-		KnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(KnownSubTypeAttribute), false).Cast<KnownSubTypeAttribute>().ToArray();
-		if (unionAttributes is null or { Length: 0 })
+		IReadOnlyDictionary<int, ITypeShape>? mapping;
+		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping))
 		{
-			return null;
+			KnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(KnownSubTypeAttribute), false).Cast<KnownSubTypeAttribute>().ToArray();
+			if (unionAttributes is null or { Length: 0 })
+			{
+				return null;
+			}
+
+			Dictionary<int, ITypeShape> mutableMapping = new();
+			foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
+			{
+				ITypeShape subtypeShape = unionAttribute.Shape ?? objectShape.Provider.GetShapeOrThrow(unionAttribute.SubType);
+				Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {KnownSubTypeAttribute.TypeName} that references non-derived {subtypeShape.Type.FullName}.");
+				Verify.Operation(mutableMapping.TryAdd(unionAttribute.Alias, subtypeShape), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
+			}
+
+			mapping = mutableMapping;
 		}
 
 		Dictionary<int, IMessagePackConverter> deserializerData = new();
 		Dictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
-		foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
+		foreach (KeyValuePair<int, ITypeShape> pair in mapping)
 		{
-			ITypeShape subtypeShape = unionAttribute.Shape ?? objectShape.Provider.GetShapeOrThrow(unionAttribute.SubType);
-			Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {KnownSubTypeAttribute.TypeName} that references non-derived {subtypeShape.Type.FullName}.");
+			int alias = pair.Key;
+			ITypeShape shape = pair.Value;
 
-			IMessagePackConverter converter = this.GetConverter(subtypeShape);
-			Verify.Operation(deserializerData.TryAdd(unionAttribute.Alias, converter), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
-			Verify.Operation(serializerData.TryAdd(subtypeShape.Type, (unionAttribute.Alias, converter, subtypeShape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {unionAttribute.Alias}.");
+			// We don't want a reference-preserving converter here because that layer has already run
+			// by the time our subtype converter is invoked.
+			// And doubling up on it means values get serialized incorrectly.
+			IMessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
+			deserializerData.Add(alias, converter);
+			Verify.Operation(serializerData.TryAdd(shape.Type, (alias, converter, shape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {alias}.");
 		}
 
 		return new SubTypes
