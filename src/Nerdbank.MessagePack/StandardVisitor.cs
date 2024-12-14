@@ -521,7 +521,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
 	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
 	{
-		IReadOnlyDictionary<int, ITypeShape>? mapping;
+		IReadOnlyDictionary<SubTypeAlias, ITypeShape>? mapping;
 		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping))
 		{
 			KnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(KnownSubTypeAttribute), false).Cast<KnownSubTypeAttribute>().ToArray();
@@ -530,7 +530,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				return null;
 			}
 
-			Dictionary<int, ITypeShape> mutableMapping = new();
+			Dictionary<SubTypeAlias, ITypeShape> mutableMapping = new();
 			foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
 			{
 				ITypeShape subtypeShape = unionAttribute.Shape ?? objectShape.Provider.GetShapeOrThrow(unionAttribute.SubType);
@@ -541,24 +541,37 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			mapping = mutableMapping;
 		}
 
-		Dictionary<int, IMessagePackConverter> deserializerData = new();
-		Dictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
-		foreach (KeyValuePair<int, ITypeShape> pair in mapping)
+		Dictionary<int, IMessagePackConverter> deserializeByIntData = new();
+		Dictionary<ReadOnlyMemory<byte>, IMessagePackConverter> deserializeByUtf8Data = new();
+		Dictionary<Type, (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
+		foreach (KeyValuePair<SubTypeAlias, ITypeShape> pair in mapping)
 		{
-			int alias = pair.Key;
+			SubTypeAlias alias = pair.Key;
 			ITypeShape shape = pair.Value;
 
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
 			IMessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
-			deserializerData.Add(alias, converter);
+			switch (alias.Type)
+			{
+				case SubTypeAlias.AliasType.Integer:
+					deserializeByIntData.Add(alias.IntAlias, converter);
+					break;
+				case SubTypeAlias.AliasType.String:
+					deserializeByUtf8Data.Add(alias.Utf8Alias, converter);
+					break;
+				default:
+					throw new NotImplementedException("Unknown alias type.");
+			}
+
 			Verify.Operation(serializerData.TryAdd(shape.Type, (alias, converter, shape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {alias}.");
 		}
 
 		return new SubTypes
 		{
-			Deserializers = deserializerData.ToFrozenDictionary(),
+			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
+			DeserializersByStringAlias = new SpanDictionary<byte, IMessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
 			Serializers = serializerData.ToFrozenDictionary(),
 		};
 	}

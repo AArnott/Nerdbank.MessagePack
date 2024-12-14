@@ -12,7 +12,7 @@ namespace Nerdbank.MessagePack;
 /// <typeparam name="TBase">The base type or interface that all sub-types derive from or implement.</typeparam>
 public class KnownSubTypeMapping<TBase> : IKnownSubTypeMapping
 {
-	private readonly Dictionary<int, ITypeShape> map = new();
+	private readonly Dictionary<SubTypeAlias, ITypeShape> map = new();
 	private readonly HashSet<Type> addedTypes = new();
 
 	/// <summary>
@@ -65,5 +65,5 @@ public class KnownSubTypeMapping<TBase> : IKnownSubTypeMapping
 #endif
 
 	/// <inheritdoc />
-	FrozenDictionary<int, ITypeShape> IKnownSubTypeMapping.CreateSubTypesMapping() => this.map.ToFrozenDictionary();
+	FrozenDictionary<SubTypeAlias, ITypeShape> IKnownSubTypeMapping.CreateSubTypesMapping() => this.map.ToFrozenDictionary();
 }

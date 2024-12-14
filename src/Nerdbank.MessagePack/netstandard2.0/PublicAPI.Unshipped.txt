@@ -75,8 +75,8 @@ Nerdbank.MessagePack.KeyAttribute
 Nerdbank.MessagePack.KeyAttribute.Index.get -> int
 Nerdbank.MessagePack.KeyAttribute.KeyAttribute(int index) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute
-Nerdbank.MessagePack.KnownSubTypeAttribute.Alias.get -> int
 Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(int alias, System.Type! subType) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(string! alias, System.Type! subType) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute.SubType.get -> System.Type!
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.Abstractions.ITypeShape<TDerived>! typeShape) -> void

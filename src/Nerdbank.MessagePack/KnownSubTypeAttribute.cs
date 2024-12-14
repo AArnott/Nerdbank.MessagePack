@@ -17,7 +17,6 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <typeparam name="TSubType">A class derived from the one to which this attribute is affixed.</typeparam>
 /// <typeparam name="TShapeProvider">The class that serves as the shape provider for <typeparamref name="TSubType"/>.</typeparam>
-/// <param name="alias">A value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.</param>
 /// <remarks>
 /// <para>
 /// A type with one or more of these attributes applied serializes to a different schema than the same type
@@ -30,11 +29,28 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
 [DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
-#pragma warning disable CS0618 // Type or member is obsolete
-public class KnownSubTypeAttribute<TSubType, TShapeProvider>(int alias) : KnownSubTypeAttribute(alias, typeof(TSubType))
-#pragma warning restore CS0618 // Type or member is obsolete
+public class KnownSubTypeAttribute<TSubType, TShapeProvider> : KnownSubTypeAttribute
 	where TShapeProvider : IShapeable<TSubType>
 {
+	/// <summary>
+	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute{TSubType, TShapeProvider}"/> class.
+	/// </summary>
+	/// <param name="alias"><inheritdoc cref="KnownSubTypeAttribute(int, Type)" path="/param[@name='alias']" /></param>
+	public KnownSubTypeAttribute(int alias)
+#pragma warning disable CS0618 // Type or member is obsolete
+		: base(alias, typeof(TSubType))
+#pragma warning restore CS0618 // Type or member is obsolete
+	{
+	}
+
+	/// <inheritdoc cref="KnownSubTypeAttribute{TSubType, TShapeProvider}.KnownSubTypeAttribute(int)" />
+	public KnownSubTypeAttribute(string alias)
+#pragma warning disable CS0618 // Type or member is obsolete
+		: base(alias, typeof(TSubType))
+#pragma warning restore CS0618 // Type or member is obsolete
+	{
+	}
+
 	/// <inheritdoc/>
 	public override ITypeShape? Shape => TShapeProvider.GetShape();
 
@@ -47,9 +63,23 @@ public class KnownSubTypeAttribute<TSubType, TShapeProvider>(int alias) : KnownS
 /// <inheritdoc cref="KnownSubTypeAttribute{TSubType, TShapeProvider}"/>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
 [DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
-public class KnownSubTypeAttribute<TSubType>(int alias) : KnownSubTypeAttribute<TSubType, TSubType>(alias)
+public class KnownSubTypeAttribute<TSubType> : KnownSubTypeAttribute<TSubType, TSubType>
 	where TSubType : IShapeable<TSubType>
 {
+	/// <summary>
+	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute{TSubType}"/> class.
+	/// </summary>
+	/// <param name="alias"><inheritdoc cref="KnownSubTypeAttribute(int, Type)" path="/param[@name='alias']" /></param>
+	public KnownSubTypeAttribute(int alias)
+		: base(alias)
+	{
+	}
+
+	/// <inheritdoc cref="KnownSubTypeAttribute{TSubType}.KnownSubTypeAttribute(int)" />
+	public KnownSubTypeAttribute(string alias)
+		: base(alias)
+	{
+	}
 }
 
 #endif
@@ -91,10 +121,15 @@ public class KnownSubTypeAttribute : Attribute
 		this.SubType = subType;
 	}
 
-	/// <summary>
-	/// Gets a value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.
-	/// </summary>
-	public int Alias { get; }
+	/// <inheritdoc cref="KnownSubTypeAttribute(int, Type)" />
+#if NET
+	[Obsolete("Use the generic version of this attribute instead.")]
+#endif
+	public KnownSubTypeAttribute(string alias, Type subType)
+	{
+		this.Alias = alias;
+		this.SubType = subType;
+	}
 
 	/// <summary>
 	/// Gets the sub-type.
@@ -105,4 +140,9 @@ public class KnownSubTypeAttribute : Attribute
 	/// Gets the shape that describes the subtype.
 	/// </summary>
 	public virtual ITypeShape? Shape => null;
+
+	/// <summary>
+	/// Gets a value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.
+	/// </summary>
+	internal SubTypeAlias Alias { get; }
 }

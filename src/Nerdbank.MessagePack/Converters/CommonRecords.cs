@@ -135,12 +135,17 @@ internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name,
 internal record SubTypes
 {
 	/// <summary>
-	/// Gets the converters to use to deserialize a subtype, keyed by their alias.
+	/// Gets the converters to use to deserialize a subtype, keyed by its integer alias.
 	/// </summary>
-	internal required FrozenDictionary<int, IMessagePackConverter> Deserializers { get; init; }
+	internal required FrozenDictionary<int, IMessagePackConverter> DeserializersByIntAlias { get; init; }
+
+	/// <summary>
+	/// Gets the converter to use to deserialize a subtype, keyed by its UTF-8 encoded string alias.
+	/// </summary>
+	internal required SpanDictionary<byte, IMessagePackConverter> DeserializersByStringAlias { get; init; }
 
 	/// <summary>
 	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
 	/// </summary>
-	internal required FrozenDictionary<Type, (int Alias, IMessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
+	internal required FrozenDictionary<Type, (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
 }

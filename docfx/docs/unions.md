@@ -30,6 +30,7 @@ This changes the schema of the serialized data to include a tag that indicates t
 ```
 
 But with the `KnownSubTypeAttribute`, it serializes like this:
+
 ```json
 [null, { "Name": "Bessie" }]
 ```
@@ -69,6 +70,7 @@ Now suppose you have different breeds of horses that each had their own subtype:
 ---
 
 At this point your `HorsePen` *would* serialize with the union schema around each horse:
+
 ```json
 { "Horses": [[1, { "Name": "Bessie" }], [2, { "Name", "Lightfoot" }]] }
 ```
@@ -78,6 +80,35 @@ The `Animal` class only knows about `Horse` as a subtype and designates `2` as t
 `Animal` has no designation for `QuarterHorse` or `Thoroughbred`.
 As such, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects, not `QuarterHorse` or `Thoroughbred`.
 To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1 to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
+
+### Alias types
+
+An alias may also be a string.
+String aliases are case sensitive.
+
+The following example shows using strings:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#StringAliasTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#StringAliasTypesNETFX)]
+
+---
+
+Mixing alias types for a given base type is allowed, as shown here:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#MixedAliasTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#MixedAliasTypesNETFX)]
+
+---
 
 ### Nested sub-types
 

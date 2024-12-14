@@ -655,7 +655,7 @@ public partial record MessagePackSerializer
 	/// <param name="baseType">The base type.</param>
 	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
 	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<int, ITypeShape>? subTypes)
+	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<SubTypeAlias, ITypeShape>? subTypes)
 	{
 		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownSubTypeMapping? mapping))
 		{

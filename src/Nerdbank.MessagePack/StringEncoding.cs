@@ -34,4 +34,31 @@ internal static class StringEncoding
 		utf8Bytes = bytes.Slice(msgpackHeaderLength, byteCount);
 		msgpackEncoded = bytes.Slice(0, byteCount + msgpackHeaderLength);
 	}
+
+	/// <summary>
+	/// Reads a string as a contiguous span of UTF-8 encoded characters.
+	/// An array may be allocated if the string is not already contiguous in memory.
+	/// </summary>
+	/// <param name="reader">The reader to use.</param>
+	/// <returns>The span of UTF-8 encoded characters.</returns>
+	internal static ReadOnlySpan<byte> ReadStringSpan(scoped ref MessagePackReader reader)
+	{
+		if (!reader.TryReadStringSpan(out ReadOnlySpan<byte> result))
+		{
+			ReadOnlySequence<byte>? sequence = reader.ReadStringSequence();
+			if (sequence.HasValue)
+			{
+				if (sequence.Value.IsSingleSegment)
+				{
+					return sequence.Value.First.Span;
+				}
+
+				return sequence.Value.ToArray();
+			}
+
+			return default;
+		}
+
+		return result;
+	}
 }

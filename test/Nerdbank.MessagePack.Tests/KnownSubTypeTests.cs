@@ -93,6 +93,20 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	}
 
 	[Fact]
+	public void MixedAliasTypes()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<MixedAliasBase>(new MixedAliasDerivedA());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal("A", reader.ReadString());
+
+		msgpack = this.AssertRoundtrip<MixedAliasBase>(new MixedAliasDerived1());
+		reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+	}
+
+	[Fact]
 	public void RecursiveSubTypes()
 	{
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived()));
@@ -219,6 +233,22 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 
 	[GenerateShape]
 	public partial record UnknownDerived : BaseClass;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<MixedAliasDerivedA>("A")]
+	[KnownSubType<MixedAliasDerived1>(1)]
+#else
+	[KnownSubType("A", typeof(MixedAliasDerivedA))]
+	[KnownSubType(1, typeof(MixedAliasDerived1))]
+#endif
+	public partial record MixedAliasBase;
+
+	[GenerateShape]
+	public partial record MixedAliasDerivedA : MixedAliasBase;
+
+	[GenerateShape]
+	public partial record MixedAliasDerived1 : MixedAliasBase;
 
 	[GenerateShape]
 	public partial record DynamicallyRegisteredBase;

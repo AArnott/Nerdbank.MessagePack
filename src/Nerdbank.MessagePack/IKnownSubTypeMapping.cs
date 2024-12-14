@@ -19,5 +19,5 @@ internal interface IKnownSubTypeMapping
 	/// It is not strictly required that the implementation guarantee that each type is unique,
 	/// because the requirement for uniqueness is enforced later when the known sub-type converter is initialized.
 	/// </remarks>
-	FrozenDictionary<int, ITypeShape> CreateSubTypesMapping();
+	FrozenDictionary<SubTypeAlias, ITypeShape> CreateSubTypesMapping();
 }

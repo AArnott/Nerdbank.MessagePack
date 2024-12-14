@@ -129,6 +129,80 @@ namespace GenericSubTypes
 #endif
 }
 
+namespace StringAliasTypes
+{
+#if NET
+    #region StringAliasTypesNET
+    [GenerateShape]
+    [KnownSubType<Horse>("Horse")]
+    [KnownSubType<Cow>("Cow")]
+    partial class Animal
+    {
+        public string? Name { get; set; }
+    }
+
+    [GenerateShape]
+    partial class Horse : Animal { }
+
+    [GenerateShape]
+    partial class Cow : Animal { }
+    #endregion
+#else
+    #region StringAliasTypesNETFX
+    [GenerateShape]
+    [KnownSubType("Horse", typeof(Horse))]
+    [KnownSubType("Cow", typeof(Cow))]
+    partial class Animal
+    {
+        public string? Name { get; set; }
+    }
+
+    [GenerateShape]
+    partial class Horse : Animal { }
+
+    [GenerateShape]
+    partial class Cow : Animal { }
+    #endregion
+#endif
+}
+
+namespace MixedAliasTypes
+{
+#if NET
+    #region MixedAliasTypesNET
+    [GenerateShape]
+    [KnownSubType<Horse>(1)]
+    [KnownSubType<Cow>("Cow")]
+    partial class Animal
+    {
+        public string? Name { get; set; }
+    }
+
+    [GenerateShape]
+    partial class Horse : Animal { }
+
+    [GenerateShape]
+    partial class Cow : Animal { }
+    #endregion
+#else
+    #region MixedAliasTypesNETFX
+    [GenerateShape]
+    [KnownSubType(1, typeof(Horse))]
+    [KnownSubType("Cow", typeof(Cow))]
+    partial class Animal
+    {
+        public string? Name { get; set; }
+    }
+
+    [GenerateShape]
+    partial class Horse : Animal { }
+
+    [GenerateShape]
+    partial class Cow : Animal { }
+    #endregion
+#endif
+}
+
 namespace RuntimeSubTypes
 {
 #if NET
