@@ -240,7 +240,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 #if NET
 	[KnownSubType<DerivedRecordA>(1)]
 #else
-	[KnownSubType(1, typeof(DerivedRecordA))]
+	[KnownSubType(typeof(DerivedRecordA), 1)]
 #endif
 	public partial record BaseRecord;
 

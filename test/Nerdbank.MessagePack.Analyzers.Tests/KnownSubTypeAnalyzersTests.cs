@@ -26,7 +26,7 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, typeof(DerivedType))]
+			[KnownSubType(typeof(DerivedType), 1)]
 			public interface IMyType
 			{
 			}
@@ -60,7 +60,7 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, typeof(DerivedType))]
+			[KnownSubType(typeof(DerivedType), 1)]
 			public class MyType
 			{
 			}
@@ -101,8 +101,8 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, typeof(DerivedType1))]
-			[KnownSubType("A", typeof(DerivedTypeA))]
+			[KnownSubType(typeof(DerivedType1), 1)]
+			[KnownSubType(typeof(DerivedTypeA), "A")]
 			public class MyType
 			{
 			}
@@ -141,7 +141,42 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType("A", typeof(DerivedType))]
+			[KnownSubType(typeof(DerivedType), "A")]
+			public class MyType
+			{
+			}
+
+			public class DerivedType : MyType
+			{
+			}
+			""";
+#endif
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NoIssues_Subclass_Implied()
+	{
+#if NET
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType<DerivedType>]
+			public class MyType
+			{
+			}
+
+			public class DerivedType : MyType, PolyType.IShapeable<DerivedType>
+			{
+				static PolyType.Abstractions.ITypeShape<DerivedType> PolyType.IShapeable<DerivedType>.GetShape() => throw new System.NotImplementedException();
+			}
+			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType(typeof(DerivedType))]
 			public class MyType
 			{
 			}
@@ -176,7 +211,42 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, {|NBMsgPack010:typeof(NonDerivedType)|})]
+			[KnownSubType({|NBMsgPack010:typeof(NonDerivedType)|}, 1)]
+			public class MyType
+			{
+			}
+
+			public class NonDerivedType
+			{
+			}
+			""";
+#endif
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NonDerivedType_ImpliedAlias()
+	{
+#if NET
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType<{|NBMsgPack010:NonDerivedType|}>]
+			public class MyType
+			{
+			}
+
+			public class NonDerivedType : PolyType.IShapeable<NonDerivedType>
+			{
+				static PolyType.Abstractions.ITypeShape<NonDerivedType> PolyType.IShapeable<NonDerivedType>.GetShape() => throw new System.NotImplementedException();
+			}
+			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			[KnownSubType({|NBMsgPack010:typeof(NonDerivedType)|})]
 			public class MyType
 			{
 			}
@@ -221,7 +291,7 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, typeof(DerivedType1))]
+			[KnownSubType(typeof(DerivedType1), 1)]
 			public class MyType
 			{
 			}
@@ -230,7 +300,7 @@ public class KnownSubTypeAnalyzersTests
 			{
 			}
 
-			[KnownSubType(1, typeof(DerivedType2))]
+			[KnownSubType(typeof(DerivedType2), 1)]
 			public class MyType2
 			{
 			}
@@ -271,8 +341,8 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, typeof(DerivedType1))]
-			[KnownSubType({|NBMsgPack011:1|}, typeof(DerivedType2))]
+			[KnownSubType(typeof(DerivedType1), 1)]
+			[KnownSubType(typeof(DerivedType2), {|NBMsgPack011:1|})]
 			public class MyType
 			{
 			}
@@ -317,8 +387,8 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType("A", typeof(DerivedType1))]
-			[KnownSubType({|NBMsgPack011:"A"|}, typeof(DerivedType2))]
+			[KnownSubType(typeof(DerivedType1), "A")]
+			[KnownSubType(typeof(DerivedType2), {|NBMsgPack011:"A"|})]
 			public class MyType
 			{
 			}
@@ -329,6 +399,62 @@ public class KnownSubTypeAnalyzersTests
 
 			public class DerivedType2 : MyType
 			{
+			}
+			""";
+#endif
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NonUniqueAlias_StringAndImplied()
+	{
+#if NET
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			namespace A;
+
+			class B
+			{
+				[KnownSubType<DerivedType1>]
+				[KnownSubType<DerivedType2>({|NBMsgPack011:"A.B.DerivedType1"|})]
+				public class MyType
+				{
+				}
+
+				public class DerivedType1 : MyType, PolyType.IShapeable<DerivedType1>
+				{
+					static PolyType.Abstractions.ITypeShape<DerivedType1> PolyType.IShapeable<DerivedType1>.GetShape() => throw new System.NotImplementedException();
+				}
+
+				public class DerivedType2 : MyType, PolyType.IShapeable<DerivedType2>
+				{
+					static PolyType.Abstractions.ITypeShape<DerivedType2> PolyType.IShapeable<DerivedType2>.GetShape() => throw new System.NotImplementedException();
+				}
+			}
+			""";
+#else
+		string source = /* lang=c#-test */ """
+			using Nerdbank.MessagePack;
+
+			namespace A;
+
+			class B
+			{
+				[KnownSubType(typeof(DerivedType1))]
+				[KnownSubType(typeof(DerivedType2), {|NBMsgPack011:"A.B.DerivedType1"|})]
+				public class MyType
+				{
+				}
+
+				public class DerivedType1 : MyType
+				{
+				}
+
+				public class DerivedType2 : MyType
+				{
+				}
 			}
 			""";
 #endif
@@ -375,10 +501,10 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType("A", typeof(DerivedType1))]
-			[KnownSubType({|NBMsgPack011:"A"|}, typeof(DerivedType2))]
-			[KnownSubType(1, typeof(DerivedType3))]
-			[KnownSubType({|NBMsgPack011:1|}, typeof(DerivedType4))]
+			[KnownSubType(typeof(DerivedType1), "A")]
+			[KnownSubType(typeof(DerivedType2), {|NBMsgPack011:"A"|})]
+			[KnownSubType(typeof(DerivedType3), 1)]
+			[KnownSubType(typeof(DerivedType4), {|NBMsgPack011:1|})]
 			public class MyType
 			{
 			}
@@ -426,8 +552,8 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, typeof(DerivedType1))]
-			[KnownSubType(2, {|NBMsgPack012:typeof(DerivedType1)|})]
+			[KnownSubType(typeof(DerivedType1), 1)]
+			[KnownSubType({|NBMsgPack012:typeof(DerivedType1)|}, 2)]
 			public class MyType
 			{
 			}
@@ -468,8 +594,8 @@ public class KnownSubTypeAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubType(1, typeof(DerivedType<int>))]
-			[KnownSubType(2, typeof(DerivedType<bool>))]
+			[KnownSubType(typeof(DerivedType<int>), 1)]
+			[KnownSubType(typeof(DerivedType<bool>), 2)]
 			public class MyType
 			{
 			}

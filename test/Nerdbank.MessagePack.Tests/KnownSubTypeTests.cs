@@ -107,6 +107,15 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	}
 
 	[Fact]
+	public void ImpliedAlias()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<ImpliedAliasBase>(new ImpliedAliasDerived());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(typeof(ImpliedAliasDerived).FullName, reader.ReadString());
+	}
+
+	[Fact]
 	public void RecursiveSubTypes()
 	{
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived()));
@@ -192,11 +201,11 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[KnownSubType<EnumerableDerived>(4)]
 	[KnownSubType<DerivedGeneric<int>, Witness>(5)]
 #else
-	[KnownSubType(1, typeof(DerivedA))]
-	[KnownSubType(2, typeof(DerivedAA))]
-	[KnownSubType(3, typeof(DerivedB))]
-	[KnownSubType(4, typeof(EnumerableDerived))]
-	[KnownSubType(5, typeof(DerivedGeneric<int>))]
+	[KnownSubType(typeof(DerivedA), 1)]
+	[KnownSubType(typeof(DerivedAA), 2)]
+	[KnownSubType(typeof(DerivedB), 3)]
+	[KnownSubType(typeof(EnumerableDerived), 4)]
+	[KnownSubType(typeof(DerivedGeneric<int>), 5)]
 #endif
 	public partial record BaseClass
 	{
@@ -239,8 +248,8 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[KnownSubType<MixedAliasDerivedA>("A")]
 	[KnownSubType<MixedAliasDerived1>(1)]
 #else
-	[KnownSubType("A", typeof(MixedAliasDerivedA))]
-	[KnownSubType(1, typeof(MixedAliasDerived1))]
+	[KnownSubType(typeof(MixedAliasDerivedA), "A")]
+	[KnownSubType(typeof(MixedAliasDerived1), 1)]
 #endif
 	public partial record MixedAliasBase;
 
@@ -249,6 +258,17 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 
 	[GenerateShape]
 	public partial record MixedAliasDerived1 : MixedAliasBase;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<ImpliedAliasDerived>]
+#else
+	[KnownSubType(typeof(ImpliedAliasDerived))]
+#endif
+	public partial record ImpliedAliasBase;
+
+	[GenerateShape]
+	public partial record ImpliedAliasDerived : ImpliedAliasBase;
 
 	[GenerateShape]
 	public partial record DynamicallyRegisteredBase;
@@ -263,7 +283,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 #if NET
 	[KnownSubType<RecursiveDerived>(1)]
 #else
-	[KnownSubType(1, typeof(RecursiveDerived))]
+	[KnownSubType(typeof(RecursiveDerived), 1)]
 #endif
 	public partial record RecursiveBase;
 
@@ -271,7 +291,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 #if NET
 	[KnownSubType<RecursiveDerivedDerived>(13)]
 #else
-	[KnownSubType(13, typeof(RecursiveDerivedDerived))]
+	[KnownSubType(typeof(RecursiveDerivedDerived), 13)]
 #endif
 	public partial record RecursiveDerived : RecursiveBase;
 

@@ -83,8 +83,10 @@ To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1
 
 ### Alias types
 
-An alias may also be a string.
+An alias may be an integer or a string.
 String aliases are case sensitive.
+
+Aliases may also be inferred from the @System.Type.FullName?displayProperty=nameWithType of the sub-type, in which case they are treated as strings.
 
 The following example shows using strings:
 
@@ -109,6 +111,21 @@ Mixing alias types for a given base type is allowed, as shown here:
 [!code-csharp[](../../samples/Unions.cs#MixedAliasTypesNETFX)]
 
 ---
+
+Following is an example of string alias inferrence:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#InferredAliasTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#InferredAliasTypesNETFX)]
+
+---
+
+Note that while inferrence is the simplest syntax, it results in the serialized schema including the full name of the type, which can make the serialized form more fragile in the face of refactoring changes.
+It can also result in a poorer experience if the data is exchanged with non-.NET programs.
 
 ### Nested sub-types
 

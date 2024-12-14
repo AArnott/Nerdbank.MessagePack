@@ -5,6 +5,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 
 using System.Diagnostics;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -35,10 +36,10 @@ public class KnownSubTypeAttribute<TSubType, TShapeProvider> : KnownSubTypeAttri
 	/// <summary>
 	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute{TSubType, TShapeProvider}"/> class.
 	/// </summary>
-	/// <param name="alias"><inheritdoc cref="KnownSubTypeAttribute(int, Type)" path="/param[@name='alias']" /></param>
+	/// <param name="alias"><inheritdoc cref="KnownSubTypeAttribute(Type, int)" path="/param[@name='alias']" /></param>
 	public KnownSubTypeAttribute(int alias)
 #pragma warning disable CS0618 // Type or member is obsolete
-		: base(alias, typeof(TSubType))
+		: base(typeof(TSubType), alias)
 #pragma warning restore CS0618 // Type or member is obsolete
 	{
 	}
@@ -46,8 +47,18 @@ public class KnownSubTypeAttribute<TSubType, TShapeProvider> : KnownSubTypeAttri
 	/// <inheritdoc cref="KnownSubTypeAttribute{TSubType, TShapeProvider}.KnownSubTypeAttribute(int)" />
 	public KnownSubTypeAttribute(string alias)
 #pragma warning disable CS0618 // Type or member is obsolete
-		: base(alias, typeof(TSubType))
+		: base(typeof(TSubType), alias)
 #pragma warning restore CS0618 // Type or member is obsolete
+	{
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute{TSubType, TShapeProvider}"/> class
+	/// that uses the <see cref="Type.FullName"/> of the <typeparamref name="TSubType"/> as the alias.
+	/// </summary>
+	/// <inheritdoc cref="KnownSubTypeAttribute(Type)" path="/remarks" />
+	public KnownSubTypeAttribute()
+		: this(TypeToAlias(typeof(TSubType)))
 	{
 	}
 
@@ -69,7 +80,7 @@ public class KnownSubTypeAttribute<TSubType> : KnownSubTypeAttribute<TSubType, T
 	/// <summary>
 	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute{TSubType}"/> class.
 	/// </summary>
-	/// <param name="alias"><inheritdoc cref="KnownSubTypeAttribute(int, Type)" path="/param[@name='alias']" /></param>
+	/// <param name="alias"><inheritdoc cref="KnownSubTypeAttribute(Type, int)" path="/param[@name='alias']" /></param>
 	public KnownSubTypeAttribute(int alias)
 		: base(alias)
 	{
@@ -78,6 +89,16 @@ public class KnownSubTypeAttribute<TSubType> : KnownSubTypeAttribute<TSubType, T
 	/// <inheritdoc cref="KnownSubTypeAttribute{TSubType}.KnownSubTypeAttribute(int)" />
 	public KnownSubTypeAttribute(string alias)
 		: base(alias)
+	{
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute{TSubType}"/> class
+	/// that uses the <see cref="Type.FullName"/> of the <typeparamref name="TSubType"/> as the alias.
+	/// </summary>
+	/// <inheritdoc cref="KnownSubTypeAttribute(Type)" path="/remarks" />
+	public KnownSubTypeAttribute()
+		: this(TypeToAlias(typeof(TSubType)))
 	{
 	}
 }
@@ -110,24 +131,43 @@ public class KnownSubTypeAttribute : Attribute
 	/// <summary>
 	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute"/> class.
 	/// </summary>
-	/// <param name="alias">A value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.</param>
 	/// <param name="subType">The derived-type that the <paramref name="alias"/> represents.</param>
+	/// <param name="alias">A value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.</param>
 #if NET
 	[Obsolete("Use the generic version of this attribute instead.")]
 #endif
-	public KnownSubTypeAttribute(int alias, Type subType)
+	public KnownSubTypeAttribute(Type subType, int alias)
 	{
 		this.Alias = alias;
 		this.SubType = subType;
 	}
 
-	/// <inheritdoc cref="KnownSubTypeAttribute(int, Type)" />
+	/// <inheritdoc cref="KnownSubTypeAttribute(Type, int)" />
 #if NET
 	[Obsolete("Use the generic version of this attribute instead.")]
 #endif
-	public KnownSubTypeAttribute(string alias, Type subType)
+	public KnownSubTypeAttribute(Type subType, string alias)
 	{
 		this.Alias = alias;
+		this.SubType = subType;
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="KnownSubTypeAttribute"/> class
+	/// that uses the <see cref="Type.FullName"/> of the <paramref name="subType"/> as the alias.
+	/// </summary>
+	/// <param name="subType"><inheritdoc cref="KnownSubTypeAttribute(Type, string)" path="/param[@name='subType']"/></param>
+	/// <remarks>
+	/// Consider cross-platform compatibility when using this constructor, particularly when the serialized form may be exchanged with non-.NET programs
+	/// where the <see cref="Type.FullName"/> has no meaning.
+	/// </remarks>
+#if NET
+	[Obsolete("Use the generic version of this attribute instead.")]
+#endif
+	public KnownSubTypeAttribute(Type subType)
+	{
+		Requires.NotNull(subType);
+		this.Alias = TypeToAlias(subType);
 		this.SubType = subType;
 	}
 
@@ -145,4 +185,12 @@ public class KnownSubTypeAttribute : Attribute
 	/// Gets a value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.
 	/// </summary>
 	internal SubTypeAlias Alias { get; }
+
+	/// <summary>
+	/// Gets a string to serve as the alias for a given <see cref="Type"/>.
+	/// </summary>
+	/// <param name="type">The type.</param>
+	/// <returns>The string alias for it.</returns>
+	/// <exception cref="ArgumentException">Thrown if <see cref="Type.FullName"/> is <see langword="null" />.</exception>
+	internal static string TypeToAlias(Type type) => type.FullName ?? throw new ArgumentException("The type must have a name.", nameof(type));
 }
