@@ -33,10 +33,22 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 			return baseConverter.Read(ref reader, context);
 		}
 
-		int alias = reader.ReadInt32();
-		if (!subTypes.Deserializers.TryGetValue(alias, out IMessagePackConverter? converter))
+		IMessagePackConverter? converter;
+		if (reader.NextMessagePackType == MessagePackType.Integer)
 		{
-			throw new MessagePackSerializationException($"Unknown alias {alias}.");
+			int alias = reader.ReadInt32();
+			if (!subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
+			{
+				throw new MessagePackSerializationException($"Unknown alias {alias}.");
+			}
+		}
+		else
+		{
+			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
+			if (!subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+			{
+				throw new MessagePackSerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+			}
 		}
 
 		return (TBase?)converter.Read(ref reader, context);
@@ -61,9 +73,9 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 			writer.WriteNil();
 			baseConverter.Write(ref writer, value, context);
 		}
-		else if (subTypes.Serializers.TryGetValue(valueType, out (int Alias, IMessagePackConverter Converter, ITypeShape Shape) result))
+		else if (subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape) result))
 		{
-			writer.Write(result.Alias);
+			writer.WriteRaw(result.Alias.MsgPackAlias.Span);
 			result.Converter.Write(ref writer, value, context);
 		}
 		else
@@ -78,7 +90,7 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 	{
 		JsonArray oneOfArray = [CreateOneOfElement(null, baseConverter.GetJsonSchema(context, typeShape) ?? CreateUndocumentedSchema(baseConverter.GetType()))];
 
-		foreach ((int alias, _, ITypeShape shape) in subTypes.Serializers.Values)
+		foreach ((SubTypeAlias alias, _, ITypeShape shape) in subTypes.Serializers.Values)
 		{
 			oneOfArray.Add((JsonNode)CreateOneOfElement(alias, context.GetJsonSchema(shape)));
 		}
@@ -88,15 +100,27 @@ internal class SubTypeUnionConverter<TBase>(SubTypes subTypes, MessagePackConver
 			["oneOf"] = oneOfArray,
 		};
 
-		JsonObject CreateOneOfElement(int? alias, JsonObject schema)
+		JsonObject CreateOneOfElement(SubTypeAlias? alias, JsonObject schema)
 		{
 			JsonObject aliasSchema = new()
 			{
-				["type"] = alias is null ? "null" : "integer",
+				["type"] = alias switch
+				{
+					null => "null",
+					{ Type: SubTypeAlias.AliasType.Integer } => "integer",
+					{ Type: SubTypeAlias.AliasType.String } => "string",
+					_ => throw new NotImplementedException(),
+				},
 			};
 			if (alias is not null)
 			{
-				aliasSchema["enum"] = new JsonArray(alias.Value);
+				JsonNode enumValue = alias.Value.Type switch
+				{
+					SubTypeAlias.AliasType.String => (JsonNode)alias.Value.StringAlias,
+					SubTypeAlias.AliasType.Integer => (JsonNode)alias.Value.IntAlias,
+					_ => throw new NotImplementedException(),
+				};
+				aliasSchema["enum"] = new JsonArray(enumValue);
 			}
 
 			return new()

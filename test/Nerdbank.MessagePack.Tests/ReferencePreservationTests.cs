@@ -182,6 +182,42 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot.Value1, deserializedRoot.Value2);
 	}
 
+	[Fact]
+	public void KnownSubTypes_StaticRegistration()
+	{
+		BaseRecord baseInstance = new BaseRecord();
+		BaseRecord derivedInstance = new DerivedRecordA();
+		BaseRecord[] array = [baseInstance, baseInstance, derivedInstance, derivedInstance];
+
+		BaseRecord[]? deserialized = this.Roundtrip<BaseRecord[], Witness>(array);
+
+		Assert.NotNull(deserialized);
+		Assert.IsType<BaseRecord>(deserialized[0]);
+		Assert.IsType<DerivedRecordA>(deserialized[2]);
+		Assert.Same(deserialized[0], deserialized[1]);
+		Assert.Same(deserialized[2], deserialized[3]);
+	}
+
+	[Fact]
+	public void KnownSubTypes_DynamicRegistration()
+	{
+		KnownSubTypeMapping<BaseRecord> mapping = new();
+		mapping.Add<DerivedRecordB>(1, Witness.ShapeProvider);
+		this.Serializer.RegisterKnownSubTypes(mapping);
+
+		BaseRecord baseInstance = new BaseRecord();
+		BaseRecord derivedInstance = new DerivedRecordB();
+		BaseRecord[] array = [baseInstance, baseInstance, derivedInstance, derivedInstance];
+
+		BaseRecord[]? deserialized = this.Roundtrip<BaseRecord[], Witness>(array);
+
+		Assert.NotNull(deserialized);
+		Assert.IsType<BaseRecord>(deserialized[0]);
+		Assert.IsType<DerivedRecordB>(deserialized[2]);
+		Assert.Same(deserialized[0], deserialized[1]);
+		Assert.Same(deserialized[2], deserialized[3]);
+	}
+
 	[GenerateShape]
 	public partial record RecordWithStrings
 	{
@@ -199,6 +235,20 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 		public object? Value3 { get; init; }
 	}
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<DerivedRecordA>(1)]
+#else
+	[KnownSubType(typeof(DerivedRecordA), 1)]
+#endif
+	public partial record BaseRecord;
+
+	[GenerateShape]
+	public partial record DerivedRecordA : BaseRecord;
+
+	[GenerateShape]
+	public partial record DerivedRecordB : BaseRecord;
 
 	[GenerateShape]
 	public partial record CustomType
@@ -285,5 +335,6 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[GenerateShape<CustomTypeWrapper[]>]
 	[GenerateShape<CustomType[]>]
 	[GenerateShape<string[]>]
+	[GenerateShape<BaseRecord[]>]
 	private partial class Witness;
 }

@@ -83,35 +83,69 @@ public class KnownSubTypeAnalyzers : DiagnosticAnalyzer
 				{
 					INamedTypeSymbol appliedSymbol = (INamedTypeSymbol)context.Symbol;
 					AttributeData[] attributeDatas = context.Symbol.FindAttributes(referenceSymbols.KnownSubTypeAttribute).ToArray();
-					Dictionary<int, ITypeSymbol?>? typesByAlias = null;
-					Dictionary<ITypeSymbol, int?>? aliasesByType = null;
+					Dictionary<(int?, string?), ITypeSymbol?>? typesByAlias = null;
+					Dictionary<ITypeSymbol, (int?, string?)>? aliasesByType = null;
 					foreach (AttributeData att in attributeDatas)
 					{
-						int? alias = att.ConstructorArguments is [{ Value: int a }, ..] ? a : null;
+						(int?, string?) alias = (null, null);
+						Location? aliasLocation = null;
+						int? aliasIndex = null;
+						if (att.ConstructorArguments is [{ Value: INamedTypeSymbol }, { Value: int }] or [{ Value: INamedTypeSymbol }, { Value: string }])
+						{
+							aliasIndex = 1;
+						}
+						else if (att.ConstructorArguments is [{ Value: int or string }])
+						{
+							aliasIndex = 0;
+						}
+						else
+						{
+							// The alias may have come from the FullName of the type specified.
+							if (att.AttributeClass?.TypeArguments.Length > 0)
+							{
+								if (att.AttributeClass.TypeArguments[0] is INamedTypeSymbol namedTypeArg)
+								{
+									alias = (null, namedTypeArg.GetFullName());
+								}
+							}
+							else if (att.ConstructorArguments is [{ Value: INamedTypeSymbol subTypeArg2 }])
+							{
+								alias = (null, subTypeArg2.GetFullName());
+							}
+						}
+
+						if (aliasIndex is not null)
+						{
+							alias =
+								att.ConstructorArguments[aliasIndex.Value].Value is int i ? (i, null)
+								: (null, (string)att.ConstructorArguments[aliasIndex.Value].Value!);
+							aliasLocation = GetArgumentLocation(aliasIndex.Value);
+						}
+
 						(ITypeSymbol? subType, Location? subTypeLocation) =
 							att.AttributeClass?.TypeArguments.Length >= 1 ? (att.AttributeClass?.TypeArguments[0], GetTypeArgumentLocation(0)) :
-							att.ConstructorArguments.Length >= 2 ? ((ITypeSymbol?)att.ConstructorArguments[1].Value, GetArgumentLocation(1)) :
-							(null, null);
+							att.ConstructorArguments is [{ Value: INamedTypeSymbol subTypeArg }, ..] ? (subTypeArg, GetArgumentLocation(0)) :
+								(null, null);
 
-						if (alias is not null)
+						if (alias is not (null, null))
 						{
 							typesByAlias ??= new();
-							if (typesByAlias.TryGetValue(alias.Value, out ITypeSymbol? existingAssignment))
+							if (aliasIndex >= 0 && typesByAlias.TryGetValue(alias, out ITypeSymbol? existingAssignment))
 							{
 								context.ReportDiagnostic(Diagnostic.Create(
 									NonUniqueAliasDescriptor,
-									GetArgumentLocation(0)));
+									aliasLocation));
 							}
 							else
 							{
-								typesByAlias.Add(alias.Value, subType);
+								typesByAlias.Add(alias, subType);
 							}
 						}
 
 						if (subType is not null)
 						{
 							aliasesByType ??= new(SymbolEqualityComparer.Default);
-							if (aliasesByType.TryGetValue(subType, out int? existingAlias))
+							if (aliasesByType.TryGetValue(subType, out (int?, string?) existingAlias))
 							{
 								context.ReportDiagnostic(Diagnostic.Create(
 									NonUniqueTypeDescriptor,

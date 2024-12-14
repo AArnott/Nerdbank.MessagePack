@@ -16,7 +16,7 @@ Feature                   | Nerdbank.MessagePack | MessagePack-CSharp  |
 Optimized for high performance | [✅](performance.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#performance) |
 Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
 Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
-Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union) |
+Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] |
 Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) |
 Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) |
 Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
@@ -41,6 +41,7 @@ Security is a complex subject, and an area where Nerdbank.MessagePack is activel
 [^1]: Nerdbank.MessagePack's approach is more likely to be correct by default and more flexible to fixing when it is not.
 [^2]: Although MessagePack-CSharp does not support .NET 8 flavor NativeAOT, it has long-supported Unity's il2cpp runtime, but it requires careful avoidance of dynamic features.
 [^3]: This hasn't been tested, and even if it works, the level of active support may be limited as the maintainers of Nerdbank.MessagePack do not use Unity. We may accept outside contributions to support it if it isn't onerous to maintain.
+[^4]: MessagePack-CSharp is limited to derived types that can be attributed on the base type, whereas Nerdbank.MessagePack allows for dynamically identifying derived types at runtime.
 
 ## Migration process
 
@@ -114,8 +115,8 @@ Nerdbank.MessagePack supports this same use case via its @Nerdbank.MessagePack.K
 ```diff
 -[Union(0, typeof(MyType1))]
 -[Union(1, typeof(MyType2))]
-+[KnownSubType(0, typeof(MyType1))]
-+[KnownSubType(1, typeof(MyType2))]
++[KnownSubType(typeof(MyType1), 0)]
++[KnownSubType(typeof(MyType2), 1)]
  public interface IMyType
  {
  }

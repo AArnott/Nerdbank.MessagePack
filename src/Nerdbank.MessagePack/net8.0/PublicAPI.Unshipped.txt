@@ -75,13 +75,24 @@ Nerdbank.MessagePack.KeyAttribute
 Nerdbank.MessagePack.KeyAttribute.Index.get -> int
 Nerdbank.MessagePack.KeyAttribute.KeyAttribute(int index) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute
-Nerdbank.MessagePack.KnownSubTypeAttribute.Alias.get -> int
-Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(int alias, System.Type! subType) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType, int alias) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType, string! alias) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute.SubType.get -> System.Type!
 Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.KnownSubTypeAttribute() -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.KnownSubTypeAttribute(int alias) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.KnownSubTypeAttribute(string! alias) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>.KnownSubTypeAttribute() -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>.KnownSubTypeAttribute(int alias) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType>.KnownSubTypeAttribute(string! alias) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived, TProvider>(int alias) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.Abstractions.ITypeShape<TDerived>! typeShape) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.ITypeShapeProvider! provider) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.KnownSubTypeMapping() -> void
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.get -> sbyte
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.init -> void
@@ -220,6 +231,7 @@ Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.get -> Nerdbank.MessagePack.MessagePackNamingPolicy?
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter<T>(Nerdbank.MessagePack.MessagePackConverter<T>! converter) -> void
+Nerdbank.MessagePack.MessagePackSerializer.RegisterKnownSubTypes<TBase>(Nerdbank.MessagePack.KnownSubTypeMapping<TBase>! mapping) -> void
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(in T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> byte[]!
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(System.Buffers.IBufferWriter<byte>! writer, in T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T, TProvider>(System.IO.Stream! stream, in T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void

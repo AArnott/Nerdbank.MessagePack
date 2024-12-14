@@ -154,7 +154,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
-				ReadOnlySpan<byte> propertyName = ReadStringSpan(ref reader);
+				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
 				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 				{
 					propertyReader.Read(ref value, ref reader, context);
@@ -223,7 +223,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
-					ReadOnlySpan<byte> propertyName = ReadStringSpan(ref syncReader);
+					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 					if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 					{
 						propertyReader.Read(ref value, ref syncReader, context);
@@ -243,7 +243,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					if (bufferedStructures % 2 == 1)
 					{
 						// The property name has already been buffered.
-						ReadOnlySpan<byte> propertyName = ReadStringSpan(ref syncReader);
+						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader) && propertyReader.PreferAsyncSerialization)
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
@@ -337,33 +337,6 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		ApplyDescription(objectShape.AttributeProvider, schema);
 
 		return schema;
-	}
-
-	/// <summary>
-	/// Reads a string as a contiguous span of UTF-8 encoded characters.
-	/// An array may be allocated if the string is not already contiguous in memory.
-	/// </summary>
-	/// <param name="reader">The reader to use.</param>
-	/// <returns>The span of UTF-8 encoded characters.</returns>
-	protected static ReadOnlySpan<byte> ReadStringSpan(scoped ref MessagePackReader reader)
-	{
-		if (!reader.TryReadStringSpan(out ReadOnlySpan<byte> result))
-		{
-			ReadOnlySequence<byte>? sequence = reader.ReadStringSequence();
-			if (sequence.HasValue)
-			{
-				if (sequence.Value.IsSingleSegment)
-				{
-					return sequence.Value.First.Span;
-				}
-
-				return sequence.Value.ToArray();
-			}
-
-			return default;
-		}
-
-		return result;
 	}
 
 	private Memory<SerializableProperty<T>> GetPropertiesToSerialize(in T value, Memory<SerializableProperty<T>> include)

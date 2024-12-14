@@ -92,6 +92,104 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		this.Logger.WriteLine(ex.Message);
 	}
 
+	[Fact]
+	public void MixedAliasTypes()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<MixedAliasBase>(new MixedAliasDerivedA());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal("A", reader.ReadString());
+
+		msgpack = this.AssertRoundtrip<MixedAliasBase>(new MixedAliasDerived1());
+		reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+	}
+
+	[Fact]
+	public void ImpliedAlias()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<ImpliedAliasBase>(new ImpliedAliasDerived());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(typeof(ImpliedAliasDerived).FullName, reader.ReadString());
+	}
+
+	[Fact]
+	public void RecursiveSubTypes()
+	{
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived()));
+		this.Logger.WriteLine(ex.Message);
+
+#if false
+		// If it were to work, this is how we expect it to work:
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<RecursiveBase>(new RecursiveDerivedDerived());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(13, reader.ReadInt32());
+#endif
+	}
+
+	[Fact]
+	public void RuntimeRegistration()
+	{
+		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>(1);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2);
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.ShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.ShapeProvider);
+#endif
+		this.Serializer.RegisterKnownSubTypes(mapping);
+
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredBase());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedB());
+	}
+
+	[Fact]
+	public void RuntimeRegistration_OverridesStatic()
+	{
+		KnownSubTypeMapping<BaseClass> mapping = new();
+		mapping.Add<DerivedB>(1, Witness.ShapeProvider);
+		this.Serializer.RegisterKnownSubTypes(mapping);
+
+		// Verify that the base type has just one header.
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<BaseClass>(new BaseClass { BaseClassProperty = 5 });
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		reader.ReadNil();
+		Assert.Equal(1, reader.ReadMapHeader());
+
+		// Verify that the header type value is the runtime-specified 1 instead of the static 3.
+		msgpack = this.AssertRoundtrip<BaseClass>(new DerivedB(13));
+		reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+
+		// Verify that statically set subtypes are not recognized if no runtime equivalents are registered.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new DerivedA()));
+		this.Logger.WriteLine(ex.Message);
+	}
+
+	/// <summary>
+	/// Verify that an empty mapping is allowed and produces the schema that allows for sub-types to be added in the future.
+	/// </summary>
+	[Fact]
+	public void RuntimeRegistration_EmptyMapping()
+	{
+		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		this.Serializer.RegisterKnownSubTypes(mapping);
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		reader.ReadNil();
+		Assert.Equal(0, reader.ReadMapHeader());
+	}
+
 	[GenerateShape<DerivedGeneric<int>>]
 	internal partial class Witness;
 
@@ -103,11 +201,11 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[KnownSubType<EnumerableDerived>(4)]
 	[KnownSubType<DerivedGeneric<int>, Witness>(5)]
 #else
-	[KnownSubType(1, typeof(DerivedA))]
-	[KnownSubType(2, typeof(DerivedAA))]
-	[KnownSubType(3, typeof(DerivedB))]
-	[KnownSubType(4, typeof(EnumerableDerived))]
-	[KnownSubType(5, typeof(DerivedGeneric<int>))]
+	[KnownSubType(typeof(DerivedA), 1)]
+	[KnownSubType(typeof(DerivedAA), 2)]
+	[KnownSubType(typeof(DerivedB), 3)]
+	[KnownSubType(typeof(EnumerableDerived), 4)]
+	[KnownSubType(typeof(DerivedGeneric<int>), 5)]
 #endif
 	public partial record BaseClass
 	{
@@ -144,4 +242,59 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 
 	[GenerateShape]
 	public partial record UnknownDerived : BaseClass;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<MixedAliasDerivedA>("A")]
+	[KnownSubType<MixedAliasDerived1>(1)]
+#else
+	[KnownSubType(typeof(MixedAliasDerivedA), "A")]
+	[KnownSubType(typeof(MixedAliasDerived1), 1)]
+#endif
+	public partial record MixedAliasBase;
+
+	[GenerateShape]
+	public partial record MixedAliasDerivedA : MixedAliasBase;
+
+	[GenerateShape]
+	public partial record MixedAliasDerived1 : MixedAliasBase;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<ImpliedAliasDerived>]
+#else
+	[KnownSubType(typeof(ImpliedAliasDerived))]
+#endif
+	public partial record ImpliedAliasBase;
+
+	[GenerateShape]
+	public partial record ImpliedAliasDerived : ImpliedAliasBase;
+
+	[GenerateShape]
+	public partial record DynamicallyRegisteredBase;
+
+	[GenerateShape]
+	public partial record DynamicallyRegisteredDerivedA : DynamicallyRegisteredBase;
+
+	[GenerateShape]
+	public partial record DynamicallyRegisteredDerivedB : DynamicallyRegisteredBase;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<RecursiveDerived>(1)]
+#else
+	[KnownSubType(typeof(RecursiveDerived), 1)]
+#endif
+	public partial record RecursiveBase;
+
+	[GenerateShape]
+#if NET
+	[KnownSubType<RecursiveDerivedDerived>(13)]
+#else
+	[KnownSubType(typeof(RecursiveDerivedDerived), 13)]
+#endif
+	public partial record RecursiveDerived : RecursiveBase;
+
+	[GenerateShape]
+	public partial record RecursiveDerivedDerived : RecursiveDerived;
 }

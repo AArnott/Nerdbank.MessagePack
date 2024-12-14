@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Nerdbank.MessagePack.Analyzers;
@@ -135,6 +136,25 @@ public static class AnalyzerUtilities
 		=> att.ApplicationSyntaxReference?.GetSyntax(cancellationToken) is AttributeSyntax { Name: GenericNameSyntax { TypeArgumentList.Arguments: { } a } } && a.Count > typeArgumentIndex
 			? a[typeArgumentIndex].GetLocation()
 			: null;
+
+	public static string GetFullName(this INamedTypeSymbol symbol)
+	{
+		var sb = new StringBuilder();
+
+		if (symbol.ContainingType is not null)
+		{
+			sb.Append(GetFullName(symbol.ContainingType));
+			sb.Append('.');
+		}
+		else if (!symbol.ContainingNamespace.IsGlobalNamespace)
+		{
+			sb.Append(symbol.ContainingNamespace.MetadataName);
+			sb.Append('.');
+		}
+
+		sb.Append(symbol.MetadataName);
+		return sb.ToString();
+	}
 
 	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/Nerdbank.MessagePack/analyzers/{diagnosticId}.html";
 }

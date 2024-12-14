@@ -30,6 +30,7 @@ This changes the schema of the serialized data to include a tag that indicates t
 ```
 
 But with the `KnownSubTypeAttribute`, it serializes like this:
+
 ```json
 [null, { "Name": "Bessie" }]
 ```
@@ -69,6 +70,7 @@ Now suppose you have different breeds of horses that each had their own subtype:
 ---
 
 At this point your `HorsePen` *would* serialize with the union schema around each horse:
+
 ```json
 { "Horses": [[1, { "Name": "Bessie" }], [2, { "Name", "Lightfoot" }]] }
 ```
@@ -78,6 +80,61 @@ The `Animal` class only knows about `Horse` as a subtype and designates `2` as t
 `Animal` has no designation for `QuarterHorse` or `Thoroughbred`.
 As such, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects, not `QuarterHorse` or `Thoroughbred`.
 To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1 to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
+
+### Alias types
+
+An alias may be an integer or a string.
+String aliases are case sensitive.
+
+Aliases may also be inferred from the @System.Type.FullName?displayProperty=nameWithType of the sub-type, in which case they are treated as strings.
+
+The following example shows using strings:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#StringAliasTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#StringAliasTypesNETFX)]
+
+---
+
+Mixing alias types for a given base type is allowed, as shown here:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#MixedAliasTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#MixedAliasTypesNETFX)]
+
+---
+
+Following is an example of string alias inferrence:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#InferredAliasTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#InferredAliasTypesNETFX)]
+
+---
+
+Note that while inferrence is the simplest syntax, it results in the serialized schema including the full name of the type, which can make the serialized form more fragile in the face of refactoring changes.
+It can also result in a poorer experience if the data is exchanged with non-.NET programs.
+
+### Nested sub-types
+
+Suppose you had the following type hierarchy:
+
+Animal <- Horse <- Quarterback
+
+The `Animal` class _must_ have the whole set of transitive derived types listed as known sub-types directly on itself.
+It will not do for `Animal` to merely mention `Horse` and for `Horse` to listed `Quarterback` as a sub-type, as this is not currently supported.
 
 ### Generic sub-types
 
@@ -96,5 +153,27 @@ For example:
 # [.NET Standard](#tab/netfx)
 
 [!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypesNETFX)]
+
+---
+
+### Runtime subtype registration
+
+Static registration via attributes is not always possible.
+For instance, you may want to serialize types from a third-party library that you cannot modify.
+Or you may have an extensible plugin system where new types are added at runtime.
+Or most simply, the derived types may not be declared in the same assembly as the base type.
+
+In such cases, runtime registration of subtypes is possible to allow you to run any custom logic you may require to discover and register subtypes.
+Your code is still responsible to ensure unique aliases are assigned to each subtype.
+
+Consider the following example where a type hierarchy is registered without using the attribute approach:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/Unions.cs#RuntimeSubTypesNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/Unions.cs#RuntimeSubTypesNETFX)]
 
 ---

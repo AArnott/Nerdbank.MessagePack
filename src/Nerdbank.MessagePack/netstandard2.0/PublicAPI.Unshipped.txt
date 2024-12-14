@@ -75,9 +75,14 @@ Nerdbank.MessagePack.KeyAttribute
 Nerdbank.MessagePack.KeyAttribute.Index.get -> int
 Nerdbank.MessagePack.KeyAttribute.KeyAttribute(int index) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute
-Nerdbank.MessagePack.KnownSubTypeAttribute.Alias.get -> int
-Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(int alias, System.Type! subType) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType, int alias) -> void
+Nerdbank.MessagePack.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType, string! alias) -> void
 Nerdbank.MessagePack.KnownSubTypeAttribute.SubType.get -> System.Type!
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.Abstractions.ITypeShape<TDerived>! typeShape) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.ITypeShapeProvider! provider) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.KnownSubTypeMapping() -> void
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.get -> sbyte
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.init -> void
@@ -202,6 +207,7 @@ Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.get -> Nerdbank.MessagePack.MessagePackNamingPolicy?
 Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter<T>(Nerdbank.MessagePack.MessagePackConverter<T>! converter) -> void
+Nerdbank.MessagePack.MessagePackSerializer.RegisterKnownSubTypes<TBase>(Nerdbank.MessagePack.KnownSubTypeMapping<TBase>! mapping) -> void
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(in T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> byte[]!
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(in T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> byte[]!
 Nerdbank.MessagePack.MessagePackSerializer.Serialize<T>(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void

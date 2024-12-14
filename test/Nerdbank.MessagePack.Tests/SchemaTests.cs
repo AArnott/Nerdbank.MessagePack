@@ -339,7 +339,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 #if NET
 	[KnownSubType<SubType>(1)]
 #else
-	[KnownSubType(1, typeof(SubType))]
+	[KnownSubType(typeof(SubType), 1)]
 #endif
 	internal partial class BaseType
 	{
