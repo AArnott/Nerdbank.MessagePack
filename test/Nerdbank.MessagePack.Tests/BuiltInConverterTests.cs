@@ -1,12 +1,19 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Drawing;
 using System.Numerics;
 
 public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Fact]
-	public void ImmutableDictionary() => this.AssertRoundtrip(new HasImmutableDictionary() { Map = { { "a", 1 } } });
+	public void SystemDrawingColor() => this.AssertRoundtrip<Color, Witness>(Color.FromArgb(1, 2, 3, 4));
+
+	[Fact]
+	public void SystemDrawingPoint() => this.AssertRoundtrip<Point, Witness>(new Point(1, 1));
+
+	[Fact]
+	public void ImmutableDictionary() => this.AssertRoundtrip(new HasImmutableDictionary() { Map = ImmutableDictionary<string, int>.Empty.Add("a", 1) });
 
 #if NET
 
@@ -15,6 +22,13 @@ public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePa
 
 	[Fact]
 	public void UInt128() => this.AssertRoundtrip(new HasUInt128(new UInt128(1, 2)));
+
+#endif
+
+#if NET9_0_OR_GREATER
+
+	[Fact]
+	public void OrderedDictionary() => this.AssertRoundtrip(new HasOrderedDictionary() { Map = { ['a'] = 1, ['b'] = 2, ['c'] = 3 } });
 
 #endif
 
@@ -51,6 +65,18 @@ public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePa
 
 #endif
 
+#if NET9_0_OR_GREATER
+
+	[GenerateShape]
+	public partial class HasOrderedDictionary : IEquatable<HasOrderedDictionary>
+	{
+		public OrderedDictionary<char, int> Map { get; set; } = new();
+
+		public bool Equals(HasOrderedDictionary? other) => ByValueEquality.Equal((IReadOnlyList<KeyValuePair<char, int>>)this.Map, other?.Map);
+	}
+
+#endif
+
 	[GenerateShape]
 	public partial record HasDecimal(decimal Value);
 
@@ -65,4 +91,8 @@ public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePa
 
 	[GenerateShape]
 	public partial record HasDateTimeOffset(DateTimeOffset Value);
+
+	[GenerateShape<Point>]
+	[GenerateShape<Color>]
+	private partial class Witness;
 }
