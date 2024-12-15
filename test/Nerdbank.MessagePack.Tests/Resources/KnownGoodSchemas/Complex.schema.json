@@ -16,7 +16,7 @@
       ],
       "description": "0 = Male, 1 = Female"
     },
-    "System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]": {
+    "System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]": {
       "type": "object",
       "additionalProperties": {
         "type": "integer"
@@ -40,7 +40,7 @@
           "default": 18
         },
         "PetsAndAges": {
-          "$ref": "#/definitions/System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+          "$ref": "#/definitions/System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
         }
       },
       "required": [
