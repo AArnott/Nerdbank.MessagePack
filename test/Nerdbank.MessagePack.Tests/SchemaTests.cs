@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using DiffPlex;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
@@ -143,8 +144,12 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 			.Replace("Nerdbank.MessagePack.Tests, Version=0.3.0.0", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
 
 #if NETFRAMEWORK
+		// Normalize from .NET Framework specific strings to .NET strings.
 		schemaString = schemaString.Replace("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
 #endif
+
+		// Normalize across .NET versions.
+		schemaString = Regex.Replace(schemaString, @"System\.Private\.CoreLib, Version=\d+\.0\.0\.0", "System.Private.CoreLib, Version=x.0.0.0");
 
 		return schemaString;
 	}
