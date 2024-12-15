@@ -4,6 +4,7 @@
 #pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
+using System.Drawing;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -44,6 +45,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{ typeof(byte[]), ByteArrayConverter.Instance },
 		{ typeof(Memory<byte>), new MemoryOfByteConverter() },
 		{ typeof(ReadOnlyMemory<byte>), new ReadOnlyMemoryOfByteConverter() },
+		{ typeof(Color), new SystemDrawingColorConverter() },
 #if NET
 		{ typeof(Rune), new RuneConverter() },
 		{ typeof(Int128), new Int128Converter() },
