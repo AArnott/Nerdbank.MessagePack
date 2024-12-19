@@ -192,12 +192,12 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TBase? value, SerializationContext context)
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TBase? value, SerializationContext context)
 	{
 		if (value is null)
 		{
 			writer.WriteNil();
-			return default;
+			return;
 		}
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
@@ -211,11 +211,12 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			if (this.baseConverter.PreferAsyncSerialization)
 			{
 				writer.ReturnWriter(ref syncWriter);
-				return this.baseConverter.WriteAsync(writer, value, context);
+				await this.baseConverter.WriteAsync(writer, value, context).ConfigureAwait(false);
 			}
 			else
 			{
 				this.baseConverter.Write(ref syncWriter, value, context);
+				writer.ReturnWriter(ref syncWriter);
 			}
 		}
 		else if (this.subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape) result))
@@ -224,11 +225,12 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			if (result.Converter.PreferAsyncSerialization)
 			{
 				writer.ReturnWriter(ref syncWriter);
-				return result.Converter.WriteAsync(writer, value, context);
+				await result.Converter.WriteAsync(writer, value, context).ConfigureAwait(false);
 			}
 			else
 			{
 				result.Converter.Write(ref syncWriter, value, context);
+				writer.ReturnWriter(ref syncWriter);
 			}
 		}
 		else
@@ -236,8 +238,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			throw new MessagePackSerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
 		}
 
-		writer.ReturnWriter(ref syncWriter);
-		return default;
+		await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 	}
 
 	/// <inheritdoc/>
