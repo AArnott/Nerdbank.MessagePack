@@ -3,10 +3,11 @@
 
 public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
-	[Fact]
-	public void BaseType()
+	[Theory, PairwiseData]
+	public async Task BaseType(bool async)
 	{
-		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new BaseClass { BaseClassProperty = 5 });
+		BaseClass value = new() { BaseClassProperty = 5 };
+		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
 
 		// Assert that it's serialized in its special syntax that allows for derived types.
 		MessagePackReader reader = new(msgpack);
@@ -31,8 +32,19 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.True(reader.End);
 	}
 
-	[Fact]
-	public void DerivedA_AsBaseType() => this.AssertRoundtrip<BaseClass>(new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 });
+	[Theory, PairwiseData]
+	public async Task DerivedA_AsBaseType(bool async)
+	{
+		var value = new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 };
+		if (async)
+		{
+			await this.AssertRoundtripAsync<BaseClass>(value);
+		}
+		else
+		{
+			this.AssertRoundtrip<BaseClass>(value);
+		}
+	}
 
 	[Fact]
 	public void DerivedAA_AsBaseType() => this.AssertRoundtrip<BaseClass>(new DerivedAA { BaseClassProperty = 5, DerivedAProperty = 6 });
@@ -53,8 +65,18 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void ClosedGenericDerived_BaseType() => this.AssertRoundtrip<BaseClass>(new DerivedGeneric<int>(5) { BaseClassProperty = 10 });
 
-	[Fact]
-	public void Null() => this.AssertRoundtrip<BaseClass>(null);
+	[Theory, PairwiseData]
+	public async Task Null(bool async)
+	{
+		if (async)
+		{
+			await this.AssertRoundtripAsync<BaseClass>(null);
+		}
+		else
+		{
+			this.AssertRoundtrip<BaseClass>(null);
+		}
+	}
 
 	[Fact]
 	public void UnrecognizedAlias()
@@ -92,15 +114,17 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		this.Logger.WriteLine(ex.Message);
 	}
 
-	[Fact]
-	public void MixedAliasTypes()
+	[Theory, PairwiseData]
+	public async Task MixedAliasTypes(bool async)
 	{
-		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<MixedAliasBase>(new MixedAliasDerivedA());
+		MixedAliasBase value = new MixedAliasDerivedA();
+		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal(2, reader.ReadArrayHeader());
 		Assert.Equal("A", reader.ReadString());
 
-		msgpack = this.AssertRoundtrip<MixedAliasBase>(new MixedAliasDerived1());
+		value = new MixedAliasDerived1();
+		msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
 		reader = new(msgpack);
 		Assert.Equal(2, reader.ReadArrayHeader());
 		Assert.Equal(1, reader.ReadInt32());

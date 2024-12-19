@@ -31,14 +31,7 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 public abstract class MessagePackConverter<T> : IMessagePackConverter
 {
-	/// <summary>
-	/// Gets a value indicating whether callers should prefer the async methods on this object.
-	/// </summary>
-	/// <value>Unless overridden in a derived converter, this value is always <see langword="false"/>.</value>
-	/// <remarks>
-	/// Derived types that override the <see cref="WriteAsync"/> and/or <see cref="ReadAsync"/> methods
-	/// should also override this property and have it return <see langword="true" />.
-	/// </remarks>
+	/// <inheritdoc />
 	public virtual bool PreferAsyncSerialization => false;
 
 	/// <summary>
@@ -159,6 +152,14 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	{
 		return this.Read(ref reader, context);
 	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	ValueTask IMessagePackConverter.WriteAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context) => this.WriteAsync(writer, (T?)value, context);
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	async ValueTask<object?> IMessagePackConverter.ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
 
 	/// <inheritdoc/>
 	IMessagePackConverter IMessagePackConverter.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
