@@ -124,7 +124,7 @@ public record struct SerializationContext
 	/// <param name="provider">
 	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/>
 	/// It can also come from <see cref="TypeShapeProvider"/>.
-	/// A null value will be filled in with <see cref="TypeShapeProvider"/>.
+	/// A <see langword="null" /> value will be filled in with <see cref="TypeShapeProvider"/>.
 	/// </param>
 	/// <returns>The converter.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
@@ -135,6 +135,39 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
 		MessagePackConverter<T> result = this.Owner.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+	}
+
+	/// <summary>
+	/// Gets a converter for a given type shape.
+	/// </summary>
+	/// <param name="shape">The shape of the type to be converted.</param>
+	/// <returns>The converter.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
+	/// <remarks>
+	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
+	/// </remarks>
+	public IMessagePackConverter GetConverter(ITypeShape shape)
+	{
+		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
+		IMessagePackConverterInternal result = this.Owner.GetOrAddConverter(shape);
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+	}
+
+	/// <summary>
+	/// Gets a converter for a given type shape.
+	/// </summary>
+	/// <param name="type">The type to be converted.</param>
+	/// <param name="provider"><inheritdoc cref="GetConverter{T}(ITypeShapeProvider?)" path="/param[@name='provider']"/></param>
+	/// <returns>The converter.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
+	/// <remarks>
+	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
+	/// </remarks>
+	public IMessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider)
+	{
+		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
+		IMessagePackConverterInternal result = this.Owner.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 

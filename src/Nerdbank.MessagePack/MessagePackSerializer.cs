@@ -262,7 +262,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(converter);
 		this.VerifyConfigurationIsNotLocked();
 		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
-			? ((IMessagePackConverter)converter).WrapWithReferencePreservation()
+			? ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation()
 			: converter;
 	}
 
@@ -294,6 +294,27 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Serializes an untyped value.
+	/// </summary>
+	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="shape">The shape of the value to serialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <example>
+	/// <para>
+	/// The following snippet demonstrates a way to use this method.
+	/// </para>
+	/// <code source="../../samples/SimpleSerialization.cs" region="NonGenericSerializeDeserialize" lang="C#" />
+	/// </example>
+	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(shape);
+
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+	}
+
+	/// <summary>
 	/// Serializes a value.
 	/// </summary>
 	/// <typeparam name="T">The type to be serialized.</typeparam>
@@ -320,6 +341,24 @@ public partial record MessagePackSerializer
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 		this.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
+	}
+
+	/// <summary>
+	/// Deserializes an untyped value.
+	/// </summary>
+	/// <param name="reader">The msgpack reader to deserialize from.</param>
+	/// <param name="shape">The shape of the value to deserialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	/// <example>
+	/// See the <see cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, CancellationToken)"/> method for an example of using this method.
+	/// </example>
+	public object? DeserializeObject(ref MessagePackReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(shape);
+
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -595,8 +634,8 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverter GetOrAddConverter(ITypeShape shape)
-		=> (IMessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
+	internal IMessagePackConverterInternal GetOrAddConverter(ITypeShape shape)
+		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -608,6 +647,17 @@ public partial record MessagePackSerializer
 	/// <returns>A msgpack converter.</returns>
 	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShapeProvider provider)
 		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
+
+	/// <summary>
+	/// Gets a converter for the given type shape.
+	/// An existing converter is reused if one is found in the cache.
+	/// If a converter must be created, it is added to the cache for lookup next time.
+	/// </summary>
+	/// <param name="type">The type to convert.</param>
+	/// <param name="provider">The type shape provider.</param>
+	/// <returns>A msgpack converter.</returns>
+	internal IMessagePackConverterInternal GetOrAddConverter(Type type, ITypeShapeProvider provider)
+		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAddOrThrow(type, provider);
 
 	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available.
@@ -696,7 +746,7 @@ public partial record MessagePackSerializer
 	{
 		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
 		{
-			IMessagePackConverter converter = (IMessagePackConverter)pair.Value;
+			IMessagePackConverterInternal converter = (IMessagePackConverterInternal)pair.Value;
 			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
 		}
 	}

@@ -249,6 +249,23 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack)?.AString);
 	}
 
+	[Fact]
+	public void SerializeObject_DeserializeObject()
+	{
+		Fruit value = new() { Seeds = 5 };
+
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		this.Serializer.SerializeObject(ref writer, value, Witness.ShapeProvider.GetShape(typeof(Fruit))!);
+		writer.Flush();
+
+		this.LogMsgPack(seq);
+
+		MessagePackReader reader = new(seq);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.ShapeProvider.GetShape(typeof(Fruit))!);
+		Assert.Equal(value, deserialized);
+	}
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>

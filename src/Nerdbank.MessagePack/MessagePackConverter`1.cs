@@ -29,7 +29,7 @@ namespace Nerdbank.MessagePack;
 /// <see cref="MessagePackSerializer.GetJsonSchema(ITypeShape)"/>.
 /// </para>
 /// </remarks>
-public abstract class MessagePackConverter<T> : IMessagePackConverter
+public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessagePackConverterInternal
 {
 	/// <inheritdoc />
 	public virtual bool PreferAsyncSerialization => false;
@@ -162,15 +162,15 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter
 	async ValueTask<object?> IMessagePackConverter.ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
 
 	/// <inheritdoc/>
-	IMessagePackConverter IMessagePackConverter.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
+	IMessagePackConverterInternal IMessagePackConverterInternal.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
 
 	/// <inheritdoc/>
-	IMessagePackConverter IMessagePackConverter.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
+	IMessagePackConverterInternal IMessagePackConverterInternal.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
 
-	/// <inheritdoc cref="IMessagePackConverter.WrapWithReferencePreservation" />
+	/// <inheritdoc cref="IMessagePackConverterInternal.WrapWithReferencePreservation" />
 	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
 
-	/// <inheritdoc cref="IMessagePackConverter.UnwrapReferencePreservation" />
+	/// <inheritdoc cref="IMessagePackConverterInternal.UnwrapReferencePreservation" />
 	internal virtual MessagePackConverter<T> UnwrapReferencePreservation() => this;
 
 	/// <summary>

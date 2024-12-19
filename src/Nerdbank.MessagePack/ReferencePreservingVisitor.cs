@@ -19,13 +19,13 @@ internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVi
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
-		=> ((IMessagePackConverter)inner.VisitDictionary(dictionaryShape, state)!).WrapWithReferencePreservation();
+		=> ((IMessagePackConverterInternal)inner.VisitDictionary(dictionaryShape, state)!).WrapWithReferencePreservation();
 
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
-		=> ((IMessagePackConverter)inner.VisitEnumerable(enumerableShape, state)!).WrapWithReferencePreservation();
+		=> ((IMessagePackConverterInternal)inner.VisitEnumerable(enumerableShape, state)!).WrapWithReferencePreservation();
 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
-		=> ((IMessagePackConverter)inner.VisitObject(objectShape, state)!).WrapWithReferencePreservation();
+		=> ((IMessagePackConverterInternal)inner.VisitObject(objectShape, state)!).WrapWithReferencePreservation();
 }

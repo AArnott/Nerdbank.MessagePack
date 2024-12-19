@@ -9,7 +9,7 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// A non-generic, <see cref="object"/>-based interface for all message pack converters.
 /// </summary>
-internal interface IMessagePackConverter
+public interface IMessagePackConverter
 {
 	/// <summary>
 	/// Gets a value indicating whether callers should prefer the async methods on this object.
@@ -45,18 +45,6 @@ internal interface IMessagePackConverter
 	/// <inheritdoc cref="Read"/>
 	[Experimental("NBMsgPackAsync")]
 	ValueTask<object?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context);
-
-	/// <summary>
-	/// Wraps this converter with a reference preservation converter.
-	/// </summary>
-	/// <returns>A converter. Possibly <see langword="this"/> if this instance is already reference preserving.</returns>
-	IMessagePackConverter WrapWithReferencePreservation();
-
-	/// <summary>
-	/// Removes the outer reference preserving converter, if present.
-	/// </summary>
-	/// <returns>The unwrapped converter.</returns>
-	IMessagePackConverter UnwrapReferencePreservation();
 
 	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
 	JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);

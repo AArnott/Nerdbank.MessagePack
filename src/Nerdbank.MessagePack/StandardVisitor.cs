@@ -58,7 +58,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	private static readonly FrozenDictionary<Type, object> PrimitiveReferencePreservingConverters = PrimitiveConverters.ToFrozenDictionary(
 		pair => pair.Key,
-		pair => (object)((IMessagePackConverter)pair.Value).WrapWithReferencePreservation());
+		pair => (object)((IMessagePackConverterInternal)pair.Value).WrapWithReferencePreservation());
 
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
@@ -509,10 +509,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="shape">The type shape.</param>
 	/// <param name="state">An optional state object to pass to the converter.</param>
 	/// <returns>The converter.</returns>
-	protected IMessagePackConverter GetConverter(ITypeShape shape, object? state = null)
+	protected IMessagePackConverterInternal GetConverter(ITypeShape shape, object? state = null)
 	{
 		ITypeShapeFunc self = this;
-		return (IMessagePackConverter)shape.Invoke(this, state)!;
+		return (IMessagePackConverterInternal)shape.Invoke(this, state)!;
 	}
 
 	/// <summary>

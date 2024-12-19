@@ -195,6 +195,65 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_DeferToOtherConverter_NonGeneric()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			public class MyType
+			{
+				public SomeOtherType SomeField;
+			}
+
+			#if NET
+			public class SomeOtherType : IShapeable<SomeOtherType>
+			{
+				public static ITypeShape<SomeOtherType> GetShape() => throw new System.NotImplementedException();
+			}
+			#else
+			public class SomeOtherType
+			{
+			}
+			#endif
+
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				{
+					if (reader.TryReadNil())
+					{
+						return null;
+					}
+					else
+					{
+						return new MyType
+						{
+							SomeField = (SomeOtherType)context.GetConverter(typeof(SomeOtherType), null).Read(ref reader, context),
+						};
+					}
+				}
+
+				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
+				{
+					if (value is null)
+					{
+						writer.WriteNil();
+						return;
+					}
+
+					context.GetConverter(typeof(SomeOtherType), null).Write(ref writer, value.SomeField, context);
+				}
+
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task NoIssues_StructureIsReadIntoReturnValueViaConstructor()
 	{
 		string source = /* lang=c#-test */ """

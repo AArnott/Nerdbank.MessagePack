@@ -23,6 +23,20 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		Assert.Throws<InvalidOperationException>(() => this.Serializer.RegisterConverter(new NoOpConverter()));
 	}
 
+	[Fact]
+	public void UseNonGenericSubConverters_ShapeProvider()
+	{
+		this.Serializer.RegisterConverter(new CustomTypeConverterNonGenericTypeShapeProvider());
+		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
+	}
+
+	[Fact]
+	public void UseNonGenericSubConverters_Shape()
+	{
+		this.Serializer.RegisterConverter(new CustomTypeConverterNonGenericTypeShape());
+		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
+	}
+
 	[GenerateShape]
 	public partial record Tree(int FruitCount);
 
@@ -46,6 +60,36 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 			{
 				context.GetConverter<string>(ShapeProvider).Write(ref writer, value?.InternalProperty, context);
 			}
+		}
+	}
+
+	[GenerateShape<string>]
+	private partial class CustomTypeConverterNonGenericTypeShapeProvider : MessagePackConverter<CustomType>
+	{
+		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			string? value = (string?)context.GetConverter(typeof(string), ShapeProvider).Read(ref reader, context);
+			return new CustomType { InternalProperty = value };
+		}
+
+		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
+		{
+			context.GetConverter(typeof(string), ShapeProvider).Write(ref writer, value?.InternalProperty, context);
+		}
+	}
+
+	[GenerateShape<string>]
+	private partial class CustomTypeConverterNonGenericTypeShape : MessagePackConverter<CustomType>
+	{
+		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			string? value = (string?)context.GetConverter(ShapeProvider.GetShape(typeof(string))!).Read(ref reader, context);
+			return new CustomType { InternalProperty = value };
+		}
+
+		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
+		{
+			context.GetConverter(ShapeProvider.GetShape(typeof(string)!)!).Write(ref writer, value?.InternalProperty, context);
 		}
 	}
 
