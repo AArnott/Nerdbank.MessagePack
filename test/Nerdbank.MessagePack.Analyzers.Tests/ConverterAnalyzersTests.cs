@@ -771,7 +771,7 @@ public class ConverterAnalyzersTests
 					syncWriter.Write(value);
 					//writer.ReturnWriter(ref syncWriter);
 
-					{|NBMsgPack033:await|} writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+					{|NBMsgPack033:await|} {|NBMsgPack033:writer.FlushIfAppropriateAsync(context)|}.ConfigureAwait(false);
 					{|NBMsgPack033:writer.CreateWriter()|};
 				{|NBMsgPack033:}|}
 
@@ -790,6 +790,64 @@ public class ConverterAnalyzersTests
 					//reader.ReturnReader(ref streamingReader);
 
 					{|NBMsgPack035:return|} 5;
+				}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task AsyncConverter_UsesAsyncIOWhileRentalIsCurrent()
+	{
+		string source = /* lang=c#-test */ """
+			#pragma warning disable NBMsgPackAsync
+
+			using System;
+			using System.Text.Json.Nodes;
+			using System.Threading.Tasks;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			class MyConverter : MessagePackConverter<int>
+			{
+				public override bool PreferAsyncSerialization => true;
+
+				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+
+				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				{
+					MessagePackWriter syncWriter = writer.CreateWriter();
+					{|NBMsgPack033:writer.WriteNil()|};
+					{|NBMsgPack033:await|} {|NBMsgPack033:writer.FlushIfAppropriateAsync(context)|};
+					{|NBMsgPack033:writer.Write((ref MessagePackWriter w, int s) => { }, 5)|};
+					syncWriter.Write(value);
+					writer.ReturnWriter(ref syncWriter);
+
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				}
+
+				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				{
+					MessagePackReader bufferedReader = reader.CreateBufferedReader();
+					{|NBMsgPack035:await|} {|NBMsgPack035:reader.ReadAsync()|};
+					{|NBMsgPack035:await|} {|NBMsgPack035:reader.BufferNextStructureAsync(context)|};
+					bufferedReader.ReadInt32();
+					reader.ReturnReader(ref bufferedReader);
+
+					MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
+					{
+						streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+					}
+
+					reader.ReturnReader(ref streamingReader);
+
+					return 5;
 				}
 			}
 			""";

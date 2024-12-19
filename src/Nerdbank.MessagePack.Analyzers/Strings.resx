@@ -196,7 +196,7 @@
     <value>Converters should override GetJsonSchema</value>
   </data>
   <data name="NBMsgPack033_MessageFormat" xml:space="preserve">
-    <value>An async messagepack converter should return the MessagePackWriter previously obtained by calling ReturnWriter before returning, awaiting or creating a new writer.</value>
+    <value>An async messagepack converter should return the MessagePackWriter previously obtained by calling ReturnWriter before returning, awaiting or invoking other methods on the MessagePackAsyncWriter.</value>
   </data>
   <data name="NBMsgPack033_Title" xml:space="preserve">
     <value>Async converters should return sync writers</value>
@@ -208,7 +208,7 @@
     <value>Async converters should not reuse returned writers</value>
   </data>
   <data name="NBMsgPack035_MessageFormat" xml:space="preserve">
-    <value>An async messagepack converter should return the MessagePackReader or MessagePackStreamingReader previously obtained by calling ReturnReader before returning, awaiting or creating a new reader.</value>
+    <value>An async messagepack converter should return the MessagePackReader or MessagePackStreamingReader previously obtained by calling ReturnReader before returning, awaiting or invoking other methods on the MessagePackAsyncReader.</value>
   </data>
   <data name="NBMsgPack035_Title" xml:space="preserve">
     <value>Async converters should return sync readers</value>
