@@ -66,6 +66,13 @@ Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.DeepEquals(T? other) -> bool
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetHashCode() -> int
 Nerdbank.MessagePack.IDeepSecureEqualityComparer<T>.GetSecureHashCode() -> long
+Nerdbank.MessagePack.IMessagePackConverter
+Nerdbank.MessagePack.IMessagePackConverter.GetJsonSchema(Nerdbank.MessagePack.JsonSchemaContext! context, PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject?
+Nerdbank.MessagePack.IMessagePackConverter.PreferAsyncSerialization.get -> bool
+Nerdbank.MessagePack.IMessagePackConverter.Read(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> object?
+Nerdbank.MessagePack.IMessagePackConverter.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
+Nerdbank.MessagePack.IMessagePackConverter.Write(ref Nerdbank.MessagePack.MessagePackWriter writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> void
+Nerdbank.MessagePack.IMessagePackConverter.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnAfterDeserialize() -> void
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnBeforeSerialize() -> void
@@ -343,6 +350,8 @@ Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.SerializationContext.CancellationToken.get -> System.Threading.CancellationToken
 Nerdbank.MessagePack.SerializationContext.CancellationToken.init -> void
 Nerdbank.MessagePack.SerializationContext.DepthStep() -> void
+Nerdbank.MessagePack.SerializationContext.GetConverter(PolyType.Abstractions.ITypeShape! shape) -> Nerdbank.MessagePack.IMessagePackConverter!
+Nerdbank.MessagePack.SerializationContext.GetConverter(System.Type! type, PolyType.ITypeShapeProvider? provider) -> Nerdbank.MessagePack.IMessagePackConverter!
 Nerdbank.MessagePack.SerializationContext.GetConverter<T>(PolyType.ITypeShapeProvider? provider) -> Nerdbank.MessagePack.MessagePackConverter<T>!
 Nerdbank.MessagePack.SerializationContext.MaxDepth.get -> int
 Nerdbank.MessagePack.SerializationContext.MaxDepth.set -> void

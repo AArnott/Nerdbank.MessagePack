@@ -242,7 +242,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							_ => (0, true),
 						};
 					}
-					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound))
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.IMessagePackConverter) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
 					{
 						return i.TargetMethod.Name switch
 						{
@@ -273,7 +273,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							_ => (0, true),
 						};
 					}
-					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound))
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.IMessagePackConverter) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
 					{
 						return i.TargetMethod.Name switch
 						{

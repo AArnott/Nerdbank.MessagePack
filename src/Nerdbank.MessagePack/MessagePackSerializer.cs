@@ -262,7 +262,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(converter);
 		this.VerifyConfigurationIsNotLocked();
 		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
-			? ((IMessagePackConverter)converter).WrapWithReferencePreservation()
+			? ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation()
 			: converter;
 	}
 
@@ -634,8 +634,8 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverter GetOrAddConverter(ITypeShape shape)
-		=> (IMessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
+	internal IMessagePackConverterInternal GetOrAddConverter(ITypeShape shape)
+		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -647,6 +647,17 @@ public partial record MessagePackSerializer
 	/// <returns>A msgpack converter.</returns>
 	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShapeProvider provider)
 		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
+
+	/// <summary>
+	/// Gets a converter for the given type shape.
+	/// An existing converter is reused if one is found in the cache.
+	/// If a converter must be created, it is added to the cache for lookup next time.
+	/// </summary>
+	/// <param name="type">The type to convert.</param>
+	/// <param name="provider">The type shape provider.</param>
+	/// <returns>A msgpack converter.</returns>
+	internal IMessagePackConverterInternal GetOrAddConverter(Type type, ITypeShapeProvider provider)
+		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAddOrThrow(type, provider);
 
 	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available.
@@ -735,7 +746,7 @@ public partial record MessagePackSerializer
 	{
 		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
 		{
-			IMessagePackConverter converter = (IMessagePackConverter)pair.Value;
+			IMessagePackConverterInternal converter = (IMessagePackConverterInternal)pair.Value;
 			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
 		}
 	}
