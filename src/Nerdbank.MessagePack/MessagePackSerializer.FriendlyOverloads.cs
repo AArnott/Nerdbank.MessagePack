@@ -40,6 +40,27 @@ public partial record MessagePackSerializer
 		}
 	}
 
+	/// <inheritdoc cref="Serialize(in object?, ITypeShape, CancellationToken)"/>
+	/// <returns>A byte array containing the serialized msgpack.</returns>
+	public byte[] Serialize(in object? value, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(shape);
+
+		// Although the static array is thread-local, we still want to null it out while using it
+		// to avoid any potential issues with re-entrancy due to a converter that makes a (bad) top-level call to the serializer.
+		(byte[] array, scratchArray) = (scratchArray ?? new byte[65536], null);
+		try
+		{
+			MessagePackWriter writer = new(SequencePool.Shared, array);
+			this.Serialize(ref writer, value, shape, cancellationToken);
+			return writer.FlushAndGetArray();
+		}
+		finally
+		{
+			scratchArray = array;
+		}
+	}
+
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)"/>
 	public void Serialize<T>(IBufferWriter<byte> writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
@@ -87,6 +108,25 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)" />
 	/// <returns>A byte array containing the serialized msgpack.</returns>
 	public byte[] Serialize<T>(in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(provider);
+
+		// Although the static array is thread-local, we still want to null it out while using it
+		// to avoid any potential issues with re-entrancy due to a converter that makes a (bad) top-level call to the serializer.
+		(byte[] array, scratchArray) = (scratchArray ?? new byte[65536], null);
+		try
+		{
+			MessagePackWriter writer = new(SequencePool.Shared, array);
+			this.Serialize(ref writer, value, provider, cancellationToken);
+			return writer.FlushAndGetArray();
+		}
+		finally
+		{
+			scratchArray = array;
+		}
+	}
+
+	public byte[] Serialize(in object? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(provider);
 

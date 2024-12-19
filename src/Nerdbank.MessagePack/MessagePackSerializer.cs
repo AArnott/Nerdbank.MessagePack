@@ -323,6 +323,37 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Serializes a value.
+	/// </summary>
+	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="provider">The shape provider of the type to serialize.</param>
+	/// <param name="valueType">The type of the value to serialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="valueType"/> is null.</exception>
+	public void Serialize(ref MessagePackWriter writer, in object? value, ITypeShapeProvider provider, Type valueType, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(valueType);
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+		this.GetOrAddConverter(provider.GetShapeOrThrow(valueType)).Write(ref writer, value, context.Value);
+	}
+
+	/// <summary>
+	/// Serializes a value.
+	/// </summary>
+	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="shape">The shape of the type to serialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="shape"/> is null.</exception>
+	public void Serialize(ref MessagePackWriter writer, in object? value, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(shape);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+	}
+
+	/// <summary>
 	/// Deserializes a value.
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
@@ -353,6 +384,37 @@ public partial record MessagePackSerializer
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 		return this.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
+	}
+
+	/// <summary>
+	/// Deserializes a value from a MessagePack reader.
+	/// </summary>
+	/// <param name="reader">The MessagePack reader to deserialize from.</param>
+	/// <param name="provider">The shape provider of the type to deserialize.</param>
+	/// <param name="valueType">The type of the value to deserialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="valueType"/> is null.</exception>
+	public object? Deserialize(ref MessagePackReader reader, ITypeShapeProvider provider, Type valueType, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(valueType);
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+		return this.GetOrAddConverter(provider.GetShapeOrThrow(valueType)).Read(ref reader, context.Value);
+	}
+
+	/// <summary>
+	/// Deserializes a value from a MessagePack reader.
+	/// </summary>
+	/// <param name="reader">The MessagePack reader to deserialize from.</param>
+	/// <param name="shape">The shape of the type to deserialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	/// <exception cref="ArgumentNullException">Thrown if <paramref name="shape"/> is null.</exception>
+	public object? Deserialize(ref MessagePackReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(shape);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
