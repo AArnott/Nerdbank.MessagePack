@@ -209,6 +209,7 @@ Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Pipelin
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Stream! stream, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Stream! stream, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeObject(ref Nerdbank.MessagePack.MessagePackReader reader, PolyType.Abstractions.ITypeShape! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> object?
 Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.DisposableSerializationContext() -> void
 Nerdbank.MessagePack.MessagePackSerializer.DisposableSerializationContext.DisposableSerializationContext(Nerdbank.MessagePack.SerializationContext context) -> void
@@ -258,6 +259,7 @@ Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.get -> bool
 Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.get -> bool
 Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.SerializeObject(ref Nerdbank.MessagePack.MessagePackWriter writer, object? value, PolyType.Abstractions.ITypeShape! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.get -> Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.init -> void
 Nerdbank.MessagePack.MessagePackStreamingReader

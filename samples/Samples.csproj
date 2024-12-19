@@ -18,11 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EditorConfigFiles Remove="d:\source\Repos\Nerdbank.MessagePack\test\Samples\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="d:\source\Repos\Nerdbank.MessagePack\test\Samples\.editorconfig" />
+    <PackageReference Include="Nerdbank.Streams" />
   </ItemGroup>
 
 </Project>

@@ -294,6 +294,27 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Serializes an untyped value.
+	/// </summary>
+	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="shape">The shape of the value to serialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <example>
+	/// <para>
+	/// The following snippet demonstrates a way to use this method.
+	/// </para>
+	/// <code source="../../samples/SimpleSerialization.cs" region="NonGenericSerializeDeserialize" lang="C#" />
+	/// </example>
+	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(shape);
+
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+	}
+
+	/// <summary>
 	/// Serializes a value.
 	/// </summary>
 	/// <typeparam name="T">The type to be serialized.</typeparam>
@@ -320,6 +341,24 @@ public partial record MessagePackSerializer
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 		this.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
+	}
+
+	/// <summary>
+	/// Deserializes an untyped value.
+	/// </summary>
+	/// <param name="reader">The msgpack reader to deserialize from.</param>
+	/// <param name="shape">The shape of the value to deserialize.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The deserialized value.</returns>
+	/// <example>
+	/// See the <see cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, CancellationToken)"/> method for an example of using this method.
+	/// </example>
+	public object? DeserializeObject(ref MessagePackReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(shape);
+
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
