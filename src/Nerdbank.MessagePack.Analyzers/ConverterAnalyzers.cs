@@ -552,6 +552,13 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 						currentRental = null;
 					}
 				}
+				else if (currentRental is not null)
+				{
+					// Other invocations of the async reader/writer are not allowed when a rental is held.
+					context.ReportDiagnostic(Diagnostic.Create(
+						inputs.ReturnRentalFirst,
+						operation.Syntax.GetLocation()));
+				}
 			}
 		}
 
