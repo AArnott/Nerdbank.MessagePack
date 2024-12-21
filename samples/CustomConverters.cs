@@ -378,3 +378,79 @@ namespace AsyncConverters
         }
     }
 }
+
+namespace PerformanceConverters
+{
+    #region MessagePackStringUser
+    [MessagePackConverter(typeof(MyCustomTypeConverter))]
+    public class MyCustomType
+    {
+        public string? Message1 { get; set; }
+
+        public string? Message2 { get; set; }
+    }
+
+    public class MyCustomTypeConverter : MessagePackConverter<MyCustomType>
+    {
+        private static readonly MessagePackString Message1 = new(nameof(MyCustomType.Message1));
+        private static readonly MessagePackString Message2 = new(nameof(MyCustomType.Message2));
+
+        public override MyCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            if (reader.TryReadNil())
+            {
+                return null;
+            }
+
+            string? message1 = null;
+            string? message2 = null;
+
+            int count = reader.ReadMapHeader();
+
+            // It is critical that we read or skip every element of the map, even if we don't recognize the key.
+            for (int i = 0; i < count; i++)
+            {
+                // Compare the key to those we recognize such that we don't decode or allocate strings unnecessarily.
+                if (Message1.TryRead(ref reader))
+                {
+                    message1 = reader.ReadString();
+                }
+                else if (Message2.TryRead(ref reader))
+                {
+                    message2 = reader.ReadString();
+                }
+                else
+                {
+                    // We don't recognize the key, so skip both the key and the value.
+                    reader.Skip(context);
+                    reader.Skip(context);
+                }
+            }
+
+            return new MyCustomType
+            {
+                Message1 = message1,
+                Message2 = message2,
+            };
+        }
+
+        public override void Write(ref MessagePackWriter writer, in MyCustomType? value, SerializationContext context)
+        {
+            if (value is null)
+            {
+                writer.WriteNil();
+                return;
+            }
+
+            writer.WriteMapHeader(2);
+
+            // Write the pre-encoded msgpack for the property names to avoid repeatedly paying encoding costs.
+            writer.WriteRaw(Message1.MsgPack.Span);
+            writer.Write(value.Message1);
+
+            writer.WriteRaw(Message2.MsgPack.Span);
+            writer.Write(value.Message2);
+        }
+    }
+    #endregion
+}

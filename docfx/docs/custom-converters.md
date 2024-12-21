@@ -115,6 +115,10 @@ The built-in converters take special considerations to avoid allocating, encodin
 This reduces GC pressure and removes redundant CPU time spent repeatedly converting UTF-8 encoded property names as strings.
 Your custom converters *may* follow similar patterns if tuning performance for your particular type's serialization is important.
 
+The following sample demonstrates using the @Nerdbank.MessagePack.MessagePackString class to avoid allocations and repeated encoding operations for strings used for property names:
+
+[!code-csharp[](../../samples/CustomConverters.cs#MessagePackStringUser)]
+
 ### Async converters
 
 @Nerdbank.MessagePack.MessagePackConverter`1 is an abstract class that requires a derived converter to implement synchronous @Nerdbank.MessagePack.MessagePackConverter`1.Write* and @Nerdbank.MessagePack.MessagePackConverter`1.Read* methods.
