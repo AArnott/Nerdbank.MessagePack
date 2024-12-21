@@ -79,6 +79,8 @@ So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1
 
 [!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatterNETFX)]
 
+---
+
 ### Version compatibility
 
 > [!IMPORTANT]
