@@ -585,7 +585,21 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return null;
 		}
 
-		if (customConverterAttribute.ConverterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
+		Type converterType = customConverterAttribute.ConverterType;
+		if (converterType.ContainsGenericParameters)
+		{
+			// We expect the data type to also be generic and to have exactly the number of generic type arguments
+			// required to close the converter type.
+			Type[] genericArguments = typeShape.Type.GetGenericArguments();
+			if (genericArguments.Length != converterType.GetTypeInfo().GenericTypeParameters.Length)
+			{
+				throw new MessagePackSerializationException($"{typeShape.Type.FullName} has {typeof(MessagePackConverterAttribute)} that refers to {converterType.FullName} but the converter type is generic and the data type does not have the right number of generic arguments to close it.");
+			}
+
+			converterType = converterType.MakeGenericType(genericArguments);
+		}
+
+		if (converterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
 		{
 			throw new MessagePackSerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
 		}
