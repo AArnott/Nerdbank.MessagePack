@@ -23,7 +23,7 @@ public partial class RawMessagePackTests(ITestOutputHelper logger) : MessagePack
 	public void DeferredSerialization()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = this.Serializer.Serialize(userData) };
+		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData) };
 
 		Envelope? deserializedEnvelope = this.Roundtrip(envelope);
 
@@ -38,7 +38,7 @@ public partial class RawMessagePackTests(ITestOutputHelper logger) : MessagePack
 	public async Task DeferredSerializationAsync()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = this.Serializer.Serialize(userData) };
+		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData) };
 
 		Envelope? deserializedEnvelope = await this.RoundtripAsync(envelope);
 
@@ -88,7 +88,7 @@ public partial class RawMessagePackTests(ITestOutputHelper logger) : MessagePack
 	public void ToOwned_NonEmpty()
 	{
 		// Verify that we consider an initial version to be borrowed.
-		RawMessagePack msgpack = new byte[] { 1, 2, 3 };
+		RawMessagePack msgpack = (RawMessagePack)new byte[] { 1, 2, 3 };
 		Assert.False(msgpack.IsOwned);
 		ReadOnlySequence<byte> borrowedSequence = msgpack.MsgPack;
 

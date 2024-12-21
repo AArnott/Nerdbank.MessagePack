@@ -468,10 +468,10 @@ static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.Mes
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack) -> string!
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(long value) -> int
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(ulong value) -> int
-static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(byte[]! msgpack) -> Nerdbank.MessagePack.RawMessagePack
-static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.Buffers.ReadOnlySequence<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
-static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.Memory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
-static Nerdbank.MessagePack.RawMessagePack.implicit operator Nerdbank.MessagePack.RawMessagePack(System.ReadOnlyMemory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(byte[]! msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(System.Buffers.ReadOnlySequence<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(System.Memory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
+static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(System.ReadOnlyMemory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
 static Nerdbank.MessagePack.RawMessagePack.implicit operator System.Buffers.ReadOnlySequence<byte>(Nerdbank.MessagePack.RawMessagePack msgpack) -> System.Buffers.ReadOnlySequence<byte>
 static readonly Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Default -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 virtual Nerdbank.MessagePack.KnownSubTypeAttribute.Shape.get -> PolyType.Abstractions.ITypeShape?
