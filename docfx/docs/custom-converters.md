@@ -79,6 +79,8 @@ So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1
 
 [!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatterNETFX)]
 
+---
+
 ### Version compatibility
 
 > [!IMPORTANT]
@@ -112,6 +114,10 @@ For particularly expensive converters, it may be beneficial to check the token p
 The built-in converters take special considerations to avoid allocating, encoding and deallocating strings for property names.
 This reduces GC pressure and removes redundant CPU time spent repeatedly converting UTF-8 encoded property names as strings.
 Your custom converters *may* follow similar patterns if tuning performance for your particular type's serialization is important.
+
+The following sample demonstrates using the @Nerdbank.MessagePack.MessagePackString class to avoid allocations and repeated encoding operations for strings used for property names:
+
+[!code-csharp[](../../samples/CustomConverters.cs#MessagePackStringUser)]
 
 ### Async converters
 
