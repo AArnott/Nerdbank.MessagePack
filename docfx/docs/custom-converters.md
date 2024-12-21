@@ -24,6 +24,22 @@ In the @"Nerdbank.MessagePack.MessagePackConverter`1.Read*" method, use @Nerdban
 
 Custom converters are encouraged to override @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*?displayProperty=nameWithType to support the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType methods.
 
+### Generic types
+
+Generic types may have custom converters created for them.
+
+The converter may be non-generic and written for a specific _closed_ generic data type:
+
+```cs
+class MyConverter : MessagePackConverter<MyType<string>>
+```
+
+Or the converter may itself be generic and support an open generic data type:
+
+```cs
+class MyConverter<T> : MessagePackConverter<MyType<T>>
+```
+
 ### Security considerations
 
 Any custom converter should call @Nerdbank.MessagePack.SerializationContext.DepthStep*?displayProperty=nameWithType on the @Nerdbank.MessagePack.SerializationContext argument provided to it to ensure that the depth of the msgpack structure is within acceptable bounds.
@@ -136,8 +152,13 @@ To get your converter to be automatically used wherever the data type that it fo
 
 [!code-csharp[](../../samples/CustomConverters.cs#CustomConverterByAttribute)]
 
+When the converter is generic, it must have exactly the same number of generic type parameters as the data type it supports.
+The generic converter will be constructed using the same list of generic type arguments that the data type to be serialized uses.
+
 ### Runtime registration
 
 For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter*.
 
 [!code-csharp[](../../samples/CustomConverters.cs#CustomConverterByRegister)]
+
+Runtime registration of open generic converters (i.e. converters that themselves are generic types) can either be as live objects (which necessarily locks the converters down to just one closed generic type) or you can register the converter's open generic type itself, in which case the converter will be activated on-demand when an object graph that carries an instance of the generic data type needs to be serialized.

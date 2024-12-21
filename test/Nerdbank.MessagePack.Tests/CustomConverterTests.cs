@@ -37,6 +37,19 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
+	[Fact]
+	public void GenericDataAndGenericConverterByOpenGenericAttribute()
+	{
+		this.AssertRoundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
+	}
+
+	[Fact]
+	public void GenericDataAndGenericConverterByClosedGenericRuntimeRegistration()
+	{
+		this.Serializer.RegisterConverter(new GenericDataConverter<string>());
+		this.AssertRoundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
+	}
+
 	[GenerateShape]
 	public partial record Tree(int FruitCount);
 
@@ -61,6 +74,12 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 				context.GetConverter<string>(ShapeProvider).Write(ref writer, value?.InternalProperty, context);
 			}
 		}
+	}
+
+	[MessagePackConverter(typeof(GenericDataConverter<>))]
+	public partial record GenericData<T>
+	{
+		internal T? Value { get; set; }
 	}
 
 	[GenerateShape<string>]
@@ -99,4 +118,44 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context) => throw new NotImplementedException();
 	}
+
+	private partial class GenericDataConverter<T> : MessagePackConverter<GenericData<T>>
+	{
+		public override GenericData<T>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int count = reader.ReadArrayHeader();
+			if (count != 1)
+			{
+				throw new MessagePackSerializationException("Expected array of length 1.");
+			}
+
+			return new GenericData<T>
+			{
+				Value = GetTConverter(ref context).Read(ref reader, context),
+			};
+		}
+
+		public override void Write(ref MessagePackWriter writer, in GenericData<T>? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(1);
+			GetTConverter(ref context).Write(ref writer, value.Value, context);
+		}
+
+		private static MessagePackConverter<T> GetTConverter(ref SerializationContext context)
+			=> (MessagePackConverter<T>)context.GetConverter(typeof(T), null);
+	}
+
+	[GenerateShape<GenericData<string>>]
+	private partial class Witness;
 }
