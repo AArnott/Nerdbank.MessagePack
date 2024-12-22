@@ -4,8 +4,6 @@
 #pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
-using System.Drawing;
-using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -19,47 +17,6 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 {
-	private static readonly FrozenDictionary<Type, object> PrimitiveConverters = new Dictionary<Type, object>()
-	{
-		{ typeof(char), new CharConverter() },
-		{ typeof(byte), new ByteConverter() },
-		{ typeof(ushort), new UInt16Converter() },
-		{ typeof(uint), new UInt32Converter() },
-		{ typeof(ulong), new UInt64Converter() },
-		{ typeof(sbyte), new SByteConverter() },
-		{ typeof(short), new Int16Converter() },
-		{ typeof(int), new Int32Converter() },
-		{ typeof(long), new Int64Converter() },
-		{ typeof(BigInteger), new BigIntegerConverter() },
-		{ typeof(string), new StringConverter() },
-		{ typeof(bool), new BooleanConverter() },
-		{ typeof(Version), new VersionConverter() },
-		{ typeof(Uri), new UriConverter() },
-		{ typeof(float), new SingleConverter() },
-		{ typeof(double), new DoubleConverter() },
-		{ typeof(decimal), new DecimalConverter() },
-		{ typeof(DateTime), new DateTimeConverter() },
-		{ typeof(DateTimeOffset), new DateTimeOffsetConverter() },
-		{ typeof(TimeSpan), new TimeSpanConverter() },
-		{ typeof(Guid), new GuidConverter() },
-		{ typeof(byte[]), ByteArrayConverter.Instance },
-		{ typeof(Memory<byte>), new MemoryOfByteConverter() },
-		{ typeof(ReadOnlyMemory<byte>), new ReadOnlyMemoryOfByteConverter() },
-		{ typeof(Color), new SystemDrawingColorConverter() },
-#if NET
-		{ typeof(Rune), new RuneConverter() },
-		{ typeof(Int128), new Int128Converter() },
-		{ typeof(UInt128), new UInt128Converter() },
-		{ typeof(Half), new HalfConverter() },
-		{ typeof(TimeOnly), new TimeOnlyConverter() },
-		{ typeof(DateOnly), new DateOnlyConverter() },
-#endif
-	}.ToFrozenDictionary();
-
-	private static readonly FrozenDictionary<Type, object> PrimitiveReferencePreservingConverters = PrimitiveConverters.ToFrozenDictionary(
-		pair => pair.Key,
-		pair => (object)((IMessagePackConverterInternal)pair.Value).WrapWithReferencePreservation());
-
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
 
@@ -102,10 +59,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Check if the type has a built-in converter.
-		FrozenDictionary<Type, object> builtins = this.owner.PreserveReferences ? PrimitiveReferencePreservingConverters : PrimitiveConverters;
-		if (builtins.TryGetValue(typeof(T), out object? defaultConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? defaultConverter))
 		{
-			return (MessagePackConverter<T>)defaultConverter;
+			return defaultConverter;
 		}
 
 		// Otherwise, build a converter using the visitor.

@@ -703,10 +703,6 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 
 	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter());
 
-	private ByteArrayConverter()
-	{
-	}
-
 	/// <inheritdoc/>
 	public override byte[]? Read(ref MessagePackReader reader, SerializationContext context)
 	{
