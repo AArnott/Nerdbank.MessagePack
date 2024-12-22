@@ -3,13 +3,8 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
-using System.Collections.Concurrent;
-using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
-using System.Reflection;
 using Microsoft;
-using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
 
