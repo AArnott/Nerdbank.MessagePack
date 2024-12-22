@@ -36,6 +36,47 @@ public partial class SerializationContextTests
 		Assert.Throws<MessagePackSerializationException>(context.DepthStep);
 	}
 
+	[Fact]
+	public void StateDictionary_Add_Remove()
+	{
+		SerializationContext context = new()
+		{
+			["first"] = "FIRST",
+		};
+		Assert.Equal("FIRST", context["first"]);
+
+		// Test key removal.
+		context["first"] = null;
+		Assert.Null(context["first"]);
+	}
+
+	[Fact]
+	public void StateDictionary_NonExistent()
+	{
+		SerializationContext context = new();
+		Assert.Null(context["DOESnotEXIST"]);
+	}
+
+	[Fact]
+	public void StateDictionary_PersistentCollection()
+	{
+		SerializationContext original = new()
+		{
+			["first"] = "FIRST",
+		};
+
+		SerializationContext derived = original;
+		derived["second"] = "SECOND";
+
+		// Both contexts have the original key.
+		Assert.Equal("FIRST", original["first"]);
+		Assert.Equal("FIRST", derived["first"]);
+
+		// Only the derived context has the second.
+		Assert.Null(original["second"]);
+		Assert.Equal("SECOND", derived["second"]);
+	}
+
 	[GenerateShape]
 	public partial class MyType;
 }

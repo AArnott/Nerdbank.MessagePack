@@ -63,7 +63,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
 
-	private readonly MessagePackSerializer owner;
+	private readonly ConverterCache owner;
 	private readonly TypeGenerationContext context;
 
 	/// <summary>
@@ -71,7 +71,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// </summary>
 	/// <param name="owner">The serializer that created this instance. Usable for obtaining settings that may influence the generated converter.</param>
 	/// <param name="context">Context for a generation of a particular data model.</param>
-	internal StandardVisitor(MessagePackSerializer owner, TypeGenerationContext context)
+	internal StandardVisitor(ConverterCache owner, TypeGenerationContext context)
 	{
 		this.owner = owner;
 		this.context = context;
