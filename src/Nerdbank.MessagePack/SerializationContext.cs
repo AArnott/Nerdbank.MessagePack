@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft;
 
@@ -17,6 +18,8 @@ namespace Nerdbank.MessagePack;
 [DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
 public record struct SerializationContext
 {
+	private ImmutableDictionary<object, object?> specialState = ImmutableDictionary<object, object?>.Empty;
+
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SerializationContext"/> struct.
 	/// </summary>
@@ -58,7 +61,7 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
 	/// </summary>
-	internal MessagePackSerializer? Owner { get; private init; }
+	internal ConverterCache? Cache { get; private init; }
 
 	/// <summary>
 	/// Gets the reference equality tracker for this serialization operation.
@@ -70,6 +73,25 @@ public record struct SerializationContext
 	/// </summary>
 	/// <value>0 when no skip operation was suspended and is still incomplete.</value>
 	internal int MidSkipRemainingCount { get; set; }
+
+	/// <summary>
+	/// Gets or sets special state to be exposed to converters during serialization.
+	/// </summary>
+	/// <param name="key">Any object that can act as a key in a dictionary.</param>
+	/// <returns>The value stored under the specified key, or <see langword="null" /> if no value has been stored under that key.</returns>
+	/// <remarks>
+	/// <para>A key-value pair is removed from the underlying dictionary by assigning a value of <see langword="null" /> for a given key.</para>
+	/// <para>
+	/// Strings can serve as convenient keys, but may collide with the same string used by another part of the data model for another purpose.
+	/// Make your strings sufficiently unique to avoid collisions, or use a <c>static readonly object MyKey = new object()</c> field that you expose
+	/// such that all interested parties can access the object for a key that is guaranteed to be unique.
+	/// </para>
+	/// </remarks>
+	public object? this[object key]
+	{
+		get => this.specialState.TryGetValue(key, out object? value) ? value : null;
+		set => this.specialState = value is not null ? this.specialState.SetItem(key, value) : this.specialState.Remove(key);
+	}
 
 	/// <summary>
 	/// Decrements the depth remaining and checks the cancellation token.
@@ -93,8 +115,8 @@ public record struct SerializationContext
 	public MessagePackConverter<T> GetConverter<T>()
 		where T : IShapeable<T>
 	{
-		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Owner.GetOrAddConverter(T.GetShape());
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(T.GetShape());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
@@ -111,8 +133,8 @@ public record struct SerializationContext
 	public MessagePackConverter<T> GetConverter<T, TProvider>()
 		where TProvider : IShapeable<T>
 	{
-		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Owner.GetOrAddConverter(TProvider.GetShape());
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(TProvider.GetShape());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 #endif
@@ -133,8 +155,8 @@ public record struct SerializationContext
 	/// </remarks>
 	public MessagePackConverter<T> GetConverter<T>(ITypeShapeProvider? provider)
 	{
-		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Owner.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter<T> result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
@@ -149,8 +171,8 @@ public record struct SerializationContext
 	/// </remarks>
 	public IMessagePackConverter GetConverter(ITypeShape shape)
 	{
-		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		IMessagePackConverterInternal result = this.Owner.GetOrAddConverter(shape);
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		IMessagePackConverterInternal result = this.Cache.GetOrAddConverter(shape);
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
@@ -166,8 +188,8 @@ public record struct SerializationContext
 	/// </remarks>
 	public IMessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider)
 	{
-		Verify.Operation(this.Owner is not null, "No serialization operation is in progress.");
-		IMessagePackConverterInternal result = this.Owner.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		IMessagePackConverterInternal result = this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
@@ -175,15 +197,16 @@ public record struct SerializationContext
 	/// Starts a new serialization operation.
 	/// </summary>
 	/// <param name="owner">The owning serializer.</param>
+	/// <param name="cache">The converter cache.</param>
 	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token to associate with this serialization operation.</param>
 	/// <returns>The new context for the operation.</returns>
-	internal SerializationContext Start(MessagePackSerializer owner, ITypeShapeProvider provider, CancellationToken cancellationToken)
+	internal SerializationContext Start(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
 		return this with
 		{
-			Owner = owner,
-			ReferenceEqualityTracker = owner.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
+			Cache = cache,
+			ReferenceEqualityTracker = cache.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
 			TypeShapeProvider = provider,
 			CancellationToken = cancellationToken,
 		};

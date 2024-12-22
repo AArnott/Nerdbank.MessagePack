@@ -402,6 +402,8 @@ Nerdbank.MessagePack.SerializationContext.GetConverter<T>(PolyType.ITypeShapePro
 Nerdbank.MessagePack.SerializationContext.MaxDepth.get -> int
 Nerdbank.MessagePack.SerializationContext.MaxDepth.set -> void
 Nerdbank.MessagePack.SerializationContext.SerializationContext() -> void
+Nerdbank.MessagePack.SerializationContext.this[object! key].get -> object?
+Nerdbank.MessagePack.SerializationContext.this[object! key].set -> void
 Nerdbank.MessagePack.SerializationContext.TypeShapeProvider.get -> PolyType.ITypeShapeProvider?
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.get -> int
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.init -> void

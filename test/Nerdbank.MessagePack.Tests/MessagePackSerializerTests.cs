@@ -10,6 +10,21 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		C,
 	}
 
+	/// <summary>
+	/// Verifies that properties are independent on each instance of <see cref="MessagePackSerializer"/>
+	/// of properties on other instances.
+	/// </summary>
+	[Fact]
+	public void PropertiesAreIndependent()
+	{
+		this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
+		MessagePackSerializer s1 = this.Serializer with { InternStrings = true };
+		MessagePackSerializer s2 = this.Serializer with { InternStrings = false };
+
+		s1 = s1 with { SerializeEnumValuesByName = false };
+		Assert.True(s2.SerializeEnumValuesByName);
+	}
+
 	[Fact]
 	public void SimpleNull() => this.AssertRoundtrip<Fruit>(null);
 

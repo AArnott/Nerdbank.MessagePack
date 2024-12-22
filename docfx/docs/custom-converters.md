@@ -70,7 +70,6 @@ The @PolyType.GenerateShapeAttribute`1 is what enables `FooConverter` to be a "p
 Arrays of a type require a shape of their own.
 So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1, serializing `MyType[]` would require a witness type and attribute. For example:
 
-
 # [.NET](#tab/net)
 
 [!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatterNET)]
@@ -118,6 +117,41 @@ Your custom converters *may* follow similar patterns if tuning performance for y
 The following sample demonstrates using the @Nerdbank.MessagePack.MessagePackString class to avoid allocations and repeated encoding operations for strings used for property names:
 
 [!code-csharp[](../../samples/CustomConverters.cs#MessagePackStringUser)]
+
+### Stateful converters
+
+Converters are usually stateless, meaning that they have no fields and serialize/deserialize strictly on the inputs provided them via their parameters.
+
+When converters have stateful fields, they cannot be used concurrently with different values in those fields.
+Creating multiple instances of those converters with different values in those fields requires creating unique instances of @Nerdbank.MessagePack.MessagePackSerializer which each incur a startup cost while they create and cache the rest of the converters necessary for your data model.
+
+For higher performance, configure one @Nerdbank.MessagePack.MessagePackSerializer instance with one set of converters.
+Your converters can be stateful by accessing state in the @Nerdbank.MessagePack.SerializationContext parameter instead of fields on the converter itself.
+
+For example, suppose your custom converter serializes data bound for a particular RPC connection and must access state associated with that connection.
+This can be achieved as follows:
+
+1. Store the state in the @Nerdbank.MessagePack.SerializationContext via its @Nerdbank.MessagePack.SerializationContext.Item(System.Object)?displayProperty=nameWithType indexer.
+1. Apply that @Nerdbank.MessagePack.SerializationContext to a @Nerdbank.MessagePack.MessagePackSerializer by setting its @Nerdbank.MessagePack.MessagePackSerializer.StartingContext property.
+1. Your custom converter can then retrieve that state during serialization/deserialization via that same @Nerdbank.MessagePack.SerializationContext.Item(System.Object)?displayProperty=nameWithType indexer.
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/CustomConverters.cs#StatefulNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/CustomConverters.cs#StatefulNETFX)]
+
+---
+
+When the state object stored in the @Nerdbank.MessagePack.SerializationContext is a mutable reference type, the converters *may* mutate it such that they or others can observe those changes later.
+Consider the thread-safety implications of doing this if that same mutable state object is shared across multiple serializations that may happen on different threads in parallel.
+
+Converters that change the state dictionary itself (by using @"Nerdbank.MessagePack.SerializationContext.Item(System.Object)?displayProperty=nameWithType") can expect those changes to propagate only to their callees.
+
+Strings can serve as convenient keys, but may collide with the same string used by another part of the data model for another purpose.
+Make your strings sufficiently unique to avoid collisions, or use a `static readonly object MyKey = new object()` field that you expose such that all interested parties can access the object for a key that is guaranteed to be unique.
 
 ### Async converters
 

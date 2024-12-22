@@ -29,142 +29,54 @@ namespace Nerdbank.MessagePack;
 /// </devremarks>
 public partial record MessagePackSerializer
 {
-	private readonly object lazyInitCookie = new();
-
-	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
-
-	private readonly ConcurrentDictionary<Type, IKnownSubTypeMapping> userProvidedKnownSubTypes = new();
-
-	private bool configurationLocked;
-
-	private MultiProviderTypeCache? cachedConverters;
-	private bool preserveReferences;
+	private ConverterCache converterCache = new();
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
 #if NET
 
-	/// <summary>
-	/// Gets the format to use when serializing multi-dimensional arrays.
-	/// </summary>
-	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat { get; init; } = MultiDimensionalArrayFormat.Nested;
+	/// <inheritdoc cref="ConverterCache.MultiDimensionalArrayFormat"/>
+	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat
+	{
+		get => this.converterCache.MultiDimensionalArrayFormat;
+		init => this.converterCache = this.converterCache with { MultiDimensionalArrayFormat = value };
+	}
 
 #endif
 
-	/// <summary>
-	/// Gets the transformation function to apply to property names before serializing them.
-	/// </summary>
-	/// <value>
-	/// The default value is null, indicating that property names should be persisted exactly as they are declared in .NET.
-	/// </value>
-	public MessagePackNamingPolicy? PropertyNamingPolicy { get; init; }
-
-	/// <summary>
-	/// Gets a value indicating whether enum values will be serialized by name rather than by their numeric value.
-	/// </summary>
-	/// <remarks>
-	/// <para>
-	/// Serializing by name is a best effort.
-	/// Most enums do not define a name for every possible value, and flags enums may have complicated string representations when multiple named enum elements are combined to form a value.
-	/// When a simple string cannot be constructed for a given value, the numeric form is used.
-	/// </para>
-	/// <para>
-	/// When deserializing enums by name, name matching is case <em>insensitive</em> unless the enum type defines multiple values with names that are only distinguished by case.
-	/// </para>
-	/// </remarks>
-	public bool SerializeEnumValuesByName { get; init; }
-
-	/// <summary>
-	/// Gets a value indicating whether to serialize properties that are set to their default values.
-	/// </summary>
-	/// <value>The default value is <see langword="false" />.</value>
-	/// <remarks>
-	/// <para>
-	/// By default, the serializer omits properties and fields that are set to their default values when serializing objects.
-	/// This property can be used to override that behavior and serialize all properties and fields, regardless of their value.
-	/// </para>
-	/// <para>
-	/// This property currently only impacts objects serialized as maps (i.e. types that are <em>not</em> using <see cref="KeyAttribute"/> on their members),
-	/// but this could be expanded to truncate value arrays as well.
-	/// </para>
-	/// <para>
-	/// Default values are assumed to be <c>default(TPropertyType)</c> except where overridden, as follows:
-	/// <list type="bullet">
-	///   <item><description>Primary constructor default parameter values. e.g. <c>record Person(int Age = 18)</c></description></item>
-	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] public int Age { get; set; }</c></description></item>
-	/// </list>
-	/// </para>
-	/// </remarks>
-	public bool SerializeDefaultValues { get; init; }
-
-	/// <summary>
-	/// Gets a value indicating whether to preserve reference equality when serializing objects.
-	/// </summary>
-	/// <value>The default value is <see langword="false" />.</value>
-	/// <remarks>
-	/// <para>
-	/// When <see langword="false" />, if an object appears multiple times in a serialized object graph, it will be serialized at each location.
-	/// This has two outcomes: redundant data leading to larger serialized payloads and the loss of reference equality when deserialized.
-	/// This is the default behavior because it requires no msgpack extensions and is compatible with all msgpack readers.
-	/// </para>
-	/// <para>
-	/// When <see langword="true"/>, every object is serialized normally the first time it appears in the object graph.
-	/// Each subsequent type the object appears in the object graph, it is serialized as a reference to the first occurrence.
-	/// This reference requires between 3-6 bytes of overhead per reference instead of whatever the object's by-value representation would have required.
-	/// Upon deserialization, all objects that were shared across the object graph will also be shared across the deserialized object graph.
-	/// Of course there will not be reference equality between the original and deserialized objects, but the deserialized objects will have reference equality with each other.
-	/// This option utilizes a proprietary msgpack extension and can only be deserialized by libraries that understand this extension.
-	/// There is a small perf penalty for this feature, but depending on the object graph it may turn out to improve performance due to avoiding redundant serializations.
-	/// </para>
-	/// <para>
-	/// Reference cycles (where an object refers to itself or to another object that eventually refers back to it) are <em>not</em> supported in either mode.
-	/// When this property is <see langword="true" />, an exception will be thrown when a cycle is detected.
-	/// When this property is <see langword="false" />, a cycle will eventually result in a <see cref="StackOverflowException" /> being thrown.
-	/// </para>
-	/// </remarks>
-	public bool PreserveReferences
+	/// <inheritdoc cref="ConverterCache.PropertyNamingPolicy"/>
+	public MessagePackNamingPolicy? PropertyNamingPolicy
 	{
-		get => this.preserveReferences;
-		init
-		{
-			if (this.preserveReferences != value)
-			{
-				this.preserveReferences = value;
-				this.ReconfigureUserProvidedConverters();
-			}
-		}
+		get => this.converterCache.PropertyNamingPolicy;
+		init => this.converterCache = this.converterCache with { PropertyNamingPolicy = value };
 	}
 
-	/// <summary>
-	/// Gets a value indicating whether to intern strings during deserialization.
-	/// </summary>
-	/// <remarks>
-	/// <para>
-	/// String interning means that a string that appears multiple times (within a single deserialization or across many)
-	/// in the msgpack data will be deserialized as the same <see cref="string"/> instance, reducing GC pressure.
-	/// </para>
-	/// <para>
-	/// When enabled, all deserialized are retained with a weak reference, allowing them to be garbage collected
-	/// while also being reusable for future deserializations as long as they are in memory.
-	/// </para>
-	/// <para>
-	/// This feature has a positive impact on memory usage but may have a negative impact on performance due to searching
-	/// through previously deserialized strings to find a match.
-	/// If your application is performance sensitive, you should measure the impact of this feature on your application.
-	/// </para>
-	/// <para>
-	/// This feature is orthogonal and complementary to <see cref="PreserveReferences"/>.
-	/// Preserving references impacts the serialized result and can hurt interoperability if the other party is not using the same feature.
-	/// Preserving references also does not guarantee that equal strings will be reused because the original serialization may have had
-	/// multiple string objects for the same value, so deserialization would produce the same result.
-	/// Preserving references alone will never reuse strings across top-level deserialization operations either.
-	/// Interning strings however, has no impact on the serialized result and is always safe to use.
-	/// Interning strings will guarantee string objects are reused within and across deserialization operations so long as their values are equal.
-	/// The combination of the two features will ensure the most compact msgpack, and will produce faster deserialization times than string interning alone.
-	/// Combining the two features also activates special behavior to ensure that serialization only writes a string once
-	/// and references that string later in that same serialization, even if the equal strings were unique objects.
-	/// </para>
-	/// </remarks>
-	public bool InternStrings { get; init; }
+	/// <inheritdoc cref="ConverterCache.SerializeEnumValuesByName"/>
+	public bool SerializeEnumValuesByName
+	{
+		get => this.converterCache.SerializeEnumValuesByName;
+		init => this.converterCache = this.converterCache with { SerializeEnumValuesByName = value };
+	}
+
+	/// <inheritdoc cref="ConverterCache.SerializeDefaultValues"/>
+	public bool SerializeDefaultValues
+	{
+		get => this.converterCache.SerializeDefaultValues;
+		init => this.converterCache = this.converterCache with { SerializeDefaultValues = value };
+	}
+
+	/// <inheritdoc cref="ConverterCache.PreserveReferences"/>
+	public bool PreserveReferences
+	{
+		get => this.converterCache.PreserveReferences;
+		init => this.converterCache = this.converterCache with { PreserveReferences = value };
+	}
+
+	/// <inheritdoc cref="ConverterCache.InternStrings"/>
+	public bool InternStrings
+	{
+		get => this.converterCache.InternStrings;
+		init => this.converterCache = this.converterCache with { InternStrings = value };
+	}
 
 	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.
@@ -210,88 +122,17 @@ public partial record MessagePackSerializer
 	/// <summary>
 	/// Gets a value indicating whether hardware accelerated converters should be avoided.
 	/// </summary>
-	internal bool DisableHardwareAcceleration { get; init; }
-
-	/// <summary>
-	/// Gets all the converters this instance knows about so far.
-	/// </summary>
-	private MultiProviderTypeCache CachedConverters
+	internal bool DisableHardwareAcceleration
 	{
-		get
-		{
-			if (this.cachedConverters is null)
-			{
-				lock (this.lazyInitCookie)
-				{
-					this.cachedConverters ??= new()
-					{
-						DelayedValueFactory = new DelayedConverterFactory(),
-						ValueBuilderFactory = ctx =>
-						{
-							StandardVisitor standardVisitor = new StandardVisitor(this, ctx);
-							if (!this.PreserveReferences)
-							{
-								return standardVisitor;
-							}
-
-							ReferencePreservingVisitor visitor = new(standardVisitor);
-							standardVisitor.OutwardVisitor = visitor;
-							return standardVisitor;
-						},
-					};
-				}
-			}
-
-			return this.cachedConverters;
-		}
+		get => this.converterCache.DisableHardwareAcceleration;
+		init => this.converterCache = this.converterCache with { DisableHardwareAcceleration = value };
 	}
 
-	/// <summary>
-	/// Registers a converter for use with this serializer.
-	/// </summary>
-	/// <typeparam name="T">The convertible type.</typeparam>
-	/// <param name="converter">The converter.</param>
-	/// <remarks>
-	/// If a converter for the data type has already been cached, the new value takes its place.
-	/// Custom converters should be registered before serializing anything on this
-	/// instance of <see cref="MessagePackSerializer" />.
-	/// </remarks>
-	/// <exception cref="InvalidOperationException">Thrown if serialization has already occurred. All calls to this method should be made before anything is serialized.</exception>
-	public void RegisterConverter<T>(MessagePackConverter<T> converter)
-	{
-		Requires.NotNull(converter);
-		this.VerifyConfigurationIsNotLocked();
-		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
-			? ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation()
-			: converter;
-	}
+	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(MessagePackConverter{T})"/>
+	public void RegisterConverter<T>(MessagePackConverter<T> converter) => this.converterCache.RegisterConverter(converter);
 
-	/// <summary>
-	/// Registers a known sub-type mapping for a base type.
-	/// </summary>
-	/// <typeparam name="TBase"><inheritdoc cref="KnownSubTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
-	/// <param name="mapping">The mapping.</param>
-	/// <remarks>
-	/// <para>
-	/// This method provides a runtime dynamic alternative to the otherwise simpler but static
-	/// <see cref="KnownSubTypeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
-	/// </para>
-	/// <para>
-	/// This is also the only way to force the serialized schema to <em>support</em> sub-types in the future when
-	/// no sub-types are defined yet, such that they can be added later without a schema-breaking change.
-	/// </para>
-	/// <para>
-	/// A mapping provided for a given <typeparamref name="TBase"/> will completely replace any mapping from
-	/// <see cref="KnownSubTypeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
-	/// </para>
-	/// </remarks>
-	/// <exception cref="InvalidOperationException">Thrown if serialization has already occurred. All calls to this method should be made before anything is serialized.</exception>
-	public void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping)
-	{
-		Requires.NotNull(mapping);
-		this.VerifyConfigurationIsNotLocked();
-		this.userProvidedKnownSubTypes[typeof(TBase)] = mapping;
-	}
+	/// <inheritdoc cref="ConverterCache.RegisterKnownSubTypes{TBase}(KnownSubTypeMapping{TBase})"/>
+	public void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping) => this.converterCache.RegisterKnownSubTypes(mapping);
 
 	/// <summary>
 	/// Serializes an untyped value.
@@ -311,7 +152,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+		this.converterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -326,7 +167,7 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+		this.converterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -340,7 +181,7 @@ public partial record MessagePackSerializer
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		this.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
+		this.converterCache.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -358,7 +199,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
+		return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -373,7 +214,7 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.GetOrAddConverter(shape).Read(ref reader, context.Value);
+		return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -391,7 +232,7 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		return this.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
+		return this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -412,7 +253,7 @@ public partial record MessagePackSerializer
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		await this.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+		await this.converterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -434,7 +275,7 @@ public partial record MessagePackSerializer
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		await this.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+		await this.converterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 	}
@@ -448,7 +289,7 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
-		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.GetOrAddConverter(shape), cancellationToken);
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter(shape), cancellationToken);
 
 	/// <summary>
 	/// Deserializes a value from a <see cref="PipeReader"/>.
@@ -459,7 +300,7 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.GetOrAddConverter<T>(provider), cancellationToken);
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
 	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
@@ -617,107 +458,6 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
-	/// Gets a converter for the given type shape.
-	/// An existing converter is reused if one is found in the cache.
-	/// If a converter must be created, it is added to the cache for lookup next time.
-	/// </summary>
-	/// <typeparam name="T">The data type to convert.</typeparam>
-	/// <param name="shape">The shape of the type to convert.</param>
-	/// <returns>A msgpack converter.</returns>
-	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
-		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAdd(shape)!;
-
-	/// <summary>
-	/// Gets a converter for the given type shape.
-	/// An existing converter is reused if one is found in the cache.
-	/// If a converter must be created, it is added to the cache for lookup next time.
-	/// </summary>
-	/// <param name="shape">The shape of the type to convert.</param>
-	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverterInternal GetOrAddConverter(ITypeShape shape)
-		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAdd(shape)!;
-
-	/// <summary>
-	/// Gets a converter for the given type shape.
-	/// An existing converter is reused if one is found in the cache.
-	/// If a converter must be created, it is added to the cache for lookup next time.
-	/// </summary>
-	/// <typeparam name="T">The type to convert.</typeparam>
-	/// <param name="provider">The type shape provider.</param>
-	/// <returns>A msgpack converter.</returns>
-	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShapeProvider provider)
-		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
-
-	/// <summary>
-	/// Gets a converter for the given type shape.
-	/// An existing converter is reused if one is found in the cache.
-	/// If a converter must be created, it is added to the cache for lookup next time.
-	/// </summary>
-	/// <param name="type">The type to convert.</param>
-	/// <param name="provider">The type shape provider.</param>
-	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverterInternal GetOrAddConverter(Type type, ITypeShapeProvider provider)
-		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAddOrThrow(type, provider);
-
-	/// <summary>
-	/// Gets a user-defined converter for the specified type if one is available.
-	/// </summary>
-	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
-	/// <param name="converter">Receives the converter, if the user provided one (e.g. via <see cref="RegisterConverter{T}(MessagePackConverter{T})"/>.</param>
-	/// <returns>A value indicating whether a customer converter exists.</returns>
-	internal bool TryGetUserDefinedConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
-	{
-		if (this.userProvidedConverters.TryGetValue(typeof(T), out object? value))
-		{
-			converter = (MessagePackConverter<T>)value;
-			return true;
-		}
-
-		converter = default;
-		return false;
-	}
-
-	/// <summary>
-	/// Gets the property name that should be used when serializing a property.
-	/// </summary>
-	/// <param name="name">The original property name as given by <see cref="IPropertyShape"/>.</param>
-	/// <param name="attributeProvider">The attribute provider for the property.</param>
-	/// <returns>The serialized property name to use.</returns>
-	internal string GetSerializedPropertyName(string name, ICustomAttributeProvider? attributeProvider)
-	{
-		if (this.PropertyNamingPolicy is null)
-		{
-			return name;
-		}
-
-		// If the property was decorated with [PropertyShape(Name = "...")], do *not* meddle with the property name.
-		if (attributeProvider?.GetCustomAttributes(typeof(PropertyShapeAttribute), false).FirstOrDefault() is PropertyShapeAttribute { Name: not null })
-		{
-			return name;
-		}
-
-		return this.PropertyNamingPolicy.ConvertName(name);
-	}
-
-	/// <summary>
-	/// Gets the runtime registered sub-types for a given base type, if any.
-	/// </summary>
-	/// <param name="baseType">The base type.</param>
-	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
-	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<SubTypeAlias, ITypeShape>? subTypes)
-	{
-		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownSubTypeMapping? mapping))
-		{
-			subTypes = mapping.CreateSubTypesMapping();
-			return true;
-		}
-
-		subTypes = null;
-		return false;
-	}
-
-	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
@@ -729,26 +469,7 @@ public partial record MessagePackSerializer
 	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(provider);
-		this.configurationLocked = true;
-		return new(this.StartingContext.Start(this, provider, cancellationToken));
-	}
-
-	/// <summary>
-	/// Throws <see cref="InvalidOperationException"/> if this object should not be mutated any more
-	/// (because serializations have already happened, so mutating again can lead to unpredictable behavior).
-	/// </summary>
-	private void VerifyConfigurationIsNotLocked()
-	{
-		Verify.Operation(!this.configurationLocked, "This operation must be done before (de)serialization occurs.");
-	}
-
-	private void ReconfigureUserProvidedConverters()
-	{
-		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
-		{
-			IMessagePackConverterInternal converter = (IMessagePackConverterInternal)pair.Value;
-			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
-		}
+		return new(this.StartingContext.Start(this, this.converterCache, provider, cancellationToken));
 	}
 
 	/// <summary>

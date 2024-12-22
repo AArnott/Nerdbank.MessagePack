@@ -454,3 +454,94 @@ namespace PerformanceConverters
     }
     #endregion
 }
+
+namespace Stateful
+{
+#if NET
+    #region StatefulNET
+    class Program
+    {
+        static void Main()
+        {
+            MessagePackSerializer serializer = new()
+            {
+                StartingContext = new SerializationContext
+                {
+                    ["ValueMultiplier"] = 3,
+                },
+            };
+            SpecialType original = new(5);
+            Console.WriteLine($"Original value: {original}");
+            byte[] msgpack = serializer.Serialize(original);
+            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack);
+            Console.WriteLine($"Deserialized value: {deserialized}");
+        }
+    }
+
+    class StatefulConverter : MessagePackConverter<SpecialType>
+    {
+        public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            int serializedValue = reader.ReadInt32();
+            return new SpecialType(serializedValue / multiplier);
+        }
+
+        public override void Write(ref MessagePackWriter writer, in SpecialType value, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            writer.Write(value.Value * multiplier);
+        }
+    }
+
+    [GenerateShape]
+    [MessagePackConverter(typeof(StatefulConverter))]
+    partial record struct SpecialType(int Value);
+    #endregion
+#else
+    #region StatefulNETFX
+    class Program
+    {
+        static void Main()
+        {
+            MessagePackSerializer serializer = new()
+            {
+                StartingContext = new SerializationContext
+                {
+                    ["ValueMultiplier"] = 3,
+                },
+            };
+            SpecialType original = new(5);
+            Console.WriteLine($"Original value: {original}");
+            byte[] msgpack = serializer.Serialize(original, Witness.ShapeProvider);
+            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack, Witness.ShapeProvider);
+            Console.WriteLine($"Deserialized value: {deserialized}");
+        }
+    }
+
+    class StatefulConverter : MessagePackConverter<SpecialType>
+    {
+        public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            int serializedValue = reader.ReadInt32();
+            return new SpecialType(serializedValue / multiplier);
+        }
+
+        public override void Write(ref MessagePackWriter writer, in SpecialType value, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            writer.Write(value.Value * multiplier);
+        }
+    }
+
+    [MessagePackConverter(typeof(StatefulConverter))]
+    partial record struct SpecialType(int Value);
+
+    [GenerateShape<SpecialType>]
+    partial class Witness;
+    #endregion
+#endif
+}
