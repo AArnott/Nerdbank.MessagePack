@@ -158,10 +158,10 @@ public abstract class MessagePackSerializerTestBase
 	protected T? Roundtrip<T>(T? value, ITypeShape<T> shape)
 	{
 		Sequence<byte> sequence = new();
-		this.Serializer.Serialize(sequence, value, shape);
+		this.Serializer.Serialize(sequence, value, shape, TestContext.Current.CancellationToken);
 		this.LogMsgPack(sequence);
 		this.lastRoundtrippedMsgpack = sequence;
-		return this.Serializer.Deserialize(sequence, shape);
+		return this.Serializer.Deserialize(sequence, shape, TestContext.Current.CancellationToken);
 	}
 
 	protected ValueTask<T?> RoundtripAsync<T>(T? value)

@@ -1,6 +1,9 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq.Expressions;
+using Xunit.Sdk;
+
 public partial class MessagePackSerializerTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	public enum SomeEnum
@@ -90,8 +93,18 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 #pragma warning restore SA1500 // Braces for multi-line statements should not share line
 #endif
 
-	[SkippableFact(typeof(PlatformNotSupportedException))]
-	public void MultidimensionalArray_Null() => this.AssertRoundtrip(new HasMultiDimensionalArray());
+	[Fact]
+	public void MultidimensionalArray_Null()
+	{
+		try
+		{
+			this.AssertRoundtrip(new HasMultiDimensionalArray());
+		}
+		catch (PlatformNotSupportedException ex)
+		{
+			throw SkipException.ForSkip($"Skipped: {ex.Message}");
+		}
+	}
 
 	[Fact]
 	public void Enumerable() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = [1, 2, 3] });
@@ -126,7 +139,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void ReadOnlyPropertiesNotSerialized_NoCtor()
 	{
 		RecordWithReadOnlyProperties_NoConstructor obj = new(1, 2);
-		byte[] msgpack = this.Serializer.Serialize(obj);
+		byte[] msgpack = this.Serializer.Serialize(obj, TestContext.Current.CancellationToken);
 		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
 		MessagePackReader reader = new(msgpack);
 
@@ -170,8 +183,8 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public async Task ReadOnlyCollectionProperties_Nil()
 	{
 		ReadOnlySequence<byte> sequence = PrepareSequence();
-		this.Serializer.Deserialize<ClassWithReadOnlyCollectionProperties>(sequence);
-		await this.Serializer.DeserializeAsync<ClassWithReadOnlyCollectionProperties>(PipeReader.Create(sequence));
+		this.Serializer.Deserialize<ClassWithReadOnlyCollectionProperties>(sequence, TestContext.Current.CancellationToken);
+		await this.Serializer.DeserializeAsync<ClassWithReadOnlyCollectionProperties>(PipeReader.Create(sequence), TestContext.Current.CancellationToken);
 
 		Sequence<byte> PrepareSequence()
 		{
@@ -223,7 +236,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
 
-		byte[]? result = this.Serializer.Deserialize<byte[], Witness>(sequence);
+		byte[]? result = this.Serializer.Deserialize<byte[], Witness>(sequence, TestContext.Current.CancellationToken);
 		Assert.NotNull(result);
 		Assert.Equal<byte>([1, 2, 3], result);
 	}
@@ -233,7 +246,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
 
-		Memory<byte> result = this.Serializer.Deserialize<Memory<byte>, Witness>(sequence);
+		Memory<byte> result = this.Serializer.Deserialize<Memory<byte>, Witness>(sequence, TestContext.Current.CancellationToken);
 		Assert.Equal<byte>([1, 2, 3], result.ToArray());
 	}
 
@@ -242,7 +255,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
 
-		ReadOnlyMemory<byte> result = this.Serializer.Deserialize<ReadOnlyMemory<byte>, Witness>(sequence);
+		ReadOnlyMemory<byte> result = this.Serializer.Deserialize<ReadOnlyMemory<byte>, Witness>(sequence, TestContext.Current.CancellationToken);
 		Assert.Equal<byte>([1, 2, 3], result.ToArray());
 	}
 
@@ -250,18 +263,18 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void CustomConverterVsBuiltIn_TopLevel()
 	{
 		this.Serializer.RegisterConverter(new CustomStringConverter());
-		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello");
+		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello", TestContext.Current.CancellationToken);
 		this.LogMsgPack(new(msgpack));
-		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack));
+		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
 	public void CustomConverterVsBuiltIn_SubLevel()
 	{
 		this.Serializer.RegisterConverter(new CustomStringConverter());
-		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0));
+		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0), TestContext.Current.CancellationToken);
 		this.LogMsgPack(new(msgpack));
-		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack)?.AString);
+		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack, TestContext.Current.CancellationToken)?.AString);
 	}
 
 	[Fact]
@@ -271,13 +284,13 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
-		this.Serializer.SerializeObject(ref writer, value, Witness.ShapeProvider.GetShape(typeof(Fruit))!);
+		this.Serializer.SerializeObject(ref writer, value, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
 		writer.Flush();
 
 		this.LogMsgPack(seq);
 
 		MessagePackReader reader = new(seq);
-		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.ShapeProvider.GetShape(typeof(Fruit))!);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
 		Assert.Equal(value, deserialized);
 	}
 

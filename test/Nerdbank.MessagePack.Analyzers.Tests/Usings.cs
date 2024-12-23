@@ -8,4 +8,3 @@ global using Microsoft.CodeAnalysis.Diagnostics;
 global using Microsoft.CodeAnalysis.Testing;
 global using Nerdbank.MessagePack;
 global using Xunit;
-global using Xunit.Abstractions;
