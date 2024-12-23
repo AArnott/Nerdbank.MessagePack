@@ -71,3 +71,12 @@ Here are some reasons a new library was created:
 * Nerdbank.MessagePack makes adding some long-sought for features from MessagePack-CSharp far easier to implement.
 
 See [a feature comparison table](https://aarnott.github.io/Nerdbank.MessagePack/docs/migrating.html#feature-comparison) that compares the two libraries.
+
+## Consuming CI builds
+
+You can acquire CI build packages (with no assurance of quality) to get early access to the latest changes without waiting for the next release to nuget.org.
+
+There are two feeds you can use to acquire these packages:
+
+- [GitHub Packages](https://github.com/AArnott?tab=packages&repo_name=Nerdbank.MessagePack) (requires GitHub authentication)
+- [Azure Artifacts](https://dev.azure.com/andrewarnott/OSS/_artifacts/feed/PublicCI) (no authentication required)
