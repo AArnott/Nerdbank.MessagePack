@@ -9,4 +9,3 @@ global using Nerdbank.Streams;
 global using PolyType;
 global using PolyType.Abstractions;
 global using Xunit;
-global using Xunit.Abstractions;

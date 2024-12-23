@@ -31,7 +31,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	{
 		Person person = new() { FirstName = "Andrew", LastName = "Arnott" };
 		Sequence<byte> buffer = new();
-		this.Serializer.Serialize(buffer, person);
+		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
 		this.LogMsgPack(buffer);
 
 		MessagePackReader reader = new(buffer);
@@ -41,7 +41,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal("Arnott", reader.ReadString());
 		Assert.True(reader.End);
 
-		Person? deserialized = this.Serializer.Deserialize<Person>(buffer);
+		Person? deserialized = this.Serializer.Deserialize<Person>(buffer, TestContext.Current.CancellationToken);
 		Assert.Equal(person, deserialized);
 	}
 
@@ -90,7 +90,9 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		writer.Write("C"); // This should be ignored.
 		writer.Flush();
 
-		Person? person = async ? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence)) : this.Serializer.Deserialize<Person>(sequence);
+		Person? person = async
+			? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<Person>(sequence, TestContext.Current.CancellationToken);
 		Assert.Equal(new Person { FirstName = "A", LastName = "B" }, person);
 	}
 
@@ -111,7 +113,9 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		writer.Write("B");
 		writer.Flush();
 
-		Person? person = async ? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence)) : this.Serializer.Deserialize<Person>(sequence);
+		Person? person = async
+			? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<Person>(sequence, TestContext.Current.CancellationToken);
 		Assert.Equal(new Person { FirstName = "A", LastName = "B" }, person);
 	}
 
@@ -162,7 +166,9 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		writer.Write("C"); // This should be ignored.
 		writer.Flush();
 
-		PersonWithDefaultConstructor? person = async ? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence)) : this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence);
+		PersonWithDefaultConstructor? person = async
+			? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence, TestContext.Current.CancellationToken);
 		Assert.Equal(new PersonWithDefaultConstructor { FirstName = "A", LastName = "B" }, person);
 	}
 
@@ -183,7 +189,9 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		writer.Write("B");
 		writer.Flush();
 
-		PersonWithDefaultConstructor? person = async ? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence)) : this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence);
+		PersonWithDefaultConstructor? person = async
+			? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence, TestContext.Current.CancellationToken);
 		Assert.Equal(new PersonWithDefaultConstructor { FirstName = "A", LastName = "B" }, person);
 	}
 
@@ -244,7 +252,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		writer.Flush();
 		long positionAfterIndex = sequence.Length;
 
-		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>());
+		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>(), TestContext.Current.CancellationToken);
 		writer.Flush();
 		this.LogMsgPack(sequence);
 
@@ -261,7 +269,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		// Deserialize, through a pipe that lets us control the buffer segments.
 		FragmentedPipeReader pipeReader = new(sequence, sequence.AsReadOnlySequence.GetPosition(splitPosition));
 
-		FamilyWithAsyncProperties? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncProperties>(pipeReader);
+		FamilyWithAsyncProperties? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncProperties>(pipeReader, TestContext.Current.CancellationToken);
 
 		Assert.Equal(expectedFamily, family);
 	}
@@ -290,7 +298,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		writer.Flush();
 		long positionAfterIndex = sequence.Length;
 
-		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>());
+		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>(), TestContext.Current.CancellationToken);
 		writer.Flush();
 		this.LogMsgPack(sequence);
 
@@ -307,7 +315,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		// Deserialize, through a pipe that lets us control the buffer segments.
 		FragmentedPipeReader pipeReader = new(sequence, sequence.AsReadOnlySequence.GetPosition(splitPosition));
 
-		FamilyWithAsyncPropertiesWithDefaultCtor? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncPropertiesWithDefaultCtor>(pipeReader);
+		FamilyWithAsyncPropertiesWithDefaultCtor? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncPropertiesWithDefaultCtor>(pipeReader, TestContext.Current.CancellationToken);
 
 		Assert.Equal(expectedFamily, family);
 	}
@@ -327,7 +335,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		ClassWithPropertyGettersWithCtorParamAndMissingKey obj = new("hi") { Value = true };
 
 		// We expect this to throw because a qualified property is not attributed with KeyAttribute.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(obj));
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(obj, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 	}
 

@@ -59,11 +59,11 @@ public partial class MessagePackStringTests
 	[Fact]
 	public void TryRead()
 	{
-		MessagePackReader matchingReaderContiguous = new(Serializer.Serialize<string, Witness>("abc"));
-		MessagePackReader matchingReaderFragmented = new(SplitSequence<byte>(Serializer.Serialize<string, Witness>("abc"), 2));
-		MessagePackReader mismatchingReader = new(Serializer.Serialize<string, Witness>("def"));
-		MessagePackReader nilReader = new(Serializer.Serialize<string, Witness>(null));
-		MessagePackReader intReader = new(Serializer.Serialize<int, Witness>(3));
+		MessagePackReader matchingReaderContiguous = new(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken));
+		MessagePackReader matchingReaderFragmented = new(SplitSequence<byte>(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken), 2));
+		MessagePackReader mismatchingReader = new(Serializer.Serialize<string, Witness>("def", TestContext.Current.CancellationToken));
+		MessagePackReader nilReader = new(Serializer.Serialize<string, Witness>(null, TestContext.Current.CancellationToken));
+		MessagePackReader intReader = new(Serializer.Serialize<int, Witness>(3, TestContext.Current.CancellationToken));
 
 		MessagePackString msgpackString = new("abc");
 

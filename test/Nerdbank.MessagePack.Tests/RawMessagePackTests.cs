@@ -23,14 +23,14 @@ public partial class RawMessagePackTests(ITestOutputHelper logger) : MessagePack
 	public void DeferredSerialization()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData) };
+		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData, TestContext.Current.CancellationToken) };
 
 		Envelope? deserializedEnvelope = this.Roundtrip(envelope);
 
 		Assert.NotNull(deserializedEnvelope);
 		Assert.Equal(envelope, deserializedEnvelope);
 		Assert.True(deserializedEnvelope.Deferred.IsOwned);
-		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred);
+		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred, TestContext.Current.CancellationToken);
 		Assert.Equal(userData, deserializedUserData);
 	}
 
@@ -38,14 +38,14 @@ public partial class RawMessagePackTests(ITestOutputHelper logger) : MessagePack
 	public async Task DeferredSerializationAsync()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData) };
+		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData, TestContext.Current.CancellationToken) };
 
 		Envelope? deserializedEnvelope = await this.RoundtripAsync(envelope);
 
 		Assert.NotNull(deserializedEnvelope);
 		Assert.Equal(envelope, deserializedEnvelope);
 		Assert.True(deserializedEnvelope.Deferred.IsOwned);
-		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred);
+		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred, TestContext.Current.CancellationToken);
 		Assert.Equal(userData, deserializedUserData);
 	}
 

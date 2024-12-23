@@ -8,6 +8,7 @@
 
 using System.Numerics;
 using PolyType.Tests;
+using Xunit.Sdk;
 
 public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper logger)
 {
@@ -50,7 +51,7 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		[new HaveReadOnlyMemoryOfByte(new byte[] { 1, 2 }), new HaveReadOnlyMemoryOfByte(new byte[] { 1, 2 })],
 		[new HaveReadOnlyMemoryOfByte(new byte[] { 1, 3 }), new HaveReadOnlyMemoryOfByte(new byte[] { 1, 2, 3 })]);
 
-	[SkippableTheory(typeof(NotSupportedException))]
+	[Theory]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
 #if NET
 	public void Equals_Exhaustive<T, TProvider>(TestCase<T, TProvider> testCase)
@@ -62,15 +63,23 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		// We do not expect these cases to work.
 		Skip.If(typeof(T) == typeof(object));
 
-		IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
-		Assert.True(equalityComparer.Equals(testCase.Value!, testCase.Value!));
+		try
+		{
+			IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
+			Assert.True(equalityComparer.Equals(testCase.Value!, testCase.Value!));
+		}
+		catch (NotSupportedException ex)
+		{
+			// We don't expect all types to be supported.
+			throw SkipException.ForSkip($"Unsupported: {ex.Message}");
+		}
 	}
 
-	[SkippableTheory(typeof(NotSupportedException))]
+	[Theory]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
 #if NET
 	public void GetHashCode_Exhaustive<T, TProvider>(TestCase<T, TProvider> testCase)
-		where TProvider : IShapeable<T>
+	where TProvider : IShapeable<T>
 #else
 	public void GetHashCode_Exhaustive<T, TProvider>(TestCase<T> testCase)
 #endif
@@ -78,13 +87,21 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		// We do not expect these cases to work.
 		Skip.If(typeof(T) == typeof(object));
 
-		IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
-
-		// We don't really have anything useful to check the return value against, but
-		// at least verify it doesn't throw.
-		if (testCase.Value is not null)
+		try
 		{
-			equalityComparer.GetHashCode(testCase.Value);
+			IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
+
+			// We don't really have anything useful to check the return value against, but
+			// at least verify it doesn't throw.
+			if (testCase.Value is not null)
+			{
+				equalityComparer.GetHashCode(testCase.Value);
+			}
+		}
+		catch (NotSupportedException ex)
+		{
+			// We don't expect all types to be supported.
+			throw SkipException.ForSkip($"Unsupported: {ex.Message}");
 		}
 	}
 

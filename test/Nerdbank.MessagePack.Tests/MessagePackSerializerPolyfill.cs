@@ -7,41 +7,41 @@ using System.Text.Json.Nodes;
 
 internal static partial class MessagePackSerializerPolyfill
 {
-	internal static byte[] Serialize<T>(this MessagePackSerializer serializer, in T? value)
-		=> serializer.Serialize(value, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static byte[] Serialize<T>(this MessagePackSerializer serializer, in T? value, CancellationToken cancellationToken = default)
+		=> serializer.Serialize(value, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static byte[] Serialize<T, TProvider>(this MessagePackSerializer serializer, in T? value)
-		=> serializer.Serialize(value, MessagePackSerializerTestBase.GetShapeProvider<TProvider>());
+	internal static byte[] Serialize<T, TProvider>(this MessagePackSerializer serializer, in T? value, CancellationToken cancellationToken = default)
+		=> serializer.Serialize(value, MessagePackSerializerTestBase.GetShapeProvider<TProvider>(), cancellationToken);
 
-	internal static void Serialize<T>(this MessagePackSerializer serializer, IBufferWriter<byte> writer, in T? value)
-		=> serializer.Serialize(writer, value, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static void Serialize<T>(this MessagePackSerializer serializer, IBufferWriter<byte> writer, in T? value, CancellationToken cancellationToken = default)
+		=> serializer.Serialize(writer, value, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static void Serialize<T>(this MessagePackSerializer serializer, Stream stream, in T? value)
-		=> serializer.Serialize(stream, value, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static void Serialize<T>(this MessagePackSerializer serializer, Stream stream, in T? value, CancellationToken cancellationToken = default)
+		=> serializer.Serialize(stream, value, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static ValueTask SerializeAsync<T>(this MessagePackSerializer serializer, Stream writer, in T? value)
-		=> serializer.SerializeAsync(writer, value, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static ValueTask SerializeAsync<T>(this MessagePackSerializer serializer, Stream writer, in T? value, CancellationToken cancellationToken = default)
+		=> serializer.SerializeAsync(writer, value, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static T? Deserialize<T, TProvider>(this MessagePackSerializer serializer, byte[] sequence)
-		=> serializer.Deserialize<T>(sequence, MessagePackSerializerTestBase.GetShapeProvider<TProvider>());
+	internal static T? Deserialize<T, TProvider>(this MessagePackSerializer serializer, byte[] sequence, CancellationToken cancellationToken = default)
+		=> serializer.Deserialize<T>(sequence, MessagePackSerializerTestBase.GetShapeProvider<TProvider>(), cancellationToken);
 
-	internal static T? Deserialize<T, TProvider>(this MessagePackSerializer serializer, ReadOnlySequence<byte> sequence)
-		=> serializer.Deserialize<T>(sequence, MessagePackSerializerTestBase.GetShapeProvider<TProvider>());
+	internal static T? Deserialize<T, TProvider>(this MessagePackSerializer serializer, ReadOnlySequence<byte> sequence, CancellationToken cancellationToken = default)
+		=> serializer.Deserialize<T>(sequence, MessagePackSerializerTestBase.GetShapeProvider<TProvider>(), cancellationToken);
 
-	internal static T? Deserialize<T>(this MessagePackSerializer serializer, ReadOnlySequence<byte> sequence)
-		=> serializer.Deserialize<T>(sequence, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static T? Deserialize<T>(this MessagePackSerializer serializer, ReadOnlySequence<byte> sequence, CancellationToken cancellationToken = default)
+		=> serializer.Deserialize<T>(sequence, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static T? Deserialize<T>(this MessagePackSerializer serializer, byte[] buffer)
-		=> serializer.Deserialize<T>(buffer, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static T? Deserialize<T>(this MessagePackSerializer serializer, byte[] buffer, CancellationToken cancellationToken = default)
+		=> serializer.Deserialize<T>(buffer, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static T? Deserialize<T>(this MessagePackSerializer serializer, Stream stream)
-		=> serializer.Deserialize<T>(stream, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static T? Deserialize<T>(this MessagePackSerializer serializer, Stream stream, CancellationToken cancellationToken = default)
+		=> serializer.Deserialize<T>(stream, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static ValueTask<T?> DeserializeAsync<T>(this MessagePackSerializer serializer, PipeReader pipeReader)
-		=> serializer.DeserializeAsync<T>(pipeReader, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static ValueTask<T?> DeserializeAsync<T>(this MessagePackSerializer serializer, PipeReader pipeReader, CancellationToken cancellationToken = default)
+		=> serializer.DeserializeAsync<T>(pipeReader, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static ValueTask<T?> DeserializeAsync<T>(this MessagePackSerializer serializer, Stream pipeReader)
-		=> serializer.DeserializeAsync<T>(pipeReader, MessagePackSerializerTestBase.GetShapeProvider<Witness>());
+	internal static ValueTask<T?> DeserializeAsync<T>(this MessagePackSerializer serializer, Stream pipeReader, CancellationToken cancellationToken = default)
+		=> serializer.DeserializeAsync<T>(pipeReader, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
 	internal static MessagePackConverter<T> GetConverter<T>(this SerializationContext context)
 		=> context.GetConverter<T>(MessagePackSerializerTestBase.GetShapeProvider<Witness>());

@@ -39,19 +39,19 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 		SpecialRecordConverter converter = new();
 		this.Serializer.RegisterConverter(converter);
 		var msgpack = new ReadOnlySequence<byte>(
-			this.Serializer.Serialize(new SpecialRecord { Property = 446 }));
+			this.Serializer.Serialize(new SpecialRecord { Property = 446 }, TestContext.Current.CancellationToken));
 
 		// Verify that with a sufficiently low async buffer, the async paths are taken.
 		this.Serializer = new() { MaxAsyncBuffer = 1 };
 		this.Serializer.RegisterConverter(converter);
-		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack));
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), TestContext.Current.CancellationToken);
 		Assert.Equal(1, converter.AsyncDeserializationCounter);
 
 		// Verify that with a sufficiently high async buffer, the sync paths are taken.
 		converter.AsyncDeserializationCounter = 0;
 		this.Serializer = new() { MaxAsyncBuffer = 15 };
 		this.Serializer.RegisterConverter(converter);
-		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack));
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), TestContext.Current.CancellationToken);
 		Assert.Equal(0, converter.AsyncDeserializationCounter);
 	}
 

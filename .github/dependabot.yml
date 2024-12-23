@@ -7,6 +7,10 @@ updates:
   directory: /
   schedule:
     interval: weekly
+  ignore:
+  - dependency-name: System.Collections.Immutable # Should be updated with minimum .NET target version
+  - dependency-name: System.Text.Json # Should be updated with minimum .NET target version
+    update-types: ["version-update:semver-major"]
 - package-ecosystem: dotnet-sdk
   directory: /
   schedule:
