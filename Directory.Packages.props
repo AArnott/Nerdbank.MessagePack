@@ -5,7 +5,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <RoslynVersion>4.12.0</RoslynVersion>
-    <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
+    <RoslynVersionForAnalyzers>4.12.0</RoslynVersionForAnalyzers>
     <PolyTypeVersion>0.23.1</PolyTypeVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -37,11 +37,11 @@
          so that as someone references the .NET Standard version and then runs against the .NET build, they don't get an older
          dependency than they were expecting or needlessly bring in a 9.0 assembly to an 8.0 runtime. -->
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-    <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageVersion Include="System.Collections.Immutable" Version="9.0.0" />
     <PackageVersion Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
-    <PackageVersion Update="System.Collections.Immutable" Version="8.0.0" />
+    <PackageVersion Update="System.Collections.Immutable" Version="9.0.0" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
   </ItemGroup>
