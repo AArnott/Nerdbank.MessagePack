@@ -445,10 +445,10 @@ namespace PerformanceConverters
             writer.WriteMapHeader(2);
 
             // Write the pre-encoded msgpack for the property names to avoid repeatedly paying encoding costs.
-            writer.WriteRaw(Message1.MsgPack.Span);
+            writer.Write(Message1);
             writer.Write(value.Message1);
 
-            writer.WriteRaw(Message2.MsgPack.Span);
+            writer.Write(Message2);
             writer.Write(value.Message2);
         }
     }
