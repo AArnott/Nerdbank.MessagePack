@@ -61,7 +61,7 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 #endif
 	{
 		// We do not expect these cases to work.
-		Skip.If(typeof(T) == typeof(object));
+		Assert.SkipWhen(typeof(T) == typeof(object), "T = object");
 
 		try
 		{
@@ -85,7 +85,7 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 #endif
 	{
 		// We do not expect these cases to work.
-		Skip.If(typeof(T) == typeof(object));
+		Assert.SkipWhen(typeof(T) == typeof(object), "T = object");
 
 		try
 		{
