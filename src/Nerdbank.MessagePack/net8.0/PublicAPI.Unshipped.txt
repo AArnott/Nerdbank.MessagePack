@@ -351,6 +351,7 @@ Nerdbank.MessagePack.MessagePackWriter.Write(int value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(long value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.Extension extensionData) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.ExtensionHeader extensionHeader) -> void
+Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.MessagePackString! value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(sbyte value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(short value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(string? value) -> void
