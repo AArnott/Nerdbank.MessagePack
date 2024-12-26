@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.RefParametersFor
 
 public class RefParametersForRefStructsAnalyzerTests
 {
-	[Fact]
+	[Test]
 	public async Task MethodWithRefParameters()
 	{
 		string testSource = /* lang=c#-test */ """
@@ -32,7 +32,7 @@ public class RefParametersForRefStructsAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(testSource);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MethodWithParameters_MissingRef()
 	{
 		string testSource = /* lang=c#-test */ """

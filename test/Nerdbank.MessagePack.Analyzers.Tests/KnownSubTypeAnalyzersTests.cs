@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.KnownSubTypeAnal
 
 public class KnownSubTypeAnalyzersTests
 {
-	[Fact]
+	[Test]
 	public async Task NoIssues_Interface()
 	{
 #if NET
@@ -39,7 +39,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_Subclass_Int()
 	{
 #if NET
@@ -74,7 +74,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_Subclass_Mixed()
 	{
 #if NET
@@ -120,7 +120,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_Subclass_String()
 	{
 #if NET
@@ -155,7 +155,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_Subclass_Implied()
 	{
 #if NET
@@ -190,7 +190,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonDerivedType()
 	{
 #if NET
@@ -225,7 +225,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonDerivedType_ImpliedAlias()
 	{
 #if NET
@@ -260,7 +260,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_NonUniqueAlias_AcrossTypes()
 	{
 #if NET
@@ -314,7 +314,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonUniqueAlias_Int()
 	{
 #if NET
@@ -360,7 +360,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonUniqueAlias_String()
 	{
 #if NET
@@ -406,7 +406,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonUniqueAlias_StringAndImplied()
 	{
 #if NET
@@ -462,7 +462,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonUniqueAlias_Mixed()
 	{
 #if NET
@@ -530,7 +530,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonUniqueSubType()
 	{
 #if NET
@@ -567,7 +567,7 @@ public class KnownSubTypeAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_ClosedGenericSubType()
 	{
 #if NET

@@ -1,0 +1,35 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="TUnit.Engine" />
+    <PackageReference Include="xunit.v3.assert" />
+  </ItemGroup>
+
+  <!-- Workaround https://github.com/thomhurst/TUnit/issues/520 -->
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+  <!-- Workaround https://github.com/thomhurst/TUnit/issues/1463 -->
+  <PropertyGroup>
+    <TUnitImplicitUsings>false</TUnitImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="TUnit.Core" />
+  </ItemGroup>
+
+  <!-- Workaround https://github.com/thomhurst/TUnit/issues/1460 -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" VersionOverride="9.0.0" />
+  </ItemGroup>
+
+  <!-- Workaround https://github.com/thomhurst/TUnit/issues/1464 -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)PolyFills.cs" />
+  </ItemGroup>
+
+  <!-- Workaround https://github.com/thomhurst/TUnit/issues/1465 -->
+  <PropertyGroup>
+    <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+</Project>
