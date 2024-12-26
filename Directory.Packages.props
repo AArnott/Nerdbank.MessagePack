@@ -24,7 +24,6 @@
     <PackageVersion Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)" />
-    <PackageVersion Include="System.Formats.Asn1" Version="8.0.1" />
     <PackageVersion Include="System.IO.Pipelines" Version="9.0.0" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.5-alpha" />
   </ItemGroup>
