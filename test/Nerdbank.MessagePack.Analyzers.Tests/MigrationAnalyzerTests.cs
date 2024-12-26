@@ -6,7 +6,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.MigrationAnalyze
 
 public class MigrationAnalyzerTests
 {
-	[Fact]
+	[Test]
 	public async Task Formatter()
 	{
 		string source = /* lang=c#-test */ """
@@ -130,7 +130,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MessagePackObject_Keys()
 	{
 		string source = /* lang=c#-test */ """
@@ -167,7 +167,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MessagePackObject_IgnoreMember()
 	{
 		string source = /* lang=c#-test */ """
@@ -180,7 +180,7 @@ public class MigrationAnalyzerTests
 
 				[{|NBMsgPack104:IgnoreMember|}]
 				public string PublicIgnored { get; set; }
-				
+
 				[{|NBMsgPack104:IgnoreMember|}]
 				internal string NonPublicIgnored { get; set; }
 			}
@@ -205,7 +205,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MessagePackObject_Map()
 	{
 		string source = /* lang=c#-test */ """
@@ -230,7 +230,7 @@ public class MigrationAnalyzerTests
 			public class MyType
 			{
 				public string Name { get; set; }
-			
+
 				[PropertyShape(Name = "AnotherName")]
 				public string AnotherProperty { get; set; }
 			}
@@ -243,7 +243,7 @@ public class MigrationAnalyzerTests
 	/// Verifies that [GenerateShape] is added when removing MessagePackObjectAttribute
 	/// when the class is used in a top level call to MessagePackSerializer.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task MessagePackObject_WithTopLevelUsage()
 	{
 		string source = /* lang=c#-test */ """
@@ -294,7 +294,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ClassImplementsOldCallbackInterface_ExplicitMethods()
 	{
 		string source = /* lang=c#-test */ """
@@ -335,7 +335,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ClassImplementsOldCallbackInterface_PublicMethods()
 	{
 		string source = /* lang=c#-test */ """
@@ -376,7 +376,7 @@ public class MigrationAnalyzerTests
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
 
-	[Fact]
+	[Test]
 	public async Task SerializationConstructor()
 	{
 		string source = /* lang=c#-test */ """

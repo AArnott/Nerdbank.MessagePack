@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.KeyAttributeUseA
 
 public class KeyAttributeUseAnalyzerTests
 {
-	[Fact]
+	[Test]
 	public async Task NoIssues()
 	{
 		string source = /* lang=c#-test */ """
@@ -32,7 +32,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task KeyReuseInOneClass()
 	{
 		string source = /* lang=c#-test */ """
@@ -53,7 +53,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task KeyReuseAcrossClassHierarchy()
 	{
 		string source = /* lang=c#-test */ """
@@ -78,7 +78,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MissingKey()
 	{
 		string source = /* lang=c#-test */ """
@@ -98,7 +98,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MissingKeyOnBaseType()
 	{
 		string source = /* lang=c#-test */ """
@@ -122,7 +122,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task KeyOnNonSerializedInternalProperty()
 	{
 		string source = /* lang=c#-test */ """
@@ -143,7 +143,7 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task KeyOnNonSerializedPublicProperty()
 	{
 		string source = /* lang=c#-test */ """
@@ -164,13 +164,13 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task KeyNotOnPropertyWithOnlyGetter()
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using Nerdbank.MessagePack;
-			
+
 			[GenerateShape]
 			public partial record ClassWithUnserializedPropertyGetters
 			{
@@ -184,13 +184,13 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task KeyNotOnPropertyWithOnlyGetterWithPropertyShapeAttribute()
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using Nerdbank.MessagePack;
-			
+
 			[GenerateShape]
 			public partial record ClassWithUnserializedPropertyGetters
 			{
@@ -205,13 +205,13 @@ public class KeyAttributeUseAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task KeyNotOnPropertyWithOnlyGetterButAlsoHasCtorParam()
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using Nerdbank.MessagePack;
-			
+
 			[GenerateShape]
 			public partial record ClassWithUnserializedPropertyGetters
 			{
