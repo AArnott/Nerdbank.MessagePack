@@ -73,3 +73,13 @@ You can make changes and host the site locally to preview them by switching to t
 After making a change, you can rebuild the docs site while the localhost server is running by running `dotnet docfx` again from a separate terminal.
 
 [Learn more about docfx](https://dotnet.github.io/docfx/).
+
+## Updating dependencies
+
+This repo uses Renovate to keep dependencies current.
+Configuration is in the `.github/renovate.json` file.
+[Learn more about configuring Renovate](https://docs.renovatebot.com/configuration-options/).
+
+When changing the renovate.json file, follow [these validation steps](https://docs.renovatebot.com/config-validation/).
+
+If Renovate is not creating pull requests when you expect it to, check that the [Renovate GitHub App](https://github.com/apps/renovate) is configured for your account or repo.
