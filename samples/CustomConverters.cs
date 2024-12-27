@@ -544,4 +544,20 @@ namespace Stateful
     partial class Witness;
     #endregion
 #endif
+
+    class ChangeExistingState
+    {
+        MessagePackSerializer ModifySerializer(MessagePackSerializer serializer)
+        {
+            #region ModifyStateOnSerializer
+            SerializationContext context = serializer.StartingContext;
+            context["ValueMultiplier"] = 5;
+            serializer = serializer with
+            {
+                StartingContext = context,
+            };
+            #endregion
+            return serializer;
+        }
+    }
 }
