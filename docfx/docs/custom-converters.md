@@ -153,6 +153,10 @@ Converters that change the state dictionary itself (by using @"Nerdbank.MessageP
 Strings can serve as convenient keys, but may collide with the same string used by another part of the data model for another purpose.
 Make your strings sufficiently unique to avoid collisions, or use a `static readonly object MyKey = new object()` field that you expose such that all interested parties can access the object for a key that is guaranteed to be unique.
 
+Modify state on an existing @Nerdbank.MessagePack.MessagePackSerializer by capturing the context as a local variable, mutating state there, then creating a new serializer with the modified state, as follows:
+
+[!code-csharp[](../../samples/CustomConverters.cs#ModifyStateOnSerializer)]
+
 ### Async converters
 
 @Nerdbank.MessagePack.MessagePackConverter`1 is an abstract class that requires a derived converter to implement synchronous @Nerdbank.MessagePack.MessagePackConverter`1.Write* and @Nerdbank.MessagePack.MessagePackConverter`1.Read* methods.

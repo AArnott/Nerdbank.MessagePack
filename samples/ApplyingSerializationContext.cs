@@ -14,5 +14,22 @@ partial class ApplyingSerializationContext
             },
         };
         #endregion
+        #region ModifyingStartingContext
+        serializer = serializer with
+        {
+            StartingContext = serializer.StartingContext with
+            {
+                MaxDepth = 256,
+            },
+        };
+        #endregion
+        #region ModifyingStartingContextState
+        SerializationContext context = serializer.StartingContext;
+        context["MyState"] = "IsValue";
+        serializer = serializer with
+        {
+            StartingContext = context,
+        };
+        #endregion
     }
 }
