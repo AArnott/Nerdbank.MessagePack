@@ -491,7 +491,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			Dictionary<SubTypeAlias, ITypeShape> mutableMapping = new();
 			foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
 			{
-				ITypeShape subtypeShape = unionAttribute.Shape ?? objectShape.Provider.GetShapeOrThrow(unionAttribute.SubType);
+				ITypeShape subtypeShape = unionAttribute.Shape ?? objectShape.Provider.Resolve(unionAttribute.SubType);
 				Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {KnownSubTypeAttribute.TypeName} that references non-derived {subtypeShape.Type.FullName}.");
 				Verify.Operation(mutableMapping.TryAdd(unionAttribute.Alias, subtypeShape), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
 			}
