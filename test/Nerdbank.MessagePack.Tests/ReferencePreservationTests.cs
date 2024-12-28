@@ -167,7 +167,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		object value = new();
 		RecordWithObjects root = new() { Value1 = value, Value2 = value };
 		Sequence<byte> sequence = new();
-		this.Serializer.Serialize(sequence, root);
+		this.Serializer.Serialize(sequence, root, TestContext.Current.CancellationToken);
 		this.LogMsgPack(sequence);
 
 		MessagePackReader reader = new(sequence);
@@ -177,7 +177,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		reader.Skip(this.Serializer.StartingContext); // Value2 name
 		Assert.Equal(100, reader.ReadExtensionHeader().TypeCode);
 
-		RecordWithObjects? deserializedRoot = this.Serializer.Deserialize<RecordWithObjects>(sequence);
+		RecordWithObjects? deserializedRoot = this.Serializer.Deserialize<RecordWithObjects>(sequence, TestContext.Current.CancellationToken);
 		Assert.NotNull(deserializedRoot);
 		Assert.Same(deserializedRoot.Value1, deserializedRoot.Value2);
 	}

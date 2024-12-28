@@ -119,21 +119,21 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 		[Fact]
 		public void CaseInsensitiveByDefault()
 		{
-			Assert.Equal(Simple.One, this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("ONE")));
+			Assert.Equal(Simple.One, this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("ONE"), TestContext.Current.CancellationToken));
 		}
 
 		[Fact]
 		public void UnrecognizedName()
 		{
-			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO")));
+			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), TestContext.Current.CancellationToken));
 			this.Logger.WriteLine(ex.Message);
 		}
 
 		[Fact]
 		public void NonUniqueNamesInEnum_ParseEitherName()
 		{
-			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One))));
-			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne))));
+			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), TestContext.Current.CancellationToken));
+			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), TestContext.Current.CancellationToken));
 		}
 	}
 

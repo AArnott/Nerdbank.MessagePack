@@ -14,10 +14,10 @@ public partial class StreamTests(ITestOutputHelper logger) : MessagePackSerializ
 			stream = new MonitoringStream(stream);
 		}
 
-		await this.Serializer.SerializeAsync(stream, person);
+		await this.Serializer.SerializeAsync(stream, person, TestContext.Current.CancellationToken);
 
 		stream.Position = 0;
-		Person? deserialized = await this.Serializer.DeserializeAsync<Person>(stream);
+		Person? deserialized = await this.Serializer.DeserializeAsync<Person>(stream, TestContext.Current.CancellationToken);
 
 		Assert.Equal(person, deserialized);
 	}
@@ -33,10 +33,10 @@ public partial class StreamTests(ITestOutputHelper logger) : MessagePackSerializ
 			stream = new MonitoringStream(stream);
 		}
 
-		this.Serializer.Serialize(stream, person);
+		this.Serializer.Serialize(stream, person, TestContext.Current.CancellationToken);
 
 		stream.Position = 0;
-		Person? deserialized = this.Serializer.Deserialize<Person>(stream);
+		Person? deserialized = this.Serializer.Deserialize<Person>(stream, TestContext.Current.CancellationToken);
 	}
 
 	[GenerateShape]

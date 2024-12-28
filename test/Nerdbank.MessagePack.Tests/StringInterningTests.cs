@@ -47,11 +47,11 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Fragmented()
 	{
-		ReadOnlyMemory<byte> buffer = this.Serializer.Serialize<string, Witness>("abc");
+		ReadOnlyMemory<byte> buffer = this.Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken);
 		Sequence<byte> seq = new();
 		seq.Append(buffer[..^1]);
 		seq.Append(buffer[^1..]);
-		string? deserialized = this.Serializer.Deserialize<string, Witness>(seq);
+		string? deserialized = this.Serializer.Deserialize<string, Witness>(seq, TestContext.Current.CancellationToken);
 		Assert.Equal("abc", deserialized);
 	}
 

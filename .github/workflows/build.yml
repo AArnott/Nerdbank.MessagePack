@@ -4,9 +4,13 @@ on:
   push:
     branches:
     - main
+    - 'v*.*'
     - validate/*
   pull_request:
   workflow_dispatch:
+
+permissions:
+  packages: write
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -42,12 +46,12 @@ jobs:
         }
       shell: pwsh
     - name: ⚙️ Set pipeline variables based on source
-      run: azure-pipelines/variables/_pipelines.ps1
+      run: tools/variables/_define.ps1
       shell: pwsh
     - name: 🛠 build
       run: dotnet build -t:build,pack --no-restore -c ${{ env.BUILDCONFIGURATION }} -warnAsError -warnNotAsError:NU1901,NU1902,NU1903,NU1904 /bl:"${{ runner.temp }}/_artifacts/build_logs/build.binlog"
     - name: 🧪 test
-      run: azure-pipelines/dotnet-test-cloud.ps1 -Configuration ${{ env.BUILDCONFIGURATION }} -Agent ${{ runner.os }}
+      run: tools/dotnet-test-cloud.ps1 -Configuration ${{ env.BUILDCONFIGURATION }} -Agent ${{ runner.os }}
       shell: pwsh
     - name: 💅🏻 Verify formatted code
       run: dotnet format --verify-no-changes --no-restore
@@ -57,13 +61,23 @@ jobs:
       run: dotnet docfx docfx/docfx.json --warningsAsErrors --disableGitFeatures
       if: runner.os == 'Linux'
     - name: ⚙ Update pipeline variables based on build outputs
-      run: azure-pipelines/variables/_pipelines.ps1
+      run: tools/variables/_define.ps1
       shell: pwsh
     - name: 📢 Publish artifacts
       uses: ./.github/actions/publish-artifacts
-      if: always()
+      if: cancelled() == false
+    - name: 📦 Push CI package
+      shell: pwsh
+      run: |
+        dotnet nuget push ${{ runner.temp }}/_artifacts/deployables/*.nupkg -s https://nuget.pkg.github.com/aarnott/index.json -k ${{ secrets.GITHUB_TOKEN }}
+        if ('${{ secrets.AZP_TOKEN }}') {
+          dotnet nuget add source https://pkgs.dev.azure.com/andrewarnott/OSS/_packaging/PublicCI/nuget/v3/index.json -n publicCI -u andrewarnott -p ${{ secrets.AZP_TOKEN }} --store-password-in-clear-text
+          dotnet nuget push ${{ runner.temp }}/_artifacts/deployables/*.nupkg -s publicCI -k x
+        }
+      if: success() && runner.os == 'Linux' && github.event_name != 'pull_request'
+      continue-on-error: true
     - name: 📢 Publish code coverage results to codecov.io
-      run: ./azure-pipelines/publish-CodeCov.ps1 -CodeCovToken "${{ env.codecov_token }}" -PathToCodeCoverage "${{ runner.temp }}/_artifacts/coverageResults" -Name "${{ runner.os }} Coverage Results" -Flags "${{ runner.os }}"
+      run: ./tools/publish-CodeCov.ps1 -CodeCovToken "${{ env.codecov_token }}" -PathToCodeCoverage "${{ runner.temp }}/_artifacts/coverageResults" -Name "${{ runner.os }} Coverage Results" -Flags "${{ runner.os }}"
       shell: pwsh
       timeout-minutes: 3
       continue-on-error: true

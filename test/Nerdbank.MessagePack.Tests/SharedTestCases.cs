@@ -2,10 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using PolyType.Tests;
+using Xunit.Sdk;
 
 public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
-	[SkippableTheory(typeof(PlatformNotSupportedException))]
+	[Theory]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
 #if NET
 	public void Roundtrip_Value<T, TProvider>(TestCase<T, TProvider> testCase)
@@ -14,32 +15,39 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 	public void Roundtrip_Value<T, TProvider>(TestCase<T> testCase)
 #endif
 	{
-		ITypeShape<T> shape = testCase.DefaultShape;
-		byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape);
-
-		if (IsDeserializable(testCase))
+		try
 		{
-			T? deserializedValue = this.Serializer.Deserialize(msgpack, shape);
+			ITypeShape<T> shape = testCase.DefaultShape;
+			byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
 
-			if (testCase.IsEquatable)
+			if (IsDeserializable(testCase))
 			{
-				Assert.Equal(testCase.Value, deserializedValue);
+				T? deserializedValue = this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken);
+
+				if (testCase.IsEquatable)
+				{
+					Assert.Equal(testCase.Value, deserializedValue);
+				}
+				else
+				{
+					if (testCase.IsStack)
+					{
+						deserializedValue = this.Roundtrip(deserializedValue, shape);
+					}
+
+					byte[] msgpack2 = this.Serializer.Serialize(deserializedValue, shape, TestContext.Current.CancellationToken);
+
+					Assert.Equal(msgpack, msgpack2);
+				}
 			}
 			else
 			{
-				if (testCase.IsStack)
-				{
-					deserializedValue = this.Roundtrip(deserializedValue, shape);
-				}
-
-				byte[] msgpack2 = this.Serializer.Serialize(deserializedValue, shape);
-
-				Assert.Equal(msgpack, msgpack2);
+				Assert.Throws<NotSupportedException>(() => this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken));
 			}
 		}
-		else
+		catch (PlatformNotSupportedException ex)
 		{
-			Assert.Throws<NotSupportedException>(() => this.Serializer.Deserialize(msgpack, shape));
+			throw SkipException.ForSkip(ex.Message);
 		}
 	}
 

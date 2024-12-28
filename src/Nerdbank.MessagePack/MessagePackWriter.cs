@@ -674,6 +674,12 @@ public ref struct MessagePackWriter
 	}
 
 	/// <summary>
+	/// Writes a pre-encoded msgpack string.
+	/// </summary>
+	/// <param name="value">The string to write.</param>
+	public void Write(MessagePackString value) => this.WriteRaw(Requires.NotNull(value).MsgPack.Span);
+
+	/// <summary>
 	/// Writes the extension format header, using the smallest one of these codes:
 	/// <see cref="MessagePackCode.FixExt1"/>,
 	/// <see cref="MessagePackCode.FixExt2"/>,

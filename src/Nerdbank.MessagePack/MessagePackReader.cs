@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -483,6 +484,9 @@ public ref partial struct MessagePackReader
 	/// The sequence of bytes, or <see langword="null"/> if the read token is <see cref="MessagePackCode.Nil"/>.
 	/// The data is a slice from the original sequence passed to this reader's constructor.
 	/// </returns>
+	/// <remarks>
+	/// This method never allocates memory.
+	/// </remarks>
 	public ReadOnlySequence<byte>? ReadStringSequence()
 	{
 		switch (this.streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> value))
@@ -520,6 +524,8 @@ public ref partial struct MessagePackReader
 	/// Callers should generally be prepared for a <see langword="false"/> result and failover to calling <see cref="ReadStringSequence"/>
 	/// which can represent a <see langword="null"/> result and handle strings that are not contiguous in memory.
 	/// </remarks>
+	/// <exception cref="EndOfStreamException">If the buffer does not contain enough bytes to read the next msgpack token.</exception>
+	/// <exception cref="MessagePackSerializationException">Thrown if <see cref="NextCode"/> is neither a string nor a nil.</exception>
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> span)
 	{
 		switch (this.streamingReader.TryReadStringSpan(out bool contiguous, out span))
@@ -534,6 +540,39 @@ public ref partial struct MessagePackReader
 					return false;
 				}
 
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	/// <summary>
+	/// Reads a string of bytes, whose length is determined by a header of one of these types:
+	/// <see cref="MessagePackCode.Str8"/>,
+	/// <see cref="MessagePackCode.Str16"/>,
+	/// <see cref="MessagePackCode.Str32"/>,
+	/// or a code between <see cref="MessagePackCode.MinFixStr"/> and <see cref="MessagePackCode.MaxFixStr"/>.
+	/// </summary>
+	/// <returns>
+	/// The UTF-8 bytes of the string.
+	/// </returns>
+	/// <remarks>
+	/// This method <em>may</em> allocate memory if the string is not contiguous in memory.
+	/// Use <see cref="TryReadStringSpan(out ReadOnlySpan{byte})"/> to avoid allocating memory while reading strings that are contiguous
+	/// or to avoid throwing when the value is null.
+	/// </remarks>
+	/// <exception cref="EndOfStreamException">If the buffer does not contain enough bytes to read the next msgpack token.</exception>
+	/// <exception cref="MessagePackSerializationException">Thrown if <see cref="NextCode"/> is not a string.</exception>
+	public ReadOnlySpan<byte> ReadStringSpan()
+	{
+		switch (this.streamingReader.TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> span))
+		{
+			case MessagePackPrimitives.DecodeResult.Success:
+				return contiguous ? span : this.ReadStringSequence()!.Value.ToArray();
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
 				throw ThrowInvalidCode(this.NextCode);
 			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
 			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
@@ -694,7 +733,7 @@ public ref partial struct MessagePackReader
 	}
 
 	/// <summary>
-	/// Throws an exception indicating that there aren't enough bytes remaining in the buffer to store
+	/// Throws <see cref="EndOfStreamException"/> indicating that there aren't enough bytes remaining in the buffer to store
 	/// the promised data.
 	/// </summary>
 	private static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();

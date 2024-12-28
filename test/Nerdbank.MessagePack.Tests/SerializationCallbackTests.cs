@@ -13,11 +13,11 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 	{
 		if (async)
 		{
-			await this.Serializer.SerializeAsync(Stream.Null, this.objectAsArray);
+			await this.Serializer.SerializeAsync(Stream.Null, this.objectAsArray, TestContext.Current.CancellationToken);
 		}
 		else
 		{
-			this.Serializer.Serialize(this.objectAsArray);
+			this.Serializer.Serialize(this.objectAsArray, TestContext.Current.CancellationToken);
 		}
 
 		Assert.Equal(1, this.objectAsArray.OnBeforeSerializeCounter);
@@ -29,11 +29,11 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 	{
 		if (async)
 		{
-			await this.Serializer.SerializeAsync(Stream.Null, this.objectAsMap);
+			await this.Serializer.SerializeAsync(Stream.Null, this.objectAsMap, TestContext.Current.CancellationToken);
 		}
 		else
 		{
-			this.Serializer.Serialize(this.objectAsMap);
+			this.Serializer.Serialize(this.objectAsMap, TestContext.Current.CancellationToken);
 		}
 
 		Assert.Equal(1, this.objectAsMap.OnBeforeSerializeCounter);
@@ -44,8 +44,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 	public async Task Deserialize_ObjectAsArray(bool async)
 	{
 		BusyClassArray? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassArray>(PipeReader.Create(new(ObjectAsArrayMsgPack)))
-			: this.Serializer.Deserialize<BusyClassArray>(ObjectAsArrayMsgPack);
+			? await this.Serializer.DeserializeAsync<BusyClassArray>(PipeReader.Create(new(ObjectAsArrayMsgPack)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassArray>(ObjectAsArrayMsgPack, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
@@ -56,8 +56,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 	public async Task Deserialize_ObjectAsMap(bool async)
 	{
 		BusyClassMap? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassMap>(PipeReader.Create(new(ObjectAsMapMsgPack)))
-			: this.Serializer.Deserialize<BusyClassMap>(ObjectAsMapMsgPack);
+			? await this.Serializer.DeserializeAsync<BusyClassMap>(PipeReader.Create(new(ObjectAsMapMsgPack)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassMap>(ObjectAsMapMsgPack, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
@@ -68,8 +68,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 	public async Task Deserialize_ObjectAsArray_Init(bool async)
 	{
 		BusyClassArray? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassArrayInit>(PipeReader.Create(new(ObjectAsArrayMsgPack)))
-			: this.Serializer.Deserialize<BusyClassArrayInit>(ObjectAsArrayMsgPack);
+			? await this.Serializer.DeserializeAsync<BusyClassArrayInit>(PipeReader.Create(new(ObjectAsArrayMsgPack)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassArrayInit>(ObjectAsArrayMsgPack, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
@@ -80,8 +80,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 	public async Task Deserialize_ObjectAsMap_Init(bool async)
 	{
 		BusyClassMap? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassMapInit>(PipeReader.Create(new(ObjectAsMapMsgPack)))
-			: this.Serializer.Deserialize<BusyClassMapInit>(ObjectAsMapMsgPack);
+			? await this.Serializer.DeserializeAsync<BusyClassMapInit>(PipeReader.Create(new(ObjectAsMapMsgPack)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassMapInit>(ObjectAsMapMsgPack, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);

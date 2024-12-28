@@ -21,6 +21,7 @@ Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSer
 Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) |
 Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
 Custom converters         | [✅](custom-converters.md) | ✅ |
+Stateful converters       | [✅](custom-converters.md#stateful-converters) | ❌ |
 Deserialization callback  | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
 MsgPack extensions        | ✅ | ✅ |
 LZ4 compression           | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/34) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression) |

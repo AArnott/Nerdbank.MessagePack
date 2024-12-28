@@ -378,3 +378,186 @@ namespace AsyncConverters
         }
     }
 }
+
+namespace PerformanceConverters
+{
+    #region MessagePackStringUser
+    [MessagePackConverter(typeof(MyCustomTypeConverter))]
+    public class MyCustomType
+    {
+        public string? Message1 { get; set; }
+
+        public string? Message2 { get; set; }
+    }
+
+    public class MyCustomTypeConverter : MessagePackConverter<MyCustomType>
+    {
+        private static readonly MessagePackString Message1 = new(nameof(MyCustomType.Message1));
+        private static readonly MessagePackString Message2 = new(nameof(MyCustomType.Message2));
+
+        public override MyCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            if (reader.TryReadNil())
+            {
+                return null;
+            }
+
+            string? message1 = null;
+            string? message2 = null;
+
+            int count = reader.ReadMapHeader();
+
+            // It is critical that we read or skip every element of the map, even if we don't recognize the key.
+            for (int i = 0; i < count; i++)
+            {
+                // Compare the key to those we recognize such that we don't decode or allocate strings unnecessarily.
+                if (Message1.TryRead(ref reader))
+                {
+                    message1 = reader.ReadString();
+                }
+                else if (Message2.TryRead(ref reader))
+                {
+                    message2 = reader.ReadString();
+                }
+                else
+                {
+                    // We don't recognize the key, so skip both the key and the value.
+                    reader.Skip(context);
+                    reader.Skip(context);
+                }
+            }
+
+            return new MyCustomType
+            {
+                Message1 = message1,
+                Message2 = message2,
+            };
+        }
+
+        public override void Write(ref MessagePackWriter writer, in MyCustomType? value, SerializationContext context)
+        {
+            if (value is null)
+            {
+                writer.WriteNil();
+                return;
+            }
+
+            writer.WriteMapHeader(2);
+
+            // Write the pre-encoded msgpack for the property names to avoid repeatedly paying encoding costs.
+            writer.Write(Message1);
+            writer.Write(value.Message1);
+
+            writer.Write(Message2);
+            writer.Write(value.Message2);
+        }
+    }
+    #endregion
+}
+
+namespace Stateful
+{
+#if NET
+    #region StatefulNET
+    class Program
+    {
+        static void Main()
+        {
+            MessagePackSerializer serializer = new()
+            {
+                StartingContext = new SerializationContext
+                {
+                    ["ValueMultiplier"] = 3,
+                },
+            };
+            SpecialType original = new(5);
+            Console.WriteLine($"Original value: {original}");
+            byte[] msgpack = serializer.Serialize(original);
+            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack);
+            Console.WriteLine($"Deserialized value: {deserialized}");
+        }
+    }
+
+    class StatefulConverter : MessagePackConverter<SpecialType>
+    {
+        public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            int serializedValue = reader.ReadInt32();
+            return new SpecialType(serializedValue / multiplier);
+        }
+
+        public override void Write(ref MessagePackWriter writer, in SpecialType value, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            writer.Write(value.Value * multiplier);
+        }
+    }
+
+    [GenerateShape]
+    [MessagePackConverter(typeof(StatefulConverter))]
+    partial record struct SpecialType(int Value);
+    #endregion
+#else
+    #region StatefulNETFX
+    class Program
+    {
+        static void Main()
+        {
+            MessagePackSerializer serializer = new()
+            {
+                StartingContext = new SerializationContext
+                {
+                    ["ValueMultiplier"] = 3,
+                },
+            };
+            SpecialType original = new(5);
+            Console.WriteLine($"Original value: {original}");
+            byte[] msgpack = serializer.Serialize(original, Witness.ShapeProvider);
+            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack, Witness.ShapeProvider);
+            Console.WriteLine($"Deserialized value: {deserialized}");
+        }
+    }
+
+    class StatefulConverter : MessagePackConverter<SpecialType>
+    {
+        public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            int serializedValue = reader.ReadInt32();
+            return new SpecialType(serializedValue / multiplier);
+        }
+
+        public override void Write(ref MessagePackWriter writer, in SpecialType value, SerializationContext context)
+        {
+            int multiplier = (int)context["ValueMultiplier"]!;
+            writer.Write(value.Value * multiplier);
+        }
+    }
+
+    [MessagePackConverter(typeof(StatefulConverter))]
+    partial record struct SpecialType(int Value);
+
+    [GenerateShape<SpecialType>]
+    partial class Witness;
+    #endregion
+#endif
+
+    class ChangeExistingState
+    {
+        MessagePackSerializer ModifySerializer(MessagePackSerializer serializer)
+        {
+            #region ModifyStateOnSerializer
+            SerializationContext context = serializer.StartingContext;
+            context["ValueMultiplier"] = 5;
+            serializer = serializer with
+            {
+                StartingContext = context,
+            };
+            #endregion
+            return serializer;
+        }
+    }
+}

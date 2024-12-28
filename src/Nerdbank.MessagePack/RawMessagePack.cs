@@ -43,32 +43,32 @@ public struct RawMessagePack : IEquatable<RawMessagePack>
 	public bool IsOwned { get; internal set; }
 
 	/// <summary>
-	/// Implicitly converts a <see cref="ReadOnlySequence{T}"/> of bytes to a <see cref="RawMessagePack"/>.
+	/// Explicitly converts a <see cref="ReadOnlySequence{T}"/> of bytes to a <see cref="RawMessagePack"/>.
 	/// </summary>
 	/// <param name="msgpack">The sequence of MessagePack bytes.</param>
 	/// <returns>A new instance of <see cref="RawMessagePack"/> containing the provided bytes.</returns>
-	public static implicit operator RawMessagePack(ReadOnlySequence<byte> msgpack) => new(msgpack);
+	public static explicit operator RawMessagePack(ReadOnlySequence<byte> msgpack) => new(msgpack);
 
 	/// <summary>
-	/// Implicitly converts a <see cref="ReadOnlyMemory{T}"/> of bytes to a <see cref="RawMessagePack"/>.
+	/// Explicitly converts a <see cref="ReadOnlyMemory{T}"/> of bytes to a <see cref="RawMessagePack"/>.
 	/// </summary>
 	/// <param name="msgpack">The memory containing MessagePack bytes.</param>
 	/// <returns>A new instance of <see cref="RawMessagePack"/> containing the provided bytes.</returns>
-	public static implicit operator RawMessagePack(ReadOnlyMemory<byte> msgpack) => new(new ReadOnlySequence<byte>(msgpack));
+	public static explicit operator RawMessagePack(ReadOnlyMemory<byte> msgpack) => new(new ReadOnlySequence<byte>(msgpack));
 
 	/// <summary>
-	/// Implicitly converts a <see cref="Memory{T}"/> of bytes to a <see cref="RawMessagePack"/>.
+	/// Explicitly converts a <see cref="Memory{T}"/> of bytes to a <see cref="RawMessagePack"/>.
 	/// </summary>
 	/// <param name="msgpack">The memory containing MessagePack bytes.</param>
 	/// <returns>A new instance of <see cref="RawMessagePack"/> containing the provided bytes.</returns>
-	public static implicit operator RawMessagePack(Memory<byte> msgpack) => new(new ReadOnlySequence<byte>(msgpack));
+	public static explicit operator RawMessagePack(Memory<byte> msgpack) => new(new ReadOnlySequence<byte>(msgpack));
 
 	/// <summary>
-	/// Implicitly converts an array of bytes to a <see cref="RawMessagePack"/>.
+	/// Explicitly converts an array of bytes to a <see cref="RawMessagePack"/>.
 	/// </summary>
 	/// <param name="msgpack">The memory containing MessagePack bytes.</param>
 	/// <returns>A new instance of <see cref="RawMessagePack"/> containing the provided bytes.</returns>
-	public static implicit operator RawMessagePack(byte[] msgpack) => new(new ReadOnlySequence<byte>(msgpack));
+	public static explicit operator RawMessagePack(byte[] msgpack) => new(new ReadOnlySequence<byte>(msgpack));
 
 	/// <summary>
 	/// Implicitly converts a <see cref="RawMessagePack"/> to a <see cref="ReadOnlySequence{T}"/> of bytes.

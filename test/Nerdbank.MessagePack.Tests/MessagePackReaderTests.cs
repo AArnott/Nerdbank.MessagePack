@@ -170,7 +170,7 @@ public partial class MessagePackReaderTests
 	{
 		var contiguousSequence = new Sequence<byte>();
 		var writer = new MessagePackWriter(contiguousSequence);
-		byte[] expected = new byte[] { 0x1, 0x2, 0x3 };
+		byte[] expected = [0x1, 0x2, 0x3];
 		writer.WriteString(expected);
 		writer.Flush();
 		ReadOnlySequence<byte> fragmentedSequence = BuildSequence(
@@ -185,7 +185,7 @@ public partial class MessagePackReaderTests
 		ReadOnlySequence<byte>? actualSequence = reader.ReadStringSequence();
 		Assert.True(actualSequence.HasValue);
 		Assert.False(actualSequence.Value.IsSingleSegment);
-		Assert.Equal(new byte[] { 1, 2, 3 }, actualSequence.Value.ToArray());
+		Assert.Equal([1, 2, 3], actualSequence.Value.ToArray());
 	}
 
 	[Fact]
@@ -215,6 +215,83 @@ public partial class MessagePackReaderTests
 		Assert.False(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
 		Assert.Equal(0, span.Length);
 		Assert.Equal(sequence.AsReadOnlySequence.Start, reader.Position);
+	}
+
+	[Fact]
+	public void TryReadStringSpan_WrongType()
+	{
+		var sequence = new Sequence<byte>();
+		var writer = new MessagePackWriter(sequence);
+		writer.Write(3);
+		writer.Flush();
+
+		Assert.Throws<MessagePackSerializationException>(() =>
+		{
+			var reader = new MessagePackReader(sequence);
+			reader.TryReadStringSpan(out ReadOnlySpan<byte> span);
+		});
+	}
+
+	[Fact]
+	public void ReadStringSpan_Fragmented()
+	{
+		var contiguousSequence = new Sequence<byte>();
+		var writer = new MessagePackWriter(contiguousSequence);
+		byte[] expected = [0x1, 0x2, 0x3];
+		writer.WriteString(expected);
+		writer.Flush();
+		ReadOnlySequence<byte> fragmentedSequence = BuildSequence(
+		   contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
+		   contiguousSequence.AsReadOnlySequence.First.Slice(2));
+
+		var reader = new MessagePackReader(fragmentedSequence);
+		ReadOnlySpan<byte> span = reader.ReadStringSpan();
+		Assert.Equal([1, 2, 3], span.ToArray());
+	}
+
+	[Fact]
+	public void ReadStringSpan_Contiguous()
+	{
+		var sequence = new Sequence<byte>();
+		var writer = new MessagePackWriter(sequence);
+		byte[] expected = [0x1, 0x2, 0x3];
+		writer.WriteString(expected);
+		writer.Flush();
+
+		var reader = new MessagePackReader(sequence);
+		ReadOnlySpan<byte> span = reader.ReadStringSpan();
+		Assert.Equal(expected, span.ToArray());
+		Assert.True(reader.End);
+	}
+
+	[Fact]
+	public void ReadStringSpan_Nil()
+	{
+		var sequence = new Sequence<byte>();
+		var writer = new MessagePackWriter(sequence);
+		writer.WriteNil();
+		writer.Flush();
+
+		Assert.Throws<MessagePackSerializationException>(() =>
+		{
+			var reader = new MessagePackReader(sequence);
+			reader.ReadStringSpan();
+		});
+	}
+
+	[Fact]
+	public void ReadStringSpan_WrongType()
+	{
+		var sequence = new Sequence<byte>();
+		var writer = new MessagePackWriter(sequence);
+		writer.Write(3);
+		writer.Flush();
+
+		Assert.Throws<MessagePackSerializationException>(() =>
+		{
+			var reader = new MessagePackReader(sequence);
+			reader.ReadStringSpan();
+		});
 	}
 
 	[Fact]

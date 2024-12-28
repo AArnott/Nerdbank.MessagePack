@@ -16,7 +16,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 
 		// Try serializing that structure. This should throw for security reasons.
 		Sequence<byte> buffer = new();
-		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(buffer, outer));
+		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(buffer, outer, TestContext.Current.CancellationToken));
 	}
 
 	/// <summary>
@@ -30,7 +30,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 
 		// Try serializing that structure. This should throw for security reasons.
 		Sequence<byte> buffer = new();
-		this.Serializer.Serialize(buffer, outer);
+		this.Serializer.Serialize(buffer, outer, TestContext.Current.CancellationToken);
 	}
 
 	/// <summary>
@@ -43,7 +43,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth + 1);
 
 		// Try deserializing that structure. This should throw for security reasons.
-		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Nested>(buffer));
+		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Nested>(buffer, TestContext.Current.CancellationToken));
 	}
 
 	/// <summary>
@@ -56,7 +56,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth);
 
 		// Try deserializing that structure. This should throw for security reasons.
-		this.Serializer.Deserialize<Nested>(buffer);
+		this.Serializer.Deserialize<Nested>(buffer, TestContext.Current.CancellationToken);
 	}
 
 	[Fact]

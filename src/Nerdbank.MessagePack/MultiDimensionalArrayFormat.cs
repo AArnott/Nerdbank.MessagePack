@@ -3,6 +3,8 @@
 
 namespace Nerdbank.MessagePack;
 
+#if NET
+
 /// <summary>
 /// Enumerates the possible formats for serializing multi-dimensional arrays.
 /// </summary>
@@ -22,3 +24,5 @@ public enum MultiDimensionalArrayFormat
 	/// </summary>
 	Flat,
 }
+
+#endif

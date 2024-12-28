@@ -112,6 +112,19 @@ public class MessagePackWriterTests
 	}
 
 	[Fact]
+	public void Write_MessagePackString()
+	{
+		MessagePackString msgpackString = new("abc");
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.Write(msgpackString);
+		writer.Flush();
+
+		MessagePackReader reader = new(seq);
+		Assert.Equal("abc", reader.ReadString());
+	}
+
+	[Fact]
 	public void WriteBinHeader()
 	{
 		var sequence = new Sequence<byte>();

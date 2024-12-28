@@ -12,7 +12,7 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 public class JsonSchemaContext
 {
-	private readonly MessagePackSerializer serializer;
+	private readonly ConverterCache cache;
 	private readonly Dictionary<Type, string> schemaReferences = new();
 	private readonly Dictionary<string, JsonObject> schemaDefinitions = new(StringComparer.Ordinal);
 	private readonly HashSet<Type> recursionGuard = new();
@@ -20,10 +20,10 @@ public class JsonSchemaContext
 	/// <summary>
 	/// Initializes a new instance of the <see cref="JsonSchemaContext"/> class.
 	/// </summary>
-	/// <param name="serializer">The <see cref="MessagePackSerializer"/> object from which the JSON schema is being retrieved.</param>
-	internal JsonSchemaContext(MessagePackSerializer serializer)
+	/// <param name="cache">The <see cref="ConverterCache"/> object from which the JSON schema is being retrieved.</param>
+	internal JsonSchemaContext(ConverterCache cache)
 	{
-		this.serializer = serializer;
+		this.cache = cache;
 	}
 
 	/// <summary>
@@ -54,7 +54,7 @@ public class JsonSchemaContext
 			return CreateReference(qualifiedReference);
 		}
 
-		IMessagePackConverter converter = this.serializer.GetOrAddConverter(typeShape);
+		IMessagePackConverter converter = this.cache.GetOrAddConverter(typeShape);
 		if (converter.GetJsonSchema(this, typeShape) is not JsonObject schema)
 		{
 			schema = MessagePackConverter<int>.CreateUndocumentedSchema(converter.GetType());

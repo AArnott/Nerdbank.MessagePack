@@ -10,7 +10,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 	{
 		Person person = new Person { FirstName = "Andrew", LastName = "Arnott" };
 		Sequence<byte> buffer = new();
-		this.Serializer.Serialize(buffer, person);
+		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
 		this.LogMsgPack(buffer);
 
 		MessagePackReader reader = new(buffer);
@@ -20,7 +20,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal("last_name", reader.ReadString());
 		Assert.Equal("Arnott", reader.ReadString());
 
-		Assert.Equal(person, this.Serializer.Deserialize<Person>(buffer));
+		Assert.Equal(person, this.Serializer.Deserialize<Person>(buffer, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
