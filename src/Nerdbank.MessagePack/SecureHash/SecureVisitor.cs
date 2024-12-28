@@ -83,7 +83,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		}
 
 		SecureAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
-			.. from property in objectShape.GetProperties()
+			.. from property in objectShape.Properties
 			   where property.HasGetter
 			   select (SecureEqualityComparer<T>)property.Accept(this, null)!]);
 

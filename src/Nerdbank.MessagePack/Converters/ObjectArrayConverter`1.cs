@@ -505,7 +505,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			["type"] = new JsonArray(["object", "array"]),
 		};
 
-		if (objectShape.HasProperties)
+		if (objectShape.Properties.Count > 0)
 		{
 			Dictionary<string, IConstructorParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
 
