@@ -34,7 +34,7 @@ internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor,
 		}
 
 		ByValueAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
-			.. from property in objectShape.GetProperties()
+			.. from property in objectShape.Properties
 			   where property.HasGetter
 			   select (IEqualityComparer<T>)property.Accept(this, null)!]);
 

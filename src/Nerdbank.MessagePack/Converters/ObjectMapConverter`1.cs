@@ -296,7 +296,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			["type"] = "object",
 		};
 
-		if (objectShape.HasProperties)
+		if (objectShape.Properties.Count > 0)
 		{
 			Dictionary<string, IConstructorParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
 
