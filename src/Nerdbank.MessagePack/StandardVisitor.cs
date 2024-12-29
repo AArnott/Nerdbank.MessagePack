@@ -83,7 +83,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		Dictionary<string, IConstructorParameterShape>? ctorParametersByName = null;
 		if (ctorShape is not null)
 		{
-			ctorParametersByName = new(StringComparer.OrdinalIgnoreCase);
+			ctorParametersByName = new(StringComparer.Ordinal);
 			foreach (IConstructorParameterShape ctorParameter in ctorShape.Parameters)
 			{
 				// Keep the one with the Kind that we prefer.
@@ -331,7 +331,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), !this.owner.SerializeDefaultValues);
 					}
 
-					Dictionary<string, int> propertyIndexesByName = new(StringComparer.OrdinalIgnoreCase);
+					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
 					for (int i = 0; i < inputs.Properties.Count; i++)
 					{
 						if (inputs.Properties[i] is { } property)
