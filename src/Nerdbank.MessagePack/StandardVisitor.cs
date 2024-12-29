@@ -80,8 +80,23 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		IConstructorShape? ctorShape = objectShape.Constructor;
 
-		Dictionary<string, IConstructorParameterShape>? ctorParametersByName =
-			ctorShape?.Parameters.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, IConstructorParameterShape>? ctorParametersByName = null;
+		if (ctorShape is not null)
+		{
+			ctorParametersByName = new(StringComparer.Ordinal);
+			foreach (IConstructorParameterShape ctorParameter in ctorShape.Parameters)
+			{
+				// Keep the one with the Kind that we prefer.
+				if (ctorParameter.Kind == ConstructorParameterKind.ConstructorParameter)
+				{
+					ctorParametersByName[ctorParameter.Name] = ctorParameter;
+				}
+				else if (!ctorParametersByName.ContainsKey(ctorParameter.Name))
+				{
+					ctorParametersByName.Add(ctorParameter.Name, ctorParameter);
+				}
+			}
+		}
 
 		List<SerializableProperty<T>>? serializable = null;
 		List<DeserializableProperty<T>>? deserializable = null;
@@ -147,9 +162,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			MapSerializableProperties<T> serializableMap = new(serializable?.ToArray());
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
-			MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap);
 			if (ctorShape is not null)
 			{
+				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!);
 				converter = (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!;
 			}
 			else
@@ -279,7 +294,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
 
-					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = constructorShape.Parameters
+					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = inputs.ParametersByName.Values
 						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
 						{
 							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
@@ -316,7 +331,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), !this.owner.SerializeDefaultValues);
 					}
 
-					Dictionary<string, int> propertyIndexesByName = new(StringComparer.OrdinalIgnoreCase);
+					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
 					for (int i = 0; i < inputs.Properties.Count; i++)
 					{
 						if (inputs.Properties[i] is { } property)

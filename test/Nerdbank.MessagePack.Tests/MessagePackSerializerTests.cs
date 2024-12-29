@@ -294,6 +294,26 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Assert.Equal(value, deserialized);
 	}
 
+	[Fact]
+	public void CtorParameterNameMatchesSerializedInsteadOfDeclaredName_Roundtrips()
+	{
+		this.AssertRoundtrip(new TypeWithConstructorParameterMatchingSerializedPropertyName(2));
+	}
+
+	[Fact]
+	public void CtorParameterNameMatchesSerializedInsteadOfDeclaredName_DefaultValueWorks()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(0);
+		writer.Flush();
+
+		TypeWithConstructorParameterMatchingSerializedPropertyName? deserialized =
+			this.Serializer.Deserialize<TypeWithConstructorParameterMatchingSerializedPropertyName>(seq, TestContext.Current.CancellationToken);
+		Assert.NotNull(deserialized);
+		Assert.Equal(8, deserialized.Marshaled);
+	}
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
@@ -494,6 +514,16 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		[PropertyShape(Ignore = true)]
 		public int Sum => this.A + this.B;
+	}
+
+	[GenerateShape]
+	internal partial record TypeWithConstructorParameterMatchingSerializedPropertyName
+	{
+		public TypeWithConstructorParameterMatchingSerializedPropertyName(int otherName = 8)
+			=> this.Marshaled = otherName;
+
+		[PropertyShape(Name = "otherName")]
+		public int Marshaled { get; set; }
 	}
 
 	[GenerateShape<UnannotatedPoco>]
