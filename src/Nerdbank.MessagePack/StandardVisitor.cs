@@ -44,6 +44,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// </remarks>
 	internal ITypeShapeVisitor OutwardVisitor { get; set; }
 
+	internal ITypeShapeProvider2? GenericShapeProvider { get; set; }
+
 	/// <inheritdoc/>
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
 	{
@@ -567,7 +569,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				throw new MessagePackSerializationException($"{typeShape.Type.FullName} has {typeof(MessagePackConverterAttribute)} that refers to {converterType.FullName} but the converter type is generic and the data type does not have the right number of generic arguments to close it.");
 			}
 
-			converterType = converterType.MakeGenericType(genericArguments);
+			if (this.GenericShapeProvider?.GetShape(converterType, genericArguments) is ITypeShape converterShape)
+			{
+				return (MessagePackConverter<T>?)converterShape.Accept(new GenericConverterInstantiator()) ?? throw new MessagePackSerializationException("Unable to create the converter.");
+			}
+			else
+			{
+				converterType = converterType.MakeGenericType(genericArguments);
+			}
 		}
 
 		if (converterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
@@ -576,5 +585,18 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
+	}
+
+	private class GenericConverterInstantiator : TypeShapeVisitor
+	{
+		public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
+		{
+			return objectShape.Constructor?.Accept(this);
+		}
+
+		public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
+		{
+			return constructorShape.GetDefaultConstructor()();
+		}
 	}
 }

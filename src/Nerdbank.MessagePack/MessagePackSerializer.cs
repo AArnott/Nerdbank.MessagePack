@@ -87,6 +87,12 @@ public partial record MessagePackSerializer
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
 
+	public ITypeShapeProvider2? GenericShapeProvider
+	{
+		get => this.converterCache.GenericShapeProvider;
+		init => this.converterCache = this.converterCache with { GenericShapeProvider = value };
+	}
+
 	/// <summary>
 	/// Gets the maximum length of msgpack to buffer before beginning deserialization.
 	/// </summary>

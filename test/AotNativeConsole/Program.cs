@@ -2,12 +2,20 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Nerdbank.MessagePack;
 using PolyType;
+using PolyType.Abstractions;
 
 GenericData<int> data = new() { Value = 42 };
 
-MessagePackSerializer serializer = new();
+MessagePackSerializer serializer = new()
+{
+	// Until the ordinary ITypeShapeProvider interface allows acquisition of shapes for generic types
+	// given the unbound type and type arguments, we have to provide an implementation of our own.
+	GenericShapeProvider = new TypeShapeProvider2(Witness.ShapeProvider),
+};
+
 GenericData<int> deserializedTree = serializer.Deserialize<GenericData<int>, Witness>(serializer.Serialize<GenericData<int>, Witness>(data))!;
 Console.WriteLine($"Value: {deserializedTree.Value}");
 
@@ -63,3 +71,27 @@ partial class GenericDataConverter<T> : MessagePackConverter<GenericData<T>>
 [GenerateShape<GenericDataConverter<int>>]
 [GenerateShape<int>] // PolyType: why is this necessary? Shouldn't it be inferred?
 partial class Witness;
+
+/// <summary>
+/// This implementation is hand-written but entirely generatable by PolyType's source generator, in theory.
+/// </summary>
+class TypeShapeProvider2(ITypeShapeProvider inner) : ITypeShapeProvider2
+{
+	private List<(Type Unbound, ReadOnlyMemory<Type> TypeArgs, Type BoundType)> sourceGenerated =
+	[
+		(typeof(GenericDataConverter<>), new Type[] { typeof(int) }, typeof(GenericDataConverter<int>)!),
+	];
+
+	public ITypeShape? GetShape(Type unboundGenericType, ReadOnlySpan<Type> genericTypeArguments)
+	{
+		foreach (var item in sourceGenerated)
+		{
+			if (item.Unbound.IsEquivalentTo(unboundGenericType) && item.TypeArgs.Span.SequenceEqual(genericTypeArguments))
+			{
+				return inner.GetShape(item.BoundType);
+			}
+		}
+
+		return null;
+	}
+}

@@ -88,6 +88,8 @@ internal record class ConverterCache
 		}
 	}
 
+	internal ITypeShapeProvider2? GenericShapeProvider { get; init; }
+
 	/// <summary>
 	/// Gets a value indicating whether enum values will be serialized by name rather than by their numeric value.
 	/// </summary>
@@ -205,7 +207,11 @@ internal record class ConverterCache
 					DelayedValueFactory = new DelayedConverterFactory(),
 					ValueBuilderFactory = ctx =>
 					{
-						StandardVisitor standardVisitor = new StandardVisitor(this, ctx);
+						StandardVisitor standardVisitor = new(this, ctx)
+						{
+							GenericShapeProvider = this.GenericShapeProvider,
+						};
+
 						if (!this.PreserveReferences)
 						{
 							return standardVisitor;
