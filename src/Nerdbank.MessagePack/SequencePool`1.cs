@@ -7,12 +7,13 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// A pool of <see cref="Sequence{T}"/> objects.
 /// </summary>
-internal class SequencePool
+/// <typeparam name="T">The type of elements in the sequences.</typeparam>
+internal class SequencePool<T>
 {
 	/// <summary>
 	/// A thread-safe pool of reusable <see cref="Sequence{T}"/> objects.
 	/// </summary>
-	internal static readonly SequencePool Shared = new SequencePool();
+	internal static readonly SequencePool<T> Shared = new SequencePool<T>();
 
 	/// <summary>
 	/// The value to use for <see cref="Sequence{T}.MinimumSpanLength"/>.
@@ -28,43 +29,43 @@ internal class SequencePool
 	private const int MinimumSpanLength = 32 * 1024;
 
 	private readonly int maxSize;
-	private readonly Stack<Sequence<byte>> pool = new Stack<Sequence<byte>>();
+	private readonly Stack<Sequence<T>> pool = new Stack<Sequence<T>>();
 
 	/// <summary>
-	/// The array pool which we share with all <see cref="Sequence{T}"/> objects created by this <see cref="SequencePool"/> instance.
+	/// The array pool which we share with all <see cref="Sequence{T}"/> objects created by this <see cref="SequencePool{T}"/> instance.
 	/// </summary>
-	private readonly ArrayPool<byte> arrayPool;
+	private readonly ArrayPool<T> arrayPool;
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="SequencePool"/> class.
+	/// Initializes a new instance of the <see cref="SequencePool{T}"/> class.
 	/// </summary>
 	/// <remarks>
 	/// We use a <see cref="maxSize"/> that allows every processor to be involved in messagepack serialization concurrently,
 	/// plus one nested serialization per processor (since LZ4 and sometimes other nested serializations may exist).
 	/// </remarks>
 	public SequencePool()
-		: this(Environment.ProcessorCount * 2, ArrayPool<byte>.Create(80 * 1024, 100))
+		: this(Environment.ProcessorCount * 2, ArrayPool<T>.Create(80 * 1024, 100))
 	{
 	}
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="SequencePool"/> class.
+	/// Initializes a new instance of the <see cref="SequencePool{T}"/> class.
 	/// </summary>
 	/// <param name="maxSize">The maximum size to allow the pool to grow.</param>
 	/// <devremarks>
 	/// We allow 100 arrays to be shared (instead of the default 50) and reduce the max array length from the default 1MB to something more reasonable for our expected use.
 	/// </devremarks>
 	public SequencePool(int maxSize)
-		: this(maxSize, ArrayPool<byte>.Create(80 * 1024, 100))
+		: this(maxSize, ArrayPool<T>.Create(80 * 1024, 100))
 	{
 	}
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="SequencePool"/> class.
+	/// Initializes a new instance of the <see cref="SequencePool{T}"/> class.
 	/// </summary>
 	/// <param name="maxSize">The maximum size to allow the pool to grow.</param>
 	/// <param name="arrayPool">Array pool that will be used.</param>
-	public SequencePool(int maxSize, ArrayPool<byte> arrayPool)
+	public SequencePool(int maxSize, ArrayPool<T> arrayPool)
 	{
 		this.maxSize = maxSize;
 		this.arrayPool = arrayPool;
@@ -96,10 +97,10 @@ internal class SequencePool
 
 		// Configure the newly created object to share a common array pool with the other instances,
 		// otherwise each one will have its own ArrayPool which would likely waste a lot of memory.
-		return new Rental(this, new Sequence<byte>(this.arrayPool) { MinimumSpanLength = MinimumSpanLength });
+		return new Rental(this, new Sequence<T>(this.arrayPool) { MinimumSpanLength = MinimumSpanLength });
 	}
 
-	private void Return(Sequence<byte> value)
+	private void Return(Sequence<T> value)
 	{
 		value.Reset();
 		lock (this.pool)
@@ -115,18 +116,18 @@ internal class SequencePool
 	}
 
 	/// <summary>
-	/// A struct that manages the rental of a <see cref="Sequence{T}"/> from a <see cref="SequencePool"/>.
+	/// A struct that manages the rental of a <see cref="Sequence{T}"/> from a <see cref="SequencePool{T}"/>.
 	/// </summary>
 	internal struct Rental : IDisposable
 	{
-		private readonly SequencePool owner;
+		private readonly SequencePool<T> owner;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Rental"/> struct.
 		/// </summary>
-		/// <param name="owner">The <see cref="SequencePool"/> that owns this rental.</param>
+		/// <param name="owner">The <see cref="SequencePool{T}"/> that owns this rental.</param>
 		/// <param name="value">The <see cref="Sequence{T}"/> object being rented.</param>
-		internal Rental(SequencePool owner, Sequence<byte> value)
+		internal Rental(SequencePool<T> owner, Sequence<T> value)
 		{
 			this.owner = owner;
 			this.Value = value;
@@ -135,7 +136,7 @@ internal class SequencePool
 		/// <summary>
 		/// Gets the recyclable object.
 		/// </summary>
-		public Sequence<byte> Value { get; }
+		public Sequence<T> Value { get; }
 
 		/// <summary>
 		/// Returns the recyclable object to the pool.
