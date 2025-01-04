@@ -882,6 +882,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <summary>
 	/// Adds more bytes to the buffer being decoded, if they are available.
 	/// </summary>
+	/// <param name="minimumLength">The minimum number of bytes to fetch before returning.</param>
 	/// <returns>The value to pass to <see cref="MessagePackStreamingReader(in BufferRefresh)"/>.</returns>
 	/// <exception cref="EndOfStreamException">Thrown if no more bytes are available.</exception>
 	/// <remarks>
@@ -889,7 +890,7 @@ public ref partial struct MessagePackStreamingReader
 	/// It must not be used after calling this method.
 	/// Instead, the result can use the result of this method to recreate a new <see cref="MessagePackStreamingReader"/> value.
 	/// </remarks>
-	public ValueTask<BufferRefresh> FetchMoreBytesAsync()
+	public ValueTask<BufferRefresh> FetchMoreBytesAsync(uint minimumLength = 1)
 	{
 		if (this.getMoreBytesAsync is null || this.eof)
 		{
@@ -897,15 +898,21 @@ public ref partial struct MessagePackStreamingReader
 		}
 
 		this.CancellationToken.ThrowIfCancellationRequested();
-		ValueTask<BufferRefresh> result = HelperAsync(this.getMoreBytesAsync, this.getMoreBytesState, this.reader.Position, this.reader.Sequence.End, this.CancellationToken);
+		ValueTask<BufferRefresh> result = HelperAsync(this.getMoreBytesAsync, this.getMoreBytesState, this.reader.Position, this.reader.Sequence.End, minimumLength, this.CancellationToken);
 
 		// Having made the call to request more bytes, our caller can no longer use this struct because the buffers it had are assumed to have been recycled.
 		this.reader = default;
 		return result;
 
-		static async ValueTask<BufferRefresh> HelperAsync(GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken)
+		static async ValueTask<BufferRefresh> HelperAsync(GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, uint minimumLength, CancellationToken cancellationToken)
 		{
 			ReadResult moreBuffer = await getMoreBytes(getMoreBytesState, consumed, examined, cancellationToken).ConfigureAwait(false);
+			while (moreBuffer.Buffer.Length < minimumLength && !(moreBuffer.IsCompleted || moreBuffer.IsCanceled))
+			{
+				// We haven't got enough bytes. Try again.
+				moreBuffer = await getMoreBytes(getMoreBytesState, consumed, moreBuffer.Buffer.End, cancellationToken).ConfigureAwait(false);
+			}
+
 			return new BufferRefresh
 			{
 				CancellationToken = cancellationToken,

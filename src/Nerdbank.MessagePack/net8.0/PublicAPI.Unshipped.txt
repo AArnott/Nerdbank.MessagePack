@@ -275,7 +275,7 @@ Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh
 Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh.BufferRefresh() -> void
 Nerdbank.MessagePack.MessagePackStreamingReader.CancellationToken.get -> System.Threading.CancellationToken
 Nerdbank.MessagePack.MessagePackStreamingReader.CancellationToken.init -> void
-Nerdbank.MessagePack.MessagePackStreamingReader.FetchMoreBytesAsync() -> System.Threading.Tasks.ValueTask<Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh>
+Nerdbank.MessagePack.MessagePackStreamingReader.FetchMoreBytesAsync(uint minimumLength = 1) -> System.Threading.Tasks.ValueTask<Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh>
 Nerdbank.MessagePack.MessagePackStreamingReader.GetExchangeInfo() -> Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh
 Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync
 Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader() -> void
