@@ -30,7 +30,7 @@ public partial record MessagePackSerializer
 		(byte[] array, scratchArray) = (scratchArray ?? new byte[65536], null);
 		try
 		{
-			MessagePackWriter writer = new(SequencePool.Shared, array);
+			MessagePackWriter writer = new(SequencePool<byte>.Shared, array);
 			this.Serialize(ref writer, value, shape, cancellationToken);
 			return writer.FlushAndGetArray();
 		}
@@ -95,7 +95,7 @@ public partial record MessagePackSerializer
 		(byte[] array, scratchArray) = (scratchArray ?? new byte[65536], null);
 		try
 		{
-			MessagePackWriter writer = new(SequencePool.Shared, array);
+			MessagePackWriter writer = new(SequencePool<byte>.Shared, array);
 			this.Serialize(ref writer, value, provider, cancellationToken);
 			return writer.FlushAndGetArray();
 		}
@@ -187,7 +187,7 @@ public partial record MessagePackSerializer
 		else
 		{
 			// We don't have a streaming msgpack reader, so buffer it all into memory instead and read from there.
-			using SequencePool.Rental rental = SequencePool.Shared.Rent();
+			using SequencePool<byte>.Rental rental = SequencePool<byte>.Shared.Rent();
 			int bytesLastRead;
 			do
 			{
@@ -263,7 +263,7 @@ public partial record MessagePackSerializer
 		else
 		{
 			// We don't have a streaming msgpack reader, so buffer it all into memory instead and read from there.
-			using SequencePool.Rental rental = SequencePool.Shared.Rent();
+			using SequencePool<byte>.Rental rental = SequencePool<byte>.Shared.Rent();
 			int bytesLastRead;
 			do
 			{

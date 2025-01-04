@@ -55,6 +55,29 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 		Assert.Equal(0, converter.AsyncDeserializationCounter);
 	}
 
+	[Fact]
+	public async Task DecodeLargeString()
+	{
+		string expected = new string('a', 100 * 1024);
+		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
+		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0), msgpack.GetPosition(1), msgpack.GetPosition(512), msgpack.GetPosition(6000), msgpack.GetPosition(32 * 1024));
+		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(expected, actual);
+	}
+
+	[Fact]
+	public async Task DecodeEmptyString()
+	{
+		string expected = string.Empty;
+		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
+		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0));
+		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(expected, actual);
+	}
+
+	[GenerateShape<string>]
+	private partial class Witness;
+
 	[GenerateShape]
 	public partial record Poco(int X, int Y);
 

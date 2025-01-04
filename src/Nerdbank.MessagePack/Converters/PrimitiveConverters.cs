@@ -4,6 +4,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -18,11 +19,91 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 internal class StringConverter : MessagePackConverter<string>
 {
+#if NET
+	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => true;
+#endif
+
 	/// <inheritdoc/>
 	public override string? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);
+
+#if NET
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<string?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		const uint MinChunkSize = 2048;
+
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool wasNil;
+		if (streamingReader.TryReadNil(out wasNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (wasNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return null;
+		}
+
+		uint length;
+		while (streamingReader.TryReadStringHeader(out length).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		string result;
+		if (streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> utf8BytesSequence).NeedsMoreBytes())
+		{
+			uint remainingBytesToDecode = length;
+			using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
+			Sequence<char> charSequence = sequenceRental.Value;
+			Decoder decoder = StringEncoding.UTF8.GetDecoder();
+			while (remainingBytesToDecode > 0)
+			{
+				// We'll always require at least a reasonable numbe of bytes to decode at once,
+				// to keep overhead to a minimum.
+				uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
+				if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
+				{
+					// We don't have enough bytes to decode this round. Fetch more.
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync(desiredBytesThisRound).ConfigureAwait(false));
+				}
+
+				int thisLoopLength = unchecked((int)Math.Min(int.MaxValue, Math.Min(checked((uint)streamingReader.SequenceReader.Remaining), remainingBytesToDecode)));
+				Assumes.True(streamingReader.TryReadRaw(thisLoopLength, out utf8BytesSequence) == MessagePackPrimitives.DecodeResult.Success);
+				bool flush = utf8BytesSequence.Length == remainingBytesToDecode;
+				decoder.Convert(utf8BytesSequence, charSequence, flush, out _, out _);
+				remainingBytesToDecode -= checked((uint)utf8BytesSequence.Length);
+			}
+
+			result = string.Create(
+				checked((int)charSequence.Length),
+				charSequence,
+				static (span, seq) => seq.AsReadOnlySequence.CopyTo(span));
+		}
+		else
+		{
+			// We happened to get all bytes at once. Decode now.
+			result = StringEncoding.UTF8.GetString(utf8BytesSequence);
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		return result;
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, string? value, SerializationContext context)
+	{
+		// We *could* do incremental string encoding, flushing periodically based on the user's preferred flush threshold.
+		return base.WriteAsync(writer, value, context);
+	}
+#endif
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "string" };

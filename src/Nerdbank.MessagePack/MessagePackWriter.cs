@@ -37,7 +37,7 @@ public ref struct MessagePackWriter
 	/// </summary>
 	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required..</param>
 	/// <param name="array">An array to start with so we can avoid accessing the <paramref name="sequencePool"/> if possible.</param>
-	internal MessagePackWriter(SequencePool sequencePool, byte[] array)
+	internal MessagePackWriter(SequencePool<byte> sequencePool, byte[] array)
 		: this()
 	{
 		this.writer = new BufferWriter(sequencePool, array);
