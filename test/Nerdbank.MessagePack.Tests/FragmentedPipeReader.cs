@@ -13,6 +13,9 @@ internal class FragmentedPipeReader : PipeReader
 	private readonly int? chunkSize;
 
 	private readonly SequencePosition[]? chunkPositions;
+#if NETFRAMEWORK
+	private readonly long[]? chunkIndexes;
+#endif
 
 	private SequencePosition consumed;
 	private SequencePosition examined;
@@ -32,6 +35,9 @@ internal class FragmentedPipeReader : PipeReader
 		this.buffer = buffer;
 		this.consumed = this.examined = buffer.Start;
 		this.chunkPositions = chunkPositions;
+#if NETFRAMEWORK
+		this.chunkIndexes = [.. chunkPositions.Select(p => buffer.Slice(0, p).Length)];
+#endif
 	}
 
 	public override void AdvanceTo(SequencePosition consumed) => this.AdvanceTo(consumed, consumed);
@@ -63,7 +69,12 @@ internal class FragmentedPipeReader : PipeReader
 			if (this.lastReadReturnedPosition.HasValue && this.examined.Equals(this.lastReadReturnedPosition.Value))
 			{
 				// The caller has examined everything we gave them. Give them more.
+#if NETFRAMEWORK
+				long examinedIndex = this.buffer.Slice(0, this.examined).Length;
+				int lastChunkGivenIndex = Array.IndexOf(this.chunkIndexes!, examinedIndex);
+#else
 				int lastChunkGivenIndex = Array.IndexOf(this.chunkPositions, this.examined);
+#endif
 				Assumes.True(lastChunkGivenIndex >= 0);
 				chunkEnd = this.chunkPositions.Length > lastChunkGivenIndex + 1 ? this.chunkPositions[lastChunkGivenIndex + 1] : this.buffer.End;
 			}
