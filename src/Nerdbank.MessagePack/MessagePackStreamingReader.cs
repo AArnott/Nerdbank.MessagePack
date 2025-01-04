@@ -319,7 +319,7 @@ public ref partial struct MessagePackStreamingReader
 			return result;
 		}
 
-		result = this.TryGetStringLengthInBytes(out uint byteLength);
+		result = this.TryReadStringHeader(out uint byteLength);
 		if (result != DecodeResult.Success)
 		{
 			value = null;
@@ -550,7 +550,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadBinary(out ReadOnlySequence<byte> value)
 	{
-		DecodeResult result = this.TryGetBytesLength(out uint length);
+		DecodeResult result = this.TryReadBinHeader(out uint length);
 		if (result != DecodeResult.Success)
 		{
 			value = default;
@@ -575,7 +575,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadStringSequence(out ReadOnlySequence<byte> value)
 	{
-		DecodeResult result = this.TryGetStringLengthInBytes(out uint length);
+		DecodeResult result = this.TryReadStringHeader(out uint length);
 		if (result != DecodeResult.Success)
 		{
 			value = default;
@@ -603,7 +603,7 @@ public ref partial struct MessagePackStreamingReader
 	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value)
 	{
 		SequenceReader<byte> oldReader = this.reader;
-		DecodeResult result = this.TryGetStringLengthInBytes(out uint length);
+		DecodeResult result = this.TryReadStringHeader(out uint length);
 		if (result != DecodeResult.Success)
 		{
 			value = default;
@@ -793,7 +793,7 @@ public ref partial struct MessagePackStreamingReader
 				case MessagePackCode.Str16:
 				case MessagePackCode.Str32:
 					SequenceReader<byte> peekBackup = self.SequenceReader;
-					result = self.TryGetStringLengthInBytes(out uint length);
+					result = self.TryReadStringHeader(out uint length);
 					if (result != DecodeResult.Success)
 					{
 						return result;
@@ -814,7 +814,7 @@ public ref partial struct MessagePackStreamingReader
 				case MessagePackCode.Bin16:
 				case MessagePackCode.Bin32:
 					peekBackup = self.SequenceReader;
-					result = self.TryGetBytesLength(out length);
+					result = self.TryReadBinHeader(out length);
 					if (result != DecodeResult.Success)
 					{
 						return result;
@@ -917,10 +917,13 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
-	[DoesNotReturn]
-	private static DecodeResult ThrowUnreachable() => throw new UnreachableException();
-
-	private DecodeResult TryGetBytesLength(out uint length)
+	/// <summary>
+	/// Tries to read the header of binary data.
+	/// </summary>
+	/// <param name="length">Receives the length of the binary data, when successful.</param>
+	/// <returns>The result classification of the read operation.</returns>
+	/// <inheritdoc cref="MessagePackPrimitives.TryReadBinHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
+	public DecodeResult TryReadBinHeader(out uint length)
 	{
 		bool usingBinaryHeader = true;
 		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadBinHeader(this.reader.UnreadSpan, out length, out int tokenSize);
@@ -973,7 +976,13 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
-	private DecodeResult TryGetStringLengthInBytes(out uint length)
+	/// <summary>
+	/// Tries to read the header of a string.
+	/// </summary>
+	/// <param name="length">Receives the length of the next string, when successful.</param>
+	/// <returns>The result classification of the read operation.</returns>
+	/// <inheritdoc cref="MessagePackPrimitives.TryReadStringHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
+	public DecodeResult TryReadStringHeader(out uint length)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadStringHeader(this.reader.UnreadSpan, out length, out int tokenSize);
 		if (readResult == DecodeResult.Success)
@@ -1012,6 +1021,9 @@ public ref partial struct MessagePackStreamingReader
 			}
 		}
 	}
+
+	[DoesNotReturn]
+	private static DecodeResult ThrowUnreachable() => throw new UnreachableException();
 
 	/// <summary>
 	/// Reads a string assuming that it is spread across multiple spans in the <see cref="ReadOnlySequence{T}"/>.
