@@ -19,7 +19,7 @@ using Microsoft;
 
 namespace Nerdbank.MessagePack.SecureHash;
 
-internal static class HashResistantPrimitives
+internal static class HashCollisionResistantPrimitives
 {
 	private static int SecureHash<T>(T value)
 		where T : unmanaged

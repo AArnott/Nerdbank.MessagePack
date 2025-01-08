@@ -23,8 +23,8 @@ partial class Security
     {
         public HashCollisionResistance()
         {
-            this.Dictionary = new(ByValueEqualityComparer.GetHashResistant<CustomType>());
-            this.HashSet = new(ByValueEqualityComparer.GetHashResistant<CustomType>());
+            this.Dictionary = new(ByValueEqualityComparer.GetHashCollisionResistant<CustomType>());
+            this.HashSet = new(ByValueEqualityComparer.GetHashCollisionResistant<CustomType>());
         }
 
         public Dictionary<CustomType, string> Dictionary { get; }
@@ -47,8 +47,8 @@ partial class Security
     {
         public HashCollisionResistance()
         {
-            this.Dictionary = new(ByValueEqualityComparer.GetHashResistant<CustomType>(Witness.ShapeProvider));
-            this.HashSet = new(ByValueEqualityComparer.GetHashResistant<CustomType>(Witness.ShapeProvider));
+            this.Dictionary = new(ByValueEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
+            this.HashSet = new(ByValueEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
         }
 
         public Dictionary<CustomType, string> Dictionary { get; }
