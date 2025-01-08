@@ -59,6 +59,9 @@ namespace Nerdbank.MessagePack;
 /// If between two object graphs being equality checked, their runtime types do not match, the equality check will return <see langword="false" />.
 /// </para>
 /// </remarks>
+/// <example>
+/// <code source="../../samples/ByValueEquality.cs" region="ByValueEqualityNET" lang="C#" />
+/// </example>
 public static class ByValueEqualityComparer
 {
 	/// <summary>

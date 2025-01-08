@@ -35,6 +35,7 @@ Secure defaults           | ✅ | ❌ |
 Automatic hash collection deserialization in secure mode | ❌ | ✅ |
 Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.ByValueEqualityComparer) | ❌ |
 Free of mutable statics   | ✅ | ❌ |
+Deep by-value `IEqualityComparer<T>` for arbitrary types | ✅ | ❌ |
 
 Security is a complex subject, and an area where Nerdbank.MessagePack is actively evolving.
 [Learn more about how to secure your deserializer](security.md).
