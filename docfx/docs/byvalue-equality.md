@@ -1,6 +1,6 @@
 # By-value equality testing
 
-.NET provides reference types with a default implementation of @System.Object.GetHashCode() and @System.Object.Equals(object) that considers every object to be unique, and therefore these methods only return 'equivalent' results when two references are to the same actual object.
+.NET provides reference types with a default implementation of @System.Object.GetHashCode?displayProperty=nameWithType and @System.Object.Equals(System.Object)?displayProperty=nameWithType that considers every object to be unique, and therefore these methods only return 'equivalent' results when two references are to the same actual object.
 Types may override these methods to provide by-value equality and hash functions, and in fact are encouraged to do so.
 @System.Collections.Generic.EqualityComparer`1.Default?displayProperty=nameWithType in fact relies on this methods to perform its function.
 
