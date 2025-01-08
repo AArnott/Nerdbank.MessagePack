@@ -417,10 +417,10 @@ static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T, TProvider>() -
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T>() -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T, TProvider>() -> System.Collections.Generic.IEqualityComparer<T>!
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T>() -> System.Collections.Generic.IEqualityComparer<T>!
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T, TProvider>() -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>() -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.DecodeResultExtensions.NeedsMoreBytes(this Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult result) -> bool
 static Nerdbank.MessagePack.MessagePackCode.ToFormatName(byte code) -> string!
 static Nerdbank.MessagePack.MessagePackCode.ToMessagePackType(byte code) -> Nerdbank.MessagePack.MessagePackType

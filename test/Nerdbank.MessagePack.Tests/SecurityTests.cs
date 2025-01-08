@@ -117,7 +117,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		public HashCollisionResistance()
 		{
 			// Theoretically these instances would be created with hash-collision resistant equality comparers.
-			// In this particular case, it turns out that the string equality comparer *is* hash resistant.
+			// In this particular case, it turns out that the string equality comparer *is* hash collision resistant.
 			this.Dictionary = new(EqualityComparer<string>.Default);
 			this.HashSet = new(EqualityComparer<string>.Default);
 		}

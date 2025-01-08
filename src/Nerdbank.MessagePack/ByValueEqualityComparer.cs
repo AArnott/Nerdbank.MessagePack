@@ -76,7 +76,7 @@ public static class ByValueEqualityComparer
 	/// <summary>
 	/// Cache for generated secure by-value comparers.
 	/// </summary>
-	internal static readonly MultiProviderTypeCache HashResistantEqualityComparerCache = new()
+	internal static readonly MultiProviderTypeCache HashCollisionResistantEqualityComparerCache = new()
 	{
 		DelayedValueFactory = new SecureVisitor.DelayedEqualityComparerFactory(),
 		ValueBuilderFactory = ctx => new SecureVisitor(ctx),
@@ -102,8 +102,8 @@ public static class ByValueEqualityComparer
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
-	public static IEqualityComparer<T> GetHashResistant<T>()
-		where T : IShapeable<T> => (IEqualityComparer<T>)HashResistantEqualityComparerCache.GetOrAdd(T.GetShape())!;
+	public static IEqualityComparer<T> GetHashCollisionResistant<T>()
+		where T : IShapeable<T> => (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(T.GetShape())!;
 
 	/// <summary>
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, without hash collision resistance.
@@ -126,8 +126,8 @@ public static class ByValueEqualityComparer
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
-	public static IEqualityComparer<T> GetHashResistant<T, TProvider>()
-		where TProvider : IShapeable<T> => (IEqualityComparer<T>)HashResistantEqualityComparerCache.GetOrAdd(TProvider.GetShape())!;
+	public static IEqualityComparer<T> GetHashCollisionResistant<T, TProvider>()
+		where TProvider : IShapeable<T> => (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TProvider.GetShape())!;
 #endif
 
 	/// <summary>
@@ -151,8 +151,8 @@ public static class ByValueEqualityComparer
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
-	public static IEqualityComparer<T> GetHashResistant<T>(ITypeShapeProvider provider)
-		=> (IEqualityComparer<T>)HashResistantEqualityComparerCache.GetOrAddOrThrow(typeof(T), provider);
+	public static IEqualityComparer<T> GetHashCollisionResistant<T>(ITypeShapeProvider provider)
+		=> (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAddOrThrow(typeof(T), provider);
 
 	/// <summary>
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, without hash collision resistance.
@@ -175,6 +175,6 @@ public static class ByValueEqualityComparer
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
-	public static IEqualityComparer<T> GetHashResistant<T>(ITypeShape<T> shape)
-		=> (IEqualityComparer<T>)HashResistantEqualityComparerCache.GetOrAdd(shape)!;
+	public static IEqualityComparer<T> GetHashCollisionResistant<T>(ITypeShape<T> shape)
+		=> (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(shape)!;
 }

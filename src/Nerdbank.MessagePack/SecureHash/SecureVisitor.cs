@@ -18,7 +18,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	/// <summary>
 	/// A dictionary of primitive types and their corresponding hash-resistant equality comparers.
 	/// </summary>
-	internal static readonly FrozenDictionary<Type, object> HashResistantPrimitiveEqualityComparers = new Dictionary<Type, object>()
+	internal static readonly FrozenDictionary<Type, object> HashCollisionResistantPrimitiveEqualityComparers = new Dictionary<Type, object>()
 	{
 		{ typeof(char), new CollisionResistantHasherUnmanaged<char>() },
 		{ typeof(byte), new CollisionResistantHasherUnmanaged<byte>() },
@@ -29,23 +29,23 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		{ typeof(short), new CollisionResistantHasherUnmanaged<short>() },
 		{ typeof(int), new CollisionResistantHasherUnmanaged<int>() },
 		{ typeof(long), new CollisionResistantHasherUnmanaged<long>() },
-		{ typeof(BigInteger), new HashResistantPrimitives.BigIntegerEqualityComparer() },
-		{ typeof(string), new HashResistantPrimitives.StringEqualityComparer() },
-		{ typeof(bool), new HashResistantPrimitives.BooleanEqualityComparer() },
-		{ typeof(Version), new HashResistantPrimitives.VersionEqualityComparer() },
-		{ typeof(Uri), new HashResistantPrimitives.AlreadySecureEqualityComparer<Uri>() },
-		{ typeof(float), new HashResistantPrimitives.SingleEqualityComparer() },
-		{ typeof(double), new HashResistantPrimitives.DoubleEqualityComparer() },
-		{ typeof(decimal), new HashResistantPrimitives.DecimalEqualityComparer() },
-		{ typeof(DateTime), new HashResistantPrimitives.DateTimeEqualityComparer() },
-		{ typeof(DateTimeOffset), new HashResistantPrimitives.DateTimeOffsetEqualityComparer() },
+		{ typeof(BigInteger), new HashCollisionResistantPrimitives.BigIntegerEqualityComparer() },
+		{ typeof(string), new HashCollisionResistantPrimitives.StringEqualityComparer() },
+		{ typeof(bool), new HashCollisionResistantPrimitives.BooleanEqualityComparer() },
+		{ typeof(Version), new HashCollisionResistantPrimitives.VersionEqualityComparer() },
+		{ typeof(Uri), new HashCollisionResistantPrimitives.AlreadySecureEqualityComparer<Uri>() },
+		{ typeof(float), new HashCollisionResistantPrimitives.SingleEqualityComparer() },
+		{ typeof(double), new HashCollisionResistantPrimitives.DoubleEqualityComparer() },
+		{ typeof(decimal), new HashCollisionResistantPrimitives.DecimalEqualityComparer() },
+		{ typeof(DateTime), new HashCollisionResistantPrimitives.DateTimeEqualityComparer() },
+		{ typeof(DateTimeOffset), new HashCollisionResistantPrimitives.DateTimeOffsetEqualityComparer() },
 		{ typeof(TimeSpan), new CollisionResistantHasherUnmanaged<TimeSpan>() },
 		{ typeof(Guid), new CollisionResistantHasherUnmanaged<Guid>() },
 #if NET
 		{ typeof(Int128), new CollisionResistantHasherUnmanaged<Int128>() },
 		{ typeof(UInt128), new CollisionResistantHasherUnmanaged<UInt128>() },
 		{ typeof(Rune), new CollisionResistantHasherUnmanaged<Rune>() },
-		{ typeof(Half), new HashResistantPrimitives.HalfEqualityComparer() },
+		{ typeof(Half), new HashCollisionResistantPrimitives.HalfEqualityComparer() },
 		{ typeof(TimeOnly), new CollisionResistantHasherUnmanaged<TimeOnly>() },
 		{ typeof(DateOnly), new CollisionResistantHasherUnmanaged<DateOnly>() },
 #endif
@@ -55,7 +55,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
 	{
 		// Check if the type has a built-in converter.
-		if (HashResistantPrimitiveEqualityComparers.TryGetValue(typeof(T), out object? defaultComparer))
+		if (HashCollisionResistantPrimitiveEqualityComparers.TryGetValue(typeof(T), out object? defaultComparer))
 		{
 			return defaultComparer;
 		}
@@ -67,14 +67,14 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (HashResistantPrimitiveEqualityComparers.TryGetValue(objectShape.Type, out object? primitiveEqualityComparer))
+		if (HashCollisionResistantPrimitiveEqualityComparers.TryGetValue(objectShape.Type, out object? primitiveEqualityComparer))
 		{
 			return primitiveEqualityComparer;
 		}
 
 		if (typeof(T) == typeof(byte[]))
 		{
-			return HashResistantPrimitives.ByteArrayEqualityComparer.Default;
+			return HashCollisionResistantPrimitives.ByteArrayEqualityComparer.Default;
 		}
 
 		if (typeof(IDeepSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
@@ -110,7 +110,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
-		=> new HashResistantPrimitives.CollisionResistantEnumHasher<TEnum, TUnderlying>(this.GetEqualityComparer(enumShape.UnderlyingType));
+		=> new HashCollisionResistantPrimitives.CollisionResistantEnumHasher<TEnum, TUnderlying>(this.GetEqualityComparer(enumShape.UnderlyingType));
 
 	/// <inheritdoc/>
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)

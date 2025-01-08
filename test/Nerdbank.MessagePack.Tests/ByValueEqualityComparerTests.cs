@@ -191,7 +191,7 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		}
 
 		protected override IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape)
-			=> ByValueEqualityComparer.GetHashResistant(shape);
+			=> ByValueEqualityComparer.GetHashCollisionResistant(shape);
 	}
 
 	[GenerateShape<bool>]
