@@ -46,7 +46,7 @@
     <PackageVersion Include="xunit.v3" Version="1.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="3.11.0-beta1.24527.2" />
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="3.11.0-beta1.24605.2" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <GlobalPackageReference Include="CSharpIsNullAnalyzer" Version="0.1.593" />
