@@ -49,6 +49,8 @@ Nerdbank.MessagePack.DecodeResultExtensions
 Nerdbank.MessagePack.Extension
 Nerdbank.MessagePack.Extension.Data.get -> System.Buffers.ReadOnlySequence<byte>
 Nerdbank.MessagePack.Extension.Data.set -> void
+Nerdbank.MessagePack.Extension.Deconstruct(out sbyte TypeCode, out System.Buffers.ReadOnlySequence<byte> Data) -> void
+Nerdbank.MessagePack.Extension.Equals(Nerdbank.MessagePack.Extension other) -> bool
 Nerdbank.MessagePack.Extension.Extension() -> void
 Nerdbank.MessagePack.Extension.Extension(sbyte TypeCode, System.Buffers.ReadOnlySequence<byte> Data) -> void
 Nerdbank.MessagePack.Extension.Extension(sbyte typeCode, System.Memory<byte> data) -> void
@@ -56,6 +58,8 @@ Nerdbank.MessagePack.Extension.Header.get -> Nerdbank.MessagePack.ExtensionHeade
 Nerdbank.MessagePack.Extension.TypeCode.get -> sbyte
 Nerdbank.MessagePack.Extension.TypeCode.set -> void
 Nerdbank.MessagePack.ExtensionHeader
+Nerdbank.MessagePack.ExtensionHeader.Deconstruct(out sbyte TypeCode, out uint Length) -> void
+Nerdbank.MessagePack.ExtensionHeader.Equals(Nerdbank.MessagePack.ExtensionHeader other) -> bool
 Nerdbank.MessagePack.ExtensionHeader.ExtensionHeader() -> void
 Nerdbank.MessagePack.ExtensionHeader.ExtensionHeader(sbyte TypeCode, uint Length) -> void
 Nerdbank.MessagePack.ExtensionHeader.Length.get -> uint
@@ -70,9 +74,7 @@ Nerdbank.MessagePack.IMessagePackConverter
 Nerdbank.MessagePack.IMessagePackConverter.GetJsonSchema(Nerdbank.MessagePack.JsonSchemaContext! context, PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject?
 Nerdbank.MessagePack.IMessagePackConverter.PreferAsyncSerialization.get -> bool
 Nerdbank.MessagePack.IMessagePackConverter.Read(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> object?
-Nerdbank.MessagePack.IMessagePackConverter.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
 Nerdbank.MessagePack.IMessagePackConverter.Write(ref Nerdbank.MessagePack.MessagePackWriter writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> void
-Nerdbank.MessagePack.IMessagePackConverter.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnAfterDeserialize() -> void
 Nerdbank.MessagePack.IMessagePackSerializationCallbacks.OnBeforeSerialize() -> void
@@ -101,36 +103,10 @@ Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyTyp
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.ITypeShapeProvider! provider) -> void
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.KnownSubTypeMapping() -> void
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode
+Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.LibraryReservedMessagePackExtensionTypeCode() -> void
+Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.LibraryReservedMessagePackExtensionTypeCode(Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode! original) -> void
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.get -> sbyte
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.init -> void
-Nerdbank.MessagePack.MessagePackAsyncReader
-Nerdbank.MessagePack.MessagePackAsyncReader.BufferNextStructureAsync(Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
-Nerdbank.MessagePack.MessagePackAsyncReader.BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<int>
-Nerdbank.MessagePack.MessagePackAsyncReader.CancellationToken.get -> System.Threading.CancellationToken
-Nerdbank.MessagePack.MessagePackAsyncReader.CancellationToken.init -> void
-Nerdbank.MessagePack.MessagePackAsyncReader.CreateBufferedReader() -> Nerdbank.MessagePack.MessagePackReader
-Nerdbank.MessagePack.MessagePackAsyncReader.CreateStreamingReader() -> Nerdbank.MessagePack.MessagePackStreamingReader
-Nerdbank.MessagePack.MessagePackAsyncReader.MessagePackAsyncReader(System.IO.Pipelines.PipeReader! pipeReader) -> void
-Nerdbank.MessagePack.MessagePackAsyncReader.ReadAsync() -> System.Threading.Tasks.ValueTask
-Nerdbank.MessagePack.MessagePackAsyncReader.ReturnReader(ref Nerdbank.MessagePack.MessagePackReader reader) -> void
-Nerdbank.MessagePack.MessagePackAsyncReader.ReturnReader(ref Nerdbank.MessagePack.MessagePackStreamingReader reader) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter
-Nerdbank.MessagePack.MessagePackAsyncWriter.CreateWriter() -> Nerdbank.MessagePack.MessagePackWriter
-Nerdbank.MessagePack.MessagePackAsyncWriter.Flush() -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.FlushIfAppropriateAsync(Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
-Nerdbank.MessagePack.MessagePackAsyncWriter.IsTimeToFlush(Nerdbank.MessagePack.SerializationContext context) -> bool
-Nerdbank.MessagePack.MessagePackAsyncWriter.IsTimeToFlush(Nerdbank.MessagePack.SerializationContext context, in Nerdbank.MessagePack.MessagePackWriter syncWriter) -> bool
-Nerdbank.MessagePack.MessagePackAsyncWriter.MessagePackAsyncWriter(System.IO.Pipelines.PipeWriter! pipeWriter) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.ReturnWriter(ref Nerdbank.MessagePack.MessagePackWriter writer) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<T>
-Nerdbank.MessagePack.MessagePackAsyncWriter.Write<TState>(Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<TState>! writer, TState state) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.WriteArrayHeader(int count) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.WriteArrayHeader(uint count) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.WriteMapHeader(int count) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.WriteMapHeader(uint count) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.WriteNil() -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.WriteRaw(System.Buffers.ReadOnlySequence<byte> bytes) -> void
-Nerdbank.MessagePack.MessagePackAsyncWriter.WriteRaw(System.ReadOnlySpan<byte> bytes) -> void
 Nerdbank.MessagePack.MessagePackCode
 Nerdbank.MessagePack.MessagePackConverter<T>
 Nerdbank.MessagePack.MessagePackConverter<T>.MessagePackConverter() -> void
@@ -233,6 +209,8 @@ Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.get -> Nerd
 Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.MaxAsyncBuffer.get -> int
 Nerdbank.MessagePack.MessagePackSerializer.MaxAsyncBuffer.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.MessagePackSerializer() -> void
+Nerdbank.MessagePack.MessagePackSerializer.MessagePackSerializer(Nerdbank.MessagePack.MessagePackSerializer! original) -> void
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.get -> Nerdbank.MessagePack.MultiDimensionalArrayFormat
 Nerdbank.MessagePack.MessagePackSerializer.MultiDimensionalArrayFormat.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences.get -> bool
@@ -270,48 +248,6 @@ Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.init -> voi
 Nerdbank.MessagePack.MessagePackSerializer.SerializeObject(ref Nerdbank.MessagePack.MessagePackWriter writer, object? value, PolyType.Abstractions.ITypeShape! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.get -> Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.init -> void
-Nerdbank.MessagePack.MessagePackStreamingReader
-Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh
-Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh.BufferRefresh() -> void
-Nerdbank.MessagePack.MessagePackStreamingReader.CancellationToken.get -> System.Threading.CancellationToken
-Nerdbank.MessagePack.MessagePackStreamingReader.CancellationToken.init -> void
-Nerdbank.MessagePack.MessagePackStreamingReader.FetchMoreBytesAsync(uint minimumLength = 1) -> System.Threading.Tasks.ValueTask<Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh>
-Nerdbank.MessagePack.MessagePackStreamingReader.GetExchangeInfo() -> Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh
-Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync
-Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader() -> void
-Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh refresh) -> void
-Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence) -> void
-Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence, Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState) -> void
-Nerdbank.MessagePack.MessagePackStreamingReader.Position.get -> System.SequencePosition
-Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextCode(out byte code) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextMessagePackType(out Nerdbank.MessagePack.MessagePackType type) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(Nerdbank.MessagePack.ExtensionHeader extensionHeader, out System.DateTime value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out bool value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out byte value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out double value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out float value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out int value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out long value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out Nerdbank.MessagePack.Extension extension) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out Nerdbank.MessagePack.ExtensionHeader extensionHeader) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out sbyte value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out short value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out string? value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out System.DateTime value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out uint value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out ulong value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out ushort value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadArrayHeader(out int count) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadBinary(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadBinHeader(out uint length) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadMapHeader(out int count) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadNil() -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadNil(out bool isNil) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadRaw(long length, out System.Buffers.ReadOnlySequence<byte> rawMsgPack) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringHeader(out uint length) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringSequence(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringSpan(out bool contiguous, out System.ReadOnlySpan<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
-Nerdbank.MessagePack.MessagePackStreamingReader.TrySkip(ref Nerdbank.MessagePack.SerializationContext context) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 Nerdbank.MessagePack.MessagePackString
 Nerdbank.MessagePack.MessagePackString.Equals(Nerdbank.MessagePack.MessagePackString? other) -> bool
 Nerdbank.MessagePack.MessagePackString.IsMatch(System.Buffers.ReadOnlySequence<byte> utf8String) -> bool
@@ -397,6 +333,7 @@ Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.SerializationContext.CancellationToken.get -> System.Threading.CancellationToken
 Nerdbank.MessagePack.SerializationContext.CancellationToken.init -> void
 Nerdbank.MessagePack.SerializationContext.DepthStep() -> void
+Nerdbank.MessagePack.SerializationContext.Equals(Nerdbank.MessagePack.SerializationContext other) -> bool
 Nerdbank.MessagePack.SerializationContext.GetConverter(PolyType.Abstractions.ITypeShape! shape) -> Nerdbank.MessagePack.IMessagePackConverter!
 Nerdbank.MessagePack.SerializationContext.GetConverter(System.Type! type, PolyType.ITypeShapeProvider? provider) -> Nerdbank.MessagePack.IMessagePackConverter!
 Nerdbank.MessagePack.SerializationContext.GetConverter<T, TProvider>() -> Nerdbank.MessagePack.MessagePackConverter<T>!
@@ -410,9 +347,18 @@ Nerdbank.MessagePack.SerializationContext.this[object! key].set -> void
 Nerdbank.MessagePack.SerializationContext.TypeShapeProvider.get -> PolyType.ITypeShapeProvider?
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.get -> int
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.init -> void
+override Nerdbank.MessagePack.Extension.GetHashCode() -> int
+override Nerdbank.MessagePack.ExtensionHeader.GetHashCode() -> int
 override Nerdbank.MessagePack.KnownSubTypeAttribute<TSubType, TShapeProvider>.Shape.get -> PolyType.Abstractions.ITypeShape?
+override Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(object? obj) -> bool
+override Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.GetHashCode() -> int
+override Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ToString() -> string!
+override Nerdbank.MessagePack.MessagePackSerializer.Equals(object? obj) -> bool
+override Nerdbank.MessagePack.MessagePackSerializer.GetHashCode() -> int
+override Nerdbank.MessagePack.MessagePackSerializer.ToString() -> string!
 override Nerdbank.MessagePack.MessagePackString.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.MessagePackString.GetHashCode() -> int
+override Nerdbank.MessagePack.SerializationContext.GetHashCode() -> int
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T, TProvider>() -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T>() -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
@@ -422,6 +368,12 @@ static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.DecodeResultExtensions.NeedsMoreBytes(this Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult result) -> bool
+static Nerdbank.MessagePack.Extension.operator !=(Nerdbank.MessagePack.Extension left, Nerdbank.MessagePack.Extension right) -> bool
+static Nerdbank.MessagePack.Extension.operator ==(Nerdbank.MessagePack.Extension left, Nerdbank.MessagePack.Extension right) -> bool
+static Nerdbank.MessagePack.ExtensionHeader.operator !=(Nerdbank.MessagePack.ExtensionHeader left, Nerdbank.MessagePack.ExtensionHeader right) -> bool
+static Nerdbank.MessagePack.ExtensionHeader.operator ==(Nerdbank.MessagePack.ExtensionHeader left, Nerdbank.MessagePack.ExtensionHeader right) -> bool
+static Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.operator !=(Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode? left, Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode? right) -> bool
+static Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.operator ==(Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode? left, Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode? right) -> bool
 static Nerdbank.MessagePack.MessagePackCode.ToFormatName(byte code) -> string!
 static Nerdbank.MessagePack.MessagePackCode.ToMessagePackType(byte code) -> Nerdbank.MessagePack.MessagePackType
 static Nerdbank.MessagePack.MessagePackConverter<T>.ApplyJsonSchemaNullability(System.Text.Json.Nodes.JsonObject! schema) -> System.Text.Json.Nodes.JsonObject!
@@ -483,6 +435,8 @@ static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt8(System.Span<byte
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(in System.Buffers.ReadOnlySequence<byte> msgpack) -> string!
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.MessagePack.MessagePackReader reader, System.IO.TextWriter! jsonWriter) -> void
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack) -> string!
+static Nerdbank.MessagePack.MessagePackSerializer.operator !=(Nerdbank.MessagePack.MessagePackSerializer? left, Nerdbank.MessagePack.MessagePackSerializer? right) -> bool
+static Nerdbank.MessagePack.MessagePackSerializer.operator ==(Nerdbank.MessagePack.MessagePackSerializer? left, Nerdbank.MessagePack.MessagePackSerializer? right) -> bool
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(long value) -> int
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(ulong value) -> int
 static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(byte[]! msgpack) -> Nerdbank.MessagePack.RawMessagePack
@@ -490,9 +444,99 @@ static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePac
 static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(System.Memory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
 static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(System.ReadOnlyMemory<byte> msgpack) -> Nerdbank.MessagePack.RawMessagePack
 static Nerdbank.MessagePack.RawMessagePack.implicit operator System.Buffers.ReadOnlySequence<byte>(Nerdbank.MessagePack.RawMessagePack msgpack) -> System.Buffers.ReadOnlySequence<byte>
+static Nerdbank.MessagePack.SerializationContext.operator !=(Nerdbank.MessagePack.SerializationContext left, Nerdbank.MessagePack.SerializationContext right) -> bool
+static Nerdbank.MessagePack.SerializationContext.operator ==(Nerdbank.MessagePack.SerializationContext left, Nerdbank.MessagePack.SerializationContext right) -> bool
 static readonly Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Default -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 virtual Nerdbank.MessagePack.KnownSubTypeAttribute.Shape.get -> PolyType.Abstractions.ITypeShape?
+virtual Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.<Clone>$() -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+virtual Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.EqualityContract.get -> System.Type!
+virtual Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode? other) -> bool
+virtual Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.PrintMembers(System.Text.StringBuilder! builder) -> bool
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.GetJsonSchema(Nerdbank.MessagePack.JsonSchemaContext! context, PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject?
 virtual Nerdbank.MessagePack.MessagePackConverter<T>.PreferAsyncSerialization.get -> bool
-virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<T?>
-virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
+virtual Nerdbank.MessagePack.MessagePackSerializer.<Clone>$() -> Nerdbank.MessagePack.MessagePackSerializer!
+virtual Nerdbank.MessagePack.MessagePackSerializer.EqualityContract.get -> System.Type!
+virtual Nerdbank.MessagePack.MessagePackSerializer.Equals(Nerdbank.MessagePack.MessagePackSerializer? other) -> bool
+virtual Nerdbank.MessagePack.MessagePackSerializer.PrintMembers(System.Text.StringBuilder! builder) -> bool
+[NBMsgPackAsync]Nerdbank.MessagePack.IMessagePackConverter.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
+[NBMsgPackAsync]Nerdbank.MessagePack.IMessagePackConverter.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.BufferNextStructureAsync(Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<int>
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.CancellationToken.get -> System.Threading.CancellationToken
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.CancellationToken.init -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.CreateBufferedReader() -> Nerdbank.MessagePack.MessagePackReader
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.CreateStreamingReader() -> Nerdbank.MessagePack.MessagePackStreamingReader
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.MessagePackAsyncReader(System.IO.Pipelines.PipeReader! pipeReader) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.ReadAsync() -> System.Threading.Tasks.ValueTask
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.ReturnReader(ref Nerdbank.MessagePack.MessagePackReader reader) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.ReturnReader(ref Nerdbank.MessagePack.MessagePackStreamingReader reader) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.CreateWriter() -> Nerdbank.MessagePack.MessagePackWriter
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.Flush() -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.FlushIfAppropriateAsync(Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.IsTimeToFlush(Nerdbank.MessagePack.SerializationContext context) -> bool
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.IsTimeToFlush(Nerdbank.MessagePack.SerializationContext context, in Nerdbank.MessagePack.MessagePackWriter syncWriter) -> bool
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.MessagePackAsyncWriter(System.IO.Pipelines.PipeWriter! pipeWriter) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.ReturnWriter(ref Nerdbank.MessagePack.MessagePackWriter writer) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<T>
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.Write<TState>(Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<TState>! writer, TState state) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.WriteArrayHeader(int count) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.WriteArrayHeader(uint count) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.WriteMapHeader(int count) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.WriteMapHeader(uint count) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.WriteNil() -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.WriteRaw(System.Buffers.ReadOnlySequence<byte> bytes) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncWriter.WriteRaw(System.ReadOnlySpan<byte> bytes) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh.BufferRefresh() -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.CancellationToken.get -> System.Threading.CancellationToken
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.CancellationToken.init -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.FetchMoreBytesAsync(uint minimumLength = 1) -> System.Threading.Tasks.ValueTask<Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh>
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.GetExchangeInfo() -> Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader() -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in Nerdbank.MessagePack.MessagePackStreamingReader.BufferRefresh refresh) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.MessagePackStreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence, Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState) -> void
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.Position.get -> System.SequencePosition
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextCode(out byte code) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryPeekNextMessagePackType(out Nerdbank.MessagePack.MessagePackType type) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(Nerdbank.MessagePack.ExtensionHeader extensionHeader, out System.DateTime value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out bool value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out byte value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out double value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out float value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out int value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out long value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out Nerdbank.MessagePack.Extension extension) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out Nerdbank.MessagePack.ExtensionHeader extensionHeader) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out sbyte value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out short value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out string? value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out System.DateTime value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out uint value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out ulong value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryRead(out ushort value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadArrayHeader(out int count) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadBinary(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadBinHeader(out uint length) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadMapHeader(out int count) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadNil() -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadNil(out bool isNil) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadRaw(long length, out System.Buffers.ReadOnlySequence<byte> rawMsgPack) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringHeader(out uint length) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringSequence(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TryReadStringSpan(out bool contiguous, out System.ReadOnlySpan<byte> value) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TrySkip(ref Nerdbank.MessagePack.SerializationContext context) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
+[NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<T>.Invoke(ref Nerdbank.MessagePack.MessagePackWriter writer, T state) -> void
+[NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<T?>
+[NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
+[NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync.Invoke(object? state, System.SequencePosition consumed, System.SequencePosition examined, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult>
+~override Nerdbank.MessagePack.Extension.Equals(object obj) -> bool
+~override Nerdbank.MessagePack.Extension.ToString() -> string
+~override Nerdbank.MessagePack.ExtensionHeader.Equals(object obj) -> bool
+~override Nerdbank.MessagePack.ExtensionHeader.ToString() -> string
+~override Nerdbank.MessagePack.SerializationContext.Equals(object obj) -> bool
+~override Nerdbank.MessagePack.SerializationContext.ToString() -> string
