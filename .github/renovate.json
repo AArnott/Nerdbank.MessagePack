@@ -22,6 +22,10 @@
 			"matchPackageNames": ["System.Collections.Immutable", "System.Text.Json"],
 			"allowedVersions": "<9.0",
 			"groupName": "Included in .NET runtime"
+		},
+		{
+			"matchJsonata": ["groupName='RoslynVersionForAnalyzers'"],
+			"enabled": false
 		}
 	]
 }
