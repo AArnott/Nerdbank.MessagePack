@@ -24,7 +24,7 @@
 			"groupName": "Included in .NET runtime"
 		},
 		{
-			"matchJsonata": ["groupName='RoslynVersionForAnalyzers'"],
+			"matchJsonata": ["groupName='RoslynVersionForAnalyzers' or sharedVariableName='RoslynVersionForAnalyzers'"],
 			"enabled": false
 		}
 	]
