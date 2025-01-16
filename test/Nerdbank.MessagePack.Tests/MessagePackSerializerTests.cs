@@ -314,6 +314,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Assert.Equal(8, deserialized.Marshaled);
 	}
 
+	[Fact]
+	public void ClassWithIndexerCanBeSerialized()
+	{
+		this.AssertRoundtrip(new ClassWithIndexer { Member = 3 });
+	}
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
@@ -524,6 +530,18 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 		[PropertyShape(Name = "otherName")]
 		public int Marshaled { get; set; }
+	}
+
+	[GenerateShape]
+	internal partial class ClassWithIndexer
+	{
+		public int Member { get; set; }
+
+		public int this[int index] => index;
+
+		public override bool Equals(object? obj) => obj is ClassWithIndexer other && this.Member == other.Member;
+
+		public override int GetHashCode() => this.Member;
 	}
 
 	[GenerateShape<UnannotatedPoco>]
