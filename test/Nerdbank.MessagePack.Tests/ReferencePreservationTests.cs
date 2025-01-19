@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+[Trait("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
 	public ReferencePreservationTests(ITestOutputHelper logger)
@@ -109,6 +110,15 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 		// Verify that reference equality is also satisfied within the deserialized tree.
 		Assert.Same(deserializedRoot.City, deserializedRoot.State);
+	}
+
+	[Fact]
+	public void DictionaryReferencePreservation()
+	{
+		Dictionary<string, int> dict = new() { ["a"] = 1, ["b"] = 2 };
+		Dictionary<string, int>[]? deserializedArray = this.Roundtrip<Dictionary<string, int>[], Witness>([dict, dict]);
+		Assert.NotNull(deserializedArray);
+		Assert.Same(deserializedArray[0], deserializedArray[1]);
 	}
 
 	[Theory, PairwiseData]
@@ -336,5 +346,6 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[GenerateShape<CustomType[]>]
 	[GenerateShape<string[]>]
 	[GenerateShape<BaseRecord[]>]
+	[GenerateShape<Dictionary<string, int>[]>]
 	private partial class Witness;
 }

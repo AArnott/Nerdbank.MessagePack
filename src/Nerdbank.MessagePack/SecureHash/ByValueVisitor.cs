@@ -67,6 +67,10 @@ internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor,
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
 		=> new ByValueNullableEqualityComparer<T>(this.GetEqualityComparer(nullableShape.ElementType));
 
+	/// <inheritdoc/>
+	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+		=> new SurrogateEqualityComparer<T, TSurrogate>(surrogateShape.Marshaller, this.GetEqualityComparer(surrogateShape.SurrogateType, state));
+
 	/// <summary>
 	/// Gets or creates an equality comparer for the given type shape.
 	/// </summary>

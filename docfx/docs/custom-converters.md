@@ -1,7 +1,10 @@
 # Custom converters
 
-While using the [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
+While using the @PolyType.GenerateShapeAttribute is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
 In such cases, you can define and register your own custom converter for the incompatible type.
+
+Before writing your own converter for a custom type, consider writing a [surrogate type](surrogate-types.md) instead.
+Surrogate types are simpler and utilize efficient, tested converters that are automatically generated.
 
 ## Define your own converter
 

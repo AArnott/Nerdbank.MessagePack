@@ -8,7 +8,7 @@ Even when types override these methods, they are often not implemented for _deep
 This is particularly true when a type contains collection members, since testing a collection's contents for by-value equality of each element can be difficult.
 
 Nerdbank.MessagePack alleviates these difficulties somewhat by providing deep, by-value equality testing and hashing for arbitrary types, using the same @PolyType.GenerateShapeAttribute technology that it uses for serialization.
-It does this via the @Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault\*?displayProperty=nameWithType method, which returns an instance of @System.Collections.Generic.IEqualityComparer`1 for the specified type that provides deep, by-value checking and hashing.
+It does this via the @"Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault*?displayProperty=nameWithType" method, which returns an instance of @System.Collections.Generic.IEqualityComparer`1 for the specified type that provides deep, by-value checking and hashing.
 
 Here is an example of using this for by-value equality checking for a user-defined type that does not implement it itself:
 

@@ -23,6 +23,7 @@ using Microsoft;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
+[Trait("JsonSchema", "true")]
 public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	private const bool RecordMode =
@@ -91,6 +92,13 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 	[Fact]
 	public void Recursive() => this.AssertSchema([new RecursiveType { Child = new RecursiveType() }]);
+
+	[Fact]
+	[Trait("Surrogates", "true")]
+	public void Surrogates()
+	{
+		this.AssertSchema<SurrogateTests.OriginalType>();
+	}
 
 	[Fact]
 	public void Complex() => this.AssertSchema([
