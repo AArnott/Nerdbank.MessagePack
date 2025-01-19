@@ -462,6 +462,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			? new EnumAsStringConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType))
 			: new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
 
+	/// <inheritdoc/>
+	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+		=> new SurrogateConverter<T, TSurrogate>(surrogateShape, this.GetConverter(surrogateShape.SurrogateType, state));
+
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
 	/// </summary>

@@ -20,6 +20,7 @@ Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessageP
 Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) |
 Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) |
 Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
+Surrogate types for automatic serialization of unserializable types | [✅](surrogate-types.md) | ❌ |
 Custom converters         | [✅](custom-converters.md) | ✅ |
 Stateful converters       | [✅](custom-converters.md#stateful-converters) | ❌ |
 Deserialization callback  | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |

@@ -28,4 +28,8 @@ internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVi
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 		=> ((IMessagePackConverterInternal)inner.VisitObject(objectShape, state)!).WrapWithReferencePreservation();
+
+	/// <inheritdoc/>
+	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+		=> ((IMessagePackConverterInternal)inner.VisitSurrogate(surrogateShape, state)!).WrapWithReferencePreservation();
 }
