@@ -3,6 +3,7 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
+using System.Globalization;
 using System.IO.Pipelines;
 using Microsoft;
 
@@ -357,7 +358,17 @@ public partial record MessagePackSerializer
 					jsonWriter.Write(reader.ReadBoolean() ? "true" : "false");
 					break;
 				case MessagePackType.Float:
-					jsonWriter.Write(reader.ReadDouble());
+					// Emit with only the precision inherent in the msgpack format.
+					// Use "R" to preserve full precision in the string version so it isn't lossy.
+					if (reader.NextCode == MessagePackCode.Float32)
+					{
+						jsonWriter.Write(reader.ReadSingle().ToString("R", CultureInfo.InvariantCulture));
+					}
+					else
+					{
+						jsonWriter.Write(reader.ReadDouble().ToString("R", CultureInfo.InvariantCulture));
+					}
+
 					break;
 				case MessagePackType.String:
 					WriteJsonString(reader.ReadString()!, jsonWriter);
