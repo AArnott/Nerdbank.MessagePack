@@ -27,11 +27,12 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		throw new NotSupportedException();
@@ -85,8 +86,10 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <param name="value">Receives the value.</param>
 	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey key, out TValue value)
 	{
-		key = keyConverter.Read(ref reader, context)!;
-		value = valueConverter.Read(ref reader, context)!;
+		key = default;
+		value = default;
+		keyConverter.Read(ref reader, ref key, context);
+		valueConverter.Read(ref reader, ref value, context);
 	}
 
 	/// <summary>
@@ -126,16 +129,18 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		TDictionary result = ctor();
 		this.DeserializeInto(ref reader, ref result, context);
-		return result;
+		value = result;
+		return;
 	}
 #pragma warning restore NBMsgPack03
 
@@ -226,11 +231,12 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		context.DepthStep();
@@ -240,11 +246,12 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-				entries[i] = new(key, value);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue val);
+				entries[i] = new(key, val);
 			}
 
-			return ctor(entries.AsSpan(0, count));
+			value = ctor(entries.AsSpan(0, count));
+			return;
 		}
 		finally
 		{
@@ -269,11 +276,12 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		context.DepthStep();
@@ -283,11 +291,12 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-				entries[i] = new(key, value);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue val);
+				entries[i] = new(key, val);
 			}
 
-			return ctor(entries.Take(count));
+			value = ctor(entries.Take(count));
+			return;
 		}
 		finally
 		{
