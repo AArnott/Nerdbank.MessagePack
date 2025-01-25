@@ -733,18 +733,20 @@ internal static class HardwareAccelerated
 	{
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
-		public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, TEnumerable? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{
-				return default;
+				value = default;
+				return;
 			}
 
 			context.DepthStep();
 			int count = reader.ReadArrayHeader();
 			if (count == 0)
 			{
-				return GetEmptyEnumerable<TEnumerable, bool>(this.spanConstructorKind);
+				value = GetEmptyEnumerable<TEnumerable, bool>(this.spanConstructorKind);
+				return;
 			}
 
 			TEnumerable enumerable;
@@ -799,7 +801,7 @@ internal static class HardwareAccelerated
 				span = span[segment.Length..];
 			}
 
-			return enumerable;
+			value = enumerable;
 		}
 
 		public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
