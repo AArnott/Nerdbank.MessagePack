@@ -88,17 +88,19 @@ internal static partial class ArraysOfPrimitivesConverters
 		}
 
 		/// <inheritdoc/>
-		public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
 		{
 			if (reader.TryReadNil())
 			{
-				return default;
+				value = default;
+				return;
 			}
 
 			int count = reader.ReadArrayHeader();
 			if (count == 0)
 			{
-				return spanConstructor is null ? (TEnumerable)(object)Array.Empty<TElement>() : spanConstructor(default);
+				value = spanConstructor is null ? (TEnumerable)(object)Array.Empty<TElement>() : spanConstructor(default);
+				return;
 			}
 
 			TElement[] elements = spanConstructor is null ? new TElement[count] : ArrayPool<TElement>.Shared.Rent(count);
@@ -111,7 +113,7 @@ internal static partial class ArraysOfPrimitivesConverters
 					elements[i] = this.Read(ref reader);
 				}
 
-				return spanConstructor is null ? (TEnumerable)(object)elements : spanConstructor(elements.AsSpan(0, count));
+				value = spanConstructor is null ? (TEnumerable)(object)elements : spanConstructor(elements.AsSpan(0, count));
 			}
 			finally
 			{

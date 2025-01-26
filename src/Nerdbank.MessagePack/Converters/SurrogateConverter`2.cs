@@ -20,8 +20,12 @@ internal class SurrogateConverter<T, TSurrogate>(ISurrogateTypeShape<T, TSurroga
 	public override bool PreferAsyncSerialization => surrogateConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
-		=> shape.Marshaller.FromSurrogate(surrogateConverter.Read(ref reader, context));
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
+	{
+		TSurrogate? surrogateValue = default;
+		surrogateConverter.Read(ref reader, context, ref surrogateValue);
+		value = shape.Marshaller.FromSurrogate(surrogateValue);
+	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)

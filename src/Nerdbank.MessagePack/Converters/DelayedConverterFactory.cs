@@ -23,8 +23,8 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 	internal class DelayedConverter<T>(DelayedValue<MessagePackConverter<T>> self) : MessagePackConverter<T>
 	{
 		/// <inheritdoc/>
-		public override T? Read(ref MessagePackReader reader, SerializationContext context)
-			=> self.Result.Read(ref reader, context);
+		public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
+			=> self.Result.Read(ref reader, context, ref value);
 
 		/// <inheritdoc/>
 		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)

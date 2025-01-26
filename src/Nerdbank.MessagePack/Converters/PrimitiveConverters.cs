@@ -25,7 +25,7 @@ internal class StringConverter : MessagePackConverter<string>
 #endif
 
 	/// <inheritdoc/>
-	public override string? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref string? value) => value = reader.ReadString();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);
@@ -67,7 +67,7 @@ internal class StringConverter : MessagePackConverter<string>
 			{
 				// We'll always require at least a reasonable numbe of bytes to decode at once,
 				// to keep overhead to a minimum.
-				uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
+				uint desiredBytesThisRound = Math.min(remainingBytesToDecode, MinChunkSize);
 				if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
 				{
 					// We don't have enough bytes to decode this round. Fetch more.
@@ -118,11 +118,12 @@ internal class InterningStringConverter : MessagePackConverter<string>
 	private const int MaxStackStringCharLength = 4096;
 
 	/// <inheritdoc/>
-	public override string? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref string? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return null;
+			value = null;
+			return;
 		}
 
 		ReadOnlySequence<byte> bytesSequence = default;
@@ -132,7 +133,8 @@ internal class InterningStringConverter : MessagePackConverter<string>
 		{
 			if (byteSpan.IsEmpty)
 			{
-				return string.Empty;
+				value = string.Empty;
+				return;
 			}
 
 			spanMode = true;
@@ -152,12 +154,12 @@ internal class InterningStringConverter : MessagePackConverter<string>
 			if (spanMode)
 			{
 				int characterCount = StringEncoding.UTF8.GetChars(byteSpan, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
+				value = Strings.WeakIntern(stackSpan[..characterCount]);
 			}
 			else
 			{
 				int characterCount = StringEncoding.UTF8.GetChars(bytesSequence, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
+				value = Strings.WeakIntern(stackSpan[..characterCount]);
 			}
 		}
 		finally
@@ -182,7 +184,7 @@ internal class InterningStringConverter : MessagePackConverter<string>
 internal class BooleanConverter : MessagePackConverter<bool>
 {
 	/// <inheritdoc/>
-	public override bool Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadBoolean();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref bool value) => value = reader.ReadBoolean();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in bool value, SerializationContext context) => writer.Write(value);
@@ -197,7 +199,7 @@ internal class BooleanConverter : MessagePackConverter<bool>
 internal class VersionConverter : MessagePackConverter<Version?>
 {
 	/// <inheritdoc/>
-	public override Version? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Version(value) : null;
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Version? value) => value = reader.ReadString() is string v ? new Version(v) : null;
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Version? value, SerializationContext context) => writer.Write(value?.ToString());
@@ -217,7 +219,7 @@ internal class VersionConverter : MessagePackConverter<Version?>
 internal class UriConverter : MessagePackConverter<Uri?>
 {
 	/// <inheritdoc/>
-	public override Uri? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Uri(value, UriKind.RelativeOrAbsolute) : null;
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Uri? value) => value = reader.ReadString() is string v ? new Uri(v, UriKind.RelativeOrAbsolute) : null;
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Uri? value, SerializationContext context) => writer.Write(value?.OriginalString);
@@ -239,7 +241,7 @@ internal class UriConverter : MessagePackConverter<Uri?>
 internal class HalfConverter : MessagePackConverter<Half>
 {
 	/// <inheritdoc/>
-	public override Half Read(ref MessagePackReader reader, SerializationContext context) => (Half)reader.ReadSingle();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Half value) => value = (Half)reader.ReadSingle();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Half value, SerializationContext context) => writer.Write((float)value);
@@ -261,7 +263,7 @@ internal class HalfConverter : MessagePackConverter<Half>
 internal class SingleConverter : MessagePackConverter<float>
 {
 	/// <inheritdoc/>
-	public override float Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadSingle();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref float value) => value = reader.ReadSingle();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in float value, SerializationContext context) => writer.Write(value);
@@ -281,7 +283,7 @@ internal class SingleConverter : MessagePackConverter<float>
 internal class DoubleConverter : MessagePackConverter<double>
 {
 	/// <inheritdoc/>
-	public override double Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadDouble();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref double value) => value = reader.ReadDouble();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in double value, SerializationContext context) => writer.Write(value);
@@ -301,7 +303,7 @@ internal class DoubleConverter : MessagePackConverter<double>
 internal class DecimalConverter : MessagePackConverter<decimal>
 {
 	/// <inheritdoc/>
-	public override decimal Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref decimal value)
 	{
 		if (!(reader.ReadStringSequence() is ReadOnlySequence<byte> sequence))
 		{
@@ -318,7 +320,8 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 					throw new MessagePackSerializationException("Unexpected length of string.");
 				}
 
-				return result;
+				value = result;
+				return;
 			}
 		}
 		else
@@ -336,7 +339,8 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 						throw new MessagePackSerializationException("Unexpected length of string.");
 					}
 
-					return result;
+					value = result;
+					return;
 				}
 			}
 			else
@@ -352,7 +356,8 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 							throw new MessagePackSerializationException("Unexpected length of string.");
 						}
 
-						return result;
+						value = result;
+						return;
 					}
 				}
 				finally
@@ -400,7 +405,7 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 internal class Int128Converter : MessagePackConverter<Int128>
 {
 	/// <inheritdoc/>
-	public override Int128 Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Int128 value)
 	{
 		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Int128>();
 		if (sequence.IsSingleSegment)
@@ -408,7 +413,8 @@ internal class Int128Converter : MessagePackConverter<Int128>
 			ReadOnlySpan<byte> span = sequence.First.Span;
 			if (Int128.TryParse(span, CultureInfo.InvariantCulture, out Int128 result))
 			{
-				return result;
+				value = result;
+				return;
 			}
 		}
 		else
@@ -421,7 +427,8 @@ internal class Int128Converter : MessagePackConverter<Int128>
 				sequence.CopyTo(span);
 				if (Int128.TryParse(span, CultureInfo.InvariantCulture, out Int128 result))
 				{
-					return result;
+					value = result;
+					return;
 				}
 			}
 			else
@@ -432,7 +439,8 @@ internal class Int128Converter : MessagePackConverter<Int128>
 					sequence.CopyTo(rentArray);
 					if (Int128.TryParse(rentArray.AsSpan(0, seqLen), CultureInfo.InvariantCulture, out Int128 result))
 					{
-						return result;
+						value = result;
+						return;
 					}
 				}
 				finally
@@ -478,7 +486,7 @@ internal class Int128Converter : MessagePackConverter<Int128>
 internal class UInt128Converter : MessagePackConverter<UInt128>
 {
 	/// <inheritdoc/>
-	public override UInt128 Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref UInt128 value)
 	{
 		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<UInt128>();
 		if (sequence.IsSingleSegment)
@@ -486,7 +494,8 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 			ReadOnlySpan<byte> span = sequence.First.Span;
 			if (UInt128.TryParse(span, CultureInfo.InvariantCulture, out UInt128 result))
 			{
-				return result;
+				value = result;
+				return;
 			}
 		}
 		else
@@ -499,7 +508,8 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 				sequence.CopyTo(span);
 				if (UInt128.TryParse(span, CultureInfo.InvariantCulture, out UInt128 result))
 				{
-					return result;
+					value = result;
+					return;
 				}
 			}
 			else
@@ -510,7 +520,8 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 					sequence.CopyTo(rentArray);
 					if (UInt128.TryParse(rentArray.AsSpan(0, seqLen), CultureInfo.InvariantCulture, out UInt128 result))
 					{
-						return result;
+						value = result;
+						return;
 					}
 				}
 				finally
@@ -558,15 +569,15 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 {
 	/// <inheritdoc/>
-	public override BigInteger Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref BigInteger value)
 	{
 		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
 		if (bytes.IsSingleSegment)
 		{
 #if NET
-			return new BigInteger(bytes.First.Span);
+			value = new BigInteger(bytes.First.Span);
 #else
-			return new BigInteger(bytes.First.ToArray());
+			value = new BigInteger(bytes.First.ToArray());
 #endif
 		}
 		else
@@ -576,14 +587,14 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			try
 			{
 				bytes.CopyTo(bytesArray);
-				return new BigInteger(bytesArray.AsSpan(0, (int)bytes.Length));
+				value = new BigInteger(bytesArray.AsSpan(0, (int)bytes.Length));
 			}
 			finally
 			{
 				ArrayPool<byte>.Shared.Return(bytesArray);
 			}
 #else
-			return new BigInteger(bytes.ToArray());
+			value = new BigInteger(bytes.ToArray());
 #endif
 		}
 	}
@@ -613,7 +624,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 internal class DateTimeConverter : MessagePackConverter<DateTime>
 {
 	/// <inheritdoc/>
-	public override DateTime Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadDateTime();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref DateTime value) => value = reader.ReadDateTime();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in DateTime value, SerializationContext context) => writer.Write(value);
@@ -628,7 +639,7 @@ internal class DateTimeConverter : MessagePackConverter<DateTime>
 internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 {
 	/// <inheritdoc/>
-	public override DateTimeOffset Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref DateTimeOffset value)
 	{
 		int count = reader.ReadArrayHeader();
 		if (count != 2)
@@ -638,7 +649,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 
 		DateTime utcDateTime = reader.ReadDateTime();
 		short offsetMinutes = reader.ReadInt16();
-		return new DateTimeOffset(utcDateTime.Ticks, TimeSpan.FromMinutes(offsetMinutes));
+		value = new DateTimeOffset(utcDateTime.Ticks, TimeSpan.FromMinutes(offsetMinutes));
 	}
 
 	/// <inheritdoc/>
@@ -668,7 +679,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 internal class DateOnlyConverter : MessagePackConverter<DateOnly>
 {
 	/// <inheritdoc/>
-	public override DateOnly Read(ref MessagePackReader reader, SerializationContext context) => DateOnly.FromDayNumber(reader.ReadInt32());
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref DateOnly value) => value = DateOnly.FromDayNumber(reader.ReadInt32());
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in DateOnly value, SerializationContext context) => writer.Write(value.DayNumber);
@@ -689,7 +700,7 @@ internal class DateOnlyConverter : MessagePackConverter<DateOnly>
 internal class TimeOnlyConverter : MessagePackConverter<TimeOnly>
 {
 	/// <inheritdoc/>
-	public override TimeOnly Read(ref MessagePackReader reader, SerializationContext context) => new TimeOnly(reader.ReadInt64());
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TimeOnly value) => value = new TimeOnly(reader.ReadInt64());
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TimeOnly value, SerializationContext context) => writer.Write(value.Ticks);
@@ -712,7 +723,7 @@ internal class TimeOnlyConverter : MessagePackConverter<TimeOnly>
 internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
 {
 	/// <inheritdoc/>
-	public override TimeSpan Read(ref MessagePackReader reader, SerializationContext context) => new TimeSpan(reader.ReadInt64());
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TimeSpan value) => value = new TimeSpan(reader.ReadInt64());
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
@@ -735,7 +746,7 @@ internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
 internal class RuneConverter : MessagePackConverter<Rune>
 {
 	/// <inheritdoc/>
-	public override Rune Read(ref MessagePackReader reader, SerializationContext context) => new Rune(reader.ReadInt32());
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Rune value) => value = new Rune(reader.ReadInt32());
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Rune value, SerializationContext context) => writer.Write(value.Value);
@@ -756,7 +767,7 @@ internal class RuneConverter : MessagePackConverter<Rune>
 internal class CharConverter : MessagePackConverter<char>
 {
 	/// <inheritdoc/>
-	public override char Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadChar();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref char value) => value = reader.ReadChar();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in char value, SerializationContext context) => writer.Write(value);
@@ -785,17 +796,20 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter());
 
 	/// <inheritdoc/>
-	public override byte[]? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref byte[]? value)
 	{
 		switch (reader.NextMessagePackType)
 		{
 			case MessagePackType.Nil:
 				reader.ReadNil();
-				return null;
+				value = null;
+				break;
 			case MessagePackType.Binary:
-				return reader.ReadBytes()?.ToArray();
+				value = reader.ReadBytes()?.ToArray();
+				break;
 			default:
-				return Fallback.Read(ref reader, context);
+				Fallback.Read(ref reader, context, ref value);
+				break;
 		}
 	}
 
@@ -822,7 +836,11 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 internal class MemoryOfByteConverter : MessagePackConverter<Memory<byte>>
 {
 	/// <inheritdoc/>
-	public override Memory<byte> Read(ref MessagePackReader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Memory<byte> value)
+	{
+		byte[]? array = ByteArrayConverter.Instance.Read(ref reader, context);
+		value = array;
+	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Memory<byte> value, SerializationContext context) => writer.Write(value.Span);
@@ -838,7 +856,11 @@ internal class MemoryOfByteConverter : MessagePackConverter<Memory<byte>>
 internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemory<byte>>
 {
 	/// <inheritdoc/>
-	public override ReadOnlyMemory<byte> Read(ref MessagePackReader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref ReadOnlyMemory<byte> value)
+	{
+		byte[]? array = ByteArrayConverter.Instance.Read(ref reader, context);
+		value = array;
+	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in ReadOnlyMemory<byte> value, SerializationContext context) => writer.Write(value.Span);
@@ -856,16 +878,16 @@ internal class GuidConverter : MessagePackConverter<Guid>
 	private const int GuidLength = 16;
 
 	/// <inheritdoc/>
-	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Guid value)
 	{
 		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Guid>();
 
 		if (bytes.IsSingleSegment)
 		{
 #if NET
-			return new Guid(bytes.FirstSpan);
+			value = new Guid(bytes.FirstSpan);
 #else
-			return PolyfillExtensions.CreateGuid(bytes.First.Span);
+			value = PolyfillExtensions.CreateGuid(bytes.First.Span);
 #endif
 		}
 		else
@@ -873,9 +895,9 @@ internal class GuidConverter : MessagePackConverter<Guid>
 			Span<byte> guidValue = stackalloc byte[GuidLength];
 			bytes.CopyTo(guidValue);
 #if NET
-			return new Guid(guidValue);
+			value = new Guid(guidValue);
 #else
-			return PolyfillExtensions.CreateGuid(guidValue);
+			value = PolyfillExtensions.CreateGuid(guidValue);
 #endif
 		}
 	}
@@ -915,14 +937,17 @@ internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : 
 	}
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return null;
+			value = null;
+			return;
 		}
 
-		return elementConverter.Read(ref reader, context);
+		T elementValue = default;
+		elementConverter.Read(ref reader, context, ref elementValue);
+		value = elementValue;
 	}
 
 	/// <inheritdoc/>

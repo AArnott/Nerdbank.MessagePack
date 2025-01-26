@@ -19,15 +19,16 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 	public override bool PreferAsyncSerialization => false; // inner.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		Assumes.NotNull(context.ReferenceEqualityTracker);
-		return context.ReferenceEqualityTracker.ReadObject(ref reader, inner, context);
+		value = context.ReferenceEqualityTracker.ReadObject(ref reader, inner, context);
 	}
 
 	/// <inheritdoc/>

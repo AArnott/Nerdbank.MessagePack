@@ -50,8 +50,8 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 	/// </summary>
 	/// <param name="reader">The reader to use.</param>
 	/// <param name="context">Context for the deserialization.</param>
-	/// <returns>The deserialized value.</returns>
-	public abstract T? Read(ref MessagePackReader reader, SerializationContext context);
+	/// <param name="value">The deserialized value.</param>
+	public abstract void Read(ref MessagePackReader reader, SerializationContext context, ref T? value);
 
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.

@@ -16,11 +16,12 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override TElement[]? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TElement[]? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return null;
+			value = null;
+			return;
 		}
 
 		context.DepthStep();
@@ -31,7 +32,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			array[i] = elementConverter.Read(ref reader, context)!;
 		}
 
-		return array;
+		value = array;
 	}
 
 	/// <inheritdoc/>

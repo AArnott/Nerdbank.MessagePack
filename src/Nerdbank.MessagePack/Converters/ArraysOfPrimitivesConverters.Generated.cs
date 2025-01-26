@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #nullable enable
@@ -186,7 +186,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<Int32, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int32>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override Int32 Read(ref MessagePackReader reader) => reader.ReadInt32();
+		protected override Int32 Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadInt32();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Int32 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
@@ -212,7 +212,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<Int64, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int64>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override Int64 Read(ref MessagePackReader reader) => reader.ReadInt64();
+		protected override Int64 Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadInt64();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Int64 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
@@ -238,7 +238,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<UInt16, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt16>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override UInt16 Read(ref MessagePackReader reader) => reader.ReadUInt16();
+		protected override UInt16 Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadUInt16();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, UInt16 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
@@ -264,7 +264,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<UInt32, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt32>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override UInt32 Read(ref MessagePackReader reader) => reader.ReadUInt32();
+		protected override UInt32 Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadUInt32();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, UInt32 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
@@ -290,7 +290,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<UInt64, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt64>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override UInt64 Read(ref MessagePackReader reader) => reader.ReadUInt64();
+		protected override UInt64 Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadUInt64();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, UInt64 value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
@@ -316,7 +316,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<Single, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Single>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override Single Read(ref MessagePackReader reader) => reader.ReadSingle();
+		protected override Single Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadSingle();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Single value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
@@ -342,7 +342,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<Double, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Double>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override Double Read(ref MessagePackReader reader) => reader.ReadDouble();
+		protected override Double Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadDouble();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Double value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
@@ -368,7 +368,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<Boolean, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Boolean>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override Boolean Read(ref MessagePackReader reader) => reader.ReadBoolean();
+		protected override Boolean Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value) => reader.ReadBoolean();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, Boolean value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);

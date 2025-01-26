@@ -32,11 +32,12 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 	public override bool PreferAsyncSerialization { get; }
 
 	/// <inheritdoc/>
-	public override TBase? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TBase? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		int count = reader.ReadArrayHeader();
@@ -48,7 +49,8 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		// The alias for the base type itself is simply nil.
 		if (reader.TryReadNil())
 		{
-			return this.baseConverter.Read(ref reader, context);
+			this.baseConverter.Read(ref reader, context, ref value);
+			return;
 		}
 
 		IMessagePackConverter? converter;
@@ -69,7 +71,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			}
 		}
 
-		return (TBase?)converter.Read(ref reader, context);
+		converter.Read(ref reader, context, ref value);
 	}
 
 #pragma warning disable NBMsgPack031 // Exactly one structure -- it can't see internal IMessagePackConverter.Write calls
@@ -127,7 +129,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		}
 
 		if (count != 2)
-		{
+			{
 			throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
 		}
 
