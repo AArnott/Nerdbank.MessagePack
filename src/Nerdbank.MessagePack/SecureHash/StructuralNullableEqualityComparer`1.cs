@@ -15,7 +15,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// </summary>
 /// <typeparam name="T">The value type.</typeparam>
 /// <param name="inner">The inner equality comparer for the non-nullable value type.</param>
-internal class ByValueNullableEqualityComparer<T>(IEqualityComparer<T> inner) : IEqualityComparer<T?>
+internal class StructuralNullableEqualityComparer<T>(IEqualityComparer<T> inner) : IEqualityComparer<T?>
 	where T : struct
 {
 	/// <inheritdoc/>

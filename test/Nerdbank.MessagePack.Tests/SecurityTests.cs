@@ -127,7 +127,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		public HashSet<string> HashSet { get; }
 
 		public bool Equals(HashCollisionResistance? other) =>
-			ByValueEquality.Equal(this.Dictionary, other?.Dictionary) &&
-			ByValueEquality.Equal(this.HashSet, other?.HashSet);
+			StructuralEquality.Equal(this.Dictionary, other?.Dictionary) &&
+			StructuralEquality.Equal(this.HashSet, other?.HashSet);
 	}
 }

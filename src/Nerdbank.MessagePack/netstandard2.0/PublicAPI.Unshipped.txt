@@ -44,7 +44,6 @@ const Nerdbank.MessagePack.MessagePackCode.UInt32 = 206 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt64 = 207 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt8 = 204 -> byte
 const Nerdbank.MessagePack.ReservedMessagePackExtensionTypeCode.DateTime = -1 -> sbyte
-Nerdbank.MessagePack.ByValueEqualityComparer
 Nerdbank.MessagePack.DecodeResultExtensions
 Nerdbank.MessagePack.Extension
 Nerdbank.MessagePack.Extension.Data.get -> System.Buffers.ReadOnlySequence<byte>
@@ -308,6 +307,7 @@ Nerdbank.MessagePack.SerializationContext.this[object! key].set -> void
 Nerdbank.MessagePack.SerializationContext.TypeShapeProvider.get -> PolyType.ITypeShapeProvider?
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.get -> int
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.init -> void
+Nerdbank.MessagePack.StructuralEqualityComparer
 override Nerdbank.MessagePack.Extension.GetHashCode() -> int
 override Nerdbank.MessagePack.ExtensionHeader.GetHashCode() -> int
 override Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(object? obj) -> bool
@@ -319,10 +319,6 @@ override Nerdbank.MessagePack.MessagePackSerializer.ToString() -> string!
 override Nerdbank.MessagePack.MessagePackString.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.MessagePackString.GetHashCode() -> int
 override Nerdbank.MessagePack.SerializationContext.GetHashCode() -> int
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetDefault<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
-static Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.DecodeResultExtensions.NeedsMoreBytes(this Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult result) -> bool
 static Nerdbank.MessagePack.Extension.operator !=(Nerdbank.MessagePack.Extension left, Nerdbank.MessagePack.Extension right) -> bool
 static Nerdbank.MessagePack.Extension.operator ==(Nerdbank.MessagePack.Extension left, Nerdbank.MessagePack.Extension right) -> bool
@@ -402,6 +398,10 @@ static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePac
 static Nerdbank.MessagePack.RawMessagePack.implicit operator System.Buffers.ReadOnlySequence<byte>(Nerdbank.MessagePack.RawMessagePack msgpack) -> System.Buffers.ReadOnlySequence<byte>
 static Nerdbank.MessagePack.SerializationContext.operator !=(Nerdbank.MessagePack.SerializationContext left, Nerdbank.MessagePack.SerializationContext right) -> bool
 static Nerdbank.MessagePack.SerializationContext.operator ==(Nerdbank.MessagePack.SerializationContext left, Nerdbank.MessagePack.SerializationContext right) -> bool
+static Nerdbank.MessagePack.StructuralEqualityComparer.GetDefault<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.StructuralEqualityComparer.GetDefault<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
 static readonly Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Default -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 virtual Nerdbank.MessagePack.KnownSubTypeAttribute.Shape.get -> PolyType.Abstractions.ITypeShape?
 virtual Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.<Clone>$() -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!

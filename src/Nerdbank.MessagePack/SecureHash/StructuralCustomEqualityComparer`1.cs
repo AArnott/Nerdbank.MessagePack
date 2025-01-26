@@ -14,12 +14,12 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// An implementation of <see cref="IEqualityComparer{T}"/> that delegates to <see cref="IDeepSecureEqualityComparer{T}"/> on an object.
 /// </summary>
 /// <typeparam name="T">The self-implementing type to be compared.</typeparam>
-internal class ByValueCustomEqualityComparer<T> : IEqualityComparer<T>
+internal class StructuralCustomEqualityComparer<T> : IEqualityComparer<T>
 {
 	/// <summary>
 	/// The singleton that may be used for any type that implements <see cref="IDeepSecureEqualityComparer{T}"/>.
 	/// </summary>
-	internal static readonly ByValueCustomEqualityComparer<T> Default = new();
+	internal static readonly StructuralCustomEqualityComparer<T> Default = new();
 
 	/// <inheritdoc/>
 	public bool Equals(T? x, T? y)

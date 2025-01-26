@@ -17,7 +17,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// <typeparam name="TEnumerable">The type of the enumerable. Must be assignable to <see cref="IReadOnlyList{T}" />.</typeparam>
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
 /// <param name="equalityComparer">The equality comparer for individual elements.</param>
-internal class ByValueIReadOnlyListEqualityComparer<TEnumerable, TElement>(IEqualityComparer<TElement> equalityComparer) : IEqualityComparer<TEnumerable>
+internal class StructuralIReadOnlyListEqualityComparer<TEnumerable, TElement>(IEqualityComparer<TElement> equalityComparer) : IEqualityComparer<TEnumerable>
 {
 	/// <inheritdoc/>
 	public bool Equals(TEnumerable? x, TEnumerable? y)

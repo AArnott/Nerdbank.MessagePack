@@ -94,7 +94,7 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	{
 		public Poco[]? Pocos => pocos;
 
-		public bool Equals(ArrayOfPocos? other) => other is not null && ByValueEquality.Equal(this.Pocos, other.Pocos);
+		public bool Equals(ArrayOfPocos? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
 	}
 
 	[GenerateShape]
@@ -102,7 +102,7 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	{
 		public int[]? Values => values;
 
-		public bool Equals(ArrayOfPrimitives? other) => other is not null && ByValueEquality.Equal(this.Values, other.Values);
+		public bool Equals(ArrayOfPrimitives? other) => other is not null && StructuralEquality.Equal(this.Values, other.Values);
 	}
 
 	[GenerateShape]

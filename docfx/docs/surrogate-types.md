@@ -4,7 +4,7 @@ While using the @PolyType.GenerateShapeAttribute is by far the simplest way to m
 In such cases, you can define a surrogate type that _is_ serializable and a marshaler that can convert between the two types.
 
 Surrogate types are an easier way to make an unserializable type serializable than writing [custom converters](custom-converters.md).
-Surrogate types can also effectively assist with the [by value equality](byvalue-equality.md) feature for types that may not be directly comparable.
+Surrogate types can also effectively assist with the [structural equality](structural-equality.md) feature for types that may not be directly comparable.
 
 Suppose you have the following type, which has fields that are not directly serializable.
 This could be because the fields are of a type that cannot be directly serialized.

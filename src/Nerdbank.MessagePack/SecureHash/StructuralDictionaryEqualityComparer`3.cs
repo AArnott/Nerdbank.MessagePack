@@ -19,7 +19,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// <param name="getDictionary">A function that can get a meaningful dictionary out of a <typeparamref name="TDictionary"/>.</param>
 /// <param name="keyEqualityComparer">The equality comparer to use for the key.</param>
 /// <param name="valueEqualityComparer">The equality comparer to use for the value.</param>
-internal class ByValueDictionaryEqualityComparer<TDictionary, TKey, TValue>(
+internal class StructuralDictionaryEqualityComparer<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getDictionary,
 	IEqualityComparer<TKey> keyEqualityComparer,
 	IEqualityComparer<TValue> valueEqualityComparer) : IEqualityComparer<TDictionary>

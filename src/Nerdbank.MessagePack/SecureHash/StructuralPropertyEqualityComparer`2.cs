@@ -17,7 +17,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// <typeparam name="TPropertyType">The type of the property itself.</typeparam>
 /// <param name="getter">The function that can retrieve the value of the property from an instance of <typeparamref name="TDeclaringType"/>.</param>
 /// <param name="equalityComparer">The equality comparer to use for the value of the property.</param>
-internal class ByValuePropertyEqualityComparer<TDeclaringType, TPropertyType>(
+internal class StructuralPropertyEqualityComparer<TDeclaringType, TPropertyType>(
 	Getter<TDeclaringType, TPropertyType> getter,
 	IEqualityComparer<TPropertyType> equalityComparer) : IEqualityComparer<TDeclaringType>
 {
