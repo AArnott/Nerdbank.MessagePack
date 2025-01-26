@@ -18,7 +18,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
 /// <param name="equalityComparer">The equality comparer for individual elements.</param>
 /// <param name="getEnumerable">The function that gets the enumerable of the collection.</param>
-internal class ByValueEnumerableEqualityComparer<TEnumerable, TElement>(
+internal class StructuralEnumerableEqualityComparer<TEnumerable, TElement>(
 	IEqualityComparer<TElement> equalityComparer,
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable) : IEqualityComparer<TEnumerable>
 {

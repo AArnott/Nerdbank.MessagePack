@@ -20,7 +20,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// While hashing, 8 bytes of stack space will be allocated for each of these.
 /// If this is an empty array, equality checking will always return <see langword="false" />.
 /// </param>
-internal class ByValueAggregatingEqualityComparer<T>(ImmutableArray<IEqualityComparer<T>> components) : IEqualityComparer<T>
+internal class StructuralAggregatingEqualityComparer<T>(ImmutableArray<IEqualityComparer<T>> components) : IEqualityComparer<T>
 {
 	/// <summary>
 	/// Gets a value indicating whether no components were given.

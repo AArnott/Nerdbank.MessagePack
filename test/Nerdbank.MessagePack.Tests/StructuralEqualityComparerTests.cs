@@ -10,7 +10,7 @@ using System.Numerics;
 using PolyType.Tests;
 using Xunit.Sdk;
 
-public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper logger)
+public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper logger)
 {
 	internal enum FruitKind
 	{
@@ -168,7 +168,7 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		}
 	}
 
-	public class DefaultByValue(ITestOutputHelper logger) : ByValueEqualityComparerTests(logger)
+	public class DefaultStructural(ITestOutputHelper logger) : StructuralEqualityComparerTests(logger)
 	{
 		[Fact]
 		public override void CustomHash()
@@ -178,10 +178,10 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		}
 
 		protected override IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape)
-			=> ByValueEqualityComparer.GetDefault(shape);
+			=> StructuralEqualityComparer.GetDefault(shape);
 	}
 
-	public class HashCollisionResistant(ITestOutputHelper logger) : ByValueEqualityComparerTests(logger)
+	public class HashCollisionResistant(ITestOutputHelper logger) : StructuralEqualityComparerTests(logger)
 	{
 		[Fact]
 		public override void CustomHash()
@@ -191,7 +191,7 @@ public abstract partial class ByValueEqualityComparerTests(ITestOutputHelper log
 		}
 
 		protected override IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape)
-			=> ByValueEqualityComparer.GetHashCollisionResistant(shape);
+			=> StructuralEqualityComparer.GetHashCollisionResistant(shape);
 	}
 
 	[GenerateShape<bool>]

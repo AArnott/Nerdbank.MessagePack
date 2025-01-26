@@ -343,7 +343,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		public Dictionary<string, string> Dictionary { get; } = new();
 
 		public bool Equals(ClassWithReadOnlyCollectionProperties? other)
-			=> ByValueEquality.Equal(this.List, other?.List) && ByValueEquality.Equal(this.Dictionary, other?.Dictionary);
+			=> StructuralEquality.Equal(this.List, other?.List) && StructuralEquality.Equal(this.Dictionary, other?.Dictionary);
 	}
 
 	[GenerateShape]
@@ -418,7 +418,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		public Dictionary<string, int>? StringInt { get; set; }
 
-		public bool Equals(ClassWithDictionary? other) => other is not null && ByValueEquality.Equal(this.StringInt, other.StringInt);
+		public bool Equals(ClassWithDictionary? other) => other is not null && StructuralEquality.Equal(this.StringInt, other.StringInt);
 	}
 
 	[GenerateShape]
@@ -426,7 +426,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		public ImmutableDictionary<string, int>? StringInt { get; set; }
 
-		public bool Equals(ClassWithImmutableDictionary? other) => other is not null && ByValueEquality.Equal(this.StringInt, other.StringInt);
+		public bool Equals(ClassWithImmutableDictionary? other) => other is not null && StructuralEquality.Equal(this.StringInt, other.StringInt);
 	}
 
 	[GenerateShape]
@@ -434,7 +434,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		public int[]? IntArray { get; set; }
 
-		public bool Equals(ClassWithArray? other) => other is not null && ByValueEquality.Equal(this.IntArray, other.IntArray);
+		public bool Equals(ClassWithArray? other) => other is not null && StructuralEquality.Equal(this.IntArray, other.IntArray);
 	}
 
 	[GenerateShape]
@@ -442,7 +442,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		public IEnumerable<int>? IntEnum { get; set; }
 
-		public bool Equals(ClassWithEnumerable? other) => other is not null && ByValueEquality.Equal(this.IntEnum, other.IntEnum);
+		public bool Equals(ClassWithEnumerable? other) => other is not null && StructuralEquality.Equal(this.IntEnum, other.IntEnum);
 	}
 
 	[GenerateShape]
@@ -455,7 +455,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 
 		public int[,,]? Array3D { get; set; }
 
-		public bool Equals(HasMultiDimensionalArray? other) => other is not null && ByValueEquality.Equal<int>(this.Array2D, other.Array2D) && ByValueEquality.Equal<int>(this.Array3D, other.Array3D);
+		public bool Equals(HasMultiDimensionalArray? other) => other is not null && StructuralEquality.Equal<int>(this.Array2D, other.Array2D) && StructuralEquality.Equal<int>(this.Array3D, other.Array3D);
 	}
 
 	public record UnannotatedPoco

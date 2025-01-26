@@ -56,7 +56,7 @@ Here is an example of a defense against hash collisions:
 Note how the collection properties do _not_ define a property setter.
 This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.
 
-In this example, we use @Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
+In this example, we use @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
 This implementation uses the SIP hash algorithm, which is known for its high performance and collision resistance.
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
-Please review the documentation for @Nerdbank.MessagePack.ByValueEqualityComparer.GetHashCollisionResistant* for more information.
+Please review the documentation for @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* for more information.

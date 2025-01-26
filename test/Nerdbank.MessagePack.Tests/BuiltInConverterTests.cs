@@ -52,7 +52,7 @@ public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePa
 	{
 		public ImmutableDictionary<string, int> Map { get; set; } = ImmutableDictionary<string, int>.Empty;
 
-		public bool Equals(HasImmutableDictionary? other) => ByValueEquality.Equal(this.Map, other?.Map);
+		public bool Equals(HasImmutableDictionary? other) => StructuralEquality.Equal(this.Map, other?.Map);
 	}
 
 #if NET
@@ -72,7 +72,7 @@ public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePa
 	{
 		public OrderedDictionary<char, int> Map { get; set; } = new();
 
-		public bool Equals(HasOrderedDictionary? other) => ByValueEquality.Equal((IReadOnlyList<KeyValuePair<char, int>>)this.Map, other?.Map);
+		public bool Equals(HasOrderedDictionary? other) => StructuralEquality.Equal((IReadOnlyList<KeyValuePair<char, int>>)this.Map, other?.Map);
 	}
 
 #endif
