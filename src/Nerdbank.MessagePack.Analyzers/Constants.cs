@@ -18,4 +18,10 @@ public static class Constants
 		public const string IndexProperty = "Index";
 		public static readonly ImmutableArray<string> Namespace = ["Nerdbank", "MessagePack"];
 	}
+
+	public static class PreferDotNetAlternativeApiAttribute
+	{
+		public const string TypeName = "PreferDotNetAlternativeApiAttribute";
+		public static readonly ImmutableArray<string> Namespace = ["Nerdbank", "MessagePack"];
+	}
 }
