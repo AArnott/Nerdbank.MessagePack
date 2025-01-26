@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable NBMsgPack031 // NotExactlyOneStructure -- we're doing advanced stuff.
@@ -19,15 +19,16 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 	public override bool PreferAsyncSerialization => false; // inner.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, ref T? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		Assumes.NotNull(context.ReferenceEqualityTracker);
-		return context.ReferenceEqualityTracker.ReadObject(ref reader, inner, context);
+		value = context.ReferenceEqualityTracker.ReadObject(ref reader, inner, context);
 	}
 
 	/// <inheritdoc/>

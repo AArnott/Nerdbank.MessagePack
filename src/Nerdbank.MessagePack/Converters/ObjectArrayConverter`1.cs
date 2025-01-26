@@ -19,11 +19,12 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, ref T? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		if (constructor is null)
@@ -32,7 +33,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 
 		context.DepthStep();
-		T value = constructor();
+		value = constructor();
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.

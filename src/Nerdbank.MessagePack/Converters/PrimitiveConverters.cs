@@ -756,7 +756,8 @@ internal class RuneConverter : MessagePackConverter<Rune>
 internal class CharConverter : MessagePackConverter<char>
 {
 	/// <inheritdoc/>
-	public override char Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadChar();
+	public override void Read(ref MessagePackReader reader, ref char value, SerializationContext context)
+		=> value = (char)reader.ReadInt32();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in char value, SerializationContext context) => writer.Write(value);
@@ -915,14 +916,15 @@ internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : 
 	}
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, ref T? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return null;
+			value = default;
+			return;
 		}
 
-		return elementConverter.Read(ref reader, context);
+		value = elementConverter.Read(ref reader, context);
 	}
 
 	/// <inheritdoc/>
