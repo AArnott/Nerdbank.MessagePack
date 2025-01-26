@@ -120,6 +120,9 @@ public class KnownSubTypeAttribute<TSubType> : KnownSubTypeAttribute<TSubType, T
 /// Each type referenced by this attribute must have <see cref="GenerateShapeAttribute"/> applied to it or a witness class.
 /// </para>
 /// </remarks>
+#if NET
+[PreferDotNetAlternativeApi("Use the generic version of this attribute instead.")]
+#endif
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
 public class KnownSubTypeAttribute : Attribute
 {
@@ -133,9 +136,6 @@ public class KnownSubTypeAttribute : Attribute
 	/// </summary>
 	/// <param name="subType">The derived-type that the <paramref name="alias"/> represents.</param>
 	/// <param name="alias">A value that identifies the subtype in the serialized data. Must be unique among all the attributes applied to the same class.</param>
-#if NET
-	[Obsolete("Use the generic version of this attribute instead.")]
-#endif
 	public KnownSubTypeAttribute(Type subType, int alias)
 	{
 		this.Alias = alias;
@@ -143,9 +143,6 @@ public class KnownSubTypeAttribute : Attribute
 	}
 
 	/// <inheritdoc cref="KnownSubTypeAttribute(Type, int)" />
-#if NET
-	[Obsolete("Use the generic version of this attribute instead.")]
-#endif
 	public KnownSubTypeAttribute(Type subType, string alias)
 	{
 		this.Alias = alias;
@@ -161,9 +158,6 @@ public class KnownSubTypeAttribute : Attribute
 	/// Consider cross-platform compatibility when using this constructor, particularly when the serialized form may be exchanged with non-.NET programs
 	/// where the <see cref="Type.FullName"/> has no meaning.
 	/// </remarks>
-#if NET
-	[Obsolete("Use the generic version of this attribute instead.")]
-#endif
 	public KnownSubTypeAttribute(Type subType)
 	{
 		Requires.NotNull(subType);
