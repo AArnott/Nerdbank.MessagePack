@@ -71,7 +71,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			}
 		}
 
-		converter.Read(ref reader, context, ref value);
+		value = (TBase?)converter.Read(ref reader, context);
 	}
 
 #pragma warning disable NBMsgPack031 // Exactly one structure -- it can't see internal IMessagePackConverter.Write calls

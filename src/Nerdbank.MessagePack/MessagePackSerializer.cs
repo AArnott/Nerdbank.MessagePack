@@ -210,7 +210,9 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
+		T? value = default;
+		this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value, ref value);
+		return value;
 	}
 
 	/// <summary>
@@ -228,7 +230,9 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
+		T? value = default;
+		this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value, ref value);
+		return value;
 	}
 
 	/// <summary>
@@ -501,7 +505,8 @@ public partial record MessagePackSerializer
 			if (readResult.IsCompleted)
 			{
 				MessagePackReader msgpackReader = new(readResult.Buffer);
-				T? result = converter.Read(ref msgpackReader, context.Value);
+				T? result = default;
+				converter.Read(ref msgpackReader, context.Value, ref result);
 				reader.AdvanceTo(msgpackReader.Position);
 				return result;
 			}

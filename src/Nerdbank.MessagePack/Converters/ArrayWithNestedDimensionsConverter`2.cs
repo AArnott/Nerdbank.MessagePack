@@ -140,7 +140,9 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 		{
 			for (int i = 0; i < outerDimension; i++)
 			{
-				elements[i] = elementConverter.Read(ref reader, context)!;
+				TElement element = default;
+				elementConverter.Read(ref reader, context, ref element);
+				elements[i] = element;
 			}
 		}
 	}

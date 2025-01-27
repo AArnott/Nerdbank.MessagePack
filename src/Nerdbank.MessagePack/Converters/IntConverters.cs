@@ -14,7 +14,7 @@ namespace Nerdbank.MessagePack;
 internal class SByteConverter : MessagePackConverter<SByte>
 {
 	/// <inheritdoc/>
-	public override SByte Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadSByte();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref SByte value) => value = reader.ReadSByte();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in SByte value, SerializationContext context) => writer.Write(value);
@@ -27,7 +27,7 @@ internal class SByteConverter : MessagePackConverter<SByte>
 internal class Int16Converter : MessagePackConverter<Int16>
 {
 	/// <inheritdoc/>
-	public override Int16 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt16();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Int16 value) => value = reader.ReadInt16();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Int16 value, SerializationContext context) => writer.Write(value);
@@ -40,7 +40,7 @@ internal class Int16Converter : MessagePackConverter<Int16>
 internal class Int32Converter : MessagePackConverter<Int32>
 {
 	/// <inheritdoc/>
-	public override Int32 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt32();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Int32 value) => value = reader.ReadInt32();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Int32 value, SerializationContext context) => writer.Write(value);
@@ -53,7 +53,7 @@ internal class Int32Converter : MessagePackConverter<Int32>
 internal class Int64Converter : MessagePackConverter<Int64>
 {
 	/// <inheritdoc/>
-	public override Int64 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt64();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Int64 value) => value = reader.ReadInt64();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Int64 value, SerializationContext context) => writer.Write(value);
@@ -66,7 +66,7 @@ internal class Int64Converter : MessagePackConverter<Int64>
 internal class ByteConverter : MessagePackConverter<Byte>
 {
 	/// <inheritdoc/>
-	public override Byte Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadByte();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Byte value) => value = reader.ReadByte();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Byte value, SerializationContext context) => writer.Write(value);
@@ -79,7 +79,7 @@ internal class ByteConverter : MessagePackConverter<Byte>
 internal class UInt16Converter : MessagePackConverter<UInt16>
 {
 	/// <inheritdoc/>
-	public override UInt16 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt16();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref UInt16 value) => value = reader.ReadUInt16();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in UInt16 value, SerializationContext context) => writer.Write(value);
@@ -92,7 +92,7 @@ internal class UInt16Converter : MessagePackConverter<UInt16>
 internal class UInt32Converter : MessagePackConverter<UInt32>
 {
 	/// <inheritdoc/>
-	public override UInt32 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt32();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref UInt32 value) => value = reader.ReadUInt32();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in UInt32 value, SerializationContext context) => writer.Write(value);
@@ -105,7 +105,7 @@ internal class UInt32Converter : MessagePackConverter<UInt32>
 internal class UInt64Converter : MessagePackConverter<UInt64>
 {
 	/// <inheritdoc/>
-	public override UInt64 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadUInt64();
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref UInt64 value) => value = reader.ReadUInt64();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in UInt64 value, SerializationContext context) => writer.Write(value);

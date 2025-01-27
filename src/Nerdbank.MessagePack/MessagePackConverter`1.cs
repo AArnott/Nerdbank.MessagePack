@@ -108,7 +108,8 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 
 		await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 		MessagePackReader syncReader = reader.CreateBufferedReader();
-		T? result = this.Read(ref syncReader, context);
+		T? result = default;
+		this.Read(ref syncReader, context, ref result);
 		reader.ReturnReader(ref syncReader);
 		return result;
 	}
@@ -150,7 +151,9 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 	/// <inheritdoc/>
 	object? IMessagePackConverter.Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		return this.Read(ref reader, context);
+		T value = default;
+		this.Read(ref reader, context, ref value);
+		return value;
 	}
 
 	/// <inheritdoc/>

@@ -29,7 +29,9 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		TElement[] array = new TElement[count];
 		for (int i = 0; i < count; i++)
 		{
-			array[i] = elementConverter.Read(ref reader, context)!;
+			TElement element = default;
+			elementConverter.Read(ref reader, context, ref element);
+			array[i] = element;
 		}
 
 		value = array;
@@ -138,7 +140,9 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			TElement[] array = new TElement[count];
 			for (int i = 0; i < count; i++)
 			{
-				array[i] = elementConverter.Read(ref syncReader, context)!;
+				TElement element = default;
+				elementConverter.Read(ref syncReader, context, ref element);
+				array[i] = element;
 			}
 
 			reader.ReturnReader(ref syncReader);

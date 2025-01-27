@@ -67,7 +67,7 @@ internal class StringConverter : MessagePackConverter<string>
 			{
 				// We'll always require at least a reasonable numbe of bytes to decode at once,
 				// to keep overhead to a minimum.
-				uint desiredBytesThisRound = Math.min(remainingBytesToDecode, MinChunkSize);
+				uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
 				if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
 				{
 					// We don't have enough bytes to decode this round. Fetch more.
@@ -838,7 +838,8 @@ internal class MemoryOfByteConverter : MessagePackConverter<Memory<byte>>
 	/// <inheritdoc/>
 	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Memory<byte> value)
 	{
-		byte[]? array = ByteArrayConverter.Instance.Read(ref reader, context);
+		byte[]? array = null;
+		ByteArrayConverter.Instance.Read(ref reader, context, ref array);
 		value = array;
 	}
 
@@ -858,7 +859,8 @@ internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemo
 	/// <inheritdoc/>
 	public override void Read(ref MessagePackReader reader, SerializationContext context, ref ReadOnlyMemory<byte> value)
 	{
-		byte[]? array = ByteArrayConverter.Instance.Read(ref reader, context);
+		byte[]? array = null;
+		ByteArrayConverter.Instance.Read(ref reader, context, ref array);
 		value = array;
 	}
 

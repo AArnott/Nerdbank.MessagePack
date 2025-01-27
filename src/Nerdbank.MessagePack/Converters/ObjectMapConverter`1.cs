@@ -134,11 +134,12 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	}
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		if (constructor is null || deserializable is null)
@@ -147,7 +148,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		context.DepthStep();
-		T value = constructor();
+		value = constructor();
 
 		if (deserializable.Value.Readers is not null)
 		{
@@ -175,8 +176,6 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		{
 			callbacks.OnAfterDeserialize();
 		}
-
-		return value;
 	}
 
 	/// <inheritdoc/>

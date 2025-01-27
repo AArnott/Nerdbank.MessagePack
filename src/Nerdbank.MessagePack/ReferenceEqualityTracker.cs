@@ -88,7 +88,13 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		// Reserve our position in the array.
 		int reservation = this.deserializedObjects.Count;
 		this.deserializedObjects.Add(null);
-		T value = inner.Read(ref reader, context) ?? throw new MessagePackSerializationException("Converter returned null for non-null value.");
+		T? value = default;
+		inner.Read(ref reader, context, ref value);
+		if (value is null)
+		{
+			throw new MessagePackSerializationException("Converter returned null for non-null value.");
+		}
+
 		this.deserializedObjects[reservation] = value;
 		return value;
 	}

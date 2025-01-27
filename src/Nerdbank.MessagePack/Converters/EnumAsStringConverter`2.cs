@@ -132,7 +132,9 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 		}
 		else
 		{
-			this.primitiveConverter.Read(ref reader, context, ref value);
+			TUnderlyingType underlying = default;
+			this.primitiveConverter.Read(ref reader, context, ref underlying);
+			value = (TEnum)(object)underlying;
 		}
 	}
 

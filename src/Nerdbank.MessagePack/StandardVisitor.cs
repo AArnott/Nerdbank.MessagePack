@@ -224,7 +224,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (propertyShape.HasSetter)
 		{
 			Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) => setter(ref container, converter.Read(ref reader, context)!);
+			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+			{
+				TPropertyType? value = default;
+				converter.Read(ref reader, context, ref value);
+				setter(ref container, value);
+			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
 				setter(ref container, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
@@ -370,7 +375,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return new DeserializableProperty<TArgumentState>(
 			parameterShape.Name,
 			StringEncoding.UTF8.GetBytes(parameterShape.Name),
-			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Read(ref reader, context)!),
+			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+			{
+				TParameterType? value = default;
+				converter.Read(ref reader, context, ref value);
+				setter(ref state, value);
+			},
 			async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
 				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);

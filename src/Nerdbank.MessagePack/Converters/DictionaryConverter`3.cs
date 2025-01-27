@@ -86,8 +86,10 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <param name="value">Receives the value.</param>
 	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey key, out TValue value)
 	{
-		key = keyConverter.Read(ref reader, context)!;
-		value = valueConverter.Read(ref reader, context)!;
+		key = default;
+		value = default;
+		keyConverter.Read(ref reader, context, ref key);
+		valueConverter.Read(ref reader, context, ref value);
 	}
 
 	/// <summary>
@@ -243,8 +245,8 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-				entries[i] = new(key, value);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue element);
+				entries[i] = new(key, element);
 			}
 
 			value = ctor(entries.AsSpan(0, count));
@@ -287,8 +289,8 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-				entries[i] = new(key, value);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue element);
+				entries[i] = new(key, element);
 			}
 
 			value = ctor(entries.Take(count));

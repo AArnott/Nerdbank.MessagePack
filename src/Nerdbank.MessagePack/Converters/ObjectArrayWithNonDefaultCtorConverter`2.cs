@@ -24,11 +24,12 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	bool callShouldSerialize) : ObjectArrayConverter<TDeclaringType>(properties, null, callShouldSerialize)
 {
 	/// <inheritdoc/>
-	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDeclaringType? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		context.DepthStep();
@@ -67,14 +68,12 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			}
 		}
 
-		TDeclaringType value = ctor(ref argState);
+		value = ctor(ref argState);
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}
-
-		return value;
 	}
 
 	/// <inheritdoc/>

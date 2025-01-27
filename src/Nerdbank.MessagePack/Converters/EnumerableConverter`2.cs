@@ -79,7 +79,12 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// <param name="reader">The reader.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
-	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Read(ref reader, context)!;
+	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context)
+	{
+		TElement? element = default;
+		elementConverter.Read(ref reader, context, ref element);
+		return element;
+	}
 
 	/// <summary>
 	/// Reads one element from the reader.
