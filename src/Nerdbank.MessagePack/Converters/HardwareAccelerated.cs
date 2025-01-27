@@ -733,7 +733,7 @@ internal static class HardwareAccelerated
 	{
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
-		public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
+		public override void Read(ref MessagePackReader reader, ref TEnumerable? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{
@@ -865,7 +865,7 @@ internal static class HardwareAccelerated
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
 		/// <inheritdoc/>
-		public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
+		public override void Read(ref MessagePackReader reader, ref TEnumerable? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{

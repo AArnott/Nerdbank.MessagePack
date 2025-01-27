@@ -24,7 +24,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	bool callShouldSerialize) : ObjectArrayConverter<TDeclaringType>(properties, null, callShouldSerialize)
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDeclaringType? value)
+	public override void Read(ref MessagePackReader reader, ref TDeclaringType? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

@@ -227,7 +227,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
 			{
 				TPropertyType? value = default;
-				converter.Read(ref reader, context, ref value);
+				converter.Read(ref reader, ref value, context);
 				setter(ref container, value);
 			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
@@ -378,7 +378,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
 			{
 				TParameterType? value = default;
-				converter.Read(ref reader, context, ref value);
+				converter.Read(ref reader, ref value, context);
 				setter(ref state, value);
 			},
 			async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>

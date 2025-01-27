@@ -82,7 +82,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		{
 			public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				string? value = context.GetConverter<string>(ShapeProvider).Read(ref reader, context);
+				string? value = context.GetConverter<string>(ShapeProvider).Read(ref reader, context: context);
 				return new CustomType { InternalProperty = value };
 			}
 

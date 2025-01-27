@@ -97,7 +97,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 	}
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnum value)
+	public override void Read(ref MessagePackReader reader, ref TEnum value, SerializationContext context)
 	{
 		if (reader.NextMessagePackType == MessagePackType.String)
 		{
@@ -133,7 +133,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 		else
 		{
 			TUnderlyingType underlying = default;
-			this.primitiveConverter.Read(ref reader, context, ref underlying);
+			this.primitiveConverter.Read(ref reader, ref underlying, context);
 			value = (TEnum)(object)underlying;
 		}
 	}

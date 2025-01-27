@@ -15,10 +15,10 @@ internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConvert
 	where TEnum : struct, Enum
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnum value)
+	public override void Read(ref MessagePackReader reader, ref TEnum value, SerializationContext context)
 	{
 		TUnderlyingType v = default;
-		primitiveConverter.Read(ref reader, context, ref v);
+		primitiveConverter.Read(ref reader, ref v, context);
 		value = (TEnum)(object)v;
 	}
 

@@ -89,7 +89,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		int reservation = this.deserializedObjects.Count;
 		this.deserializedObjects.Add(null);
 		T? value = default;
-		inner.Read(ref reader, context, ref value);
+		inner.Read(ref reader, ref value, context);
 		if (value is null)
 		{
 			throw new MessagePackSerializationException("Converter returned null for non-null value.");

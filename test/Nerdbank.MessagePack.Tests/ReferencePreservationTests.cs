@@ -285,7 +285,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				throw new MessagePackSerializationException("Expected an array of length 1.");
 			}
 
-			string? message = context.GetConverter<string, CustomTypeConverter>().Read(ref reader, context);
+			string? message = context.GetConverter<string, CustomTypeConverter>().Read(ref reader, context: context);
 			return new CustomType { Message = message };
 		}
 
@@ -325,7 +325,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				throw new MessagePackSerializationException("Expected an array of length 1.");
 			}
 
-			string? message = context.GetConverter<string, CustomType2Converter>().Read(ref reader, context);
+			string? message = context.GetConverter<string, CustomType2Converter>().Read(ref reader, context: context);
 			return new CustomType2 { Message = message };
 		}
 

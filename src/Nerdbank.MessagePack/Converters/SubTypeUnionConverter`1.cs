@@ -32,7 +32,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 	public override bool PreferAsyncSerialization { get; }
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TBase? value)
+	public override void Read(ref MessagePackReader reader, ref TBase? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -49,7 +49,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		// The alias for the base type itself is simply nil.
 		if (reader.TryReadNil())
 		{
-			this.baseConverter.Read(ref reader, context, ref value);
+			this.baseConverter.Read(ref reader, ref value, context);
 			return;
 		}
 

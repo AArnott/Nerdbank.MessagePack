@@ -27,7 +27,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -88,8 +88,8 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	{
 		key = default;
 		value = default;
-		keyConverter.Read(ref reader, context, ref key);
-		valueConverter.Read(ref reader, context, ref value);
+		keyConverter.Read(ref reader, ref key, context);
+		valueConverter.Read(ref reader, ref value, context);
 	}
 
 	/// <summary>
@@ -129,7 +129,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -230,7 +230,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -274,7 +274,7 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
+	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

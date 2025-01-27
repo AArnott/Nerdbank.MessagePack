@@ -88,7 +88,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		}
 
 		/// <inheritdoc/>
-		public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
+		public override void Read(ref MessagePackReader reader, ref TEnumerable? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{

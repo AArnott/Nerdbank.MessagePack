@@ -49,9 +49,9 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 	/// Deserializes an instance of <typeparamref name="T"/>.
 	/// </summary>
 	/// <param name="reader">The reader to use.</param>
-	/// <param name="context">Context for the deserialization.</param>
 	/// <param name="value">The deserialized value.</param>
-	public abstract void Read(ref MessagePackReader reader, SerializationContext context, ref T? value);
+	/// <param name="context">Context for the deserialization.</param>
+	public abstract void Read(ref MessagePackReader reader, ref T? value, SerializationContext context);
 
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
@@ -109,7 +109,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 		await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 		MessagePackReader syncReader = reader.CreateBufferedReader();
 		T? result = default;
-		this.Read(ref syncReader, context, ref result);
+		this.Read(ref syncReader, ref result, context);
 		reader.ReturnReader(ref syncReader);
 		return result;
 	}
@@ -152,7 +152,7 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 	object? IMessagePackConverter.Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		T value = default;
-		this.Read(ref reader, context, ref value);
+		this.Read(ref reader, ref value, context);
 		return value;
 	}
 

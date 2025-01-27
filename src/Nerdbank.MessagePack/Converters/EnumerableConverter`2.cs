@@ -22,7 +22,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	protected bool ElementPrefersAsyncSerialization => elementConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
+	public override void Read(ref MessagePackReader reader, ref TEnumerable? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -82,7 +82,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context)
 	{
 		TElement? element = default;
-		elementConverter.Read(ref reader, context, ref element);
+		elementConverter.Read(ref reader, ref element, context);
 		return element;
 	}
 
@@ -113,7 +113,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 {
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
+	public override void Read(ref MessagePackReader reader, ref TEnumerable? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -186,7 +186,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
+	public override void Read(ref MessagePackReader reader, ref TEnumerable? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -226,7 +226,7 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
+	public override void Read(ref MessagePackReader reader, ref TEnumerable? value, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{

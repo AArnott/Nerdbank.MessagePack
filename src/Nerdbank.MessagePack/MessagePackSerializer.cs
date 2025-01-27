@@ -211,7 +211,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		T? value = default;
-		this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value, ref value);
+		this.converterCache.GetOrAddConverter(shape).Read(ref reader, ref value, context.Value);
 		return value;
 	}
 
@@ -231,7 +231,7 @@ public partial record MessagePackSerializer
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 		T? value = default;
-		this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value, ref value);
+		this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, ref value, context.Value);
 		return value;
 	}
 
@@ -506,7 +506,7 @@ public partial record MessagePackSerializer
 			{
 				MessagePackReader msgpackReader = new(readResult.Buffer);
 				T? result = default;
-				converter.Read(ref msgpackReader, context.Value, ref result);
+				converter.Read(ref msgpackReader, ref result, context.Value);
 				reader.AdvanceTo(msgpackReader.Position);
 				return result;
 			}

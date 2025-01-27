@@ -11,7 +11,7 @@ namespace Nerdbank.MessagePack.Converters;
 
 internal class SystemDrawingColorConverter : MessagePackConverter<Color>
 {
-	public override void Read(ref MessagePackReader reader, SerializationContext context, ref Color value)
+	public override void Read(ref MessagePackReader reader, ref Color value, SerializationContext context)
 		=> value = Color.FromArgb(reader.ReadInt32());
 
 	public override void Write(ref MessagePackWriter writer, in Color value, SerializationContext context)
