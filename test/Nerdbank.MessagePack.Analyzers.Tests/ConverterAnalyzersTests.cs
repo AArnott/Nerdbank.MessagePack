@@ -16,7 +16,7 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
@@ -36,20 +36,22 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context)
 				{
 					if (reader.TryReadNil())
 					{
-						return null;
+						value = null;
 					}
-
-					int count = reader.ReadArrayHeader();
-					for (int i = 0; i < count; i++)
+					else
 					{
-						reader.Skip(context);
-					}
+						int count = reader.ReadArrayHeader();
+						for (int i = 0; i < count; i++)
+						{
+							reader.Skip(context);
+						}
 
-					return new MyType();
+						value = new MyType();
+					}
 				}
 
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
@@ -84,7 +86,7 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context)
 				{
 					if (!reader.TryReadNil())
 					{
@@ -95,11 +97,11 @@ public class ConverterAnalyzersTests
 							reader.Skip(context);
 						}
 
-						return new MyType();
+						value = new MyType();
 					}
 					else
 					{
-						return null;
+						value = null;
 					}
 				}
 
@@ -153,15 +155,15 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context)
 				{
 					if (reader.TryReadNil())
 					{
-						return null;
+						value = null;
 					}
 					else
 					{
-						return new MyType
+						value = new MyType
 						{
 			#if NET
 							SomeField = context.GetConverter<SomeOtherType>().Read(ref reader, context),
@@ -220,15 +222,15 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context)
 				{
 					if (reader.TryReadNil())
 					{
-						return null;
+						value = null;
 					}
 					else
 					{
-						return new MyType
+						value = new MyType
 						{
 							SomeField = (SomeOtherType)context.GetConverter(typeof(SomeOtherType), null).Read(ref reader, context),
 						};
@@ -264,7 +266,7 @@ public class ConverterAnalyzersTests
 
 			internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
 			{
-				public override TimeSpan Read(ref MessagePackReader reader, SerializationContext context) => new TimeSpan(reader.ReadInt64());
+				public override void Read(ref MessagePackReader reader, ref TimeSpan? value, SerializationContext context) => value = new TimeSpan(reader.ReadInt64());
 
 				public override void Write(ref MessagePackWriter writer, in TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
 
@@ -286,7 +288,7 @@ public class ConverterAnalyzersTests
 
 			internal class Int16Converter : MessagePackConverter<Int16>
 			{
-				public override Int16 Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt16();
+				public override void Read(ref MessagePackReader reader, ref Int16? value, SerializationContext context) => value = reader.ReadInt16();
 
 				public override void Write(ref MessagePackWriter writer, in Int16 value, SerializationContext context) => writer.Write(value);
 
@@ -308,7 +310,7 @@ public class ConverterAnalyzersTests
 
 			internal class VersionConverter : MessagePackConverter<Version>
 			{
-				public override Version Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Version(value) : null;
+				public override void Read(ref MessagePackReader reader, ref Version? value, SerializationContext context) => value = reader.ReadString() is string str ? new Version(str) : null;
 
 				public override void Write(ref MessagePackWriter writer, in Version value, SerializationContext context) => writer.Write(value?.ToString());
 
@@ -330,7 +332,7 @@ public class ConverterAnalyzersTests
 
 			internal class VersionConverter : MessagePackConverter<Version>
 			{
-				public override Version Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Version(value) : null;
+				public override void Read(ref MessagePackReader reader, ref Version? value, SerializationContext context) => value = reader.ReadString() is string str ? new Version(str) : null;
 
 				public override void Write(ref MessagePackWriter writer, in Version value, SerializationContext context)
 				{
@@ -358,10 +360,10 @@ public class ConverterAnalyzersTests
 
 			internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement> : MessagePackConverter<TArray>
 			{
-				public override TArray Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref TArray? value, SerializationContext context)
 				{
 					reader.Skip(context);
-					return default;
+					value = default;
 				}
 
 				public override void Write(ref MessagePackWriter writer, in TArray value, SerializationContext context) => throw new NotImplementedException();
@@ -385,9 +387,9 @@ public class ConverterAnalyzersTests
 			internal class ArrayWithFlattenedDimensionsConverter : MessagePackConverter<int>
 			{
 				[My]
-				public override int Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref int? value, SerializationContext context)
 				{
-					return reader.ReadInt32();
+					value = reader.ReadInt32();
 				}
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
@@ -413,7 +415,7 @@ public class ConverterAnalyzersTests
 
 			internal class ArrayWithFlattenedDimensionsConverter(MessagePackConverter<int> primitiveConverter) : MessagePackConverter<int>
 			{
-				public override int Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref int? value, SerializationContext context)
 				{
 					if (reader.NextMessagePackType == MessagePackType.String)
 					{
@@ -423,18 +425,17 @@ public class ConverterAnalyzersTests
 						// This only works for case sensitive matches, so be prepared to fallback to string comparisons.
 						if (reader.TryReadStringSpan(out ReadOnlySpan<byte> span))
 						{
-							return span.Length;
+							value = span.Length;
 						}
 						else
 						{
 							stringValue = reader.ReadString()!;
+							value = stringValue.Length;
 						}
-
-						return stringValue.Length;
 					}
 					else
 					{
-						return primitiveConverter.Read(ref reader, context)!;
+						value = primitiveConverter.Read(ref reader, context)!;
 					}
 				}
 
@@ -458,7 +459,7 @@ public class ConverterAnalyzersTests
 
 			public abstract class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
@@ -477,7 +478,7 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
@@ -511,7 +512,7 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
 				{
 					var serializer = {|NBMsgPack030:new MessagePackSerializer()|};
@@ -541,11 +542,11 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context)
 				{
 					reader.ReadInt32();
 					{|NBMsgPack031:reader.ReadInt16()|};
-					return new MyType();
+					value = new MyType();
 				}
 
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
@@ -572,9 +573,9 @@ public class ConverterAnalyzersTests
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
-				public override MyType {|NBMsgPack031:Read|}(ref MessagePackReader reader, SerializationContext context)
+				public override void {|NBMsgPack031:Read|}(ref MessagePackReader reader, ref MyType? value, SerializationContext context)
 				{
-					return new MyType();
+					value = new MyType();
 				}
 
 				public override void {|NBMsgPack031:Write|}(ref MessagePackWriter writer, in MyType value, SerializationContext context)
@@ -605,8 +606,8 @@ public class ConverterAnalyzersTests
 
 			class CustomStringConverter : MessagePackConverter<string>
 			{
-				public override string Read(ref MessagePackReader reader, SerializationContext context)
-					=> reader.ReadString() + "R";
+				public override void Read(ref MessagePackReader reader, ref string? value, SerializationContext context)
+					=> value = reader.ReadString() + "R";
 
 				public override void Write(ref MessagePackWriter writer, in string value, SerializationContext context)
 					=> writer.Write(value + "W");
@@ -626,8 +627,8 @@ public class ConverterAnalyzersTests
 
 			class CustomStringConverter : MessagePackConverter<string>
 			{
-				public override string Read(ref MessagePackReader reader, SerializationContext context)
-					=> reader.ReadString() + {|NBMsgPack031:reader.ReadString()|};
+				public override void Read(ref MessagePackReader reader, ref string? value, SerializationContext context)
+					=> value = reader.ReadString() + {|NBMsgPack031:reader.ReadString()|};
 
 				public override void Write(ref MessagePackWriter writer, in string value, SerializationContext context)
 					=> writer.Write(value);
@@ -649,7 +650,7 @@ public class ConverterAnalyzersTests
 
 			public class {|NBMsgPack032:MyTypeConverter|} : MessagePackConverter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref MyType? value, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
@@ -671,7 +672,7 @@ public class ConverterAnalyzersTests
 
 			class {|NBMsgPack037:MyConverter|} : MessagePackConverter<int>
 			{
-				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref int? value, SerializationContext context) => throw new NotImplementedException();
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
 
@@ -702,7 +703,7 @@ public class ConverterAnalyzersTests
 			{
 				public override bool PreferAsyncSerialization => true;
 
-				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref int? value, SerializationContext context) => throw new NotImplementedException();
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
 
@@ -760,7 +761,7 @@ public class ConverterAnalyzersTests
 			{
 				public override bool PreferAsyncSerialization => true;
 
-				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref int? value, SerializationContext context) => throw new NotImplementedException();
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
 
@@ -818,7 +819,7 @@ public class ConverterAnalyzersTests
 			{
 				public override bool PreferAsyncSerialization => true;
 
-				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref int? value, SerializationContext context) => throw new NotImplementedException();
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
 
@@ -872,7 +873,7 @@ public class ConverterAnalyzersTests
 			{
 				public override bool PreferAsyncSerialization => true;
 
-				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+				public override void Read(ref MessagePackReader reader, ref int? value, SerializationContext context) => throw new NotImplementedException();
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
 

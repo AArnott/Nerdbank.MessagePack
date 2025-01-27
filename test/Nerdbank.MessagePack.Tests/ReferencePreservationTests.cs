@@ -272,11 +272,12 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[GenerateShape<string>]
 	internal partial class CustomTypeConverter : MessagePackConverter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref CustomType? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{
-				return null;
+				value = null;
+				return;
 			}
 
 			int count = reader.ReadArrayHeader();
@@ -285,8 +286,8 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				throw new MessagePackSerializationException("Expected an array of length 1.");
 			}
 
-			string? message = context.GetConverter<string, CustomTypeConverter>().Read(ref reader, context: context);
-			return new CustomType { Message = message };
+			string? message = context.GetConverter<string, CustomTypeConverter>().Read(ref reader, ref message, context);
+			value = new CustomType { Message = message };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
@@ -312,11 +313,12 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[GenerateShape<CustomType2[]>]
 	internal partial class CustomType2Converter : MessagePackConverter<CustomType2>
 	{
-		public override CustomType2? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref CustomType2? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{
-				return null;
+				value = null;
+				return;
 			}
 
 			int count = reader.ReadArrayHeader();
@@ -325,8 +327,8 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				throw new MessagePackSerializationException("Expected an array of length 1.");
 			}
 
-			string? message = context.GetConverter<string, CustomType2Converter>().Read(ref reader, context: context);
-			return new CustomType2 { Message = message };
+			string? message = context.GetConverter<string, CustomType2Converter>().Read(ref reader, ref message, context);
+			value = new CustomType2 { Message = message };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in CustomType2? value, SerializationContext context)

@@ -372,7 +372,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 
 	internal class NonDocumentingCustomConverter : MessagePackConverter<TypeWithNonDocumentingCustomConverter>
 	{
-		public override TypeWithNonDocumentingCustomConverter? Read(ref MessagePackReader reader, SerializationContext context)
+		public override TypeWithNonDocumentingCustomConverter? Read(ref MessagePackReader reader, ref TypeWithNonDocumentingCustomConverter? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{
@@ -413,7 +413,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 			};
 		}
 
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override CustomType? Read(ref MessagePackReader reader, ref CustomType? value, SerializationContext context)
 		{
 			if (reader.TryReadNil())
 			{

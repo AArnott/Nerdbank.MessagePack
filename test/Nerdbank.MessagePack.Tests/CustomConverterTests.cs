@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
@@ -80,10 +80,11 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		[GenerateShape<string>]
 		private partial class CustomTypeConverter : MessagePackConverter<CustomType>
 		{
-			public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+			public override void Read(ref MessagePackReader reader, ref CustomType? value, SerializationContext context)
 			{
-				string? value = context.GetConverter<string>(ShapeProvider).Read(ref reader, context: context);
-				return new CustomType { InternalProperty = value };
+				string? val = null;
+				context.GetConverter<string>(ShapeProvider).Read(ref reader, ref val, context);
+				value = new CustomType { InternalProperty = val };
 			}
 
 			public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
@@ -96,10 +97,10 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[GenerateShape<string>]
 	private partial class CustomTypeConverterNonGenericTypeShapeProvider : MessagePackConverter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref CustomType? value, SerializationContext context)
 		{
-			string? value = (string?)context.GetConverter(typeof(string), ShapeProvider).Read(ref reader, context);
-			return new CustomType { InternalProperty = value };
+			string? val = (string?)context.GetConverter(typeof(string), ShapeProvider).Read(ref reader, context);
+			value = new CustomType { InternalProperty = val };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
@@ -111,10 +112,10 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[GenerateShape<string>]
 	private partial class CustomTypeConverterNonGenericTypeShape : MessagePackConverter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref CustomType? value, SerializationContext context)
 		{
-			string? value = (string?)context.GetConverter(ShapeProvider.GetShape(typeof(string))!).Read(ref reader, context);
-			return new CustomType { InternalProperty = value };
+			string? val = (string?)context.GetConverter(ShapeProvider.GetShape(typeof(string))!).Read(ref reader, context);
+			value = new CustomType { InternalProperty = val };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
@@ -125,7 +126,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 
 	private class NoOpConverter : MessagePackConverter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+		public override void Read(ref MessagePackReader reader, ref CustomType? value, SerializationContext context) => throw new NotImplementedException();
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context) => throw new NotImplementedException();
 	}
@@ -138,15 +139,17 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	{
 		public int InvocationCount { get; private set; }
 
-		public override Tree? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref Tree? value, SerializationContext context)
 		{
 			this.InvocationCount++;
 			if (reader.TryReadNil())
 			{
-				return null;
+				value = null;
 			}
-
-			return new Tree(reader.ReadInt32());
+			else
+			{
+				value = new Tree(reader.ReadInt32());
+			}
 		}
 
 		public override void Write(ref MessagePackWriter writer, in Tree? value, SerializationContext context)
@@ -164,11 +167,11 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 
 	private class StatefulConverter : MessagePackConverter<TypeWithStatefulConverter>
 	{
-		public override TypeWithStatefulConverter Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref TypeWithStatefulConverter value, SerializationContext context)
 		{
 			int multiplier = (int)context["ValueMultiplier"]!;
 			int serializedValue = reader.ReadInt32();
-			return new TypeWithStatefulConverter(serializedValue / multiplier);
+			value = new TypeWithStatefulConverter(serializedValue / multiplier);
 		}
 
 		public override void Write(ref MessagePackWriter writer, in TypeWithStatefulConverter value, SerializationContext context)

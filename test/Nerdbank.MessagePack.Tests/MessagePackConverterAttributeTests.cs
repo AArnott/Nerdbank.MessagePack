@@ -22,9 +22,9 @@ public partial class MessagePackConverterAttributeTests(ITestOutputHelper logger
 
 	public class CustomTypeConverter : MessagePackConverter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref CustomType? value, SerializationContext context)
 		{
-			return new() { InternalProperty = reader.ReadString() };
+			value = new() { InternalProperty = reader.ReadString() };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)

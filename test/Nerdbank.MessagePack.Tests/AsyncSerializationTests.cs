@@ -127,9 +127,9 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 
 		internal int AsyncDeserializationCounter { get; set; }
 
-		public override SpecialRecord? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void Read(ref MessagePackReader reader, ref SpecialRecord? value, SerializationContext context)
 		{
-			return new SpecialRecord { Property = reader.ReadInt32() };
+			value = new SpecialRecord { Property = reader.ReadInt32() };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in SpecialRecord? value, SerializationContext context)

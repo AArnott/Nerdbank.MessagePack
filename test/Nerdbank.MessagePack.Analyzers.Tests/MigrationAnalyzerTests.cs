@@ -10,122 +10,122 @@ public class MigrationAnalyzerTests
 	public async Task Formatter()
 	{
 		string source = /* lang=c#-test */ """
-			#nullable enable
+				#nullable enable
 
-			using MessagePack;
-			using MessagePack.Formatters;
+				using MessagePack;
+				using MessagePack.Formatters;
 
-			[MessagePackFormatter(typeof(MyTypeFormatter))]
-			public class MyType
-			{
-				public string? Name { get; set; }
-
-				private class {|NBMsgPack100:MyTypeFormatter|} : IMessagePackFormatter<MyType?>
+				[MessagePackFormatter(typeof(MyTypeFormatter))]
+				public class MyType
 				{
-					public MyType? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+					public string? Name { get; set; }
+
+					private class {|NBMsgPack100:MyTypeFormatter|} : IMessagePackFormatter<MyType?>
 					{
-						if (reader.TryReadNil())
+						public MyType? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
 						{
-							return null;
+							if (reader.TryReadNil())
+							{
+								return null;
+							}
+
+							string? name = null;
+							options.Security.DepthStep(ref reader);
+							try
+							{
+								int count = reader.ReadArrayHeader();
+								for (int i = 0; i < count; i++)
+								{
+									switch (i)
+									{
+										case 0:
+											name = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
+											break;
+										default:
+											reader.Skip();
+											break;
+										}
+								}
+
+								return new MyType { Name = name };
+							}
+							finally
+							{
+								reader.Depth--;
+							}
 						}
 
-						string? name = null;
-						options.Security.DepthStep(ref reader);
-						try
+						public void Serialize(ref MessagePackWriter writer, MyType? value, MessagePackSerializerOptions options)
 						{
+							if (value is null)
+							{
+								writer.WriteNil();
+								return;
+							}
+
+							writer.WriteArrayHeader(1);
+							options.Resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.Name, options);
+						}
+					}
+				}
+				""";
+
+		string fixedSource = /* lang=c#-test */ """
+				#nullable enable
+
+				using MessagePack;
+				using MessagePack.Formatters;
+				using Nerdbank.MessagePack;
+				using PolyType;
+
+				[MessagePackConverter(typeof(MyTypeFormatter))]
+				public class MyType
+				{
+					public string? Name { get; set; }
+
+					[GenerateShape<string>]
+					private partial class MyTypeFormatter : MessagePackConverter<MyType>
+					{
+						public override void Read(ref Nerdbank.MessagePack.MessagePackReader reader, ref MyType? value, SerializationContext context)
+						{
+							if (reader.TryReadNil())
+							{
+								value = null;
+							}
+
+							string? name = null;
+							context.DepthStep();
 							int count = reader.ReadArrayHeader();
 							for (int i = 0; i < count; i++)
 							{
 								switch (i)
 								{
 									case 0:
-										name = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
+										name = context.GetConverter<string, MyTypeFormatter>().Read(ref reader, context);
 										break;
 									default:
-										reader.Skip();
+										reader.Skip(context);
 										break;
-									}
+								}
 							}
 
-							return new MyType { Name = name };
-						}
-						finally
-						{
-							reader.Depth--;
-						}
-					}
-
-					public void Serialize(ref MessagePackWriter writer, MyType? value, MessagePackSerializerOptions options)
-					{
-						if (value is null)
-						{
-							writer.WriteNil();
-							return;
+							value = new MyType { Name = name };
 						}
 
-						writer.WriteArrayHeader(1);
-						options.Resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.Name, options);
-					}
-				}
-			}
-			""";
-
-		string fixedSource = /* lang=c#-test */ """
-			#nullable enable
-
-			using MessagePack;
-			using MessagePack.Formatters;
-			using Nerdbank.MessagePack;
-			using PolyType;
-
-			[MessagePackConverter(typeof(MyTypeFormatter))]
-			public class MyType
-			{
-				public string? Name { get; set; }
-
-				[GenerateShape<string>]
-				private partial class MyTypeFormatter : MessagePackConverter<MyType>
-				{
-					public override MyType? Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
-					{
-						if (reader.TryReadNil())
+						public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType? value, SerializationContext context)
 						{
-							return null;
-						}
-
-						string? name = null;
-						context.DepthStep();
-						int count = reader.ReadArrayHeader();
-						for (int i = 0; i < count; i++)
-						{
-							switch (i)
+							if (value is null)
 							{
-								case 0:
-									name = context.GetConverter<string, MyTypeFormatter>().Read(ref reader, context);
-									break;
-								default:
-									reader.Skip(context);
-									break;
+								writer.WriteNil();
+								return;
 							}
+
+							writer.WriteArrayHeader(1);
+							context.GetConverter<string, MyTypeFormatter>().Write(ref writer, value.Name, context);
 						}
-
-						return new MyType { Name = name };
-					}
-
-					public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType? value, SerializationContext context)
-					{
-						if (value is null)
-						{
-							writer.WriteNil();
-							return;
-						}
-
-						writer.WriteArrayHeader(1);
-						context.GetConverter<string, MyTypeFormatter>().Write(ref writer, value.Name, context);
 					}
 				}
-			}
-			""";
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
@@ -134,35 +134,35 @@ public class MigrationAnalyzerTests
 	public async Task MessagePackObject_Keys()
 	{
 		string source = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
+				using MessagePack;
+				using MessagePack.Formatters;
 
-			/// <summary>
-			/// Doc comment
-			/// </summary>
-			[{|NBMsgPack102:MessagePackObject|}]
-			public class MyType
-			{
-				/// <summary>doc comment</summary>
-				[{|NBMsgPack103:Key(0)|}]
-				public string Name { get; set; }
-			}
-			""";
+				/// <summary>
+				/// Doc comment
+				/// </summary>
+				[{|NBMsgPack102:MessagePackObject|}]
+				public class MyType
+				{
+					/// <summary>doc comment</summary>
+					[{|NBMsgPack103:Key(0)|}]
+					public string Name { get; set; }
+				}
+				""";
 
 		string fixedSource = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
+				using MessagePack;
+				using MessagePack.Formatters;
 
-			/// <summary>
-			/// Doc comment
-			/// </summary>
-			public class MyType
-			{
-				/// <summary>doc comment</summary>
-				[Nerdbank.MessagePack.Key(0)]
-				public string Name { get; set; }
-			}
-			""";
+				/// <summary>
+				/// Doc comment
+				/// </summary>
+				public class MyType
+				{
+					/// <summary>doc comment</summary>
+					[Nerdbank.MessagePack.Key(0)]
+					public string Name { get; set; }
+				}
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
@@ -171,36 +171,36 @@ public class MigrationAnalyzerTests
 	public async Task MessagePackObject_IgnoreMember()
 	{
 		string source = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
+				using MessagePack;
+				using MessagePack.Formatters;
 
-			public class MyType
-			{
-				public string Name { get; set; }
+				public class MyType
+				{
+					public string Name { get; set; }
 
-				[{|NBMsgPack104:IgnoreMember|}]
-				public string PublicIgnored { get; set; }
-				
-				[{|NBMsgPack104:IgnoreMember|}]
-				internal string NonPublicIgnored { get; set; }
-			}
-			""";
+					[{|NBMsgPack104:IgnoreMember|}]
+					public string PublicIgnored { get; set; }
+					
+					[{|NBMsgPack104:IgnoreMember|}]
+					internal string NonPublicIgnored { get; set; }
+				}
+				""";
 
 		string fixedSource = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
-			using PolyType;
+				using MessagePack;
+				using MessagePack.Formatters;
+				using PolyType;
 
-			public class MyType
-			{
-				public string Name { get; set; }
+				public class MyType
+				{
+					public string Name { get; set; }
 
-				[PropertyShape(Ignore = true)]
-				public string PublicIgnored { get; set; }
+					[PropertyShape(Ignore = true)]
+					public string PublicIgnored { get; set; }
 
-				internal string NonPublicIgnored { get; set; }
-			}
-			""";
+					internal string NonPublicIgnored { get; set; }
+				}
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
@@ -209,32 +209,32 @@ public class MigrationAnalyzerTests
 	public async Task MessagePackObject_Map()
 	{
 		string source = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
+				using MessagePack;
+				using MessagePack.Formatters;
 
-			[{|NBMsgPack102:MessagePackObject(true)|}]
-			public class MyType
-			{
-				public string Name { get; set; }
+				[{|NBMsgPack102:MessagePackObject(true)|}]
+				public class MyType
+				{
+					public string Name { get; set; }
 
-				[{|NBMsgPack103:Key("AnotherName")|}]
-				public string AnotherProperty { get; set; }
-			}
-			""";
+					[{|NBMsgPack103:Key("AnotherName")|}]
+					public string AnotherProperty { get; set; }
+				}
+				""";
 
 		string fixedSource = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
-			using PolyType;
+				using MessagePack;
+				using MessagePack.Formatters;
+				using PolyType;
 
-			public class MyType
-			{
-				public string Name { get; set; }
-			
-				[PropertyShape(Name = "AnotherName")]
-				public string AnotherProperty { get; set; }
-			}
-			""";
+				public class MyType
+				{
+					public string Name { get; set; }
+				
+					[PropertyShape(Name = "AnotherName")]
+					public string AnotherProperty { get; set; }
+				}
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
@@ -247,49 +247,49 @@ public class MigrationAnalyzerTests
 	public async Task MessagePackObject_WithTopLevelUsage()
 	{
 		string source = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
+				using MessagePack;
+				using MessagePack.Formatters;
 
-			/// <summary>
-			/// Doc comment
-			/// </summary>
-			[{|NBMsgPack102:MessagePackObject(true)|}]
-			public class MyType
-			{
-				public string Name { get; set; }
-			}
-
-			class Other
-			{
-				void Foo()
+				/// <summary>
+				/// Doc comment
+				/// </summary>
+				[{|NBMsgPack102:MessagePackObject(true)|}]
+				public class MyType
 				{
-					MessagePackSerializer.Serialize(new MyType());
+					public string Name { get; set; }
 				}
-			}
-			""";
+
+				class Other
+				{
+					void Foo()
+					{
+						MessagePackSerializer.Serialize(new MyType());
+					}
+				}
+				""";
 
 		string fixedSource = /* lang=c#-test */ """
-			using MessagePack;
-			using MessagePack.Formatters;
-			using PolyType;
+				using MessagePack;
+				using MessagePack.Formatters;
+				using PolyType;
 
-			/// <summary>
-			/// Doc comment
-			/// </summary>
-			[GenerateShape]
-			public partial class MyType
-			{
-				public string Name { get; set; }
-			}
-
-			class Other
-			{
-				void Foo()
+				/// <summary>
+				/// Doc comment
+				/// </summary>
+				[GenerateShape]
+				public partial class MyType
 				{
-					MessagePackSerializer.Serialize(new MyType());
+					public string Name { get; set; }
 				}
-			}
-			""";
+
+				class Other
+				{
+					void Foo()
+					{
+						MessagePackSerializer.Serialize(new MyType());
+					}
+				}
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
@@ -298,39 +298,39 @@ public class MigrationAnalyzerTests
 	public async Task ClassImplementsOldCallbackInterface_ExplicitMethods()
 	{
 		string source = /* lang=c#-test */ """
-			using MessagePack;
+				using MessagePack;
 
-			class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
-			{
-				void IMessagePackSerializationCallbackReceiver.OnAfterDeserialize()
+				class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
 				{
-					// deserialize
-				}
+					void IMessagePackSerializationCallbackReceiver.OnAfterDeserialize()
+					{
+						// deserialize
+					}
 
-				void IMessagePackSerializationCallbackReceiver.OnBeforeSerialize()
-				{
-					// serialize
+					void IMessagePackSerializationCallbackReceiver.OnBeforeSerialize()
+					{
+						// serialize
+					}
 				}
-			}
-			""";
+				""";
 
 		string fixedSource = /* lang=c#-test */ """
-			using MessagePack;
-			using Nerdbank.MessagePack;
+				using MessagePack;
+				using Nerdbank.MessagePack;
 
-			class A : IMessagePackSerializationCallbacks
-			{
-				void IMessagePackSerializationCallbacks.OnAfterDeserialize()
+				class A : IMessagePackSerializationCallbacks
 				{
-					// deserialize
-				}
+					void IMessagePackSerializationCallbacks.OnAfterDeserialize()
+					{
+						// deserialize
+					}
 
-				void IMessagePackSerializationCallbacks.OnBeforeSerialize()
-				{
-					// serialize
+					void IMessagePackSerializationCallbacks.OnBeforeSerialize()
+					{
+						// serialize
+					}
 				}
-			}
-			""";
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
@@ -339,39 +339,39 @@ public class MigrationAnalyzerTests
 	public async Task ClassImplementsOldCallbackInterface_PublicMethods()
 	{
 		string source = /* lang=c#-test */ """
-			using MessagePack;
+				using MessagePack;
 
-			class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
-			{
-				public void OnAfterDeserialize()
+				class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
 				{
-					// deserialize
-				}
+					public void OnAfterDeserialize()
+					{
+						// deserialize
+					}
 
-				public void OnBeforeSerialize()
-				{
-					// serialize
+					public void OnBeforeSerialize()
+					{
+						// serialize
+					}
 				}
-			}
-			""";
+				""";
 
 		string fixedSource = /* lang=c#-test */ """
-			using MessagePack;
-			using Nerdbank.MessagePack;
+				using MessagePack;
+				using Nerdbank.MessagePack;
 
-			class A : IMessagePackSerializationCallbacks
-			{
-				public void OnAfterDeserialize()
+				class A : IMessagePackSerializationCallbacks
 				{
-					// deserialize
-				}
+					public void OnAfterDeserialize()
+					{
+						// deserialize
+					}
 
-				public void OnBeforeSerialize()
-				{
-					// serialize
+					public void OnBeforeSerialize()
+					{
+						// serialize
+					}
 				}
-			}
-			""";
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}
@@ -380,29 +380,29 @@ public class MigrationAnalyzerTests
 	public async Task SerializationConstructor()
 	{
 		string source = /* lang=c#-test */ """
-			using MessagePack;
+				using MessagePack;
 
-			class A
-			{
-				[{|NBMsgPack106:SerializationConstructor|}]
-				public A(int x)
+				class A
 				{
+					[{|NBMsgPack106:SerializationConstructor|}]
+					public A(int x)
+					{
+					}
 				}
-			}
-			""";
+				""";
 
 		string fixedSource = /* lang=c#-test */ """
-			using MessagePack;
-			using PolyType;
+				using MessagePack;
+				using PolyType;
 
-			class A
-			{
-				[ConstructorShape]
-				public A(int x)
+				class A
 				{
+					[ConstructorShape]
+					public A(int x)
+					{
+					}
 				}
-			}
-			""";
+				""";
 
 		await this.VerifyCodeFixAsync(source, fixedSource);
 	}

@@ -214,10 +214,11 @@ namespace SubValuesWithWitness
     [GenerateShape<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
     partial class FooConverter : MessagePackConverter<Foo?>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override void Read(ref MessagePackReader reader, ref Foo? value, SerializationContext context)
         {
             // ...
-            context.GetConverter<SomeOtherType, FooConverter>().Read(ref reader, context: context);
+            SomeOtherType? other = null;
+            context.GetConverter<SomeOtherType, FooConverter>().Read(ref reader, ref other, context: context);
             // ...
             #endregion
 
