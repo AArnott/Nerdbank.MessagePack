@@ -134,7 +134,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	}
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, ref T? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
 	{
 		if (reader.TryReadNil())
 		{

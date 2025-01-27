@@ -27,7 +27,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
 	{
 		if (reader.TryReadNil())
 		{
@@ -88,8 +88,8 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	{
 		key = default;
 		value = default;
-		keyConverter.Read(ref reader, ref key, context);
-		valueConverter.Read(ref reader, ref value, context);
+		keyConverter.Read(ref reader, context, ref key);
+		valueConverter.Read(ref reader, context, ref value);
 	}
 
 	/// <summary>
@@ -129,7 +129,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
-	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
 	{
 		if (reader.TryReadNil())
 		{
@@ -140,7 +140,6 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		TDictionary result = ctor();
 		this.DeserializeInto(ref reader, ref result, context);
 		value = result;
-		return;
 	}
 #pragma warning restore NBMsgPack03
 
@@ -231,7 +230,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
 	{
 		if (reader.TryReadNil())
 		{
@@ -246,12 +245,11 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey key, out TValue val);
-				entries[i] = new(key, val);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue element);
+				entries[i] = new(key, element);
 			}
 
 			value = ctor(entries.AsSpan(0, count));
-			return;
 		}
 		finally
 		{
@@ -276,7 +274,7 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, ref TDictionary? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDictionary? value)
 	{
 		if (reader.TryReadNil())
 		{
@@ -291,12 +289,11 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				this.ReadEntry(ref reader, context, out TKey key, out TValue val);
-				entries[i] = new(key, val);
+				this.ReadEntry(ref reader, context, out TKey key, out TValue element);
+				entries[i] = new(key, element);
 			}
 
 			value = ctor(entries.Take(count));
-			return;
 		}
 		finally
 		{

@@ -97,20 +97,21 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 	}
 
 	/// <inheritdoc/>
-	public override TEnum Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnum value)
 	{
 		if (reader.NextMessagePackType == MessagePackType.String)
 		{
 			string stringValue;
-			TEnum value;
+			TEnum enumValue;
 
 			// Try to avoid any allocations by reading the string as a span.
 			// This only works for case sensitive matches, so be prepared to fallback to string comparisons.
 			if (reader.TryReadStringSpan(out ReadOnlySpan<byte> span))
 			{
-				if (this.valueByUtf8Name.TryGetValue(span, out value))
+				if (this.valueByUtf8Name.TryGetValue(span, out enumValue))
 				{
-					return value;
+					value = enumValue;
+					return;
 				}
 
 				stringValue = StringEncoding.UTF8.GetString(span);
@@ -120,9 +121,9 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 				stringValue = reader.ReadString()!;
 			}
 
-			if (this.valueByName.TryGetValue(stringValue, out value))
+			if (this.valueByName.TryGetValue(stringValue, out enumValue))
 			{
-				return value;
+				value = enumValue;
 			}
 			else
 			{
@@ -131,7 +132,9 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 		}
 		else
 		{
-			return (TEnum)(object)this.primitiveConverter.Read(ref reader, context)!;
+			TUnderlyingType underlying = default;
+			this.primitiveConverter.Read(ref reader, context, ref underlying);
+			value = (TEnum)(object)underlying;
 		}
 	}
 

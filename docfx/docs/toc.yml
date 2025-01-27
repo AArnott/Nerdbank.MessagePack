@@ -14,7 +14,7 @@ items:
   href: performance.md
 - name: Security
   href: security.md
-- href: byvalue-equality.md
+- href: structural-equality.md
 - name: Migrating
   href: migrating.md
 - name: Type shapes

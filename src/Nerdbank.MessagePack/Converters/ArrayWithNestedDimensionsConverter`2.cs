@@ -30,7 +30,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 #pragma warning disable NBMsgPack031 // Exactly one structure -- it can't see into this.method calls
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public override void Read(ref MessagePackReader reader, ref TArray? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TArray? value)
 	{
 		if (reader.TryReadNil())
 		{
@@ -140,8 +140,8 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 		{
 			for (int i = 0; i < outerDimension; i++)
 			{
-				TElement? element = default;
-				elementConverter.Read(ref reader, ref element, context);
+				TElement element = default;
+				elementConverter.Read(ref reader, context, ref element);
 				elements[i] = element;
 			}
 		}

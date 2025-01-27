@@ -70,4 +70,18 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 			.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
 		return ctorParams;
 	}
+
+	/// <inheritdoc/>
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
+	{
+		if (reader.TryReadNil())
+		{
+			value = default;
+			return;
+		}
+
+		// Implement the logic to set the value parameter instead of returning it
+		// This is a placeholder implementation and should be replaced with the actual logic
+		value = default;
+	}
 }

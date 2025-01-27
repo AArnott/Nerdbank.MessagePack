@@ -9,7 +9,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// <summary>
 /// A visitor that creates an <see cref="IEqualityComparer{T}"/> for a given type shape that compares values by value (deeply).
 /// </summary>
-internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
+internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
 	/// <inheritdoc/>
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => typeShape.Accept(this);
@@ -25,15 +25,15 @@ internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor,
 
 		if (typeof(T) == typeof(byte[]))
 		{
-			return ByValueByteArrayEqualityComparer.Default;
+			return StructuralByteArrayEqualityComparer.Default;
 		}
 
 		if (typeof(IDeepSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
 		{
-			return ByValueCustomEqualityComparer<T>.Default;
+			return StructuralCustomEqualityComparer<T>.Default;
 		}
 
-		ByValueAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
+		StructuralAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
 			.. from property in objectShape.Properties
 			   where property.HasGetter
 			   select (IEqualityComparer<T>)property.Accept(this, null)!]);
@@ -48,16 +48,16 @@ internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor,
 
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
-		=> new ByValuePropertyEqualityComparer<TDeclaringType, TPropertyType>(propertyShape.GetGetter(), this.GetEqualityComparer(propertyShape.PropertyType));
+		=> new StructuralPropertyEqualityComparer<TDeclaringType, TPropertyType>(propertyShape.GetGetter(), this.GetEqualityComparer(propertyShape.PropertyType));
 
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
-		=> typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable)) ? new ByValueIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType)) :
-			new ByValueEnumerableEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType), enumerableShape.GetGetEnumerable());
+		=> typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable)) ? new StructuralIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType)) :
+			new StructuralEnumerableEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType), enumerableShape.GetGetEnumerable());
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
-		=> new ByValueDictionaryEqualityComparer<TDictionary, TKey, TValue>(dictionaryShape.GetGetDictionary(), this.GetEqualityComparer(dictionaryShape.KeyType), this.GetEqualityComparer(dictionaryShape.ValueType));
+		=> new StructuralDictionaryEqualityComparer<TDictionary, TKey, TValue>(dictionaryShape.GetGetDictionary(), this.GetEqualityComparer(dictionaryShape.KeyType), this.GetEqualityComparer(dictionaryShape.ValueType));
 
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
@@ -65,7 +65,7 @@ internal class ByValueVisitor(TypeGenerationContext context) : TypeShapeVisitor,
 
 	/// <inheritdoc/>
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
-		=> new ByValueNullableEqualityComparer<T>(this.GetEqualityComparer(nullableShape.ElementType));
+		=> new StructuralNullableEqualityComparer<T>(this.GetEqualityComparer(nullableShape.ElementType));
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)

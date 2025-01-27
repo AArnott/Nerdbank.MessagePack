@@ -24,11 +24,12 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 	bool callShouldSerialize) : ObjectMapConverter<TDeclaringType>(serializable, null, null, callShouldSerialize)
 {
 	/// <inheritdoc/>
-	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TDeclaringType? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		context.DepthStep();
@@ -55,14 +56,12 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.Skip(context);
 		}
 
-		TDeclaringType value = ctor(ref argState);
+		value = ctor(ref argState);
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}
-
-		return value;
 	}
 
 	/// <inheritdoc/>

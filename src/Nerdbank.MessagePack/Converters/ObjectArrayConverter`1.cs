@@ -19,7 +19,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, ref T? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
 	{
 		if (reader.TryReadNil())
 		{
@@ -71,8 +71,6 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		{
 			callbacks.OnAfterDeserialize();
 		}
-
-		return value;
 	}
 
 	/// <inheritdoc/>

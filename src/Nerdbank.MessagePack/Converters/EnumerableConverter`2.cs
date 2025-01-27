@@ -22,11 +22,12 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	protected bool ElementPrefersAsyncSerialization => elementConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		throw new NotImplementedException();
@@ -78,7 +79,12 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// <param name="reader">The reader.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
-	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Read(ref reader, context)!;
+	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context)
+	{
+		TElement? element = default;
+		elementConverter.Read(ref reader, context, ref element);
+		return element;
+	}
 
 	/// <summary>
 	/// Reads one element from the reader.
@@ -107,16 +113,17 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 {
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		TEnumerable result = ctor();
 		this.DeserializeInto(ref reader, ref result, context);
-		return result;
+		value = result;
 	}
 #pragma warning restore NBMsgPack03
 
@@ -179,11 +186,12 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		context.DepthStep();
@@ -196,7 +204,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 				elements[i] = this.ReadElement(ref reader, context);
 			}
 
-			return ctor(elements.AsSpan(0, count));
+			value = ctor(elements.AsSpan(0, count));
 		}
 		finally
 		{
@@ -218,11 +226,12 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref TEnumerable? value)
 	{
 		if (reader.TryReadNil())
 		{
-			return default;
+			value = default;
+			return;
 		}
 
 		context.DepthStep();
@@ -235,7 +244,7 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 				elements[i] = this.ReadElement(ref reader, context);
 			}
 
-			return ctor(elements.Take(count));
+			value = ctor(elements.Take(count));
 		}
 		finally
 		{

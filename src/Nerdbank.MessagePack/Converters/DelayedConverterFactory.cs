@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text.Json.Nodes;
@@ -23,8 +23,8 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 	internal class DelayedConverter<T>(DelayedValue<MessagePackConverter<T>> self) : MessagePackConverter<T>
 	{
 		/// <inheritdoc/>
-		public override void Read(ref MessagePackReader reader, ref T? value, SerializationContext context)
-			=> self.Result.Read(ref reader, ref value, context);
+		public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
+			=> self.Result.Read(ref reader, context, ref value);
 
 		/// <inheritdoc/>
 		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)

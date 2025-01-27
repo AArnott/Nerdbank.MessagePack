@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
@@ -20,10 +20,10 @@ internal class SurrogateConverter<T, TSurrogate>(ISurrogateTypeShape<T, TSurroga
 	public override bool PreferAsyncSerialization => surrogateConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override void Read(ref MessagePackReader reader, ref T? value, SerializationContext context)
+	public override void Read(ref MessagePackReader reader, SerializationContext context, ref T? value)
 	{
 		TSurrogate? surrogateValue = default;
-		surrogateConverter.Read(ref reader, ref surrogateValue, context);
+		surrogateConverter.Read(ref reader, context, ref surrogateValue);
 		value = shape.Marshaller.FromSurrogate(surrogateValue);
 	}
 

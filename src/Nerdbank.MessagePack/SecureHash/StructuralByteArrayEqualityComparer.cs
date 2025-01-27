@@ -8,14 +8,14 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// <summary>
 /// A full content comparison and hash of a byte buffer.
 /// </summary>
-internal class ByValueByteArrayEqualityComparer : IEqualityComparer<byte[]>
+internal class StructuralByteArrayEqualityComparer : IEqualityComparer<byte[]>
 {
 	/// <summary>
 	/// The singleton to use.
 	/// </summary>
-	internal static readonly ByValueByteArrayEqualityComparer Default = new();
+	internal static readonly StructuralByteArrayEqualityComparer Default = new();
 
-	private ByValueByteArrayEqualityComparer()
+	private StructuralByteArrayEqualityComparer()
 	{
 	}
 

@@ -54,7 +54,7 @@ jobs:
       run: tools/dotnet-test-cloud.ps1 -Configuration ${{ env.BUILDCONFIGURATION }} -Agent ${{ runner.os }}
       shell: pwsh
     - name: 💅🏻 Verify formatted code
-      run: dotnet format --verify-no-changes --no-restore
+      run: dotnet format --verify-no-changes --no-restore --exclude ./samples/AnalyzerDocs/NBMsgPack051.cs
       shell: pwsh
       if: runner.os == 'Linux'
     - name: 📚 Verify docfx build

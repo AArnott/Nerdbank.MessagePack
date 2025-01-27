@@ -14,4 +14,4 @@
 * Optionally serialize your custom types as arrays of values instead of maps of names and value for more compact representation and even higher performance.
 * Support for serializing instances of certain types derived from the declared type and deserializing them back to their original runtime types using [unions](unions.md).
 * Optionally [preserve reference equality](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) across serialization/deserialization.
-* Deep by-value equality checker implementation for arbitrary types, both with and without collision resistant hash functions.
+* Structural (i.e. deep, by-value) equality checking for arbitrary types, both with and without collision resistant hash functions.
