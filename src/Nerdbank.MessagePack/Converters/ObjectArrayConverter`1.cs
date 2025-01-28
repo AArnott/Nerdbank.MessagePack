@@ -512,6 +512,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			JsonObject propertiesObject = [];
 			JsonArray? items = [];
 			JsonArray? required = null;
+			int minItems = 0;
 			for (int i = 0; i < properties.Length; i++)
 			{
 				if (properties.Span[i] is not PropertyAccessors<T> property)
@@ -523,14 +524,15 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				ctorParams?.TryGetValue(property.Shape.Name, out associatedParameter);
 
 				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
-				ApplyDescription(property.Shape.AttributeProvider, propertySchema);
+				ApplyDescription(property.Shape.AttributeProvider, propertySchema, property.Shape.Name);
 				ApplyDefaultValue(property.Shape.AttributeProvider, propertySchema, associatedParameter);
 				if (!IsNonNullable(property.Shape, associatedParameter))
 				{
 					propertySchema = ApplyJsonSchemaNullability(propertySchema);
 				}
 
-				propertiesObject.Add(i.ToString(CultureInfo.InvariantCulture), propertySchema);
+				string objectPropertyName = i.ToString(CultureInfo.InvariantCulture);
+				propertiesObject.Add(objectPropertyName, propertySchema);
 
 				while (items.Count < i)
 				{
@@ -541,11 +543,14 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					});
 				}
 
-				items.Add((JsonNode)propertySchema.DeepClone());
+				items.Add(propertySchema.DeepClone());
 
 				if (associatedParameter?.IsRequired is true)
 				{
-					(required ??= []).Add((JsonNode)property.Shape.Name);
+					(required ??= []).Add((JsonNode)objectPropertyName);
+
+					// In the case of an array, a required element means the array must be at least this long.
+					minItems = i + 1;
 				}
 			}
 
@@ -555,6 +560,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			if (required is not null)
 			{
 				schema["required"] = required;
+			}
+
+			if (minItems > 0)
+			{
+				schema["minItems"] = minItems;
 			}
 		}
 
