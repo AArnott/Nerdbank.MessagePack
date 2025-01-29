@@ -30,6 +30,7 @@ Trim-safe                 | ✅ | ❌ |
 NativeAOT ready           | ✅ | ❌[^2] |
 Unity                     | ❓[^3] | ✅ |
 Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ |
+Endless streaming deserialization | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/237) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream)
 Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
 JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
 Secure defaults           | ✅ | ❌ |
