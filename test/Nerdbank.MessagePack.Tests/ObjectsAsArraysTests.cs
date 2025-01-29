@@ -141,8 +141,11 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
+	[Trait("ShouldSerialize", "true")]
 	[Theory, PairwiseData]
-	public async Task PersonWithDefaultConstructor_AllDefaultValues(bool async, bool serializeDefaultValues)
+	public async Task PersonWithDefaultConstructor_AllDefaultValues(
+		bool async,
+		[CombinatorialValues(SerializeDefaultValuesPolicy.Always, SerializeDefaultValuesPolicy.Never)] SerializeDefaultValuesPolicy serializeDefaultValues)
 	{
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose, iff we're in that mode.
@@ -151,7 +154,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		MessagePackReader reader = new(msgpack);
-		Assert.Equal(serializeDefaultValues ? 3 : 0, reader.ReadArrayHeader());
+		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadArrayHeader());
 	}
 
 	[Theory, PairwiseData]

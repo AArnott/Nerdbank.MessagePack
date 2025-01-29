@@ -6,7 +6,7 @@
 [CategoriesColumn]
 public partial class SimplePoco
 {
-	private readonly MessagePackSerializer serializer = new() { SerializeDefaultValues = true };
+	private readonly MessagePackSerializer serializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
 	private readonly Sequence buffer = new();
 
 	[Benchmark]
