@@ -97,6 +97,66 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 		Assert.Equal("a"u8, readResult.Buffer.ToArray());
 	}
 
+	/// <summary>
+	/// Streams multiple elements with no array envelope.
+	/// </summary>
+	[Fact]
+	public async Task DeserializeEnumerableAsync_TopLevel_PipeReader()
+	{
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		for (int i = 1; i <= 10; i++)
+		{
+			writer.Write(i);
+		}
+
+		writer.Flush();
+
+		int readCount = 0;
+		PipeReader reader = PipeReader.Create(sequence);
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken))
+		{
+			readCount++;
+			this.Logger.WriteLine(current.ToString());
+		}
+
+		Assert.Equal(10, readCount);
+	}
+
+	/// <summary>
+	/// Streams multiple elements with no array envelope.
+	/// </summary>
+	[Fact]
+	public async Task DeserializeEnumerableAsync_TopLevel_Stream()
+	{
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		for (int i = 1; i <= 10; i++)
+		{
+			writer.Write(i);
+		}
+
+		writer.Flush();
+
+		int readCount = 0;
+		MemoryStream reader = new(sequence.AsReadOnlySequence.ToArray());
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.ShapeProvider.Resolve<int>(), TestContext.Current.CancellationToken))
+		{
+			readCount++;
+			this.Logger.WriteLine(current.ToString());
+		}
+
+		Assert.Equal(10, readCount);
+	}
+
+	/// <summary>
+	/// Streams elements of a top-level msgpack array.
+	/// </summary>
+	[Fact(Skip = "Not ready")]
+	public void DeserializeEnumerableAsync_Array()
+	{
+	}
+
 	[GenerateShape<string>]
 	[GenerateShape<int>]
 	private partial class Witness;

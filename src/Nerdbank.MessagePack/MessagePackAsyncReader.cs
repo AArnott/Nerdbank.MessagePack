@@ -211,6 +211,20 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		}
 	}
 
+	/// <summary>
+	/// Gets a value indicating whether we've reached the end of the stream.
+	/// </summary>
+	/// <returns>A boolean value.</returns>
+	internal async ValueTask<bool> GetIsEndOfStreamAsync()
+	{
+		if (this.refresh is null or { Buffer.IsEmpty: true, EndOfStream: false })
+		{
+			await this.ReadAsync().ConfigureAwait(false);
+		}
+
+		return this.Refresh.EndOfStream && this.Refresh.Buffer.IsEmpty;
+	}
+
 	private void ThrowIfReaderNotReturned()
 	{
 		Verify.Operation(this.readerReturned, "The previous reader must be returned before creating a new one.");
