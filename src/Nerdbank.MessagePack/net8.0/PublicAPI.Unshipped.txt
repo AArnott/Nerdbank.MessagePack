@@ -473,6 +473,7 @@ virtual Nerdbank.MessagePack.MessagePackSerializer.PrintMembers(System.Text.Stri
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.CancellationToken.init -> void
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.CreateBufferedReader() -> Nerdbank.MessagePack.MessagePackReader
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.CreateStreamingReader() -> Nerdbank.MessagePack.MessagePackStreamingReader
+[NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.Dispose() -> void
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.MessagePackAsyncReader(System.IO.Pipelines.PipeReader! pipeReader) -> void
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.ReadAsync() -> System.Threading.Tasks.ValueTask
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.ReturnReader(ref Nerdbank.MessagePack.MessagePackReader reader) -> void
