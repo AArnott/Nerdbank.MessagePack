@@ -45,9 +45,12 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal(person, deserialized);
 	}
 
+	[Trait("ShouldSerialize", "true")]
 	[Theory, PairwiseData]
 	public async Task Person_WithoutLastName(bool async)
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+
 		// The most compact representation of this is an array of length 1.
 		// Verify that this is what the converter chose.
 		Person person = new() { FirstName = "Andrew", LastName = null };
@@ -56,9 +59,12 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 
+	[Trait("ShouldSerialize", "true")]
 	[Theory, PairwiseData]
 	public async Task Person_WithoutFirstName(bool async)
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose.
 		Person person = new() { FirstName = null, LastName = "Arnott" };
@@ -67,9 +73,12 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
+	[Trait("ShouldSerialize", "true")]
 	[Theory, PairwiseData]
 	public async Task Person_AllDefaultValues(bool async)
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose.
 		Person person = new Person { FirstName = null, LastName = null };
@@ -141,8 +150,11 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
+	[Trait("ShouldSerialize", "true")]
 	[Theory, PairwiseData]
-	public async Task PersonWithDefaultConstructor_AllDefaultValues(bool async, bool serializeDefaultValues)
+	public async Task PersonWithDefaultConstructor_AllDefaultValues(
+		bool async,
+		[CombinatorialValues(SerializeDefaultValuesPolicy.Always, SerializeDefaultValuesPolicy.Never)] SerializeDefaultValuesPolicy serializeDefaultValues)
 	{
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose, iff we're in that mode.
@@ -151,7 +163,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		MessagePackReader reader = new(msgpack);
-		Assert.Equal(serializeDefaultValues ? 3 : 0, reader.ReadArrayHeader());
+		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadArrayHeader());
 	}
 
 	[Theory, PairwiseData]
@@ -211,9 +223,12 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Assert.Equal(5, reader.ReadArrayHeader());
 	}
 
+	[Trait("ShouldSerialize", "true")]
 	[Fact]
 	public async Task AsyncAndSyncPropertyMix_AsMap()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+
 		// Initialize a default late in the array to motivate serialization as a map.
 		FamilyWithAsyncProperties family = new()
 		{

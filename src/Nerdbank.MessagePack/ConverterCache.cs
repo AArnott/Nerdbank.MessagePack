@@ -32,7 +32,7 @@ internal record class ConverterCache
 
 	private bool preserveReferences;
 	private bool serializeEnumValuesByName;
-	private bool serializeDefaultValues;
+	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
@@ -108,27 +108,28 @@ internal record class ConverterCache
 	}
 
 	/// <summary>
-	/// Gets a value indicating whether to serialize properties that are set to their default values.
+	/// Gets the policy concerning which properties to serialize though they are set to their default values.
 	/// </summary>
-	/// <value>The default value is <see langword="false" />.</value>
+	/// <value>The default value is <see cref="SerializeDefaultValuesPolicy.Required"/>, meaning that only required properties or properties with non-default values will be serialized.</value>
 	/// <remarks>
 	/// <para>
 	/// By default, the serializer omits properties and fields that are set to their default values when serializing objects.
 	/// This property can be used to override that behavior and serialize all properties and fields, regardless of their value.
 	/// </para>
 	/// <para>
-	/// This property currently only impacts objects serialized as maps (i.e. types that are <em>not</em> using <see cref="KeyAttribute"/> on their members),
-	/// but this could be expanded to truncate value arrays as well.
+	/// Objects that are serialized as arrays (i.e. types that use <see cref="KeyAttribute"/> on their members),
+	/// have a limited ability to omit default values because the order of the elements in the array is significant.
+	/// See the <see cref="KeyAttribute" /> documentation for details.
 	/// </para>
 	/// <para>
 	/// Default values are assumed to be <c>default(TPropertyType)</c> except where overridden, as follows:
 	/// <list type="bullet">
 	///   <item><description>Primary constructor default parameter values. e.g. <c>record Person(int Age = 18)</c></description></item>
-	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] internal int Age { get; set; }</c></description></item>
+	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] internal int Age { get; set; } = 18;</c></description></item>
 	/// </list>
 	/// </para>
 	/// </remarks>
-	internal bool SerializeDefaultValues
+	internal SerializeDefaultValuesPolicy SerializeDefaultValues
 	{
 		get => this.serializeDefaultValues;
 		init => this.ChangeSetting(ref this.serializeDefaultValues, value);

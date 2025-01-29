@@ -54,7 +54,7 @@ public partial record MessagePackSerializer
 	}
 
 	/// <inheritdoc cref="ConverterCache.SerializeDefaultValues"/>
-	public bool SerializeDefaultValues
+	public SerializeDefaultValuesPolicy SerializeDefaultValues
 	{
 		get => this.converterCache.SerializeDefaultValues;
 		init => this.converterCache = this.converterCache with { SerializeDefaultValues = value };

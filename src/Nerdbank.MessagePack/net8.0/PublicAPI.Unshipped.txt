@@ -240,7 +240,7 @@ Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Pipelines
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Stream! stream, in T? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Stream! stream, T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync<T>(System.IO.Stream! stream, T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
-Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.get -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
 Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.get -> bool
 Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.init -> void
@@ -346,6 +346,12 @@ Nerdbank.MessagePack.SerializationContext.this[object! key].set -> void
 Nerdbank.MessagePack.SerializationContext.TypeShapeProvider.get -> PolyType.ITypeShapeProvider?
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.get -> int
 Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold.init -> void
+Nerdbank.MessagePack.SerializeDefaultValuesPolicy
+Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always = Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Required | Nerdbank.MessagePack.SerializeDefaultValuesPolicy.ValueTypes | Nerdbank.MessagePack.SerializeDefaultValuesPolicy.ReferenceTypes -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
+Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never = 0 -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
+Nerdbank.MessagePack.SerializeDefaultValuesPolicy.ReferenceTypes = 4 -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
+Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Required = 1 -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
+Nerdbank.MessagePack.SerializeDefaultValuesPolicy.ValueTypes = 2 -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
 Nerdbank.MessagePack.StructuralEqualityComparer
 override Nerdbank.MessagePack.Extension.GetHashCode() -> int
 override Nerdbank.MessagePack.ExtensionHeader.GetHashCode() -> int
