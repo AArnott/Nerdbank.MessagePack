@@ -5,6 +5,7 @@ items:
   href: getting-started.md
 - name: Unions
   href: unions.md
+- href: streaming-deserialization.md
 - name: Customizing serialization
   href: customizing-serialization.md
 - href: surrogate-types.md

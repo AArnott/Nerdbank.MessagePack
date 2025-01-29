@@ -2,8 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
+#pragma warning disable RS0027 // optional parameter on a method with overloads
 
 using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -285,9 +287,7 @@ public partial record MessagePackSerializer
 	/// <param name="provider"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/returns"/></returns>
-#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public async ValueTask<T?> DeserializeAsync<T>(Stream stream, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		// Fast path for MemoryStream.
 		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
@@ -299,5 +299,24 @@ public partial record MessagePackSerializer
 		T? result = await this.DeserializeAsync<T>(pipeReader, provider, cancellationToken).ConfigureAwait(false);
 		await pipeReader.CompleteAsync().ConfigureAwait(false);
 		return result;
+	}
+
+	/// <summary>
+	/// Deserializes an enumerable from a <see cref="Stream"/>.
+	/// </summary>
+	/// <typeparam name="T"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShapeProvider, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
+	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
+	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
+	/// <param name="cancellationToken"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
+	/// <returns><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/returns"/></returns>
+	public async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(Stream stream, ITypeShape<T> shape, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+	{
+		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
+		await foreach (T? result in this.DeserializeEnumerableAsync<T>(pipeReader, shape, cancellationToken).ConfigureAwait(false))
+		{
+			yield return result;
+		}
+
+		await pipeReader.CompleteAsync().ConfigureAwait(false);
 	}
 }

@@ -8,6 +8,7 @@
 * NativeAOT and trimming compatible.
 * Serialize only properties that have non-default values (optionally).
 * Keep memory pressure low by using async serialization directly to/from I/O like a network, IPC pipe or file.
+* [Streaming deserialization](streaming-deserialization.md) for large or over-time sequences.
 * Primitive msgpack reader and writer APIs for low-level scenarios.
 * Author custom converters for advanced scenarios.
 * Security mitigations for stack overflows.

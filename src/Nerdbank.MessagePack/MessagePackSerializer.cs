@@ -5,6 +5,7 @@
 
 using System.Globalization;
 using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -463,6 +464,17 @@ public partial record MessagePackSerializer
 		}
 	}
 
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
+	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter<T>(shape), cancellationToken);
+
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
+	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
+
 	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
@@ -476,6 +488,37 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(provider);
 		return new(this.StartingContext.Start(this, this.converterCache, provider, cancellationToken));
+	}
+
+	/// <summary>
+	/// Deserializes a sequence of values from a <see cref="PipeReader"/> such that each element is produced individually.
+	/// </summary>
+	/// <typeparam name="T">The type of value to be deserialized.</typeparam>
+	/// <param name="reader">The reader to deserialize from. <see cref="PipeReader.CompleteAsync(Exception?)"/> will be called only at the conclusion of a successful enumeration.</param>
+	/// <param name="provider"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="converter">The msgpack converter for the root data type.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>An async enumerable, suitable for use with <c>await foreach</c>.</returns>
+	/// <remarks>
+	/// The content read from <paramref name="reader"/> must be a sequence of msgpack-encoded values with no envelope (e.g. an array).
+	/// After the <paramref name="reader"/> is exhausted, the sequence will end.
+	/// </remarks>
+	private async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter<T> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+
+#pragma warning disable NBMsgPackAsync
+		using (MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken })
+		{
+			while (!await asyncReader.GetIsEndOfStreamAsync().ConfigureAwait(false))
+			{
+				yield return await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+			}
+		}
+#pragma warning restore NBMsgPackAsync
+
+		await reader.CompleteAsync().ConfigureAwait(false);
 	}
 
 	/// <summary>
