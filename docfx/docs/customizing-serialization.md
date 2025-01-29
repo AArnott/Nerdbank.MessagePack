@@ -128,7 +128,7 @@ When some properties of the object would ideally be skipped because the values a
 A map has its own overhead because indexes are not implicit.
 
 When @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always?displayProperty=nameWithType, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
-But when this property is left to its default value of @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
+But when this property is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
 
 In the case above, the array format would have been chosen because there are two non-default values and no gaps.
 Let's now consider another case:
@@ -145,7 +145,7 @@ If both properties were set, the serialized form might look like this:
 ["value1",null,null,null,null,"value2"]
 ```
 
-For the rest of this section, let's assume @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues is at its default @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never value.
+For the rest of this section, let's assume @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never.
 This immediately changes the binary representation of the serialized object above to just this:
 
 ```json

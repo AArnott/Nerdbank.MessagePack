@@ -32,7 +32,7 @@ internal record class ConverterCache
 
 	private bool preserveReferences;
 	private bool serializeEnumValuesByName;
-	private SerializeDefaultValuesPolicy serializeDefaultValues;
+	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
@@ -110,7 +110,7 @@ internal record class ConverterCache
 	/// <summary>
 	/// Gets the policy concerning which properties to serialize though they are set to their default values.
 	/// </summary>
-	/// <value>The default value is <see cref="SerializeDefaultValuesPolicy.Never"/>, meaning that only properties with non-default values will be serialized.</value>
+	/// <value>The default value is <see cref="SerializeDefaultValuesPolicy.Required"/>, meaning that only required properties or properties with non-default values will be serialized.</value>
 	/// <remarks>
 	/// <para>
 	/// By default, the serializer omits properties and fields that are set to their default values when serializing objects.

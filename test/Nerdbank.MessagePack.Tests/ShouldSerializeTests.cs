@@ -42,6 +42,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void PersonWithPrimaryConstructor_AllDefaultsByType()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
@@ -54,6 +55,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void PersonWithPrimaryConstructor_AllDefaultsByExplicitDefault()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, "Blue");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
@@ -107,6 +109,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void PersonWithPrimaryConstructor_DifferentFavoriteColor()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, "Red");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 		MessagePackReader reader = new(sequence);
@@ -128,6 +131,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void PersonWithPrimaryConstructor_NoFavoriteColor()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, FavoriteColor: null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 		MessagePackReader reader = new(sequence);
