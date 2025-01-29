@@ -11,7 +11,7 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// A primitive types reader for the MessagePack format that reads from a <see cref="PipeReader"/>.
 /// </summary>
-/// <param name="pipeReader">The pipe reader to decode from.</param>
+/// <param name="pipeReader">The pipe reader to decode from. <see cref="PipeReader.Complete(Exception?)"/> is <em>not</em> called on this at the conclusion of deserialization, and the reader is left at the position after the last msgpack byte read.</param>
 /// <remarks>
 /// <para>
 /// This is an async capable and slower alternative to <see cref="MessagePackReader"/> with fewer methods,
@@ -23,7 +23,7 @@ namespace Nerdbank.MessagePack;
 /// <exception cref="MessagePackSerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncReader(PipeReader pipeReader)
+public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 {
 	private MessagePackStreamingReader.BufferRefresh? refresh;
 	private bool readerReturned = true;
@@ -194,6 +194,21 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		reader = default;
 
 		this.readerReturned = true;
+	}
+
+	/// <inheritdoc/>
+	public void Dispose()
+	{
+		if (!this.readerReturned)
+		{
+			throw new InvalidOperationException("A reader was not returned before disposing this object.");
+		}
+
+		if (this.refresh.HasValue)
+		{
+			// Update the PipeReader so it knows where we left off.
+			pipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
+		}
 	}
 
 	private void ThrowIfReaderNotReturned()

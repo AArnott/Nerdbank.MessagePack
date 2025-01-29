@@ -280,7 +280,7 @@ public partial record MessagePackSerializer
 	/// Deserializes a value from a <see cref="PipeReader"/>.
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
-	/// <param name="reader">The reader to deserialize from.</param>
+	/// <param name="reader">The reader to deserialize from. <see cref="PipeReader.Complete(Exception?)"/> is <em>not</em> called on this at the conclusion of deserialization, and the reader is left at the position after the last msgpack byte read.</param>
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
@@ -512,7 +512,7 @@ public partial record MessagePackSerializer
 		}
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		using MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 		return await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
 #pragma warning restore NBMsgPackAsync
