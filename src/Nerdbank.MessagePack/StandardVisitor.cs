@@ -139,7 +139,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		bool callShouldSerialize = this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always;
 		MessagePackConverter<T> converter;
 		if (propertyAccessors is not null)
 		{
@@ -152,7 +151,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
 			converter = ctorShape is not null
 				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null, callShouldSerialize);
+				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null, this.owner.SerializeDefaultValues);
 		}
 		else
 		{
@@ -171,7 +170,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			else
 			{
 				Func<T>? ctor = typeof(T) == typeof(object) ? (Func<T>)(object)new Func<object>(() => new object()) : null;
-				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor, callShouldSerialize);
+				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor, this.owner.SerializeDefaultValues);
 			}
 		}
 
@@ -294,7 +293,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
 	{
-		bool callShouldSerialize = this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always;
 		switch (state)
 		{
 			case MapConstructorVisitorInputs<TDeclaringType> inputs:
@@ -305,7 +303,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							inputs.Serializers,
 							inputs.Deserializers,
 							constructorShape.GetDefaultConstructor(),
-							callShouldSerialize);
+							this.owner.SerializeDefaultValues);
 					}
 
 					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
@@ -337,14 +335,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
 						new MapDeserializableProperties<TArgumentState>(parameters),
-						callShouldSerialize);
+						this.owner.SerializeDefaultValues);
 				}
 
 			case ArrayConstructorVisitorInputs<TDeclaringType> inputs:
 				{
 					if (constructorShape.Parameters.Count == 0)
 					{
-						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), callShouldSerialize);
+						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), this.owner.SerializeDefaultValues);
 					}
 
 					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
@@ -368,7 +366,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
 						parameters,
-						callShouldSerialize);
+						this.owner.SerializeDefaultValues);
 				}
 
 			default:

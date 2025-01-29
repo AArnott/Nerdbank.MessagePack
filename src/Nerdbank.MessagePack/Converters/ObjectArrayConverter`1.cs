@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -13,7 +12,10 @@ namespace Nerdbank.MessagePack.Converters;
 /// Only data types with default constructors may be deserialized.
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
-internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, Func<T>? constructor, bool callShouldSerialize) : ObjectConverterBase<T>
+/// <param name="properties">The properties to be serialized.</param>
+/// <param name="constructor">The constructor for the deserialized type.</param>
+/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter(MapSerializableProperties{T}, MapDeserializableProperties{T}?, Func{T}?, SerializeDefaultValuesPolicy)" path="/param[@name='defaultValuesPolicy']"/></param>
+internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -92,7 +94,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 
-		if (callShouldSerialize && properties.Length > 0)
+		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
 			int[]? indexesToIncludeArray = null;
 			try
@@ -171,7 +173,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 
-		if (callShouldSerialize && properties.Length > 0)
+		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
 			int[]? indexesToIncludeArray = null;
 			try
@@ -557,14 +559,18 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			schema["properties"] = propertiesObject;
 			schema["items"] = items;
 
-			if (required is not null)
+			// Only describe the properties as required if we guarantee that we'll write them.
+			if ((defaultValuesPolicy & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required)
 			{
-				schema["required"] = required;
-			}
+				if (required is not null)
+				{
+					schema["required"] = required;
+				}
 
-			if (minItems > 0)
-			{
-				schema["minItems"] = minItems;
+				if (minItems > 0)
+				{
+					schema["minItems"] = minItems;
+				}
 			}
 		}
 

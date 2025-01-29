@@ -14,8 +14,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="serializable">Tools for serializing individual property values.</param>
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="constructor">The default constructor, if present.</param>
-/// <param name="callShouldSerialize"><see langword="true" /> if some of the properties should maybe be omitted; <see langword="false" /> to allow a fast path that assumes all properties are serialized.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, bool callShouldSerialize) : ObjectConverterBase<T>
+/// <param name="defaultValuesPolicy">The policy for whether to serialize properties. When not <see cref="SerializeDefaultValuesPolicy.Always"/>, the <see cref="SerializableProperty{TDeclaringType}.ShouldSerialize"/> property will be consulted prior to serialization.</param>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -38,7 +38,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 
-		if (callShouldSerialize && serializable.Properties.Length > 0)
+		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
 		{
 			SerializableProperty<T>[] include = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
 			try
@@ -86,7 +86,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		SerializableProperty<T>[]? borrowedArray = null;
 		try
 		{
-			if (callShouldSerialize && serializable.Properties.Length > 0)
+			if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
 			{
 				borrowedArray = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
 				propertiesToSerialize = this.GetPropertiesToSerialize(value, borrowedArray.AsMemory());
@@ -328,9 +328,13 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 			schema["properties"] = properties;
 
-			if (required is not null)
+			// Only describe the properties as required if we guarantee that we'll write them.
+			if ((defaultValuesPolicy & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required)
 			{
-				schema["required"] = required;
+				if (required is not null)
+				{
+					schema["required"] = required;
+				}
 			}
 		}
 
