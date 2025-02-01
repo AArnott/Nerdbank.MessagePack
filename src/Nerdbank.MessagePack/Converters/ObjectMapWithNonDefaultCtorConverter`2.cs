@@ -125,23 +125,44 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					{
 						// The property name has already been buffered.
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader) && propertyReader.PreferAsyncSerialization)
+						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 						{
-							// The next property value is async, so turn in our sync reader and read it asynchronously.
+							if (propertyReader.PreferAsyncSerialization)
+							{
+								// The next property value is async, so turn in our sync reader and read it asynchronously.
+								reader.ReturnReader(ref syncReader);
+								argState = await propertyReader.ReadAsync(argState, reader, context).ConfigureAwait(false);
+								remainingEntries--;
+								continue;
+							}
+							else
+							{
+								// Deserialize the value synchronously.
+								reader.ReturnReader(ref syncReader);
+								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+								syncReader = reader.CreateBufferedReader();
+								propertyReader.Read(ref argState, ref syncReader, context);
+								reader.ReturnReader(ref syncReader);
+								remainingEntries--;
+								continue;
+							}
+						}
+						else
+						{
+							// We don't recognize the property name, so skip the value.
 							reader.ReturnReader(ref syncReader);
-							argState = await propertyReader.ReadAsync(argState, reader, context).ConfigureAwait(false);
-							remainingEntries--;
 
-							// Now loop around to see what else we can do with the next buffer.
+							streamingReader = reader.CreateStreamingReader();
+							while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+							{
+								streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+							}
+
+							reader.ReturnReader(ref streamingReader);
+
+							remainingEntries--;
 							continue;
 						}
-					}
-					else
-					{
-						// The property name isn't in the buffer, and thus whether it'll have an async reader.
-						// Advance the reader so it knows we need more buffer than we got last time.
-						reader.ReturnReader(ref syncReader);
-						continue;
 					}
 				}
 

@@ -35,6 +35,44 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
+	[Fact]
+	public async Task FetchRequiredBetweenPropertyAndItsSyncValue()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(2);
+		writer.Write("Name");
+		writer.Write("Andrew");
+		writer.Write("Age");
+		writer.Flush();
+		SequencePosition breakPosition = seq.AsReadOnlySequence.End;
+		writer.Write(1);
+		writer.Flush();
+
+		FragmentedPipeReader reader = new(seq.AsReadOnlySequence, breakPosition);
+		PersonWithAge? person = await this.Serializer.DeserializeAsync<PersonWithAge>(reader, TestContext.Current.CancellationToken);
+		Assert.Equal(1, person?.Age);
+	}
+
+	[Fact]
+	public async Task FetchRequiredBetweenPropertyAndItsSyncValue_DefaultCtor()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(2);
+		writer.Write("Name");
+		writer.Write("Andrew");
+		writer.Write("Age");
+		writer.Flush();
+		SequencePosition breakPosition = seq.AsReadOnlySequence.End;
+		writer.Write(1);
+		writer.Flush();
+
+		FragmentedPipeReader reader = new(seq.AsReadOnlySequence, breakPosition);
+		PersonWithAgeDefaultCtor? person = await this.Serializer.DeserializeAsync<PersonWithAgeDefaultCtor>(reader, TestContext.Current.CancellationToken);
+		Assert.Equal(1, person?.Age);
+	}
+
 	[GenerateShape]
 	public partial record Person
 	{
@@ -43,6 +81,17 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 
 		[PropertyShape(Name = "last_name")]
 		public required string LastName { get; init; }
+	}
+
+	[GenerateShape]
+	public partial record PersonWithAge(string Name, int Age);
+
+	[GenerateShape]
+	public partial record PersonWithAgeDefaultCtor
+	{
+		public string? Name { get; set; }
+
+		public int Age { get; set; }
 	}
 
 	[GenerateShape]
