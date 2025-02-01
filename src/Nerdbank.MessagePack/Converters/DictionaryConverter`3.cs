@@ -76,6 +76,70 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 		return schema;
 	}
 
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
+	{
+		if (index is null)
+		{
+			return false;
+		}
+
+		TKey desiredKey = (TKey)index;
+
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (isNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+
+		int count;
+		while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		for (int i = 0; i < count; i++)
+		{
+			reader.ReturnReader(ref streamingReader);
+			TKey? key;
+			if (keyConverter.PreferAsyncSerialization)
+			{
+				key = await keyConverter.ReadAsync(reader, context).ConfigureAwait(false);
+			}
+			else
+			{
+				await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
+				MessagePackReader syncReader = reader.CreateBufferedReader();
+				key = keyConverter.Read(ref syncReader, context);
+				reader.ReturnReader(ref syncReader);
+			}
+
+			if (EqualityComparer<TKey?>.Default.Equals(key, desiredKey))
+			{
+				return true;
+			}
+
+			// Skip the value since the key didn't match.
+			streamingReader = reader.CreateStreamingReader();
+			while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		return false;
+	}
+
 	/// <summary>
 	/// Reads a key and value pair.
 	/// </summary>

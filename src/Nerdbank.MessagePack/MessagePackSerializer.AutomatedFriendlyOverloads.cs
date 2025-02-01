@@ -56,6 +56,13 @@ public partial record MessagePackSerializer
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where T : IShapeable<T> => this.DeserializeEnumerableAsync(reader, T.GetShape(), cancellationToken);
 
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where T : IShapeable<T> => this.DeserializeEnumerableAsync(reader, T.GetShape(), options, cancellationToken);
+
 	/// <inheritdoc cref="DeserializeAsync{T}(Stream, ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -69,6 +76,13 @@ public partial record MessagePackSerializer
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where T : IShapeable<T> => this.DeserializeEnumerableAsync(stream, T.GetShape(), cancellationToken);
+
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(Stream, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(Stream stream, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where T : IShapeable<T> => this.DeserializeEnumerableAsync(stream, T.GetShape(), options, cancellationToken);
 
 	/// <inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -128,6 +142,13 @@ public partial record MessagePackSerializer
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where TProvider : IShapeable<T> => this.DeserializeEnumerableAsync(reader, TProvider.GetShape(), cancellationToken);
 
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement, TProvider>(PipeReader reader, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where TProvider : IShapeable<T> => this.DeserializeEnumerableAsync(reader, TProvider.GetShape(), options, cancellationToken);
+
 	/// <inheritdoc cref="DeserializeAsync{T}(Stream, ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -141,6 +162,13 @@ public partial record MessagePackSerializer
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T, TProvider>(Stream stream, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where TProvider : IShapeable<T> => this.DeserializeEnumerableAsync(stream, TProvider.GetShape(), cancellationToken);
+
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(Stream, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement, TProvider>(Stream stream, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where TProvider : IShapeable<T> => this.DeserializeEnumerableAsync(stream, TProvider.GetShape(), options, cancellationToken);
 
 	/// <inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads

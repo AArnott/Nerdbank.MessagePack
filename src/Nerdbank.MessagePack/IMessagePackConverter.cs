@@ -48,4 +48,29 @@ public interface IMessagePackConverter
 
 	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
 	JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);
+
+	/// <summary>
+	/// Skips ahead in the msgpack data to the point where the value of the specified property can be read.
+	/// </summary>
+	/// <param name="reader">The reader.</param>
+	/// <param name="propertyShape">The shape of the property whose value is to be skipped to.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <returns><see langword="true" /> if the specified property was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
+	/// <remarks><inheritdoc cref="SkipToIndexValueAsync(MessagePackAsyncReader, object?, SerializationContext)" path="/remarks"/></remarks>
+	[Experimental("NBMsgPackAsync")]
+	ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context);
+
+	/// <summary>
+	/// Skips ahead in the msgpack data to the point where the value at the specified index can be read.
+	/// </summary>
+	/// <param name="reader">The reader.</param>
+	/// <param name="index">The key or index of the value to be retrieved.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <returns><see langword="true" /> if the specified index was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
+	/// <remarks>
+	/// This method is used by <see cref="MessagePackSerializer.DeserializeEnumerableAsync{T, TElement}(System.IO.Pipelines.PipeReader, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
+	/// to skip to the starting position of a sequence that should be asynchronously enumerated.
+	/// </remarks>
+	[Experimental("NBMsgPackAsync")]
+	ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context);
 }

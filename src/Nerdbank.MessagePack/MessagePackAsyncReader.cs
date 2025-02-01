@@ -28,6 +28,9 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	private MessagePackStreamingReader.BufferRefresh? refresh;
 	private bool readerReturned = true;
 
+	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
+	private uint expectedRemainingStructures;
+
 	/// <summary>
 	/// Gets a cancellation token to consider for calls into this object.
 	/// </summary>
@@ -148,7 +151,10 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	{
 		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
-		return new(this.Refresh);
+		return new(this.Refresh)
+		{
+			ExpectedRemainingStructures = this.expectedRemainingStructures,
+		};
 	}
 
 	/// <summary>
@@ -164,7 +170,10 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	{
 		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
-		return new(this.Refresh.Buffer);
+		return new(this.Refresh.Buffer)
+		{
+			ExpectedRemainingStructures = this.expectedRemainingStructures,
+		};
 	}
 
 	/// <summary>
@@ -176,6 +185,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	public void ReturnReader(ref MessagePackStreamingReader reader)
 	{
 		this.refresh = reader.GetExchangeInfo();
+		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
 
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
@@ -189,6 +199,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		MessagePackStreamingReader.BufferRefresh refresh = this.Refresh;
 		refresh = refresh with { Buffer = refresh.Buffer.Slice(reader.Position) };
 		this.refresh = refresh;
+		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
 
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
@@ -223,6 +234,28 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		}
 
 		return this.Refresh.EndOfStream && this.Refresh.Buffer.IsEmpty;
+	}
+
+	/// <summary>
+	/// Advances the reader to the end of the top-level structure that we started reading.
+	/// </summary>
+	/// <returns>An async task representing the advance operation.</returns>
+	internal async ValueTask AdvanceToEndOfTopLevelStructureAsync()
+	{
+		if (this.expectedRemainingStructures > 0)
+		{
+			MessagePackStreamingReader reader = this.CreateStreamingReader();
+			SerializationContext context = new()
+			{
+				MidSkipRemainingCount = this.expectedRemainingStructures,
+			};
+			while (reader.TrySkip(ref context).NeedsMoreBytes())
+			{
+				reader = new(await reader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			this.ReturnReader(ref reader);
+		}
 	}
 
 	private void ThrowIfReaderNotReturned()

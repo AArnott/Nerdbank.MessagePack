@@ -142,6 +142,16 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 	public virtual JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
 
 	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public virtual ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public virtual ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
+		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+
+	/// <inheritdoc/>
 	void IMessagePackConverter.Write(ref MessagePackWriter writer, object? value, SerializationContext context)
 	{
 		this.Write(ref writer, (T?)value, context);

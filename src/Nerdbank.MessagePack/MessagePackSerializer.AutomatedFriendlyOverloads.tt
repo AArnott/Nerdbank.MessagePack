@@ -28,10 +28,10 @@ public partial record MessagePackSerializer
     
     foreach (ShapeSource shapeSource in Enum.GetValues(typeof(ShapeSource)))
     {
-        (string genericTypeParameters, string typeConstraint, string shapeProviderName) = shapeSource switch
+        (string genericTypeParameters, string genericTypeParametersWithElement, string typeConstraint, string shapeProviderName) = shapeSource switch
         {
-            ShapeSource.T => ("T","T : IShapeable<T>","T"),
-            ShapeSource.TProvider => ("T, TProvider","TProvider : IShapeable<T>","TProvider"),
+            ShapeSource.T => ("T","T, TElement", "T : IShapeable<T>","T"),
+            ShapeSource.TProvider => ("T, TProvider","T, TElement, TProvider","TProvider : IShapeable<T>","TProvider"),
             _ => throw new NotSupportedException(),
         };
 
@@ -97,6 +97,13 @@ public partial record MessagePackSerializer
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), cancellationToken);
+
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<<#=genericTypeParametersWithElement#>>(<#=firstParameter#>, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), options, cancellationToken);
 <#
         }
 

@@ -192,6 +192,13 @@ Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Pipelin
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Stream! stream, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Stream! stream, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync<T>(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TElement, TProvider>(System.IO.Pipelines.PipeReader! reader, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TElement, TProvider>(System.IO.Stream! stream, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TElement>(System.IO.Pipelines.PipeReader! reader, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TElement>(System.IO.Pipelines.PipeReader! reader, PolyType.Abstractions.ITypeShape<T>! shape, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TElement>(System.IO.Pipelines.PipeReader! reader, PolyType.ITypeShapeProvider! provider, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TElement>(System.IO.Stream! stream, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TElement>(System.IO.Stream! stream, PolyType.Abstractions.ITypeShape<T>! shape, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TProvider>(System.IO.Pipelines.PipeReader! reader, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T?>!
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T, TProvider>(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T?>!
 Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync<T>(System.IO.Pipelines.PipeReader! reader, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T?>!
@@ -254,6 +261,16 @@ Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName.init -> voi
 Nerdbank.MessagePack.MessagePackSerializer.SerializeObject(ref Nerdbank.MessagePack.MessagePackWriter writer, object? value, PolyType.Abstractions.ITypeShape! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.get -> Nerdbank.MessagePack.SerializationContext
 Nerdbank.MessagePack.MessagePackSerializer.StartingContext.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Deconstruct(out System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement>!>!>! Path) -> void
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.EmptySequenceForUndiscoverablePath.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.EmptySequenceForUndiscoverablePath.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.LeaveOpen.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.LeaveOpen.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Path.get -> System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement>!>!>!
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Path.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.StreamingEnumerationOptions(Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! original) -> void
+Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.StreamingEnumerationOptions(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement>!>!>! Path) -> void
 Nerdbank.MessagePack.MessagePackString
 Nerdbank.MessagePack.MessagePackString.Equals(Nerdbank.MessagePack.MessagePackString? other) -> bool
 Nerdbank.MessagePack.MessagePackString.IsMatch(System.Buffers.ReadOnlySequence<byte> utf8String) -> bool
@@ -369,6 +386,9 @@ override Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ToStri
 override Nerdbank.MessagePack.MessagePackSerializer.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.MessagePackSerializer.GetHashCode() -> int
 override Nerdbank.MessagePack.MessagePackSerializer.ToString() -> string!
+override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Equals(object? obj) -> bool
+override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.GetHashCode() -> int
+override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.ToString() -> string!
 override Nerdbank.MessagePack.MessagePackString.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.MessagePackString.GetHashCode() -> int
 override Nerdbank.MessagePack.SerializationContext.GetHashCode() -> int
@@ -442,6 +462,8 @@ static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.Mes
 static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack) -> string!
 static Nerdbank.MessagePack.MessagePackSerializer.operator !=(Nerdbank.MessagePack.MessagePackSerializer? left, Nerdbank.MessagePack.MessagePackSerializer? right) -> bool
 static Nerdbank.MessagePack.MessagePackSerializer.operator ==(Nerdbank.MessagePack.MessagePackSerializer? left, Nerdbank.MessagePack.MessagePackSerializer? right) -> bool
+static Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.operator !=(Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? left, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? right) -> bool
+static Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.operator ==(Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? left, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? right) -> bool
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(long value) -> int
 static Nerdbank.MessagePack.MessagePackWriter.GetEncodedLength(ulong value) -> int
 static Nerdbank.MessagePack.RawMessagePack.explicit operator Nerdbank.MessagePack.RawMessagePack(byte[]! msgpack) -> Nerdbank.MessagePack.RawMessagePack
@@ -471,7 +493,13 @@ virtual Nerdbank.MessagePack.MessagePackSerializer.<Clone>$() -> Nerdbank.Messag
 virtual Nerdbank.MessagePack.MessagePackSerializer.EqualityContract.get -> System.Type!
 virtual Nerdbank.MessagePack.MessagePackSerializer.Equals(Nerdbank.MessagePack.MessagePackSerializer? other) -> bool
 virtual Nerdbank.MessagePack.MessagePackSerializer.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.<Clone>$() -> Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>!
+virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.EqualityContract.get -> System.Type!
+virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Equals(Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? other) -> bool
+virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.PrintMembers(System.Text.StringBuilder! builder) -> bool
 [NBMsgPackAsync]Nerdbank.MessagePack.IMessagePackConverter.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
+[NBMsgPackAsync]Nerdbank.MessagePack.IMessagePackConverter.SkipToIndexValueAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, object? index, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
+[NBMsgPackAsync]Nerdbank.MessagePack.IMessagePackConverter.SkipToPropertyValueAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, PolyType.Abstractions.IPropertyShape! propertyShape, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
 [NBMsgPackAsync]Nerdbank.MessagePack.IMessagePackConverter.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.BufferNextStructureAsync(Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
@@ -546,6 +574,8 @@ virtual Nerdbank.MessagePack.MessagePackSerializer.PrintMembers(System.Text.Stri
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackStreamingReader.TrySkip(ref Nerdbank.MessagePack.SerializationContext context) -> Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<T>.Invoke(ref Nerdbank.MessagePack.MessagePackWriter writer, T state) -> void
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<T?>
+[NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.SkipToIndexValueAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, object? index, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
+[NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.SkipToPropertyValueAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, PolyType.Abstractions.IPropertyShape! propertyShape, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync.Invoke(object? state, System.SequencePosition consumed, System.SequencePosition examined, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult>
 ~override Nerdbank.MessagePack.Extension.Equals(object obj) -> bool
