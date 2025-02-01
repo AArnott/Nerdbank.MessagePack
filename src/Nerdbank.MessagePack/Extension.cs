@@ -15,7 +15,7 @@ public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data)
 	/// </summary>
 	/// <param name="typeCode"><inheritdoc cref="Extension(sbyte, ReadOnlySequence{byte})" path="/param[@name='TypeCode']"/></param>
 	/// <param name="data"><inheritdoc cref="Extension(sbyte, ReadOnlySequence{byte})" path="/param[@name='Data']"/></param>
-	public Extension(sbyte typeCode, Memory<byte> data)
+	public Extension(sbyte typeCode, ReadOnlyMemory<byte> data)
 		: this(typeCode, new ReadOnlySequence<byte>(data))
 	{
 	}

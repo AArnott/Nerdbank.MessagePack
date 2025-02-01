@@ -52,7 +52,7 @@ Nerdbank.MessagePack.Extension.Deconstruct(out sbyte TypeCode, out System.Buffer
 Nerdbank.MessagePack.Extension.Equals(Nerdbank.MessagePack.Extension other) -> bool
 Nerdbank.MessagePack.Extension.Extension() -> void
 Nerdbank.MessagePack.Extension.Extension(sbyte TypeCode, System.Buffers.ReadOnlySequence<byte> Data) -> void
-Nerdbank.MessagePack.Extension.Extension(sbyte typeCode, System.Memory<byte> data) -> void
+Nerdbank.MessagePack.Extension.Extension(sbyte typeCode, System.ReadOnlyMemory<byte> data) -> void
 Nerdbank.MessagePack.Extension.Header.get -> Nerdbank.MessagePack.ExtensionHeader
 Nerdbank.MessagePack.Extension.TypeCode.get -> sbyte
 Nerdbank.MessagePack.Extension.TypeCode.set -> void
