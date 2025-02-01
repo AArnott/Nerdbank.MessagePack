@@ -312,6 +312,8 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out string? value)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
+
 		DecodeResult result = this.TryReadNil();
 		if (result != DecodeResult.TokenMismatch)
 		{
@@ -336,7 +338,14 @@ public ref partial struct MessagePackStreamingReader
 		}
 		else
 		{
-			return this.ReadStringSlow(byteLength, out value);
+			result = this.ReadStringSlow(byteLength, out value);
+			if (result == DecodeResult.InsufficientBuffer)
+			{
+				// Rewind the header so we can try it again.
+				this.reader = originalPosition;
+			}
+
+			return result;
 		}
 	}
 
@@ -550,6 +559,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadBinary(out ReadOnlySequence<byte> value)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
 		DecodeResult result = this.TryReadBinHeader(out uint length);
 		if (result != DecodeResult.Success)
 		{
@@ -559,6 +569,8 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < length)
 		{
+			// Rewind the header so we can try it again.
+			this.reader = originalPosition;
 			value = default;
 			return this.InsufficientBytes;
 		}
@@ -575,6 +587,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadStringSequence(out ReadOnlySequence<byte> value)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
 		DecodeResult result = this.TryReadStringHeader(out uint length);
 		if (result != DecodeResult.Success)
 		{
@@ -584,6 +597,9 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < length)
 		{
+			// Rewind the header so we can try it again.
+			this.reader = originalPosition;
+
 			value = default;
 			return this.InsufficientBytes;
 		}
@@ -613,6 +629,7 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < length)
 		{
+			this.reader = oldReader;
 			value = default;
 			contiguous = false;
 			return this.InsufficientBytes;
@@ -686,6 +703,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out Extension extension)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
 		DecodeResult result = this.TryRead(out ExtensionHeader header);
 		if (result != DecodeResult.Success)
 		{
@@ -695,6 +713,8 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < header.Length)
 		{
+			// Rewind the header so we can try it again.
+			this.reader = originalPosition;
 			extension = default;
 			return this.InsufficientBytes;
 		}
