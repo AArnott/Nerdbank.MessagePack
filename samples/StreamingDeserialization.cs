@@ -20,10 +20,7 @@ namespace StreamingDeserialization
         }
 
         [GenerateShape]
-        internal partial class Person
-        {
-            public int Age { get; set; }
-        }
+        internal partial record Person(int Age);
         #endregion
 #else
         #region TopLevelStreamingEnumerationNETFX
@@ -37,12 +34,52 @@ namespace StreamingDeserialization
             }
         }
 
-        internal class Person
-        {
-            public int Age { get; set; }
-        }
+        internal record Person(int Age);
 
         [GenerateShape<Person>]
+        partial class Witness;
+        #endregion
+#endif
+    }
+
+    partial class StreamingEnumerationWithEnvelope
+    {
+#if NET
+        #region StreamingEnumerationWithEnvelopeNET
+        private static readonly MessagePackSerializer Serializer = new();
+
+        async Task ReadFamilyMembersAsync(PipeReader reader)
+        {
+            MessagePackSerializer.StreamingEnumerationOptions<Family, Person> options = new(f => f.Members);
+            await foreach (Person? item in Serializer.DeserializeEnumerableAsync(reader, options))
+            {
+                // Process item here.
+            }
+        }
+
+        [GenerateShape]
+        internal partial record Family(Person[] Members);
+
+        internal record Person(int Age);
+        #endregion
+#else
+        #region StreamingEnumerationWithEnvelopeNETFX
+        private static readonly MessagePackSerializer Serializer = new();
+
+        async Task ReadListAsync(PipeReader reader)
+        {
+            MessagePackSerializer.StreamingEnumerationOptions<Family, Person> options = new(f => f.Members);
+            await foreach (Person? item in Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options))
+            {
+                // Process item here.
+            }
+        }
+
+        internal record Family(Person[] Members);
+
+        internal record Person(int Age);
+
+        [GenerateShape<Family>]
         partial class Witness;
         #endregion
 #endif

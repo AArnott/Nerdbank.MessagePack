@@ -577,6 +577,106 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		return schema;
 	}
 
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	{
+		int index = -1;
+		for (int i = 0; i < properties.Length; i++)
+		{
+			PropertyAccessors<T>? property = properties.Span[i];
+			if (propertyShape.Equals(property?.Shape))
+			{
+				index = i;
+				break;
+			}
+		}
+
+		if (index == -1)
+		{
+			return false;
+		}
+
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (isNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+
+		context.DepthStep();
+
+		MessagePackType peekType;
+		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (peekType == MessagePackType.Map)
+		{
+			int count;
+			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			for (int i = 0; i < count; i++)
+			{
+				if (streamingReader.TryRead(out int key).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+
+				if (key == index)
+				{
+					reader.ReturnReader(ref streamingReader);
+					return true;
+				}
+
+				// Skip over the value.
+				if (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+			}
+
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+		else
+		{
+			int count;
+			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (count < index + 1)
+			{
+				reader.ReturnReader(ref streamingReader);
+				return false;
+			}
+
+			// Skip over the preceding elements.
+			for (int i = 0; i < index; i++)
+			{
+				while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+			}
+
+			reader.ReturnReader(ref streamingReader);
+			return true;
+		}
+	}
+
 	private Memory<int> GetPropertiesToSerialize(in T value, Memory<int> include)
 	{
 		return include[..this.GetPropertiesToSerialize(value, include.Span)];

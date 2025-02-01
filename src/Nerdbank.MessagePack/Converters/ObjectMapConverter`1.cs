@@ -343,6 +343,86 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		return schema;
 	}
 
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	{
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (isNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+
+		context.DepthStep();
+
+		int mapEntries;
+		while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		for (int i = 0; i < mapEntries; i++)
+		{
+			ReadOnlySpan<byte> propertyName;
+			bool contiguous;
+			while (streamingReader.TryReadStringSpan(out contiguous, out propertyName).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (!contiguous)
+			{
+				ReadOnlySequence<byte> propertyNameSequence;
+				while (streamingReader.TryReadStringSequence(out propertyNameSequence).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+
+				propertyName = propertyNameSequence.ToArray();
+			}
+
+			if (this.TryMatchPropertyName(propertyName, propertyShape.Name))
+			{
+				// Return before reading the value.
+				reader.ReturnReader(ref streamingReader);
+				return true;
+			}
+			else
+			{
+				// Skip over the value.
+				while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+			}
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		return false;
+	}
+
+	/// <summary>
+	/// Searches for a property with a given UTF-8 encoded name, and checks to see if it matches the expected name expressed as a string.
+	/// </summary>
+	/// <param name="propertyName">The UTF-8 encoded string.</param>
+	/// <param name="expectedName">The string.</param>
+	/// <returns><see langword="true" /> iff the two arguments are equal to each other, and match a known property on the object.</returns>
+	/// <remarks>
+	/// This is a glorified way of avoiding the costs of encoding/decoding.
+	/// Whether several dictionary lookups is faster than encoding/decoding is an open question.
+	/// </remarks>
+	private protected virtual bool TryMatchPropertyName(ReadOnlySpan<byte> propertyName, string expectedName)
+	{
+		return deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader) is true && propertyReader.Name == expectedName;
+	}
+
 	private Memory<SerializableProperty<T>> GetPropertiesToSerialize(in T value, Memory<SerializableProperty<T>> include)
 	{
 		return include[..this.GetPropertiesToSerialize(value, include.Span)];

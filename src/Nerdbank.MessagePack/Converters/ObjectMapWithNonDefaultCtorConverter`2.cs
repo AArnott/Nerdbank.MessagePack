@@ -168,4 +168,10 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		return value;
 	}
+
+	/// <inheritdoc/>
+	private protected override bool TryMatchPropertyName(ReadOnlySpan<byte> propertyName, string expectedName)
+	{
+		return parameters.Readers?.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader) is true && propertyReader.Name == expectedName;
+	}
 }
