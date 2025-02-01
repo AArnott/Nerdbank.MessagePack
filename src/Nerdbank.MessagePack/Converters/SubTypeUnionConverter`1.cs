@@ -72,7 +72,6 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		return (TBase?)converter.ReadObject(ref reader, context);
 	}
 
-#pragma warning disable NBMsgPack031 // Exactly one structure -- it doesn't (yet) see MessagePackConverter.WriteObject calls
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TBase? value, SerializationContext context)
 	{
@@ -101,7 +100,6 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			throw new MessagePackSerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
 		}
 	}
-#pragma warning restore NBMsgPack031
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
