@@ -76,7 +76,7 @@ public record struct SerializationContext
 	/// Gets or sets the number of elements that must still be skipped to complete a skip operation.
 	/// </summary>
 	/// <value>0 when no skip operation was suspended and is still incomplete.</value>
-	internal int MidSkipRemainingCount { get; set; }
+	internal uint MidSkipRemainingCount { get; set; }
 
 	/// <summary>
 	/// Gets or sets special state to be exposed to converters during serialization.
