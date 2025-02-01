@@ -286,8 +286,8 @@ internal record class ConverterCache
 	/// </summary>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverterInternal GetOrAddConverter(ITypeShape shape)
-		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAdd(shape)!;
+	internal MessagePackConverter GetOrAddConverter(ITypeShape shape)
+		=> (MessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
 	/// Gets a converter for the given type shape.

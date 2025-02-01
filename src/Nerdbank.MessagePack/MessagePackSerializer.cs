@@ -151,7 +151,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.converterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+		this.converterCache.GetOrAddConverter(shape).WriteObject(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -198,7 +198,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
+		return this.converterCache.GetOrAddConverter(shape).ReadObject(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -493,7 +493,7 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <param name="typeShape">The type shape.</param>
 	/// <returns>A converter.</returns>
-	internal IMessagePackConverterInternal GetConverter(ITypeShape typeShape) => this.converterCache.GetOrAddConverter(typeShape);
+	internal MessagePackConverter GetConverter(ITypeShape typeShape) => this.converterCache.GetOrAddConverter(typeShape);
 
 	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.

@@ -7,19 +7,19 @@ using System.Text.Json.Nodes;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A non-generic, <see cref="object"/>-based interface for all message pack converters.
+/// A non-generic, <see cref="object"/>-based base class for all message pack converters.
 /// </summary>
-public interface IMessagePackConverter
+public abstract class MessagePackConverter
 {
 	/// <summary>
 	/// Gets a value indicating whether callers should prefer the async methods on this object.
 	/// </summary>
 	/// <value>Unless overridden in a derived converter, this value is always <see langword="false"/>.</value>
 	/// <remarks>
-	/// Derived types that override the <see cref="WriteAsync"/> and/or <see cref="ReadAsync"/> methods
+	/// Derived types that override the <see cref="WriteObjectAsync"/> and/or <see cref="ReadObjectAsync"/> methods
 	/// should also override this property and have it return <see langword="true" />.
 	/// </remarks>
-	bool PreferAsyncSerialization { get; }
+	public abstract bool PreferAsyncSerialization { get; }
 
 	/// <summary>
 	/// Serializes an instance of an object.
@@ -27,7 +27,10 @@ public interface IMessagePackConverter
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="context">Context for the serialization.</param>
-	void Write(ref MessagePackWriter writer, object? value, SerializationContext context);
+	/// <remarks>
+	/// Implementations of this method should not flush the writer.
+	/// </remarks>
+	public abstract void WriteObject(ref MessagePackWriter writer, object? value, SerializationContext context);
 
 	/// <summary>
 	/// Deserializes an instance of an object.
@@ -35,19 +38,19 @@ public interface IMessagePackConverter
 	/// <param name="reader">The reader to use.</param>
 	/// <param name="context">Context for the deserialization.</param>
 	/// <returns>The deserialized value.</returns>
-	object? Read(ref MessagePackReader reader, SerializationContext context);
+	public abstract object? ReadObject(ref MessagePackReader reader, SerializationContext context);
 
-	/// <inheritdoc cref="Write"/>
+	/// <inheritdoc cref="WriteObject"/>
 	/// <returns>A task that tracks the asynchronous operation.</returns>
 	[Experimental("NBMsgPackAsync")]
-	ValueTask WriteAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context);
+	public abstract ValueTask WriteObjectAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context);
 
-	/// <inheritdoc cref="Read"/>
+	/// <inheritdoc cref="ReadObject"/>
 	[Experimental("NBMsgPackAsync")]
-	ValueTask<object?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context);
+	public abstract ValueTask<object?> ReadObjectAsync(MessagePackAsyncReader reader, SerializationContext context);
 
 	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
-	JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);
+	public abstract JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);
 
 	/// <summary>
 	/// Skips ahead in the msgpack data to the point where the value of the specified property can be read.
@@ -58,7 +61,7 @@ public interface IMessagePackConverter
 	/// <returns><see langword="true" /> if the specified property was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
 	/// <remarks><inheritdoc cref="SkipToIndexValueAsync(MessagePackAsyncReader, object?, SerializationContext)" path="/remarks"/></remarks>
 	[Experimental("NBMsgPackAsync")]
-	ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context);
+	public abstract ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context);
 
 	/// <summary>
 	/// Skips ahead in the msgpack data to the point where the value at the specified index can be read.
@@ -72,5 +75,10 @@ public interface IMessagePackConverter
 	/// to skip to the starting position of a sequence that should be asynchronously enumerated.
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context);
+	public abstract ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context);
+
+	/// <summary>
+	/// Just insurance that no external assembly can derive a concrete type from this type, except through the generic <see cref="MessagePackConverter{T}"/>.
+	/// </summary>
+	internal abstract void DerivationGuard();
 }

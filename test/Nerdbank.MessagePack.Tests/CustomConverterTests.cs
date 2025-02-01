@@ -98,13 +98,13 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	{
 		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
 		{
-			string? value = (string?)context.GetConverter(typeof(string), ShapeProvider).Read(ref reader, context);
+			string? value = (string?)context.GetConverter(typeof(string), ShapeProvider).ReadObject(ref reader, context);
 			return new CustomType { InternalProperty = value };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
 		{
-			context.GetConverter(typeof(string), ShapeProvider).Write(ref writer, value?.InternalProperty, context);
+			context.GetConverter(typeof(string), ShapeProvider).WriteObject(ref writer, value?.InternalProperty, context);
 		}
 	}
 
@@ -113,13 +113,13 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	{
 		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
 		{
-			string? value = (string?)context.GetConverter(ShapeProvider.GetShape(typeof(string))!).Read(ref reader, context);
+			string? value = (string?)context.GetConverter(ShapeProvider.GetShape(typeof(string))!).ReadObject(ref reader, context);
 			return new CustomType { InternalProperty = value };
 		}
 
 		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
 		{
-			context.GetConverter(ShapeProvider.GetShape(typeof(string)!)!).Write(ref writer, value?.InternalProperty, context);
+			context.GetConverter(ShapeProvider.GetShape(typeof(string)!)!).WriteObject(ref writer, value?.InternalProperty, context);
 		}
 	}
 

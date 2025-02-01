@@ -162,7 +162,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 			// We use a converter to do the actual skipping.
 			ITypeShape? typeShape = provider.GetShape(expression.Object.Type);
 			Requires.Argument(typeShape is not null, nameof(expression), "The expression does not have a known type shape.");
-			IMessagePackConverterInternal converter = serializer.GetConverter(typeShape);
+			MessagePackConverter converter = serializer.GetConverter(typeShape);
 
 			return await converter.SkipToIndexValueAsync(reader, indexArg, context).ConfigureAwait(false) ? null : expression;
 		}
@@ -242,7 +242,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 			Requires.Argument(propertyShape is not null, nameof(expression), "The expression does not refer to a serialized property.");
 
 			// We use a converter to do the actual skipping.
-			IMessagePackConverterInternal converter = serializer.GetConverter(typeShape);
+			MessagePackConverter converter = serializer.GetConverter(typeShape);
 
 			return await converter.SkipToPropertyValueAsync(reader, propertyShape, context).ConfigureAwait(false) ? null : expression;
 

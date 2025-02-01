@@ -8,7 +8,7 @@ namespace Nerdbank.MessagePack.Analyzers;
 public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackSerializer,
 	INamedTypeSymbol MessagePackConverter,
-	INamedTypeSymbol IMessagePackConverter,
+	INamedTypeSymbol MessagePackConverterNonGeneric,
 	INamedTypeSymbol MessagePackConverterAttribute,
 	INamedTypeSymbol MessagePackReader,
 	INamedTypeSymbol MessagePackStreamingReader,
@@ -53,8 +53,8 @@ public record ReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? imessagePackConverter = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.IMessagePackConverter");
-		if (imessagePackConverter is null)
+		INamedTypeSymbol? messagePackConverterNonGeneric = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverter");
+		if (messagePackConverterNonGeneric is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -133,7 +133,7 @@ public record ReferenceSymbols(
 		referenceSymbols = new ReferenceSymbols(
 			messagePackSerializer,
 			messagePackConverter,
-			imessagePackConverter,
+			messagePackConverterNonGeneric,
 			messagePackConverterAttribute,
 			messagePackReader,
 			messagePackStreamingReader,
