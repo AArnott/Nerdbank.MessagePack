@@ -51,7 +51,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			return this.baseConverter.Read(ref reader, context);
 		}
 
-		IMessagePackConverter? converter;
+		MessagePackConverter? converter;
 		if (reader.NextMessagePackType == MessagePackType.Integer)
 		{
 			int alias = reader.ReadInt32();
@@ -69,10 +69,10 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			}
 		}
 
-		return (TBase?)converter.Read(ref reader, context);
+		return (TBase?)converter.ReadObject(ref reader, context);
 	}
 
-#pragma warning disable NBMsgPack031 // Exactly one structure -- it can't see internal IMessagePackConverter.Write calls
+#pragma warning disable NBMsgPack031 // Exactly one structure -- it doesn't (yet) see MessagePackConverter.WriteObject calls
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TBase? value, SerializationContext context)
 	{
@@ -91,10 +91,10 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			writer.WriteNil();
 			this.baseConverter.Write(ref writer, value, context);
 		}
-		else if (this.subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape) result))
+		else if (this.subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape) result))
 		{
 			writer.WriteRaw(result.Alias.MsgPackAlias.Span);
-			result.Converter.Write(ref writer, value, context);
+			result.Converter.WriteObject(ref writer, value, context);
 		}
 		else
 		{
@@ -151,7 +151,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		IMessagePackConverter? converter;
+		MessagePackConverter? converter;
 		if (nextMessagePackType == MessagePackType.Integer)
 		{
 			int alias;
@@ -187,7 +187,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		}
 
 		reader.ReturnReader(ref streamingReader);
-		return (TBase?)await converter.ReadAsync(reader, context).ConfigureAwait(false);
+		return (TBase?)await converter.ReadObjectAsync(reader, context).ConfigureAwait(false);
 	}
 
 	/// <inheritdoc/>
@@ -219,17 +219,17 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 				writer.ReturnWriter(ref syncWriter);
 			}
 		}
-		else if (this.subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape) result))
+		else if (this.subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape) result))
 		{
 			syncWriter.WriteRaw(result.Alias.MsgPackAlias.Span);
 			if (result.Converter.PreferAsyncSerialization)
 			{
 				writer.ReturnWriter(ref syncWriter);
-				await result.Converter.WriteAsync(writer, value, context).ConfigureAwait(false);
+				await result.Converter.WriteObjectAsync(writer, value, context).ConfigureAwait(false);
 			}
 			else
 			{
-				result.Converter.Write(ref syncWriter, value, context);
+				result.Converter.WriteObject(ref syncWriter, value, context);
 				writer.ReturnWriter(ref syncWriter);
 			}
 		}

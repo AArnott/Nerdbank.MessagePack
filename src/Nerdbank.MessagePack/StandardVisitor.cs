@@ -532,9 +532,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			mapping = mutableMapping;
 		}
 
-		Dictionary<int, IMessagePackConverter> deserializeByIntData = new();
-		Dictionary<ReadOnlyMemory<byte>, IMessagePackConverter> deserializeByUtf8Data = new();
-		Dictionary<Type, (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
+		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
+		Dictionary<ReadOnlyMemory<byte>, MessagePackConverter> deserializeByUtf8Data = new();
+		Dictionary<Type, (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
 		foreach (KeyValuePair<SubTypeAlias, ITypeShape> pair in mapping)
 		{
 			SubTypeAlias alias = pair.Key;
@@ -543,7 +543,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			IMessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
+			MessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
 			switch (alias.Type)
 			{
 				case SubTypeAlias.AliasType.Integer:
@@ -562,7 +562,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return new SubTypes
 		{
 			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
-			DeserializersByStringAlias = new SpanDictionary<byte, IMessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
+			DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
 			Serializers = serializerData.ToFrozenDictionary(),
 		};
 	}
