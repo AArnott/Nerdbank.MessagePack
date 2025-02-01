@@ -65,6 +65,7 @@ public ref partial struct MessagePackStreamingReader
 		this.reader = new SequenceReader<byte>(sequence);
 		this.getMoreBytesAsync = additionalBytesSource;
 		this.getMoreBytesState = getMoreBytesState;
+		this.eof = additionalBytesSource is null;
 	}
 
 	/// <summary>
@@ -127,7 +128,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <summary>
 	/// Gets the error code to return when the buffer has insufficient bytes to finish a decode request.
 	/// </summary>
-	private DecodeResult InsufficientBytes => this.eof ? DecodeResult.EmptyBuffer : DecodeResult.InsufficientBuffer;
+	private DecodeResult InsufficientBytes => this.eof && this.SequenceReader.Sequence.IsEmpty ? DecodeResult.EmptyBuffer : DecodeResult.InsufficientBuffer;
 
 	/// <summary>
 	/// Peeks at the next msgpack byte without advancing the reader.

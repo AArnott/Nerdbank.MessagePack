@@ -127,14 +127,16 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 
 			reader = new(
 				readResult.Buffer,
-				static (state, consumed, examined, ct) =>
-				{
-					PipeReader pipeReader = (PipeReader)state!;
-					pipeReader.AdvanceTo(consumed, examined);
-					return pipeReader.ReadAsync(ct);
-				},
+				readResult.IsCompleted ? null : FetchMoreBytesAsync,
 				pipeReader);
 			this.refresh = reader.GetExchangeInfo();
+
+			static ValueTask<ReadResult> FetchMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken ct)
+			{
+				PipeReader pipeReader = (PipeReader)state!;
+				pipeReader.AdvanceTo(consumed, examined);
+				return pipeReader.ReadAsync(ct);
+			}
 		}
 	}
 
