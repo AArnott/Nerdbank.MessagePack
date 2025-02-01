@@ -41,7 +41,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.False(boolean);
 
-		Assert.Equal(DecodeResult.EmptyBuffer, incompleteReader.TryReadNil());
+		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNil());
 	}
 
 	[Fact]

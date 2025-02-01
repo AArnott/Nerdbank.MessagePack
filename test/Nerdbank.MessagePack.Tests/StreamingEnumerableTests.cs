@@ -34,6 +34,19 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 	/// Streams multiple elements with no array envelope.
 	/// </summary>
 	[Fact]
+	public async Task DeserializeEnumerableAsync_TopLevel_Empty()
+	{
+		PipeReader reader = PipeReader.Create(new([]));
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken))
+		{
+			Assert.Fail("No items should have been read.");
+		}
+	}
+
+	/// <summary>
+	/// Streams multiple elements with no array envelope.
+	/// </summary>
+	[Fact]
 	public async Task DeserializeEnumerableAsync_TopLevel_Stream()
 	{
 		using Sequence<byte> sequence = new();
