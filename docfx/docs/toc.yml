@@ -16,6 +16,7 @@ items:
 - name: Security
   href: security.md
 - href: structural-equality.md
+- href: unity.md
 - name: Migrating
   href: migrating.md
 - name: Type shapes
