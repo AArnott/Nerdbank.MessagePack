@@ -64,23 +64,8 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 				await this.ReadAsync().ConfigureAwait(false);
 			}
 
-			MessagePackStreamingReader reader = new(this.Refresh);
-			skipCount = 0;
-			for (; skipCount < countUpTo; skipCount++)
-			{
-				SerializationContext contextCopy = context; // We don't want the context changed to track partial skips
-				if (reader.TrySkip(ref contextCopy) is MessagePackPrimitives.DecodeResult.InsufficientBuffer or MessagePackPrimitives.DecodeResult.EmptyBuffer)
-				{
-					if (skipCount >= minimumDesiredBufferedStructures)
-					{
-						return skipCount;
-					}
-
-					break;
-				}
-			}
-
-			if (skipCount == countUpTo)
+			skipCount = this.GetBufferedStructuresCount(countUpTo, context, out _);
+			if (skipCount >= minimumDesiredBufferedStructures)
 			{
 				break;
 			}
@@ -222,6 +207,44 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 			// Update the PipeReader so it knows where we left off.
 			pipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
 		}
+	}
+
+	/// <summary>
+	/// Counts how many structures are buffered, starting at the reader's current position.
+	/// </summary>
+	/// <param name="countUpTo">The max number of structures to count.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="reachedMaxCount">Receives a value indicating whether we reached <paramref name="countUpTo"/> before running out of buffer, so there could be even more full structures in the buffer left uncounted.</param>
+	/// <returns>The number of structures in the buffer, up to <paramref name="countUpTo"/>.</returns>
+	/// <remarks>
+	/// If the reader is positioned at something other than the start of a stream, and somewhere deep in an object graph,
+	/// the <paramref name="countUpTo"/> should be set to avoid walking *up* the graph to count shallower structures.
+	/// Behavior is undefined if this is not followed.
+	/// </remarks>
+	internal int GetBufferedStructuresCount(int countUpTo, SerializationContext context, out bool reachedMaxCount)
+	{
+		this.ThrowIfReaderNotReturned();
+
+		reachedMaxCount = false;
+		if (this.refresh is null)
+		{
+			return 0;
+		}
+
+		MessagePackStreamingReader reader = new(this.refresh.Value);
+		int skipCount = 0;
+		for (; skipCount < countUpTo; skipCount++)
+		{
+			// Present a copy of the context because we don't want TrySkip to retain state between each of our calls.
+			SerializationContext contextCopy = context;
+			if (reader.TrySkip(ref contextCopy) is not MessagePackPrimitives.DecodeResult.Success)
+			{
+				return skipCount;
+			}
+		}
+
+		reachedMaxCount = true;
+		return skipCount;
 	}
 
 	/// <summary>

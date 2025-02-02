@@ -21,7 +21,7 @@ internal class StringConverter : MessagePackConverter<string>
 {
 #if NET
 	/// <inheritdoc/>
-	public override bool PreferAsyncSerialization => true;
+	public override bool PreferAsyncSerialization => false; // async is slower, and incremental decoding isn't worth it.
 #endif
 
 	/// <inheritdoc/>
@@ -65,7 +65,7 @@ internal class StringConverter : MessagePackConverter<string>
 			Decoder decoder = StringEncoding.UTF8.GetDecoder();
 			while (remainingBytesToDecode > 0)
 			{
-				// We'll always require at least a reasonable numbe of bytes to decode at once,
+				// We'll always require at least a reasonable number of bytes to decode at once,
 				// to keep overhead to a minimum.
 				uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
 				if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
