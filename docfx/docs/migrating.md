@@ -23,7 +23,7 @@ Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/Me
 Surrogate types for automatic serialization of unserializable types | [✅](surrogate-types.md) | ❌ |
 Custom converters         | [✅](custom-converters.md) | ✅ |
 Stateful converters       | [✅](custom-converters.md#stateful-converters) | ❌ |
-Deserialization callback  | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
+Deserialization callback  | [✅](xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
 MsgPack extensions        | ✅ | ✅ |
 LZ4 compression           | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/34) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression) |
 Trim-safe                 | ✅ | ❌ |
