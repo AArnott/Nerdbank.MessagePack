@@ -97,6 +97,31 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 		Assert.Equal(10, readCount);
 	}
 
+	[Trait("ReferencePreservation", "true")]
+	[Fact]
+	public async Task DeserializeEnumerableAsync_ReferencesPreserved()
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = true };
+		SimpleStreamingContainerKeyed original = new();
+		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>([original, original], TestContext.Current.CancellationToken);
+		this.LogMsgPack(new(msgpack));
+
+		PipeReader reader = PipeReader.Create(new(msgpack));
+		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
+		List<SimpleStreamingContainerKeyed?> actual = new();
+		NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async delegate
+		{
+			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+			{
+				actual.Add(item);
+			}
+
+			Assert.Equal(2, actual.Count);
+			Assert.Same(actual[0], actual[1]);
+		});
+		this.Logger.WriteLine(ex.Message);
+	}
+
 	[Theory, PairwiseData]
 	public async Task DeserializeEnumerableAsync_SequenceWithinTwoContainers(bool leaveOpen)
 	{
@@ -388,6 +413,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 
 	[GenerateShape<string>]
 	[GenerateShape<int>]
+	[GenerateShape<SimpleStreamingContainerKeyed[]>]
 	private partial class Witness;
 
 	[GenerateShape]

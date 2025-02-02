@@ -482,11 +482,11 @@ public partial record MessagePackSerializer
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, options, this.converterCache.GetOrAddConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, options, this.converterCache.GetOrAddConverter<TElement>(provider), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter<TElement>(provider), cancellationToken);
 
 	/// <summary>
 	/// Gets a converter for a given type shape.
@@ -532,6 +532,8 @@ public partial record MessagePackSerializer
 	/// </remarks>
 	private async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter<T> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
+		this.ThrowIfPreservingReferencesDuringEnumeration();
+
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
@@ -572,9 +574,7 @@ public partial record MessagePackSerializer
 	/// </remarks>
 	private async IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, MessagePackConverter<TElement> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
-		Requires.NotNull(reader);
-		Requires.NotNull(provider);
-		Requires.NotNull(options);
+		this.ThrowIfPreservingReferencesDuringEnumeration();
 
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
@@ -594,6 +594,18 @@ public partial record MessagePackSerializer
 		if (!options.LeaveOpen)
 		{
 			await reader.CompleteAsync().ConfigureAwait(false);
+		}
+	}
+
+	private void ThrowIfPreservingReferencesDuringEnumeration()
+	{
+		if (this.PreserveReferences)
+		{
+			// This was failing in less expected ways, so we just disable the scenario.
+			// It may not make so much sense anyway, given async enumeration clients may not want to retain references to all the objects
+			// over potentially long periods of time.
+			// If we ever enable this, we should think about whether to use weak references, or only preserve references within a single enumerated item's graph.
+			throw new NotSupportedException($"Enumeration is not supported when {nameof(this.PreserveReferences)} is enabled.");
 		}
 	}
 
