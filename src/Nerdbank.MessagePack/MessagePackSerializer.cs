@@ -539,9 +539,41 @@ public partial record MessagePackSerializer
 
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		bool readMore = false;
 		while (!await asyncReader.GetIsEndOfStreamAsync().ConfigureAwait(false))
 		{
-			yield return await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+			if (readMore)
+			{
+				// We've proven that items *can* fit in the buffer, and that we've read all we can.
+				// Try once to read more bytes to see if we can keep synchronously deserializing.
+				await asyncReader.ReadAsync().ConfigureAwait(false);
+				readMore = false;
+			}
+
+			// Use sync deserialization if we can because it's faster.
+			int bufferedCount = asyncReader.GetBufferedStructuresCount(100, context.Value, out bool reachedMaxCount);
+			if (bufferedCount > 0)
+			{
+				for (int i = 0; i < bufferedCount; i++)
+				{
+					MessagePackReader bufferedReader = asyncReader.CreateBufferedReader();
+					T? element = converter.Read(ref bufferedReader, context.Value);
+					asyncReader.ReturnReader(ref bufferedReader);
+					yield return element;
+				}
+
+				// If we reached the max count, there may be more items in the buffer still that were not counted.
+				// In which case we should NOT potentially wait for more bytes to come as that can hang deserialization
+				// while there are still items to yield.
+				// We've proven that items *can* fit in the buffer, and that we've read all we can.
+				// Try to read more bytes to see if we can keep synchronously deserializing.
+				readMore = !reachedMaxCount;
+			}
+			else
+			{
+				// We don't have a complete structure buffered, so use async streaming deserialization.
+				yield return await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+			}
 		}
 
 		asyncReader.Dispose(); // Only dispose in non-exceptional paths, since it may throw again if an exception is already in progress.
