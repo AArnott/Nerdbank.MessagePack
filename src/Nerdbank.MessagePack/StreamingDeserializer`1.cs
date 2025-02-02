@@ -4,7 +4,6 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft;
-using PolyType.Abstractions;
 
 namespace Nerdbank.MessagePack;
 
@@ -72,22 +71,60 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			if (elementConverter.PreferAsyncSerialization)
+			int remaining = count;
+			while (remaining > 0)
 			{
-				for (int i = 0; i < count; i++)
+				// Generally, we prefer synchronous deserialization because it's much faster.
+				// Deserialize all the elements we can that are already in the buffer.
+				if (elementConverter.PreferAsyncSerialization)
 				{
-					yield return await elementConverter.ReadAsync(reader, context).ConfigureAwait(false);
+					int bufferedCount = reader.GetBufferedStructuresCount(remaining, context, out bool reachedMaxCount);
+					if (bufferedCount > 0)
+					{
+						for (int i = 0; i < bufferedCount; i++)
+						{
+							MessagePackReader bufferedReader = reader.CreateBufferedReader();
+							TElement? element = elementConverter.Read(ref bufferedReader, context);
+							reader.ReturnReader(ref bufferedReader);
+							yield return element;
+							remaining--;
+						}
+
+						// If we reached the max count, there may be more items in the buffer still that were not counted.
+						// In which case we should NOT potentially wait for more bytes to come as that can hang deserialization
+						// while there are still items to yield.
+						if (!reachedMaxCount && remaining > 0)
+						{
+							// We've proven that items *can* fit in the buffer, and that we've read all we can.
+							// Try to read more bytes to see if we can keep synchronously deserializing.
+							await reader.ReadAsync().ConfigureAwait(false);
+						}
+					}
+					else
+					{
+						// We have less than one element in the buffer.
+						// There's no telling how large the element is, and the user wants us to be async about it.
+						// So deserialize asynchronously.
+						// After it's done, we *may* find ourselves with a leftover buffer with more items, in which case
+						// we'll try again to synchronously deserialize all we can.
+						yield return await elementConverter.ReadAsync(reader, context).ConfigureAwait(false);
+						remaining--;
+					}
 				}
-			}
-			else
-			{
-				for (int i = 0; i < count; i++)
+				else
 				{
-					await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
-					MessagePackReader bufferedReader = reader.CreateBufferedReader();
-					TElement? element = elementConverter.Read(ref bufferedReader, context);
-					reader.ReturnReader(ref bufferedReader);
-					yield return element;
+					// Each element should be synchronously deserialized.
+					// Buffer at least one structure, and notice how many structures we end up with in the buffer,
+					// deserializing them in bursts.
+					int bufferedCount = await reader.BufferNextStructuresAsync(1, remaining, context).ConfigureAwait(false);
+					for (int i = 0; i < bufferedCount; i++)
+					{
+						MessagePackReader bufferedReader = reader.CreateBufferedReader();
+						TElement? element = elementConverter.Read(ref bufferedReader, context);
+						reader.ReturnReader(ref bufferedReader);
+						yield return element;
+						remaining--;
+					}
 				}
 			}
 		}

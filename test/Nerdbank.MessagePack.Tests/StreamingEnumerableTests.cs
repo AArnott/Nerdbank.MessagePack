@@ -97,6 +97,24 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 		Assert.Equal(10, readCount);
 	}
 
+	[Fact]
+	public async Task DeserializeEnumerableAsync_AsyncElementConverter()
+	{
+		SimpleStreamingContainerKeyed[] array = [new(), new()];
+		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>(array, TestContext.Current.CancellationToken);
+		this.LogMsgPack(new(msgpack));
+
+		PipeReader reader = PipeReader.Create(new(msgpack));
+		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
+		List<SimpleStreamingContainerKeyed?> actual = new();
+		await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		{
+			actual.Add(item);
+		}
+
+		Assert.Equal(2, actual.Count);
+	}
+
 	[Trait("ReferencePreservation", "true")]
 	[Fact]
 	public async Task DeserializeEnumerableAsync_ReferencesPreserved()
