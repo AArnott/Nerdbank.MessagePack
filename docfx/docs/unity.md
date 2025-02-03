@@ -6,8 +6,7 @@ Nerdbank.MessagePack is ready for [Unity](https://unity.com/), both for its mono
 The NativeAOT readiness of this library makes it an ideal library for IL2CPP in your game.
 
 Unity, for its part, is _almost_ ready for Nerdbank.MessagePack.
-With a couple steps, **you can make it work today with its mono backend**.
-The IL2CPP backend fails to AOT compile the IL in our testing.
+With a couple steps, **you can make it work today**.
 
 ## Prerequisites
 
@@ -40,7 +39,7 @@ Unfortunately, unity does not arrange for the execution of these source generato
 ### Use of generic attributes
 
 The [UnityRoslynUpdater README](https://github.com/DaZombieKiller/UnityRoslynUpdater?tab=readme-ov-file#c-11) warns against using generic attributes or your game will crash.
-This warning does not apply for uses of the @PolyType.GenerateShapeAttribute`1 attribute because we don't use reflection to discover these attributes.
+This warning does not apply for uses of the @PolyType.GenerateShapeAttribute`1 attribute because the attribute is never included in your compiled assembly.
 
 ### `PolyType` name collision
 
@@ -53,44 +52,3 @@ This is tracked in [unity bug IN-94432](https://unity3d.atlassian.net/servicedes
 
 The only workaround known so far is to replace the occurrences of `PolyType` in the file referenced in the error with the fully-qualified `UnityEditor.U2D.Animation.ClipperLib.PolyType` string.
 This is a hack though, since it requires changing a file in the unity package cache for your project.
-
-### IL2CPP failures
-
-Building your project in il2cpp mode may fail with an error such as the one below.
-
-This is tracked in [unity bug IN-94443](https://unity3d.atlassian.net/servicedesk/customer/portal/2/IN-94443).
-
-```text
-C:\Program Files\Unity\Hub\Editor\6000.0.36f1\Editor\Data\il2cpp\build\deploy\il2cpp.exe @Library\Bee\artifacts\rsp\15974634398270999093.rsp
-Error: IL2CPP error (no further information about what managed code was being converted is available)
-System.AggregateException: One or more errors occurred. (Specified cast is not valid.)
- ---> System.InvalidCastException: Specified cast is not valid.
-   at System.Runtime.TypeCast.CheckCastClass(MethodTable*, Object) + 0x31
-   at Unity.IL2CPP.DataModel.BuildLogic.Populaters.DefinitionPopulater.PopulateCustomAttrProvider(CecilSourcedAssemblyData, ICustomAttributeProvider) + 0x1a2
-   at Unity.IL2CPP.DataModel.BuildLogic.Populaters.DefinitionPopulater.PopulateTypeDef(TypeContext, UnderConstructionMember`2) + 0x94
-   at Unity.IL2CPP.DataModel.BuildLogic.DataModelBuilder.<PopulateCecilSourcedDefinitions>b__14_1(UnderConstructionMember`2 typeDef) + 0x143
-   at System.Threading.Tasks.Parallel.<>c__DisplayClass44_0`2.<PartitionerForEachWorker>b__1(IEnumerator& partitionState, Int32 timeout, Boolean& replicationDelegateYieldedBeforeCompletion) + 0x286
---- End of stack trace from previous location ---
-   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
-   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(Exception) + 0x13
-   at System.Threading.Tasks.Parallel.<>c__DisplayClass44_0`2.<PartitionerForEachWorker>b__1(IEnumerator& partitionState, Int32 timeout, Boolean& replicationDelegateYieldedBeforeCompletion) + 0x646
-   at System.Threading.Tasks.TaskReplicator.Replica.Execute() + 0x3a
-   --- End of inner exception stack trace ---
-   at System.Threading.Tasks.TaskReplicator.Run[TState](TaskReplicator.ReplicatableUserAction`1, ParallelOptions, Boolean) + 0x15d
-   at System.Threading.Tasks.Parallel.PartitionerForEachWorker[TSource, TLocal](Partitioner`1, ParallelOptions, Action`1, Action`2, Action`3, Func`4, Func`5, Func`1, Action`1) + 0x23f
---- End of stack trace from previous location ---
-   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw() + 0x20
-   at System.Threading.Tasks.Parallel.ThrowSingleCancellationExceptionOrOtherException(ICollection, CancellationToken, Exception) + 0x31
-   at System.Threading.Tasks.Parallel.PartitionerForEachWorker[TSource, TLocal](Partitioner`1, ParallelOptions, Action`1, Action`2, Action`3, Func`4, Func`5, Func`1, Action`1) + 0x3e0
-   at System.Threading.Tasks.Parallel.ForEachWorker[TSource, TLocal](IEnumerable`1, ParallelOptions, Action`1, Action`2, Action`3, Func`4, Func`5, Func`1, Action`1) + 0x17b
-   at System.Threading.Tasks.Parallel.ForEach[TSource](IEnumerable`1, Action`1) + 0x68
-   at Unity.IL2CPP.DataModel.BuildLogic.Utils.ParallelHelpers.ForEach[TSource](IEnumerable`1, Action`1, Boolean) + 0xc4
-   at Unity.IL2CPP.DataModel.BuildLogic.DataModelBuilder.PopulateCecilSourcedDefinitions(ReadOnlyCollection`1) + 0x2e6
-   at Unity.IL2CPP.DataModel.BuildLogic.DataModelBuilder.Build() + 0x23c
-   at Unity.IL2CPP.AssemblyConversion.Phases.InitializePhase.Run(AssemblyConversionContext) + 0x319
-   at Unity.IL2CPP.AssemblyConversion.Classic.ClassicConverter.Run(AssemblyConversionContext) + 0x11
-   at Unity.IL2CPP.AssemblyConversion.AssemblyConverter.ConvertAssemblies(AssemblyConversionContext, ConversionMode) + 0x24
-   at Unity.IL2CPP.AssemblyConversion.AssemblyConverter.ConvertAssemblies(TinyProfiler2, AssemblyConversionInputData, AssemblyConversionParameters, AssemblyConversionInputDataForTopLevelAccess) + 0x17f
-
-UnityEditor.EditorApplication:Internal_CallDelayFunctions ()
-```
