@@ -3,7 +3,6 @@
 
 using System.Globalization;
 using System.Text;
-using MessagePackWriterCref = MessagePack.MessagePackWriter;
 
 public class MessagePackWriterTests
 {
@@ -15,7 +14,7 @@ public class MessagePackWriterTests
 	}
 
 	/// <summary>
-	/// Verifies that <see cref="MessagePackWriterCref.WriteRaw(ReadOnlySpan{byte})"/>
+	/// Verifies that <see cref="MessagePackWriter.WriteRaw(ReadOnlySpan{byte})"/>
 	/// accepts a span that came from stackalloc.
 	/// </summary>
 	[Fact]
