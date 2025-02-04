@@ -58,15 +58,18 @@
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "description": "Property0"
         },
         "2": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "GappedProperty"
         },
         "3": {
           "oneOf": [
             {
-              "$ref": "#/definitions/SchemaTests\u002BPerson"
+              "$ref": "#/definitions/SchemaTests\u002BPerson",
+              "description": "Person"
             },
             {
               "type": "null"
@@ -79,7 +82,8 @@
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "description": "Property0"
         },
         {
           "type": [
@@ -94,12 +98,14 @@
           "description": "This is an undocumented element that is ignored by the deserializer and always serialized as null."
         },
         {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "GappedProperty"
         },
         {
           "oneOf": [
             {
-              "$ref": "#/definitions/SchemaTests\u002BPerson"
+              "$ref": "#/definitions/SchemaTests\u002BPerson",
+              "description": "Person"
             },
             {
               "type": "null"

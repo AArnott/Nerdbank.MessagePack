@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+[Trait("AsyncSerialization", "true")]
 public partial class AsyncSerializationTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Fact]
@@ -75,7 +76,30 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 		Assert.Equal(expected, actual);
 	}
 
+	[Theory, PairwiseData]
+	public async Task DeserializeAsyncAdvancesPipeReader(bool forceAsync)
+	{
+		this.Serializer = this.Serializer with { MaxAsyncBuffer = forceAsync ? 0 : 1024 };
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.Write(42);
+		writer.Flush();
+		sequence.Write("a"u8);
+
+		PipeReader reader = PipeReader.Create(sequence);
+
+		// Deserialize a value. It should advance the reader exactly across the msgpack structure.
+		int number = await this.Serializer.DeserializeAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(42, number);
+
+		// Verify that the reader is now positioned at the next byte.
+		ReadResult readResult = await reader.ReadAsync(TestContext.Current.CancellationToken);
+		Assert.True(readResult.IsCompleted);
+		Assert.Equal("a"u8, readResult.Buffer.ToArray());
+	}
+
 	[GenerateShape<string>]
+	[GenerateShape<int>]
 	private partial class Witness;
 
 	[GenerateShape]

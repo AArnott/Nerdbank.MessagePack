@@ -127,9 +127,8 @@ When all values on an object are set to non-default values and there are no gaps
 When some properties of the object would ideally be skipped because the values are their defaults and/or there are gaps in assigned indexes, a map may be more compact.
 A map has its own overhead because indexes are not implicit.
 
-When @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is `true`, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
-But when this property is left to its default value of `false`, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
-
+When @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always?displayProperty=nameWithType, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
+But when this property is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
 
 In the case above, the array format would have been chosen because there are two non-default values and no gaps.
 Let's now consider another case:
@@ -139,14 +138,14 @@ Let's now consider another case:
 Note the large gap between assigned indexes 0 and 5 in this class.
 This could be justified by the removal of properties with indexes 1-4 and a desire to retain compatibility with previous versions of the serialized schema.
 
-Serializing this object with @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType set to `true`, we'd get a 6-element array.
+Serializing this object with @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always, we'd get a 6-element array.
 If both properties were set, the serialized form might look like this:
 
 ```json
 ["value1",null,null,null,null,"value2"]
 ```
 
-For the rest of this section, let's assume @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is at its default `false` value.
+For the rest of this section, let's assume @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never.
 This immediately changes the binary representation of the serialized object above to just this:
 
 ```json

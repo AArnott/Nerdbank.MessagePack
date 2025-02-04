@@ -11,7 +11,7 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// A primitive types reader for the MessagePack format that reads from a <see cref="PipeReader"/>.
 /// </summary>
-/// <param name="pipeReader">The pipe reader to decode from.</param>
+/// <param name="pipeReader">The pipe reader to decode from. <see cref="PipeReader.Complete(Exception?)"/> is <em>not</em> called on this at the conclusion of deserialization, and the reader is left at the position after the last msgpack byte read.</param>
 /// <remarks>
 /// <para>
 /// This is an async capable and slower alternative to <see cref="MessagePackReader"/> with fewer methods,
@@ -23,10 +23,13 @@ namespace Nerdbank.MessagePack;
 /// <exception cref="MessagePackSerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncReader(PipeReader pipeReader)
+public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 {
 	private MessagePackStreamingReader.BufferRefresh? refresh;
 	private bool readerReturned = true;
+
+	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
+	private uint expectedRemainingStructures;
 
 	/// <summary>
 	/// Gets a cancellation token to consider for calls into this object.
@@ -61,23 +64,8 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 				await this.ReadAsync().ConfigureAwait(false);
 			}
 
-			MessagePackStreamingReader reader = new(this.Refresh);
-			skipCount = 0;
-			for (; skipCount < countUpTo; skipCount++)
-			{
-				SerializationContext contextCopy = context; // We don't want the context changed to track partial skips
-				if (reader.TrySkip(ref contextCopy) is MessagePackPrimitives.DecodeResult.InsufficientBuffer or MessagePackPrimitives.DecodeResult.EmptyBuffer)
-				{
-					if (skipCount >= minimumDesiredBufferedStructures)
-					{
-						return skipCount;
-					}
-
-					break;
-				}
-			}
-
-			if (skipCount == countUpTo)
+			skipCount = this.GetBufferedStructuresCount(countUpTo, context, out _);
+			if (skipCount >= minimumDesiredBufferedStructures)
 			{
 				break;
 			}
@@ -124,14 +112,16 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 
 			reader = new(
 				readResult.Buffer,
-				static (state, consumed, examined, ct) =>
-				{
-					PipeReader pipeReader = (PipeReader)state!;
-					pipeReader.AdvanceTo(consumed, examined);
-					return pipeReader.ReadAsync(ct);
-				},
+				readResult.IsCompleted ? null : FetchMoreBytesAsync,
 				pipeReader);
 			this.refresh = reader.GetExchangeInfo();
+
+			static ValueTask<ReadResult> FetchMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken ct)
+			{
+				PipeReader pipeReader = (PipeReader)state!;
+				pipeReader.AdvanceTo(consumed, examined);
+				return pipeReader.ReadAsync(ct);
+			}
 		}
 	}
 
@@ -148,7 +138,10 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	{
 		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
-		return new(this.Refresh);
+		return new(this.Refresh)
+		{
+			ExpectedRemainingStructures = this.expectedRemainingStructures,
+		};
 	}
 
 	/// <summary>
@@ -164,7 +157,10 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	{
 		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
-		return new(this.Refresh.Buffer);
+		return new(this.Refresh.Buffer)
+		{
+			ExpectedRemainingStructures = this.expectedRemainingStructures,
+		};
 	}
 
 	/// <summary>
@@ -176,6 +172,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 	public void ReturnReader(ref MessagePackStreamingReader reader)
 	{
 		this.refresh = reader.GetExchangeInfo();
+		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
 
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
@@ -189,11 +186,101 @@ public class MessagePackAsyncReader(PipeReader pipeReader)
 		MessagePackStreamingReader.BufferRefresh refresh = this.Refresh;
 		refresh = refresh with { Buffer = refresh.Buffer.Slice(reader.Position) };
 		this.refresh = refresh;
+		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
 
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
 
 		this.readerReturned = true;
+	}
+
+	/// <inheritdoc/>
+	public void Dispose()
+	{
+		if (!this.readerReturned)
+		{
+			throw new InvalidOperationException("A reader was not returned before disposing this object.");
+		}
+
+		if (this.refresh.HasValue)
+		{
+			// Update the PipeReader so it knows where we left off.
+			pipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
+		}
+	}
+
+	/// <summary>
+	/// Counts how many structures are buffered, starting at the reader's current position.
+	/// </summary>
+	/// <param name="countUpTo">The max number of structures to count.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="reachedMaxCount">Receives a value indicating whether we reached <paramref name="countUpTo"/> before running out of buffer, so there could be even more full structures in the buffer left uncounted.</param>
+	/// <returns>The number of structures in the buffer, up to <paramref name="countUpTo"/>.</returns>
+	/// <remarks>
+	/// If the reader is positioned at something other than the start of a stream, and somewhere deep in an object graph,
+	/// the <paramref name="countUpTo"/> should be set to avoid walking *up* the graph to count shallower structures.
+	/// Behavior is undefined if this is not followed.
+	/// </remarks>
+	internal int GetBufferedStructuresCount(int countUpTo, SerializationContext context, out bool reachedMaxCount)
+	{
+		this.ThrowIfReaderNotReturned();
+
+		reachedMaxCount = false;
+		if (this.refresh is null)
+		{
+			return 0;
+		}
+
+		MessagePackStreamingReader reader = new(this.refresh.Value);
+		int skipCount = 0;
+		for (; skipCount < countUpTo; skipCount++)
+		{
+			// Present a copy of the context because we don't want TrySkip to retain state between each of our calls.
+			SerializationContext contextCopy = context;
+			if (reader.TrySkip(ref contextCopy) is not MessagePackPrimitives.DecodeResult.Success)
+			{
+				return skipCount;
+			}
+		}
+
+		reachedMaxCount = true;
+		return skipCount;
+	}
+
+	/// <summary>
+	/// Gets a value indicating whether we've reached the end of the stream.
+	/// </summary>
+	/// <returns>A boolean value.</returns>
+	internal async ValueTask<bool> GetIsEndOfStreamAsync()
+	{
+		if (this.refresh is null or { Buffer.IsEmpty: true, EndOfStream: false })
+		{
+			await this.ReadAsync().ConfigureAwait(false);
+		}
+
+		return this.Refresh.EndOfStream && this.Refresh.Buffer.IsEmpty;
+	}
+
+	/// <summary>
+	/// Advances the reader to the end of the top-level structure that we started reading.
+	/// </summary>
+	/// <returns>An async task representing the advance operation.</returns>
+	internal async ValueTask AdvanceToEndOfTopLevelStructureAsync()
+	{
+		if (this.expectedRemainingStructures > 0)
+		{
+			MessagePackStreamingReader reader = this.CreateStreamingReader();
+			SerializationContext context = new()
+			{
+				MidSkipRemainingCount = this.expectedRemainingStructures,
+			};
+			while (reader.TrySkip(ref context).NeedsMoreBytes())
+			{
+				reader = new(await reader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			this.ReturnReader(ref reader);
+		}
 	}
 
 	private void ThrowIfReaderNotReturned()

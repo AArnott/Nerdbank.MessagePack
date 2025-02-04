@@ -17,19 +17,20 @@ Optimized for high performance | [✅](performance.md) | [✅](https://github.co
 Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
 Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
 Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] |
+Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
 Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) |
 Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) |
-Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
 Surrogate types for automatic serialization of unserializable types | [✅](surrogate-types.md) | ❌ |
 Custom converters         | [✅](custom-converters.md) | ✅ |
 Stateful converters       | [✅](custom-converters.md#stateful-converters) | ❌ |
-Deserialization callback  | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
+Deserialization callback  | [✅](xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
 MsgPack extensions        | ✅ | ✅ |
 LZ4 compression           | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/34) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression) |
 Trim-safe                 | ✅ | ❌ |
 NativeAOT ready           | ✅ | ❌[^2] |
-Unity                     | ❓[^3] | ✅ |
+Unity                     | [✅](unity.md)[^3] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#unity-support) |
 Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ |
+Endless streaming deserialization | [✅](streaming-deserialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream)
 Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
 JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
 Secure defaults           | ✅ | ❌ |
@@ -43,7 +44,7 @@ Security is a complex subject, and an area where Nerdbank.MessagePack is activel
 
 [^1]: Nerdbank.MessagePack's approach is more likely to be correct by default and more flexible to fixing when it is not.
 [^2]: Although MessagePack-CSharp does not support .NET 8 flavor NativeAOT, it has long-supported Unity's il2cpp runtime, but it requires careful avoidance of dynamic features.
-[^3]: This hasn't been tested, and even if it works, the level of active support may be limited as the maintainers of Nerdbank.MessagePack do not use Unity. We may accept outside contributions to support it if it isn't onerous to maintain.
+[^3]: Particular steps are currently required, and limitations apply. See our [unity doc](unity.md) for more information.
 [^4]: MessagePack-CSharp is limited to derived types that can be attributed on the base type, whereas Nerdbank.MessagePack allows for dynamically identifying derived types at runtime.
 
 ## Migration process

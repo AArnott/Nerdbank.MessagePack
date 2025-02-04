@@ -232,7 +232,7 @@ public class ConverterAnalyzersTests
 					{
 						value = new MyType
 						{
-							SomeField = (SomeOtherType)context.GetConverter(typeof(SomeOtherType), null).Read(ref reader, context),
+							SomeField = (SomeOtherType)context.GetConverter(typeof(SomeOtherType), null).ReadObject(ref reader, context),
 						};
 					}
 				}
@@ -245,7 +245,7 @@ public class ConverterAnalyzersTests
 						return;
 					}
 
-					context.GetConverter(typeof(SomeOtherType), null).Write(ref writer, value.SomeField, context);
+					context.GetConverter(typeof(SomeOtherType), null).WriteObject(ref writer, value.SomeField, context);
 				}
 
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();

@@ -15,9 +15,9 @@ using System.Runtime.InteropServices;
 public partial class ArraysOfMultipleCategoryPrimitives
 {
 	private const int Length = 10_000;
-	private static readonly MessagePackSerializer AcceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = false };
-	private static readonly MessagePackSerializer UnacceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = true };
-	private static readonly MessagePackSerializer TestSerializer = new() { SerializeDefaultValues = true };
+	private static readonly MessagePackSerializer AcceleratedSerializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always, DisableHardwareAcceleration = false };
+	private static readonly MessagePackSerializer UnacceleratedSerializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always, DisableHardwareAcceleration = true };
+	private static readonly MessagePackSerializer TestSerializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
 	private static readonly sbyte[] Int8Values = GetRandomValues<sbyte>(Length);
 	private static readonly sbyte[] Int8ValuesMultipleCategory = GetRandomInt8Values2Category(Length);
 	private static readonly byte[] Int8ValuesMsgPack = TestSerializer.Serialize<sbyte[], Witness>(Int8Values);

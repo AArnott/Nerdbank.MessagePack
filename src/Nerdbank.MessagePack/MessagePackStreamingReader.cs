@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
-using Microsoft;
 using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
 namespace Nerdbank.MessagePack;
@@ -34,6 +33,7 @@ public ref partial struct MessagePackStreamingReader
 	private readonly GetMoreBytesAsync? getMoreBytesAsync;
 	private readonly object? getMoreBytesState;
 	private SequenceReader<byte> reader;
+	private uint expectedRemainingStructures;
 
 	/// <summary>
 	/// A value indicating whether no more bytes can be expected once we reach the end of the current buffer.
@@ -65,6 +65,7 @@ public ref partial struct MessagePackStreamingReader
 		this.reader = new SequenceReader<byte>(sequence);
 		this.getMoreBytesAsync = additionalBytesSource;
 		this.getMoreBytesState = getMoreBytesState;
+		this.eof = additionalBytesSource is null;
 	}
 
 	/// <summary>
@@ -113,9 +114,21 @@ public ref partial struct MessagePackStreamingReader
 	internal ref SequenceReader<byte> SequenceReader => ref this.reader;
 
 	/// <summary>
+	/// Gets or sets the number of structures that have been announced but not yet read.
+	/// </summary>
+	/// <remarks>
+	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
+	/// </remarks>
+	internal uint ExpectedRemainingStructures
+	{
+		get => this.expectedRemainingStructures;
+		set => this.expectedRemainingStructures = value;
+	}
+
+	/// <summary>
 	/// Gets the error code to return when the buffer has insufficient bytes to finish a decode request.
 	/// </summary>
-	private DecodeResult InsufficientBytes => this.eof ? DecodeResult.EmptyBuffer : DecodeResult.InsufficientBuffer;
+	private DecodeResult InsufficientBytes => this.eof && this.SequenceReader.Sequence.IsEmpty ? DecodeResult.EmptyBuffer : DecodeResult.InsufficientBuffer;
 
 	/// <summary>
 	/// Peeks at the next msgpack byte without advancing the reader.
@@ -158,7 +171,7 @@ public ref partial struct MessagePackStreamingReader
 		{
 			if (next == MessagePackCode.Nil)
 			{
-				this.reader.Advance(1);
+				this.Advance(1);
 				return DecodeResult.Success;
 			}
 
@@ -207,7 +220,7 @@ public ref partial struct MessagePackStreamingReader
 					return DecodeResult.TokenMismatch;
 			}
 
-			this.reader.Advance(1);
+			this.Advance(1);
 			return DecodeResult.Success;
 		}
 		else
@@ -227,7 +240,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == MessagePackPrimitives.DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -238,7 +251,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case MessagePackPrimitives.DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -271,7 +284,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == MessagePackPrimitives.DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -282,7 +295,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case MessagePackPrimitives.DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -312,6 +325,8 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out string? value)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
+
 		DecodeResult result = this.TryReadNil();
 		if (result != DecodeResult.TokenMismatch)
 		{
@@ -331,12 +346,19 @@ public ref partial struct MessagePackStreamingReader
 		{
 			// Fast path: all bytes to decode appear in the same span.
 			value = StringEncoding.UTF8.GetString(unreadSpan.Slice(0, checked((int)byteLength)));
-			this.reader.Advance(byteLength);
+			this.Advance(byteLength);
 			return DecodeResult.Success;
 		}
 		else
 		{
-			return this.ReadStringSlow(byteLength, out value);
+			result = this.ReadStringSlow(byteLength, out value);
+			if (result == DecodeResult.InsufficientBuffer)
+			{
+				// Rewind the header so we can try it again.
+				this.reader = originalPosition;
+			}
+
+			return result;
 		}
 	}
 
@@ -350,7 +372,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -361,7 +383,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -396,7 +418,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, extensionHeader, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -407,7 +429,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -441,7 +463,7 @@ public ref partial struct MessagePackStreamingReader
 		count = checked((int)uintCount);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize, added: uintCount);
 			return DecodeResult.Success;
 		}
 
@@ -452,7 +474,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize, added: unchecked((uint)count));
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -488,7 +510,7 @@ public ref partial struct MessagePackStreamingReader
 		count = checked((int)uintCount);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize, added: uintCount * 2);
 			return DecodeResult.Success;
 		}
 
@@ -499,7 +521,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize, added: unchecked((uint)count) * 2);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -527,7 +549,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <summary>
 	/// Reads a given number of bytes from the msgpack stream without decoding them.
 	/// </summary>
-	/// <param name="length">The number of bytes to read.</param>
+	/// <param name="length">The number of bytes to read. This should always be the length of exactly one msgpack structure.</param>
 	/// <param name="rawMsgPack">The bytes if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawMsgPack)
@@ -535,7 +557,7 @@ public ref partial struct MessagePackStreamingReader
 		if (this.reader.Remaining >= length)
 		{
 			rawMsgPack = this.reader.Sequence.Slice(this.reader.Position, length);
-			this.reader.Advance(length);
+			this.Advance(length);
 			return DecodeResult.Success;
 		}
 
@@ -550,6 +572,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadBinary(out ReadOnlySequence<byte> value)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
 		DecodeResult result = this.TryReadBinHeader(out uint length);
 		if (result != DecodeResult.Success)
 		{
@@ -559,12 +582,14 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < length)
 		{
+			// Rewind the header so we can try it again.
+			this.reader = originalPosition;
 			value = default;
 			return this.InsufficientBytes;
 		}
 
 		value = this.reader.Sequence.Slice(this.reader.Position, length);
-		this.reader.Advance(length);
+		this.Advance(length);
 		return DecodeResult.Success;
 	}
 
@@ -575,6 +600,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryReadStringSequence(out ReadOnlySequence<byte> value)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
 		DecodeResult result = this.TryReadStringHeader(out uint length);
 		if (result != DecodeResult.Success)
 		{
@@ -584,12 +610,15 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < length)
 		{
+			// Rewind the header so we can try it again.
+			this.reader = originalPosition;
+
 			value = default;
 			return this.InsufficientBytes;
 		}
 
 		value = this.reader.Sequence.Slice(this.reader.Position, length);
-		this.reader.Advance(length);
+		this.Advance(length);
 		return DecodeResult.Success;
 	}
 
@@ -613,6 +642,7 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < length)
 		{
+			this.reader = oldReader;
 			value = default;
 			contiguous = false;
 			return this.InsufficientBytes;
@@ -621,7 +651,7 @@ public ref partial struct MessagePackStreamingReader
 		if (this.reader.CurrentSpanIndex + length <= this.reader.CurrentSpan.Length)
 		{
 			value = this.reader.CurrentSpan.Slice(this.reader.CurrentSpanIndex, checked((int)length));
-			this.reader.Advance(length);
+			this.Advance(length);
 			contiguous = true;
 			return DecodeResult.Success;
 		}
@@ -639,12 +669,16 @@ public ref partial struct MessagePackStreamingReader
 	/// </summary>
 	/// <param name="extensionHeader">Receives the extension header if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
+	/// <remarks>
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// with the length of bytes specified by <see cref="ExtensionHeader.Length"/> (even if zero), so that the overall structure can be recorded as read.
+	/// </remarks>
 	public DecodeResult TryRead(out ExtensionHeader extensionHeader)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(this.reader.UnreadSpan, out extensionHeader, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize, 0);
 			return DecodeResult.Success;
 		}
 
@@ -655,7 +689,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize, 0);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -686,6 +720,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryRead(out Extension extension)
 	{
+		SequenceReader<byte> originalPosition = this.reader;
 		DecodeResult result = this.TryRead(out ExtensionHeader header);
 		if (result != DecodeResult.Success)
 		{
@@ -695,12 +730,14 @@ public ref partial struct MessagePackStreamingReader
 
 		if (this.reader.Remaining < header.Length)
 		{
+			// Rewind the header so we can try it again.
+			this.reader = originalPosition;
 			extension = default;
 			return this.InsufficientBytes;
 		}
 
 		ReadOnlySequence<byte> data = this.reader.Sequence.Slice(this.reader.Position, header.Length);
-		this.reader.Advance(header.Length);
+		this.Advance(header.Length);
 		extension = new Extension(header.TypeCode, data);
 		return DecodeResult.Success;
 	}
@@ -717,28 +754,31 @@ public ref partial struct MessagePackStreamingReader
 	/// </remarks>
 	public DecodeResult TrySkip(ref SerializationContext context)
 	{
-		int count = Math.Max(1, context.MidSkipRemainingCount);
+		uint originalCount = Math.Max(1, context.MidSkipRemainingCount);
+		uint count = originalCount;
 
 		// Skip as many structures as we have already predicted we must skip to complete this or a previously suspended skip operation.
-		for (int i = 0; i < count; i++)
+		for (uint i = 0; i < count; i++)
 		{
-			switch (TrySkipOne(ref this, out int skipMore))
+			switch (TrySkipOne(ref this, out uint skipMore))
 			{
 				case DecodeResult.Success:
 					count += skipMore;
 					break;
 				case DecodeResult.InsufficientBuffer:
 					context.MidSkipRemainingCount = count - i;
+					this.DecrementRemainingStructures((int)originalCount - (int)context.MidSkipRemainingCount);
 					return DecodeResult.InsufficientBuffer;
 				case DecodeResult other:
 					return other;
 			}
 		}
 
+		this.DecrementRemainingStructures((int)originalCount);
 		context.MidSkipRemainingCount = 0;
 		return DecodeResult.Success;
 
-		static DecodeResult TrySkipOne(ref MessagePackStreamingReader self, out int skipMore)
+		static DecodeResult TrySkipOne(ref MessagePackStreamingReader self, out uint skipMore)
 		{
 			skipMore = 0;
 			DecodeResult result = self.TryPeekNextCode(out byte code);
@@ -774,7 +814,7 @@ public ref partial struct MessagePackStreamingReader
 					result = self.TryReadMapHeader(out int count);
 					if (result == DecodeResult.Success)
 					{
-						skipMore = count * 2;
+						skipMore = (uint)count * 2;
 					}
 
 					return result;
@@ -784,7 +824,7 @@ public ref partial struct MessagePackStreamingReader
 					result = self.TryReadArrayHeader(out count);
 					if (result == DecodeResult.Success)
 					{
-						skipMore = count;
+						skipMore = (uint)count;
 					}
 
 					return result;
@@ -930,13 +970,17 @@ public ref partial struct MessagePackStreamingReader
 	/// <param name="length">Receives the length of the binary data, when successful.</param>
 	/// <returns>The result classification of the read operation.</returns>
 	/// <inheritdoc cref="MessagePackPrimitives.TryReadBinHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
+	/// <remarks>
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// with the length specified by <paramref name="length"/> (even if zero), so that the overall structure can be recorded as read.
+	/// </remarks>
 	public DecodeResult TryReadBinHeader(out uint length)
 	{
 		bool usingBinaryHeader = true;
 		MessagePackPrimitives.DecodeResult readResult = MessagePackPrimitives.TryReadBinHeader(this.reader.UnreadSpan, out length, out int tokenSize);
 		if (readResult == MessagePackPrimitives.DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize, 0);
 			return DecodeResult.Success;
 		}
 
@@ -947,7 +991,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case MessagePackPrimitives.DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize, 0);
 					return DecodeResult.Success;
 				case MessagePackPrimitives.DecodeResult.TokenMismatch:
 					if (usingBinaryHeader)
@@ -988,13 +1032,17 @@ public ref partial struct MessagePackStreamingReader
 	/// </summary>
 	/// <param name="length">Receives the length of the next string, when successful.</param>
 	/// <returns>The result classification of the read operation.</returns>
+	/// <remarks>
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// with the length of bytes specified by the extension (even if zero), so that the overall structure can be recorded as read.
+	/// </remarks>
 	/// <inheritdoc cref="MessagePackPrimitives.TryReadStringHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
 	public DecodeResult TryReadStringHeader(out uint length)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadStringHeader(this.reader.UnreadSpan, out length, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize, 0);
 			return DecodeResult.Success;
 		}
 
@@ -1005,7 +1053,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize, 0);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -1072,12 +1120,43 @@ public ref partial struct MessagePackStreamingReader
 				}
 			}
 #endif
-			this.reader.Advance(bytesRead);
+			this.Advance(bytesRead);
 		}
 
 		value = new string(charArray, 0, initializedChars);
 		ArrayPool<char>.Shared.Return(charArray);
 		return DecodeResult.Success;
+	}
+
+	/// <summary>
+	/// Advances the reader past the specified number of bytes.
+	/// </summary>
+	/// <param name="bytes">The number of bytes to advance.</param>
+	/// <param name="consumed">The number of msgpack structures that has been read. Typically 1, sometimes 0.</param>
+	/// <param name="added">The number of msgpack structures added to the expected count. Typically 0, but for array/map headers will be non-zero.</param>
+	private void Advance(long bytes, uint consumed = 1, uint added = 0)
+	{
+		this.reader.Advance(bytes);
+
+		// Never let the expected remaining structures go negative.
+		// If we're reading simple top-level values, we start at 0 and should remain there.
+		uint expectedRemainingStructures = this.expectedRemainingStructures;
+		if (consumed > expectedRemainingStructures)
+		{
+			expectedRemainingStructures = 0;
+		}
+		else
+		{
+			expectedRemainingStructures -= consumed;
+		}
+
+		this.expectedRemainingStructures = expectedRemainingStructures + added;
+	}
+
+	private void DecrementRemainingStructures(int count)
+	{
+		uint expectedRemainingStructures = this.expectedRemainingStructures;
+		this.expectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
 	}
 
 	/// <summary>

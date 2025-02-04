@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -29,10 +30,10 @@ namespace Nerdbank.MessagePack;
 /// <see cref="MessagePackSerializer.GetJsonSchema(ITypeShape)"/>.
 /// </para>
 /// </remarks>
-public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessagePackConverterInternal
+public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePackConverterInternal
 {
 	/// <inheritdoc />
-	public virtual bool PreferAsyncSerialization => false;
+	public override bool PreferAsyncSerialization => false;
 
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
@@ -140,16 +141,23 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 	/// <seealso cref="CreateMsgPackExtensionSchema"/>
 	/// <seealso cref="CreateJsonValue(object?)"/>
 	/// <seealso cref="ApplyJsonSchemaNullability(JsonObject)"/>
-	public virtual JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
 
 	/// <inheritdoc/>
-	void IMessagePackConverter.Write(ref MessagePackWriter writer, object? value, SerializationContext context)
-	{
-		this.Write(ref writer, (T?)value, context);
-	}
+	[Experimental("NBMsgPackAsync")]
+	public override ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
 
 	/// <inheritdoc/>
-	object? IMessagePackConverter.Read(ref MessagePackReader reader, SerializationContext context)
+	[Experimental("NBMsgPackAsync")]
+	public override ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
+		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+
+	/// <inheritdoc/>
+	public override sealed void WriteObject(ref MessagePackWriter writer, object? value, SerializationContext context) => this.Write(ref writer, (T?)value, context);
+
+	/// <inheritdoc/>
+	public override sealed object? ReadObject(ref MessagePackReader reader, SerializationContext context)
 	{
 		T value = default;
 		this.Read(ref reader, ref value, context);
@@ -158,23 +166,31 @@ public abstract class MessagePackConverter<T> : IMessagePackConverter, IMessageP
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	ValueTask IMessagePackConverter.WriteAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context) => this.WriteAsync(writer, (T?)value, context);
+	[EditorBrowsable(EditorBrowsableState.Never)] // Use the generic methods instead.
+	public override sealed ValueTask WriteObjectAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context) => this.WriteAsync(writer, (T?)value, context);
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	async ValueTask<object?> IMessagePackConverter.ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
+	[EditorBrowsable(EditorBrowsableState.Never)] // Use the generic methods instead.
+	public override sealed async ValueTask<object?> ReadObjectAsync(MessagePackAsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
 
 	/// <inheritdoc/>
-	IMessagePackConverterInternal IMessagePackConverterInternal.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
+	MessagePackConverter IMessagePackConverterInternal.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
 
 	/// <inheritdoc/>
-	IMessagePackConverterInternal IMessagePackConverterInternal.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
+	MessagePackConverter IMessagePackConverterInternal.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
 
 	/// <inheritdoc cref="IMessagePackConverterInternal.WrapWithReferencePreservation" />
 	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
 
 	/// <inheritdoc cref="IMessagePackConverterInternal.UnwrapReferencePreservation" />
 	internal virtual MessagePackConverter<T> UnwrapReferencePreservation() => this;
+
+	/// <inheritdoc/>
+	internal override sealed void DerivationGuard()
+	{
+		throw new NotImplementedException();
+	}
 
 	/// <summary>
 	/// Transforms a JSON schema to include "null" as a possible value for the schema.

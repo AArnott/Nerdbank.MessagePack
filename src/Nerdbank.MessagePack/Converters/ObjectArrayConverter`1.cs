@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -13,7 +12,10 @@ namespace Nerdbank.MessagePack.Converters;
 /// Only data types with default constructors may be deserialized.
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
-internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, Func<T>? constructor, bool callShouldSerialize) : ObjectConverterBase<T>
+/// <param name="properties">The properties to be serialized.</param>
+/// <param name="constructor">The constructor for the deserialized type.</param>
+/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter(MapSerializableProperties{T}, MapDeserializableProperties{T}?, Func{T}?, SerializeDefaultValuesPolicy)" path="/param[@name='defaultValuesPolicy']"/></param>
+internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -91,7 +93,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 
-		if (callShouldSerialize && properties.Length > 0)
+		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
 			int[]? indexesToIncludeArray = null;
 			try
@@ -170,7 +172,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 
-		if (callShouldSerialize && properties.Length > 0)
+		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
 			int[]? indexesToIncludeArray = null;
 			try
@@ -511,6 +513,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			JsonObject propertiesObject = [];
 			JsonArray? items = [];
 			JsonArray? required = null;
+			int minItems = 0;
 			for (int i = 0; i < properties.Length; i++)
 			{
 				if (properties.Span[i] is not PropertyAccessors<T> property)
@@ -522,14 +525,15 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				ctorParams?.TryGetValue(property.Shape.Name, out associatedParameter);
 
 				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
-				ApplyDescription(property.Shape.AttributeProvider, propertySchema);
+				ApplyDescription(property.Shape.AttributeProvider, propertySchema, property.Shape.Name);
 				ApplyDefaultValue(property.Shape.AttributeProvider, propertySchema, associatedParameter);
 				if (!IsNonNullable(property.Shape, associatedParameter))
 				{
 					propertySchema = ApplyJsonSchemaNullability(propertySchema);
 				}
 
-				propertiesObject.Add(i.ToString(CultureInfo.InvariantCulture), propertySchema);
+				string objectPropertyName = i.ToString(CultureInfo.InvariantCulture);
+				propertiesObject.Add(objectPropertyName, propertySchema);
 
 				while (items.Count < i)
 				{
@@ -540,24 +544,136 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					});
 				}
 
-				items.Add((JsonNode)propertySchema.DeepClone());
+				items.Add(propertySchema.DeepClone());
 
 				if (associatedParameter?.IsRequired is true)
 				{
-					(required ??= []).Add((JsonNode)property.Shape.Name);
+					(required ??= []).Add((JsonNode)objectPropertyName);
+
+					// In the case of an array, a required element means the array must be at least this long.
+					minItems = i + 1;
 				}
 			}
 
 			schema["properties"] = propertiesObject;
 			schema["items"] = items;
 
-			if (required is not null)
+			// Only describe the properties as required if we guarantee that we'll write them.
+			if ((defaultValuesPolicy & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required)
 			{
-				schema["required"] = required;
+				if (required is not null)
+				{
+					schema["required"] = required;
+				}
+
+				if (minItems > 0)
+				{
+					schema["minItems"] = minItems;
+				}
 			}
 		}
 
 		return schema;
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	{
+		int index = -1;
+		for (int i = 0; i < properties.Length; i++)
+		{
+			PropertyAccessors<T>? property = properties.Span[i];
+			if (propertyShape.Equals(property?.Shape))
+			{
+				index = i;
+				break;
+			}
+		}
+
+		if (index == -1)
+		{
+			return false;
+		}
+
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (isNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+
+		context.DepthStep();
+
+		MessagePackType peekType;
+		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (peekType == MessagePackType.Map)
+		{
+			int count;
+			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			for (int i = 0; i < count; i++)
+			{
+				if (streamingReader.TryRead(out int key).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+
+				if (key == index)
+				{
+					reader.ReturnReader(ref streamingReader);
+					return true;
+				}
+
+				// Skip over the value.
+				if (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+			}
+
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+		else
+		{
+			int count;
+			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (count < index + 1)
+			{
+				reader.ReturnReader(ref streamingReader);
+				return false;
+			}
+
+			// Skip over the preceding elements.
+			for (int i = 0; i < index; i++)
+			{
+				while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+			}
+
+			reader.ReturnReader(ref streamingReader);
+			return true;
+		}
 	}
 
 	private Memory<int> GetPropertiesToSerialize(in T value, Memory<int> include)

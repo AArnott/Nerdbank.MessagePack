@@ -7,6 +7,21 @@ Click on the badge to find its latest version and the instructions for consuming
 
 [![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg)](https://nuget.org/packages/Nerdbank.MessagePack)
 
+### C# language version
+
+When your project targets .NET Framework or .NET Standard 2.x, the C# language version may default to 7.3.
+C# 12 introduced support for generic attributes, which is a fundamental requirement PolyType, upon which Nerdbank.MessagePack is based.
+If you find generic attributes are not allowed in your C# code, change your .csproj file to include this snippet:
+
+```xml
+<PropertyGroup>
+  <LangVersion>12</LangVersion>
+</PropertyGroup>
+```
+
+Using the latest C# language version (even when targeting older runtimes like .NET Framework) is generally a Good Thing.
+C# automatically produces errors if you try to use certain newer language features that requires a newer runtime.
+
 ## Usage
 
 Given a type annotated with [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) like this:

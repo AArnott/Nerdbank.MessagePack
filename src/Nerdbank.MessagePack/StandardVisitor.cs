@@ -151,7 +151,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
 			converter = ctorShape is not null
 				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null, !this.owner.SerializeDefaultValues);
+				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null, this.owner.SerializeDefaultValues);
 		}
 		else
 		{
@@ -170,7 +170,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			else
 			{
 				Func<T>? ctor = typeof(T) == typeof(object) ? (Func<T>)(object)new Func<object>(() => new object()) : null;
-				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor, !this.owner.SerializeDefaultValues);
+				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor, this.owner.SerializeDefaultValues);
 			}
 		}
 
@@ -191,19 +191,33 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
 			EqualityComparer<TPropertyType> eq = EqualityComparer<TPropertyType>.Default;
 
-			if (!this.owner.SerializeDefaultValues)
+			if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always)
 			{
-				TPropertyType? defaultValue = default;
-				if (constructorParameterShape?.HasDefaultValue is true)
-				{
-					defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
-				}
-				else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
-				{
-					defaultValue = attributeDefaultValue;
-				}
+				// Test for value-independent flags that would indicate this property must always be serialized.
+				bool alwaysSerialize =
+					((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && typeof(TPropertyType).IsValueType) ||
+					((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !typeof(TPropertyType).IsValueType) ||
+					((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
 
-				shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
+				if (alwaysSerialize)
+				{
+					shouldSerialize = static obj => true;
+				}
+				else
+				{
+					// The only possibility for serializing the property that remains is that it has a non-default value.
+					TPropertyType? defaultValue = default;
+					if (constructorParameterShape?.HasDefaultValue is true)
+					{
+						defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
+					}
+					else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
+					{
+						defaultValue = attributeDefaultValue;
+					}
+
+					shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
+				}
 			}
 
 			SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
@@ -294,7 +308,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							inputs.Serializers,
 							inputs.Deserializers,
 							constructorShape.GetDefaultConstructor(),
-							!this.owner.SerializeDefaultValues);
+							this.owner.SerializeDefaultValues);
 					}
 
 					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
@@ -326,14 +340,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
 						new MapDeserializableProperties<TArgumentState>(parameters),
-						!this.owner.SerializeDefaultValues);
+						this.owner.SerializeDefaultValues);
 				}
 
 			case ArrayConstructorVisitorInputs<TDeclaringType> inputs:
 				{
 					if (constructorShape.Parameters.Count == 0)
 					{
-						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), !this.owner.SerializeDefaultValues);
+						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), this.owner.SerializeDefaultValues);
 					}
 
 					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
@@ -357,7 +371,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
 						parameters,
-						!this.owner.SerializeDefaultValues);
+						this.owner.SerializeDefaultValues);
 				}
 
 			default:
@@ -528,9 +542,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			mapping = mutableMapping;
 		}
 
-		Dictionary<int, IMessagePackConverter> deserializeByIntData = new();
-		Dictionary<ReadOnlyMemory<byte>, IMessagePackConverter> deserializeByUtf8Data = new();
-		Dictionary<Type, (SubTypeAlias Alias, IMessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
+		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
+		Dictionary<ReadOnlyMemory<byte>, MessagePackConverter> deserializeByUtf8Data = new();
+		Dictionary<Type, (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
 		foreach (KeyValuePair<SubTypeAlias, ITypeShape> pair in mapping)
 		{
 			SubTypeAlias alias = pair.Key;
@@ -539,7 +553,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			IMessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
+			MessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
 			switch (alias.Type)
 			{
 				case SubTypeAlias.AliasType.Integer:
@@ -558,7 +572,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return new SubTypes
 		{
 			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
-			DeserializersByStringAlias = new SpanDictionary<byte, IMessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
+			DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
 			Serializers = serializerData.ToFrozenDictionary(),
 		};
 	}

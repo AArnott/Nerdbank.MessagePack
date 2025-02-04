@@ -14,8 +14,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="serializable">Tools for serializing individual property values.</param>
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="constructor">The default constructor, if present.</param>
-/// <param name="callShouldSerialize"><see langword="true" /> if some of the properties should maybe be omitted; <see langword="false" /> to allow a fast path that assumes all properties are serialized.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, bool callShouldSerialize) : ObjectConverterBase<T>
+/// <param name="defaultValuesPolicy">The policy for whether to serialize properties. When not <see cref="SerializeDefaultValuesPolicy.Always"/>, the <see cref="SerializableProperty{TDeclaringType}.ShouldSerialize"/> property will be consulted prior to serialization.</param>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -38,7 +38,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 
-		if (callShouldSerialize && serializable.Properties.Length > 0)
+		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
 		{
 			SerializableProperty<T>[] include = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
 			try
@@ -86,7 +86,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		SerializableProperty<T>[]? borrowedArray = null;
 		try
 		{
-			if (callShouldSerialize && serializable.Properties.Length > 0)
+			if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
 			{
 				borrowedArray = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
 				propertiesToSerialize = this.GetPropertiesToSerialize(value, borrowedArray.AsMemory());
@@ -243,23 +243,44 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					{
 						// The property name has already been buffered.
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader) && propertyReader.PreferAsyncSerialization)
+						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 						{
-							// The next property value is async, so turn in our sync reader and read it asynchronously.
+							if (propertyReader.PreferAsyncSerialization)
+							{
+								// The next property value is async, so turn in our sync reader and read it asynchronously.
+								reader.ReturnReader(ref syncReader);
+								value = await propertyReader.ReadAsync(value, reader, context).ConfigureAwait(false);
+								remainingEntries--;
+								continue;
+							}
+							else
+							{
+								// Deserialize the value synchronously.
+								reader.ReturnReader(ref syncReader);
+								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+								syncReader = reader.CreateBufferedReader();
+								propertyReader.Read(ref value, ref syncReader, context);
+								reader.ReturnReader(ref syncReader);
+								remainingEntries--;
+								continue;
+							}
+						}
+						else
+						{
+							// We don't recognize the property name, so skip the value.
 							reader.ReturnReader(ref syncReader);
-							value = await propertyReader.ReadAsync(value, reader, context).ConfigureAwait(false);
-							remainingEntries--;
 
-							// Now loop around to see what else we can do with the next buffer.
+							streamingReader = reader.CreateStreamingReader();
+							while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+							{
+								streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+							}
+
+							reader.ReturnReader(ref streamingReader);
+
+							remainingEntries--;
 							continue;
 						}
-					}
-					else
-					{
-						// The property name isn't in the buffer, and thus whether it'll have an async reader.
-						// Advance the reader so it knows we need more buffer than we got last time.
-						reader.ReturnReader(ref syncReader);
-						continue;
 					}
 				}
 
@@ -327,15 +348,99 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 			schema["properties"] = properties;
 
-			if (required is not null)
+			// Only describe the properties as required if we guarantee that we'll write them.
+			if ((defaultValuesPolicy & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required)
 			{
-				schema["required"] = required;
+				if (required is not null)
+				{
+					schema["required"] = required;
+				}
 			}
 		}
 
 		ApplyDescription(objectShape.AttributeProvider, schema);
 
 		return schema;
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	{
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (isNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+
+		context.DepthStep();
+
+		int mapEntries;
+		while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		for (int i = 0; i < mapEntries; i++)
+		{
+			ReadOnlySpan<byte> propertyName;
+			bool contiguous;
+			while (streamingReader.TryReadStringSpan(out contiguous, out propertyName).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (!contiguous)
+			{
+				ReadOnlySequence<byte> propertyNameSequence;
+				while (streamingReader.TryReadStringSequence(out propertyNameSequence).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+
+				propertyName = propertyNameSequence.ToArray();
+			}
+
+			if (this.TryMatchPropertyName(propertyName, propertyShape.Name))
+			{
+				// Return before reading the value.
+				reader.ReturnReader(ref streamingReader);
+				return true;
+			}
+			else
+			{
+				// Skip over the value.
+				while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+			}
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		return false;
+	}
+
+	/// <summary>
+	/// Searches for a property with a given UTF-8 encoded name, and checks to see if it matches the expected name expressed as a string.
+	/// </summary>
+	/// <param name="propertyName">The UTF-8 encoded string.</param>
+	/// <param name="expectedName">The string.</param>
+	/// <returns><see langword="true" /> iff the two arguments are equal to each other, and match a known property on the object.</returns>
+	/// <remarks>
+	/// This is a glorified way of avoiding the costs of encoding/decoding.
+	/// Whether several dictionary lookups is faster than encoding/decoding is an open question.
+	/// </remarks>
+	private protected virtual bool TryMatchPropertyName(ReadOnlySpan<byte> propertyName, string expectedName)
+	{
+		return deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader) is true && propertyReader.Name == expectedName;
 	}
 
 	private Memory<SerializableProperty<T>> GetPropertiesToSerialize(in T value, Memory<SerializableProperty<T>> include)

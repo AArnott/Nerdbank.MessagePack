@@ -28,6 +28,18 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.NotSame(deserializedRoot.Value3, deserializedRoot.Value1);
 	}
 
+	[Trait("AsyncSerialization", "true")]
+	[Fact]
+	public async Task AsyncSerialization()
+	{
+		CustomType o = new();
+		CustomType?[] array = [o, o, null];
+		CustomType?[]? deserializedArray = await this.RoundtripAsync<CustomType?[], Witness>(array);
+		Assert.NotNull(deserializedArray);
+		Assert.Same(deserializedArray[0], deserializedArray[1]);
+		Assert.Null(deserializedArray[2]);
+	}
+
 	[Fact]
 	public void CustomConverterByAttributeSkippedByReferencePreservation()
 	{

@@ -15,13 +15,13 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Constructor parameter initializers, in array positions matching serialization indexes.</param>
-/// <param name="callShouldSerialize"><inheritdoc cref="ObjectArrayConverter{T}.ObjectArrayConverter(ReadOnlyMemory{PropertyAccessors{T}?}, Func{T}?, bool)" path="/param[@name='callShouldSerialize']"/></param>
+/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectArrayConverter{T}.ObjectArrayConverter(ReadOnlyMemory{PropertyAccessors{T}?}, Func{T}?, SerializeDefaultValuesPolicy)" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	PropertyAccessors<TDeclaringType>?[] properties,
 	Func<TArgumentState> argStateCtor,
 	Constructor<TArgumentState, TDeclaringType> ctor,
 	DeserializableProperty<TArgumentState>?[] parameters,
-	bool callShouldSerialize) : ObjectArrayConverter<TDeclaringType>(properties, null, callShouldSerialize)
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectArrayConverter<TDeclaringType>(properties, null, defaultValuesPolicy)
 {
 	/// <inheritdoc/>
 	public override void Read(ref MessagePackReader reader, ref TDeclaringType? value, SerializationContext context)
