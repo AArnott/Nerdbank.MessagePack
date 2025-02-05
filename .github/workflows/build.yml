@@ -89,6 +89,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: 🔗 Markup Link Checker (mlc)
-      uses: becheran/mlc@v0.19.0
+      uses: becheran/mlc@v0.19.2
       with:
-        args: --do-not-warn-for-redirect-to https://learn.microsoft.com*,https://dev.azure.com/*,https://app.codecov.io/*,https://www.gitsponsors.com/* -p docfx
+        args: --do-not-warn-for-redirect-to https://learn.microsoft.com*,https://dotnet.microsoft.com/*,https://dev.azure.com/*,https://app.codecov.io/*,https://www.gitsponsors.com/* -p docfx
