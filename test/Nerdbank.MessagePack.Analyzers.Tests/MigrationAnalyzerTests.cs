@@ -6,7 +6,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.MigrationAnalyze
 
 public class MigrationAnalyzerTests
 {
-	[Fact(Skip = "Not yet passing due to missing PolyType source generator")]
+	[Fact]
 	public async Task Formatter()
 	{
 		string source = /* lang=c#-test */ """
@@ -79,7 +79,7 @@ public class MigrationAnalyzerTests
 			using PolyType;
 
 			[MessagePackConverter(typeof(MyTypeFormatter))]
-			public class MyType
+			public partial class MyType
 			{
 				public string? Name { get; set; }
 
@@ -101,7 +101,7 @@ public class MigrationAnalyzerTests
 							switch (i)
 							{
 								case 0:
-									name = context.GetConverter<string, MyTypeFormatter>().Read(ref reader, context);
+									name = context.GetConverter<string>(MyTypeFormatter.ShapeProvider).Read(ref reader, context);
 									break;
 								default:
 									reader.Skip(context);
@@ -121,13 +121,13 @@ public class MigrationAnalyzerTests
 						}
 
 						writer.WriteArrayHeader(1);
-						context.GetConverter<string, MyTypeFormatter>().Write(ref writer, value.Name, context);
+						context.GetConverter<string>(MyTypeFormatter.ShapeProvider).Write(ref writer, value.Name, context);
 					}
 				}
 			}
 			""";
 
-		await this.VerifyCodeFixAsync(source, fixedSource);
+		await this.VerifyCodeFixAsync(source, fixedSource, 2);
 	}
 
 	[Fact]
