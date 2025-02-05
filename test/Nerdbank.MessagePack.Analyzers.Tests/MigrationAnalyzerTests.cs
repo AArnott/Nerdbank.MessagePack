@@ -411,6 +411,7 @@ public class MigrationAnalyzerTests
 	{
 		return new VerifyCS.Test
 		{
+			TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
 			TestCode = source.Replace("\t", "    "),
 			FixedCode = fixedSource.Replace("\t", "    "),
 			ReferenceAssemblies = ReferencesHelper.References.WithPackages([
