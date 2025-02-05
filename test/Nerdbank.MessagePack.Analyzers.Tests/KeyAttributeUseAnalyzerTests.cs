@@ -13,7 +13,7 @@ public class KeyAttributeUseAnalyzerTests
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
-			public class MyType
+			public partial class MyType
 			{
 				[Key(0)]
 				public int MyProperty1 { get; set; }
@@ -37,7 +37,7 @@ public class KeyAttributeUseAnalyzerTests
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
-			public class MyType
+			public partial class MyType
 			{
 				[Key(0)]
 				public int MyProperty1 { get; set; }
@@ -58,14 +58,14 @@ public class KeyAttributeUseAnalyzerTests
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
-			public class MyBaseType
+			public partial class MyBaseType
 			{
 				[{|NBMsgPack003:Key(0)|}]
 				public int MyProperty1 { get; set; }
 			}
 
 			[GenerateShape]
-			public class MyType : MyBaseType
+			public partial class MyType : MyBaseType
 			{
 				[Key(0)]
 				public int MyProperty2 { get; set; }
@@ -83,7 +83,7 @@ public class KeyAttributeUseAnalyzerTests
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
-			public class MyType
+			public partial class MyType
 			{
 				[Key(0)]
 				public int MyProperty1 { get; set; }
@@ -103,13 +103,13 @@ public class KeyAttributeUseAnalyzerTests
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
-			public class MyBaseType
+			public partial class MyBaseType
 			{
 				public int {|NBMsgPack001:MyProperty1|} { get; set; }
 			}
 
 			[GenerateShape]
-			public class MyType : MyBaseType
+			public partial class MyType : MyBaseType
 			{
 				[Key(1)]
 				public int MyProperty2 { get; set; }
@@ -127,7 +127,7 @@ public class KeyAttributeUseAnalyzerTests
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
-			public class MyType
+			public partial class MyType
 			{
 				[Key(0)]
 				public int MyProperty1 { get; set; }
@@ -148,7 +148,7 @@ public class KeyAttributeUseAnalyzerTests
 			using Nerdbank.MessagePack;
 
 			[GenerateShape]
-			public class MyType
+			public partial class MyType
 			{
 				[Key(0)]
 				public int MyProperty1 { get; set; }

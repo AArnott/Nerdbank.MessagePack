@@ -414,6 +414,8 @@ public class MigrationCodeFix : CodeFixProvider
 
 	private class FormatterMigrationVisitor(SemanticModel? semanticModel, MessagePackCSharpReferenceSymbols oldLibrarySymbols, CancellationToken cancellationToken) : CSharpSyntaxRewriter
 	{
+		private static readonly SyntaxAnnotation MadePartial = new();
+
 		private readonly Dictionary<string, TypeSyntax> requiredWitnesses = new(StringComparer.Ordinal);
 
 		public required INamedTypeSymbol? FormatterInterfaceSymbol { get; init; }
@@ -441,7 +443,9 @@ public class MigrationCodeFix : CodeFixProvider
 
 					if (!classDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
 					{
-						classDecl = classDecl.AddModifiers(Token(SyntaxKind.PartialKeyword));
+						classDecl = classDecl
+							.AddModifiers(Token(SyntaxKind.PartialKeyword))
+							.WithAdditionalAnnotations(MadePartial);
 					}
 
 					result = classDecl;
@@ -452,7 +456,18 @@ public class MigrationCodeFix : CodeFixProvider
 			else
 			{
 				// look for nested types that need to be marked with [GenerateShape]
-				return base.VisitClassDeclaration(node);
+				SyntaxNode? result = base.VisitClassDeclaration(node);
+
+				// If any child nodes were made partial, we need the containing type to be partial as well.
+				if (result is BaseTypeDeclarationSyntax baseTypeDecl &&
+					baseTypeDecl.ContainsAnnotations &&
+					baseTypeDecl.DescendantNodesAndSelf(n => n is BaseTypeDeclarationSyntax).Any(t => t.HasAnnotation(MadePartial)) &&
+					!baseTypeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
+				{
+					result = baseTypeDecl.AddModifiers(Token(SyntaxKind.PartialKeyword));
+				}
+
+				return result;
 			}
 		}
 
@@ -516,7 +531,7 @@ public class MigrationCodeFix : CodeFixProvider
 
 				{
 					// - options.Resolver.GetFormatterWithVerify<string>()
-					// + context.GetConverter<string, ThisConverter>()
+					// + context.GetConverter<string>(ThisConverter.ShapeProvider)
 					if (methodSymbol is { IsGenericMethod: true } &&
 						(SymbolEqualityComparer.Default.Equals(methodSymbol.ConstructedFrom, oldLibrarySymbols.GetFormatterWithVerify) ||
 						 SymbolEqualityComparer.Default.Equals(methodSymbol.ConstructedFrom, oldLibrarySymbols.GetFormatterWithVerify.ReduceExtensionMethod(oldLibrarySymbols.IFormatterResolver))))
@@ -534,10 +549,14 @@ public class MigrationCodeFix : CodeFixProvider
 								this.requiredWitnesses.Add(typeArgString, typeArg);
 							}
 
-							GenericNameSyntax getConverter = GenericName("GetConverter").AddTypeArgumentListArguments(typeArg, IdentifierName(this.FormatterDeclaration.Identifier));
+							GenericNameSyntax getConverter = GenericName("GetConverter").AddTypeArgumentListArguments(typeArg);
 							return node
 								.WithExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, ContextParameterName, getConverter))
-								.WithArgumentList(ArgumentList());
+								.WithArgumentList(ArgumentList().AddArguments(
+									Argument(MemberAccessExpression(
+										SyntaxKind.SimpleMemberAccessExpression,
+										IdentifierName(this.FormatterDeclaration.Identifier),
+										IdentifierName("ShapeProvider")))));
 						}
 					}
 				}
