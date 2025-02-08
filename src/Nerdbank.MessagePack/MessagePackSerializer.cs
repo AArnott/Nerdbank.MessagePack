@@ -301,13 +301,14 @@ public partial record MessagePackSerializer
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
-	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
-	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
+	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte}, JsonOptions?)"/>
+	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack, JsonOptions? options = null) => ConvertToJson(new ReadOnlySequence<byte>(msgpack), options);
 
 	/// <summary>
 	/// Converts a msgpack sequence into equivalent JSON.
 	/// </summary>
 	/// <param name="msgpack">The msgpack sequence.</param>
+	/// <param name="options"><inheritdoc cref="ConvertToJson(ref MessagePackReader, TextWriter, JsonOptions?)" path="/param[@name='options']"/></param>
 	/// <returns>The JSON.</returns>
 	/// <remarks>
 	/// <para>
@@ -315,13 +316,13 @@ public partial record MessagePackSerializer
 	/// As such, this method is intended for debugging purposes rather than for production use.
 	/// </para>
 	/// </remarks>
-	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack)
+	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack, JsonOptions? options = null)
 	{
 		StringWriter jsonWriter = new();
 		MessagePackReader reader = new(msgpack);
 		while (!reader.End)
 		{
-			ConvertToJson(ref reader, jsonWriter);
+			ConvertToJson(ref reader, jsonWriter, options);
 		}
 
 		return jsonWriter.ToString();
@@ -332,13 +333,14 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <param name="reader">A reader of the msgpack stream.</param>
 	/// <param name="jsonWriter">The writer that will receive JSON text.</param>
-	public static void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter)
+	/// <param name="options">Options to customize how the JSON is written.</param>
+	public static void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions? options = null)
 	{
 		Requires.NotNull(jsonWriter);
 
-		WriteOneElement(ref reader, jsonWriter);
+		WriteOneElement(ref reader, jsonWriter, options ?? new(), 0);
 
-		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter)
+		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, int indentationLevel)
 		{
 			switch (reader.NextMessagePackType)
 			{
@@ -379,14 +381,27 @@ public partial record MessagePackSerializer
 				case MessagePackType.Array:
 					jsonWriter.Write('[');
 					int count = reader.ReadArrayHeader();
-					for (int i = 0; i < count; i++)
+					if (count > 0)
 					{
-						if (i > 0)
+						NewLine(jsonWriter, options, indentationLevel + 1);
+
+						for (int i = 0; i < count; i++)
+						{
+							if (i > 0)
+							{
+								jsonWriter.Write(',');
+								NewLine(jsonWriter, options, indentationLevel + 1);
+							}
+
+							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+						}
+
+						if (options.TrailingCommas && options.Indentation is not null && count > 0)
 						{
 							jsonWriter.Write(',');
 						}
 
-						WriteOneElement(ref reader, jsonWriter);
+						NewLine(jsonWriter, options, indentationLevel);
 					}
 
 					jsonWriter.Write(']');
@@ -394,16 +409,36 @@ public partial record MessagePackSerializer
 				case MessagePackType.Map:
 					jsonWriter.Write('{');
 					count = reader.ReadMapHeader();
-					for (int i = 0; i < count; i++)
+					if (count > 0)
 					{
-						if (i > 0)
+						NewLine(jsonWriter, options, indentationLevel + 1);
+						for (int i = 0; i < count; i++)
+						{
+							if (i > 0)
+							{
+								jsonWriter.Write(',');
+								NewLine(jsonWriter, options, indentationLevel + 1);
+							}
+
+							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							if (options.Indentation is null)
+							{
+								jsonWriter.Write(':');
+							}
+							else
+							{
+								jsonWriter.Write(": ");
+							}
+
+							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+						}
+
+						if (options.TrailingCommas && options.Indentation is not null && count > 0)
 						{
 							jsonWriter.Write(',');
 						}
 
-						WriteOneElement(ref reader, jsonWriter);
-						jsonWriter.Write(':');
-						WriteOneElement(ref reader, jsonWriter);
+						NewLine(jsonWriter, options, indentationLevel);
 					}
 
 					jsonWriter.Write('}');
@@ -421,6 +456,18 @@ public partial record MessagePackSerializer
 					break;
 				case MessagePackType.Unknown:
 					throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented.");
+			}
+
+			static void NewLine(TextWriter writer, JsonOptions options, int indentationLevel)
+			{
+				if (options.Indentation is not null)
+				{
+					writer.Write(options.NewLine);
+					for (int i = 0; i < indentationLevel; i++)
+					{
+						writer.Write(options.Indentation);
+					}
+				}
 			}
 		}
 
@@ -698,6 +745,47 @@ public partial record MessagePackSerializer
 		/// Disposes of any resources held by the serialization context.
 		/// </summary>
 		public void Dispose() => context.End();
+	}
+
+	/// <summary>
+	/// A description of how JSON should be formatted when calling one of the <see cref="ConvertToJson(ref MessagePackReader, TextWriter, JsonOptions?)"/> overloads.
+	/// </summary>
+	public record struct JsonOptions
+	{
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JsonOptions"/> struct.
+		/// </summary>
+		public JsonOptions()
+		{
+		}
+
+		/// <summary>
+		/// Gets or sets the string used to indent the JSON (implies newlines are also used).
+		/// </summary>
+		/// <remarks>
+		/// A <see langword="null" /> value indicates that no indentation should be used.
+		/// </remarks>
+		public string? Indentation { get; set; }
+
+		/// <summary>
+		/// Gets or sets the sequence of characters used to represent a newline.
+		/// </summary>
+		/// <value>The default is <see cref="Environment.NewLine"/>.</value>
+		public string NewLine { get; set; } = Environment.NewLine;
+
+		/// <summary>
+		/// Gets or sets a value indicating whether the JSON may use trailing commas (e.g. after the last property or element in an array).
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// Trailing commas are not allowed in JSON by default, but some parsers may accept them.
+		/// JSON5 allows trailing commas.
+		/// </para>
+		/// <para>
+		/// Trailing commas may only be emitted when <see cref="Indentation"/> is set to a non-<see langword="null" /> value.
+		/// </para>
+		/// </remarks>
+		public bool TrailingCommas { get; set; }
 	}
 
 	/// <summary>

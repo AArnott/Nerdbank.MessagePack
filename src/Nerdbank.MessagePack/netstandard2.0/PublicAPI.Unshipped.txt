@@ -191,6 +191,15 @@ Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema(PolyType.Abstractions.I
 Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema<T>(PolyType.ITypeShapeProvider! provider) -> System.Text.Json.Nodes.JsonObject!
 Nerdbank.MessagePack.MessagePackSerializer.InternStrings.get -> bool
 Nerdbank.MessagePack.MessagePackSerializer.InternStrings.init -> void
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.Equals(Nerdbank.MessagePack.MessagePackSerializer.JsonOptions other) -> bool
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.Indentation.get -> string?
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.Indentation.set -> void
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.JsonOptions() -> void
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.NewLine.get -> string!
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.NewLine.set -> void
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.TrailingCommas.get -> bool
+Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.TrailingCommas.set -> void
 Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.get -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 Nerdbank.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.MaxAsyncBuffer.get -> int
@@ -342,10 +351,11 @@ override Nerdbank.MessagePack.MessagePackConverter<T>.GetJsonSchema(Nerdbank.Mes
 override Nerdbank.MessagePack.MessagePackConverter<T>.PreferAsyncSerialization.get -> bool
 override Nerdbank.MessagePack.MessagePackSerializer.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.MessagePackSerializer.GetHashCode() -> int
-override Nerdbank.MessagePack.MessagePackSerializer.ToString() -> string!
+override Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.GetHashCode() -> int
 override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.GetHashCode() -> int
 override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.ToString() -> string!
+override Nerdbank.MessagePack.MessagePackSerializer.ToString() -> string!
 override Nerdbank.MessagePack.MessagePackString.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.MessagePackString.GetHashCode() -> int
 override Nerdbank.MessagePack.SerializationContext.GetHashCode() -> int
@@ -416,9 +426,11 @@ static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt16(System.Span<byt
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt32(System.Span<byte> destination, uint value, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt64(System.Span<byte> destination, ulong value, out int bytesWritten) -> bool
 static Nerdbank.MessagePack.MessagePackPrimitives.TryWriteUInt8(System.Span<byte> destination, byte value, out int bytesWritten) -> bool
-static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(in System.Buffers.ReadOnlySequence<byte> msgpack) -> string!
-static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.MessagePack.MessagePackReader reader, System.IO.TextWriter! jsonWriter) -> void
-static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack) -> string!
+static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(in System.Buffers.ReadOnlySequence<byte> msgpack, Nerdbank.MessagePack.MessagePackSerializer.JsonOptions? options = null) -> string!
+static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(ref Nerdbank.MessagePack.MessagePackReader reader, System.IO.TextWriter! jsonWriter, Nerdbank.MessagePack.MessagePackSerializer.JsonOptions? options = null) -> void
+static Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson(System.ReadOnlyMemory<byte> msgpack, Nerdbank.MessagePack.MessagePackSerializer.JsonOptions? options = null) -> string!
+static Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.operator !=(Nerdbank.MessagePack.MessagePackSerializer.JsonOptions left, Nerdbank.MessagePack.MessagePackSerializer.JsonOptions right) -> bool
+static Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.operator ==(Nerdbank.MessagePack.MessagePackSerializer.JsonOptions left, Nerdbank.MessagePack.MessagePackSerializer.JsonOptions right) -> bool
 static Nerdbank.MessagePack.MessagePackSerializer.operator !=(Nerdbank.MessagePack.MessagePackSerializer? left, Nerdbank.MessagePack.MessagePackSerializer? right) -> bool
 static Nerdbank.MessagePack.MessagePackSerializer.operator ==(Nerdbank.MessagePack.MessagePackSerializer? left, Nerdbank.MessagePack.MessagePackSerializer? right) -> bool
 static Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.operator !=(Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? left, Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? right) -> bool
@@ -537,5 +549,7 @@ virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T
 ~override Nerdbank.MessagePack.Extension.ToString() -> string
 ~override Nerdbank.MessagePack.ExtensionHeader.Equals(object obj) -> bool
 ~override Nerdbank.MessagePack.ExtensionHeader.ToString() -> string
+~override Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.Equals(object obj) -> bool
+~override Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.ToString() -> string
 ~override Nerdbank.MessagePack.SerializationContext.Equals(object obj) -> bool
 ~override Nerdbank.MessagePack.SerializationContext.ToString() -> string
