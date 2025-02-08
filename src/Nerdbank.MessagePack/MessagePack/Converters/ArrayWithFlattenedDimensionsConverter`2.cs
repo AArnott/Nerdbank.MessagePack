@@ -38,7 +38,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 		int outerCount = reader.ReadArrayHeader();
 		if (outerCount != 2)
 		{
-			throw new MessagePackSerializationException($"Expected array length of 2 but was {outerCount}.");
+			throw new SerializationException($"Expected array length of 2 but was {outerCount}.");
 		}
 
 		int rank = reader.ReadArrayHeader();
@@ -53,7 +53,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 		int elementCount = reader.ReadArrayHeader();
 		if (elementCount != elements.Length)
 		{
-			throw new MessagePackSerializationException($"Expected {elements.Length} elements but found {elementCount}.");
+			throw new SerializationException($"Expected {elements.Length} elements but found {elementCount}.");
 		}
 
 		for (int i = 0; i < elements.Length; i++)

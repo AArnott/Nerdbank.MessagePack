@@ -6,6 +6,7 @@
 
 using System;
 using System.Buffers;
+using Nerdbank.PolySerializer.Converters;
 
 #pragma warning disable SA1205 // Partial elements should declare access
 #pragma warning disable SA1121 // Use built-in type alias

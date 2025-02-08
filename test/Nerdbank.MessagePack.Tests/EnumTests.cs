@@ -125,7 +125,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 		[Fact]
 		public void UnrecognizedName()
 		{
-			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), TestContext.Current.CancellationToken));
+			SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), TestContext.Current.CancellationToken));
 			this.Logger.WriteLine(ex.Message);
 		}
 

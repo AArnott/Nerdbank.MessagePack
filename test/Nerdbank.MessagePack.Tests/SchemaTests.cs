@@ -48,7 +48,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[Fact]
 	public void BasicObject_Map_NamingPolicy()
 	{
-		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
+		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 		this.AssertSchema([new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
 	}
 

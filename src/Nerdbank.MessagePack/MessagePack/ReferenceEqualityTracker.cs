@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 using Microsoft.NET.StringTools;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack;
@@ -106,7 +107,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="inner">The converter to use to deserialize the object if it is not a reference.</param>
 	/// <param name="context">The serialization context.</param>
 	/// <returns>The reference to an object, whether it was deserialized fresh or just referenced.</returns>
-	/// <exception cref="MessagePackSerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
+	/// <exception cref="SerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
 	internal T ReadObject<T>(ref MessagePackReader reader, MessagePackConverter<T> inner, SerializationContext context)
 	{
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
@@ -119,14 +120,14 @@ internal class ReferenceEqualityTracker : IPoolableObject
 			{
 				int id = provisionaryReader.ReadInt32();
 				reader = provisionaryReader;
-				return (T?)this.deserializedObjects[id] ?? throw new MessagePackSerializationException("Unexpected null element in shared object array. Dependency cycle?");
+				return (T?)this.deserializedObjects[id] ?? throw new SerializationException("Unexpected null element in shared object array. Dependency cycle?");
 			}
 		}
 
 		// Reserve our position in the array.
 		int reservation = this.deserializedObjects.Count;
 		this.deserializedObjects.Add(null);
-		T value = inner.Read(ref reader, context) ?? throw new MessagePackSerializationException("Converter returned null for non-null value.");
+		T value = inner.Read(ref reader, context) ?? throw new SerializationException("Converter returned null for non-null value.");
 		this.deserializedObjects[reservation] = value;
 		return value;
 	}
@@ -139,7 +140,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="inner">The converter to use to deserialize the object if it is not a reference.</param>
 	/// <param name="context">The serialization context.</param>
 	/// <returns>The reference to an object, whether it was deserialized fresh or just referenced.</returns>
-	/// <exception cref="MessagePackSerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
+	/// <exception cref="SerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
 	[Experimental("NBMsgPackAsync")]
 	internal async ValueTask<T> ReadObjectAsync<T>(MessagePackAsyncReader reader, MessagePackConverter<T> inner, SerializationContext context)
 	{
@@ -164,7 +165,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 				int id = provisionaryReader.ReadInt32();
 				syncReader = provisionaryReader;
 				reader.ReturnReader(ref syncReader);
-				return (T?)this.deserializedObjects[id] ?? throw new MessagePackSerializationException("Unexpected null element in shared object array. Dependency cycle?");
+				return (T?)this.deserializedObjects[id] ?? throw new SerializationException("Unexpected null element in shared object array. Dependency cycle?");
 			}
 
 			reader.ReturnReader(ref syncReader);
@@ -173,7 +174,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		// Reserve our position in the array.
 		int reservation = this.deserializedObjects.Count;
 		this.deserializedObjects.Add(null);
-		T value = (await inner.ReadAsync(reader, context).ConfigureAwait(false)) ?? throw new MessagePackSerializationException("Converter returned null for non-null value.");
+		T value = (await inner.ReadAsync(reader, context).ConfigureAwait(false)) ?? throw new SerializationException("Converter returned null for non-null value.");
 		this.deserializedObjects[reservation] = value;
 		return value;
 	}

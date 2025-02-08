@@ -793,7 +793,7 @@ internal static class HardwareAccelerated
 			{
 				if (!MessagePackPrimitiveSpanUtility.Read(ref MemoryMarshal.GetReference(span), in MemoryMarshal.GetReference(segment.Span), segment.Length))
 				{
-					throw new MessagePackSerializationException("Not all elements were boolean msgpack values.");
+					throw new SerializationException("Not all elements were boolean msgpack values.");
 				}
 
 				span = span[segment.Length..];

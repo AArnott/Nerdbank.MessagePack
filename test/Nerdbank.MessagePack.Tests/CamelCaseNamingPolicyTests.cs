@@ -6,11 +6,11 @@ public partial class CamelCaseNamingPolicyTests
 	[Fact]
 	public void ConvertName()
 	{
-		Assert.NotNull(MessagePackNamingPolicy.CamelCase);
-		Assert.Equal("foo", MessagePackNamingPolicy.CamelCase.ConvertName("Foo"));
-		Assert.Equal("foo", MessagePackNamingPolicy.CamelCase.ConvertName("foo"));
-		Assert.Equal("fooBar", MessagePackNamingPolicy.CamelCase.ConvertName("FooBar"));
-		Assert.Equal("fOOBAR", MessagePackNamingPolicy.CamelCase.ConvertName("FOOBAR"));
-		Assert.Equal(string.Empty, MessagePackNamingPolicy.CamelCase.ConvertName(string.Empty));
+		Assert.NotNull(NamingPolicy.CamelCase);
+		Assert.Equal("foo", NamingPolicy.CamelCase.ConvertName("Foo"));
+		Assert.Equal("foo", NamingPolicy.CamelCase.ConvertName("foo"));
+		Assert.Equal("fooBar", NamingPolicy.CamelCase.ConvertName("FooBar"));
+		Assert.Equal("fOOBAR", NamingPolicy.CamelCase.ConvertName("FOOBAR"));
+		Assert.Equal(string.Empty, NamingPolicy.CamelCase.ConvertName(string.Empty));
 	}
 }

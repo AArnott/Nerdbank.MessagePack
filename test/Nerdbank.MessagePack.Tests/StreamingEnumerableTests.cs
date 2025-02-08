@@ -359,7 +359,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 
 			Assert.True(preferEmptySequence, "Should have thrown an exception.");
 		}
-		catch (MessagePackSerializationException ex)
+		catch (SerializationException ex)
 		{
 			this.Logger.WriteLine(ex.ToString());
 			Assert.False(preferEmptySequence, "Should not have thrown an exception.");
@@ -389,7 +389,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 
 			Assert.True(preferEmptySequence, "Should have thrown an exception.");
 		}
-		catch (MessagePackSerializationException ex)
+		catch (SerializationException ex)
 		{
 			this.Logger.WriteLine(ex.ToString());
 			Assert.False(preferEmptySequence, "Should not have thrown an exception.");
@@ -419,7 +419,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 
 			Assert.True(preferEmptySequence, "Should have thrown an exception.");
 		}
-		catch (MessagePackSerializationException ex)
+		catch (SerializationException ex)
 		{
 			this.Logger.WriteLine(ex.ToString());
 			Assert.False(preferEmptySequence, "Should not have thrown an exception.");

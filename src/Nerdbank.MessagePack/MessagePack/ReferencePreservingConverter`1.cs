@@ -6,6 +6,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
+using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 

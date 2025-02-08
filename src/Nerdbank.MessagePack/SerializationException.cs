@@ -8,30 +8,30 @@ namespace Nerdbank.PolySerializer;
 /// <summary>
 /// Represents errors that occur during MessagePack serialization.
 /// </summary>
-public class MessagePackSerializationException : Exception
+public class SerializationException : Exception
 {
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackSerializationException"/> class.
+	/// Initializes a new instance of the <see cref="SerializationException"/> class.
 	/// </summary>
-	public MessagePackSerializationException()
+	public SerializationException()
 	{
 	}
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackSerializationException"/> class with a specified error message.
+	/// Initializes a new instance of the <see cref="SerializationException"/> class with a specified error message.
 	/// </summary>
 	/// <param name="message">The message that describes the error.</param>
-	public MessagePackSerializationException(string? message)
+	public SerializationException(string? message)
 		: base(message)
 	{
 	}
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackSerializationException"/> class with a specified error message and a reference to the inner exception that is the cause of this exception.
+	/// Initializes a new instance of the <see cref="SerializationException"/> class with a specified error message and a reference to the inner exception that is the cause of this exception.
 	/// </summary>
 	/// <param name="message">The message that describes the error.</param>
 	/// <param name="innerException">The exception that is the cause of the current exception, or a null reference if no inner exception is specified.</param>
-	public MessagePackSerializationException(string? message, Exception? innerException)
+	public SerializationException(string? message, Exception? innerException)
 		: base(message, innerException)
 	{
 	}
@@ -42,5 +42,5 @@ public class MessagePackSerializationException : Exception
 	/// <typeparam name="T">The value type that was being deserialized.</typeparam>
 	/// <returns>Nothing. This method always throws.</returns>
 	[DoesNotReturn]
-	internal static MessagePackSerializationException ThrowUnexpectedNilWhileDeserializing<T>() => throw new MessagePackSerializationException("Unexpected nil encountered while deserializing " + typeof(T).FullName);
+	internal static SerializationException ThrowUnexpectedNilWhileDeserializing<T>() => throw new SerializationException("Unexpected nil encountered while deserializing " + typeof(T).FullName);
 }

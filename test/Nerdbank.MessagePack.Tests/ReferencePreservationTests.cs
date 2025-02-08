@@ -294,7 +294,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 			int count = reader.ReadArrayHeader();
 			if (count != 1)
 			{
-				throw new MessagePackSerializationException("Expected an array of length 1.");
+				throw new SerializationException("Expected an array of length 1.");
 			}
 
 			string? message = context.GetConverter<string, CustomTypeConverter>().Read(ref reader, context);
@@ -334,7 +334,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 			int count = reader.ReadArrayHeader();
 			if (count != 1)
 			{
-				throw new MessagePackSerializationException("Expected an array of length 1.");
+				throw new SerializationException("Expected an array of length 1.");
 			}
 
 			string? message = context.GetConverter<string, CustomType2Converter>().Read(ref reader, context);

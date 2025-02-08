@@ -6,7 +6,7 @@ namespace Nerdbank.PolySerializer;
 /// <summary>
 /// An interface that may be implemented to receive callbacks before serialization and after deserialization.
 /// </summary>
-public interface IMessagePackSerializationCallbacks
+public interface ISerializationCallbacks
 {
 	/// <summary>
 	/// Performs any additional operations on an object before it is serialized.

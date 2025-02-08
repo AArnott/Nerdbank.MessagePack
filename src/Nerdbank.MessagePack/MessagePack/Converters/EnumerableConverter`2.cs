@@ -5,6 +5,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;

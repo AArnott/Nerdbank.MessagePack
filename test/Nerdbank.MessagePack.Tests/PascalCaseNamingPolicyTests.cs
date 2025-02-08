@@ -6,11 +6,11 @@ public partial class PascalCaseNamingPolicyTests
 	[Fact]
 	public void ConvertName()
 	{
-		Assert.NotNull(MessagePackNamingPolicy.PascalCase);
-		Assert.Equal("Foo", MessagePackNamingPolicy.PascalCase.ConvertName("Foo"));
-		Assert.Equal("Foo", MessagePackNamingPolicy.PascalCase.ConvertName("foo"));
-		Assert.Equal("FooBar", MessagePackNamingPolicy.PascalCase.ConvertName("fooBar"));
-		Assert.Equal("FOOBAR", MessagePackNamingPolicy.PascalCase.ConvertName("fOOBAR"));
-		Assert.Equal(string.Empty, MessagePackNamingPolicy.PascalCase.ConvertName(string.Empty));
+		Assert.NotNull(NamingPolicy.PascalCase);
+		Assert.Equal("Foo", NamingPolicy.PascalCase.ConvertName("Foo"));
+		Assert.Equal("Foo", NamingPolicy.PascalCase.ConvertName("foo"));
+		Assert.Equal("FooBar", NamingPolicy.PascalCase.ConvertName("fooBar"));
+		Assert.Equal("FOOBAR", NamingPolicy.PascalCase.ConvertName("fOOBAR"));
+		Assert.Equal(string.Empty, NamingPolicy.PascalCase.ConvertName(string.Empty));
 	}
 }

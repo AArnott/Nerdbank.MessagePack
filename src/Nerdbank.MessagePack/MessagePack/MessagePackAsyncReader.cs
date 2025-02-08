@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Microsoft;
+using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -20,7 +21,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// </para>
 /// <see href="https://github.com/msgpack/msgpack/blob/master/spec.md">The MessagePack spec.</see>.
 /// </remarks>
-/// <exception cref="MessagePackSerializationException">Thrown when reading methods fail due to invalid data.</exception>
+/// <exception cref="SerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
 public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable

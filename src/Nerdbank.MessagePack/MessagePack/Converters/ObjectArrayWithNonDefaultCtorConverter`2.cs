@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
@@ -70,7 +71,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		TDeclaringType value = ctor(ref argState);
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}
@@ -234,7 +235,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		TDeclaringType value = ctor(ref argState);
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}

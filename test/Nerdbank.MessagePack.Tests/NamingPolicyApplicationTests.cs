@@ -6,7 +6,7 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 	public NamingPolicyApplicationTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
+		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 	}
 
 	[Fact]
@@ -48,7 +48,7 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 #endif
 	{
 		Sequence<byte> sequence = new();
-		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
+		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 		this.Serializer.Serialize(sequence, value);
 
 		MessagePackReader reader = new(sequence);
@@ -65,7 +65,7 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 #endif
 	{
 		Sequence<byte> sequence = new();
-		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
+		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 		this.Serializer.Serialize(sequence, value);
 
 		MessagePackReader reader = new(sequence);

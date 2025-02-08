@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 

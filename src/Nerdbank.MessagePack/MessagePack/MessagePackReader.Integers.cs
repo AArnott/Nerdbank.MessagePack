@@ -9,6 +9,8 @@
 #pragma warning disable SA1121 // Simplify type syntax
 #pragma warning disable SA1601 // Partial elements should be documented
 
+using Nerdbank.PolySerializer.Converters;
+
 namespace Nerdbank.PolySerializer.MessagePack;
 
 public ref partial struct MessagePackReader

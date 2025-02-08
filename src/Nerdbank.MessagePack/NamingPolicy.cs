@@ -6,17 +6,17 @@ namespace Nerdbank.PolySerializer;
 /// <summary>
 /// Defines a transformation for property names from .NET to msgpack.
 /// </summary>
-public abstract class MessagePackNamingPolicy
+public abstract class NamingPolicy
 {
 	/// <summary>
 	/// Gets a naming policy that converts a .NET PascalCase property to camelCase for msgpack.
 	/// </summary>
-	public static MessagePackNamingPolicy CamelCase { get; } = new CamelCaseNamingPolicy();
+	public static NamingPolicy CamelCase { get; } = new CamelCaseNamingPolicy();
 
 	/// <summary>
 	/// Gets a naming policy that converts a .NET camelCase property to PascalCase for msgpack.
 	/// </summary>
-	public static MessagePackNamingPolicy PascalCase { get; } = new PascalCaseNamingPolicy();
+	public static NamingPolicy PascalCase { get; } = new PascalCaseNamingPolicy();
 
 	/// <summary>
 	/// Transforms a property name as defined in .NET to a property name as it should be serialized to MessagePack.
@@ -25,7 +25,7 @@ public abstract class MessagePackNamingPolicy
 	/// <returns>The msgpack property name.</returns>
 	public abstract string ConvertName(string name);
 
-	private class CamelCaseNamingPolicy : MessagePackNamingPolicy
+	private class CamelCaseNamingPolicy : NamingPolicy
 	{
 		/// <summary>
 		/// Converts a PascalCase identifier to camelCase.
@@ -51,7 +51,7 @@ public abstract class MessagePackNamingPolicy
 		}
 	}
 
-	private class PascalCaseNamingPolicy : MessagePackNamingPolicy
+	private class PascalCaseNamingPolicy : NamingPolicy
 	{
 		/// <summary>
 		/// Converts a camelCase identifier to PascalCase.

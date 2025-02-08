@@ -44,7 +44,7 @@ public partial record MessagePackSerializer
 #endif
 
 	/// <inheritdoc cref="ConverterCache.PropertyNamingPolicy"/>
-	public MessagePackNamingPolicy? PropertyNamingPolicy
+	public NamingPolicy? PropertyNamingPolicy
 	{
 		get => this.converterCache.PropertyNamingPolicy;
 		init => this.converterCache = this.converterCache with { PropertyNamingPolicy = value };
@@ -809,7 +809,7 @@ public partial record MessagePackSerializer
 		/// Gets a value indicating whether to produce an empty sequence if <see cref="Path"/> does not lead to a sequence (due to a missing property or null value) in the msgpack data.
 		/// </summary>
 		/// <remarks>
-		/// When this value is <see langword="false"/>, a <see cref="MessagePackSerializationException"/> is thrown when <see cref="Path"/> does not lead to a sequence.
+		/// When this value is <see langword="false"/>, a <see cref="SerializationException"/> is thrown when <see cref="Path"/> does not lead to a sequence.
 		/// </remarks>
 		public bool EmptySequenceForUndiscoverablePath { get; init; }
 	}

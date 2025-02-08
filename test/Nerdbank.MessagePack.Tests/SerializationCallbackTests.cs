@@ -89,7 +89,7 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 	}
 
 	[GenerateShape]
-	public partial class BusyClassMap : IMessagePackSerializationCallbacks, IEquatable<BusyClassMap>
+	public partial class BusyClassMap : ISerializationCallbacks, IEquatable<BusyClassMap>
 	{
 		public string? Name { get; set; }
 
@@ -97,15 +97,15 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 
 		internal int OnAfterDeserializeCounter { get; private set; }
 
-		void IMessagePackSerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCounter++;
+		void ISerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCounter++;
 
-		void IMessagePackSerializationCallbacks.OnAfterDeserialize() => this.OnAfterDeserializeCounter++;
+		void ISerializationCallbacks.OnAfterDeserialize() => this.OnAfterDeserializeCounter++;
 
 		public bool Equals(BusyClassMap? other) => other != null && this.Name == other.Name;
 	}
 
 	[GenerateShape]
-	public partial class BusyClassArray : IMessagePackSerializationCallbacks, IEquatable<BusyClassArray>
+	public partial class BusyClassArray : ISerializationCallbacks, IEquatable<BusyClassArray>
 	{
 		[Key(0)]
 		public string? Name { get; set; }
@@ -114,9 +114,9 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 
 		internal int OnAfterDeserializeCounter { get; private set; }
 
-		void IMessagePackSerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCounter++;
+		void ISerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCounter++;
 
-		void IMessagePackSerializationCallbacks.OnAfterDeserialize() => this.OnAfterDeserializeCounter++;
+		void ISerializationCallbacks.OnAfterDeserialize() => this.OnAfterDeserializeCounter++;
 
 		public bool Equals(BusyClassArray? other) => other != null && this.Name == other.Name;
 	}

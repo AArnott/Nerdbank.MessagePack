@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack.Converters;
 using PolyType.Utilities;
 
@@ -146,7 +147,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (serializable is { Count: > 0 })
 			{
 				// Members with and without KeyAttribute have been detected as intended for serialization. These two worlds are incompatible.
-				throw new MessagePackSerializationException($"The type {objectShape.Type.FullName} has fields/properties that are candidates for serialization but are inconsistently attributed with {nameof(KeyAttribute)}.\nMembers with the attribute: {string.Join(", ", propertyAccessors.Where(a => a is not null).Select(a => a!.Value.Name))}\nMembers without the attribute: {string.Join(", ", serializable.Select(p => p.Name))}");
+				throw new SerializationException($"The type {objectShape.Type.FullName} has fields/properties that are candidates for serialization but are inconsistently attributed with {nameof(KeyAttribute)}.\nMembers with the attribute: {string.Join(", ", propertyAccessors.Where(a => a is not null).Select(a => a!.Value.Name))}\nMembers without the attribute: {string.Join(", ", serializable.Select(p => p.Name))}");
 			}
 
 			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
@@ -320,8 +321,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							// If the parameter name is PascalCased (as would typically happen in a record primary constructor),
 							// we want it to match camelCase property names in case the user has camelCase name policy applied.
 							// Ultimately we would probably do well to just match without case sensitivity, but we don't support that yet.
-							string camelCase = MessagePackNamingPolicy.CamelCase.ConvertName(p.Name);
-							string pascalCase = MessagePackNamingPolicy.PascalCase.ConvertName(p.Name);
+							string camelCase = NamingPolicy.CamelCase.ConvertName(p.Name);
+							string pascalCase = NamingPolicy.PascalCase.ConvertName(p.Name);
 							return camelCase != pascalCase
 								? [(camelCase, prop), (pascalCase, prop)]
 								: [(camelCase, prop)];
@@ -577,7 +578,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		if (customConverterAttribute.ConverterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
 		{
-			throw new MessagePackSerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
+			throw new SerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
 		}
 
 		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());

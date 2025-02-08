@@ -226,7 +226,7 @@ public partial class MessagePackReaderTests
 		writer.Write(3);
 		writer.Flush();
 
-		Assert.Throws<MessagePackSerializationException>(() =>
+		Assert.Throws<SerializationException>(() =>
 		{
 			var reader = new MessagePackReader(sequence);
 			reader.TryReadStringSpan(out ReadOnlySpan<byte> span);
@@ -273,7 +273,7 @@ public partial class MessagePackReaderTests
 		writer.WriteNil();
 		writer.Flush();
 
-		Assert.Throws<MessagePackSerializationException>(() =>
+		Assert.Throws<SerializationException>(() =>
 		{
 			var reader = new MessagePackReader(sequence);
 			reader.ReadStringSpan();
@@ -288,7 +288,7 @@ public partial class MessagePackReaderTests
 		writer.Write(3);
 		writer.Flush();
 
-		Assert.Throws<MessagePackSerializationException>(() =>
+		Assert.Throws<SerializationException>(() =>
 		{
 			var reader = new MessagePackReader(sequence);
 			reader.ReadStringSpan();
@@ -481,7 +481,7 @@ public partial class MessagePackReaderTests
 					predicate(ref reader);
 					actual = true;
 				}
-				catch (MessagePackSerializationException)
+				catch (SerializationException)
 				{
 					actual = false;
 				}

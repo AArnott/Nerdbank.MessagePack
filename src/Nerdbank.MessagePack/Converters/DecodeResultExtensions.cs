@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace Nerdbank.PolySerializer;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Extension methods for the <see cref="DecodeResult"/> enum.
@@ -19,7 +19,7 @@ public static class DecodeResultExtensions
 	/// <see langword="false"/> if the value is <see cref="DecodeResult.Success"/>.
 	/// </returns>
 	/// <exception cref="EndOfStreamException">Thrown if the value is <see cref="DecodeResult.EmptyBuffer"/>.</exception>
-	/// <exception cref="MessagePackSerializationException">Thrown if the value is <see cref="DecodeResult.TokenMismatch"/>.</exception>
+	/// <exception cref="SerializationException">Thrown if the value is <see cref="DecodeResult.TokenMismatch"/>.</exception>
 	public static bool NeedsMoreBytes(this DecodeResult result)
 	{
 		return result switch
@@ -27,7 +27,7 @@ public static class DecodeResultExtensions
 			DecodeResult.Success => false,
 			DecodeResult.InsufficientBuffer => true,
 			DecodeResult.EmptyBuffer => throw new EndOfStreamException(),
-			DecodeResult.TokenMismatch => throw new MessagePackSerializationException("Unexpected token encountered."), // TODO: Include the unexpected token into the exception message by packing MessagePackType into the DecodeResult.
+			DecodeResult.TokenMismatch => throw new SerializationException("Unexpected token encountered."), // TODO: Include the unexpected token into the exception message by packing MessagePackType into the DecodeResult.
 			_ => throw new UnreachableException(),
 		};
 	}

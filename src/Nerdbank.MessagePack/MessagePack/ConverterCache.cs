@@ -36,7 +36,7 @@ internal record class ConverterCache
 	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
-	private MessagePackNamingPolicy? propertyNamingPolicy;
+	private NamingPolicy? propertyNamingPolicy;
 
 #if NET
 
@@ -178,7 +178,7 @@ internal record class ConverterCache
 	/// <value>
 	/// The default value is null, indicating that property names should be persisted exactly as they are declared in .NET.
 	/// </value>
-	internal MessagePackNamingPolicy? PropertyNamingPolicy
+	internal NamingPolicy? PropertyNamingPolicy
 	{
 		get => this.propertyNamingPolicy;
 		init => this.ChangeSetting(ref this.propertyNamingPolicy, value);

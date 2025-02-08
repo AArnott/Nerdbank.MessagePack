@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack.Converters;
 using Strings = Microsoft.NET.StringTools.Strings;
 
@@ -306,7 +307,7 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	{
 		if (!(reader.ReadStringSequence() is ReadOnlySequence<byte> sequence))
 		{
-			throw new MessagePackSerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", MessagePackCode.Nil, MessagePackCode.ToFormatName(MessagePackCode.Nil)));
+			throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", MessagePackCode.Nil, MessagePackCode.ToFormatName(MessagePackCode.Nil)));
 		}
 
 		if (sequence.IsSingleSegment)
@@ -316,7 +317,7 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 			{
 				if (span.Length != bytesConsumed)
 				{
-					throw new MessagePackSerializationException("Unexpected length of string.");
+					throw new SerializationException("Unexpected length of string.");
 				}
 
 				return result;
@@ -334,7 +335,7 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 				{
 					if (seqLen != bytesConsumed)
 					{
-						throw new MessagePackSerializationException("Unexpected length of string.");
+						throw new SerializationException("Unexpected length of string.");
 					}
 
 					return result;
@@ -350,7 +351,7 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 					{
 						if (seqLen != bytesConsumed)
 						{
-							throw new MessagePackSerializationException("Unexpected length of string.");
+							throw new SerializationException("Unexpected length of string.");
 						}
 
 						return result;
@@ -363,7 +364,7 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 			}
 		}
 
-		throw new MessagePackSerializationException("Can't parse to decimal, input string was not in a correct format.");
+		throw new SerializationException("Can't parse to decimal, input string was not in a correct format.");
 	}
 
 	/// <inheritdoc/>
@@ -403,7 +404,7 @@ internal class Int128Converter : MessagePackConverter<Int128>
 	/// <inheritdoc/>
 	public override Int128 Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Int128>();
+		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<Int128>();
 		if (sequence.IsSingleSegment)
 		{
 			ReadOnlySpan<byte> span = sequence.First.Span;
@@ -443,7 +444,7 @@ internal class Int128Converter : MessagePackConverter<Int128>
 			}
 		}
 
-		throw new MessagePackSerializationException("Can't parse to Int128, input string was not in a correct format.");
+		throw new SerializationException("Can't parse to Int128, input string was not in a correct format.");
 	}
 
 	/// <inheritdoc/>
@@ -481,7 +482,7 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 	/// <inheritdoc/>
 	public override UInt128 Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<UInt128>();
+		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<UInt128>();
 		if (sequence.IsSingleSegment)
 		{
 			ReadOnlySpan<byte> span = sequence.First.Span;
@@ -521,7 +522,7 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 			}
 		}
 
-		throw new MessagePackSerializationException("Can't parse to Int123, input string was not in a correct format.");
+		throw new SerializationException("Can't parse to Int123, input string was not in a correct format.");
 	}
 
 	/// <inheritdoc/>
@@ -561,7 +562,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	/// <inheritdoc/>
 	public override BigInteger Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
+		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
 		if (bytes.IsSingleSegment)
 		{
 #if NET
@@ -634,7 +635,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 		int count = reader.ReadArrayHeader();
 		if (count != 2)
 		{
-			throw new MessagePackSerializationException("Expected array of length 2.");
+			throw new SerializationException("Expected array of length 2.");
 		}
 
 		DateTime utcDateTime = reader.ReadDateTime();
@@ -859,7 +860,7 @@ internal class GuidConverter : MessagePackConverter<Guid>
 	/// <inheritdoc/>
 	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Guid>();
+		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<Guid>();
 
 		if (bytes.IsSingleSegment)
 		{

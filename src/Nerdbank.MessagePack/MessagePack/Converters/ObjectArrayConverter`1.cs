@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json.Nodes;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
@@ -69,7 +70,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			}
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}
@@ -88,7 +89,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnBeforeSerialize();
 		}
@@ -167,7 +168,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnBeforeSerialize();
 		}
@@ -490,7 +491,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			}
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}

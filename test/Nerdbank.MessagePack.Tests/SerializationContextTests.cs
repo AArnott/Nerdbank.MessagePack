@@ -33,7 +33,7 @@ public partial class SerializationContextTests
 		SerializationContext context = new() { MaxDepth = 2 };
 		context.DepthStep();
 		context.DepthStep();
-		Assert.Throws<MessagePackSerializationException>(context.DepthStep);
+		Assert.Throws<SerializationException>(context.DepthStep);
 	}
 
 	[Fact]

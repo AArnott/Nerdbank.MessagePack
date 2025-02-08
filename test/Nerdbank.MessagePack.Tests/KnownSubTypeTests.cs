@@ -88,7 +88,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		writer.WriteMapHeader(0);
 		writer.Flush();
 
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, TestContext.Current.CancellationToken));
+		SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 	}
 
@@ -103,14 +103,14 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		writer.WriteNil();
 		writer.Flush();
 
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, TestContext.Current.CancellationToken));
+		SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 	}
 
 	[Fact]
 	public void UnknownDerivedType()
 	{
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new UnknownDerived()));
+		SerializationException ex = Assert.Throws<SerializationException>(() => this.Roundtrip<BaseClass>(new UnknownDerived()));
 		this.Logger.WriteLine(ex.Message);
 	}
 
@@ -142,7 +142,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void RecursiveSubTypes()
 	{
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+		SerializationException ex = Assert.Throws<SerializationException>(
 			() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived(), TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 
@@ -196,7 +196,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal(1, reader.ReadInt32());
 
 		// Verify that statically set subtypes are not recognized if no runtime equivalents are registered.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new DerivedA()));
+		SerializationException ex = Assert.Throws<SerializationException>(() => this.Roundtrip<BaseClass>(new DerivedA()));
 		this.Logger.WriteLine(ex.Message);
 	}
 

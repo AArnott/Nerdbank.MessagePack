@@ -35,7 +35,7 @@ partial class ApplyNamePolicy
             #region ApplyNamePolicy
             var serializer = new MessagePackSerializer
             {
-                PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase,
+                PropertyNamingPolicy = NamingPolicy.CamelCase,
             };
             #endregion
         }

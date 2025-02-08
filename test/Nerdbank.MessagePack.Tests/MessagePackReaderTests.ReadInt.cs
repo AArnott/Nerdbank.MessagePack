@@ -160,7 +160,7 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadByte_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadByte());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadByte());
 	}
 
 	[Fact]
@@ -185,7 +185,7 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadUInt16_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt16());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt16());
 	}
 
 	[Fact]
@@ -210,7 +210,7 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadUInt32_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt32());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt32());
 	}
 
 	[Fact]
@@ -235,7 +235,7 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadUInt64_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt64());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt64());
 	}
 
 	[Fact]
@@ -260,7 +260,7 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadSByte_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadSByte());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadSByte());
 	}
 
 	[Fact]
@@ -285,7 +285,7 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadInt16_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt16());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt16());
 	}
 
 	[Fact]
@@ -310,7 +310,7 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadInt32_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt32());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt32());
 	}
 
 	[Fact]
@@ -335,6 +335,6 @@ public partial class MessagePackReaderTests
 	[Fact]
 	public void ReadInt64_ThrowsOnUnexpectedCode()
 	{
-		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt64());
+		Assert.Throws<SerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt64());
 	}
 }

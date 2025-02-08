@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
@@ -32,7 +33,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnBeforeSerialize();
 		}
@@ -77,7 +78,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnBeforeSerialize();
 		}
@@ -172,7 +173,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			reader.Skip(context);
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}
@@ -300,7 +301,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			reader.ReturnReader(ref streamingReader);
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
+		if (value is ISerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}

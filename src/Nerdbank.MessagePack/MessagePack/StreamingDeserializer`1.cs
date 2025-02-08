@@ -4,6 +4,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft;
+using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -137,7 +138,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 		}
 
 		static Exception IncompletePathException(Expression incompletePath)
-			=> new MessagePackSerializationException($"The path to the sequence could not be followed. {incompletePath} is missing or has a null value.");
+			=> new SerializationException($"The path to the sequence could not be followed. {incompletePath} is missing or has a null value.");
 	}
 
 	private ValueTask<Expression?> NavigateToMemberAsync(Expression path)

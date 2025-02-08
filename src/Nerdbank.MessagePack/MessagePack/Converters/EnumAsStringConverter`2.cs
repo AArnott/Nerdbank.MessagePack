@@ -127,7 +127,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 			}
 			else
 			{
-				throw new MessagePackSerializationException($"Unrecognized enum value name: \"{stringValue}\".");
+				throw new SerializationException($"Unrecognized enum value name: \"{stringValue}\".");
 			}
 		}
 		else

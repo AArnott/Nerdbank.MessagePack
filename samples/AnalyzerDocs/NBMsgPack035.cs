@@ -3,6 +3,8 @@
 
 #pragma warning disable NBMsgPackAsync
 
+using Nerdbank.PolySerializer.Converters;
+
 namespace Samples.AnalyzerDocs.NBMsgPack035
 {
     internal record SomeCustomType(int SeedCount);
@@ -37,7 +39,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack035
 
                 if (count != 1)
                 {
-                    throw new MessagePackSerializationException();
+                    throw new SerializationException();
                 }
 
                 await reader.BufferNextStructureAsync(context); // OOPS: streamingReader should have been returned first
@@ -85,7 +87,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack035
 
                 if (count != 1)
                 {
-                    throw new MessagePackSerializationException();
+                    throw new SerializationException();
                 }
 
                 reader.ReturnReader(ref streamingReader);

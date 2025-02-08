@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
+using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
@@ -43,7 +44,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		int count = reader.ReadArrayHeader();
 		if (count != 2)
 		{
-			throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
+			throw new SerializationException($"Expected an array of 2 elements, but found {count}.");
 		}
 
 		// The alias for the base type itself is simply nil.
@@ -58,7 +59,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			int alias = reader.ReadInt32();
 			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias {alias}.");
+				throw new SerializationException($"Unknown alias {alias}.");
 			}
 		}
 		else
@@ -66,7 +67,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
 			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new SerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
 		}
 
@@ -98,7 +99,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		}
 		else
 		{
-			throw new MessagePackSerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
+			throw new SerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
 		}
 	}
 
@@ -127,7 +128,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 
 		if (count != 2)
 		{
-			throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
+			throw new SerializationException($"Expected an array of 2 elements, but found {count}.");
 		}
 
 		// The alias for the base type itself is simply nil.
@@ -161,7 +162,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 
 			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias {alias}.");
+				throw new SerializationException($"Unknown alias {alias}.");
 			}
 		}
 		else
@@ -181,7 +182,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 
 			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new SerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
 		}
 
@@ -234,7 +235,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		}
 		else
 		{
-			throw new MessagePackSerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
+			throw new SerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
 		}
 
 		await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);

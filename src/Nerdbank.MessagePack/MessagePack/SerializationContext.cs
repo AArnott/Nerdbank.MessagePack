@@ -36,7 +36,7 @@ public record struct SerializationContext
 	/// </summary>
 	/// <value>The default value is 64.</value>
 	/// <remarks>
-	/// Exceeding this depth will result in a <see cref="MessagePackSerializationException"/> being thrown
+	/// Exceeding this depth will result in a <see cref="SerializationException"/> being thrown
 	/// from <see cref="DepthStep"/>.
 	/// </remarks>
 	public int MaxDepth { get; set; } = 64;
@@ -108,14 +108,14 @@ public record struct SerializationContext
 	/// <remarks>
 	/// Converters that (de)serialize nested objects should invoke this once <em>before</em> passing the context to nested (de)serializers.
 	/// </remarks>
-	/// <exception cref="MessagePackSerializationException">Thrown if the depth limit has been exceeded.</exception>
+	/// <exception cref="SerializationException">Thrown if the depth limit has been exceeded.</exception>
 	/// <exception cref="OperationCanceledException">Thrown if <see cref="CancellationToken"/> has been canceled.</exception>
 	public void DepthStep()
 	{
 		this.CancellationToken.ThrowIfCancellationRequested();
 		if (--this.MaxDepth < 0)
 		{
-			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
+			throw new SerializationException("Exceeded maximum depth of object graph.");
 		}
 	}
 

@@ -350,7 +350,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		ClassWithPropertyGettersWithCtorParamAndMissingKey obj = new("hi") { Value = true };
 
 		// We expect this to throw because a qualified property is not attributed with KeyAttribute.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(obj, TestContext.Current.CancellationToken));
+		SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Serialize(obj, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 	}
 

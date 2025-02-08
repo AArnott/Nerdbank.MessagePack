@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -15,7 +16,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <remarks>
 /// <see href="https://github.com/msgpack/msgpack/blob/master/spec.md">The MessagePack spec.</see>.
 /// </remarks>
-/// <exception cref="MessagePackSerializationException">Thrown when reading methods fail due to invalid data.</exception>
+/// <exception cref="SerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 public ref partial struct MessagePackReader
 {
@@ -216,7 +217,7 @@ public ref partial struct MessagePackReader
 	/// Thrown if the header cannot be read in the bytes left in the <see cref="Sequence"/>
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
-	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an array header is encountered.</exception>
+	/// <exception cref="SerializationException">Thrown if a code other than an array header is encountered.</exception>
 	public int ReadArrayHeader()
 	{
 		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(out int count));
@@ -238,7 +239,7 @@ public ref partial struct MessagePackReader
 	/// </summary>
 	/// <param name="count">Receives the number of elements in the array if the entire array header could be read.</param>
 	/// <returns><see langword="true"/> if there was sufficient buffer and an array header was found; <see langword="false"/> if the buffer incompletely describes an array header.</returns>
-	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an array header is encountered.</exception>
+	/// <exception cref="SerializationException">Thrown if a code other than an array header is encountered.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool TryReadArrayHeader(out int count)
 	{
@@ -267,7 +268,7 @@ public ref partial struct MessagePackReader
 	/// Thrown if the header cannot be read in the bytes left in the <see cref="Sequence"/>
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
-	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an map header is encountered.</exception>
+	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
 	public int ReadMapHeader()
 	{
 		ThrowInsufficientBufferUnless(this.TryReadMapHeader(out int count));
@@ -289,7 +290,7 @@ public ref partial struct MessagePackReader
 	/// </summary>
 	/// <param name="count">Receives the number of key=value pairs in the map if the entire map header can be read.</param>
 	/// <returns><see langword="true"/> if there was sufficient buffer and a map header was found; <see langword="false"/> if the buffer incompletely describes an map header.</returns>
-	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an map header is encountered.</exception>
+	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
 	public bool TryReadMapHeader(out int count)
 	{
 		switch (this.streamingReader.TryReadMapHeader(out count))
@@ -532,7 +533,7 @@ public ref partial struct MessagePackReader
 	/// which can represent a <see langword="null"/> result and handle strings that are not contiguous in memory.
 	/// </remarks>
 	/// <exception cref="EndOfStreamException">If the buffer does not contain enough bytes to read the next msgpack token.</exception>
-	/// <exception cref="MessagePackSerializationException">Thrown if <see cref="NextCode"/> is neither a string nor a nil.</exception>
+	/// <exception cref="SerializationException">Thrown if <see cref="NextCode"/> is neither a string nor a nil.</exception>
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> span)
 	{
 		switch (this.streamingReader.TryReadStringSpan(out bool contiguous, out span))
@@ -572,7 +573,7 @@ public ref partial struct MessagePackReader
 	/// or to avoid throwing when the value is null.
 	/// </remarks>
 	/// <exception cref="EndOfStreamException">If the buffer does not contain enough bytes to read the next msgpack token.</exception>
-	/// <exception cref="MessagePackSerializationException">Thrown if <see cref="NextCode"/> is not a string.</exception>
+	/// <exception cref="SerializationException">Thrown if <see cref="NextCode"/> is not a string.</exception>
 	public ReadOnlySpan<byte> ReadStringSpan()
 	{
 		switch (this.streamingReader.TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> span))
@@ -634,7 +635,7 @@ public ref partial struct MessagePackReader
 	/// Thrown if the header cannot be read in the bytes left in the <see cref="Sequence"/>
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the bytes the header claims to be there.
 	/// </exception>
-	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an extension format header is encountered.</exception>
+	/// <exception cref="SerializationException">Thrown if a code other than an extension format header is encountered.</exception>
 	public ExtensionHeader ReadExtensionHeader()
 	{
 		ThrowInsufficientBufferUnless(this.TryReadExtensionHeader(out ExtensionHeader header));
@@ -659,7 +660,7 @@ public ref partial struct MessagePackReader
 	/// </summary>
 	/// <param name="extensionHeader">Receives the extension header if the remaining bytes in the <see cref="Sequence"/> fully describe the header.</param>
 	/// <returns>A value indicating whether an extension header is fully represented at the reader's position.</returns>
-	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an extension format header is encountered.</exception>
+	/// <exception cref="SerializationException">Thrown if a code other than an extension format header is encountered.</exception>
 	/// <remarks>
 	/// This call should always be followed by a successful call to <see cref="ReadRaw(long)"/>,
 	/// with the length of bytes specified by <see cref="ExtensionHeader.Length"/> (even if zero), so that the overall structure can be recorded as read.
@@ -712,14 +713,14 @@ public ref partial struct MessagePackReader
 	}
 
 	/// <summary>
-	/// Throws an <see cref="MessagePackSerializationException"/> explaining an unexpected code was encountered.
+	/// Throws an <see cref="SerializationException"/> explaining an unexpected code was encountered.
 	/// </summary>
 	/// <param name="code">The code that was encountered.</param>
 	/// <returns>Nothing. This method always throws.</returns>
 	[DoesNotReturn]
 	internal static Exception ThrowInvalidCode(byte code)
 	{
-		throw new MessagePackSerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, MessagePackCode.ToFormatName(code)));
+		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, MessagePackCode.ToFormatName(code)));
 	}
 
 	/// <summary>
