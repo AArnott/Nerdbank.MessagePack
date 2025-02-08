@@ -2,7 +2,7 @@
 
 ***A modern, fast and NativeAOT-compatible MessagePack serialization library***
 
-[![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg)](https://nuget.org/packages/Nerdbank.MessagePack)
+[![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg)](https://www.nuget.org/packages/Nerdbank.MessagePack)
 [![codecov](https://codecov.io/gh/AArnott/Nerdbank.MessagePack/graph/badge.svg?token=CLMWEX3M3W)](https://codecov.io/gh/AArnott/Nerdbank.MessagePack)
 [![🏭 Build](https://github.com/AArnott/Nerdbank.MessagePack/actions/workflows/build.yml/badge.svg)](https://github.com/AArnott/Nerdbank.MessagePack/actions/workflows/build.yml)
 
