@@ -33,7 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{36CCE840-6
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D8954A17-45FA-4893-A5D6-83C0F6269631}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack", "src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj", "{EC0B20E6-6236-459F-8AB9-F92A73F19D57}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.PolySerializer", "src\Nerdbank.MessagePack\Nerdbank.PolySerializer.csproj", "{EC0B20E6-6236-459F-8AB9-F92A73F19D57}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A9500399-3916-4C15-8456-E17FCA73EF9F}"
 EndProject

@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// A <see cref="SecureEqualityComparer{T}"/> that operates on values through their surrogates.

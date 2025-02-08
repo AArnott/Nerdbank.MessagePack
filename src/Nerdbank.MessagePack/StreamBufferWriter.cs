@@ -3,7 +3,7 @@
 
 using Microsoft;
 
-namespace Nerdbank.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// Adapts a <see cref="Stream"/> to operate as an <see cref="IBufferWriter{T}"/>.

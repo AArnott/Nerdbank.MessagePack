@@ -9,7 +9,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// A base class for all <see cref="IEqualityComparer{T}"/> implementations that are hash collision resistant.

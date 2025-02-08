@@ -4,7 +4,7 @@
 #pragma warning disable NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 using System.Text;
-using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
+using Nerdbank.PolySerializer;
 
 public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 {

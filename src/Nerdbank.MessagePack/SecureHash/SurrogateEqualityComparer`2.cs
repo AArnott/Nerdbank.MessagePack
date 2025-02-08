@@ -8,7 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// An <see cref="IEqualityComparer{T}"/> that operates on values through their surrogates.

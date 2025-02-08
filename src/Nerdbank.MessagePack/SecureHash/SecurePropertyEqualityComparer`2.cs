@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// A secure equality comparer that focuses on just one property for a given type.

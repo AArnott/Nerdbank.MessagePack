@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Text;
+using Nerdbank.PolySerializer.MessagePack;
 
 public class MessagePackWriterTests
 {

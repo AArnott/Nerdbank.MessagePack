@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
-namespace Nerdbank.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// Manages a sequence of elements, readily castable as a <see cref="ReadOnlySequence{T}"/>.

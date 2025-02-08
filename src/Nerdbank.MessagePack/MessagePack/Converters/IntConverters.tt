@@ -1,0 +1,29 @@
+<#@ assembly name="System.Core" #>
+<#@ Import Namespace="System.Linq" #>
+// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+/* THIS (.cs) FILE IS GENERATED. DO NOT CHANGE IT.
+ * CHANGE THE .tt FILE INSTEAD. */
+
+#pragma warning disable SA1121 // Simplify type syntax
+#pragma warning disable SA1649 // File name should match first type name
+#pragma warning disable SA1402 // File may only contain a single class
+
+namespace Nerdbank.PolySerializer.MessagePack;
+<# var types = new Type[] { typeof(sbyte), typeof(short), typeof(int), typeof(long), typeof(byte), typeof(ushort), typeof(uint), typeof(ulong) }.Select(t => t.Name);
+foreach (string type in types) { #>
+
+/// <summary>Serializes the primitive integer type <see cref="<#=type#>"/> as a MessagePack integer.</summary>
+internal class <#=type#>Converter : MessagePackConverter<<#=type#>>
+{
+	/// <inheritdoc/>
+	public override <#=type#> Read(ref MessagePackReader reader, SerializationContext context) => reader.Read<#=type#>();
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in <#=type#> value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
+}
+<# } #>

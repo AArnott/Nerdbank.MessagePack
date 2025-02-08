@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Nerdbank.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// An interface that may be implemented by user-defined types in order to provide their own

@@ -8,7 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// Implements a hash collision resistant <see cref="IEqualityComparer{T}"/> for nullable value types.

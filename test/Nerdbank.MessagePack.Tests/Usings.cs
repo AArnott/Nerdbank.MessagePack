@@ -4,7 +4,8 @@
 global using System.Buffers;
 global using System.Collections.Immutable;
 global using System.IO.Pipelines;
-global using Nerdbank.MessagePack;
+global using Nerdbank.PolySerializer;
+global using Nerdbank.PolySerializer.MessagePack;
 global using Nerdbank.Streams;
 global using PolyType;
 global using PolyType.Abstractions;

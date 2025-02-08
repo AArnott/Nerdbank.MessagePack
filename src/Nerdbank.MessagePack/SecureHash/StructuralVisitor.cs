@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using PolyType.Utilities;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// A visitor that creates an <see cref="IEqualityComparer{T}"/> for a given type shape that compares values by value (deeply).

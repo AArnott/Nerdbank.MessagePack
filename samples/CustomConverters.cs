@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace CustomConverter
 {
     #region YourOwnConverter
-    using Nerdbank.MessagePack;
+    using Nerdbank.PolySerializer.MessagePack;
 
     public record Foo(int MyProperty1, string? MyProperty2);
 
@@ -109,7 +109,7 @@ namespace CustomConverter
 
 namespace SubValues
 {
-    using Nerdbank.MessagePack;
+    using Nerdbank.PolySerializer.MessagePack;
 
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 
@@ -202,7 +202,7 @@ namespace SubValues
 
 namespace SubValuesWithWitness
 {
-    using Nerdbank.MessagePack;
+    using Nerdbank.PolySerializer.MessagePack;
 
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 
@@ -257,7 +257,7 @@ namespace SubValuesWithWitness
 
 namespace WitnessForArray
 {
-    using Nerdbank.MessagePack;
+    using Nerdbank.PolySerializer.MessagePack;
 
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 

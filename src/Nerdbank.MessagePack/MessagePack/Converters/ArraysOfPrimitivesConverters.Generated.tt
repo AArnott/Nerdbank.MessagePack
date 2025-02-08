@@ -1,0 +1,113 @@
+// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#nullable enable
+
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
+using Microsoft;
+
+namespace Nerdbank.PolySerializer.MessagePack.Converters;
+
+<#
+	// We don't bother with Byte because byte[] has a far superior encoding (binary) so we don't need to optimize it here.
+	string[] primitiveTypeNames = ["SByte", "Int16", "Int32", "Int64", /*"Byte",*/ "UInt16", "UInt32", "UInt64", "Single", "Double", "Boolean"];
+#>
+
+/// <summary>
+/// Contains a bunch of converters for arrays of primitives.
+/// </summary>
+/// <remarks>
+/// These aren't strictly necessary, but because we can predict their max encoded representation and embed the
+/// direct reader/writer calls, we can avoid the overhead of many tiny calls to
+/// <see cref="MessagePackWriter.GetSpan(int)"/> and <see cref="MessagePackWriter.Advance(int)"/>,
+/// which speeds things up considerably.
+/// </remarks>
+internal static partial class ArraysOfPrimitivesConverters
+{
+	/// <summary>
+	/// Creates a converter optimized for primitive arrays if one is available for the given enumerable and element type.
+	/// </summary>
+	/// <typeparam name="TEnumerable">The type of enumerable.</typeparam>
+	/// <typeparam name="TElement">The type of element.</typeparam>
+	/// <param name="getEnumerable">The function that produces an <see cref="IEnumerable{T}"/> for a given <typeparamref name="TEnumerable"/>.</param>
+	/// <param name="spanConstructor">The constructor for the enumerable type.</param>
+	/// <param name="converter">Receives the hardware-accelerated converter if one is available.</param>
+	/// <returns>A value indicating whether a converter is available.</returns>
+	internal static bool TryGetConverter<TEnumerable, TElement>(
+		Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+		SpanConstructor<TElement, TEnumerable> spanConstructor,
+		[NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
+	{
+		// T[], Memory<T>, ReadOnlyMemory<T>, and possibly more types are all satisfiable by T[].
+		// So we avoid allocating or borrowing a temporary array only to copy from it to the span constructor
+		// for these types by just allocating an array up-front and returning it directly.
+		object? spanConstructorToUse = typeof(TElement[]).IsAssignableTo(typeof(TEnumerable)) ? null : spanConstructor;
+
+<#
+	foreach (string primitive in primitiveTypeNames)
+	{
+#>
+		if (typeof(TElement) == typeof(<#=primitive#>))
+		{
+			converter = (MessagePackConverter<TEnumerable>)(object)new <#=primitive#>ArrayConverter<TEnumerable>(
+				(Func<TEnumerable, IEnumerable<<#=primitive#>>>)getEnumerable,
+				(SpanConstructor<<#=primitive#>, TEnumerable>?)spanConstructorToUse);
+			return true;
+		}
+
+<#
+	}
+#>
+		converter = null;
+		return false;
+	}
+<#
+	foreach (string primitive in primitiveTypeNames)
+	{
+        string jsonSchemaType = primitive switch
+        {
+            "SByte" => "integer",
+            "Int16" => "integer",
+            "Int32" => "integer",
+            "Int64" => "integer",
+            "UInt16" => "integer",
+            "UInt32" => "integer",
+            "UInt64" => "integer",
+            "Single" => "number",
+            "Double" => "number",
+            "Boolean" => "boolean",
+            _ => throw new NotSupportedException(),
+        };
+#>
+
+	/// <summary>
+	/// A converter for <see cref="<#=primitive#>"/> enumerables.
+	/// </summary>
+	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
+	private class <#=primitive#>ArrayConverter<TEnumerable>(
+		Func<TEnumerable, IEnumerable<<#=primitive#>>> getEnumerable,
+		SpanConstructor<<#=primitive#>, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, <#=primitive#>>(getEnumerable, spanConstructor)
+	{
+		/// <inheritdoc/>
+		protected override <#=primitive#> Read(ref MessagePackReader reader) => reader.Read<#=primitive#>();
+
+		/// <inheritdoc/>
+		protected override bool TryWrite(Span<byte> msgpack, <#=primitive#> value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);
+
+		/// <inheritdoc/>
+		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+			=> new()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject
+				{
+					["type"] = "<#=jsonSchemaType#>",
+				},
+			};
+	}
+<#
+	}
+#>
+}

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft;
 
-namespace Nerdbank.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// A fast access struct that wraps <see cref="IBufferWriter{T}"/>.

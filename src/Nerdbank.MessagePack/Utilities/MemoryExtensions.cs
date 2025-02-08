@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Nerdbank.MessagePack.Utilities;
+namespace Nerdbank.PolySerializer.Utilities;
 
 /// <summary>
 /// Extension methods for the <see cref="ReadOnlySpan{T}"/> and <see cref="ReadOnlyMemory{T}"/> types.

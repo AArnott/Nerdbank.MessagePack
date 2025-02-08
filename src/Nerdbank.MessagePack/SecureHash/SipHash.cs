@@ -10,7 +10,7 @@ using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// Implements the <see href="https://en.wikipedia.org/wiki/SipHash">SipHash pseudo-random function</see>.

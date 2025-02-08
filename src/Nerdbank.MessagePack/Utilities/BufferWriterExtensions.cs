@@ -4,7 +4,7 @@
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
 using Microsoft;
 
-namespace Nerdbank.MessagePack.Utilities;
+namespace Nerdbank.PolySerializer.Utilities;
 
 /// <summary>
 /// Extensions for the <see cref="IBufferWriter{T}"/> type.

@@ -6,7 +6,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace Nerdbank.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// A .NET Framework implementation of the SequenceReader from .NET.

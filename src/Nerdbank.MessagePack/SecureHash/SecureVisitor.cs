@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Text;
 using PolyType.Utilities;
 
-namespace Nerdbank.MessagePack.SecureHash;
+namespace Nerdbank.PolySerializer.SecureHash;
 
 /// <summary>
 /// A visitor that creates a hash collision resistant <see cref="IEqualityComparer{T}"/> for a given type shape

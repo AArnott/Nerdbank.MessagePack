@@ -3,7 +3,7 @@
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
 // with Yoshifumi Kawai getting credit for the original implementation.
-namespace Nerdbank.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// Provides constants related to DateTime operations.

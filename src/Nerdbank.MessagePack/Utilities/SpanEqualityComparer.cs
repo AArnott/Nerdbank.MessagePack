@@ -8,7 +8,7 @@
 
 using System.Globalization;
 
-namespace Nerdbank.MessagePack.Utilities;
+namespace Nerdbank.PolySerializer.Utilities;
 
 /// <summary>Defines a span-based equality comparer.</summary>
 /// <typeparam name="T">The type of element that can be compared within its span.</typeparam>

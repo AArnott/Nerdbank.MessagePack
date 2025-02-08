@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Nerdbank.MessagePack.SecureHash;
+using Nerdbank.PolySerializer.SecureHash;
 using PolyType.Utilities;
 
-namespace Nerdbank.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// Provides deep, by-value implementations of <see cref="IEqualityComparer{T}"/> for arbitrary data types.
