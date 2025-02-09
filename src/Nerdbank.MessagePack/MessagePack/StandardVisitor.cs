@@ -9,19 +9,17 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
 using Nerdbank.PolySerializer.Converters;
+using Nerdbank.PolySerializer.MessagePack;
 using Nerdbank.PolySerializer.MessagePack.Converters;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// A <see cref="TypeShapeVisitor"/> that produces <see cref="MessagePackConverter{T}"/> instances for each type shape it visits.
 /// </summary>
-internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
+internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 {
-	private static readonly InterningStringConverter InterningStringConverter = new();
-	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
-
 	private readonly ConverterCache owner;
 	private readonly TypeGenerationContext context;
 
@@ -36,6 +34,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		this.context = context;
 		this.OutwardVisitor = this;
 	}
+
+	protected abstract Converter GetInterningStringConverter();
+
+	protected abstract Converter GetReferencePreservingInterningStringConverter();
 
 	/// <summary>
 	/// Gets or sets the visitor that will be used to generate converters for new types that are encountered.
@@ -57,7 +59,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		if (this.owner.InternStrings && typeof(T) == typeof(string))
 		{
-			return this.owner.PreserveReferences ? ReferencePreservingInterningStringConverter : InterningStringConverter;
+			return this.owner.PreserveReferences ? this.GetReferencePreservingInterningStringConverter() : this.GetInterningStringConverter();
 		}
 
 		// Check if the type has a built-in converter.

@@ -207,7 +207,7 @@ internal record class ConverterCache
 					DelayedValueFactory = new DelayedConverterFactory(),
 					ValueBuilderFactory = ctx =>
 					{
-						StandardVisitor standardVisitor = new StandardVisitor(this, ctx);
+						StandardVisitor standardVisitor = new MessagePackVisitor(this, ctx);
 						if (!this.PreserveReferences)
 						{
 							return standardVisitor;

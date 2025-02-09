@@ -9,18 +9,8 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <summary>
 /// A non-generic, <see cref="object"/>-based base class for all message pack converters.
 /// </summary>
-public abstract class MessagePackConverter
+public abstract class MessagePackConverter : PolySerializer.Converters.Converter
 {
-	/// <summary>
-	/// Gets a value indicating whether callers should prefer the async methods on this object.
-	/// </summary>
-	/// <value>Unless overridden in a derived converter, this value is always <see langword="false"/>.</value>
-	/// <remarks>
-	/// Derived types that override the <see cref="WriteObjectAsync"/> and/or <see cref="ReadObjectAsync"/> methods
-	/// should also override this property and have it return <see langword="true" />.
-	/// </remarks>
-	public abstract bool PreferAsyncSerialization { get; }
-
 	/// <summary>
 	/// Serializes an instance of an object.
 	/// </summary>
