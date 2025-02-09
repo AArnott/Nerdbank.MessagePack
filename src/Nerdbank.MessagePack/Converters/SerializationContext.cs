@@ -4,8 +4,9 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft;
+using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Context that flows through the serialization process.
@@ -51,8 +52,8 @@ public record struct SerializationContext
 	/// Gets a cancellation token that can be used to cancel the serialization operation.
 	/// </summary>
 	/// <remarks>
-	/// In <see cref="MessagePackConverter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext)" />
-	/// or <see cref="MessagePackConverter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext)"/> methods,
+	/// In <see cref="Converter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext)" />
+	/// or <see cref="Converter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext)"/> methods,
 	/// this will tend to be equivalent to the <c>cancellationToken</c> parameter passed to those methods.
 	/// </remarks>
 	public CancellationToken CancellationToken { get; init; }
@@ -121,12 +122,12 @@ public record struct SerializationContext
 
 #if NET
 	/// <inheritdoc cref="GetConverter{T, TProvider}()"/>
-	public MessagePackConverter<T> GetConverter<T>()
+	public Converter<T> GetConverter<T>()
 		where T : IShapeable<T>
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(T.GetShape());
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		Converter<T> result = this.Cache.GetOrAddConverter(T.GetShape());
+		return this.ReferenceEqualityTracker is null ? result : (Converter<T>)result.WrapWithReferencePreservation();
 	}
 
 	/// <summary>
@@ -139,12 +140,12 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public MessagePackConverter<T> GetConverter<T, TProvider>()
+	public Converter<T> GetConverter<T, TProvider>()
 		where TProvider : IShapeable<T>
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(TProvider.GetShape());
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		Converter<T> result = this.Cache.GetOrAddConverter(TProvider.GetShape());
+		return this.ReferenceEqualityTracker is null ? result : (Converter<T>)result.WrapWithReferencePreservation();
 	}
 #endif
 
@@ -162,11 +163,11 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public MessagePackConverter<T> GetConverter<T>(ITypeShapeProvider? provider)
+	public Converter<T> GetConverter<T>(ITypeShapeProvider? provider)
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		Converter<T> result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
+		return this.ReferenceEqualityTracker is null ? result : (Converter<T>)result.WrapWithReferencePreservation();
 	}
 
 	/// <summary>
@@ -178,11 +179,11 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public MessagePackConverter GetConverter(ITypeShape shape)
+	public Converter GetConverter(ITypeShape shape)
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.Cache.GetOrAddConverter(shape);
-		return this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation();
+		Converter result = this.Cache.GetOrAddConverter(shape);
+		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
 	/// <summary>
@@ -195,11 +196,11 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public MessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider)
+	public Converter GetConverter(Type type, ITypeShapeProvider? provider)
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		IMessagePackConverterInternal result = this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
-		return this.ReferenceEqualityTracker is null ? (MessagePackConverter)result : result.WrapWithReferencePreservation();
+		Converter result = this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
+		return this.ReferenceEqualityTracker is null ? (Converter)result : result.WrapWithReferencePreservation();
 	}
 
 	/// <summary>

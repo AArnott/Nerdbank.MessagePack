@@ -12,7 +12,7 @@ namespace Nerdbank.PolySerializer;
 /// <summary>
 /// A fast access struct that wraps <see cref="IBufferWriter{T}"/>.
 /// </summary>
-internal ref struct BufferWriter
+public ref struct BufferWriter
 {
 	private readonly bool usingBufferMemoryWriter;
 

@@ -5,10 +5,11 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack.Converters;
+using Nerdbank.PolySerializer.Converters;
+using Nerdbank.PolySerializer.MessagePack;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// Tracks all inputs to converter construction and caches the results of construction itself.
@@ -234,12 +235,12 @@ internal record class ConverterCache
 	/// Custom converters should be registered before serializing anything on this
 	/// instance of <see cref="MessagePackSerializer" />.
 	/// </remarks>
-	internal void RegisterConverter<T>(MessagePackConverter<T> converter)
+	internal void RegisterConverter<T>(Converter<T> converter)
 	{
 		Requires.NotNull(converter);
 		this.OnChangingConfiguration();
 		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
-			? ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation()
+			? converter.WrapWithReferencePreservation()
 			: converter;
 	}
 
@@ -277,8 +278,8 @@ internal record class ConverterCache
 	/// <typeparam name="T">The data type to convert.</typeparam>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
-		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAdd(shape)!;
+	internal Converter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
+		=> (Converter<T>)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -287,8 +288,8 @@ internal record class ConverterCache
 	/// </summary>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal MessagePackConverter GetOrAddConverter(ITypeShape shape)
-		=> (MessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
+	internal Converter GetOrAddConverter(ITypeShape shape)
+		=> (Converter)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -298,8 +299,8 @@ internal record class ConverterCache
 	/// <typeparam name="T">The type to convert.</typeparam>
 	/// <param name="provider">The type shape provider.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShapeProvider provider)
-		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
+	internal Converter<T> GetOrAddConverter<T>(ITypeShapeProvider provider)
+		=> (Converter<T>)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -309,20 +310,20 @@ internal record class ConverterCache
 	/// <param name="type">The type to convert.</param>
 	/// <param name="provider">The type shape provider.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverterInternal GetOrAddConverter(Type type, ITypeShapeProvider provider)
-		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAddOrThrow(type, provider);
+	internal Converter GetOrAddConverter(Type type, ITypeShapeProvider provider)
+		=> (Converter)this.CachedConverters.GetOrAddOrThrow(type, provider);
 
 	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available.
 	/// </summary>
 	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
-	/// <param name="converter">Receives the converter, if the user provided one (e.g. via <see cref="RegisterConverter{T}(MessagePackConverter{T})"/>.</param>
+	/// <param name="converter">Receives the converter, if the user provided one (e.g. via <see cref="RegisterConverter{T}(Converter{T})"/>.</param>
 	/// <returns>A value indicating whether a customer converter exists.</returns>
-	internal bool TryGetUserDefinedConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	internal bool TryGetUserDefinedConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
 	{
 		if (this.userProvidedConverters.TryGetValue(typeof(T), out object? value))
 		{
-			converter = (MessagePackConverter<T>)value;
+			converter = (Converter<T>)value;
 			return true;
 		}
 
@@ -387,7 +388,7 @@ internal record class ConverterCache
 	{
 		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
 		{
-			IMessagePackConverterInternal converter = (IMessagePackConverterInternal)pair.Value;
+			Converter converter = (Converter)pair.Value;
 			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
 		}
 	}

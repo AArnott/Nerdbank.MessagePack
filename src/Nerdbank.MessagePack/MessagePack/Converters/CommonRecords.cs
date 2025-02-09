@@ -139,15 +139,15 @@ internal record SubTypes
 	/// <summary>
 	/// Gets the converters to use to deserialize a subtype, keyed by its integer alias.
 	/// </summary>
-	internal required FrozenDictionary<int, MessagePackConverter> DeserializersByIntAlias { get; init; }
+	internal required FrozenDictionary<int, Converter> DeserializersByIntAlias { get; init; }
 
 	/// <summary>
 	/// Gets the converter to use to deserialize a subtype, keyed by its UTF-8 encoded string alias.
 	/// </summary>
-	internal required SpanDictionary<byte, MessagePackConverter> DeserializersByStringAlias { get; init; }
+	internal required SpanDictionary<byte, Converter> DeserializersByStringAlias { get; init; }
 
 	/// <summary>
 	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
 	/// </summary>
-	internal required FrozenDictionary<Type, (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
+	internal required FrozenDictionary<Type, (SubTypeAlias Alias, Converter Converter, ITypeShape Shape)> Serializers { get; init; }
 }

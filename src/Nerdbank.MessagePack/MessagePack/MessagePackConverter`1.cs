@@ -30,10 +30,56 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <see cref="MessagePackSerializer.GetJsonSchema(ITypeShape)"/>.
 /// </para>
 /// </remarks>
-public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePackConverterInternal
+public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConverter
 {
-	/// <inheritdoc />
-	public override bool PreferAsyncSerialization => false;
+	object? IMessagePackConverter.ReadObject(ref MessagePackReader reader, SerializationContext context) => this.Read(ref reader, context);
+
+	void IMessagePackConverter.WriteObject(ref MessagePackWriter writer, object? value, SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	[Experimental("NBMsgPackAsync")]
+	ValueTask<object?> IMessagePackConverter.ReadObjectAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	[Experimental("NBMsgPackAsync")]
+	ValueTask IMessagePackConverter.WriteObjectAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	[Experimental("NBMsgPackAsync")]
+	Task<bool> IMessagePackConverter.SkipToIndexValueAsync(MessagePackAsyncReader reader, object? indexArg, SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	[Experimental("NBMsgPackAsync")]
+	Task<bool> IMessagePackConverter.SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	public sealed override T? Read(ref Reader reader, SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	public sealed override void Write(ref Writer writer, in T? value, SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	[Experimental("NBMsgPackAsync")]
+	public sealed override ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
+		=> this.ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = context.CancellationToken }, context);
+
+	[Experimental("NBMsgPackAsync")]
+	public sealed override ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
+		=> this.WriteAsync(new MessagePackAsyncWriter(writer), value, context);
 
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
@@ -142,106 +188,27 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 	/// <seealso cref="ApplyJsonSchemaNullability(JsonObject)"/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
 
-	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	public sealed override ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
+		=> this.SkipToIndexValueAsync(new MessagePackAsyncReader(reader) { CancellationToken = context.CancellationToken }, index, context);
+
+	[Experimental("NBMsgPackAsync")]
+	public sealed override ValueTask<bool> SkipToPropertyValueAsync(AsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+		=> this.SkipToPropertyValueAsync(new MessagePackAsyncReader(reader) { CancellationToken = context.CancellationToken }, propertyShape, context);
+
+	[Experimental("NBMsgPackAsync")]
+	public virtual ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
 		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
 
-	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
+	public virtual ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
 		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
 
-	/// <inheritdoc/>
-	public override sealed void WriteObject(ref MessagePackWriter writer, object? value, SerializationContext context) => this.Write(ref writer, (T?)value, context);
+	/// <inheritdoc cref="WrapWithReferencePreservation" />
+	internal override Converter WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
 
-	/// <inheritdoc/>
-	public override sealed object? ReadObject(ref MessagePackReader reader, SerializationContext context) => this.Read(ref reader, context);
-
-	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
-	[EditorBrowsable(EditorBrowsableState.Never)] // Use the generic methods instead.
-	public override sealed ValueTask WriteObjectAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context) => this.WriteAsync(writer, (T?)value, context);
-
-	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
-	[EditorBrowsable(EditorBrowsableState.Never)] // Use the generic methods instead.
-	public override sealed async ValueTask<object?> ReadObjectAsync(MessagePackAsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
-
-	/// <inheritdoc/>
-	MessagePackConverter IMessagePackConverterInternal.WrapWithReferencePreservation() => this.WrapWithReferencePreservation();
-
-	/// <inheritdoc/>
-	MessagePackConverter IMessagePackConverterInternal.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
-
-	/// <inheritdoc cref="IMessagePackConverterInternal.WrapWithReferencePreservation" />
-	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
-
-	/// <inheritdoc cref="IMessagePackConverterInternal.UnwrapReferencePreservation" />
-	internal virtual MessagePackConverter<T> UnwrapReferencePreservation() => this;
-
-	/// <inheritdoc/>
-	internal override sealed void DerivationGuard()
-	{
-		throw new NotImplementedException();
-	}
-
-	/// <summary>
-	/// Transforms a JSON schema to include "null" as a possible value for the schema.
-	/// </summary>
-	/// <param name="schema">The schema to transform. This value may be mutated.</param>
-	/// <returns>The result of the transformation, which may be a different root object than given in <paramref name="schema"/>.</returns>
-	/// <remarks>
-	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
-	/// </remarks>
-	protected internal static JsonObject ApplyJsonSchemaNullability(JsonObject schema)
-	{
-		Requires.NotNull(schema);
-
-		if (schema.TryGetPropertyValue("type", out JsonNode? typeValue))
-		{
-			if (schema["type"] is JsonArray types)
-			{
-				if (!types.Any(n => n?.GetValueKind() == System.Text.Json.JsonValueKind.String && n.GetValue<string>() == "null"))
-				{
-					types.Add((JsonNode)"null");
-				}
-			}
-			else
-			{
-				schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
-			}
-		}
-		else
-		{
-			// This is probably a schema reference.
-			schema = new()
-			{
-				["oneOf"] = new JsonArray(schema, new JsonObject { ["type"] = "null" }),
-			};
-		}
-
-		return schema;
-	}
-
-	/// <summary>
-	/// Creates a JSON schema fragment that describes a type that has no documented schema.
-	/// </summary>
-	/// <param name="undocumentingConverter">The converter that has not provided a schema.</param>
-	/// <returns>The JSON schema fragment that permits anything and explains why.</returns>
-	/// <remarks>
-	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
-	/// </remarks>
-	protected internal static JsonObject CreateUndocumentedSchema(Type undocumentingConverter)
-	{
-		Requires.NotNull(undocumentingConverter);
-
-		return new()
-		{
-			["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
-			["description"] = $"The schema of this object is unknown as it is determined by the {undocumentingConverter.FullName} converter which does not override {nameof(MessagePackConverter<int>.GetJsonSchema)}.",
-		};
-	}
+	/// <inheritdoc cref="UnwrapReferencePreservation" />
+	internal override Converter UnwrapReferencePreservation() => this;
 
 	/// <summary>
 	/// Creates a JSON schema fragment that provides a cursory description of a MessagePack extension.
@@ -279,38 +246,5 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 		}
 
 		return schema;
-	}
-
-	/// <summary>
-	/// Wraps a boxed primitive as a <see cref="JsonValue"/>.
-	/// </summary>
-	/// <param name="value">The boxed primitive to wrap as a <see cref="JsonValue"/>. Only certain primitives are supported (roughly those supported by non-generic overloads of <c>JsonValue.Create</c>.</param>
-	/// <returns>The <see cref="JsonValue"/>, or <see langword="null" /> if <paramref name="value"/> is <see langword="null" /> because <see cref="JsonValue"/> does not represent null.</returns>
-	/// <exception cref="NotSupportedException">Thrown if <paramref name="value"/> is of a type that cannot be wrapped as a simple JSON value.</exception>
-	/// <remarks>
-	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
-	/// </remarks>
-	[return: NotNullIfNotNull(nameof(value))]
-	protected static JsonValue? CreateJsonValue(object? value)
-	{
-		return value switch
-		{
-			null => null,
-			string v => JsonValue.Create(v),
-			short v => JsonValue.Create(v),
-			int v => JsonValue.Create(v),
-			long v => JsonValue.Create(v),
-			float v => JsonValue.Create(v),
-			double v => JsonValue.Create(v),
-			decimal v => JsonValue.Create(v),
-			bool v => JsonValue.Create(v),
-			byte v => JsonValue.Create(v),
-			sbyte v => JsonValue.Create(v),
-			ushort v => JsonValue.Create(v),
-			uint v => JsonValue.Create(v),
-			ulong v => JsonValue.Create(v),
-			char v => JsonValue.Create(v),
-			_ => throw new NotSupportedException($"Unsupported object type: {value.GetType().FullName}"),
-		};
 	}
 }

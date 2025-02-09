@@ -10,7 +10,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 internal class MessagePackVisitor : StandardVisitor
 {
 	private static readonly InterningStringConverter InterningStringConverter = new();
-	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
+	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = (MessagePackConverter<string>)InterningStringConverter.WrapWithReferencePreservation();
 
 	public MessagePackVisitor(ConverterCache owner, TypeGenerationContext context)
 		: base(owner, context)

@@ -20,10 +20,8 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <see href="https://github.com/msgpack/msgpack/blob/master/spec.md">The MessagePack spec.</see>.
 /// </remarks>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncWriter(PipeWriter pipeWriter)
+public class MessagePackAsyncWriter(AsyncWriter asyncWriter)
 {
-	private BufferMemoryWriter bufferWriter = new(pipeWriter);
-
 	/// <summary>
 	/// The delegate type that may be provided to the <see cref="Write{TState}(SyncWriter{TState}, TState)"/> method.
 	/// </summary>
@@ -43,10 +41,10 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	{
 #if !NET
 		// ref fields are not supported on .NET Framework, so we have to prepare to copy the struct.
-		this.bufferWriter.Commit();
+		asyncWriter.bufferWriter.Commit();
 #endif
 
-		return new(new BufferWriter(ref this.bufferWriter));
+		return new(new BufferWriter(ref asyncWriter.bufferWriter));
 	}
 
 	/// <summary>
@@ -59,7 +57,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 
 #if !NET
 		// ref fields are not supported on .NET Framework, so we have to copy the struct since it'll disappear.
-		this.bufferWriter = writer.Writer.BufferMemoryWriter;
+		asyncWriter.bufferWriter = writer.Writer.BufferMemoryWriter;
 #endif
 
 		// Help prevent misuse of the writer after it's been returned.
@@ -69,7 +67,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// <summary>
 	/// Ensures everything previously written has been flushed to the underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>
-	public void Flush() => this.bufferWriter.Commit();
+	public void Flush() => asyncWriter.Flush();
 
 	/// <summary>
 	/// Creates a sync writer for purposes of serializing a message.
@@ -100,9 +98,9 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// <inheritdoc cref="MessagePackWriter.WriteArrayHeader(uint)"/>
 	public void WriteArrayHeader(uint count)
 	{
-		Span<byte> span = this.bufferWriter.GetSpan(5);
+		Span<byte> span = asyncWriter.bufferWriter.GetSpan(5);
 		Assumes.True(MessagePackPrimitives.TryWriteArrayHeader(span, count, out int written));
-		this.bufferWriter.Advance(written);
+		asyncWriter.bufferWriter.Advance(written);
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteMapHeader(int)"/>
@@ -111,9 +109,9 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// <inheritdoc cref="MessagePackWriter.WriteMapHeader(uint)"/>
 	public void WriteMapHeader(uint count)
 	{
-		Span<byte> span = this.bufferWriter.GetSpan(5);
+		Span<byte> span = asyncWriter.bufferWriter.GetSpan(5);
 		Assumes.True(MessagePackPrimitives.TryWriteMapHeader(span, count, out int written));
-		this.bufferWriter.Advance(written);
+		asyncWriter.bufferWriter.Advance(written);
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteRaw(ReadOnlySpan{byte})"/>
@@ -137,43 +135,14 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
 	/// <returns>A task to await before writing further.</returns>
-	public ValueTask FlushIfAppropriateAsync(SerializationContext context)
-	{
-		if (this.IsTimeToFlush(context))
-		{
-			// We need to commit our own writer first or the PipeWriter may discard the buffer we've written to.
-			this.Flush();
-			return FlushAsync(pipeWriter, context.CancellationToken);
-		}
-		else
-		{
-			return default;
-		}
-
-		static async ValueTask FlushAsync(PipeWriter pipeWriter, CancellationToken cancellationToken)
-		{
-			FlushResult flushResult = await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-			if (flushResult.IsCanceled)
-			{
-				throw new OperationCanceledException();
-			}
-
-			if (flushResult.IsCompleted)
-			{
-				throw new EndOfStreamException("The receiver has stopped listening.");
-			}
-		}
-	}
+	public ValueTask FlushIfAppropriateAsync(SerializationContext context) => asyncWriter.FlushIfAppropriateAsync(context);
 
 	/// <summary>
 	/// Gets a value indicating whether it is time to flush the pipe.
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
 	/// <returns><see langword="true" /> if the pipe buffers are reaching their preferred capacity; <see langword="false" /> otherwise.</returns>
-	public bool IsTimeToFlush(SerializationContext context)
-	{
-		return pipeWriter.CanGetUnflushedBytes && pipeWriter.UnflushedBytes > context.UnflushedBytesThreshold;
-	}
+	public bool IsTimeToFlush(SerializationContext context) => asyncWriter.IsTimeToFlush(context);
 
 	/// <summary>
 	/// Gets a value indicating whether it is time to flush the pipe.
@@ -181,8 +150,5 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// <param name="context">The serialization context.</param>
 	/// <param name="syncWriter">The synchronous writer that may have unflushed bytes to consider as well.</param>
 	/// <returns><see langword="true" /> if the pipe buffers are reaching their preferred capacity; <see langword="false" /> otherwise.</returns>
-	public bool IsTimeToFlush(SerializationContext context, in MessagePackWriter syncWriter)
-	{
-		return pipeWriter.CanGetUnflushedBytes && (pipeWriter.UnflushedBytes + syncWriter.UnflushedBytes) > context.UnflushedBytesThreshold;
-	}
+	public bool IsTimeToFlush(SerializationContext context, in MessagePackWriter syncWriter)=>asyncWriter.IsTimeToFlush(context, syncWriter.UnflushedBytes);
 }

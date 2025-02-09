@@ -4,7 +4,7 @@
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// The context provided to <see cref="MessagePackConverter{T}.GetJsonSchema"/>
@@ -54,10 +54,10 @@ public class JsonSchemaContext
 			return CreateReference(qualifiedReference);
 		}
 
-		MessagePackConverter converter = this.cache.GetOrAddConverter(typeShape);
+		Converter converter = this.cache.GetOrAddConverter(typeShape);
 		if (converter.GetJsonSchema(this, typeShape) is not JsonObject schema)
 		{
-			schema = MessagePackConverter<int>.CreateUndocumentedSchema(converter.GetType());
+			schema = Converter.CreateUndocumentedSchema(converter.GetType());
 		}
 
 		this.recursionGuard.Remove(type);

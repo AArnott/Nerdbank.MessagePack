@@ -43,10 +43,10 @@ internal static partial class MessagePackSerializerPolyfill
 	internal static ValueTask<T?> DeserializeAsync<T>(this MessagePackSerializer serializer, Stream pipeReader, CancellationToken cancellationToken = default)
 		=> serializer.DeserializeAsync<T>(pipeReader, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
-	internal static MessagePackConverter<T> GetConverter<T>(this SerializationContext context)
+	internal static Converter<T> GetConverter<T>(this SerializationContext context)
 		=> context.GetConverter<T>(MessagePackSerializerTestBase.GetShapeProvider<Witness>());
 
-	internal static MessagePackConverter<T> GetConverter<T, TProvider>(this SerializationContext context)
+	internal static Converter<T> GetConverter<T, TProvider>(this SerializationContext context)
 		=> context.GetConverter<T>(MessagePackSerializerTestBase.GetShapeProvider<TProvider>());
 
 	internal static JsonObject GetJsonSchema<T>(this MessagePackSerializer serializer)

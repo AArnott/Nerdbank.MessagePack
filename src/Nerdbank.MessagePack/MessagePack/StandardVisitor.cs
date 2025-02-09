@@ -52,7 +52,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
 	{
 		// Check if the type has a custom converter.
-		if (this.owner.TryGetUserDefinedConverter<T>(out MessagePackConverter<T>? userDefinedConverter))
+		if (this.owner.TryGetUserDefinedConverter<T>(out Converter<T>? userDefinedConverter))
 		{
 			return userDefinedConverter;
 		}
@@ -502,11 +502,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="shape">The type shape.</param>
 	/// <param name="state">An optional state object to pass to the converter.</param>
 	/// <returns>The converter.</returns>
-	protected IMessagePackConverterInternal GetConverter(ITypeShape shape, object? state = null)
-	{
-		ITypeShapeFunc self = this;
-		return (IMessagePackConverterInternal)shape.Invoke(this, state)!;
-	}
+	protected Converter GetConverter(ITypeShape shape, object? state = null) => (Converter)shape.Invoke(this, state)!;
 
 	/// <summary>
 	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
@@ -536,9 +532,9 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			mapping = mutableMapping;
 		}
 
-		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
-		Dictionary<ReadOnlyMemory<byte>, MessagePackConverter> deserializeByUtf8Data = new();
-		Dictionary<Type, (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
+		Dictionary<int, Converter> deserializeByIntData = new();
+		Dictionary<ReadOnlyMemory<byte>, Converter> deserializeByUtf8Data = new();
+		Dictionary<Type, (SubTypeAlias Alias, Converter Converter, ITypeShape Shape)> serializerData = new();
 		foreach (KeyValuePair<SubTypeAlias, ITypeShape> pair in mapping)
 		{
 			SubTypeAlias alias = pair.Key;
@@ -547,7 +543,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			MessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
+			Converter converter = this.GetConverter(shape).UnwrapReferencePreservation();
 			switch (alias.Type)
 			{
 				case SubTypeAlias.AliasType.Integer:
@@ -566,7 +562,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return new SubTypes
 		{
 			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
-			DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
+			DeserializersByStringAlias = new SpanDictionary<byte, Converter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
 			Serializers = serializerData.ToFrozenDictionary(),
 		};
 	}

@@ -24,7 +24,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <exception cref="SerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
+public class MessagePackAsyncReader(AsyncReader asyncReader) : IDisposable
 {
 	private MessagePackStreamingReader.BufferRefresh? refresh;
 	private bool readerReturned = true;
@@ -105,7 +105,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		}
 		else
 		{
-			ReadResult readResult = await pipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
+			ReadResult readResult = await asyncReader.PipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
 			if (readResult.IsCanceled)
 			{
 				throw new OperationCanceledException();
@@ -114,7 +114,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 			reader = new(
 				readResult.Buffer,
 				readResult.IsCompleted ? null : FetchMoreBytesAsync,
-				pipeReader);
+				asyncReader.PipeReader);
 			this.refresh = reader.GetExchangeInfo();
 
 			static ValueTask<ReadResult> FetchMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken ct)
@@ -206,7 +206,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		if (this.refresh.HasValue)
 		{
 			// Update the PipeReader so it knows where we left off.
-			pipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
+			asyncReader.PipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
 		}
 	}
 

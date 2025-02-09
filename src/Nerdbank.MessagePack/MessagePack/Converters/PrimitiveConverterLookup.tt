@@ -67,9 +67,9 @@ internal static class PrimitiveConverterLookup
 #if <#=converterGroup.Key#>
 <#   } 
 	 foreach (var converter in converterGroup) { #>
-	private static IMessagePackConverterInternal? <#=converter.FieldName#>;
+	private static Converter? <#=converter.FieldName#>;
 <#	  if (converter.IsRefType) { #>
-	private static IMessagePackConverterInternal? <#=converter.ReferencePreservingFieldName#>;
+	private static Converter? <#=converter.ReferencePreservingFieldName#>;
 <#	  }
 	 }
 	 if (converterGroup.Key is not null) { #>

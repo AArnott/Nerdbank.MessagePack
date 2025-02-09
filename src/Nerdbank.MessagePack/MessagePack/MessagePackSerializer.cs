@@ -152,7 +152,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.converterCache.GetOrAddConverter(shape).WriteObject(ref writer, value, context.Value);
+		this.GetConverter(shape).WriteObject(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -167,7 +167,7 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.converterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+		this.GetConverter(shape).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -181,7 +181,7 @@ public partial record MessagePackSerializer
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		this.converterCache.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
+		this.GetConverter<T>(provider).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -199,7 +199,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter(shape).ReadObject(ref reader, context.Value);
+		return this.GetConverter(shape).ReadObject(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -214,7 +214,7 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
+		return this.GetConverter(shape).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -232,7 +232,7 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
+		return ((MessagePackConverter<T>)this.converterCache.GetOrAddConverter<T>(provider)).Read(ref reader, context.Value);
 	}
 
 	/// <summary>
@@ -251,7 +251,7 @@ public partial record MessagePackSerializer
 		cancellationToken.ThrowIfCancellationRequested();
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncWriter asyncWriter = new(writer);
+		AsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		await this.converterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
@@ -273,7 +273,7 @@ public partial record MessagePackSerializer
 		cancellationToken.ThrowIfCancellationRequested();
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncWriter asyncWriter = new(writer);
+		AsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 		await this.converterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
@@ -289,7 +289,7 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
-		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter(shape), cancellationToken);
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.GetConverter(shape), cancellationToken);
 
 	/// <summary>
 	/// Deserializes a value from a <see cref="PipeReader"/>.
@@ -300,7 +300,7 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.GetConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte}, JsonOptions?)"/>
 	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack, JsonOptions? options = null) => ConvertToJson(new ReadOnlySequence<byte>(msgpack), options);
@@ -519,29 +519,33 @@ public partial record MessagePackSerializer
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter(shape), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.GetConverter(shape), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.GetConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.GetConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter<TElement>(provider), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.GetConverter<TElement>(provider), cancellationToken);
 
 	/// <summary>
 	/// Gets a converter for a given type shape.
 	/// </summary>
 	/// <param name="typeShape">The type shape.</param>
 	/// <returns>A converter.</returns>
-	internal MessagePackConverter GetConverter(ITypeShape typeShape) => this.converterCache.GetOrAddConverter(typeShape);
+	internal IMessagePackConverter GetConverter(ITypeShape typeShape) => (IMessagePackConverter)this.converterCache.GetOrAddConverter(typeShape);
+
+	internal MessagePackConverter<T> GetConverter<T>(ITypeShape<T> typeShape) => (MessagePackConverter<T>)this.converterCache.GetOrAddConverter<T>(typeShape);
+
+	internal MessagePackConverter<T> GetConverter<T>(ITypeShapeProvider shapeProvider) => (MessagePackConverter<T>)this.converterCache.GetOrAddConverter<T>(shapeProvider);
 
 	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
@@ -586,7 +590,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(new AsyncReader(reader)) { CancellationToken = cancellationToken };
 		bool readMore = false;
 		while (!await asyncReader.GetIsEndOfStreamAsync().ConfigureAwait(false))
 		{
@@ -660,7 +664,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(new AsyncReader(reader)) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 
 		StreamingDeserializer<TElement> helper = new(this, provider, asyncReader, context.Value);
@@ -723,7 +727,7 @@ public partial record MessagePackSerializer
 		}
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(new AsyncReader(reader)) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 		T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
 		asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.

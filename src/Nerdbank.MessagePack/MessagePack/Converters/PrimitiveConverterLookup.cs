@@ -23,42 +23,42 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// </remarks>
 internal static class PrimitiveConverterLookup
 {
-	private static IMessagePackConverterInternal? _CharConverter;
-	private static IMessagePackConverterInternal? _ByteConverter;
-	private static IMessagePackConverterInternal? _SByteConverter;
-	private static IMessagePackConverterInternal? _Int16Converter;
-	private static IMessagePackConverterInternal? _UInt16Converter;
-	private static IMessagePackConverterInternal? _Int32Converter;
-	private static IMessagePackConverterInternal? _UInt32Converter;
-	private static IMessagePackConverterInternal? _Int64Converter;
-	private static IMessagePackConverterInternal? _UInt64Converter;
-	private static IMessagePackConverterInternal? _BigIntegerConverter;
-	private static IMessagePackConverterInternal? _BooleanConverter;
-	private static IMessagePackConverterInternal? _SingleConverter;
-	private static IMessagePackConverterInternal? _DoubleConverter;
-	private static IMessagePackConverterInternal? _DecimalConverter;
-	private static IMessagePackConverterInternal? _DateTimeConverter;
-	private static IMessagePackConverterInternal? _DateTimeOffsetConverter;
-	private static IMessagePackConverterInternal? _TimeSpanConverter;
-	private static IMessagePackConverterInternal? _GuidConverter;
-	private static IMessagePackConverterInternal? _SystemDrawingColorConverter;
-	private static IMessagePackConverterInternal? _MemoryOfByteConverter;
-	private static IMessagePackConverterInternal? _ReadOnlyMemoryOfByteConverter;
-	private static IMessagePackConverterInternal? _StringConverter;
-	private static IMessagePackConverterInternal? _StringConverterReferencePreserving;
-	private static IMessagePackConverterInternal? _VersionConverter;
-	private static IMessagePackConverterInternal? _VersionConverterReferencePreserving;
-	private static IMessagePackConverterInternal? _UriConverter;
-	private static IMessagePackConverterInternal? _UriConverterReferencePreserving;
-	private static IMessagePackConverterInternal? _ByteArrayConverter;
-	private static IMessagePackConverterInternal? _ByteArrayConverterReferencePreserving;
+	private static Converter? _CharConverter;
+	private static Converter? _ByteConverter;
+	private static Converter? _SByteConverter;
+	private static Converter? _Int16Converter;
+	private static Converter? _UInt16Converter;
+	private static Converter? _Int32Converter;
+	private static Converter? _UInt32Converter;
+	private static Converter? _Int64Converter;
+	private static Converter? _UInt64Converter;
+	private static Converter? _BigIntegerConverter;
+	private static Converter? _BooleanConverter;
+	private static Converter? _SingleConverter;
+	private static Converter? _DoubleConverter;
+	private static Converter? _DecimalConverter;
+	private static Converter? _DateTimeConverter;
+	private static Converter? _DateTimeOffsetConverter;
+	private static Converter? _TimeSpanConverter;
+	private static Converter? _GuidConverter;
+	private static Converter? _SystemDrawingColorConverter;
+	private static Converter? _MemoryOfByteConverter;
+	private static Converter? _ReadOnlyMemoryOfByteConverter;
+	private static Converter? _StringConverter;
+	private static Converter? _StringConverterReferencePreserving;
+	private static Converter? _VersionConverter;
+	private static Converter? _VersionConverterReferencePreserving;
+	private static Converter? _UriConverter;
+	private static Converter? _UriConverterReferencePreserving;
+	private static Converter? _ByteArrayConverter;
+	private static Converter? _ByteArrayConverterReferencePreserving;
 #if NET
-	private static IMessagePackConverterInternal? _RuneConverter;
-	private static IMessagePackConverterInternal? _Int128Converter;
-	private static IMessagePackConverterInternal? _UInt128Converter;
-	private static IMessagePackConverterInternal? _HalfConverter;
-	private static IMessagePackConverterInternal? _TimeOnlyConverter;
-	private static IMessagePackConverterInternal? _DateOnlyConverter;
+	private static Converter? _RuneConverter;
+	private static Converter? _Int128Converter;
+	private static Converter? _UInt128Converter;
+	private static Converter? _HalfConverter;
+	private static Converter? _TimeOnlyConverter;
+	private static Converter? _DateOnlyConverter;
 #endif
 
 	/// <summary>
