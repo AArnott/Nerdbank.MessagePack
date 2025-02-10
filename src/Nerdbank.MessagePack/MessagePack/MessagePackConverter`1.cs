@@ -75,11 +75,11 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 
 	[Experimental("NBMsgPackAsync")]
 	public sealed override ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
-		=> this.ReadAsync(new MessagePackAsyncReader(reader) { CancellationToken = context.CancellationToken }, context);
+		=> this.ReadAsync((MessagePackAsyncReader)reader, context);
 
 	[Experimental("NBMsgPackAsync")]
 	public sealed override ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
-		=> this.WriteAsync(new MessagePackAsyncWriter(writer), value, context);
+		=> this.WriteAsync((MessagePackAsyncWriter)writer, value, context);
 
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
@@ -190,11 +190,11 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 
 	[Experimental("NBMsgPackAsync")]
 	public sealed override ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
-		=> this.SkipToIndexValueAsync(new MessagePackAsyncReader(reader) { CancellationToken = context.CancellationToken }, index, context);
+		=> this.SkipToIndexValueAsync((MessagePackAsyncReader)reader, index, context);
 
 	[Experimental("NBMsgPackAsync")]
 	public sealed override ValueTask<bool> SkipToPropertyValueAsync(AsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
-		=> this.SkipToPropertyValueAsync(new MessagePackAsyncReader(reader) { CancellationToken = context.CancellationToken }, propertyShape, context);
+		=> this.SkipToPropertyValueAsync((MessagePackAsyncReader)reader, propertyShape, context);
 
 	[Experimental("NBMsgPackAsync")]
 	public virtual ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)

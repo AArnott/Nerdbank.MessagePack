@@ -24,7 +24,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <exception cref="SerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncReader(AsyncReader asyncReader) : IDisposable
+public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeReader), IDisposable
 {
 	private MessagePackStreamingReader.BufferRefresh? refresh;
 	private bool readerReturned = true;
@@ -93,7 +93,7 @@ public class MessagePackAsyncReader(AsyncReader asyncReader) : IDisposable
 	/// </summary>
 	/// <returns>An async task.</returns>
 	/// <exception cref="OperationCanceledException">Thrown if <see cref="CancellationToken"/> is canceled.</exception>
-	public async ValueTask ReadAsync()
+	public override async ValueTask ReadAsync()
 	{
 		this.ThrowIfReaderNotReturned();
 
@@ -105,7 +105,7 @@ public class MessagePackAsyncReader(AsyncReader asyncReader) : IDisposable
 		}
 		else
 		{
-			ReadResult readResult = await asyncReader.PipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
+			ReadResult readResult = await this.PipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
 			if (readResult.IsCanceled)
 			{
 				throw new OperationCanceledException();
@@ -114,7 +114,7 @@ public class MessagePackAsyncReader(AsyncReader asyncReader) : IDisposable
 			reader = new(
 				readResult.Buffer,
 				readResult.IsCompleted ? null : FetchMoreBytesAsync,
-				asyncReader.PipeReader);
+				this.PipeReader);
 			this.refresh = reader.GetExchangeInfo();
 
 			static ValueTask<ReadResult> FetchMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken ct)
@@ -206,7 +206,7 @@ public class MessagePackAsyncReader(AsyncReader asyncReader) : IDisposable
 		if (this.refresh.HasValue)
 		{
 			// Update the PipeReader so it knows where we left off.
-			asyncReader.PipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
+			this.PipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
 		}
 	}
 

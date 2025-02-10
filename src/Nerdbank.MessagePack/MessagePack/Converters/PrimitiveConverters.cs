@@ -64,6 +64,7 @@ internal class StringConverter : MessagePackConverter<string>
 			uint remainingBytesToDecode = length;
 			using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
 			Sequence<char> charSequence = sequenceRental.Value;
+
 			Decoder decoder = StringEncoding.UTF8.GetDecoder();
 			while (remainingBytesToDecode > 0)
 			{

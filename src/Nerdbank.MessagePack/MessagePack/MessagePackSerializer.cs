@@ -590,7 +590,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(new AsyncReader(reader)) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		bool readMore = false;
 		while (!await asyncReader.GetIsEndOfStreamAsync().ConfigureAwait(false))
 		{
@@ -664,7 +664,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(new AsyncReader(reader)) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 
 		StreamingDeserializer<TElement> helper = new(this, provider, asyncReader, context.Value);
@@ -727,7 +727,7 @@ public partial record MessagePackSerializer
 		}
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(new AsyncReader(reader)) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 		T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
 		asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.

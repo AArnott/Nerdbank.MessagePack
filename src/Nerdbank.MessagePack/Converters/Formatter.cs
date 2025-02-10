@@ -1,13 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO.Pipelines;
-
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class AsyncReader(PipeReader pipeReader)
+internal abstract class Formatter
 {
-	public PipeReader PipeReader => pipeReader;
-
-	public abstract ValueTask ReadAsync();
+	protected internal abstract void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 }

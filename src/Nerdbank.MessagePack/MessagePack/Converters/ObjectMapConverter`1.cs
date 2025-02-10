@@ -116,7 +116,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					property.Write(value, ref syncWriter, context);
 				}
 
-				if (writer.IsTimeToFlush(context, syncWriter))
+				if (writer.IsTimeToFlush(context))
 				{
 					writer.ReturnWriter(ref syncWriter);
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);

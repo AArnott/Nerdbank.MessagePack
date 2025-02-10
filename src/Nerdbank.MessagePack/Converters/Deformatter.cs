@@ -1,13 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO.Pipelines;
-
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class AsyncReader(PipeReader pipeReader)
+internal abstract class Deformatter
 {
-	public PipeReader PipeReader => pipeReader;
-
-	public abstract ValueTask ReadAsync();
 }

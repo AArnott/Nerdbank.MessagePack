@@ -222,7 +222,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					// We use a nested loop here because even during synchronous writing, we may need to occasionally yield to
 					// flush what we've written so far, but then we want to come right back to synchronous writing.
 					MessagePackWriter syncWriter = writer.CreateWriter();
-					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context, syncWriter); i++)
+					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context); i++)
 					{
 						syncWriter.Write(properties.Span[i]);
 
@@ -282,7 +282,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					// We use a nested loop here because even during synchronous writing, we may need to occasionally yield to
 					// flush what we've written so far, but then we want to come right back to synchronous writing.
 					MessagePackWriter syncWriter = writer.CreateWriter();
-					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context, syncWriter); i++)
+					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context); i++)
 					{
 						if (properties.Span[i] is { MsgPackWriters: var (serialize, _) })
 						{
