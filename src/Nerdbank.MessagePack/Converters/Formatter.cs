@@ -3,9 +3,18 @@
 
 namespace Nerdbank.PolySerializer.Converters;
 
-internal abstract class Formatter
+public abstract class Formatter
 {
-	protected internal abstract void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+	/// <summary>
+	/// Encodes and formats a given string.
+	/// </summary>
+	/// <param name="value">The string to be formatted.</param>
+	/// <param name="encodedBytes">Receives the encoded characters (e.g. UTF-8) without any header or footer.</param>
+	/// <param name="formattedBytes">Receives the formatted bytes, which is a superset of <paramref name="encodedBytes"/> that adds a header and/or footer as required by the formatter.</param>
+	/// <remarks>
+	/// This is useful as an optimization so that common strings need not be repeatedly encoded/decoded.
+	/// </remarks>
+	public abstract void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes);
 
 	public abstract bool ArrayLengthRequiredInHeader { get; }
 
@@ -48,6 +57,8 @@ internal abstract class Formatter
 	public abstract void Write(ref Writer writer, float value);
 
 	public abstract void Write(ref Writer writer, double value);
+
+	public abstract void Write(ref Writer writer, string? value);
 
 	public abstract void Write(ref Writer writer, ReadOnlySpan<byte> value);
 

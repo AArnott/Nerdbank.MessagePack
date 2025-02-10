@@ -20,7 +20,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <see href="https://github.com/msgpack/msgpack/blob/master/spec.md">The MessagePack spec.</see>.
 /// </remarks>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncWriter(PipeWriter pipeWriter) : AsyncWriter(pipeWriter)
+public class MessagePackAsyncWriter(PipeWriter pipeWriter, Formatter formatter) : AsyncWriter(pipeWriter, formatter)
 {
 	/// <summary>
 	/// The delegate type that may be provided to the <see cref="Write{TState}(SyncWriter{TState}, TState)"/> method.
@@ -80,12 +80,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter) : AsyncWriter(pipeWri
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteNil"/>
-	public void WriteNil()
-	{
-		MessagePackWriter writer = this.CreateWriter();
-		writer.WriteNil();
-		this.ReturnWriter(ref writer);
-	}
+	public void WriteNil() => this.WriteNull();
 
 	/// <inheritdoc cref="MessagePackWriter.WriteArrayHeader(int)"/>
 	public void WriteArrayHeader(int count) => this.WriteArrayHeader(checked((uint)count));

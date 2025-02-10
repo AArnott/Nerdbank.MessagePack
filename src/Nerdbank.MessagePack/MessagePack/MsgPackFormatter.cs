@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
@@ -150,6 +153,25 @@ internal class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	public override unsafe void Write(ref Writer writer, string? value)
+	{
+		if (value == null)
+		{
+			this.WriteNull(ref writer);
+			return;
+		}
+
+		ref byte buffer = ref this.WriteString_PrepareSpan(ref writer, value.Length, out int bufferSize, out int useOffset);
+		fixed (char* pValue = value)
+		{
+			fixed (byte* pBuffer = &buffer)
+			{
+				int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
+				this.WriteString_PostEncoding(ref writer, pBuffer, useOffset, byteCount);
+			}
+		}
+	}
+
 	public override void Write(ref Writer writer, ReadOnlySpan<byte> value)
 	{
 		int length = value.Length;
@@ -168,7 +190,7 @@ internal class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(length);
 	}
 
-	protected internal override void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
+	public override void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 		=> StringEncoding.GetEncodedStringBytes(value, out utf8Bytes, out msgpackEncoded);
 
 	public void WriteBinHeader(ref Writer writer, int length)
@@ -206,5 +228,125 @@ internal class MsgPackFormatter : Formatter
 		Span<byte> span = writer.Buffer.GetSpan(byteCount + 5);
 		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(span, (uint)byteCount, out int written));
 		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
+	/// Estimates the length of the header required for a given string.
+	/// </summary>
+	/// <param name="characterLength">The length of the string to be written, in characters.</param>
+	/// <param name="bufferSize">Receives the guaranteed length of the returned buffer.</param>
+	/// <param name="encodedBytesOffset">Receives the offset within the returned buffer to write the encoded string to.</param>
+	/// <returns>
+	/// A reference to the first byte in the buffer.
+	/// </returns>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private ref byte WriteString_PrepareSpan(ref Writer writer, int characterLength, out int bufferSize, out int encodedBytesOffset)
+	{
+		// MaxByteCount -> WritePrefix -> GetBytes has some overheads of `MaxByteCount`
+		// solves heuristic length check
+
+		// ensure buffer by MaxByteCount(faster than GetByteCount)
+		bufferSize = StringEncoding.UTF8.GetMaxByteCount(characterLength) + 5;
+		ref byte buffer = ref writer.Buffer.GetPointer(bufferSize);
+
+		int useOffset;
+		if (characterLength <= MessagePackRange.MaxFixStringLength)
+		{
+			useOffset = 1;
+		}
+		else if (characterLength <= byte.MaxValue && !this.OldSpec)
+		{
+			useOffset = 2;
+		}
+		else if (characterLength <= ushort.MaxValue)
+		{
+			useOffset = 3;
+		}
+		else
+		{
+			useOffset = 5;
+		}
+
+		encodedBytesOffset = useOffset;
+		return ref buffer;
+	}
+
+	/// <summary>
+	/// Finalizes an encoding of a string.
+	/// </summary>
+	/// <param name="pBuffer">A pointer obtained from a prior call to <see cref="WriteString_PrepareSpan"/>.</param>
+	/// <param name="estimatedOffset">The offset obtained from a prior call to <see cref="WriteString_PrepareSpan"/>.</param>
+	/// <param name="byteCount">The number of bytes used to actually encode the string.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private unsafe void WriteString_PostEncoding(ref Writer writer, byte* pBuffer, int estimatedOffset, int byteCount)
+	{
+		// move body and write prefix
+		if (byteCount <= MessagePackRange.MaxFixStringLength)
+		{
+			if (estimatedOffset != 1)
+			{
+				Buffer.MemoryCopy(pBuffer + estimatedOffset, pBuffer + 1, byteCount, byteCount);
+			}
+
+			pBuffer[0] = (byte)(MessagePackCode.MinFixStr | byteCount);
+			writer.Buffer.Advance(byteCount + 1);
+		}
+		else if (byteCount <= byte.MaxValue && !this.OldSpec)
+		{
+			if (estimatedOffset != 2)
+			{
+				Buffer.MemoryCopy(pBuffer + estimatedOffset, pBuffer + 2, byteCount, byteCount);
+			}
+
+			pBuffer[0] = MessagePackCode.Str8;
+			pBuffer[1] = unchecked((byte)byteCount);
+			writer.Buffer.Advance(byteCount + 2);
+		}
+		else if (byteCount <= ushort.MaxValue)
+		{
+			if (estimatedOffset != 3)
+			{
+				Buffer.MemoryCopy(pBuffer + estimatedOffset, pBuffer + 3, byteCount, byteCount);
+			}
+
+			pBuffer[0] = MessagePackCode.Str16;
+			WriteBigEndian((ushort)byteCount, pBuffer + 1);
+			writer.Buffer.Advance(byteCount + 3);
+		}
+		else
+		{
+			if (estimatedOffset != 5)
+			{
+				Buffer.MemoryCopy(pBuffer + estimatedOffset, pBuffer + 5, byteCount, byteCount);
+			}
+
+			pBuffer[0] = MessagePackCode.Str32;
+			WriteBigEndian((uint)byteCount, pBuffer + 1);
+			writer.Buffer.Advance(byteCount + 5);
+		}
+	}
+
+	private static unsafe void WriteBigEndian(ushort value, byte* span)
+	{
+		// TODO: test perf of this alternative.
+		////BinaryPrimitives.WriteUInt16BigEndian(new Span<byte>(span, 2), value);
+		unchecked
+		{
+			span[0] = (byte)(value >> 8);
+			span[1] = (byte)value;
+		}
+	}
+
+	private static unsafe void WriteBigEndian(uint value, byte* span)
+	{
+		// TODO: test perf of this alternative.
+		////BinaryPrimitives.WriteUInt32BigEndian(new Span<byte>(span, 4), value);
+		unchecked
+		{
+			span[0] = (byte)(value >> 24);
+			span[1] = (byte)(value >> 16);
+			span[2] = (byte)(value >> 8);
+			span[3] = (byte)value;
+		}
 	}
 }
