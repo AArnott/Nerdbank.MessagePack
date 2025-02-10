@@ -9,7 +9,7 @@ public class AsyncWriter(PipeWriter pipeWriter, Formatter formatter)
 {
 	public Formatter Formatter => formatter;
 
-	internal BufferMemoryWriter bufferWriter = new(pipeWriter);
+	private BufferMemoryWriter bufferWriter = new(pipeWriter);
 
 	internal ref BufferMemoryWriter Buffer => ref this.bufferWriter;
 

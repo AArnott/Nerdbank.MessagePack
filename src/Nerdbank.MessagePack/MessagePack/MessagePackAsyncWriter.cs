@@ -41,10 +41,10 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter, Formatter formatter) 
 	{
 #if !NET
 		// ref fields are not supported on .NET Framework, so we have to prepare to copy the struct.
-		this.bufferWriter.Commit();
+		this.Buffer.Commit();
 #endif
 
-		return new(new BufferWriter(ref this.bufferWriter));
+		return new(new BufferWriter(ref this.Buffer));
 	}
 
 	/// <summary>
@@ -57,7 +57,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter, Formatter formatter) 
 
 #if !NET
 		// ref fields are not supported on .NET Framework, so we have to copy the struct since it'll disappear.
-		this.bufferWriter = writer.Writer.BufferMemoryWriter;
+		this.Buffer = writer.Writer.BufferMemoryWriter;
 #endif
 
 		// Help prevent misuse of the writer after it's been returned.
@@ -88,9 +88,9 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter, Formatter formatter) 
 	/// <inheritdoc cref="MessagePackWriter.WriteArrayHeader(uint)"/>
 	public void WriteArrayHeader(uint count)
 	{
-		Span<byte> span = this.bufferWriter.GetSpan(5);
+		Span<byte> span = this.Buffer.GetSpan(5);
 		Assumes.True(MessagePackPrimitives.TryWriteArrayHeader(span, count, out int written));
-		this.bufferWriter.Advance(written);
+		this.Buffer.Advance(written);
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteMapHeader(int)"/>
@@ -99,9 +99,9 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter, Formatter formatter) 
 	/// <inheritdoc cref="MessagePackWriter.WriteMapHeader(uint)"/>
 	public void WriteMapHeader(uint count)
 	{
-		Span<byte> span = this.bufferWriter.GetSpan(5);
+		Span<byte> span = this.Buffer.GetSpan(5);
 		Assumes.True(MessagePackPrimitives.TryWriteMapHeader(span, count, out int written));
-		this.bufferWriter.Advance(written);
+		this.Buffer.Advance(written);
 	}
 
 	/// <inheritdoc cref="MessagePackWriter.WriteRaw(ReadOnlySpan{byte})"/>
