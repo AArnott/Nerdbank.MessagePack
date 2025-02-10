@@ -6,6 +6,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
@@ -146,7 +147,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		MessagePackConverter<T> converter;
+		Converter<T> converter;
 		if (propertyAccessors is not null)
 		{
 			if (serializable is { Count: > 0 })
@@ -157,7 +158,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
 			converter = ctorShape is not null
-				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
+				? (Converter<T>)ctorShape.Accept(this, inputs)!
 				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null, this.owner.SerializeDefaultValues);
 		}
 		else
@@ -172,7 +173,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (ctorShape is not null)
 			{
 				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!);
-				converter = (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!;
+				converter = (Converter<T>)ctorShape.Accept(this, inputs)!;
 			}
 			else
 			{
@@ -181,8 +182,10 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		return unionTypes is null ? converter : new SubTypeUnionConverter<T>(unionTypes, converter);
+		return unionTypes is null ? converter : this.CreateSubTypeUnionConverter<T>(unionTypes, converter);
 	}
+
+	protected abstract Converter CreateSubTypeUnionConverter<T>(SubTypes unionTypes, Converter<T> baseConverter);
 
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
@@ -403,79 +406,107 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
 
+	protected abstract Converter CreateDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter);
+
+	protected abstract Converter CreateMutableDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePair, Func<TDictionary> defaultConstructor);
+
+	protected abstract Converter CreateDictionaryFromSpanConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanConstructor);
+
+	protected abstract Converter CreateDictionaryFromEnumerableConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableConstructor);
+
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 	{
 		// Serialization functions.
-		MessagePackConverter<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);
-		MessagePackConverter<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
+		Converter<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);
+		Converter<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
 		Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
 
 		// Deserialization functions.
 		return dictionaryShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter),
-			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetDefaultConstructor()),
-			CollectionConstructionStrategy.Span => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetSpanConstructor()),
-			CollectionConstructionStrategy.Enumerable => new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetEnumerableConstructor()),
+			CollectionConstructionStrategy.None => this.CreateDictionaryConverter(getReadable, keyConverter, valueConverter),
+			CollectionConstructionStrategy.Mutable => this.CreateMutableDictionaryConverter(getReadable, keyConverter, valueConverter, dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Span => this.CreateDictionaryFromSpanConverter(getReadable, keyConverter, valueConverter, dictionaryShape.GetSpanConstructor()),
+			CollectionConstructionStrategy.Enumerable => this.CreateDictionaryFromEnumerableConverter(getReadable, keyConverter, valueConverter, dictionaryShape.GetEnumerableConstructor()),
 			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
 		};
+	}
+
+	protected abstract Converter CreateArrayConverter<TElement>(Converter<TElement> elementConverter);
+
+#if NET
+	protected abstract Converter CreateArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter, int rank);
+
+	protected abstract Converter CreateArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter);
+#endif
+
+	protected abstract bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter);
+
+	protected virtual bool TryGetHardwareAcceleratedConverter<TArray, TElement>(out Converter<TArray>? converter)
+	{
+		converter = null;
+		return false;
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
 	{
-		MessagePackConverter<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
+		Converter<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
 
 		if (enumerableShape.Type.IsArray)
 		{
-			MessagePackConverter<TEnumerable>? converter;
+			Converter<TEnumerable>? converter;
 			if (enumerableShape.Rank > 1)
 			{
 #if NET
 				return this.owner.MultiDimensionalArrayFormat switch
 				{
-					MultiDimensionalArrayFormat.Nested => new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank),
-					MultiDimensionalArrayFormat.Flat => new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter),
+					MultiDimensionalArrayFormat.Nested => this.CreateArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank),
+					MultiDimensionalArrayFormat.Flat => this.CreateArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter),
 					_ => throw new NotSupportedException(),
 				};
 #else
 				throw PolyfillExtensions.ThrowNotSupportedOnNETFramework();
 #endif
 			}
-#if NET
 			else if (!this.owner.DisableHardwareAcceleration &&
 				enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
-				HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out converter))
+				this.TryGetHardwareAcceleratedConverter<TEnumerable, TElement>(out converter))
 			{
 				return converter;
 			}
-#endif
 			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Span &&
-				ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetSpanConstructor(), out converter))
+				this.TryGetArrayOfPrimitivesConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetSpanConstructor(), out converter))
 			{
 				return converter;
 			}
 			else
 			{
-				return new ArrayConverter<TElement>(elementConverter);
+				return this.CreateArrayConverter(elementConverter);
 			}
 		}
 
 		Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
 		return enumerableShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
-			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
-#if NET
-			CollectionConstructionStrategy.Span when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
-#endif
-			CollectionConstructionStrategy.Span when ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
-			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
-			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
+			CollectionConstructionStrategy.None => this.CreateEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
+			CollectionConstructionStrategy.Mutable => this.CreateMutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Span when !this.owner.DisableHardwareAcceleration && this.TryGetHardwareAcceleratedConverter<TEnumerable, TElement>(out Converter<TEnumerable>? converter) => converter,
+			CollectionConstructionStrategy.Span when this.TryGetArrayOfPrimitivesConverter(getEnumerable, enumerableShape.GetSpanConstructor(), out Converter<TEnumerable>? converter) => converter,
+			CollectionConstructionStrategy.Span => this.CreateSpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
+			CollectionConstructionStrategy.Enumerable => this.CreateEnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
 			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
 		};
 	}
+
+	protected abstract Converter CreateEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter);
+
+	protected abstract Converter CreateMutableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Setter<TEnumerable, TElement> addElement, Func<TEnumerable> defaultConstructor);
+
+	protected abstract Converter CreateSpanEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, SpanConstructor<TElement, TEnumerable> spanConstructor);
+
+	protected abstract Converter CreateEnumerableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Func<IEnumerable<TElement>, TEnumerable> enumerableConstructor);
 
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
