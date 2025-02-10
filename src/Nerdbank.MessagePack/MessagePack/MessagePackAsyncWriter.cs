@@ -116,12 +116,4 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter) : AsyncWriter(pipeWri
 		writer.WriteRaw(bytes);
 		this.ReturnWriter(ref writer);
 	}
-
-	/// <inheritdoc cref="MessagePackWriter.WriteRaw(in ReadOnlySequence{byte})"/>
-	public void WriteRaw(ReadOnlySequence<byte> bytes)
-	{
-		MessagePackWriter writer = this.CreateWriter();
-		writer.WriteRaw(bytes);
-		this.ReturnWriter(ref writer);
-	}
 }

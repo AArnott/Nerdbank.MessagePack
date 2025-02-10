@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Nerdbank.PolySerializer.Converters;
+using BufferRefresh = Nerdbank.PolySerializer.Converters.AsyncReader.BufferRefresh;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -30,7 +31,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 [Experimental("NBMsgPackAsync")]
 public ref partial struct MessagePackStreamingReader
 {
-	private readonly GetMoreBytesAsync? getMoreBytesAsync;
+	private readonly AsyncReader.GetMoreBytesAsync? getMoreBytesAsync;
 	private readonly object? getMoreBytesState;
 	private SequenceReader<byte> reader;
 	private uint expectedRemainingStructures;
@@ -60,7 +61,7 @@ public ref partial struct MessagePackStreamingReader
 	/// A value to provide to the <paramref name="getMoreBytesState"/> delegate.
 	/// This facilitates reuse of a particular delegate across deserialization operations.
 	/// </param>
-	public MessagePackStreamingReader(scoped in ReadOnlySequence<byte> sequence, GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState)
+	public MessagePackStreamingReader(scoped in ReadOnlySequence<byte> sequence, AsyncReader.GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState)
 	{
 		this.reader = new SequenceReader<byte>(sequence);
 		this.getMoreBytesAsync = additionalBytesSource;
@@ -79,23 +80,6 @@ public ref partial struct MessagePackStreamingReader
 		this.CancellationToken = refresh.CancellationToken;
 		this.eof = refresh.EndOfStream;
 	}
-
-	/// <summary>
-	/// A delegate that can be used to get more bytes to complete the operation.
-	/// </summary>
-	/// <param name="state">A state object.</param>
-	/// <param name="consumed">
-	/// The position after the last consumed byte (i.e. the last byte from the original buffer that is not expected to be included to the new buffer).
-	/// Any bytes at or following this position that were in the original buffer must be included to the buffer returned from this method.
-	/// </param>
-	/// <param name="examined">
-	/// The position of the last examined byte.
-	/// This should be passed to <see cref="PipeReader.AdvanceTo(SequencePosition, SequencePosition)"/>
-	/// when applicable to ensure that the request to get more bytes is filled with actual more bytes rather than the existing buffer.
-	/// </param>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	/// <returns>The available buffer, which must contain more bytes than remained after <paramref name="consumed"/> if there are any more bytes to be had.</returns>
-	public delegate ValueTask<ReadResult> GetMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Gets a token that may cancel deserialization.
@@ -944,7 +928,7 @@ public ref partial struct MessagePackStreamingReader
 		this.reader = default;
 		return result;
 
-		static async ValueTask<BufferRefresh> HelperAsync(GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, uint minimumLength, CancellationToken cancellationToken)
+		static async ValueTask<BufferRefresh> HelperAsync(AsyncReader.GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, uint minimumLength, CancellationToken cancellationToken)
 		{
 			ReadResult moreBuffer = await getMoreBytes(getMoreBytesState, consumed, examined, cancellationToken).ConfigureAwait(false);
 			while (moreBuffer.Buffer.Length < minimumLength && !(moreBuffer.IsCompleted || moreBuffer.IsCanceled))
@@ -1157,35 +1141,5 @@ public ref partial struct MessagePackStreamingReader
 	{
 		uint expectedRemainingStructures = this.expectedRemainingStructures;
 		this.expectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
-	}
-
-	/// <summary>
-	/// A non-<see langword="ref" /> structure that can be used to recreate a <see cref="MessagePackStreamingReader"/> after
-	/// an <see langword="await" /> expression.
-	/// </summary>
-	public struct BufferRefresh
-	{
-		/// <inheritdoc cref="MessagePackStreamingReader.CancellationToken" />
-		internal CancellationToken CancellationToken { get; init; }
-
-		/// <summary>
-		/// Gets the buffer of msgpack already obtained.
-		/// </summary>
-		internal ReadOnlySequence<byte> Buffer { get; init; }
-
-		/// <summary>
-		/// Gets the delegate that can obtain more bytes.
-		/// </summary>
-		internal GetMoreBytesAsync? GetMoreBytes { get; init; }
-
-		/// <summary>
-		/// Gets the state object to supply to the <see cref="GetMoreBytes"/> delegate.
-		/// </summary>
-		internal object? GetMoreBytesState { get; init; }
-
-		/// <summary>
-		/// Gets a value indicating whether the <see cref="Buffer"/> contains all remaining bytes and <see cref="GetMoreBytes"/> will not provide more.
-		/// </summary>
-		internal bool EndOfStream { get; init; }
 	}
 }

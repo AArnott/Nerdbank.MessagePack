@@ -24,20 +24,10 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <exception cref="SerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeReader), IDisposable
+public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeReader)
 {
-	private MessagePackStreamingReader.BufferRefresh? refresh;
-	private bool readerReturned = true;
-
 	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
 	private uint expectedRemainingStructures;
-
-	/// <summary>
-	/// Gets a cancellation token to consider for calls into this object.
-	/// </summary>
-	public required CancellationToken CancellationToken { get; init; }
-
-	private MessagePackStreamingReader.BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
 
 	/// <summary>
 	/// Gets the fully-capable, synchronous reader.
@@ -51,7 +41,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 	/// </returns>
 	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
 	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
-	public async ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
+	public override async ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
 	{
 		Requires.Argument(minimumDesiredBufferedStructures >= 0, nameof(minimumDesiredBufferedStructures), "A non-negative integer is required.");
 		Requires.Argument(countUpTo >= minimumDesiredBufferedStructures, nameof(countUpTo), "Count must be at least as large as minimumDesiredBufferedStructures.");
@@ -85,7 +75,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 	/// <remarks>
 	/// After awaiting this method, the next msgpack structure can be retrieved by a call to <see cref="PipeReader.ReadAsync(CancellationToken)"/>.
 	/// </remarks>
-	public async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+	public override async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 
 	/// <summary>
 	/// Fills the buffer with msgpack bytes to decode.
@@ -184,7 +174,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 	/// <inheritdoc cref="ReturnReader(ref MessagePackStreamingReader)"/>
 	public void ReturnReader(ref MessagePackReader reader)
 	{
-		MessagePackStreamingReader.BufferRefresh refresh = this.Refresh;
+		AsyncReader.BufferRefresh refresh = this.Refresh;
 		refresh = refresh with { Buffer = refresh.Buffer.Slice(reader.Position) };
 		this.refresh = refresh;
 		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
@@ -193,21 +183,6 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 		reader = default;
 
 		this.readerReturned = true;
-	}
-
-	/// <inheritdoc/>
-	public void Dispose()
-	{
-		if (!this.readerReturned)
-		{
-			throw new InvalidOperationException("A reader was not returned before disposing this object.");
-		}
-
-		if (this.refresh.HasValue)
-		{
-			// Update the PipeReader so it knows where we left off.
-			this.PipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
-		}
 	}
 
 	/// <summary>
@@ -222,7 +197,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 	/// the <paramref name="countUpTo"/> should be set to avoid walking *up* the graph to count shallower structures.
 	/// Behavior is undefined if this is not followed.
 	/// </remarks>
-	internal int GetBufferedStructuresCount(int countUpTo, SerializationContext context, out bool reachedMaxCount)
+	internal override int GetBufferedStructuresCount(int countUpTo, SerializationContext context, out bool reachedMaxCount)
 	{
 		this.ThrowIfReaderNotReturned();
 
@@ -249,24 +224,10 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 	}
 
 	/// <summary>
-	/// Gets a value indicating whether we've reached the end of the stream.
-	/// </summary>
-	/// <returns>A boolean value.</returns>
-	internal async ValueTask<bool> GetIsEndOfStreamAsync()
-	{
-		if (this.refresh is null or { Buffer.IsEmpty: true, EndOfStream: false })
-		{
-			await this.ReadAsync().ConfigureAwait(false);
-		}
-
-		return this.Refresh.EndOfStream && this.Refresh.Buffer.IsEmpty;
-	}
-
-	/// <summary>
 	/// Advances the reader to the end of the top-level structure that we started reading.
 	/// </summary>
 	/// <returns>An async task representing the advance operation.</returns>
-	internal async ValueTask AdvanceToEndOfTopLevelStructureAsync()
+	internal override async ValueTask AdvanceToEndOfTopLevelStructureAsync()
 	{
 		if (this.expectedRemainingStructures > 0)
 		{
@@ -282,10 +243,5 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 
 			this.ReturnReader(ref reader);
 		}
-	}
-
-	private void ThrowIfReaderNotReturned()
-	{
-		Verify.Operation(this.readerReturned, "The previous reader must be returned before creating a new one.");
 	}
 }

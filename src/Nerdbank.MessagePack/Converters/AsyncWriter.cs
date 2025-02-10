@@ -67,4 +67,7 @@ public class AsyncWriter(PipeWriter pipeWriter)
 	{
 		return pipeWriter.CanGetUnflushedBytes && (pipeWriter.UnflushedBytes + unflushedBytes) > context.UnflushedBytesThreshold;
 	}
+
+	/// <inheritdoc cref="MessagePackWriter.WriteRaw(in ReadOnlySequence{byte})"/>
+	public void WriteRaw(ReadOnlySequence<byte> bytes) => pipeWriter.Write(bytes);
 }

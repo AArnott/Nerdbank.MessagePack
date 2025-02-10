@@ -66,7 +66,7 @@ internal record struct MapSerializableProperties<TDeclaringType>(ReadOnlyMemory<
 /// <param name="RawPropertyNameString">The entire msgpack encoding of the property name, including the string header.</param>
 /// <param name="Write">A delegate that synchronously serializes the value of the property.</param>
 /// <param name="WriteAsync">A delegate that asynchonously serializes the value of the property.</param>
-/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
+/// <param name="PreferAsyncSerialization"><inheritdoc cref="Converter.PreferAsyncSerialization"/></param>
 /// <param name="ShouldSerialize"><inheritdoc cref="PropertyAccessors{TDeclaringType}.ShouldSerialize"/></param>
 /// <param name="Shape">The property shape, for use when generating schema.</param>
 internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, bool PreferAsyncSerialization, Func<TDeclaringType, bool>? ShouldSerialize, IPropertyShape Shape);
@@ -86,7 +86,7 @@ internal record struct MapDeserializableProperties<TDeclaringType>(SpanDictionar
 /// <param name="PropertyNameUtf8">The UTF-8 encoding of the property name.</param>
 /// <param name="Read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
 /// <param name="ReadAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
-/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
+/// <param name="PreferAsyncSerialization"><inheritdoc cref="Converter.PreferAsyncSerialization"/></param>
 internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync, bool PreferAsyncSerialization);
 
 /// <summary>
@@ -95,7 +95,7 @@ internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadO
 /// <typeparam name="TDeclaringType">The data type that declares the property that these accessors can serialize and deserialize values for.</typeparam>
 /// <param name="MsgPackWriters">Delegates that can serialize the value of a property.</param>
 /// <param name="MsgPackReaders">Delegates that can initialize the property with a value deserialized from msgpack.</param>
-/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
+/// <param name="PreferAsyncSerialization"><inheritdoc cref="Converter.PreferAsyncSerialization"/></param>
 /// <param name="ShouldSerialize">An optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</param>
 /// <param name="Shape">The property shape, for use with generating schema.</param>
 internal record struct PropertyAccessors<TDeclaringType>(
