@@ -20,4 +20,18 @@ internal class MessagePackVisitor : StandardVisitor
 	protected override Converter GetInterningStringConverter() => InterningStringConverter;
 
 	protected override Converter GetReferencePreservingInterningStringConverter() => ReferencePreservingInterningStringConverter;
+
+	protected override bool TryGetPrimitiveConverter<T>(bool preserveReferences, out Converter<T>? converter)
+	{
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter<T>(preserveReferences, out MessagePackConverter<T>? msgpackConverter))
+		{
+			converter = msgpackConverter;
+			return true;
+		}
+		else
+		{
+			converter = null;
+			return false;
+		}
+	}
 }

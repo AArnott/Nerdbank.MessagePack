@@ -4,6 +4,7 @@
 #pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -39,6 +40,8 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	protected abstract Converter GetReferencePreservingInterningStringConverter();
 
+	protected abstract bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(false)] out Converter<T>? converter);
+
 	/// <summary>
 	/// Gets or sets the visitor that will be used to generate converters for new types that are encountered.
 	/// </summary>
@@ -63,7 +66,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Check if the type has a built-in converter.
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? defaultConverter))
+		if (this.TryGetPrimitiveConverter(this.owner.PreserveReferences, out Converter<T>? defaultConverter))
 		{
 			return defaultConverter;
 		}
@@ -75,7 +78,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (this.GetCustomConverter(objectShape) is MessagePackConverter<T> customConverter)
+		if (this.GetCustomConverter(objectShape) is Converter<T> customConverter)
 		{
 			return customConverter;
 		}
