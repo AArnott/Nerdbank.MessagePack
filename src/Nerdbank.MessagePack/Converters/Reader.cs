@@ -16,6 +16,8 @@ public ref struct Reader
 
 	internal SequenceReader<byte> SequenceReader => this.inner;
 
+	public Deformatter Deformatter => this.deformatter;
+
 	public byte NextCode => this.deformatter.PeekNextCode(this);
 
 	public ReadOnlySpan<byte> UnreadSpan => this.inner.UnreadSpan;

@@ -2,16 +2,19 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO.Pipelines;
+using System.Runtime.Serialization;
 using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class AsyncReader(PipeReader pipeReader) : IDisposable
+public abstract class AsyncReader(PipeReader pipeReader, Deformatter deformatter) : IDisposable
 {
 	private protected bool readerReturned = true;
 	private protected BufferRefresh? refresh;
 
 	public PipeReader PipeReader => pipeReader;
+
+	public Deformatter Deformatter => deformatter;
 
 	/// <summary>
 	/// Gets a cancellation token to consider for calls into this object.
@@ -109,5 +112,7 @@ public abstract class AsyncReader(PipeReader pipeReader) : IDisposable
 		/// Gets a value indicating whether the <see cref="Buffer"/> contains all remaining bytes and <see cref="GetMoreBytes"/> will not provide more.
 		/// </summary>
 		internal bool EndOfStream { get; init; }
+
+		internal Deformatter Deformatter { get; init; }
 	}
 }

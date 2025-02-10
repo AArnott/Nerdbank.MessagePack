@@ -24,7 +24,7 @@ public abstract class StreamingDeformatter
 
 	public abstract DecodeResult TryReadNull(ref Reader reader, out bool isNull);
 
-	public abstract DecodeResult TryReadArrayHeader(ref Reader reader, out int count);
+	public abstract DecodeResult TryReadArrayHeader(ref Reader reader, out int length);
 
 	public abstract DecodeResult TryReadMapHeader(ref Reader reader, out int count);
 

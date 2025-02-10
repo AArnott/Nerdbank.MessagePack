@@ -8,6 +8,8 @@ namespace Nerdbank.PolySerializer.Converters;
 
 public class Deformatter(StreamingDeformatter streamingDeformatter)
 {
+	public StreamingDeformatter StreamingDeformatter => streamingDeformatter;
+
 	/// <summary>
 	/// Gets the type of the next MessagePack block.
 	/// </summary>

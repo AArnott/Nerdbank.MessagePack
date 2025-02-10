@@ -8,7 +8,13 @@ namespace Nerdbank.PolySerializer.MessagePack;
 
 internal class MsgPackStreamingDeformatter : StreamingDeformatter
 {
+	internal static readonly Deformatter Deformatter = new(MsgPackStreamingDeformatter.Instance);
+
+	internal static readonly MsgPackStreamingDeformatter Instance = new();
+
 	private uint expectedRemainingStructures;
+
+	private MsgPackStreamingDeformatter() { }
 
 	public override string ToFormatName(byte code) => MessagePackCode.ToFormatName(code);
 
