@@ -282,11 +282,11 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	public partial record CustomTypeWrapper(CustomType Value);
 
 	[GenerateShape<string>]
-	internal partial class CustomTypeConverter : MessagePackConverter<CustomType>
+	internal partial class CustomTypeConverter : Converter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override CustomType? Read(ref Reader reader, SerializationContext context)
 		{
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return null;
 			}
@@ -301,11 +301,11 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 			return new CustomType { Message = message };
 		}
 
-		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
+		public override void Write(ref Writer writer, in CustomType? value, SerializationContext context)
 		{
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 
@@ -322,11 +322,11 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 	[GenerateShape<string>]
 	[GenerateShape<CustomType2[]>]
-	internal partial class CustomType2Converter : MessagePackConverter<CustomType2>
+	internal partial class CustomType2Converter : Converter<CustomType2>
 	{
-		public override CustomType2? Read(ref MessagePackReader reader, SerializationContext context)
+		public override CustomType2? Read(ref Reader reader, SerializationContext context)
 		{
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return null;
 			}
@@ -341,11 +341,11 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 			return new CustomType2 { Message = message };
 		}
 
-		public override void Write(ref MessagePackWriter writer, in CustomType2? value, SerializationContext context)
+		public override void Write(ref Writer writer, in CustomType2? value, SerializationContext context)
 		{
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 

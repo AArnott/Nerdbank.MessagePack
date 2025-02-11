@@ -20,7 +20,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <see href="https://github.com/msgpack/msgpack/blob/master/spec.md">The MessagePack spec.</see>.
 /// </remarks>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncWriter(PipeWriter pipeWriter, Formatter formatter) : AsyncWriter(pipeWriter, formatter)
+public class MessagePackAsyncWriter(PipeWriter pipeWriter) : AsyncWriter(pipeWriter, MsgPackFormatter.Instance)
 {
 	/// <summary>
 	/// The delegate type that may be provided to the <see cref="Write{TState}(SyncWriter{TState}, TState)"/> method.

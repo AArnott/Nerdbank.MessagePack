@@ -160,34 +160,6 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 		return result;
 	}
 
-	/// <summary>
-	/// Gets the <see href="https://json-schema.org/">JSON schema</see> that resembles the data structure that this converter can serialize and deserialize.
-	/// </summary>
-	/// <param name="context">A means to obtain schema fragments for inclusion when your converter delegates to other converters.</param>
-	/// <param name="typeShape">The shape of the type <typeparamref name="T"/>, in case it provides useful metadata for constructing the schema.</param>
-	/// <returns>The fragment of JSON schema that describes the value written by this converter, or <see langword="null" /> if this method has not been overridden.</returns>
-	/// <remarks>
-	/// <para>
-	/// Implementations should return a new instance of <see cref="JsonObject"/> that represents the JSON schema fragment for every caller.
-	/// A shared instance <em>may</em> be used to call <see cref="JsonNode.DeepClone"/> and the result returned.
-	/// </para>
-	/// <para>
-	/// The <c>type</c> property should <em>not</em> include "null" on account of the converted type being a reference type.
-	/// It is the <em>consumer</em> of the object that will determine whether <see langword="null" /> is an acceptable value of the object.
-	/// </para>
-	/// <para>
-	/// Custom converters that do <em>not</em> override this method will lead to a JSON schema that does not describe the written data, and allows any data as input.
-	/// </para>
-	/// <para>
-	/// If the converter delegates to other converters, the schemas for those sub-values can be obtained for inclusion in the returned schema
-	/// by calling <see cref="JsonSchemaContext.GetJsonSchema(ITypeShape)"/> on the <paramref name="context"/>.
-	/// </para>
-	/// </remarks>
-	/// <seealso cref="CreateMsgPackExtensionSchema"/>
-	/// <seealso cref="CreateJsonValue(object?)"/>
-	/// <seealso cref="ApplyJsonSchemaNullability(JsonObject)"/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
-
 	[Experimental("NBMsgPackAsync")]
 	public sealed override ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
 		=> this.SkipToIndexValueAsync((MessagePackAsyncReader)reader, index, context);

@@ -49,7 +49,7 @@ public abstract class Converter(Type type)
 	public abstract ValueTask<object?> ReadObjectAsync(AsyncReader reader, SerializationContext context);
 
 	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
-	public abstract JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape);
+	public virtual JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
 
 	/// <summary>
 	/// Skips ahead in the msgpack data to the point where the value of the specified property can be read.
