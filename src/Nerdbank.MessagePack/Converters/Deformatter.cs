@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public class Deformatter(StreamingDeformatter streamingDeformatter)
+public partial class Deformatter(StreamingDeformatter streamingDeformatter)
 {
 	public StreamingDeformatter StreamingDeformatter => streamingDeformatter;
 
@@ -108,6 +108,98 @@ public class Deformatter(StreamingDeformatter streamingDeformatter)
 		}
 	}
 
+	public bool ReadBoolean(ref Reader reader)
+	{
+		switch (streamingDeformatter.TryRead(ref reader, out bool value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public int ReadInt32(ref Reader reader)
+	{
+		switch (streamingDeformatter.TryRead(ref reader, out int value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				throw this.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public unsafe float ReadSingle(ref Reader reader)
+	{
+		switch (streamingDeformatter.TryRead(ref reader, out float value))
+		{
+			case DecodeResult.Success:
+				return value;
+				throw ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public string? ReadString(ref Reader reader)
+	{
+		switch (streamingDeformatter.TryRead(ref reader, out string? value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				throw this.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
+
+	public TypeCode ToTypeCode(byte code) => streamingDeformatter.ToTypeCode(code);
+
+	/// <summary>
+	/// Advances the reader to the next MessagePack structure to be read.
+	/// </summary>
+	/// <param name="context">The serialization context. Used for the stack guard.</param>
+	/// <returns><see langword="true"/> if the entire structure beginning at the current <see cref="Position"/> is found in the <see cref="Sequence"/>; <see langword="false"/> otherwise.</returns>
+	/// <remarks>
+	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
+	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw(SerializationContext)"/> instead.
+	/// </remarks>
+	internal bool TrySkip(ref Reader reader, SerializationContext context)
+	{
+		switch (this.StreamingDeformatter.TrySkip(ref reader, ref context))
+		{
+			case DecodeResult.Success:
+				return true;
+			case DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.PeekNextCode(reader));
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				return false;
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
 	/// <summary>
 	/// Throws <see cref="EndOfStreamException"/> if a condition is false.
 	/// </summary>
@@ -137,6 +229,9 @@ public class Deformatter(StreamingDeformatter streamingDeformatter)
 	{
 		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, streamingDeformatter.ToFormatName(code)));
 	}
+
+	[DoesNotReturn]
+	private Exception ThrowInvalidCode(in Reader reader) => this.ThrowInvalidCode(this.PeekNextCode(reader));
 
 	[DoesNotReturn]
 	internal static Exception ThrowUnreachable() => throw new UnreachableException();

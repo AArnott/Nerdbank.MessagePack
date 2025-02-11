@@ -44,7 +44,7 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 		internal override Converter UnwrapReferencePreservation()
 			=> self.Result.UnwrapReferencePreservation();
 
-		internal override Converter WrapWithReferencePreservation()
+		internal override Converter WrapWithReferencePreservationCore()
 			=> self.Result.WrapWithReferencePreservation();
 	}
 }

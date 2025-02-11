@@ -127,6 +127,78 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 		return result == DecodeResult.TokenMismatch ? DecodeResult.Success : result;
 	}
 
+	public override DecodeResult TryRead(ref Reader reader, out bool value)
+	{
+		throw new NotImplementedException();
+	}
+
+	public override DecodeResult TryRead(ref Reader reader, out float value)
+	{
+		throw new NotImplementedException();
+	}
+
+	public override DecodeResult TryRead(ref Reader reader, out string value)
+	{
+		throw new NotImplementedException();
+	}
+
+	public override DecodeResult TryRead(ref Reader reader, out int value)
+	{
+		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			this.Advance(ref reader, tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
+
+		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref Int32 value, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.Advance(ref reader,tokenSize);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (reader.SequenceReader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
+						return SlowPath(ref reader, self, readResult, ref value, ref tokenSize);
+					}
+					else
+					{
+						return self.InsufficientBytes(reader);
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
+
+	public override DecodeResult TrySkip(ref Reader reader, ref SerializationContext context)
+	{
+		throw new NotImplementedException();
+	}
+
+	public override PolySerializer.Converters.TypeCode ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
+	{
+		MessagePackType.Integer => PolySerializer.Converters.TypeCode.Integer,
+		MessagePackType.Boolean => PolySerializer.Converters.TypeCode.Boolean,
+		MessagePackType.Float => PolySerializer.Converters.TypeCode.Float,
+		MessagePackType.String => PolySerializer.Converters.TypeCode.String,
+		MessagePackType.Binary => PolySerializer.Converters.TypeCode.Binary,
+		MessagePackType.Array => PolySerializer.Converters.TypeCode.Vector,
+		MessagePackType.Map => PolySerializer.Converters.TypeCode.Map,
+		MessagePackType.Nil => PolySerializer.Converters.TypeCode.Nil,
+		_ => PolySerializer.Converters.TypeCode.Unknown,
+	};
+
 	[DoesNotReturn]
 	private static DecodeResult ThrowUnreachable() => throw new UnreachableException();
 

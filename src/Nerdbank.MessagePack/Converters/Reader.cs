@@ -8,6 +8,16 @@ public ref struct Reader
 	private readonly Deformatter deformatter;
 	private SequenceReader<byte> inner;
 
+	internal Reader(ReadOnlyMemory<byte> buffer, Deformatter deformatter)
+		: this(new ReadOnlySequence<byte>(buffer), deformatter)
+	{
+	}
+
+	internal Reader(ReadOnlySequence<byte> sequence, Deformatter deformatter)
+		: this(new SequenceReader<byte>(sequence), deformatter)
+	{
+	}
+
 	internal Reader(SequenceReader<byte> reader, Deformatter deformatter)
 	{
 		this.inner = reader;
@@ -19,6 +29,8 @@ public ref struct Reader
 	public Deformatter Deformatter => this.deformatter;
 
 	public byte NextCode => this.deformatter.PeekNextCode(this);
+
+	public TypeCode NextTypeCode => this.deformatter.ToTypeCode(this.NextCode);
 
 	public ReadOnlySpan<byte> UnreadSpan => this.inner.UnreadSpan;
 
@@ -33,4 +45,14 @@ public ref struct Reader
 	public int ReadMapHeader() => this.deformatter.ReadMapHeader(ref this);
 
 	public bool TryReadMapHeader(out int count) => this.deformatter.TryReadMapHeader(ref this, out count);
+
+	public bool ReadBoolean() => this.deformatter.ReadBoolean(ref this);
+
+	public string ReadString() => this.deformatter.ReadString(ref this);
+
+	public int ReadInt32() => this.deformatter.ReadInt32(ref this);
+
+	public float ReadSingle() => this.deformatter.ReadSingle(ref this);
+
+	internal void Skip(SerializationContext context) => this.deformatter.Skip(ref this, context);
 }

@@ -205,10 +205,7 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
 
 	/// <inheritdoc cref="WrapWithReferencePreservation" />
-	internal override Converter WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
-
-	/// <inheritdoc cref="UnwrapReferencePreservation" />
-	internal override Converter UnwrapReferencePreservation() => this;
+	internal override Converter WrapWithReferencePreservationCore() => new ReferencePreservingConverter<T>(this);
 
 	/// <summary>
 	/// Creates a JSON schema fragment that provides a cursory description of a MessagePack extension.

@@ -23,6 +23,71 @@ public abstract class AsyncReader(PipeReader pipeReader, Deformatter deformatter
 
 	private protected BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
 
+	/// <summary>
+	/// Retrieves a <see cref="MessagePackStreamingReader"/>, which is suitable for
+	/// decoding msgpack from a buffer without throwing any exceptions, even if the buffer is incomplete.
+	/// </summary>
+	/// <returns>A <see cref="MessagePackStreamingReader"/>.</returns>
+	/// <remarks>
+	/// The result must be returned with <see cref="ReturnReader(ref MessagePackStreamingReader)"/>
+	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// </remarks>
+	public StreamingReader CreateStreamingReader()
+	{
+		this.ThrowIfReaderNotReturned();
+		this.readerReturned = false;
+		return new(this.Refresh)
+		{
+		};
+	}
+
+	/// <summary>
+	/// Retrieves a <see cref="MessagePackReader"/>, which is suitable for
+	/// decoding msgpack from a buffer that is known to have enough bytes for the decoding.
+	/// </summary>
+	/// <returns>A <see cref="MessagePackReader"/>.</returns>
+	/// <remarks>
+	/// The result must be returned with <see cref="ReturnReader(ref MessagePackReader)"/>
+	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// </remarks>
+	public Reader CreateBufferedReader()
+	{
+		this.ThrowIfReaderNotReturned();
+		this.readerReturned = false;
+		return new(this.Refresh.Buffer, this.Deformatter)
+		{
+		};
+	}
+
+	/// <summary>
+	/// Returns a previously obtained reader when the caller is done using it,
+	/// and applies the given reader's position to <em>this</em> reader so that
+	/// future reads move continuously forward in the msgpack stream.
+	/// </summary>
+	/// <param name="reader">The reader to return.</param>
+	public void ReturnReader(ref StreamingReader reader)
+	{
+		this.refresh = reader.GetExchangeInfo();
+
+		// Clear the reader to prevent accidental reuse by the caller.
+		reader = default;
+
+		this.readerReturned = true;
+	}
+
+	/// <inheritdoc cref="ReturnReader(ref MessagePackStreamingReader)"/>
+	public void ReturnReader(ref Reader reader)
+	{
+		AsyncReader.BufferRefresh refresh = this.Refresh;
+		refresh = refresh with { Buffer = refresh.Buffer.Slice(reader.SequenceReader.Position) };
+		this.refresh = refresh;
+
+		// Clear the reader to prevent accidental reuse by the caller.
+		reader = default;
+
+		this.readerReturned = true;
+	}
+
 	public abstract ValueTask ReadAsync();
 
 	public abstract ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context);

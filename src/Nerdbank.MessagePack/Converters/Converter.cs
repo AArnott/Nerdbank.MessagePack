@@ -8,7 +8,7 @@ using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class Converter
+public abstract class Converter(Type type)
 {
 	/// <summary>
 	/// Gets a value indicating whether callers should prefer the async methods on this object.
@@ -61,7 +61,7 @@ public abstract class Converter
 	/// <remarks><inheritdoc cref="SkipToIndexValueAsync(MessagePackAsyncReader, object?, SerializationContext)" path="/remarks"/></remarks>
 	[Experimental("NBMsgPackAsync")]
 	public virtual ValueTask<bool> SkipToPropertyValueAsync(AsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
-		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+		=> throw this.ThrowNotSupported();
 
 	/// <summary>
 	/// Skips ahead in the msgpack data to the point where the value at the specified index can be read.
@@ -76,19 +76,21 @@ public abstract class Converter
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
 	public virtual ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
-		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+		=> throw this.ThrowNotSupported();
+
+	internal Converter WrapWithReferencePreservation() => type.IsValueType ? this : this.WrapWithReferencePreservationCore();
 
 	/// <summary>
 	/// Wraps this converter with a reference preservation converter.
 	/// </summary>
 	/// <returns>A converter. Possibly <see langword="this"/> if this instance is already reference preserving.</returns>
-	internal abstract Converter WrapWithReferencePreservation();
+	internal virtual Converter WrapWithReferencePreservationCore() => throw this.ThrowNotSupported();
 
 	/// <summary>
 	/// Removes the outer reference preserving converter, if present.
 	/// </summary>
 	/// <returns>The unwrapped converter.</returns>
-	internal abstract Converter UnwrapReferencePreservation();
+	internal virtual Converter UnwrapReferencePreservation() => this;
 
 	/// <summary>
 	/// Transforms a JSON schema to include "null" as a possible value for the schema.
@@ -179,4 +181,7 @@ public abstract class Converter
 			_ => throw new NotSupportedException($"Unsupported object type: {value.GetType().FullName}"),
 		};
 	}
+
+	[DoesNotReturn]
+	protected Exception ThrowNotSupported() => throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
 }

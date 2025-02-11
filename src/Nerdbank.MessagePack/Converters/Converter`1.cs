@@ -7,7 +7,7 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class Converter<T> : Converter
+public abstract class Converter<T>() : Converter(typeof(T))
 {
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
@@ -48,7 +48,18 @@ public abstract class Converter<T> : Converter
 	/// </para>
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	public abstract ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context);
+	public virtual ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
+	{
+		Requires.NotNull(writer);
+		context.CancellationToken.ThrowIfCancellationRequested();
+
+		Writer syncWriter = writer.CreateWriter();
+		this.Write(ref syncWriter, value, context);
+		writer.ReturnWriter(ref syncWriter);
+
+		// On our way out, pause to flush the pipe if a lot of data has accumulated in the buffer.
+		return writer.FlushIfAppropriateAsync(context);
+	}
 
 	/// <summary>
 	/// Deserializes an instance of <typeparamref name="T"/>.
@@ -65,7 +76,17 @@ public abstract class Converter<T> : Converter
 	/// </para>
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	public abstract ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context);
+	public virtual async ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
+	{
+		Requires.NotNull(reader);
+		context.CancellationToken.ThrowIfCancellationRequested();
+
+		await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
+		Reader syncReader = reader.CreateBufferedReader();
+		T? result = this.Read(ref syncReader, context);
+		reader.ReturnReader(ref syncReader);
+		return result;
+	}
 
 	/// <inheritdoc/>
 	public override sealed void WriteObject(ref Writer writer, object? value, SerializationContext context) => this.Write(ref writer, (T?)value, context);

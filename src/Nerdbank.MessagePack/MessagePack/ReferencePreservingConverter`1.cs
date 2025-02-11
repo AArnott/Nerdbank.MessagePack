@@ -81,7 +81,7 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 	}
 
 	/// <inheritdoc/>
-	internal override Converter WrapWithReferencePreservation() => this;
+	internal override Converter WrapWithReferencePreservationCore() => this;
 
 	/// <inheritdoc/>
 	internal override Converter UnwrapReferencePreservation() => inner;
