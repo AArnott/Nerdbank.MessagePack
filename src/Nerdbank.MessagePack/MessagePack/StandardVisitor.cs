@@ -273,7 +273,9 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 
 				TPropertyType collection = getter(ref container);
-				inflater.DeserializeInto(ref reader, ref collection, context);
+				Reader baseReader = reader.ToReader();
+				inflater.DeserializeInto(ref baseReader, ref collection, context);
+				reader = MessagePackReader.FromReader(baseReader);
 			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
@@ -406,13 +408,17 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
 
-	protected abstract Converter CreateDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter);
+	protected virtual Converter CreateDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter)
+		=> new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter);
 
-	protected abstract Converter CreateMutableDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePair, Func<TDictionary> defaultConstructor);
+	protected virtual Converter CreateMutableDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePair, Func<TDictionary> defaultConstructor)
+		=> new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addKeyValuePair, defaultConstructor);
 
-	protected abstract Converter CreateDictionaryFromSpanConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanConstructor);
+	protected virtual Converter CreateDictionaryFromSpanConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanConstructor)
+		=> new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, spanConstructor);
 
-	protected abstract Converter CreateDictionaryFromEnumerableConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableConstructor);
+	protected virtual Converter CreateDictionaryFromEnumerableConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableConstructor)
+		=> new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, enumerableConstructor);
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
@@ -433,7 +439,8 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		};
 	}
 
-	protected abstract Converter CreateArrayConverter<TElement>(Converter<TElement> elementConverter);
+	protected virtual Converter CreateArrayConverter<TElement>(Converter<TElement> elementConverter)
+		=> new ArrayConverter<TElement>(elementConverter);
 
 #if NET
 	protected abstract Converter CreateArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter, int rank);

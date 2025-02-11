@@ -3,23 +3,22 @@
 
 using System.Text;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes <see langword="enum" /> types as their underlying integral type.
 /// </summary>
 /// <typeparam name="TEnum">The enum type.</typeparam>
 /// <typeparam name="TUnderlyingType">The underlying integer type.</typeparam>
-internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConverter<TUnderlyingType> primitiveConverter) : MessagePackConverter<TEnum>
+internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(Converter<TUnderlyingType> primitiveConverter) : Converter<TEnum>
 	where TEnum : struct, Enum
 {
 	/// <inheritdoc/>
-	public override TEnum Read(ref MessagePackReader reader, SerializationContext context) => (TEnum)(object)primitiveConverter.Read(ref reader, context)!;
+	public override TEnum Read(ref Reader reader, SerializationContext context) => (TEnum)(object)primitiveConverter.Read(ref reader, context)!;
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TEnum value, SerializationContext context)
+	public override void Write(ref Writer writer, in TEnum value, SerializationContext context)
 	{
 		primitiveConverter.Write(ref writer, (TUnderlyingType)(object)value, context);
 	}

@@ -5,8 +5,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
 
@@ -16,7 +14,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
-internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
+internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter) : Converter<TEnumerable>
 {
 	/// <summary>
 	/// Gets a value indicating whether the element converter prefers async serialization.
@@ -24,9 +22,9 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	protected bool ElementPrefersAsyncSerialization => elementConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -35,11 +33,11 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
+	public override void Write(ref Writer writer, in TEnumerable? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -76,19 +74,19 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
+	public override async ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
 	{
 		int skipCount = (int)index!;
 
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 
-		bool isNil;
-		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		bool isNull;
+		while (streamingReader.TryReadNull(out isNull).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (isNil)
+		if (isNull)
 		{
 			reader.ReturnReader(ref streamingReader);
 			return false;
@@ -122,18 +120,18 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// Reads one element from the reader.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="Converter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
-	protected TElement ReadElement(ref MessagePackReader reader, SerializationContext context) => elementConverter.Read(ref reader, context)!;
+	protected TElement ReadElement(ref Reader reader, SerializationContext context) => elementConverter.Read(ref reader, context)!;
 
 	/// <summary>
 	/// Reads one element from the reader.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="Converter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
 	[Experimental("NBMsgPackAsync")]
-	protected ValueTask<TElement> ReadElementAsync(MessagePackAsyncReader reader, SerializationContext context)
+	protected ValueTask<TElement> ReadElementAsync(AsyncReader reader, SerializationContext context)
 		=> elementConverter.ReadAsync(reader, context)!;
 }
 
@@ -153,9 +151,9 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 {
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -167,7 +165,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 #pragma warning restore NBMsgPack03
 
 	/// <inheritdoc/>
-	public void DeserializeInto(ref MessagePackReader reader, ref TEnumerable collection, SerializationContext context)
+	public void DeserializeInto(ref Reader reader, ref TEnumerable collection, SerializationContext context)
 	{
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
@@ -179,13 +177,13 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context)
+	public async ValueTask DeserializeIntoAsync(AsyncReader reader, TEnumerable collection, SerializationContext context)
 	{
 		context.DepthStep();
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			StreamingReader streamingReader = reader.CreateStreamingReader();
 			int count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
@@ -200,7 +198,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		else
 		{
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
-			MessagePackReader syncReader = reader.CreateBufferedReader();
+			Reader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadArrayHeader();
 			for (int i = 0; i < count; i++)
 			{
@@ -221,13 +219,13 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 /// <param name="ctor">A enumerable initializer that constructs from a span of elements.</param>
 internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-	MessagePackConverter<TElement> elementConverter,
+	Converter<TElement> elementConverter,
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -260,13 +258,13 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 /// <param name="ctor">A enumerable initializer that constructs from an enumerable of elements.</param>
 internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-	MessagePackConverter<TElement> elementConverter,
+	Converter<TElement> elementConverter,
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}

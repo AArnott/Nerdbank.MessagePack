@@ -3,10 +3,10 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
-/// An interface that may be optionally implemented by a <see cref="MessagePackConverter{T}"/> to support deserializing into an existing collection instance.
+/// An interface that may be optionally implemented by a <see cref="Converter{T}"/> to support deserializing into an existing collection instance.
 /// </summary>
 /// <typeparam name="TCollectionType">The concrete collection type supported by the converter.</typeparam>
 /// <remarks>
@@ -22,9 +22,9 @@ internal interface IDeserializeInto<TCollectionType>
 	/// <param name="collection">The collection instance to inflate with elements.</param>
 	/// <param name="context">The deserialization context.</param>
 	/// <remarks>
-	/// Implementations may assume that the messagepack token is not <see cref="MessagePackCode.Nil"/>.
+	/// Implementations may assume that the messagepack token is not <see cref="Code.Nil"/>.
 	/// </remarks>
-	void DeserializeInto(ref MessagePackReader reader, ref TCollectionType collection, SerializationContext context);
+	void DeserializeInto(ref Reader reader, ref TCollectionType collection, SerializationContext context);
 
 	/// <summary>
 	/// Deserializes a collection into an existing collection instance.
@@ -34,8 +34,8 @@ internal interface IDeserializeInto<TCollectionType>
 	/// <param name="context">The deserialization context.</param>
 	/// <returns>A task that tracks the async operation.</returns>
 	/// <remarks>
-	/// Implementations may assume that the messagepack token is not <see cref="MessagePackCode.Nil"/>.
+	/// Implementations may assume that the messagepack token is not <see cref="Code.Nil"/>.
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
-	ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TCollectionType collection, SerializationContext context);
+	ValueTask DeserializeIntoAsync(AsyncReader reader, TCollectionType collection, SerializationContext context);
 }

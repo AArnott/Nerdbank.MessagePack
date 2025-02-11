@@ -5,9 +5,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.Converters;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes a dictionary.
@@ -19,7 +18,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// <param name="getReadable">A delegate which converts the opaque dictionary type to a readable form.</param>
 /// <param name="keyConverter">A converter for keys.</param>
 /// <param name="valueConverter">A converter for values.</param>
-internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter) : MessagePackConverter<TDictionary>
+internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter) : Converter<TDictionary>
 	where TKey : notnull
 {
 	/// <summary>
@@ -28,9 +27,9 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -39,11 +38,11 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TDictionary? value, SerializationContext context)
+	public override void Write(ref Writer writer, in TDictionary? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -79,7 +78,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
+	public override async ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
 	{
 		if (index is null)
 		{
@@ -88,15 +87,15 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 
 		var desiredKey = (TKey)index;
 
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 
-		bool isNil;
-		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		bool isNull;
+		while (streamingReader.TryReadNull(out isNull).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (isNil)
+		if (isNull)
 		{
 			reader.ReturnReader(ref streamingReader);
 			return false;
@@ -119,7 +118,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			else
 			{
 				await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
-				MessagePackReader syncReader = reader.CreateBufferedReader();
+				Reader syncReader = reader.CreateBufferedReader();
 				key = keyConverter.Read(ref syncReader, context);
 				reader.ReturnReader(ref syncReader);
 			}
@@ -145,10 +144,10 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// Reads a key and value pair.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="Converter{T}.Read" path="/param[@name='context']"/></param>
 	/// <param name="key">Receives the key.</param>
 	/// <param name="value">Receives the value.</param>
-	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey key, out TValue value)
+	protected void ReadEntry(ref Reader reader, SerializationContext context, out TKey key, out TValue value)
 	{
 		key = keyConverter.Read(ref reader, context)!;
 		value = valueConverter.Read(ref reader, context)!;
@@ -158,10 +157,10 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// Reads a key and value pair.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
+	/// <param name="context"><inheritdoc cref="Converter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The key=value pair.</returns>
 	[Experimental("NBMsgPackAsync")]
-	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(MessagePackAsyncReader reader, SerializationContext context)
+	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(AsyncReader reader, SerializationContext context)
 	{
 		TKey? key = await keyConverter.ReadAsync(reader, context).ConfigureAwait(false);
 		TValue? value = await valueConverter.ReadAsync(reader, context).ConfigureAwait(false);
@@ -180,8 +179,8 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 /// <param name="ctor">The default constructor for the dictionary type.</param>
 internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
-	MessagePackConverter<TKey> keyConverter,
-	MessagePackConverter<TValue> valueConverter,
+	Converter<TKey> keyConverter,
+	Converter<TValue> valueConverter,
 	Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry,
 	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 	where TKey : notnull
@@ -191,9 +190,9 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -206,11 +205,11 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<TDictionary?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
-		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out success).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -227,7 +226,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	}
 
 	/// <inheritdoc/>
-	public void DeserializeInto(ref MessagePackReader reader, ref TDictionary collection, SerializationContext context)
+	public void DeserializeInto(ref Reader reader, ref TDictionary collection, SerializationContext context)
 	{
 		context.DepthStep();
 		int count = reader.ReadMapHeader();
@@ -240,13 +239,13 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context)
+	public async ValueTask DeserializeIntoAsync(AsyncReader reader, TDictionary collection, SerializationContext context)
 	{
 		context.DepthStep();
 
 		if (this.ElementPrefersAsyncSerialization)
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			StreamingReader streamingReader = reader.CreateStreamingReader();
 			int count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
 			{
@@ -262,7 +261,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		else
 		{
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
-			MessagePackReader syncReader = reader.CreateBufferedReader();
+			Reader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
@@ -285,15 +284,15 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 /// <param name="ctor">A dictionary initializer that constructs from a span of entries.</param>
 internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
-	MessagePackConverter<TKey> keyConverter,
-	MessagePackConverter<TValue> valueConverter,
+	Converter<TKey> keyConverter,
+	Converter<TValue> valueConverter,
 	SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -328,15 +327,15 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 /// <param name="ctor">A dictionary initializer that constructs from an enumerable of entries.</param>
 internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
-	MessagePackConverter<TKey> keyConverter,
-	MessagePackConverter<TValue> valueConverter,
+	Converter<TKey> keyConverter,
+	Converter<TValue> valueConverter,
 	Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 	where TKey : notnull
 {
 	/// <inheritdoc/>
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TDictionary? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}

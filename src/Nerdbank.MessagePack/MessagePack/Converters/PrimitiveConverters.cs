@@ -798,7 +798,10 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 			case MessagePackType.Binary:
 				return reader.ReadBytes()?.ToArray();
 			default:
-				return Fallback.Read(ref reader, context);
+				Reader baseReader = reader.ToReader();
+				byte[]? result = Fallback.Read(ref baseReader, context);
+				reader = MessagePackReader.FromReader(baseReader);
+				return result;
 		}
 	}
 

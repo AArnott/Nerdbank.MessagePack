@@ -43,6 +43,15 @@ public ref partial struct MessagePackReader
 		this.streamingReader = new(msgpack, null, null);
 	}
 
+	private MessagePackReader(scoped in Reader reader)
+	{
+		this.streamingReader = new(reader.SequenceReader.UnreadSequence);
+	}
+
+	public static MessagePackReader FromReader(scoped in Reader reader) => new(reader);
+
+	public Reader ToReader() => new(this.streamingReader.SequenceReader.UnreadSequence, MsgPackStreamingDeformatter.Deformatter);
+
 	/// <summary>
 	/// Gets the <see cref="ReadOnlySequence{T}"/> originally supplied to the constructor.
 	/// </summary>

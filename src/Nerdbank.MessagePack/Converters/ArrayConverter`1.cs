@@ -3,24 +3,22 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes and deserializes a 1-rank array.
 /// </summary>
 /// <typeparam name="TElement">The element type.</typeparam>
-internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TElement[]>
+internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : Converter<TElement[]>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override TElement[]? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TElement[]? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return null;
 		}
@@ -37,11 +35,11 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TElement[]? value, SerializationContext context)
+	public override void Write(ref Writer writer, in TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -55,18 +53,21 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TElement[]? value, SerializationContext context)
+	public override async ValueTask WriteAsync(AsyncWriter writer, TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
 		context.DepthStep();
 		if (elementConverter.PreferAsyncSerialization)
 		{
-			writer.WriteArrayHeader(value.Length);
+			Writer syncWriter = writer.CreateWriter();
+			syncWriter.WriteArrayHeader(value.Length);
+			writer.ReturnWriter(ref syncWriter);
+
 			for (int i = 0; i < value.Length; i++)
 			{
 				await elementConverter.WriteAsync(writer, value[i], context).ConfigureAwait(false);
@@ -78,7 +79,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			int progress = 0;
 			do
 			{
-				MessagePackWriter syncWriter = writer.CreateWriter();
+				Writer syncWriter = writer.CreateWriter();
 				syncWriter.WriteArrayHeader(value.Length);
 				for (; progress < value.Length && !writer.IsTimeToFlush(context); progress++)
 				{
@@ -95,11 +96,11 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<TElement[]?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
-		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out success).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -133,7 +134,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		{
 			reader.ReturnReader(ref streamingReader);
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
-			MessagePackReader syncReader = reader.CreateBufferedReader();
+			Reader syncReader = reader.CreateBufferedReader();
 
 			int count = syncReader.ReadArrayHeader();
 			var array = new TElement[count];

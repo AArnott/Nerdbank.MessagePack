@@ -36,23 +36,8 @@ internal class MessagePackVisitor : StandardVisitor
 		}
 	}
 
-	protected override Converter CreateDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter)
-		=> new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, (MessagePackConverter<TKey>)keyConverter, (MessagePackConverter<TValue>)valueConverter);
-
-	protected override Converter CreateMutableDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePair, Func<TDictionary> defaultConstructor)
-		=> new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, (MessagePackConverter<TKey>)keyConverter, (MessagePackConverter<TValue>)valueConverter, addKeyValuePair, defaultConstructor);
-
-	protected override Converter CreateDictionaryFromEnumerableConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableConstructor)
-		=> new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, (MessagePackConverter<TKey>)keyConverter, (MessagePackConverter<TValue>)valueConverter, enumerableConstructor);
-
-	protected override Converter CreateDictionaryFromSpanConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanConstructor)
-		=> new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, (MessagePackConverter<TKey>)keyConverter, (MessagePackConverter<TValue>)valueConverter, spanConstructor);
-
 	protected override Converter CreateSubTypeUnionConverter<T>(SubTypes unionTypes, Converter<T> baseConverter)
 		=> new SubTypeUnionConverter<T>(unionTypes, (MessagePackConverter<T>)baseConverter);
-
-	protected override Converter CreateArrayConverter<TElement>(Converter<TElement> elementConverter)
-		=> new ArrayConverter<TElement>((MessagePackConverter<TElement>)elementConverter);
 
 	protected override bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter)
 	{

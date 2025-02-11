@@ -22,13 +22,13 @@ public ref struct Writer
 
 	public bool ArrayLengthRequiredInHeader => this.Formatter.ArrayLengthRequiredInHeader;
 
-	public void WriteArrayStart(int length) => this.Formatter.WriteArrayStart(ref this, length);
+	public void WriteArrayHeader(int length) => this.Formatter.WriteArrayStart(ref this, length);
 
 	public void WriteArrayElementSeparator() => this.Formatter.WriteArrayElementSeparator(ref this);
 
 	public void WriteArrayEnd() => this.Formatter.WriteArrayEnd(ref this);
 
-	public void WriteMapStart(int length) => this.Formatter.WriteMapStart(ref this, length);
+	public void WriteMapHeader(int length) => this.Formatter.WriteMapStart(ref this, length);
 
 	public void WriteMapKeyValueSeparator() => this.Formatter.WriteMapKeyValueSeparator(ref this);
 
