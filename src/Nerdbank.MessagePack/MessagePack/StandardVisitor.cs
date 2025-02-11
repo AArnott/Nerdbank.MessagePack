@@ -230,7 +230,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 			}
 
-			SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
+			SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref Writer writer, SerializationContext context) =>
 			{
 				// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
 				// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
@@ -238,7 +238,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				TPropertyType? value = getter(ref Unsafe.AsRef(in container));
 				converter.Write(ref writer, value, context);
 			};
-			SerializePropertyAsync<TDeclaringType> serializeAsync = (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context)
+			SerializePropertyAsync<TDeclaringType> serializeAsync = (TDeclaringType container, AsyncWriter writer, SerializationContext context)
 				=> converter.WriteAsync(writer, getter(ref container), context);
 			msgpackWriters = (serialize, serializeAsync);
 		}
@@ -248,8 +248,8 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (propertyShape.HasSetter)
 		{
 			Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) => setter(ref container, converter.Read(ref reader, context)!);
-			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
+			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref Reader reader, SerializationContext context) => setter(ref container, converter.Read(ref reader, context)!);
+			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, AsyncReader reader, SerializationContext context) =>
 			{
 				setter(ref container, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
 				return container;
@@ -264,24 +264,22 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// and we'll just deserialize into it.
 			suppressIfNoConstructorParameter = false;
 			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
-			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref Reader reader, SerializationContext context) =>
 			{
-				if (reader.TryReadNil())
+				if (reader.TryReadNull())
 				{
 					// No elements to read. A null collection in msgpack doesn't let us set the collection to null, so just return.
 					return;
 				}
 
 				TPropertyType collection = getter(ref container);
-				Reader baseReader = reader.ToReader();
-				inflater.DeserializeInto(ref baseReader, ref collection, context);
-				reader = MessagePackReader.FromReader(baseReader);
+				inflater.DeserializeInto(ref reader, ref collection, context);
 			};
-			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
+			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, AsyncReader reader, SerializationContext context) =>
 			{
-				MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+				StreamingReader streamingReader = reader.CreateStreamingReader();
 				bool isNil;
-				while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+				while (streamingReader.TryReadNull(out isNil).NeedsMoreBytes())
 				{
 					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 				}
@@ -396,8 +394,8 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return new DeserializableProperty<TArgumentState>(
 			parameterShape.Name,
 			StringEncoding.UTF8.GetBytes(parameterShape.Name),
-			(ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Read(ref reader, context)!),
-			async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
+			(ref TArgumentState state, ref Reader reader, SerializationContext context) => setter(ref state, converter.Read(ref reader, context)!),
+			async (TArgumentState state, AsyncReader reader, SerializationContext context) =>
 			{
 				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
 				return state;

@@ -7,21 +7,20 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
 
 /// <summary>
-/// A delegate that can read a property from a data type and serialize it to a <see cref="MessagePackWriter"/>.
+/// A delegate that can read a property from a data type and serialize it to a <see cref="Writer"/>.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose property is to be read.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="writer">The means by which msgpack should be written.</param>
-/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Write" path="/param[@name='context']"/></param>
-internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
+/// <param name="context"><inheritdoc cref="Converter{T}.Write" path="/param[@name='context']"/></param>
+internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType container, ref Writer writer, SerializationContext context);
 
 /// <summary>
-/// A delegate that can asynchronously serialize a property to a <see cref="MessagePackAsyncWriter"/>.
+/// A delegate that can asynchronously serialize a property to a <see cref="AsyncWriter"/>.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose property is to be serialized.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
@@ -29,27 +28,27 @@ internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType conta
 /// <param name="context">The serialization context.</param>
 /// <returns>A task that represents the asynchronous operation.</returns>
 [Experimental("NBMsgPackAsync")]
-internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context);
+internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, AsyncWriter writer, SerializationContext context);
 
 /// <summary>
-/// A delegate that can deserialize a value from a <see cref="MessagePackReader"/> and assign it to a property.
+/// A delegate that can deserialize a value from a <see cref="Reader"/> and assign it to a property.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose property is to be initialized.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="reader">The means by which msgpack should be read.</param>
-/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
-internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context);
+/// <param name="context"><inheritdoc cref="Converter{T}.Read" path="/param[@name='context']"/></param>
+internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref Reader reader, SerializationContext context);
 
 /// <summary>
-/// A delegate that can asynchronously deserialize the value from a <see cref="MessagePackAsyncReader"/> and assign it to a property.
+/// A delegate that can asynchronously deserialize the value from a <see cref="AsyncReader"/> and assign it to a property.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose property is to be initialized.</typeparam>
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="reader">The means by which msgpack should be read.</param>
-/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
+/// <param name="context"><inheritdoc cref="Converter{T}.Read" path="/param[@name='context']"/></param>
 /// <returns>The <paramref name="container"/>, with the property initialized. This is useful when <typeparamref name="TDeclaringType"/> is a struct.</returns>
 [Experimental("NBMsgPackAsync")]
-internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context);
+internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, AsyncReader reader, SerializationContext context);
 
 /// <summary>
 /// A map of serializable properties.
