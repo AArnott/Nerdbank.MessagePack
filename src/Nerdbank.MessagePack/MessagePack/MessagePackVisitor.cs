@@ -78,12 +78,4 @@ internal class MessagePackVisitor : StandardVisitor
 
 	protected override Converter CreateSpanEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, SpanConstructor<TElement, TEnumerable> spanConstructor)
 		=> new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, (MessagePackConverter<TElement>)elementConverter, spanConstructor);
-
-#if NET
-	protected override Converter CreateArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter)
-		=> new ArrayWithFlattenedDimensionsConverter<TArray, TElement>((MessagePackConverter<TElement>)elementConverter);
-
-	protected override Converter CreateArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter, int rank)
-		=> new ArrayWithNestedDimensionsConverter<TArray, TElement>((MessagePackConverter<TElement>)elementConverter, rank);
-#endif
 }

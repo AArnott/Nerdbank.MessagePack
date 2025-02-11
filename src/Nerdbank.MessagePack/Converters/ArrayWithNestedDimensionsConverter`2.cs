@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes and deserializes an array with rank 1 (or more).
@@ -22,7 +22,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// This may change if <see href="https://github.com/msgpack/msgpack/pull/267">this pull request</see> is ever merged
 /// into the msgpack spec.
 /// </remarks>
-internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackConverter<TElement> elementConverter, int rank) : MessagePackConverter<TArray>
+internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter, int rank) : Converter<TArray>
 {
 	[ThreadStatic]
 	private static int[]? dimensionsReusable;
@@ -30,9 +30,9 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 #pragma warning disable NBMsgPack031 // Exactly one structure -- it can't see into this.method calls
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public override TArray? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TArray? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -47,12 +47,12 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TArray? value, SerializationContext context)
+	public override void Write(ref Writer writer, in TArray? value, SerializationContext context)
 	{
 		Array? array = (Array?)(object?)value;
 		if (array is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -89,8 +89,8 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	/// <param name="writer">The msgpack writer.</param>
 	/// <param name="dimensions">The remaining dimensions to be written.</param>
 	/// <param name="elements">A flat list of elements to write.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Write" path="/param[@name='context']"/></param>
-	private void WriteSubArray(ref MessagePackWriter writer, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
+	/// <param name="context"><inheritdoc cref="Converter{T}.Write" path="/param[@name='context']"/></param>
+	private void WriteSubArray(ref Writer writer, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
 		context.DepthStep();
 		int outerDimension = dimensions[0];
@@ -119,8 +119,8 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	/// <param name="reader">The msgpack reader.</param>
 	/// <param name="dimensions">The remaining dimensions to be read.</param>
 	/// <param name="elements">A flat list of elements to populate.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
-	private void ReadSubArray(ref MessagePackReader reader, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
+	/// <param name="context"><inheritdoc cref="Converter{T}.Read" path="/param[@name='context']"/></param>
+	private void ReadSubArray(ref Reader reader, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
@@ -149,9 +149,9 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	/// </summary>
 	/// <param name="reader">The reader. This is <em>not</em> a <see langword="ref" /> so as to not impact the caller's read position.</param>
 	/// <param name="dimensions">The dimensional array to initialize.</param>
-#pragma warning disable NBMsgPack050 // use "ref MessagePackReader" for parameter type
-	private void PeekDimensionsLength(MessagePackReader reader, int[] dimensions)
-#pragma warning restore NBMsgPack050 // use "ref MessagePackReader" for parameter type
+#pragma warning disable NBMsgPack050 // use "ref Reader" for parameter type
+	private void PeekDimensionsLength(Reader reader, int[] dimensions)
+#pragma warning restore NBMsgPack050 // use "ref Reader" for parameter type
 	{
 		for (int i = 0; i < dimensions.Length; i++)
 		{

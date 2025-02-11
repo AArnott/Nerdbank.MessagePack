@@ -7,9 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.Converters;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes an array with rank &gt; 1 by emitting them all in one flat array, preceded by an array that identifies the dimensions of the array.
@@ -21,16 +20,16 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// The format for this is:
 /// <c>[[dimension0, dimension1, ...], [element0, element1, ...]]</c>.
 /// </remarks>
-internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TArray>
+internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter) : Converter<TArray>
 {
 	[ThreadStatic]
 	private static int[]? dimensionsReusable;
 
 	/// <inheritdoc/>
 	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
-	public override TArray? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TArray? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -66,11 +65,11 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TArray? value, SerializationContext context)
+	public override void Write(ref Writer writer, in TArray? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
