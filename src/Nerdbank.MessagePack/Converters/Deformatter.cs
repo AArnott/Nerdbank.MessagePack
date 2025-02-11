@@ -171,6 +171,44 @@ public partial class Deformatter(StreamingDeformatter streamingDeformatter)
 		}
 	}
 
+	public ReadOnlySequence<byte>? ReadStringSequence(ref Reader reader)
+	{
+		switch (streamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				if (this.TryReadNull(ref reader))
+				{
+					return null;
+				}
+
+				throw ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public ReadOnlySpan<byte> ReadStringSpan(ref Reader reader)
+	{
+		switch (streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out ReadOnlySpan<byte> span))
+		{
+			case DecodeResult.Success:
+				return contiguous ? span : this.ReadStringSequence(ref reader)!.Value.ToArray();
+			case DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+
 	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
 
 	public TypeCode ToTypeCode(byte code) => streamingDeformatter.ToTypeCode(code);

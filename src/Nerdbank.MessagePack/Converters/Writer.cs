@@ -68,4 +68,28 @@ public ref struct Writer
 
 	public void Write(ReadOnlySequence<byte> value) => this.Formatter.Write(ref this, value);
 
+	/// <summary>
+	/// Flushes the writer and returns the written data as a byte array.
+	/// </summary>
+	/// <returns>A byte array containing the written data.</returns>
+	/// <exception cref="NotSupportedException">Thrown if the instance was not initialized to support this operation.</exception>
+	internal byte[] FlushAndGetArray()
+	{
+		if (this.Buffer.TryGetUncommittedSpan(out ReadOnlySpan<byte> span))
+		{
+			return span.ToArray();
+		}
+		else
+		{
+			if (this.Buffer.SequenceRental.Value == null)
+			{
+				throw new NotSupportedException("This instance was not initialized to support this operation.");
+			}
+
+			this.Buffer.Commit();
+			byte[] result = this.Buffer.SequenceRental.Value.AsReadOnlySequence.ToArray();
+			this.Buffer.SequenceRental.Dispose();
+			return result;
+		}
+	}
 }

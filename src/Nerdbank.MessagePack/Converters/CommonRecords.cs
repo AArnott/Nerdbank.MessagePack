@@ -8,7 +8,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// A delegate that can read a property from a data type and serialize it to a <see cref="Writer"/>.
@@ -148,5 +148,5 @@ internal record SubTypes
 	/// <summary>
 	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
 	/// </summary>
-	internal required FrozenDictionary<Type, (SubTypeAlias Alias, Converter Converter, ITypeShape Shape)> Serializers { get; init; }
+	internal required FrozenDictionary<Type, (FormattedSubTypeAlias Alias, Converter Converter, ITypeShape Shape)> Serializers { get; init; }
 }

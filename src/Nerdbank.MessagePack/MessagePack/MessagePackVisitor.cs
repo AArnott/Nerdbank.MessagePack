@@ -18,6 +18,10 @@ internal class MessagePackVisitor : StandardVisitor
 	{
 	}
 
+	internal override Formatter Formatter => MsgPackFormatter.Instance;
+
+	internal override Deformatter Deformatter => MsgPackStreamingDeformatter.Deformatter;
+
 	protected override Converter GetInterningStringConverter() => InterningStringConverter;
 
 	protected override Converter GetReferencePreservingInterningStringConverter() => ReferencePreservingInterningStringConverter;

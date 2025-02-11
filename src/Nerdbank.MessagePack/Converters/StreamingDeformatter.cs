@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+
 namespace Nerdbank.PolySerializer.Converters;
 
 public abstract class StreamingDeformatter
@@ -9,6 +12,8 @@ public abstract class StreamingDeformatter
 	/// A value indicating whether no more bytes can be expected once we reach the end of the current buffer.
 	/// </summary>
 	private bool eof;
+
+	public abstract Encoding Encoding { get; }
 
 	/// <summary>
 	/// Peeks at the next msgpack byte without advancing the reader.
@@ -48,6 +53,10 @@ public abstract class StreamingDeformatter
 	public abstract DecodeResult TryRead(ref Reader reader, out float value);
 
 	public abstract DecodeResult TryRead(ref Reader reader, out string value);
+
+	public abstract DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value);
+
+	public abstract DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value);
 
 	public abstract DecodeResult TrySkip(ref Reader reader, ref SerializationContext context);
 

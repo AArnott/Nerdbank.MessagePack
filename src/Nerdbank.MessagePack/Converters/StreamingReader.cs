@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 
 namespace Nerdbank.PolySerializer.Converters;
@@ -137,4 +138,8 @@ public ref partial struct StreamingReader
 	public DecodeResult TryRead(out int value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
 
 	public DecodeResult TrySkip(ref SerializationContext context) => this.StreamingDeformatter.TrySkip(ref this.reader, ref context);
+
+	public DecodeResult TryReadStringSequence(out ReadOnlySequence<byte> value) => this.StreamingDeformatter.TryReadStringSequence(ref this.reader, out value);
+
+	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value) => this.StreamingDeformatter.TryReadStringSpan(ref this.reader, out contiguous, out value);
 }

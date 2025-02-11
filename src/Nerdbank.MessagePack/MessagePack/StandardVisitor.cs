@@ -37,6 +37,10 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		this.OutwardVisitor = this;
 	}
 
+	internal abstract Formatter Formatter { get; }
+
+	internal abstract Deformatter Deformatter { get; }
+
 	protected abstract Converter GetInterningStringConverter();
 
 	protected abstract Converter GetReferencePreservingInterningStringConverter();
@@ -575,10 +579,10 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		Dictionary<int, Converter> deserializeByIntData = new();
 		Dictionary<ReadOnlyMemory<byte>, Converter> deserializeByUtf8Data = new();
-		Dictionary<Type, (SubTypeAlias Alias, Converter Converter, ITypeShape Shape)> serializerData = new();
+		Dictionary<Type, (FormattedSubTypeAlias Alias, Converter Converter, ITypeShape Shape)> serializerData = new();
 		foreach (KeyValuePair<SubTypeAlias, ITypeShape> pair in mapping)
 		{
-			SubTypeAlias alias = pair.Key;
+			FormattedSubTypeAlias alias = pair.Key.Format(this.Formatter);
 			ITypeShape shape = pair.Value;
 
 			// We don't want a reference-preserving converter here because that layer has already run
@@ -591,7 +595,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					deserializeByIntData.Add(alias.IntAlias, converter);
 					break;
 				case SubTypeAlias.AliasType.String:
-					deserializeByUtf8Data.Add(alias.Utf8Alias, converter);
+					deserializeByUtf8Data.Add(alias.EncodedAlias, converter);
 					break;
 				default:
 					throw new NotImplementedException("Unknown alias type.");

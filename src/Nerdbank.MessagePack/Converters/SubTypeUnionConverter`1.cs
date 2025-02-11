@@ -6,25 +6,24 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
 using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// A formatter for a type that may serve as an ancestor class for the actual runtime type of a value to be (de)serialized.
 /// </summary>
 /// <typeparam name="TBase">The type that serves as the runtime type or the ancestor type for any runtime value.</typeparam>
-internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
+internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 {
 	private readonly SubTypes subTypes;
-	private readonly MessagePackConverter<TBase> baseConverter;
+	private readonly Converter<TBase> baseConverter;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SubTypeUnionConverter{TBase}"/> class.
 	/// </summary>
 	/// <param name="subTypes">Contains maps to assist with converting subtypes.</param>
 	/// <param name="baseConverter">The converter to use for values that are actual instances of the base type itself.</param>
-	internal SubTypeUnionConverter(SubTypes subTypes, MessagePackConverter<TBase> baseConverter)
+	internal SubTypeUnionConverter(SubTypes subTypes, Converter<TBase> baseConverter)
 	{
 		this.subTypes = subTypes;
 		this.baseConverter = baseConverter;
@@ -35,9 +34,9 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 	public override bool PreferAsyncSerialization { get; }
 
 	/// <inheritdoc/>
-	public override TBase? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TBase? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -49,13 +48,13 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		}
 
 		// The alias for the base type itself is simply nil.
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return this.baseConverter.Read(ref reader, context);
 		}
 
 		Converter? converter;
-		if (reader.NextMessagePackType == MessagePackType.Integer)
+		if (reader.NextTypeCode == TypeCode.Integer)
 		{
 			int alias = reader.ReadInt32();
 			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
@@ -65,22 +64,22 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		}
 		else
 		{
-			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
+			ReadOnlySpan<byte> alias = reader.Deformatter.ReadStringSpan(ref reader);
 			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
-				throw new SerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(alias)}\".");
 			}
 		}
 
-		return (TBase?)((IMessagePackConverter)converter).ReadObject(ref reader, context);
+		return (TBase?)converter.ReadObject(ref reader, context);
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TBase? value, SerializationContext context)
+	public override void Write(ref Writer writer, in TBase? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -90,13 +89,13 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		if (valueType.IsEquivalentTo(typeof(TBase)))
 		{
 			// The runtime type of the value matches the base exactly. Use nil as the alias.
-			writer.WriteNil();
+			writer.WriteNull();
 			this.baseConverter.Write(ref writer, value, context);
 		}
-		else if (this.subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, Converter Converter, ITypeShape Shape) result))
+		else if (this.subTypes.Serializers.TryGetValue(valueType, out (FormattedSubTypeAlias Alias, Converter Converter, ITypeShape Shape) result))
 		{
-			writer.WriteRaw(result.Alias.MsgPackAlias.Span);
-			((IMessagePackConverter)result.Converter).WriteObject(ref writer, value, context);
+			writer.Buffer.Write(result.Alias.FormattedAlias.Span);
+			result.Converter.WriteObject(ref writer, value, context);
 		}
 		else
 		{
@@ -106,11 +105,11 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TBase?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<TBase?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
-		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out success).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -133,27 +132,27 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 		}
 
 		// The alias for the base type itself is simply nil.
-		bool isNil;
-		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		bool isNull;
+		while (streamingReader.TryReadNull(out isNull).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (isNil)
+		if (isNull)
 		{
 			reader.ReturnReader(ref streamingReader);
 			TBase? result = await this.baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
 			return result;
 		}
 
-		MessagePackType nextMessagePackType;
-		if (streamingReader.TryPeekNextMessagePackType(out nextMessagePackType).NeedsMoreBytes())
+		TypeCode nextType;
+		if (streamingReader.TryPeekNextCode(out nextType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
 		Converter? converter;
-		if (nextMessagePackType == MessagePackType.Integer)
+		if (nextType == TypeCode.Integer)
 		{
 			int alias;
 			while (streamingReader.TryRead(out alias).NeedsMoreBytes())
@@ -183,32 +182,32 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 
 			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
-				throw new SerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(alias)}\".");
 			}
 		}
 
 		reader.ReturnReader(ref streamingReader);
-		return (TBase?)await ((IMessagePackConverter)converter).ReadObjectAsync(reader, context).ConfigureAwait(false);
+		return (TBase?)await converter.ReadObjectAsync(reader, context).ConfigureAwait(false);
 	}
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TBase? value, SerializationContext context)
+	public override async ValueTask WriteAsync(AsyncWriter writer, TBase? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
-		MessagePackWriter syncWriter = writer.CreateWriter();
+		Writer syncWriter = writer.CreateWriter();
 		syncWriter.WriteArrayHeader(2);
 
 		Type valueType = value.GetType();
 		if (valueType.IsEquivalentTo(typeof(TBase)))
 		{
 			// The runtime type of the value matches the base exactly. Use nil as the alias.
-			syncWriter.WriteNil();
+			syncWriter.WriteNull();
 			if (this.baseConverter.PreferAsyncSerialization)
 			{
 				writer.ReturnWriter(ref syncWriter);
@@ -220,17 +219,17 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 				writer.ReturnWriter(ref syncWriter);
 			}
 		}
-		else if (this.subTypes.Serializers.TryGetValue(valueType, out (SubTypeAlias Alias, Converter Converter, ITypeShape Shape) result))
+		else if (this.subTypes.Serializers.TryGetValue(valueType, out (FormattedSubTypeAlias Alias, Converter Converter, ITypeShape Shape) result))
 		{
-			syncWriter.WriteRaw(result.Alias.MsgPackAlias.Span);
+			syncWriter.Buffer.Write(result.Alias.FormattedAlias.Span);
 			if (result.Converter.PreferAsyncSerialization)
 			{
 				writer.ReturnWriter(ref syncWriter);
-				await ((IMessagePackConverter)result.Converter).WriteObjectAsync(writer, value, context).ConfigureAwait(false);
+				await result.Converter.WriteObjectAsync(writer, value, context).ConfigureAwait(false);
 			}
 			else
 			{
-				((IMessagePackConverter)result.Converter).WriteObject(ref syncWriter, value, context);
+				result.Converter.WriteObject(ref syncWriter, value, context);
 				writer.ReturnWriter(ref syncWriter);
 			}
 		}
@@ -247,7 +246,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 	{
 		JsonArray oneOfArray = [CreateOneOfElement(null, this.baseConverter.GetJsonSchema(context, typeShape) ?? CreateUndocumentedSchema(this.baseConverter.GetType()))];
 
-		foreach ((SubTypeAlias alias, _, ITypeShape shape) in this.subTypes.Serializers.Values)
+		foreach ((FormattedSubTypeAlias alias, _, ITypeShape shape) in this.subTypes.Serializers.Values)
 		{
 			oneOfArray.Add((JsonNode)CreateOneOfElement(alias, context.GetJsonSchema(shape)));
 		}
@@ -257,7 +256,7 @@ internal class SubTypeUnionConverter<TBase> : MessagePackConverter<TBase>
 			["oneOf"] = oneOfArray,
 		};
 
-		JsonObject CreateOneOfElement(SubTypeAlias? alias, JsonObject schema)
+		JsonObject CreateOneOfElement(FormattedSubTypeAlias? alias, JsonObject schema)
 		{
 			JsonObject aliasSchema = new()
 			{

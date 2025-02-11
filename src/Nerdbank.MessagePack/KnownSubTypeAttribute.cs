@@ -7,7 +7,7 @@
 using System.Diagnostics;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 #if NET
 

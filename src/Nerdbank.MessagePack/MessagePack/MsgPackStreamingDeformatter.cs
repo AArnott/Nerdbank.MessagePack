@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -15,6 +16,8 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 	private uint expectedRemainingStructures;
 
 	private MsgPackStreamingDeformatter() { }
+
+	public override Encoding Encoding => StringEncoding.UTF8;
 
 	public override string ToFormatName(byte code) => MessagePackCode.ToFormatName(code);
 
@@ -142,6 +145,77 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 		throw new NotImplementedException();
 	}
 
+	/// <summary>
+	/// Reads a byte sequence backing a UTF-8 encoded string with an appropriate msgpack header from the msgpack stream.
+	/// </summary>
+	/// <param name="value">The byte sequence if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
+	public override DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value)
+	{
+		Reader originalPosition = reader;
+		DecodeResult result = this.TryReadStringHeader(ref reader, out uint length);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			return result;
+		}
+
+		if (reader.SequenceReader.Remaining < length)
+		{
+			// Rewind the header so we can try it again.
+			reader = originalPosition;
+
+			value = default;
+			return this.InsufficientBytes(reader);
+		}
+
+		value = reader.SequenceReader.Sequence.Slice(reader.SequenceReader.Position, length);
+		reader.SequenceReader.Advance(length);
+		return DecodeResult.Success;
+	}
+
+	/// <summary>
+	/// Reads a span backing a UTF-8 encoded string with an appropriate msgpack header from the msgpack stream,
+	/// if the string is contiguous in memory.
+	/// </summary>
+	/// <param name="contiguous">Receives a value indicating whether the string was present and contiguous in memory.</param>
+	/// <param name="value">The span of bytes if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
+	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value)
+	{
+		Reader oldReader = reader;
+		DecodeResult result = this.TryReadStringHeader(ref reader, out uint length);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			contiguous = false;
+			return result;
+		}
+
+		if (reader.SequenceReader.Remaining < length)
+		{
+			reader = oldReader;
+			value = default;
+			contiguous = false;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (reader.SequenceReader.CurrentSpanIndex + length <= reader.SequenceReader.CurrentSpan.Length)
+		{
+			value = reader.SequenceReader.CurrentSpan.Slice(reader.SequenceReader.CurrentSpanIndex, checked((int)length));
+			reader.SequenceReader.Advance(length);
+			contiguous = true;
+			return DecodeResult.Success;
+		}
+		else
+		{
+			reader = oldReader;
+			value = default;
+			contiguous = false;
+			return DecodeResult.Success;
+		}
+	}
+
 	public override DecodeResult TryRead(ref Reader reader, out int value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
@@ -198,6 +272,56 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 		MessagePackType.Nil => PolySerializer.Converters.TypeCode.Nil,
 		_ => PolySerializer.Converters.TypeCode.Unknown,
 	};
+
+	/// <summary>
+	/// Tries to read the header of a string.
+	/// </summary>
+	/// <param name="length">Receives the length of the next string, when successful.</param>
+	/// <returns>The result classification of the read operation.</returns>
+	/// <remarks>
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// with the length of bytes specified by the extension (even if zero), so that the overall structure can be recorded as read.
+	/// </remarks>
+	/// <inheritdoc cref="MessagePackPrimitives.TryReadStringHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
+	public DecodeResult TryReadStringHeader(ref Reader reader, out uint length)
+	{
+		DecodeResult readResult = MessagePackPrimitives.TryReadStringHeader(reader.UnreadSpan, out length, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			this.Advance(ref reader, tokenSize, 0);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref reader, this, readResult, ref length, ref tokenSize);
+
+		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref uint length, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.Advance(ref reader, tokenSize, 0);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (reader.SequenceReader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryReadStringHeader(buffer, out length, out tokenSize);
+						return SlowPath(ref reader, self, readResult, ref length, ref tokenSize);
+					}
+					else
+					{
+						length = default;
+						return DecodeResult.InsufficientBuffer;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
 
 	[DoesNotReturn]
 	private static DecodeResult ThrowUnreachable() => throw new UnreachableException();
