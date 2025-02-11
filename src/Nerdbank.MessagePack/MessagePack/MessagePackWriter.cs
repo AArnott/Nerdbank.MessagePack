@@ -56,6 +56,10 @@ public ref struct MessagePackWriter
 		this.OldSpec = false;
 	}
 
+	public Writer ToWriter() => new(this.writer, MsgPackFormatter.Instance);
+
+	public static MessagePackWriter FromWriter(scoped in Writer writer) => new(writer.Buffer);
+
 	/// <summary>
 	/// Gets the number of bytes that have been written but not yet committed <see cref="Flush">flushed</see> to the underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>

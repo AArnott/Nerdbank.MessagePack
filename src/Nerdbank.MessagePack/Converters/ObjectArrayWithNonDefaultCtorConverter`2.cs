@@ -2,13 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
+using Nerdbank.PolySerializer.MessagePack.Converters;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
-/// A <see cref="MessagePackConverter{T}"/> that writes objects as maps of property names to values.
+/// A <see cref="Converter{T}"/> that writes objects as maps of property names to values.
 /// Data types with constructors and/or <see langword="init" /> properties may be deserialized.
 /// </summary>
 /// <typeparam name="TDeclaringType">The type of objects that can be serialized or deserialized with this converter.</typeparam>
@@ -26,9 +26,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectArrayConverter<TDeclaringType>(properties, null, defaultValuesPolicy)
 {
 	/// <inheritdoc/>
-	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TDeclaringType? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -36,7 +36,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		if (reader.NextMessagePackType == MessagePackType.Map)
+		if (reader.NextTypeCode == PolySerializer.Converters.TypeCode.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int count = reader.ReadMapHeader();
@@ -81,11 +81,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TDeclaringType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<TDeclaringType?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
-		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out success).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -99,13 +99,13 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		MessagePackType peekType;
-		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
+		PolySerializer.Converters.TypeCode peekType;
+		while (streamingReader.TryPeekNextCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == MessagePackType.Map)
+		if (peekType == PolySerializer.Converters.TypeCode.Map)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -120,7 +120,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			while (remainingEntries > 0)
 			{
 				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = reader.CreateBufferedReader();
+				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
@@ -185,7 +185,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				if (syncBatchSize > 0)
 				{
 					await reader.BufferNextStructuresAsync(syncBatchSize, syncBatchSize, context).ConfigureAwait(false);
-					MessagePackReader syncReader = reader.CreateBufferedReader();
+					Reader syncReader = reader.CreateBufferedReader();
 					for (int syncReadEndExclusive = i + syncBatchSize; i < syncReadEndExclusive; i++)
 					{
 						if (parameters.Length > i && parameters[i] is { Read: { } deserialize })

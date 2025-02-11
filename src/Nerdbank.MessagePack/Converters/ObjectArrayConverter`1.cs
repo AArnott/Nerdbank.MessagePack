@@ -4,13 +4,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack;
+using Nerdbank.PolySerializer.MessagePack.Converters;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
-/// A <see cref="MessagePackConverter{T}"/> that writes objects as arrays of property values.
+/// A <see cref="Converter{T}"/> that writes objects as arrays of property values.
 /// Only data types with default constructors may be deserialized.
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
@@ -23,9 +22,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override T? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -37,7 +36,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
-		if (reader.NextMessagePackType == MessagePackType.Map)
+		if (reader.NextTypeCode == PolySerializer.Converters.TypeCode.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int count = reader.ReadMapHeader();
@@ -80,12 +79,12 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
-	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref Writer writer, in T? value, SerializationContext context)
 #pragma warning restore NBMsgPack031
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -101,7 +100,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			int[]? indexesToIncludeArray = null;
 			try
 			{
-				if (this.ShouldUseMap(value, ref indexesToIncludeArray, out _, out ReadOnlySpan<int> indexesToInclude))
+				if (this.ShouldUseMap(writer.Formatter, value, ref indexesToIncludeArray, out _, out ReadOnlySpan<int> indexesToInclude))
 				{
 					writer.WriteMapHeader(indexesToInclude.Length);
 					for (int i = 0; i < indexesToInclude.Length; i++)
@@ -141,7 +140,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			WriteArray(ref writer, value, properties.Span, context);
 		}
 
-		static void WriteArray(ref MessagePackWriter writer, in T value, ReadOnlySpan<PropertyAccessors<T>?> properties, SerializationContext context)
+		static void WriteArray(ref Writer writer, in T value, ReadOnlySpan<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
 			writer.WriteArrayHeader(properties.Length);
 			for (int i = 0; i < properties.Length; i++)
@@ -152,7 +151,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				}
 				else
 				{
-					writer.WriteNil();
+					writer.WriteNull();
 				}
 			}
 		}
@@ -160,11 +159,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
+	public override async ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -180,13 +179,16 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			int[]? indexesToIncludeArray = null;
 			try
 			{
-				if (this.ShouldUseMap(value, ref indexesToIncludeArray, out ReadOnlyMemory<int> indexesToInclude, out _))
+				if (this.ShouldUseMap(writer.Formatter, value, ref indexesToIncludeArray, out ReadOnlyMemory<int> indexesToInclude, out _))
 				{
 					await WriteAsMapAsync(writer, value, indexesToInclude, properties, context).ConfigureAwait(false);
 				}
 				else if (indexesToInclude.Length == 0)
 				{
-					writer.WriteArrayHeader(0);
+					Writer syncWriter = writer.CreateWriter();
+					syncWriter.WriteArrayHeader(0);
+					writer.ReturnWriter(ref syncWriter);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 				else
 				{
@@ -208,9 +210,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			await WriteAsArrayAsync(writer, value, properties, context).ConfigureAwait(false);
 		}
 
-		static async ValueTask WriteAsMapAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
+		static async ValueTask WriteAsMapAsync(AsyncWriter writer, T value, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
 		{
-			writer.WriteMapHeader(properties.Length);
+			Writer syncWriter = writer.CreateWriter();
+			syncWriter.WriteMapHeader(properties.Length);
+			writer.ReturnWriter(ref syncWriter);
 			int i = 0;
 			while (i < properties.Length)
 			{
@@ -221,7 +225,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					// We use a nested loop here because even during synchronous writing, we may need to occasionally yield to
 					// flush what we've written so far, but then we want to come right back to synchronous writing.
-					MessagePackWriter syncWriter = writer.CreateWriter();
+					syncWriter = writer.CreateWriter();
 					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context); i++)
 					{
 						syncWriter.Write(properties.Span[i]);
@@ -243,7 +247,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						break;
 					}
 
-					writer.Write(static (ref MessagePackWriter w, int i) => w.Write(i), properties.Span[i]);
+					syncWriter = writer.CreateWriter();
+					syncWriter.Write(properties.Span[i]);
+					writer.ReturnWriter(ref syncWriter);
+
 					await serializeAsync(value, writer, context).ConfigureAwait(false);
 				}
 
@@ -268,9 +275,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			}
 		}
 
-		static async ValueTask WriteAsArrayAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<PropertyAccessors<T>?> properties, SerializationContext context)
+		static async ValueTask WriteAsArrayAsync(AsyncWriter writer, T value, ReadOnlyMemory<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
-			writer.WriteArrayHeader(properties.Length);
+			Writer syncWriter = writer.CreateWriter();
+			syncWriter.WriteArrayHeader(properties.Length);
+			writer.ReturnWriter(ref syncWriter);
 			int i = 0;
 			while (i < properties.Length)
 			{
@@ -281,7 +290,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					// We use a nested loop here because even during synchronous writing, we may need to occasionally yield to
 					// flush what we've written so far, but then we want to come right back to synchronous writing.
-					MessagePackWriter syncWriter = writer.CreateWriter();
+					syncWriter = writer.CreateWriter();
 					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context); i++)
 					{
 						if (properties.Span[i] is { MsgPackWriters: var (serialize, _) })
@@ -290,7 +299,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						}
 						else
 						{
-							syncWriter.WriteNil();
+							syncWriter.WriteNull();
 						}
 					}
 
@@ -333,11 +342,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
-		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out success).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -356,13 +365,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		context.DepthStep();
 		T value = constructor();
 
-		MessagePackType peekType;
-		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
+		PolySerializer.Converters.TypeCode peekType;
+		while (streamingReader.TryPeekNextCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == MessagePackType.Map)
+		if (peekType == PolySerializer.Converters.TypeCode.Map)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -377,7 +386,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			while (remainingEntries > 0)
 			{
 				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = reader.CreateBufferedReader();
+				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
@@ -443,7 +452,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				if (syncBatchSize > 0)
 				{
 					await reader.BufferNextStructuresAsync(syncBatchSize, syncBatchSize, context).ConfigureAwait(false);
-					MessagePackReader syncReader = reader.CreateBufferedReader();
+					Reader syncReader = reader.CreateBufferedReader();
 					for (int syncReadEndExclusive = i + syncBatchSize; i < syncReadEndExclusive; i++)
 					{
 						if (properties.Length > i && properties.Span[i]?.MsgPackReaders is var (deserialize, _))
@@ -581,7 +590,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	public override async ValueTask<bool> SkipToPropertyValueAsync(AsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
 	{
 		int index = -1;
 		for (int i = 0; i < properties.Length; i++)
@@ -599,9 +608,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			return false;
 		}
 
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool isNil;
-		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out isNil).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -614,13 +623,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 
-		MessagePackType peekType;
-		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
+		PolySerializer.Converters.TypeCode peekType;
+		while (streamingReader.TryPeekNextCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == MessagePackType.Map)
+		if (peekType == PolySerializer.Converters.TypeCode.Map)
 		{
 			int count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
@@ -699,7 +708,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		return propertyCount;
 	}
 
-	private bool ShouldUseMap(in T value, ref int[]? indexesToIncludeArray, out ReadOnlyMemory<int> indexesToIncludeMemory, out ReadOnlySpan<int> indexesToIncludeSpan)
+	private bool ShouldUseMap(Formatter formatter, in T value, ref int[]? indexesToIncludeArray, out ReadOnlyMemory<int> indexesToIncludeMemory, out ReadOnlySpan<int> indexesToIncludeSpan)
 	{
 		indexesToIncludeArray = ArrayPool<int>.Shared.Rent(properties.Length);
 
@@ -716,7 +725,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		// array representations when we can truncate the array.
 		// We can't cheaply predict how large a value that didn't need to be serialized would be, but since they are 'default' values for their type,
 		// we'll assume each is just 1 byte.
-		int maxKeyLength = MessagePackWriter.GetEncodedLength(indexesToIncludeSpan[^1]);
+		int maxKeyLength = formatter.GetEncodedLength(indexesToIncludeSpan[^1]);
 		int mapOverhead = maxKeyLength * indexesToIncludeSpan.Length;
 		int arrayOverhead = indexesToIncludeSpan[^1] + 1 - indexesToIncludeSpan.Length; // number of indexes that are required - number of indexes that are useful.
 

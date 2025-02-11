@@ -17,7 +17,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="constructor">The default constructor, if present.</param>
 /// <param name="defaultValuesPolicy">The policy for whether to serialize properties. When not <see cref="SerializeDefaultValuesPolicy.Always"/>, the <see cref="SerializableProperty{TDeclaringType}.ShouldSerialize"/> property will be consulted prior to serialization.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -63,7 +63,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			foreach (SerializableProperty<T> property in properties)
 			{
 				writer.WriteRaw(property.RawPropertyNameString.Span);
-				property.Write(value, ref writer, context);
+				Writer baseWriter = writer.ToWriter();
+				property.Write(value, ref baseWriter, context);
+				writer = MessagePackWriter.FromWriter(baseWriter);
 			}
 		}
 	}
@@ -113,7 +115,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				}
 				else
 				{
-					property.Write(value, ref syncWriter, context);
+					Writer baseWriter = syncWriter.ToWriter();
+					property.Write(value, ref baseWriter, context);
+					syncWriter = MessagePackWriter.FromWriter(baseWriter);
 				}
 
 				if (writer.IsTimeToFlush(context))
@@ -159,7 +163,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
 				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 				{
-					propertyReader.Read(ref value, ref reader, context);
+					Reader baseReader = reader.ToReader();
+					propertyReader.Read(ref value, ref baseReader, context);
+					reader = MessagePackReader.FromReader(baseReader);
 				}
 				else
 				{
@@ -228,7 +234,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 					if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 					{
-						propertyReader.Read(ref value, ref syncReader, context);
+						Reader baseReader = syncReader.ToReader();
+						propertyReader.Read(ref value, ref baseReader, context);
+						syncReader = MessagePackReader.FromReader(baseReader);
 					}
 					else
 					{
@@ -262,7 +270,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 								reader.ReturnReader(ref syncReader);
 								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 								syncReader = reader.CreateBufferedReader();
-								propertyReader.Read(ref value, ref syncReader, context);
+								Reader baseReader = syncReader.ToReader();
+								propertyReader.Read(ref value, ref baseReader, context);
+								syncReader = MessagePackReader.FromReader(baseReader);
 								reader.ReturnReader(ref syncReader);
 								remainingEntries--;
 								continue;
@@ -321,7 +331,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (objectShape.Properties.Count > 0)
 		{
-			Dictionary<string, IConstructorParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
+			Dictionary<string, IConstructorParameterShape>? ctorParams = ObjectConverterBase<T>.CreatePropertyAndParameterDictionary(objectShape);
 
 			JsonObject properties = new();
 			JsonArray? required = null;
@@ -333,10 +343,10 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				ctorParams?.TryGetValue(property.Name, out associatedParameter);
 
 				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
-				ApplyDescription(property.Shape.AttributeProvider, propertySchema);
-				ApplyDefaultValue(property.Shape.AttributeProvider, propertySchema, associatedParameter);
+				ObjectConverterBase<T>.ApplyDescription(property.Shape.AttributeProvider, propertySchema);
+				ObjectConverterBase<T>.ApplyDefaultValue(property.Shape.AttributeProvider, propertySchema, associatedParameter);
 
-				if (!IsNonNullable(property.Shape, associatedParameter))
+				if (!ObjectConverterBase<T>.IsNonNullable(property.Shape, associatedParameter))
 				{
 					propertySchema = ApplyJsonSchemaNullability(propertySchema);
 				}
@@ -361,7 +371,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			}
 		}
 
-		ApplyDescription(objectShape.AttributeProvider, schema);
+		ObjectConverterBase<T>.ApplyDescription(objectShape.AttributeProvider, schema);
 
 		return schema;
 	}

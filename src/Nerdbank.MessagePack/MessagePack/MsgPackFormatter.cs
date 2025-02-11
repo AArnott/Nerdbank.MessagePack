@@ -349,4 +349,8 @@ internal class MsgPackFormatter : Formatter
 			span[3] = (byte)value;
 		}
 	}
+
+	public override int GetEncodedLength(long value) => MessagePackWriter.GetEncodedLength(value);
+
+	public override int GetEncodedLength(ulong value) => MessagePackWriter.GetEncodedLength(value);
 }

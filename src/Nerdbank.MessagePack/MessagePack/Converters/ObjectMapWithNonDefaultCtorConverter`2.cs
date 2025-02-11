@@ -43,7 +43,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
 				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
 				{
-					deserializeArg.Read(ref argState, ref reader, context);
+					Reader baseReader = reader.ToReader();
+					deserializeArg.Read(ref argState, ref baseReader, context);
+					reader = MessagePackReader.FromReader(baseReader);
 				}
 				else
 				{
@@ -109,7 +111,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 					{
-						propertyReader.Read(ref argState, ref syncReader, context);
+						Reader baseReader = syncReader.ToReader();
+						propertyReader.Read(ref argState, ref baseReader, context);
+						syncReader = MessagePackReader.FromReader(baseReader);
 					}
 					else
 					{
@@ -143,7 +147,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 								reader.ReturnReader(ref syncReader);
 								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 								syncReader = reader.CreateBufferedReader();
-								propertyReader.Read(ref argState, ref syncReader, context);
+								Reader baseReader = syncReader.ToReader();
+								propertyReader.Read(ref argState, ref baseReader, context);
+								syncReader = MessagePackReader.FromReader(baseReader);
 								reader.ReturnReader(ref syncReader);
 								remainingEntries--;
 								continue;

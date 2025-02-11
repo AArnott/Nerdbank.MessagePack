@@ -4,16 +4,15 @@
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.MessagePack;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// A base class for converters that handle object types.
 /// </summary>
 /// <typeparam name="T">The type of object to be serialized.</typeparam>
-internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
+internal abstract class ObjectConverterBase<T> : Converter<T>
 {
 	/// <summary>
 	/// Adds a <c>description</c> property to the schema based on the <see cref="DescriptionAttribute"/> that is applied to the target.
@@ -21,7 +20,7 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// <param name="attributeProvider">The attribute provider for the target.</param>
 	/// <param name="schema">The schema for the target.</param>
 	/// <param name="namePrefix">An optional prefix to include in the description, or to use by itself when no <see cref="DescriptionAttribute"/> is present.</param>
-	protected static void ApplyDescription(ICustomAttributeProvider? attributeProvider, JsonObject schema, string? namePrefix = null)
+	protected internal static void ApplyDescription(ICustomAttributeProvider? attributeProvider, JsonObject schema, string? namePrefix = null)
 	{
 		string? description;
 		if (attributeProvider?.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute descriptionAttribute)
@@ -50,7 +49,7 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// <param name="attributeProvider">The attribute provider for the target.</param>
 	/// <param name="propertySchema">The schema for the target.</param>
 	/// <param name="parameterShape">The constructor parameter that matches the property, if applicable.</param>
-	protected static void ApplyDefaultValue(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema, IConstructorParameterShape? parameterShape)
+	protected internal static void ApplyDefaultValue(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema, IConstructorParameterShape? parameterShape)
 	{
 		JsonValue? defaultValue =
 			parameterShape?.HasDefaultValue is true ? CreateJsonValue(parameterShape.DefaultValue) :
@@ -69,7 +68,7 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// <param name="property">The property.</param>
 	/// <param name="associatedParameter">The associated constructor parameter, if any.</param>
 	/// <returns>A boolean value.</returns>
-	protected static bool IsNonNullable(IPropertyShape property, IConstructorParameterShape? associatedParameter)
+	protected internal static bool IsNonNullable(IPropertyShape property, IConstructorParameterShape? associatedParameter)
 		=> (!property.HasGetter || property.IsGetterNonNullable) &&
 			(!property.HasSetter || property.IsSetterNonNullable) &&
 			(associatedParameter is null || associatedParameter.IsNonNullable);
@@ -79,7 +78,7 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// </summary>
 	/// <param name="objectShape">The object shape.</param>
 	/// <returns>The dictionary.</returns>
-	protected static Dictionary<string, IConstructorParameterShape>? CreatePropertyAndParameterDictionary(IObjectTypeShape objectShape)
+	protected internal static Dictionary<string, IConstructorParameterShape>? CreatePropertyAndParameterDictionary(IObjectTypeShape objectShape)
 	{
 		var ctorParams = objectShape.Constructor?.Parameters
 			.Where(p => p.Kind is ConstructorParameterKind.ConstructorParameter || p.IsRequired)
