@@ -65,12 +65,17 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 
 	public sealed override T? Read(ref Reader reader, SerializationContext context)
 	{
-		throw new NotImplementedException();
+		MessagePackReader realReader = MessagePackReader.FromReader(reader);
+		T? result = this.Read(ref realReader, context);
+		reader = realReader.ToReader();
+		return result;
 	}
 
 	public sealed override void Write(ref Writer writer, in T? value, SerializationContext context)
 	{
-		throw new NotImplementedException();
+		MessagePackWriter realWriter = MessagePackWriter.FromWriter(writer);
+		this.Write(ref realWriter, value, context);
+		writer = realWriter.ToWriter();
 	}
 
 	[Experimental("NBMsgPackAsync")]
