@@ -4,7 +4,6 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft;
-using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -28,7 +27,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 	/// <param name="elementConverter">The shape of the element to be deserialized.</param>
 	/// <param name="skipTrailingBytes">A value indicating whether to bother fast-forwarding after completing the enumeration to position the reader at the EOF or next top-level structure.</param>
 	/// <returns>The async enumeration.</returns>
-	internal async IAsyncEnumerable<TElement?> EnumerateArrayAsync(Expression path, bool throwOnUnreachableSequence, MessagePackConverter<TElement> elementConverter, bool skipTrailingBytes)
+	internal async IAsyncEnumerable<TElement?> EnumerateArrayAsync(Expression path, bool throwOnUnreachableSequence, Converter<TElement> elementConverter, bool skipTrailingBytes)
 	{
 		// Navigate to the sequence.
 		{
@@ -84,7 +83,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 					{
 						for (int i = 0; i < bufferedCount; i++)
 						{
-							MessagePackReader bufferedReader = reader.CreateBufferedReader();
+							Reader bufferedReader = ((AsyncReader)reader).CreateBufferedReader();
 							TElement? element = elementConverter.Read(ref bufferedReader, context);
 							reader.ReturnReader(ref bufferedReader);
 							yield return element;
@@ -120,7 +119,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 					int bufferedCount = await reader.BufferNextStructuresAsync(1, remaining, context).ConfigureAwait(false);
 					for (int i = 0; i < bufferedCount; i++)
 					{
-						MessagePackReader bufferedReader = reader.CreateBufferedReader();
+						Reader bufferedReader = ((AsyncReader)reader).CreateBufferedReader();
 						TElement? element = elementConverter.Read(ref bufferedReader, context);
 						reader.ReturnReader(ref bufferedReader);
 						yield return element;

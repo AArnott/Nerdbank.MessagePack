@@ -167,7 +167,7 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.GetConverter(shape).Write(ref writer, value, context.Value);
+		this.SerializeToMessagePackWriter(ref writer, value, this.GetConverter(shape), context.Value);
 	}
 
 	/// <summary>
@@ -181,7 +181,21 @@ public partial record MessagePackSerializer
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		this.GetConverter<T>(provider).Write(ref writer, value, context.Value);
+		this.SerializeToMessagePackWriter(ref writer, value, this.GetConverter<T>(provider), context.Value);
+	}
+
+	private void SerializeToMessagePackWriter<T>(ref MessagePackWriter writer, in T? value, Converter<T> converter, SerializationContext context)
+	{
+		if (converter is MessagePackConverter<T> msgpackConverter)
+		{
+			msgpackConverter.Write(ref writer, value, context);
+		}
+		else
+		{
+			Writer baseWriter = writer.ToWriter();
+			converter.Write(ref baseWriter, value, context);
+			writer = MessagePackWriter.FromWriter(baseWriter);
+		}
 	}
 
 	/// <summary>
@@ -214,7 +228,18 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.GetConverter(shape).Read(ref reader, context.Value);
+		Converter<T> converter = this.GetConverter(shape);
+		if (converter is MessagePackConverter<T> messagePackConverter)
+		{
+			return messagePackConverter.Read(ref reader, context.Value);
+		}
+		else
+		{
+			Reader baseReader = reader.ToReader();
+			T? result = converter.Read(ref baseReader, context.Value);
+			reader = MessagePackReader.FromReader(baseReader);
+			return result;
+		}
 	}
 
 	/// <summary>
@@ -251,7 +276,7 @@ public partial record MessagePackSerializer
 		cancellationToken.ThrowIfCancellationRequested();
 
 #pragma warning disable NBMsgPackAsync
-		AsyncWriter asyncWriter = new(writer, MsgPackFormatter.Instance);
+		MessagePackAsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		await this.converterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
@@ -273,7 +298,7 @@ public partial record MessagePackSerializer
 		cancellationToken.ThrowIfCancellationRequested();
 
 #pragma warning disable NBMsgPackAsync
-		AsyncWriter asyncWriter = new(writer, MsgPackFormatter.Instance);
+		MessagePackAsyncWriter asyncWriter = new(writer);
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 		await this.converterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 		asyncWriter.Flush();
@@ -543,9 +568,9 @@ public partial record MessagePackSerializer
 	/// <returns>A converter.</returns>
 	internal IMessagePackConverter GetConverter(ITypeShape typeShape) => (IMessagePackConverter)this.converterCache.GetOrAddConverter(typeShape);
 
-	internal MessagePackConverter<T> GetConverter<T>(ITypeShape<T> typeShape) => (MessagePackConverter<T>)this.converterCache.GetOrAddConverter<T>(typeShape);
+	internal Converter<T> GetConverter<T>(ITypeShape<T> typeShape) => this.converterCache.GetOrAddConverter<T>(typeShape);
 
-	internal MessagePackConverter<T> GetConverter<T>(ITypeShapeProvider shapeProvider) => (MessagePackConverter<T>)this.converterCache.GetOrAddConverter<T>(shapeProvider);
+	internal Converter<T> GetConverter<T>(ITypeShapeProvider shapeProvider) => this.converterCache.GetOrAddConverter<T>(shapeProvider);
 
 	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
@@ -582,7 +607,7 @@ public partial record MessagePackSerializer
 	/// for streaming a sequence of values that is nested within a larger msgpack structure.
 	/// </para>
 	/// </remarks>
-	private async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter<T> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
+	private async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, Converter<T> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
@@ -608,7 +633,7 @@ public partial record MessagePackSerializer
 			{
 				for (int i = 0; i < bufferedCount; i++)
 				{
-					MessagePackReader bufferedReader = asyncReader.CreateBufferedReader();
+					Reader bufferedReader = ((AsyncReader)asyncReader).CreateBufferedReader();
 					T? element = converter.Read(ref bufferedReader, context.Value);
 					asyncReader.ReturnReader(ref bufferedReader);
 					yield return element;
@@ -656,7 +681,7 @@ public partial record MessagePackSerializer
 	/// for streaming a sequence of values that are each top-level structures in the stream (with no envelope).
 	/// </para>
 	/// </remarks>
-	private async IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, MessagePackConverter<TElement> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
+	private async IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, Converter<TElement> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
@@ -702,7 +727,7 @@ public partial record MessagePackSerializer
 	/// <param name="converter">The msgpack converter for the root data type.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	private async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter<T> converter, CancellationToken cancellationToken)
+	private async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, Converter<T> converter, CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
@@ -715,7 +740,7 @@ public partial record MessagePackSerializer
 			ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
 			if (readResult.IsCompleted)
 			{
-				MessagePackReader msgpackReader = new(readResult.Buffer);
+				Reader msgpackReader = new(readResult.Buffer, MsgPackStreamingDeformatter.Deformatter);
 				T? result = converter.Read(ref msgpackReader, context.Value);
 				reader.AdvanceTo(msgpackReader.Position);
 				return result;

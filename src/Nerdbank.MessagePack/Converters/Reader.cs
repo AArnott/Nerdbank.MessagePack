@@ -33,6 +33,11 @@ public ref struct Reader
 	public TypeCode NextTypeCode => this.deformatter.ToTypeCode(this.NextCode);
 
 	/// <summary>
+	/// Gets the current position of the reader within <see cref="Sequence"/>.
+	/// </summary>
+	public SequencePosition Position => this.SequenceReader.Position;
+
+	/// <summary>
 	/// Gets a value indicating whether the reader is at the end of the sequence.
 	/// </summary>
 	public bool End => this.SequenceReader.End;
