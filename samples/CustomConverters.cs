@@ -7,15 +7,15 @@ using Nerdbank.PolySerializer.Converters;
 namespace CustomConverter
 {
     #region YourOwnConverter
-    using Nerdbank.PolySerializer.MessagePack;
+    using Nerdbank.PolySerializer;
 
     public record Foo(int MyProperty1, string? MyProperty2);
 
-    class FooConverter : MessagePackConverter<Foo?>
+    class FooConverter : Converter<Foo?>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override Foo? Read(ref Reader reader, SerializationContext context)
         {
-            if (reader.TryReadNil())
+            if (reader.TryReadNull())
             {
                 return null;
             }
@@ -46,11 +46,11 @@ namespace CustomConverter
             return new Foo(property1, property2);
         }
 
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+        public override void Write(ref Writer writer, in Foo? value, SerializationContext context)
         {
             if (value is null)
             {
-                writer.WriteNil();
+                writer.WriteNull();
                 return;
             }
 
@@ -66,11 +66,11 @@ namespace CustomConverter
     }
     #endregion
 
-    class VersionSafeConverter : MessagePackConverter<Foo>
+    class VersionSafeConverter : Converter<Foo>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override Foo? Read(ref Reader reader, SerializationContext context)
         {
-            if (reader.TryReadNil())
+            if (reader.TryReadNull())
             {
                 return null;
             }
@@ -101,7 +101,7 @@ namespace CustomConverter
             #endregion
         }
 
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+        public override void Write(ref Writer writer, in Foo? value, SerializationContext context)
         {
             throw new NotImplementedException();
         }
@@ -110,18 +110,16 @@ namespace CustomConverter
 
 namespace SubValues
 {
-    using Nerdbank.PolySerializer.MessagePack;
-
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 
     [GenerateShape]
     public partial record SomeOtherType;
 
-    class FooConverter : MessagePackConverter<Foo?>
+    class FooConverter : Converter<Foo?>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override Foo? Read(ref Reader reader, SerializationContext context)
         {
-            if (reader.TryReadNil())
+            if (reader.TryReadNull())
             {
                 return null;
             }
@@ -158,11 +156,11 @@ namespace SubValues
 
 #if NET
         #region DelegateSubValuesNET
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+        public override void Write(ref Writer writer, in Foo? value, SerializationContext context)
         {
             if (value is null)
             {
-                writer.WriteNil();
+                writer.WriteNull();
                 return;
             }
 
@@ -179,11 +177,11 @@ namespace SubValues
         #endregion
 #else
         #region DelegateSubValuesNETFX
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+        public override void Write(ref Writer writer, in Foo? value, SerializationContext context)
         {
             if (value is null)
             {
-                writer.WriteNil();
+                writer.WriteNull();
                 return;
             }
 
@@ -203,8 +201,6 @@ namespace SubValues
 
 namespace SubValuesWithWitness
 {
-    using Nerdbank.PolySerializer.MessagePack;
-
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 
 #if NET
@@ -213,9 +209,9 @@ namespace SubValuesWithWitness
     public partial record SomeOtherType;
 
     [GenerateShape<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
-    partial class FooConverter : MessagePackConverter<Foo?>
+    partial class FooConverter : Converter<Foo?>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override Foo? Read(ref Reader reader, SerializationContext context)
         {
             // ...
             context.GetConverter<SomeOtherType, FooConverter>().Read(ref reader, context);
@@ -225,7 +221,7 @@ namespace SubValuesWithWitness
             throw new NotImplementedException();
         }
 
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+        public override void Write(ref Writer writer, in Foo? value, SerializationContext context)
         {
             throw new NotImplementedException();
         }
@@ -236,9 +232,9 @@ namespace SubValuesWithWitness
     public partial record SomeOtherType;
 
     [GenerateShape<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
-    partial class FooConverter : MessagePackConverter<Foo?>
+    partial class FooConverter : Converter<Foo?>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override Foo? Read(ref Reader reader, SerializationContext context)
         {
             // ...
             context.GetConverter<SomeOtherType>(ShapeProvider).Read(ref reader, context);
@@ -248,7 +244,7 @@ namespace SubValuesWithWitness
             throw new NotImplementedException();
         }
 
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+        public override void Write(ref Writer writer, in Foo? value, SerializationContext context)
         {
             throw new NotImplementedException();
         }
@@ -258,8 +254,6 @@ namespace SubValuesWithWitness
 
 namespace WitnessForArray
 {
-    using Nerdbank.PolySerializer.MessagePack;
-
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 
 #if NET
@@ -268,9 +262,9 @@ namespace WitnessForArray
     public partial record SomeOtherType;
 
     [GenerateShape<SomeOtherType[]>]
-    partial class FooConverter : MessagePackConverter<Foo?>
+    partial class FooConverter : Converter<Foo?>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override Foo? Read(ref Reader reader, SerializationContext context)
         {
             // ...
             context.GetConverter<SomeOtherType[], FooConverter>().Read(ref reader, context);
@@ -282,9 +276,9 @@ namespace WitnessForArray
     public partial record SomeOtherType;
 
     [GenerateShape<SomeOtherType[]>]
-    partial class FooConverter : MessagePackConverter<Foo?>
+    partial class FooConverter : Converter<Foo?>
     {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
+        public override Foo? Read(ref Reader reader, SerializationContext context)
         {
             // ...
             context.GetConverter<SomeOtherType[]>(ShapeProvider).Read(ref reader, context);
@@ -294,7 +288,7 @@ namespace WitnessForArray
             throw new NotImplementedException();
         }
 
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
+        public override void Write(ref Writer writer, in Foo? value, SerializationContext context)
         {
             throw new NotImplementedException();
         }
@@ -308,14 +302,14 @@ namespace CustomConverterRegistration
     public class MyCustomType { }
     #endregion
 
-    public class MyCustomTypeConverter : MessagePackConverter<MyCustomType>
+    public class MyCustomTypeConverter : Converter<MyCustomType>
     {
-        public override MyCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+        public override MyCustomType? Read(ref Reader reader, SerializationContext context)
         {
             throw new NotImplementedException();
         }
 
-        public override void Write(ref MessagePackWriter writer, in MyCustomType? value, SerializationContext context)
+        public override void Write(ref Writer writer, in MyCustomType? value, SerializationContext context)
         {
             throw new NotImplementedException();
         }
@@ -338,24 +332,24 @@ namespace AsyncConverters
     [MessagePackConverter(typeof(MyCustomTypeConverter))]
     public class MyCustomType { }
 
-    public class MyCustomTypeConverter : MessagePackConverter<MyCustomType>
+    public class MyCustomTypeConverter : Converter<MyCustomType>
     {
         public override bool PreferAsyncSerialization => true;
 
-        public override MyCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+        public override MyCustomType? Read(ref Reader reader, SerializationContext context)
         {
             throw new NotImplementedException();
         }
 
-        public override void Write(ref MessagePackWriter writer, in MyCustomType? value, SerializationContext context)
+        public override void Write(ref Writer writer, in MyCustomType? value, SerializationContext context)
         {
             throw new NotImplementedException();
         }
 
         [Experimental("NBMsgPack")]
-        public override async ValueTask<MyCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+        public override async ValueTask<MyCustomType?> ReadAsync(AsyncReader reader, SerializationContext context)
         {
-            MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+            StreamingReader streamingReader = reader.CreateStreamingReader();
 
             #region GetMoreBytesPattern
             int count;
@@ -382,7 +376,7 @@ namespace AsyncConverters
 
 namespace PerformanceConverters
 {
-    #region MessagePackStringUser
+    #region StringUser
     [MessagePackConverter(typeof(MyCustomTypeConverter))]
     public class MyCustomType
     {
@@ -391,14 +385,14 @@ namespace PerformanceConverters
         public string? Message2 { get; set; }
     }
 
-    public class MyCustomTypeConverter : MessagePackConverter<MyCustomType>
+    public class MyCustomTypeConverter : Converter<MyCustomType>
     {
-        private static readonly MessagePackString Message1 = new(nameof(MyCustomType.Message1));
-        private static readonly MessagePackString Message2 = new(nameof(MyCustomType.Message2));
+        private static readonly PreformattedString Message1 = new(nameof(MyCustomType.Message1), MsgPackFormatter.Instance);
+        private static readonly PreformattedString Message2 = new(nameof(MyCustomType.Message2), MsgPackFormatter.Instance);
 
-        public override MyCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+        public override MyCustomType? Read(ref Reader reader, SerializationContext context)
         {
-            if (reader.TryReadNil())
+            if (reader.TryReadNull())
             {
                 return null;
             }
@@ -435,11 +429,11 @@ namespace PerformanceConverters
             };
         }
 
-        public override void Write(ref MessagePackWriter writer, in MyCustomType? value, SerializationContext context)
+        public override void Write(ref Writer writer, in MyCustomType? value, SerializationContext context)
         {
             if (value is null)
             {
-                writer.WriteNil();
+                writer.WriteNull();
                 return;
             }
 
@@ -480,16 +474,16 @@ namespace Stateful
         }
     }
 
-    class StatefulConverter : MessagePackConverter<SpecialType>
+    class StatefulConverter : Converter<SpecialType>
     {
-        public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
+        public override SpecialType Read(ref Reader reader, SerializationContext context)
         {
             int multiplier = (int)context["ValueMultiplier"]!;
             int serializedValue = reader.ReadInt32();
             return new SpecialType(serializedValue / multiplier);
         }
 
-        public override void Write(ref MessagePackWriter writer, in SpecialType value, SerializationContext context)
+        public override void Write(ref Writer writer, in SpecialType value, SerializationContext context)
         {
             int multiplier = (int)context["ValueMultiplier"]!;
             writer.Write(value.Value * multiplier);
@@ -522,16 +516,16 @@ namespace Stateful
         }
     }
 
-    class StatefulConverter : MessagePackConverter<SpecialType>
+    class StatefulConverter : Converter<SpecialType>
     {
-        public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
+        public override SpecialType Read(ref Reader reader, SerializationContext context)
         {
             int multiplier = (int)context["ValueMultiplier"]!;
             int serializedValue = reader.ReadInt32();
             return new SpecialType(serializedValue / multiplier);
         }
 
-        public override void Write(ref MessagePackWriter writer, in SpecialType value, SerializationContext context)
+        public override void Write(ref Writer writer, in SpecialType value, SerializationContext context)
         {
             int multiplier = (int)context["ValueMultiplier"]!;
             writer.Write(value.Value * multiplier);

@@ -32,6 +32,11 @@ public ref struct Reader
 
 	public TypeCode NextTypeCode => this.deformatter.ToTypeCode(this.NextCode);
 
+	/// <summary>
+	/// Gets a value indicating whether the reader is at the end of the sequence.
+	/// </summary>
+	public bool End => this.SequenceReader.End;
+
 	public ReadOnlySpan<byte> UnreadSpan => this.inner.UnreadSpan;
 
 	public void Advance(long count) => this.inner.Advance(count);
@@ -50,9 +55,13 @@ public ref struct Reader
 
 	public string ReadString() => this.deformatter.ReadString(ref this);
 
+	public ReadOnlySequence<byte>? ReadStringSequence() => this.deformatter.ReadStringSequence(ref this);
+
+	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.deformatter.TryReadStringSpan(ref this, out value);
+
 	public int ReadInt32() => this.deformatter.ReadInt32(ref this);
 
 	public float ReadSingle() => this.deformatter.ReadSingle(ref this);
 
-	internal void Skip(SerializationContext context) => this.deformatter.Skip(ref this, context);
+	public void Skip(SerializationContext context) => this.deformatter.Skip(ref this, context);
 }

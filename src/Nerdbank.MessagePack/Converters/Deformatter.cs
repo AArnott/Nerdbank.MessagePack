@@ -208,6 +208,28 @@ public partial class Deformatter(StreamingDeformatter streamingDeformatter)
 		}
 	}
 
+	public bool TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> span)
+	{
+		switch (streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
+		{
+			case DecodeResult.Success:
+				return contiguous;
+			case DecodeResult.TokenMismatch:
+				if (streamingDeformatter.TryPeekNextCode(ref reader, out TypeCode code) == DecodeResult.Success
+					&& code == TypeCode.Nil)
+				{
+					span = default;
+					return false;
+				}
+
+				throw ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
 
 	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
 

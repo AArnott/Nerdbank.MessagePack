@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
@@ -63,6 +64,12 @@ public ref struct Writer
 	public void Write(double value) => this.Formatter.Write(ref this, value);
 
 	public void Write(string? value) => this.Formatter.Write(ref this, value);
+
+	/// <summary>
+	/// Writes a pre-encoded msgpack string.
+	/// </summary>
+	/// <param name="value">The string to write.</param>
+	public void Write(PreformattedString value) => this.Buffer.Write(Requires.NotNull(value).Formatted.Span);
 
 	public void Write(ReadOnlySpan<byte> value) => this.Formatter.Write(ref this, value);
 

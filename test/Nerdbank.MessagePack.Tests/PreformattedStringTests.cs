@@ -1,23 +1,23 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class MessagePackStringTests
+public partial class PreformattedStringTests
 {
 	private static readonly MessagePackSerializer Serializer = new();
 
 	[Fact]
 	public void CtorAndProperties()
 	{
-		MessagePackString msgpackString = new("abc");
+		PreformattedString msgpackString = new("abc", MsgPackFormatter.Instance);
 		Assert.Equal("abc", msgpackString.Value);
-		Assert.Equal("abc"u8.ToArray(), msgpackString.Utf8.ToArray());
-		Assert.Equal([MessagePackCode.MinFixStr | 3, .. "abc"u8], msgpackString.MsgPack.ToArray());
+		Assert.Equal("abc"u8.ToArray(), msgpackString.Encoded.ToArray());
+		Assert.Equal([MessagePackCode.MinFixStr | 3, .. "abc"u8], msgpackString.Formatted.ToArray());
 	}
 
 	[Fact]
 	public void IsMatch_Span()
 	{
-		MessagePackString msgpackString = new("abc");
+		PreformattedString msgpackString = new("abc", MsgPackFormatter.Instance);
 		Assert.True(msgpackString.IsMatch("abc"u8));
 		Assert.False(msgpackString.IsMatch("abcdef"u8));
 		Assert.False(msgpackString.IsMatch("ab"u8));
@@ -27,7 +27,7 @@ public partial class MessagePackStringTests
 	[Fact]
 	public void IsMatch_Sequence_Contiguous()
 	{
-		MessagePackString msgpackString = new("abc");
+		PreformattedString msgpackString = new("abc", MsgPackFormatter.Instance);
 		Assert.True(msgpackString.IsMatch(ContiguousSequence("abc"u8)));
 		Assert.False(msgpackString.IsMatch(ContiguousSequence("abcdef"u8)));
 		Assert.False(msgpackString.IsMatch(ContiguousSequence("ab"u8)));
@@ -37,7 +37,7 @@ public partial class MessagePackStringTests
 	[Fact]
 	public void IsMatch_Sequence_NonContiguous()
 	{
-		MessagePackString msgpackString = new("abc");
+		PreformattedString msgpackString = new("abc", MsgPackFormatter.Instance);
 
 		for (int i = 0; i <= 3; i++)
 		{
@@ -57,13 +57,13 @@ public partial class MessagePackStringTests
 	[Fact]
 	public void TryRead()
 	{
-		MessagePackReader matchingReaderContiguous = new(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken));
-		MessagePackReader matchingReaderFragmented = new(SplitSequence<byte>(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken), 2));
-		MessagePackReader mismatchingReader = new(Serializer.Serialize<string, Witness>("def", TestContext.Current.CancellationToken));
-		MessagePackReader nilReader = new(Serializer.Serialize<string, Witness>(null, TestContext.Current.CancellationToken));
-		MessagePackReader intReader = new(Serializer.Serialize<int, Witness>(3, TestContext.Current.CancellationToken));
+		Reader matchingReaderContiguous = new MessagePackReader(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken)).ToReader();
+		Reader matchingReaderFragmented = new MessagePackReader(SplitSequence<byte>(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken), 2)).ToReader();
+		Reader mismatchingReader = new MessagePackReader(Serializer.Serialize<string, Witness>("def", TestContext.Current.CancellationToken)).ToReader();
+		Reader nilReader = new MessagePackReader(Serializer.Serialize<string, Witness>(null, TestContext.Current.CancellationToken)).ToReader();
+		Reader intReader = new MessagePackReader(Serializer.Serialize<int, Witness>(3, TestContext.Current.CancellationToken)).ToReader();
 
-		MessagePackString msgpackString = new("abc");
+		PreformattedString msgpackString = new("abc", MsgPackFormatter.Instance);
 
 		Assert.True(msgpackString.TryRead(ref matchingReaderContiguous));
 		Assert.True(msgpackString.TryRead(ref matchingReaderFragmented));
@@ -78,9 +78,9 @@ public partial class MessagePackStringTests
 	[Fact]
 	public void Equals_GetHashCode()
 	{
-		MessagePackString abc1 = new("abc");
-		MessagePackString abc2 = new("abc");
-		MessagePackString def = new("def");
+		PreformattedString abc1 = new("abc", MsgPackFormatter.Instance);
+		PreformattedString abc2 = new("abc", MsgPackFormatter.Instance);
+		PreformattedString def = new("def", MsgPackFormatter.Instance);
 
 		Assert.True(abc1.Equals(abc2));
 		Assert.True(abc1.Equals((object?)abc2));

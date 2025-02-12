@@ -241,15 +241,15 @@ Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TEleme
 Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Path.init -> void
 Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.StreamingEnumerationOptions(Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>! original) -> void
 Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.StreamingEnumerationOptions(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement>!>!>! Path) -> void
-Nerdbank.MessagePack.MessagePackString
-Nerdbank.MessagePack.MessagePackString.Equals(Nerdbank.MessagePack.MessagePackString? other) -> bool
-Nerdbank.MessagePack.MessagePackString.IsMatch(System.Buffers.ReadOnlySequence<byte> utf8String) -> bool
-Nerdbank.MessagePack.MessagePackString.IsMatch(System.ReadOnlySpan<byte> utf8String) -> bool
-Nerdbank.MessagePack.MessagePackString.MessagePackString(string! value) -> void
-Nerdbank.MessagePack.MessagePackString.MsgPack.get -> System.ReadOnlyMemory<byte>
-Nerdbank.MessagePack.MessagePackString.TryRead(ref Nerdbank.MessagePack.MessagePackReader reader) -> bool
-Nerdbank.MessagePack.MessagePackString.Utf8.get -> System.ReadOnlyMemory<byte>
-Nerdbank.MessagePack.MessagePackString.Value.get -> string!
+Nerdbank.MessagePack.PreformattedString
+Nerdbank.MessagePack.PreformattedString.Equals(Nerdbank.MessagePack.PreformattedString? other) -> bool
+Nerdbank.MessagePack.PreformattedString.IsMatch(System.Buffers.ReadOnlySequence<byte> utf8String) -> bool
+Nerdbank.MessagePack.PreformattedString.IsMatch(System.ReadOnlySpan<byte> utf8String) -> bool
+Nerdbank.MessagePack.PreformattedString.PreformattedString(string! value) -> void
+Nerdbank.MessagePack.PreformattedString.MsgPack.get -> System.ReadOnlyMemory<byte>
+Nerdbank.MessagePack.PreformattedString.TryRead(ref Nerdbank.MessagePack.MessagePackReader reader) -> bool
+Nerdbank.MessagePack.PreformattedString.Utf8.get -> System.ReadOnlyMemory<byte>
+Nerdbank.MessagePack.PreformattedString.Value.get -> string!
 Nerdbank.MessagePack.MessagePackType
 Nerdbank.MessagePack.MessagePackType.Array = 7 -> Nerdbank.MessagePack.MessagePackType
 Nerdbank.MessagePack.MessagePackType.Binary = 6 -> Nerdbank.MessagePack.MessagePackType
@@ -282,7 +282,7 @@ Nerdbank.MessagePack.MessagePackWriter.Write(int value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(long value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.Extension extensionData) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.ExtensionHeader extensionHeader) -> void
-Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.MessagePackString! value) -> void
+Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.PreformattedString! value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(sbyte value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(short value) -> void
 Nerdbank.MessagePack.MessagePackWriter.Write(string? value) -> void
@@ -356,8 +356,8 @@ override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<
 override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.GetHashCode() -> int
 override Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.ToString() -> string!
 override Nerdbank.MessagePack.MessagePackSerializer.ToString() -> string!
-override Nerdbank.MessagePack.MessagePackString.Equals(object? obj) -> bool
-override Nerdbank.MessagePack.MessagePackString.GetHashCode() -> int
+override Nerdbank.MessagePack.PreformattedString.Equals(object? obj) -> bool
+override Nerdbank.MessagePack.PreformattedString.GetHashCode() -> int
 override Nerdbank.MessagePack.SerializationContext.GetHashCode() -> int
 override sealed Nerdbank.MessagePack.MessagePackConverter<T>.ReadObject(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> object?
 override sealed Nerdbank.MessagePack.MessagePackConverter<T>.WriteObject(ref Nerdbank.MessagePack.MessagePackWriter writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> void

@@ -14,6 +14,7 @@ internal struct FormattedSubTypeAlias : IEquatable<FormattedSubTypeAlias>
 	internal FormattedSubTypeAlias(SubTypeAlias alias, Formatter formatter)
 	{
 		this.alias = alias;
+		this.Formatter = formatter;
 
 		switch (alias.Type)
 		{
@@ -28,6 +29,8 @@ internal struct FormattedSubTypeAlias : IEquatable<FormattedSubTypeAlias>
 			default: throw new NotSupportedException();
 		}
 	}
+
+	public Formatter Formatter { get; }
 
 	/// <inheritdoc cref="SubTypeAlias.Type"/>
 	public SubTypeAlias.AliasType Type => this.alias.Type;

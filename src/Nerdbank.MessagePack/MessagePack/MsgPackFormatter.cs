@@ -8,9 +8,9 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-internal class MsgPackFormatter : Formatter
+public class MsgPackFormatter : Formatter
 {
-	internal static readonly MsgPackFormatter Instance = new();
+	public static readonly MsgPackFormatter Instance = new();
 
 	private MsgPackFormatter()
 	{

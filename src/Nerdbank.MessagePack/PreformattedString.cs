@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// A .NET string together with its msgpack encoding parts, to optimize serialization of well-known, often seen strings
@@ -17,20 +17,21 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// but it is meant only for a finite sized set of well-known strings.
 /// </remarks>
 [DebuggerDisplay("{" + nameof(Value) + ",nq}")]
-public class MessagePackString : IEquatable<MessagePackString>
+public class PreformattedString : IEquatable<PreformattedString>
 {
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackString"/> class.
+	/// Initializes a new instance of the <see cref="PreformattedString"/> class.
 	/// </summary>
 	/// <param name="value">The string to pre-encode for msgpack serialization.</param>
-	public MessagePackString(string value)
+	public PreformattedString(string value, Formatter formatter)
 	{
 		Requires.NotNull(value);
 
+		this.Formatter = formatter;
 		this.Value = value;
-		StringEncoding.GetEncodedStringBytes(value, out ReadOnlyMemory<byte> utf8, out ReadOnlyMemory<byte> msgpack);
-		this.Utf8 = utf8;
-		this.MsgPack = msgpack;
+		formatter.GetEncodedStringBytes(value, out ReadOnlyMemory<byte> utf8, out ReadOnlyMemory<byte> msgpack);
+		this.Encoded = utf8;
+		this.Formatted = msgpack;
 	}
 
 	/// <summary>
@@ -38,13 +39,15 @@ public class MessagePackString : IEquatable<MessagePackString>
 	/// </summary>
 	public string Value { get; }
 
-	/// <summary>
-	/// Gets the UTF-8 encoded bytes of the string.
-	/// </summary>
-	public ReadOnlyMemory<byte> Utf8 { get; }
+	public Formatter Formatter { get; }
 
 	/// <summary>
-	/// Gets the msgpack encoded bytes of the string.
+	/// Gets the encoded bytes of the string, without formatter-specific header and footer.
+	/// </summary>
+	public ReadOnlyMemory<byte> Encoded { get; }
+
+	/// <summary>
+	/// Gets the formatted bytes of the string, including any formatter-specific bytes.
 	/// </summary>
 	/// <value>
 	/// The msgpack encoded bytes are the UTF-8 encoded bytes of the string, prefixed with the msgpack encoding of the string length.
@@ -52,7 +55,7 @@ public class MessagePackString : IEquatable<MessagePackString>
 	/// <remarks>
 	/// The value of this property is suitable for providing to the <see cref="MessagePackWriter.WriteRaw(ReadOnlySpan{byte})"/> method.
 	/// </remarks>
-	public ReadOnlyMemory<byte> MsgPack { get; }
+	public ReadOnlyMemory<byte> Formatted { get; }
 
 	/// <summary>
 	/// Checks whether a given UTF-8 encoded string matches the string in <see cref="Value"/>.
@@ -64,12 +67,12 @@ public class MessagePackString : IEquatable<MessagePackString>
 	/// </remarks>
 	public bool IsMatch(ReadOnlySpan<byte> utf8String)
 	{
-		if (this.Utf8.Length != utf8String.Length)
+		if (this.Encoded.Length != utf8String.Length)
 		{
 			return false;
 		}
 
-		return this.Utf8.Span.SequenceEqual(utf8String);
+		return this.Encoded.Span.SequenceEqual(utf8String);
 	}
 
 	/// <inheritdoc cref="IsMatch(ReadOnlySpan{byte})"/>
@@ -82,7 +85,7 @@ public class MessagePackString : IEquatable<MessagePackString>
 
 		// Avoid calling ReadOnlySequence<byte>.Length because that can be expensive,
 		// and it involves enumerating each segment anyway, which we're already going to do.
-		ReadOnlySpan<byte> remainingUtf8 = this.Utf8.Span;
+		ReadOnlySpan<byte> remainingUtf8 = this.Encoded.Span;
 		foreach (ReadOnlyMemory<byte> segment in utf8String)
 		{
 			if (remainingUtf8.Length < segment.Length)
@@ -111,14 +114,15 @@ public class MessagePackString : IEquatable<MessagePackString>
 	/// <para>This method never allocates memory nor encodes/decodes strings.</para>
 	/// </remarks>
 	/// <exception cref="EndOfStreamException">Thrown if the reader has no more tokens, or the buffer contains an incomplete string token.</exception>
-	public bool TryRead(ref MessagePackReader reader)
+	public bool TryRead(ref Reader reader)
 	{
-		switch (reader.NextMessagePackType)
+		// TODO: assert that the formatter of the string matches the (de)formatter in the Reader.
+		switch (reader.NextTypeCode)
 		{
-			case MessagePackType.Nil:
+			case Converters.TypeCode.Nil:
 				return false;
-			case MessagePackType.String:
-				MessagePackReader peekReader = reader.CreatePeekReader();
+			case Converters.TypeCode.String:
+				Reader peekReader = reader;
 				bool success = peekReader.TryReadStringSpan(out ReadOnlySpan<byte> span)
 					? this.IsMatch(span)
 					: this.IsMatch(peekReader.ReadStringSequence()!.Value);
@@ -134,10 +138,10 @@ public class MessagePackString : IEquatable<MessagePackString>
 	}
 
 	/// <inheritdoc />
-	public bool Equals(MessagePackString? other) => this.Value == other?.Value;
+	public bool Equals(PreformattedString? other) => this.Value == other?.Value;
 
 	/// <inheritdoc />
-	public override bool Equals(object? obj) => this.Equals(obj as MessagePackString);
+	public override bool Equals(object? obj) => this.Equals(obj as PreformattedString);
 
 	/// <inheritdoc />
 	public override int GetHashCode() => this.Value.GetHashCode();

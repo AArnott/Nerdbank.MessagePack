@@ -682,7 +682,7 @@ public ref struct MessagePackWriter
 	/// Writes a pre-encoded msgpack string.
 	/// </summary>
 	/// <param name="value">The string to write.</param>
-	public void Write(MessagePackString value) => this.WriteRaw(Requires.NotNull(value).MsgPack.Span);
+	public void Write(PreformattedString value) => this.WriteRaw(Requires.NotNull(value).Formatted.Span);
 
 	/// <summary>
 	/// Writes the extension format header, using the smallest one of these codes:
