@@ -3,11 +3,20 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public partial class Deformatter(StreamingDeformatter streamingDeformatter)
+public partial class Deformatter
 {
+	private readonly StreamingDeformatter streamingDeformatter;
+
+	public Deformatter(StreamingDeformatter streamingDeformatter)
+	{
+		Requires.NotNull(streamingDeformatter);
+		this.streamingDeformatter = streamingDeformatter;
+	}
+
 	public StreamingDeformatter StreamingDeformatter => streamingDeformatter;
 
 	/// <summary>

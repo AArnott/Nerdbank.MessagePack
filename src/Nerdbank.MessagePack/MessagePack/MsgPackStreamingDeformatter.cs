@@ -9,9 +9,9 @@ namespace Nerdbank.PolySerializer.MessagePack;
 
 internal class MsgPackStreamingDeformatter : StreamingDeformatter
 {
-	internal static readonly Deformatter Deformatter = new(MsgPackStreamingDeformatter.Instance);
-
 	internal static readonly MsgPackStreamingDeformatter Instance = new();
+
+	internal static readonly Deformatter Deformatter = new(Instance);
 
 	private uint expectedRemainingStructures;
 
