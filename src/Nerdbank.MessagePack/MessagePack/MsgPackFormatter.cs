@@ -4,6 +4,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
@@ -15,6 +16,8 @@ public class MsgPackFormatter : Formatter
 	private MsgPackFormatter()
 	{
 	}
+
+	public override Encoding Encoding => StringEncoding.UTF8;
 
 	/// <summary>
 	/// Gets or sets a value indicating whether to write in <see href="https://github.com/msgpack/msgpack/blob/master/spec-old.md">old spec</see> compatibility mode.

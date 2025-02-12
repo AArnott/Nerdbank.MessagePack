@@ -1,10 +1,14 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text;
+
 namespace Nerdbank.PolySerializer.Converters;
 
 public abstract class Formatter
 {
+	public abstract Encoding Encoding { get; }
+
 	/// <summary>
 	/// Encodes and formats a given string.
 	/// </summary>

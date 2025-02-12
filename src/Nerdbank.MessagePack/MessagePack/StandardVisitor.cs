@@ -196,7 +196,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		IConstructorParameterShape? constructorParameterShape = (IConstructorParameterShape?)state;
 
-		MessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
+		Converter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
 
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
@@ -391,7 +391,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
-		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType);
+		Converter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 
@@ -522,7 +522,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
 		=> this.owner.SerializeEnumValuesByName
-			? new EnumAsStringConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType))
+			? new EnumAsStringConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType), this.Formatter)
 			: new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
 
 	/// <inheritdoc/>
@@ -536,9 +536,9 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="shape">The type shape.</param>
 	/// <param name="state">An optional state object to pass to the converter.</param>
 	/// <returns>The converter.</returns>
-	protected MessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape, object? state = null)
+	protected Converter<T> GetConverter<T>(ITypeShape<T> shape, object? state = null)
 	{
-		return (MessagePackConverter<T>)this.context.GetOrAdd(shape, state)!;
+		return (Converter<T>)this.context.GetOrAdd(shape, state)!;
 	}
 
 	/// <summary>

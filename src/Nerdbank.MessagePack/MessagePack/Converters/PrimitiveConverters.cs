@@ -904,11 +904,11 @@ internal class GuidConverter : MessagePackConverter<Guid>
 /// </summary>
 /// <typeparam name="T">The value type.</typeparam>
 /// <param name="elementConverter">The converter to use when the value is not null.</param>
-internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : MessagePackConverter<T?>
+internal class NullableConverter<T>(Converter<T> elementConverter) : Converter<T?>
 	where T : struct
 {
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref Writer writer, in T? value, SerializationContext context)
 	{
 		if (value.HasValue)
 		{
@@ -916,14 +916,14 @@ internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : 
 		}
 		else
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 		}
 	}
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override T? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return null;
 		}

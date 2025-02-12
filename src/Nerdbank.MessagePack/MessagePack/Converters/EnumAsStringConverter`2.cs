@@ -1,12 +1,10 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes <see langword="enum" /> types as a string if possible.
@@ -18,19 +16,19 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// Upon deserialization, the enum value name match will be case insensitive
 /// unless the enum type defines multiple values with names that are only distinguished by case.
 /// </remarks>
-internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConverter<TEnum>
+internal class EnumAsStringConverter<TEnum, TUnderlyingType> : Converter<TEnum>
 	where TEnum : struct, Enum
 {
 	private readonly SpanDictionary<byte, TEnum> valueByUtf8Name;
 	private readonly Dictionary<string, TEnum> valueByName = new(StringComparer.OrdinalIgnoreCase);
 	private readonly Dictionary<TEnum, ReadOnlyMemory<byte>> msgpackEncodedNameByValue = new();
-	private readonly MessagePackConverter<TUnderlyingType> primitiveConverter;
+	private readonly Converter<TUnderlyingType> primitiveConverter;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="EnumAsStringConverter{TEnum, TUnderlyingType}"/> class.
 	/// </summary>
 	/// <param name="primitiveConverter">The converter for the primitive underlying type.</param>
-	public EnumAsStringConverter(MessagePackConverter<TUnderlyingType> primitiveConverter)
+	public EnumAsStringConverter(Converter<TUnderlyingType> primitiveConverter, Formatter formatter)
 	{
 		this.primitiveConverter = primitiveConverter;
 
@@ -42,7 +40,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 			Assumes.True(TryPopulateDictionary(), $"Failed to populate enum fields from {typeof(TEnum).FullName}.");
 		}
 
-		this.valueByUtf8Name = new SpanDictionary<byte, TEnum>(this.valueByName.Select(n => new KeyValuePair<ReadOnlyMemory<byte>, TEnum>(StringEncoding.UTF8.GetBytes(n.Key), n.Value)), ByteSpanEqualityComparer.Ordinal);
+		this.valueByUtf8Name = new SpanDictionary<byte, TEnum>(this.valueByName.Select(n => new KeyValuePair<ReadOnlyMemory<byte>, TEnum>(formatter.Encoding.GetBytes(n.Key), n.Value)), ByteSpanEqualityComparer.Ordinal);
 
 		bool TryPopulateDictionary()
 		{
@@ -71,7 +69,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 					}
 
 					// Values may be assigned to multiple names, so we don't guarantee uniqueness.
-					StringEncoding.GetEncodedStringBytes(name, out _, out ReadOnlyMemory<byte> msgpackEncodedName);
+					formatter.GetEncodedStringBytes(name, out _, out ReadOnlyMemory<byte> msgpackEncodedName);
 					this.msgpackEncodedNameByValue.TryAdd(value, msgpackEncodedName);
 				}
 			}
@@ -98,9 +96,9 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 	}
 
 	/// <inheritdoc/>
-	public override TEnum Read(ref MessagePackReader reader, SerializationContext context)
+	public override TEnum Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.NextMessagePackType == MessagePackType.String)
+		if (reader.NextTypeCode == TypeCode.String)
 		{
 			string stringValue;
 			TEnum value;
@@ -114,7 +112,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 					return value;
 				}
 
-				stringValue = StringEncoding.UTF8.GetString(span);
+				stringValue = reader.Deformatter.Encoding.GetString(span);
 			}
 			else
 			{
@@ -137,11 +135,11 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TEnum value, SerializationContext context)
+	public override void Write(ref Writer writer, in TEnum value, SerializationContext context)
 	{
 		if (this.msgpackEncodedNameByValue.TryGetValue(value, out ReadOnlyMemory<byte> name))
 		{
-			writer.WriteRaw(name.Span);
+			writer.Buffer.Write(name.Span);
 		}
 		else
 		{
