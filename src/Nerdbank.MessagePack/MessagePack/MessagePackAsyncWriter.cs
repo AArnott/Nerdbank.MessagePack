@@ -37,7 +37,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter) : AsyncWriter(pipeWri
 	/// <remarks>
 	/// The caller must take care to call <see cref="ReturnWriter(ref MessagePackWriter)"/> before discarding the writer.
 	/// </remarks>
-	public MessagePackWriter CreateWriter()
+	public new MessagePackWriter CreateWriter()
 	{
 #if !NET
 		// ref fields are not supported on .NET Framework, so we have to prepare to copy the struct.

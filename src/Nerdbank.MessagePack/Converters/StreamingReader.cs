@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
@@ -39,6 +39,7 @@ public ref partial struct StreamingReader
 	/// </param>
 	public StreamingReader(scoped in ReadOnlySequence<byte> sequence, AsyncReader.GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState, Deformatter deformatter)
 	{
+		Requires.NotNull(deformatter);
 		this.reader = new Reader(new SequenceReader<byte>(sequence), deformatter);
 		this.getMoreBytesAsync = additionalBytesSource;
 		this.getMoreBytesState = getMoreBytesState;
@@ -121,6 +122,7 @@ public ref partial struct StreamingReader
 		GetMoreBytes = this.getMoreBytesAsync,
 		GetMoreBytesState = this.getMoreBytesState,
 		EndOfStream = this.eof,
+		Deformatter = this.reader.Deformatter,
 	};
 
 	public DecodeResult TryPeekNextCode(out byte code) => this.StreamingDeformatter.TryPeekNextCode(this.reader, out code);

@@ -6,11 +6,9 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
-using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 using Nerdbank.PolySerializer.MessagePack.Converters;
 using PolyType.Utilities;
@@ -45,7 +43,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	protected abstract Converter GetReferencePreservingInterningStringConverter();
 
-	protected abstract bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(false)] out Converter<T>? converter);
+	protected abstract bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(true)] out Converter<T>? converter);
 
 	/// <summary>
 	/// Gets or sets the visitor that will be used to generate converters for new types that are encountered.
@@ -411,16 +409,16 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
 
 	protected virtual Converter CreateDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter)
-		=> new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter);
+		where TKey : notnull => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter);
 
 	protected virtual Converter CreateMutableDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePair, Func<TDictionary> defaultConstructor)
-		=> new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addKeyValuePair, defaultConstructor);
+		where TKey : notnull => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addKeyValuePair, defaultConstructor);
 
 	protected virtual Converter CreateDictionaryFromSpanConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanConstructor)
-		=> new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, spanConstructor);
+		where TKey : notnull => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, spanConstructor);
 
 	protected virtual Converter CreateDictionaryFromEnumerableConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableConstructor)
-		=> new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, enumerableConstructor);
+		where TKey : notnull => new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, enumerableConstructor);
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)

@@ -50,7 +50,7 @@ public class AsyncWriter(PipeWriter pipeWriter, Formatter formatter)
 	/// <summary>
 	/// Ensures everything previously written has been flushed to the underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>
-	public void Flush() => bufferWriter.Commit();
+	public void Flush() => this.bufferWriter.Commit();
 
 	/// <summary>
 	/// Flushes the pipe if the buffer is getting full.

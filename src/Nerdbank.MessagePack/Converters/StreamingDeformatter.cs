@@ -34,7 +34,7 @@ public abstract class StreamingDeformatter
 			return result;
 		}
 
-		typeCode = ToTypeCode(code);
+		typeCode = this.ToTypeCode(code);
 		return DecodeResult.Success;
 	}
 

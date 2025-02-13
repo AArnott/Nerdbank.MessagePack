@@ -1,11 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Microsoft;
-using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -125,7 +123,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 	/// The result must be returned with <see cref="ReturnReader(ref MessagePackStreamingReader)"/>
 	/// before using this <see cref="MessagePackAsyncReader"/> again.
 	/// </remarks>
-	public MessagePackStreamingReader CreateStreamingReader()
+	public new MessagePackStreamingReader CreateStreamingReader()
 	{
 		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
@@ -144,7 +142,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeRea
 	/// The result must be returned with <see cref="ReturnReader(ref MessagePackReader)"/>
 	/// before using this <see cref="MessagePackAsyncReader"/> again.
 	/// </remarks>
-	public MessagePackReader CreateBufferedReader()
+	public new MessagePackReader CreateBufferedReader()
 	{
 		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;

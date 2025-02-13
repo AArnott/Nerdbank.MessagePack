@@ -18,9 +18,9 @@ public partial class Deformatter
 		this.streamingDeformatter = streamingDeformatter;
 	}
 
-	public StreamingDeformatter StreamingDeformatter => streamingDeformatter;
+	public StreamingDeformatter StreamingDeformatter => this.streamingDeformatter;
 
-	public Encoding Encoding => streamingDeformatter.Encoding;
+	public Encoding Encoding => this.streamingDeformatter.Encoding;
 
 	/// <summary>
 	/// Gets the type of the next MessagePack block.
@@ -31,7 +31,7 @@ public partial class Deformatter
 	/// </remarks>
 	public byte PeekNextCode(in Reader reader)
 	{
-		return streamingDeformatter.TryPeekNextCode(reader, out byte code) switch
+		return this.streamingDeformatter.TryPeekNextCode(reader, out byte code) switch
 		{
 			DecodeResult.Success => code,
 			DecodeResult.EmptyBuffer or DecodeResult.InsufficientBuffer => throw ThrowNotEnoughBytesException(),
@@ -41,7 +41,7 @@ public partial class Deformatter
 
 	public bool TryReadNull(ref Reader reader)
 	{
-		switch (streamingDeformatter.TryReadNull(ref reader))
+		switch (this.streamingDeformatter.TryReadNull(ref reader))
 		{
 			case DecodeResult.Success:
 				return true;
@@ -68,12 +68,12 @@ public partial class Deformatter
 
 	public bool TryReadArrayHeader(ref Reader reader, out int count)
 	{
-		switch (streamingDeformatter.TryReadArrayHeader(ref reader, out count))
+		switch (this.streamingDeformatter.TryReadArrayHeader(ref reader, out count))
 		{
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.ThrowInvalidCode(this.PeekNextCode(reader));
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -106,12 +106,12 @@ public partial class Deformatter
 	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
 	public bool TryReadMapHeader(ref Reader reader, out int count)
 	{
-		switch (streamingDeformatter.TryReadMapHeader(ref reader, out count))
+		switch (this.streamingDeformatter.TryReadMapHeader(ref reader, out count))
 		{
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.ThrowInvalidCode(this.PeekNextCode(reader));
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -122,12 +122,12 @@ public partial class Deformatter
 
 	public bool ReadBoolean(ref Reader reader)
 	{
-		switch (streamingDeformatter.TryRead(ref reader, out bool value))
+		switch (this.streamingDeformatter.TryRead(ref reader, out bool value))
 		{
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -138,7 +138,7 @@ public partial class Deformatter
 
 	public int ReadInt32(ref Reader reader)
 	{
-		switch (streamingDeformatter.TryRead(ref reader, out int value))
+		switch (this.streamingDeformatter.TryRead(ref reader, out int value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -154,11 +154,11 @@ public partial class Deformatter
 
 	public unsafe float ReadSingle(ref Reader reader)
 	{
-		switch (streamingDeformatter.TryRead(ref reader, out float value))
+		switch (this.streamingDeformatter.TryRead(ref reader, out float value))
 		{
 			case DecodeResult.Success:
 				return value;
-				throw ThrowInvalidCode(reader);
+				throw this.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -169,7 +169,7 @@ public partial class Deformatter
 
 	public string? ReadString(ref Reader reader)
 	{
-		switch (streamingDeformatter.TryRead(ref reader, out string? value))
+		switch (this.streamingDeformatter.TryRead(ref reader, out string? value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -185,7 +185,7 @@ public partial class Deformatter
 
 	public ReadOnlySequence<byte>? ReadStringSequence(ref Reader reader)
 	{
-		switch (streamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
+		switch (this.streamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -195,7 +195,7 @@ public partial class Deformatter
 					return null;
 				}
 
-				throw ThrowInvalidCode(reader);
+				throw this.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -206,12 +206,12 @@ public partial class Deformatter
 
 	public ReadOnlySpan<byte> ReadStringSpan(ref Reader reader)
 	{
-		switch (streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out ReadOnlySpan<byte> span))
+		switch (this.streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out ReadOnlySpan<byte> span))
 		{
 			case DecodeResult.Success:
 				return contiguous ? span : this.ReadStringSequence(ref reader)!.Value.ToArray();
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -222,19 +222,19 @@ public partial class Deformatter
 
 	public bool TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> span)
 	{
-		switch (streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
+		switch (this.streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
 		{
 			case DecodeResult.Success:
 				return contiguous;
 			case DecodeResult.TokenMismatch:
-				if (streamingDeformatter.TryPeekNextCode(ref reader, out TypeCode code) == DecodeResult.Success
+				if (this.streamingDeformatter.TryPeekNextCode(reader, out TypeCode code) == DecodeResult.Success
 					&& code == TypeCode.Nil)
 				{
 					span = default;
 					return false;
 				}
 
-				throw ThrowInvalidCode(reader);
+				throw this.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -245,7 +245,7 @@ public partial class Deformatter
 
 	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
 
-	public TypeCode ToTypeCode(byte code) => streamingDeformatter.ToTypeCode(code);
+	public TypeCode ToTypeCode(byte code) => this.streamingDeformatter.ToTypeCode(code);
 
 	/// <summary>
 	/// Advances the reader to the next MessagePack structure to be read.
@@ -263,7 +263,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.ThrowInvalidCode(this.PeekNextCode(reader));
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -299,7 +299,7 @@ public partial class Deformatter
 	[DoesNotReturn]
 	private Exception ThrowInvalidCode(byte code)
 	{
-		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, streamingDeformatter.ToFormatName(code)));
+		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, this.streamingDeformatter.ToFormatName(code)));
 	}
 
 	[DoesNotReturn]

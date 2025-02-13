@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack.Converters;
 using PolyType.Utilities;
 
@@ -26,7 +25,7 @@ internal class MessagePackVisitor : StandardVisitor
 
 	protected override Converter GetReferencePreservingInterningStringConverter() => ReferencePreservingInterningStringConverter;
 
-	protected override bool TryGetPrimitiveConverter<T>(bool preserveReferences, out Converter<T>? converter)
+	protected override bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(true)] out Converter<T>? converter)
 	{
 		if (PrimitiveConverterLookup.TryGetPrimitiveConverter<T>(preserveReferences, out MessagePackConverter<T>? msgpackConverter))
 		{
