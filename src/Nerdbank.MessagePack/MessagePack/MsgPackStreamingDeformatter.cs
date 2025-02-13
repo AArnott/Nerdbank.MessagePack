@@ -142,7 +142,41 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override DecodeResult TryRead(ref Reader reader, out string value)
 	{
-		throw new NotImplementedException();
+		Reader originalPosition = reader;
+
+		DecodeResult result = this.TryReadNull(ref reader);
+		if (result != DecodeResult.TokenMismatch)
+		{
+			value = null;
+			return result;
+		}
+
+		result = this.TryReadStringHeader(ref reader, out uint byteLength);
+		if (result != DecodeResult.Success)
+		{
+			value = null;
+			return result;
+		}
+
+		ReadOnlySpan<byte> unreadSpan = reader.UnreadSpan;
+		if (unreadSpan.Length >= byteLength)
+		{
+			// Fast path: all bytes to decode appear in the same span.
+			value = StringEncoding.UTF8.GetString(unreadSpan.Slice(0, checked((int)byteLength)));
+			this.Advance(ref reader, byteLength);
+			return DecodeResult.Success;
+		}
+		else
+		{
+			result = this.ReadStringSlow(ref reader, byteLength, out value);
+			if (result == DecodeResult.InsufficientBuffer)
+			{
+				// Rewind the header so we can try it again.
+				reader = originalPosition;
+			}
+
+			return result;
+		}
 	}
 
 	/// <summary>
@@ -253,6 +287,19 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 					return ThrowUnreachable();
 			}
 		}
+	}
+
+	public override DecodeResult TryReadRaw(ref Reader reader, long length, out ReadOnlySequence<byte> rawMsgPack)
+	{
+		if (reader.Remaining >= length)
+		{
+			rawMsgPack = reader.Sequence.Slice(reader.Position, length);
+			this.Advance(ref reader, length);
+			return DecodeResult.Success;
+		}
+
+		rawMsgPack = default;
+		return this.InsufficientBytes(reader);
 	}
 
 	public override DecodeResult TrySkip(ref Reader reader, ref SerializationContext context)
@@ -498,5 +545,47 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 
 		this.expectedRemainingStructures = expectedRemainingStructures + added;
+	}
+
+	private DecodeResult ReadStringSlow(ref Reader reader, uint byteLength, out string? value)
+	{
+		if (reader.Remaining < byteLength)
+		{
+			value = null;
+			return this.InsufficientBytes(reader);
+		}
+
+		// We need to decode bytes incrementally across multiple spans.
+		int remainingByteLength = checked((int)byteLength);
+		int maxCharLength = StringEncoding.UTF8.GetMaxCharCount(remainingByteLength);
+		char[] charArray = ArrayPool<char>.Shared.Rent(maxCharLength);
+		System.Text.Decoder decoder = StringEncoding.UTF8.GetDecoder();
+
+		int initializedChars = 0;
+		while (remainingByteLength > 0)
+		{
+			int bytesRead = Math.Min(remainingByteLength, reader.UnreadSpan.Length);
+			remainingByteLength -= bytesRead;
+			bool flush = remainingByteLength == 0;
+#if NET
+			initializedChars += decoder.GetChars(reader.UnreadSpan.Slice(0, bytesRead), charArray.AsSpan(initializedChars), flush);
+#else
+			unsafe
+			{
+				fixed (byte* pUnreadSpan = reader.UnreadSpan)
+				{
+					fixed (char* pCharArray = &charArray[initializedChars])
+					{
+						initializedChars += decoder.GetChars(pUnreadSpan, bytesRead, pCharArray, charArray.Length - initializedChars, flush);
+					}
+				}
+			}
+#endif
+			this.Advance(ref reader, bytesRead);
+		}
+
+		value = new string(charArray, 0, initializedChars);
+		ArrayPool<char>.Shared.Return(charArray);
+		return DecodeResult.Success;
 	}
 }

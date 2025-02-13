@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Microsoft;
 
@@ -60,10 +61,15 @@ public ref partial struct StreamingReader
 
 	private StreamingDeformatter StreamingDeformatter => this.reader.Deformatter.StreamingDeformatter;
 
+	[UnscopedRef]
+	public ref Reader Reader => ref this.reader;
+
 	/// <summary>
 	/// Gets a token that may cancel deserialization.
 	/// </summary>
 	public CancellationToken CancellationToken { get; init; }
+
+	internal SequenceReader<byte> SequenceReader => this.reader.SequenceReader;
 
 	/// <summary>
 	/// Adds more bytes to the buffer being decoded, if they are available.
@@ -129,6 +135,8 @@ public ref partial struct StreamingReader
 	public DecodeResult TryPeekNextCode(out byte code) => this.StreamingDeformatter.TryPeekNextCode(this.reader, out code);
 
 	public DecodeResult TryPeekNextCode(out TypeCode typeCode) => this.StreamingDeformatter.TryPeekNextCode(this.reader, out typeCode);
+
+	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawMsgPack) => this.StreamingDeformatter.TryReadRaw(ref this.reader, length, out rawMsgPack);
 
 	public DecodeResult TryReadArrayHeader(out int length) => this.StreamingDeformatter.TryReadArrayHeader(ref this.reader, out length);
 

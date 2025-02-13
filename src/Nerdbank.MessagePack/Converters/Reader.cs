@@ -26,6 +26,10 @@ public ref struct Reader
 
 	internal SequenceReader<byte> SequenceReader => this.inner;
 
+	public ReadOnlySequence<byte> Sequence => this.inner.Sequence;
+
+	public long Remaining => this.inner.Remaining;
+
 	public Deformatter Deformatter => this.deformatter;
 
 	public byte NextCode => this.deformatter.PeekNextCode(this);

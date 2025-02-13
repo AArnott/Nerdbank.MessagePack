@@ -10,8 +10,6 @@ using System.Numerics;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
-using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack.Converters;
 using Strings = Microsoft.NET.StringTools.Strings;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
@@ -19,7 +17,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// <summary>
 /// Serializes a <see cref="string"/>.
 /// </summary>
-internal class StringConverter : MessagePackConverter<string>
+internal class StringConverter : Converter<string>
 {
 #if NET
 	/// <inheritdoc/>
@@ -27,21 +25,21 @@ internal class StringConverter : MessagePackConverter<string>
 #endif
 
 	/// <inheritdoc/>
-	public override string? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
+	public override string? Read(ref Reader reader, SerializationContext context) => reader.ReadString();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in string? value, SerializationContext context) => writer.Write(value);
 
 #if NET
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<string?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<string?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
 		const uint MinChunkSize = 2048;
 
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool wasNil;
-		if (streamingReader.TryReadNil(out wasNil).NeedsMoreBytes())
+		if (streamingReader.TryReadNull(out wasNil).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -52,47 +50,69 @@ internal class StringConverter : MessagePackConverter<string>
 			return null;
 		}
 
-		uint length;
-		while (streamingReader.TryReadStringHeader(out length).NeedsMoreBytes())
-		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-		}
-
 		string result;
-		if (streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> utf8BytesSequence).NeedsMoreBytes())
+		if (reader.Deformatter.StreamingDeformatter is MsgPackStreamingDeformatter msgpackDeformatter)
 		{
-			uint remainingBytesToDecode = length;
-			using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
-			Sequence<char> charSequence = sequenceRental.Value;
-
-			Decoder decoder = StringEncoding.UTF8.GetDecoder();
-			while (remainingBytesToDecode > 0)
+			uint length;
+			while (msgpackDeformatter.TryReadStringHeader(ref streamingReader.Reader, out length).NeedsMoreBytes())
 			{
-				// We'll always require at least a reasonable number of bytes to decode at once,
-				// to keep overhead to a minimum.
-				uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
-				if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
-				{
-					// We don't have enough bytes to decode this round. Fetch more.
-					streamingReader = new(await streamingReader.FetchMoreBytesAsync(desiredBytesThisRound).ConfigureAwait(false));
-				}
-
-				int thisLoopLength = unchecked((int)Math.Min(int.MaxValue, Math.Min(checked((uint)streamingReader.SequenceReader.Remaining), remainingBytesToDecode)));
-				Assumes.True(streamingReader.TryReadRaw(thisLoopLength, out utf8BytesSequence) == DecodeResult.Success);
-				bool flush = utf8BytesSequence.Length == remainingBytesToDecode;
-				decoder.Convert(utf8BytesSequence, charSequence, flush, out _, out _);
-				remainingBytesToDecode -= checked((uint)utf8BytesSequence.Length);
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			result = string.Create(
-				checked((int)charSequence.Length),
-				charSequence,
-				static (span, seq) => seq.AsReadOnlySequence.CopyTo(span));
+			if (streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> utf8BytesSequence).NeedsMoreBytes())
+			{
+				uint remainingBytesToDecode = length;
+				using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
+				Sequence<char> charSequence = sequenceRental.Value;
+
+				Decoder decoder = StringEncoding.UTF8.GetDecoder();
+				while (remainingBytesToDecode > 0)
+				{
+					// We'll always require at least a reasonable number of bytes to decode at once,
+					// to keep overhead to a minimum.
+					uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
+					if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
+					{
+						// We don't have enough bytes to decode this round. Fetch more.
+						streamingReader = new(await streamingReader.FetchMoreBytesAsync(desiredBytesThisRound).ConfigureAwait(false));
+					}
+
+					int thisLoopLength = unchecked((int)Math.Min(int.MaxValue, Math.Min(checked((uint)streamingReader.SequenceReader.Remaining), remainingBytesToDecode)));
+					Assumes.True(streamingReader.TryReadRaw(thisLoopLength, out utf8BytesSequence) == DecodeResult.Success);
+					bool flush = utf8BytesSequence.Length == remainingBytesToDecode;
+					decoder.Convert(utf8BytesSequence, charSequence, flush, out _, out _);
+					remainingBytesToDecode -= checked((uint)utf8BytesSequence.Length);
+				}
+
+				result = string.Create(
+					checked((int)charSequence.Length),
+					charSequence,
+					static (span, seq) => seq.AsReadOnlySequence.CopyTo(span));
+			}
+			else
+			{
+				// We happened to get all bytes at once. Decode now.
+				result = reader.Deformatter.Encoding.GetString(utf8BytesSequence);
+			}
 		}
 		else
 		{
-			// We happened to get all bytes at once. Decode now.
-			result = StringEncoding.UTF8.GetString(utf8BytesSequence);
+			bool contiguous;
+			ReadOnlySpan<byte> bytesSpan;
+			while (streamingReader.TryReadStringSpan(out contiguous, out bytesSpan).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (contiguous)
+			{
+				result = reader.Deformatter.Encoding.GetString(bytesSpan);
+			}
+			else
+			{
+				Assumes.True(streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> bytesSequence) == DecodeResult.Success);
+				result = reader.Deformatter.Encoding.GetString(bytesSequence);
+			}
 		}
 
 		reader.ReturnReader(ref streamingReader);
@@ -101,7 +121,7 @@ internal class StringConverter : MessagePackConverter<string>
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, string? value, SerializationContext context)
+	public override ValueTask WriteAsync(AsyncWriter writer, string? value, SerializationContext context)
 	{
 		// We *could* do incremental string encoding, flushing periodically based on the user's preferred flush threshold.
 		return base.WriteAsync(writer, value, context);

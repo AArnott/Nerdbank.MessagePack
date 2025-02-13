@@ -27,7 +27,7 @@ internal class MessagePackVisitor : StandardVisitor
 
 	protected override bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(true)] out Converter<T>? converter)
 	{
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter<T>(preserveReferences, out MessagePackConverter<T>? msgpackConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter<T>(preserveReferences, out Converter<T>? msgpackConverter))
 		{
 			converter = msgpackConverter;
 			return true;

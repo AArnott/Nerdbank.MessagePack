@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Nerdbank.PolySerializer.Converters;
@@ -59,6 +58,8 @@ public abstract class StreamingDeformatter
 	public abstract DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value);
 
 	public abstract DecodeResult TrySkip(ref Reader reader, ref SerializationContext context);
+
+	public abstract DecodeResult TryReadRaw(ref Reader reader, long length, out ReadOnlySequence<byte> rawMsgPack);
 
 	public abstract string ToFormatName(byte code);
 
