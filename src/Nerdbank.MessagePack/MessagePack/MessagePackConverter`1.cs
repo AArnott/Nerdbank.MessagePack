@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -34,22 +33,13 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 {
 	object? IMessagePackConverter.ReadObject(ref MessagePackReader reader, SerializationContext context) => this.Read(ref reader, context);
 
-	void IMessagePackConverter.WriteObject(ref MessagePackWriter writer, object? value, SerializationContext context)
-	{
-		throw new NotImplementedException();
-	}
+	void IMessagePackConverter.WriteObject(ref MessagePackWriter writer, object? value, SerializationContext context) => this.Write(ref writer, (T?)value, context);
 
 	[Experimental("NBMsgPackAsync")]
-	ValueTask<object?> IMessagePackConverter.ReadObjectAsync(MessagePackAsyncReader reader, SerializationContext context)
-	{
-		throw new NotImplementedException();
-	}
+	async ValueTask<object?> IMessagePackConverter.ReadObjectAsync(MessagePackAsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
 
 	[Experimental("NBMsgPackAsync")]
-	ValueTask IMessagePackConverter.WriteObjectAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context)
-	{
-		throw new NotImplementedException();
-	}
+	ValueTask IMessagePackConverter.WriteObjectAsync(MessagePackAsyncWriter writer, object? value, SerializationContext context) => this.WriteAsync(writer, (T?)value, context);
 
 	[Experimental("NBMsgPackAsync")]
 	Task<bool> IMessagePackConverter.SkipToIndexValueAsync(MessagePackAsyncReader reader, object? indexArg, SerializationContext context)
