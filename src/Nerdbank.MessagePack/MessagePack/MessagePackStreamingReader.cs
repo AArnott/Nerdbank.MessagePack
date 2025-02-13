@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
-using Nerdbank.PolySerializer.Converters;
 using BufferRefresh = Nerdbank.PolySerializer.Converters.AsyncReader.BufferRefresh;
 
 namespace Nerdbank.PolySerializer.MessagePack;
@@ -901,6 +900,7 @@ public ref partial struct MessagePackStreamingReader
 		GetMoreBytes = this.getMoreBytesAsync,
 		GetMoreBytesState = this.getMoreBytesState,
 		EndOfStream = this.eof,
+		Deformatter = MsgPackStreamingDeformatter.Deformatter,
 	};
 
 	/// <summary>
@@ -944,6 +944,7 @@ public ref partial struct MessagePackStreamingReader
 				GetMoreBytes = getMoreBytes,
 				GetMoreBytesState = getMoreBytesState,
 				EndOfStream = moreBuffer.IsCompleted,
+				Deformatter = MsgPackStreamingDeformatter.Deformatter,
 			};
 		}
 	}

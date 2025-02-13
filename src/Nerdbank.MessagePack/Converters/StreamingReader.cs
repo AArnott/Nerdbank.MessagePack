@@ -84,13 +84,13 @@ public ref partial struct StreamingReader
 		}
 
 		this.CancellationToken.ThrowIfCancellationRequested();
-		ValueTask<AsyncReader.BufferRefresh> result = HelperAsync(this.getMoreBytesAsync, this.getMoreBytesState, this.reader.SequenceReader.Position, this.reader.SequenceReader.Sequence.End, minimumLength, this.CancellationToken);
+		ValueTask<AsyncReader.BufferRefresh> result = HelperAsync(this.getMoreBytesAsync, this.getMoreBytesState, this.reader.SequenceReader.Position, this.reader.SequenceReader.Sequence.End, minimumLength, this.reader.Deformatter, this.CancellationToken);
 
 		// Having made the call to request more bytes, our caller can no longer use this struct because the buffers it had are assumed to have been recycled.
 		this.reader = default;
 		return result;
 
-		static async ValueTask<AsyncReader.BufferRefresh> HelperAsync(AsyncReader.GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, uint minimumLength, CancellationToken cancellationToken)
+		static async ValueTask<AsyncReader.BufferRefresh> HelperAsync(AsyncReader.GetMoreBytesAsync getMoreBytes, object? getMoreBytesState, SequencePosition consumed, SequencePosition examined, uint minimumLength, Deformatter deformatter, CancellationToken cancellationToken)
 		{
 			ReadResult moreBuffer = await getMoreBytes(getMoreBytesState, consumed, examined, cancellationToken).ConfigureAwait(false);
 			while (moreBuffer.Buffer.Length < minimumLength && !(moreBuffer.IsCompleted || moreBuffer.IsCanceled))
@@ -106,6 +106,7 @@ public ref partial struct StreamingReader
 				GetMoreBytes = getMoreBytes,
 				GetMoreBytesState = getMoreBytesState,
 				EndOfStream = moreBuffer.IsCompleted,
+				Deformatter = deformatter,
 			};
 		}
 	}
