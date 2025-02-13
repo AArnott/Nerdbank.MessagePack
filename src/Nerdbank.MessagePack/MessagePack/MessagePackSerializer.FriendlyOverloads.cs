@@ -4,7 +4,6 @@
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using Microsoft;
@@ -165,8 +164,20 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(scoped in ReadOnlySequence<byte> buffer, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
-		MessagePackReader reader = new(buffer);
-		return this.Deserialize(ref reader, shape, cancellationToken);
+		Requires.NotNull(shape);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		Converter<T> converter = this.GetConverter(shape);
+		if (converter is MessagePackConverter<T> messagePackConverter)
+		{
+			MessagePackReader reader = new(buffer);
+			return messagePackConverter.Read(ref reader, context.Value);
+		}
+		else
+		{
+			Reader baseReader = new(buffer, MsgPackStreamingDeformatter.Deformatter);
+			T? result = converter.Read(ref baseReader, context.Value);
+			return result;
+		}
 	}
 
 	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)"/>
