@@ -30,7 +30,7 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ArraysOfPrimitivesConverters.Generated.cs</LastGenOutput>
     </None>
-    <None Update="MessagePack\Converters\IntConverters.tt">
+    <None Update="Converters\IntConverters.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>IntConverters.cs</LastGenOutput>
     </None>
@@ -82,7 +82,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ArraysOfPrimitivesConverters.Generated.tt</DependentUpon>
     </Compile>
-    <Compile Update="MessagePack\Converters\IntConverters.cs">
+    <Compile Update="Converters\IntConverters.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>IntConverters.tt</DependentUpon>

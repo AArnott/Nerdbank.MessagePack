@@ -8,9 +8,9 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer.Converters;
 
-/// <summary>Serializes the primitive integer type <see cref="SByte"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="SByte"/>.</summary>
 internal class SByteConverter : Converter<SByte>
 {
 	/// <inheritdoc/>
@@ -23,7 +23,7 @@ internal class SByteConverter : Converter<SByte>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
-/// <summary>Serializes the primitive integer type <see cref="Int16"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="Int16"/>.</summary>
 internal class Int16Converter : Converter<Int16>
 {
 	/// <inheritdoc/>
@@ -36,7 +36,7 @@ internal class Int16Converter : Converter<Int16>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
-/// <summary>Serializes the primitive integer type <see cref="Int32"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="Int32"/>.</summary>
 internal class Int32Converter : Converter<Int32>
 {
 	/// <inheritdoc/>
@@ -49,7 +49,7 @@ internal class Int32Converter : Converter<Int32>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
-/// <summary>Serializes the primitive integer type <see cref="Int64"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="Int64"/>.</summary>
 internal class Int64Converter : Converter<Int64>
 {
 	/// <inheritdoc/>
@@ -62,7 +62,7 @@ internal class Int64Converter : Converter<Int64>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
-/// <summary>Serializes the primitive integer type <see cref="Byte"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="Byte"/>.</summary>
 internal class ByteConverter : Converter<Byte>
 {
 	/// <inheritdoc/>
@@ -75,7 +75,7 @@ internal class ByteConverter : Converter<Byte>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
-/// <summary>Serializes the primitive integer type <see cref="UInt16"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="UInt16"/>.</summary>
 internal class UInt16Converter : Converter<UInt16>
 {
 	/// <inheritdoc/>
@@ -88,7 +88,7 @@ internal class UInt16Converter : Converter<UInt16>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
-/// <summary>Serializes the primitive integer type <see cref="UInt32"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="UInt32"/>.</summary>
 internal class UInt32Converter : Converter<UInt32>
 {
 	/// <inheritdoc/>
@@ -101,7 +101,7 @@ internal class UInt32Converter : Converter<UInt32>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
 }
 
-/// <summary>Serializes the primitive integer type <see cref="UInt64"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="UInt64"/>.</summary>
 internal class UInt64Converter : Converter<UInt64>
 {
 	/// <inheritdoc/>

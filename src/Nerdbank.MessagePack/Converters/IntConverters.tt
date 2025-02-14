@@ -10,11 +10,11 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer.Converters;
 <# var types = new Type[] { typeof(sbyte), typeof(short), typeof(int), typeof(long), typeof(byte), typeof(ushort), typeof(uint), typeof(ulong) }.Select(t => t.Name);
 foreach (string type in types) { #>
 
-/// <summary>Serializes the primitive integer type <see cref="<#=type#>"/> as a MessagePack integer.</summary>
+/// <summary>Serializes the primitive integer type <see cref="<#=type#>"/>.</summary>
 internal class <#=type#>Converter : Converter<<#=type#>>
 {
 	/// <inheritdoc/>
