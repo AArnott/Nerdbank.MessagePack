@@ -75,6 +75,8 @@ public abstract class StreamingDeformatter
 
 	public abstract DecodeResult TryRead(ref Reader reader, out string value);
 
+	public abstract DecodeResult TryRead(ref Reader reader, out DateTime value);
+
 	public abstract DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value);
 
 	public abstract DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value);

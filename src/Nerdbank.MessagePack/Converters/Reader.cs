@@ -52,6 +52,8 @@ public ref struct Reader
 
 	public bool TryReadNull() => this.deformatter.TryReadNull(ref this);
 
+	public void ReadNull() => this.deformatter.ReadNull(ref this);
+
 	public int ReadArrayHeader() => this.deformatter.ReadArrayHeader(ref this);
 
 	public bool TryReadArrayHeader(out int count) => this.deformatter.TryReadArrayHeader(ref this, out count);
@@ -91,6 +93,8 @@ public ref struct Reader
 	public float ReadSingle() => this.deformatter.ReadSingle(ref this);
 
 	public double ReadDouble() => this.deformatter.ReadDouble(ref this);
+
+	public DateTime ReadDateTime() => this.deformatter.ReadDateTime(ref this);
 
 	public ReadOnlySequence<byte> ReadRaw(SerializationContext context) => this.deformatter.ReadRaw(ref this, context);
 

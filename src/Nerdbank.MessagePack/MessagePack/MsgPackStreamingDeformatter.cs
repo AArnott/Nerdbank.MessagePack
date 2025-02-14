@@ -212,6 +212,11 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	public override DecodeResult TryRead(ref Reader reader, out DateTime value)
+	{
+		throw new NotImplementedException();
+	}
+
 	/// <summary>
 	/// Reads a byte sequence backing a UTF-8 encoded string with an appropriate msgpack header from the msgpack stream.
 	/// </summary>

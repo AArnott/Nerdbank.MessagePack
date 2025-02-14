@@ -51,7 +51,14 @@ public partial class Deformatter
 			default:
 				return false;
 		}
+	}
 
+	public void ReadNull(ref Reader reader)
+	{
+		if (!this.TryReadNull(ref reader))
+		{
+			throw ThrowInvalidCode(reader);
+		}
 	}
 
 	public int ReadArrayHeader(ref Reader reader)
@@ -270,6 +277,22 @@ public partial class Deformatter
 					return false;
 				}
 
+				throw this.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public DateTime ReadDateTime(ref Reader reader)
+	{
+		switch (this.streamingDeformatter.TryRead(ref reader, out DateTime value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
 				throw this.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:

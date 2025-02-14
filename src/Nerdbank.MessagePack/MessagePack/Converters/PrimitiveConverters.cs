@@ -498,10 +498,10 @@ internal class Int128Converter : MessagePackConverter<Int128>
 /// <summary>
 /// Serializes a <see cref="UInt128"/> value.
 /// </summary>
-internal class UInt128Converter : MessagePackConverter<UInt128>
+internal class UInt128Converter : Converter<UInt128>
 {
 	/// <inheritdoc/>
-	public override UInt128 Read(ref MessagePackReader reader, SerializationContext context)
+	public override UInt128 Read(ref Reader reader, SerializationContext context)
 	{
 		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<UInt128>();
 		if (sequence.IsSingleSegment)
@@ -547,21 +547,32 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in UInt128 value, SerializationContext context)
+	public override void Write(ref Writer writer, in UInt128 value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
-		if (value.TryFormat(dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written, provider: CultureInfo.InvariantCulture))
+		const int LongestUInt128Value = 39; // UInt128.MaxValue.ToString().Length
+		switch (writer.Formatter.Encoding)
 		{
-			// write header
-			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
-			writer.Advance(written + 1);
+			case UTF8Encoding:
+				Span<byte> utf8Bytes = stackalloc byte[LongestUInt128Value];
+				if (value.TryFormat(utf8Bytes, out int bytesWritten, provider: CultureInfo.InvariantCulture))
+				{
+					writer.WriteEncodedString(utf8Bytes[..bytesWritten]);
+					return;
+				}
+
+				break;
+			default:
+				Span<char> utf16Bytes = stackalloc char[LongestUInt128Value];
+				if (value.TryFormat(utf16Bytes, out int charsWritten, provider: CultureInfo.InvariantCulture))
+				{
+					writer.Write(utf16Bytes[..charsWritten]);
+					return;
+				}
+
+				break;
 		}
-		else
-		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
-		}
+
+		writer.Write(value.ToString(CultureInfo.InvariantCulture));
 	}
 
 	/// <inheritdoc/>
@@ -578,10 +589,10 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 /// <summary>
 /// Serializes a <see cref="BigInteger"/> value.
 /// </summary>
-internal class BigIntegerConverter : MessagePackConverter<BigInteger>
+internal class BigIntegerConverter : Converter<BigInteger>
 {
 	/// <inheritdoc/>
-	public override BigInteger Read(ref MessagePackReader reader, SerializationContext context)
+	public override BigInteger Read(ref Reader reader, SerializationContext context)
 	{
 		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
 		if (bytes.IsSingleSegment)
@@ -612,14 +623,22 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in BigInteger value, SerializationContext context)
+	public override void Write(ref Writer writer, in BigInteger value, SerializationContext context)
 	{
 #if NET
 		int byteCount = value.GetByteCount();
-		writer.WriteBinHeader(byteCount);
-		Span<byte> span = writer.GetSpan(byteCount);
-		Assumes.True(value.TryWriteBytes(span, out int written));
-		writer.Advance(written);
+		if (writer.TryWriteBinHeader(byteCount))
+		{
+			Span<byte> span = writer.Buffer.GetSpan(byteCount);
+			Assumes.True(value.TryWriteBytes(span, out int written));
+			writer.Buffer.Advance(written);
+		}
+		else
+		{
+			Span<byte> span = stackalloc byte[value.GetByteCount()];
+			Assumes.True(value.TryWriteBytes(span, out int written));
+			writer.Write(span);
+		}
 #else
 		writer.Write(value.ToByteArray());
 #endif
@@ -633,16 +652,16 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 /// <summary>
 /// Serializes <see cref="DateTime"/> values.
 /// </summary>
-internal class DateTimeConverter : MessagePackConverter<DateTime>
+internal class DateTimeConverter : Converter<DateTime>
 {
 	/// <inheritdoc/>
-	public override DateTime Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadDateTime();
+	public override DateTime Read(ref Reader reader, SerializationContext context) => reader.ReadDateTime();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in DateTime value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => MessagePackConverter<DateTime>.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);
 }
 
 /// <summary>
@@ -798,7 +817,7 @@ internal class CharConverter : Converter<char>
 /// Serializes <see cref="byte"/> array values.
 /// </summary>
 [GenerateShape<byte>]
-internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
+internal partial class ByteArrayConverter : Converter<byte[]?>
 {
 	/// <summary>
 	/// A shareable instance of this converter.
@@ -808,25 +827,22 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 	private static readonly ArrayConverter<byte> Fallback = new(new ByteConverter());
 
 	/// <inheritdoc/>
-	public override byte[]? Read(ref MessagePackReader reader, SerializationContext context)
+	public override byte[]? Read(ref Reader reader, SerializationContext context)
 	{
-		switch (reader.NextMessagePackType)
+		switch (reader.NextTypeCode)
 		{
-			case MessagePackType.Nil:
-				reader.ReadNil();
+			case PolySerializer.Converters.TypeCode.Nil:
+				reader.ReadNull();
 				return null;
-			case MessagePackType.Binary:
+			case PolySerializer.Converters.TypeCode.Binary:
 				return reader.ReadBytes()?.ToArray();
 			default:
-				Reader baseReader = reader.ToReader();
-				byte[]? result = Fallback.Read(ref baseReader, context);
-				reader = MessagePackReader.FromReader(baseReader);
-				return result;
+				return Fallback.Read(ref reader, context);
 		}
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in byte[]? value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in byte[]? value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -845,13 +861,13 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 /// <summary>
 /// Serializes <see cref="byte"/> array values.
 /// </summary>
-internal class MemoryOfByteConverter : MessagePackConverter<Memory<byte>>
+internal class MemoryOfByteConverter : Converter<Memory<byte>>
 {
 	/// <inheritdoc/>
-	public override Memory<byte> Read(ref MessagePackReader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
+	public override Memory<byte> Read(ref Reader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in Memory<byte> value, SerializationContext context) => writer.Write(value.Span);
+	public override void Write(ref Writer writer, in Memory<byte> value, SerializationContext context) => writer.Write(value.Span);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -861,13 +877,13 @@ internal class MemoryOfByteConverter : MessagePackConverter<Memory<byte>>
 /// <summary>
 /// Serializes <see cref="byte"/> array values.
 /// </summary>
-internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemory<byte>>
+internal class ReadOnlyMemoryOfByteConverter : Converter<ReadOnlyMemory<byte>>
 {
 	/// <inheritdoc/>
-	public override ReadOnlyMemory<byte> Read(ref MessagePackReader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
+	public override ReadOnlyMemory<byte> Read(ref Reader reader, SerializationContext context) => ByteArrayConverter.Instance.Read(ref reader, context);
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in ReadOnlyMemory<byte> value, SerializationContext context) => writer.Write(value.Span);
+	public override void Write(ref Writer writer, in ReadOnlyMemory<byte> value, SerializationContext context) => writer.Write(value.Span);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)

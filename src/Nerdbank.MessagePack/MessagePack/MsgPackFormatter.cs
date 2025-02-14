@@ -156,6 +156,11 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	public override void Write(ref Writer writer, DateTime value)
+	{
+		throw new NotImplementedException();
+	}
+
 	public override unsafe void Write(ref Writer writer, string? value)
 	{
 		if (value == null)
@@ -173,6 +178,16 @@ public class MsgPackFormatter : Formatter
 				this.WriteString_PostEncoding(ref writer, pBuffer, useOffset, byteCount);
 			}
 		}
+	}
+
+	public override void Write(ref Writer writer, scoped ReadOnlySpan<char> value)
+	{
+		throw new NotImplementedException();
+	}
+
+	public override void WriteEncodedString(ref Writer writer, scoped ReadOnlySpan<byte> value)
+	{
+		throw new NotImplementedException();
 	}
 
 	public override void Write(ref Writer writer, scoped ReadOnlySpan<byte> value)

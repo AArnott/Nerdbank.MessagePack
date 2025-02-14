@@ -65,6 +65,10 @@ public ref struct Writer
 
 	public void Write(string? value) => this.Formatter.Write(ref this, value);
 
+	public void Write(scoped ReadOnlySpan<char> value) => this.Formatter.Write(ref this, value);
+
+	public void Write(DateTime value) => this.Formatter.Write(ref this, value);
+
 	/// <summary>
 	/// Writes a pre-encoded msgpack string.
 	/// </summary>
@@ -91,6 +95,8 @@ public ref struct Writer
 	/// </para>
 	/// </remarks>
 	public bool TryWriteBinHeader(int length) => this.Formatter.TryWriteBinHeader(ref this, length);
+
+	public void WriteEncodedString(scoped ReadOnlySpan<byte> value) => this.Formatter.WriteEncodedString(ref this, value);
 
 	/// <summary>
 	/// Flushes the writer and returns the written data as a byte array.

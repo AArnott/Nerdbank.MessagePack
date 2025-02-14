@@ -182,8 +182,9 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 	/// <remarks>
 	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
 	/// </remarks>
-	protected static JsonObject CreateMsgPackExtensionSchema(sbyte extensionCode) => new()
+	protected internal static JsonObject CreateMsgPackExtensionSchema(sbyte extensionCode) => new()
 	{
+		// TODO: Review callers and revise JSON schema method to accept Formatter. Then pass the buck on the Formatter to reveal the schema.
 		["type"] = "string",
 		["pattern"] = FormattableString.Invariant($"^msgpack extension {extensionCode} as base64: "),
 	};
