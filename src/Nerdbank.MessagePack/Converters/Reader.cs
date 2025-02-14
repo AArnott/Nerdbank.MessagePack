@@ -86,5 +86,7 @@ public ref struct Reader
 
 	public float ReadSingle() => this.deformatter.ReadSingle(ref this);
 
+	public ReadOnlySequence<byte> ReadRaw(SerializationContext context) => this.deformatter.ReadRaw(ref this, context);
+
 	public void Skip(SerializationContext context) => this.deformatter.Skip(ref this, context);
 }

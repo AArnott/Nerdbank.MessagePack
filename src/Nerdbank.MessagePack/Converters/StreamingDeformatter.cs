@@ -12,6 +12,8 @@ public abstract class StreamingDeformatter
 	/// </summary>
 	private bool eof;
 
+	public abstract string FormatName { get; }
+
 	public abstract Encoding Encoding { get; }
 
 	/// <summary>

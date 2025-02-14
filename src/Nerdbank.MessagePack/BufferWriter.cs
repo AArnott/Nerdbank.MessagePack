@@ -195,6 +195,18 @@ public ref struct BufferWriter
 	}
 
 	/// <summary>
+	/// Copies bytes directly into the buffer.
+	/// </summary>
+	/// <param name="rawMessagePackBlock">The span of bytes to copy from.</param>
+	public void Write(in ReadOnlySequence<byte> rawMessagePackBlock)
+	{
+		foreach (ReadOnlyMemory<byte> segment in rawMessagePackBlock)
+		{
+			this.Write(segment.Span);
+		}
+	}
+
+	/// <summary>
 	/// Acquires a new buffer if necessary to ensure that some given number of bytes can be written to a single buffer.
 	/// </summary>
 	/// <param name="count">The number of bytes that must be allocated in a single buffer.</param>

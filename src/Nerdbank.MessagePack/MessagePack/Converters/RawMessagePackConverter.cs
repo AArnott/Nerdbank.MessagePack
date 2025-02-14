@@ -4,13 +4,13 @@
 using System.Diagnostics.CodeAnalysis;
 using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Provides the raw msgpack transport intended for the <see cref="RawMessagePack"/> type.
 /// </summary>
 [SuppressMessage("Usage", "NBMsgPack032", Justification = "This converter by design has no idea what msgpack it reads or writes.")]
-internal class RawMessagePackConverter : MessagePackConverter<RawMessagePack>
+internal class RawMessagePackConverter : Converter<RawMessagePack>
 {
 	/// <inheritdoc/>
 	/// <remarks>
@@ -20,8 +20,16 @@ internal class RawMessagePackConverter : MessagePackConverter<RawMessagePack>
 	/// And async deserialization may invoke this (synchronous) deserializing method as an optimization,
 	/// so we really have no idea whether this buffer will last till the user has a chance to read from it.
 	/// </remarks>
-	public override RawMessagePack Read(ref MessagePackReader reader, SerializationContext context) => new RawMessagePack(reader.ReadRaw(context)).ToOwned();
+	public override RawMessagePack Read(ref Reader reader, SerializationContext context)
+	{
+		VerifyFormat<MsgPackStreamingDeformatter>(reader);
+		return new RawMessagePack(reader.ReadRaw(context)).ToOwned();
+	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in RawMessagePack value, SerializationContext context) => writer.WriteRaw(value.MsgPack);
+	public override void Write(ref Writer writer, in RawMessagePack value, SerializationContext context)
+	{
+		VerifyFormat<MsgPackFormatter>(writer);
+		writer.Buffer.Write(value.MsgPack);
+	}
 }

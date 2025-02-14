@@ -7,6 +7,8 @@ namespace Nerdbank.PolySerializer.Converters;
 
 public abstract class Formatter
 {
+	public abstract string FormatName { get; }
+
 	public abstract Encoding Encoding { get; }
 
 	/// <summary>

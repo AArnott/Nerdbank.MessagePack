@@ -149,6 +149,18 @@ public abstract class Converter(Type type)
 		};
 	}
 
+	protected static void VerifyFormat<T>(in Reader reader)
+		where T : StreamingDeformatter
+	{
+		Verify.Operation(reader.Deformatter.StreamingDeformatter is T, $"This is a {reader.Deformatter.StreamingDeformatter.FormatName} sequence, but this converter expects to use {typeof(T).Name}.");
+	}
+
+	protected static void VerifyFormat<T>(in Writer writer)
+		where T : Formatter
+	{
+		Verify.Operation(writer.Formatter is T, $"This is a {writer.Formatter.FormatName} sequence, but this converter expects to use {typeof(T).Name}.");
+	}
+
 	/// <summary>
 	/// Wraps a boxed primitive as a <see cref="JsonValue"/>.
 	/// </summary>
