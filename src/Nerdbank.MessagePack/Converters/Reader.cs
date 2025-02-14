@@ -66,6 +66,8 @@ public ref struct Reader
 
 	public string? ReadString() => this.deformatter.ReadString(ref this);
 
+	public ReadOnlySequence<byte>? ReadBytes() => this.deformatter.ReadBytes(ref this);
+
 	public ReadOnlySequence<byte>? ReadStringSequence() => this.deformatter.ReadStringSequence(ref this);
 
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.deformatter.TryReadStringSpan(ref this, out value);

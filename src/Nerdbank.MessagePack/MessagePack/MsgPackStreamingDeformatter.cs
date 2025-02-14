@@ -130,6 +130,29 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 		return result == DecodeResult.TokenMismatch ? DecodeResult.Success : result;
 	}
 
+	public override DecodeResult TryReadBinary(ref Reader reader, out ReadOnlySequence<byte> value)
+	{
+		Reader originalPosition = reader;
+		DecodeResult result = this.TryReadBinHeader(ref reader, out uint length);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			return result;
+		}
+
+		if (reader.Remaining < length)
+		{
+			// Rewind the header so we can try it again.
+			reader = originalPosition;
+			value = default;
+			return this.InsufficientBytes(reader);
+		}
+
+		value = reader.Sequence.Slice(reader.Position, length);
+		this.Advance(ref reader, length);
+		return DecodeResult.Success;
+	}
+
 	public override DecodeResult TryRead(ref Reader reader, out bool value)
 	{
 		throw new NotImplementedException();
@@ -482,6 +505,69 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 					{
 						length = default;
 						return DecodeResult.InsufficientBuffer;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Tries to read the header of binary data.
+	/// </summary>
+	/// <param name="length">Receives the length of the binary data, when successful.</param>
+	/// <returns>The result classification of the read operation.</returns>
+	/// <inheritdoc cref="MessagePackPrimitives.TryReadBinHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
+	/// <remarks>
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// with the length specified by <paramref name="length"/> (even if zero), so that the overall structure can be recorded as read.
+	/// </remarks>
+	public DecodeResult TryReadBinHeader(ref Reader reader, out uint length)
+	{
+		bool usingBinaryHeader = true;
+		DecodeResult readResult = MessagePackPrimitives.TryReadBinHeader(reader.UnreadSpan, out length, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			this.Advance(ref reader, tokenSize, 0);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref reader, this, readResult, usingBinaryHeader, ref length, ref tokenSize);
+
+		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, bool usingBinaryHeader, ref uint length, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.Advance(ref reader, tokenSize, 0);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					if (usingBinaryHeader)
+					{
+						usingBinaryHeader = false;
+						readResult = MessagePackPrimitives.TryReadStringHeader(reader.SequenceReader.UnreadSpan, out length, out tokenSize);
+						return SlowPath(ref reader, self, readResult, usingBinaryHeader, ref length, ref tokenSize);
+					}
+					else
+					{
+						return DecodeResult.TokenMismatch;
+					}
+
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (reader.SequenceReader.TryCopyTo(buffer))
+					{
+						readResult = usingBinaryHeader
+							? MessagePackPrimitives.TryReadBinHeader(buffer, out length, out tokenSize)
+							: MessagePackPrimitives.TryReadStringHeader(buffer, out length, out tokenSize);
+						return SlowPath(ref reader, self, readResult, usingBinaryHeader, ref length, ref tokenSize);
+					}
+					else
+					{
+						length = default;
+						return self.InsufficientBytes(reader);
 					}
 
 				default:

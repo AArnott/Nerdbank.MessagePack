@@ -135,15 +135,15 @@ internal class StringConverter : Converter<string>
 /// <summary>
 /// Serializes a <see cref="string"/> and interns them during deserialization.
 /// </summary>
-internal class InterningStringConverter : MessagePackConverter<string>
+internal class InterningStringConverter : Converter<string>
 {
 	// The actual stack space taken will be up to 2X this value, because we're converting UTF-8 to UTF-16.
 	private const int MaxStackStringCharLength = 4096;
 
 	/// <inheritdoc/>
-	public override string? Read(ref MessagePackReader reader, SerializationContext context)
+	public override string? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return null;
 		}
@@ -174,12 +174,12 @@ internal class InterningStringConverter : MessagePackConverter<string>
 			Span<char> stackSpan = charArray ?? stackalloc char[byteLength];
 			if (spanMode)
 			{
-				int characterCount = StringEncoding.UTF8.GetChars(byteSpan, stackSpan);
+				int characterCount = reader.Deformatter.Encoding.GetChars(byteSpan, stackSpan);
 				return Strings.WeakIntern(stackSpan[..characterCount]);
 			}
 			else
 			{
-				int characterCount = StringEncoding.UTF8.GetChars(bytesSequence, stackSpan);
+				int characterCount = reader.Deformatter.Encoding.GetChars(bytesSequence, stackSpan);
 				return Strings.WeakIntern(stackSpan[..characterCount]);
 			}
 		}
@@ -193,7 +193,7 @@ internal class InterningStringConverter : MessagePackConverter<string>
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in string? value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "string" };

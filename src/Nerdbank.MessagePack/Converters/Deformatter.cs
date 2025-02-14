@@ -198,6 +198,27 @@ public partial class Deformatter
 		}
 	}
 
+	public ReadOnlySequence<byte>? ReadBytes(ref Reader reader)
+	{
+		switch (this.streamingDeformatter.TryReadBinary(ref reader, out ReadOnlySequence<byte> value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				if (this.TryReadNull(ref reader))
+				{
+					return null;
+				}
+
+				throw this.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
 	public ReadOnlySequence<byte>? ReadStringSequence(ref Reader reader)
 	{
 		switch (this.streamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))

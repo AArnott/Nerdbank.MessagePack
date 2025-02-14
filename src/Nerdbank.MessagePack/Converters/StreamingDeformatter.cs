@@ -47,6 +47,8 @@ public abstract class StreamingDeformatter
 
 	public abstract DecodeResult TryReadMapHeader(ref Reader reader, out int count);
 
+	public abstract DecodeResult TryReadBinary(ref Reader reader, out ReadOnlySequence<byte> value);
+
 	public abstract DecodeResult TryRead(ref Reader reader, out bool value);
 
 	public abstract DecodeResult TryRead(ref Reader reader, out char value);
