@@ -22,6 +22,10 @@
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Converters\Deformatter.Integers.tt">
+      <LastGenOutput>Deformatter.Integers.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
     <None Update="MessagePack\Converters\ArraysOfPrimitivesConverters.Generated.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ArraysOfPrimitivesConverters.Generated.cs</LastGenOutput>
@@ -46,6 +50,10 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackSerializer.AutomatedFriendlyOverloads.cs</LastGenOutput>
     </None>
+    <None Update="MessagePack\MsgPackStreamingDeformatter.Integers.tt">
+      <LastGenOutput>MsgPackStreamingDeformatter.Integers.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
     <None Update="MessagePack\MessagePackStreamingReader.Integers.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackStreamingReader.Integers.cs</LastGenOutput>
@@ -64,6 +72,11 @@
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="Converters\Deformatter.Integers.cs">
+      <DependentUpon>Deformatter.Integers.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
     <Compile Update="MessagePack\Converters\ArraysOfPrimitivesConverters.Generated.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -98,6 +111,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackStreamingReader.Integers.tt</DependentUpon>
+    </Compile>
+    <Compile Update="MessagePack\MsgPackStreamingDeformatter.Integers.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>MsgPackStreamingDeformatter.Integers.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

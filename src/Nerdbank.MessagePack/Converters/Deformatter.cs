@@ -136,22 +136,6 @@ public partial class Deformatter
 		}
 	}
 
-	public int ReadInt32(ref Reader reader)
-	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out int value))
-		{
-			case DecodeResult.Success:
-				return value;
-			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
-			case DecodeResult.EmptyBuffer:
-			case DecodeResult.InsufficientBuffer:
-				throw ThrowNotEnoughBytesException();
-			default:
-				throw ThrowUnreachable();
-		}
-	}
-
 	public unsafe float ReadSingle(ref Reader reader)
 	{
 		switch (this.streamingDeformatter.TryRead(ref reader, out float value))

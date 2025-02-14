@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-internal class MsgPackStreamingDeformatter : StreamingDeformatter
+internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 {
 	internal static readonly MsgPackStreamingDeformatter Instance = new();
 
@@ -247,45 +247,6 @@ internal class MsgPackStreamingDeformatter : StreamingDeformatter
 			value = default;
 			contiguous = false;
 			return DecodeResult.Success;
-		}
-	}
-
-	public override DecodeResult TryRead(ref Reader reader, out int value)
-	{
-		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
-		if (readResult == DecodeResult.Success)
-		{
-			this.Advance(ref reader, tokenSize);
-			return DecodeResult.Success;
-		}
-
-		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
-
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref Int32 value, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case DecodeResult.Success:
-					self.Advance(ref reader, tokenSize);
-					return DecodeResult.Success;
-				case DecodeResult.TokenMismatch:
-					return DecodeResult.TokenMismatch;
-				case DecodeResult.EmptyBuffer:
-				case DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (reader.SequenceReader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
-						return SlowPath(ref reader, self, readResult, ref value, ref tokenSize);
-					}
-					else
-					{
-						return self.InsufficientBytes(reader);
-					}
-
-				default:
-					return ThrowUnreachable();
-			}
 		}
 	}
 

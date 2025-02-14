@@ -47,7 +47,21 @@ public abstract class StreamingDeformatter
 
 	public abstract DecodeResult TryRead(ref Reader reader, out bool value);
 
+	public abstract DecodeResult TryRead(ref Reader reader, out sbyte value);
+
+	public abstract DecodeResult TryRead(ref Reader reader, out short value);
+
 	public abstract DecodeResult TryRead(ref Reader reader, out int value);
+
+	public abstract DecodeResult TryRead(ref Reader reader, out long value);
+
+	public abstract DecodeResult TryRead(ref Reader reader, out byte value);
+
+	public abstract DecodeResult TryRead(ref Reader reader, out ushort value);
+
+	public abstract DecodeResult TryRead(ref Reader reader, out uint value);
+
+	public abstract DecodeResult TryRead(ref Reader reader, out ulong value);
 
 	public abstract DecodeResult TryRead(ref Reader reader, out float value);
 

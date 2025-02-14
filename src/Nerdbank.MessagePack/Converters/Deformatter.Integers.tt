@@ -1,0 +1,61 @@
+<#@ assembly name="System.Core" #>
+<#@ Import Namespace="System.Linq" #>
+// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+
+/* THIS (.cs) FILE IS GENERATED. DO NOT CHANGE IT.
+ * CHANGE THE .tt FILE INSTEAD. */
+
+#pragma warning disable SA1121 // Simplify type syntax
+#pragma warning disable SA1601 // Partial elements should be documented
+
+namespace Nerdbank.PolySerializer.Converters;
+
+public partial class Deformatter
+{<#
+var unsignedTypes = new Type[]
+{
+	typeof(byte),
+	typeof(ushort),
+	typeof(uint),
+	typeof(ulong),
+};
+var signedTypes = new Type[]
+{
+	typeof(sbyte),
+	typeof(short),
+	typeof(int),
+	typeof(long),
+};
+
+var allTypes = unsignedTypes.Concat(signedTypes);
+foreach (var intType in allTypes) {
+#>
+
+	/// <summary>
+	/// Reads an <see cref="<#=intType.Name#>"/> value from:
+	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
+	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
+	/// or any of the other MsgPack integer types.
+	/// </summary>
+	/// <returns>The value.</returns>
+	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
+	public <#=intType.Name#> Read<#=intType.Name#>(ref Reader reader)
+	{
+		switch (this.streamingDeformatter.TryRead(ref reader, out <#=intType.Name#> value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+<# } #>
+}

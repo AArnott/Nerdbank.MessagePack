@@ -68,7 +68,21 @@ public ref struct Reader
 
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.deformatter.TryReadStringSpan(ref this, out value);
 
+	public sbyte ReadSByte() => this.deformatter.ReadSByte(ref this);
+
+	public short ReadInt16() => this.deformatter.ReadInt16(ref this);
+
 	public int ReadInt32() => this.deformatter.ReadInt32(ref this);
+
+	public long ReadInt64() => this.deformatter.ReadInt64(ref this);
+
+	public byte ReadByte() => this.deformatter.ReadByte(ref this);
+
+	public ushort ReadUInt16() => this.deformatter.ReadUInt16(ref this);
+
+	public uint ReadUInt32() => this.deformatter.ReadUInt32(ref this);
+
+	public ulong ReadUInt64() => this.deformatter.ReadUInt64(ref this);
 
 	public float ReadSingle() => this.deformatter.ReadSingle(ref this);
 

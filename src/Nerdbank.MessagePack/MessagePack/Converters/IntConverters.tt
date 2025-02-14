@@ -15,13 +15,13 @@ namespace Nerdbank.PolySerializer.MessagePack;
 foreach (string type in types) { #>
 
 /// <summary>Serializes the primitive integer type <see cref="<#=type#>"/> as a MessagePack integer.</summary>
-internal class <#=type#>Converter : MessagePackConverter<<#=type#>>
+internal class <#=type#>Converter : Converter<<#=type#>>
 {
 	/// <inheritdoc/>
-	public override <#=type#> Read(ref MessagePackReader reader, SerializationContext context) => reader.Read<#=type#>();
+	public override <#=type#> Read(ref Reader reader, SerializationContext context) => reader.Read<#=type#>();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in <#=type#> value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in <#=type#> value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
 	public override System.Text.Json.Nodes.JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "integer" };
