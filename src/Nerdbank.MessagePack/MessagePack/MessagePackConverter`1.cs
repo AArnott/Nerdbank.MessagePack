@@ -187,28 +187,4 @@ public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConver
 		["type"] = "string",
 		["pattern"] = FormattableString.Invariant($"^msgpack extension {extensionCode} as base64: "),
 	};
-
-	/// <summary>
-	/// Creates a JSON schema fragment that provides a cursory description of a MessagePack binary blob.
-	/// </summary>
-	/// <param name="description">An optional description to include with the schema.</param>
-	/// <returns>A JSON schema fragment.</returns>
-	/// <remarks>
-	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
-	/// </remarks>
-	protected static JsonObject CreateMsgPackBinarySchema(string? description = null)
-	{
-		JsonObject schema = new()
-		{
-			["type"] = "string",
-			["pattern"] = "^msgpack binary as base64: ",
-		};
-
-		if (description is not null)
-		{
-			schema["description"] = description;
-		}
-
-		return schema;
-	}
 }

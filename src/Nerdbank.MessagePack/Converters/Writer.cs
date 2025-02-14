@@ -71,9 +71,26 @@ public ref struct Writer
 	/// <param name="value">The string to write.</param>
 	public void Write(PreformattedString value) => this.Buffer.Write(Requires.NotNull(value).Formatted.Span);
 
-	public void Write(ReadOnlySpan<byte> value) => this.Formatter.Write(ref this, value);
+	public void Write(scoped ReadOnlySpan<byte> value) => this.Formatter.Write(ref this, value);
 
 	public void Write(ReadOnlySequence<byte> value) => this.Formatter.Write(ref this, value);
+
+	/// <summary>
+	/// Writes a header introducing a binary buffer, if the formatter supports raw binary.
+	/// </summary>
+	/// <param name="length">The number of bytes to be written.</param>
+	/// <returns><see langword="true" /> if the formatter support raw binary; <see langword="false" /> otherwise.</returns>
+	/// <remarks>
+	/// <para>
+	/// The caller is expected to follow-up with a call to <see cref="BufferWriter.Write(ReadOnlySpan{byte})"/> to write the binary data
+	/// and then a call to <see cref="BufferWriter.Advance(int)"/> to finalize the write.
+	/// </para>
+	/// <para>
+	/// When this method returns <see langword="false" />, the caller should use
+	/// <see cref="Write(ReadOnlySpan{byte})"/> or <see cref="Write(ReadOnlySequence{byte})"/> instead.
+	/// </para>
+	/// </remarks>
+	public bool TryWriteBinHeader(int length) => this.Formatter.TryWriteBinHeader(ref this, length);
 
 	/// <summary>
 	/// Flushes the writer and returns the written data as a byte array.

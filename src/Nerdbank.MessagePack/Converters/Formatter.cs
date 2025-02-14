@@ -66,11 +66,13 @@ public abstract class Formatter
 
 	public abstract void Write(ref Writer writer, string? value);
 
-	public abstract void Write(ref Writer writer, ReadOnlySpan<byte> value);
+	public abstract void Write(ref Writer writer, scoped ReadOnlySpan<byte> value);
 
 	public abstract void Write(ref Writer writer, ReadOnlySequence<byte> value);
 
 	public abstract int GetEncodedLength(long value);
 
 	public abstract int GetEncodedLength(ulong value);
+
+	public virtual bool TryWriteBinHeader(ref Writer writer, int length) => false;
 }

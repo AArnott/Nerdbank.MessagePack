@@ -149,6 +149,30 @@ public abstract class Converter(Type type)
 		};
 	}
 
+	/// <summary>
+	/// Creates a JSON schema fragment that provides a cursory description of a binary blob, encoded as base64.
+	/// </summary>
+	/// <param name="description">An optional description to include with the schema.</param>
+	/// <returns>A JSON schema fragment.</returns>
+	/// <remarks>
+	/// This is provided as a helper function for <see cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/> implementations.
+	/// </remarks>
+	protected static JsonObject CreateBase64EncodedBinarySchema(string? description = null)
+	{
+		JsonObject schema = new()
+		{
+			["type"] = "string",
+			["pattern"] = "^Binary as base64: ",
+		};
+
+		if (description is not null)
+		{
+			schema["description"] = description;
+		}
+
+		return schema;
+	}
+
 	protected static void VerifyFormat<T>(in Reader reader)
 		where T : StreamingDeformatter
 	{

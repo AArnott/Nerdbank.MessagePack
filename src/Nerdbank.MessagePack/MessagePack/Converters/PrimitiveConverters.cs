@@ -627,7 +627,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema("The binary representation of a BigInteger.");
+		=> CreateBase64EncodedBinarySchema("The binary representation of a BigInteger.");
 }
 
 /// <summary>
@@ -833,7 +833,7 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 		=> new()
 		{
 			["oneOf"] = new JsonArray(
-				CreateMsgPackBinarySchema("The literal content of the buffer."),
+				CreateBase64EncodedBinarySchema("The literal content of the buffer."),
 				new JsonObject
 				{
 					["type"] = "array",
@@ -877,12 +877,12 @@ internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemo
 /// <summary>
 /// Serializes a <see cref="Guid"/> value.
 /// </summary>
-internal class GuidConverter : MessagePackConverter<Guid>
+internal class GuidConverter : Converter<Guid>
 {
 	private const int GuidLength = 16;
 
 	/// <inheritdoc/>
-	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
+	public override Guid Read(ref Reader reader, SerializationContext context)
 	{
 		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<Guid>();
 
@@ -907,16 +907,24 @@ internal class GuidConverter : MessagePackConverter<Guid>
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in Guid value, SerializationContext context)
+	public override void Write(ref Writer writer, in Guid value, SerializationContext context)
 	{
-		writer.WriteBinHeader(GuidLength);
-		Assumes.True(value.TryWriteBytes(writer.GetSpan(GuidLength)));
-		writer.Advance(GuidLength);
+		if (writer.TryWriteBinHeader(GuidLength))
+		{
+			Assumes.True(value.TryWriteBytes(writer.Buffer.GetSpan(GuidLength)));
+			writer.Buffer.Advance(GuidLength);
+		}
+		else
+		{
+			Span<byte> span = stackalloc byte[GuidLength];
+			Assumes.True(value.TryWriteBytes(span));
+			writer.Write(span);
+		}
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema("The binary representation of the GUID.");
+		=> CreateBase64EncodedBinarySchema("The binary representation of the GUID.");
 }
 
 /// <summary>

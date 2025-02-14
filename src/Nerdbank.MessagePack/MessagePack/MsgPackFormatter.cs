@@ -175,7 +175,7 @@ public class MsgPackFormatter : Formatter
 		}
 	}
 
-	public override void Write(ref Writer writer, ReadOnlySpan<byte> value)
+	public override void Write(ref Writer writer, scoped ReadOnlySpan<byte> value)
 	{
 		int length = value.Length;
 		this.WriteBinHeader(ref writer, length);
@@ -191,6 +191,12 @@ public class MsgPackFormatter : Formatter
 		Span<byte> span = writer.Buffer.GetSpan(length);
 		value.CopyTo(span);
 		writer.Buffer.Advance(length);
+	}
+
+	public override bool TryWriteBinHeader(ref Writer writer, int length)
+	{
+		this.WriteBinHeader(ref writer, length);
+		return true;
 	}
 
 	public override void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
