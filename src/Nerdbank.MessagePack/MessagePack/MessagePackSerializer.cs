@@ -7,9 +7,7 @@ using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -470,7 +468,7 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('}');
 					break;
 				case MessagePackType.Binary:
-					jsonWriter.Write("\"msgpack binary as base64: ");
+					jsonWriter.Write("\"Binary as base64: ");
 					jsonWriter.Write(Convert.ToBase64String(reader.ReadBytes()!.Value.ToArray()));
 					jsonWriter.Write('\"');
 					break;
