@@ -135,7 +135,17 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 		throw new NotImplementedException();
 	}
 
+	public override DecodeResult TryRead(ref Reader reader, out char value)
+	{
+		throw new NotImplementedException();
+	}
+
 	public override DecodeResult TryRead(ref Reader reader, out float value)
+	{
+		throw new NotImplementedException();
+	}
+
+	public override DecodeResult TryRead(ref Reader reader, out double value)
 	{
 		throw new NotImplementedException();
 	}

@@ -202,13 +202,13 @@ internal class InterningStringConverter : MessagePackConverter<string>
 /// <summary>
 /// Serializes a <see cref="bool"/>.
 /// </summary>
-internal class BooleanConverter : MessagePackConverter<bool>
+internal class BooleanConverter : Converter<bool>
 {
 	/// <inheritdoc/>
-	public override bool Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadBoolean();
+	public override bool Read(ref Reader reader, SerializationContext context) => reader.ReadBoolean();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in bool value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in bool value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "boolean" };
@@ -217,13 +217,13 @@ internal class BooleanConverter : MessagePackConverter<bool>
 /// <summary>
 /// Serializes a <see cref="Version"/>.
 /// </summary>
-internal class VersionConverter : MessagePackConverter<Version?>
+internal class VersionConverter : Converter<Version?>
 {
 	/// <inheritdoc/>
-	public override Version? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Version(value) : null;
+	public override Version? Read(ref Reader reader, SerializationContext context) => reader.ReadString() is string value ? new Version(value) : null;
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in Version? value, SerializationContext context) => writer.Write(value?.ToString());
+	public override void Write(ref Writer writer, in Version? value, SerializationContext context) => writer.Write(value?.ToString());
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -237,13 +237,13 @@ internal class VersionConverter : MessagePackConverter<Version?>
 /// <summary>
 /// Serializes a <see cref="Uri"/>.
 /// </summary>
-internal class UriConverter : MessagePackConverter<Uri?>
+internal class UriConverter : Converter<Uri?>
 {
 	/// <inheritdoc/>
-	public override Uri? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString() is string value ? new Uri(value, UriKind.RelativeOrAbsolute) : null;
+	public override Uri? Read(ref Reader reader, SerializationContext context) => reader.ReadString() is string value ? new Uri(value, UriKind.RelativeOrAbsolute) : null;
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in Uri? value, SerializationContext context) => writer.Write(value?.OriginalString);
+	public override void Write(ref Writer writer, in Uri? value, SerializationContext context) => writer.Write(value?.OriginalString);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -259,13 +259,13 @@ internal class UriConverter : MessagePackConverter<Uri?>
 /// <summary>
 /// Serializes a <see cref="Half"/>.
 /// </summary>
-internal class HalfConverter : MessagePackConverter<Half>
+internal class HalfConverter : Converter<Half>
 {
 	/// <inheritdoc/>
-	public override Half Read(ref MessagePackReader reader, SerializationContext context) => (Half)reader.ReadSingle();
+	public override Half Read(ref Reader reader, SerializationContext context) => (Half)reader.ReadSingle();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in Half value, SerializationContext context) => writer.Write((float)value);
+	public override void Write(ref Writer writer, in Half value, SerializationContext context) => writer.Write((float)value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -281,13 +281,13 @@ internal class HalfConverter : MessagePackConverter<Half>
 /// <summary>
 /// Serializes a <see cref="float"/>.
 /// </summary>
-internal class SingleConverter : MessagePackConverter<float>
+internal class SingleConverter : Converter<float>
 {
 	/// <inheritdoc/>
-	public override float Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadSingle();
+	public override float Read(ref Reader reader, SerializationContext context) => reader.ReadSingle();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in float value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in float value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -301,13 +301,13 @@ internal class SingleConverter : MessagePackConverter<float>
 /// <summary>
 /// Serializes a <see cref="double"/>.
 /// </summary>
-internal class DoubleConverter : MessagePackConverter<double>
+internal class DoubleConverter : Converter<double>
 {
 	/// <inheritdoc/>
-	public override double Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadDouble();
+	public override double Read(ref Reader reader, SerializationContext context) => reader.ReadDouble();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in double value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in double value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -688,13 +688,13 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 /// <summary>
 /// Serializes <see cref="DateOnly"/> values.
 /// </summary>
-internal class DateOnlyConverter : MessagePackConverter<DateOnly>
+internal class DateOnlyConverter : Converter<DateOnly>
 {
 	/// <inheritdoc/>
-	public override DateOnly Read(ref MessagePackReader reader, SerializationContext context) => DateOnly.FromDayNumber(reader.ReadInt32());
+	public override DateOnly Read(ref Reader reader, SerializationContext context) => DateOnly.FromDayNumber(reader.ReadInt32());
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in DateOnly value, SerializationContext context) => writer.Write(value.DayNumber);
+	public override void Write(ref Writer writer, in DateOnly value, SerializationContext context) => writer.Write(value.DayNumber);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -709,13 +709,13 @@ internal class DateOnlyConverter : MessagePackConverter<DateOnly>
 /// <summary>
 /// Serializes <see cref="TimeOnly"/> values.
 /// </summary>
-internal class TimeOnlyConverter : MessagePackConverter<TimeOnly>
+internal class TimeOnlyConverter : Converter<TimeOnly>
 {
 	/// <inheritdoc/>
-	public override TimeOnly Read(ref MessagePackReader reader, SerializationContext context) => new TimeOnly(reader.ReadInt64());
+	public override TimeOnly Read(ref Reader reader, SerializationContext context) => new TimeOnly(reader.ReadInt64());
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TimeOnly value, SerializationContext context) => writer.Write(value.Ticks);
+	public override void Write(ref Writer writer, in TimeOnly value, SerializationContext context) => writer.Write(value.Ticks);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -732,13 +732,13 @@ internal class TimeOnlyConverter : MessagePackConverter<TimeOnly>
 /// <summary>
 /// Serializes <see cref="TimeSpan"/> values.
 /// </summary>
-internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
+internal class TimeSpanConverter : Converter<TimeSpan>
 {
 	/// <inheritdoc/>
-	public override TimeSpan Read(ref MessagePackReader reader, SerializationContext context) => new TimeSpan(reader.ReadInt64());
+	public override TimeSpan Read(ref Reader reader, SerializationContext context) => new TimeSpan(reader.ReadInt64());
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
+	public override void Write(ref Writer writer, in TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -755,13 +755,13 @@ internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
 /// <summary>
 /// Serializes <see cref="Rune"/> values.
 /// </summary>
-internal class RuneConverter : MessagePackConverter<Rune>
+internal class RuneConverter : Converter<Rune>
 {
 	/// <inheritdoc/>
-	public override Rune Read(ref MessagePackReader reader, SerializationContext context) => new Rune(reader.ReadInt32());
+	public override Rune Read(ref Reader reader, SerializationContext context) => new Rune(reader.ReadInt32());
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in Rune value, SerializationContext context) => writer.Write(value.Value);
+	public override void Write(ref Writer writer, in Rune value, SerializationContext context) => writer.Write(value.Value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -776,13 +776,13 @@ internal class RuneConverter : MessagePackConverter<Rune>
 /// <summary>
 /// Serializes <see cref="char"/> values.
 /// </summary>
-internal class CharConverter : MessagePackConverter<char>
+internal class CharConverter : Converter<char>
 {
 	/// <inheritdoc/>
-	public override char Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadChar();
+	public override char Read(ref Reader reader, SerializationContext context) => reader.ReadChar();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in char value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref Writer writer, in char value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)

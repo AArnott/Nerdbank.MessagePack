@@ -62,6 +62,8 @@ public ref struct Reader
 
 	public bool ReadBoolean() => this.deformatter.ReadBoolean(ref this);
 
+	public char ReadChar() => this.deformatter.ReadChar(ref this);
+
 	public string? ReadString() => this.deformatter.ReadString(ref this);
 
 	public ReadOnlySequence<byte>? ReadStringSequence() => this.deformatter.ReadStringSequence(ref this);
@@ -85,6 +87,8 @@ public ref struct Reader
 	public ulong ReadUInt64() => this.deformatter.ReadUInt64(ref this);
 
 	public float ReadSingle() => this.deformatter.ReadSingle(ref this);
+
+	public double ReadDouble() => this.deformatter.ReadDouble(ref this);
 
 	public ReadOnlySequence<byte> ReadRaw(SerializationContext context) => this.deformatter.ReadRaw(ref this, context);
 
