@@ -182,7 +182,9 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override DecodeResult TryRead(ref Reader reader, out char value)
 	{
-		throw new NotImplementedException();
+		DecodeResult result = this.TryRead(ref reader, out ushort charOrdinal);
+		value = result == DecodeResult.Success ? (char)charOrdinal : default;
+		return result;
 	}
 
 	public override DecodeResult TryRead(ref Reader reader, out float value)
