@@ -84,9 +84,9 @@ public class MigrationAnalyzerTests
 				public string? Name { get; set; }
 
 				[GenerateShape<string>]
-				private partial class MyTypeFormatter : MessagePackConverter<MyType>
+				private partial class MyTypeFormatter : Converter<MyType>
 				{
-					public override MyType? Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
+					public override MyType? Read(ref Nerdbank.PolySerializer.Reader reader, SerializationContext context)
 					{
 						if (reader.TryReadNil())
 						{
@@ -112,7 +112,7 @@ public class MigrationAnalyzerTests
 						return new MyType { Name = name };
 					}
 
-					public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType? value, SerializationContext context)
+					public override void Write(ref Nerdbank.PolySerializer.Writer writer, in MyType? value, SerializationContext context)
 					{
 						if (value is null)
 						{

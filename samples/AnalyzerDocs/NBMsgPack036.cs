@@ -3,33 +3,31 @@
 
 #pragma warning disable NBMsgPackAsync
 
-using Nerdbank.PolySerializer.Converters;
-
 namespace Samples.AnalyzerDocs.NBMsgPack036
 {
     internal record SomeCustomType(int SeedCount);
 
     namespace Defective
     {
-        internal class MyCustomConverter : MessagePackConverter<SomeCustomType>
+        internal class MyCustomConverter : Converter<SomeCustomType>
         {
             public override bool PreferAsyncSerialization => true;
 
-            public override SomeCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+            public override SomeCustomType? Read(ref Reader reader, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
-            public override void Write(ref MessagePackWriter writer, in SomeCustomType? value, SerializationContext context)
+            public override void Write(ref Writer writer, in SomeCustomType? value, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
 #pragma warning disable NBMsgPack036
             #region Defective
-            public override async ValueTask<SomeCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+            public override async ValueTask<SomeCustomType?> ReadAsync(AsyncReader reader, SerializationContext context)
             {
-                MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+                StreamingReader streamingReader = reader.CreateStreamingReader();
 
                 int count;
                 while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
@@ -55,7 +53,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack036
             #endregion
 #pragma warning restore NBMsgPack035
 
-            public override ValueTask WriteAsync(MessagePackAsyncWriter writer, SomeCustomType? value, SerializationContext context)
+            public override ValueTask WriteAsync(AsyncWriter writer, SomeCustomType? value, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
@@ -64,24 +62,24 @@ namespace Samples.AnalyzerDocs.NBMsgPack036
 
     namespace Fixed
     {
-        internal class MyCustomConverter : MessagePackConverter<SomeCustomType>
+        internal class MyCustomConverter : Converter<SomeCustomType>
         {
             public override bool PreferAsyncSerialization => true;
 
-            public override SomeCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+            public override SomeCustomType? Read(ref Reader reader, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
-            public override void Write(ref MessagePackWriter writer, in SomeCustomType? value, SerializationContext context)
+            public override void Write(ref Writer writer, in SomeCustomType? value, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
             #region Fix
-            public override async ValueTask<SomeCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+            public override async ValueTask<SomeCustomType?> ReadAsync(AsyncReader reader, SerializationContext context)
             {
-                MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+                StreamingReader streamingReader = reader.CreateStreamingReader();
 
                 int count;
                 while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
@@ -105,7 +103,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack036
             }
             #endregion
 
-            public override ValueTask WriteAsync(MessagePackAsyncWriter writer, SomeCustomType? value, SerializationContext context)
+            public override ValueTask WriteAsync(AsyncWriter writer, SomeCustomType? value, SerializationContext context)
             {
                 throw new NotImplementedException();
             }

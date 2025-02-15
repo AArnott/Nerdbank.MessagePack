@@ -1,7 +1,6 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq.Expressions;
 using Xunit.Sdk;
 
 public partial class MessagePackSerializerTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
@@ -552,12 +551,12 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[GenerateShape<ReadOnlyMemory<byte>>]
 	internal partial class Witness;
 
-	private class CustomStringConverter : MessagePackConverter<string>
+	private class CustomStringConverter : Converter<string>
 	{
-		public override string? Read(ref MessagePackReader reader, SerializationContext context)
+		public override string? Read(ref Reader reader, SerializationContext context)
 			=> reader.ReadString() + "R";
 
-		public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context)
+		public override void Write(ref Writer writer, in string? value, SerializationContext context)
 			=> writer.Write(value + "W");
 	}
 }

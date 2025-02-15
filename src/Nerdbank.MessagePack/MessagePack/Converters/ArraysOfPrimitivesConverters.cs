@@ -38,7 +38,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		/// </remarks>
 		private static readonly unsafe int MsgPackBufferLengthFactor = typeof(TElement) == typeof(bool) ? 1 : (sizeof(TElement) + 1);
 
-		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.VerifyFormat(formatter, deformatter);
+		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 		/// <inheritdoc/>
 		public override void Write(ref Writer writer, in TEnumerable? value, SerializationContext context)

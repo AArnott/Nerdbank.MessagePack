@@ -19,7 +19,7 @@ internal class ReferencePreservingConverter<T>(Converter<T> inner) : Converter<T
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
 
-	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.VerifyFormat(formatter, deformatter);
+	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 	/// <inheritdoc/>
 	public override T? Read(ref Reader reader, SerializationContext context)

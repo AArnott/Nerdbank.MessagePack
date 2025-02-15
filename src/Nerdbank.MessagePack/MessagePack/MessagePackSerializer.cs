@@ -184,16 +184,9 @@ public partial record MessagePackSerializer
 
 	private void SerializeToMessagePackWriter<T>(ref MessagePackWriter writer, in T? value, Converter<T> converter, SerializationContext context)
 	{
-		if (converter is MessagePackConverter<T> msgpackConverter)
-		{
-			msgpackConverter.Write(ref writer, value, context);
-		}
-		else
-		{
-			Writer baseWriter = writer.ToWriter();
-			converter.Write(ref baseWriter, value, context);
-			writer = MessagePackWriter.FromWriter(baseWriter);
-		}
+		Writer baseWriter = writer.ToWriter();
+		converter.Write(ref baseWriter, value, context);
+		writer = MessagePackWriter.FromWriter(baseWriter);
 	}
 
 	/// <summary>
@@ -227,17 +220,10 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		Converter<T> converter = this.GetConverter(shape);
-		if (converter is MessagePackConverter<T> messagePackConverter)
-		{
-			return messagePackConverter.Read(ref reader, context.Value);
-		}
-		else
-		{
-			Reader baseReader = reader.ToReader();
-			T? result = converter.Read(ref baseReader, context.Value);
-			reader = MessagePackReader.FromReader(baseReader);
-			return result;
-		}
+		Reader baseReader = reader.ToReader();
+		T? result = converter.Read(ref baseReader, context.Value);
+		reader = MessagePackReader.FromReader(baseReader);
+		return result;
 	}
 
 	/// <summary>
@@ -255,7 +241,10 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		return ((MessagePackConverter<T>)this.converterCache.GetOrAddConverter<T>(provider)).Read(ref reader, context.Value);
+		Reader baseReader = reader.ToReader();
+		T? result = this.converterCache.GetOrAddConverter<T>(provider).Read(ref baseReader, context.Value);
+		reader = MessagePackReader.FromReader(baseReader);
+		return result;
 	}
 
 	/// <summary>

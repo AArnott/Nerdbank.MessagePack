@@ -75,7 +75,7 @@ public partial record MessagePackSerializer
 
 			if (IsNullableType(typeShape.Type))
 			{
-				schema = MessagePackConverter<int>.ApplyJsonSchemaNullability(schema);
+				schema = Converter.ApplyJsonSchemaNullability(schema);
 			}
 
 			if (this.context.SchemaDefinitions.Count > 0)

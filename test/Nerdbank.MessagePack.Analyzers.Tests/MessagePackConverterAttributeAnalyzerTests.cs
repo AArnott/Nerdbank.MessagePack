@@ -17,10 +17,10 @@ public class MessagePackConverterAttributeAnalyzerTests
 			{
 			}
 
-			public class MyTypeConverter : MessagePackConverter<MyType>
+			public class MyTypeConverter : Converter<MyType>
 			{
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
+				public override MyType Read(ref Reader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Write(ref Writer writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -39,11 +39,11 @@ public class MessagePackConverterAttributeAnalyzerTests
 			{
 			}
 
-			public class MyTypeConverter : MessagePackConverter<MyType>
+			public class MyTypeConverter : Converter<MyType>
 			{
 				private MyTypeConverter() { }
-				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
+				public override MyType Read(ref Reader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Write(ref Writer writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -64,8 +64,8 @@ public class MessagePackConverterAttributeAnalyzerTests
 
 			public class MyTypeConverter
 			{
-				public MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-				public void Write(ref MessagePackWriter writer, ref MyType value, SerializationContext context) => throw new System.NotImplementedException();
+				public MyType Read(ref Reader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public void Write(ref Writer writer, ref MyType value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -84,10 +84,10 @@ public class MessagePackConverterAttributeAnalyzerTests
 			{
 			}
 
-			public class IntConverter : MessagePackConverter<int>
+			public class IntConverter : Converter<int>
 			{
-				public override int Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
-				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new System.NotImplementedException();
+				public override int Read(ref Reader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Write(ref Writer writer, in int value, SerializationContext context) => throw new System.NotImplementedException();
 			}
 			""";
 

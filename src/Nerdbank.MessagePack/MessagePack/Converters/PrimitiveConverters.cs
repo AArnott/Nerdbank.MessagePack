@@ -685,7 +685,7 @@ internal class DateTimeConverter : Converter<DateTime>
 	public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => MessagePackConverter<DateTime>.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => MessagePackConverter.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);
 }
 
 /// <summary>
@@ -721,7 +721,7 @@ internal class DateTimeOffsetConverter : Converter<DateTimeOffset>
 		{
 			["type"] = "array",
 			["items"] = new JsonArray(
-				MessagePackConverter<DateTimeOffset>.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
+				MessagePackConverter.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
 				new JsonObject { ["type"] = "integer" }),
 		};
 }

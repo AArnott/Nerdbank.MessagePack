@@ -145,7 +145,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 /// <param name="ctor">The default constructor for the enumerable type.</param>
 internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-	MessagePackConverter<TElement> elementConverter,
+	Converter<TElement> elementConverter,
 	Setter<TEnumerable, TElement> addElement,
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {

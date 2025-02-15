@@ -733,7 +733,7 @@ internal static class HardwareAccelerated
 	{
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
-		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.VerifyFormat(formatter, deformatter);
+		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 		public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 		{
@@ -864,7 +864,7 @@ internal static class HardwareAccelerated
 
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
-		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<TEnumerable>.VerifyFormat(formatter, deformatter);
+		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 		/// <inheritdoc/>
 		public override TEnumerable? Read(ref Reader reader, SerializationContext context)

@@ -145,24 +145,24 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 		internal int Property { get; set; }
 	}
 
-	internal class SpecialRecordConverter : MessagePackConverter<SpecialRecord>
+	internal class SpecialRecordConverter : Converter<SpecialRecord>
 	{
 		public override bool PreferAsyncSerialization => true;
 
 		internal int AsyncDeserializationCounter { get; set; }
 
-		public override SpecialRecord? Read(ref MessagePackReader reader, SerializationContext context)
+		public override SpecialRecord? Read(ref Reader reader, SerializationContext context)
 		{
 			return new SpecialRecord { Property = reader.ReadInt32() };
 		}
 
-		public override void Write(ref MessagePackWriter writer, in SpecialRecord? value, SerializationContext context)
+		public override void Write(ref Writer writer, in SpecialRecord? value, SerializationContext context)
 		{
 			writer.Write(value!.Property);
 		}
 
 #pragma warning disable NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-		public override ValueTask<SpecialRecord?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+		public override ValueTask<SpecialRecord?> ReadAsync(AsyncReader reader, SerializationContext context)
 		{
 			this.AsyncDeserializationCounter++;
 			return base.ReadAsync(reader, context);

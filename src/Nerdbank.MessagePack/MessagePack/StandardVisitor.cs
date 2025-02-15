@@ -444,10 +444,10 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 #if NET
 	protected virtual Converter CreateArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter, int rank)
-		=> new ArrayWithNestedDimensionsConverter<TArray, TElement>((MessagePackConverter<TElement>)elementConverter, rank);
+		=> new ArrayWithNestedDimensionsConverter<TArray, TElement>(elementConverter, rank);
 
 	protected virtual Converter CreateArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter)
-		=> new ArrayWithFlattenedDimensionsConverter<TArray, TElement>((MessagePackConverter<TElement>)elementConverter);
+		=> new ArrayWithFlattenedDimensionsConverter<TArray, TElement>(elementConverter);
 #endif
 
 	protected abstract bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter);
@@ -610,7 +610,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		};
 	}
 
-	private MessagePackConverter<T>? GetCustomConverter<T>(ITypeShape<T> typeShape)
+	private Converter<T>? GetCustomConverter<T>(ITypeShape<T> typeShape)
 	{
 		if (typeShape.AttributeProvider?.GetCustomAttributes(typeof(MessagePackConverterAttribute), false).FirstOrDefault() is not MessagePackConverterAttribute customConverterAttribute)
 		{
@@ -622,6 +622,6 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			throw new SerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
 		}
 
-		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
+		return (Converter<T>)ctor.Invoke(Array.Empty<object?>());
 	}
 }

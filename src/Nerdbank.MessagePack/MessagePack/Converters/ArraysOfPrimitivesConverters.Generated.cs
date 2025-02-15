@@ -43,7 +43,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(SByte))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new SByteArrayConverter<TEnumerable>(
+			converter = new SByteArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<SByte>>)getEnumerable,
 				(SpanConstructor<SByte, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -51,7 +51,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(Int16))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new Int16ArrayConverter<TEnumerable>(
+			converter = new Int16ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Int16>>)getEnumerable,
 				(SpanConstructor<Int16, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -59,7 +59,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(Int32))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new Int32ArrayConverter<TEnumerable>(
+			converter = new Int32ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Int32>>)getEnumerable,
 				(SpanConstructor<Int32, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -67,7 +67,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(Int64))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new Int64ArrayConverter<TEnumerable>(
+			converter = new Int64ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Int64>>)getEnumerable,
 				(SpanConstructor<Int64, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -75,7 +75,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(UInt16))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new UInt16ArrayConverter<TEnumerable>(
+			converter = new UInt16ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<UInt16>>)getEnumerable,
 				(SpanConstructor<UInt16, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -83,7 +83,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(UInt32))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new UInt32ArrayConverter<TEnumerable>(
+			converter = new UInt32ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<UInt32>>)getEnumerable,
 				(SpanConstructor<UInt32, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -91,7 +91,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(UInt64))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new UInt64ArrayConverter<TEnumerable>(
+			converter = new UInt64ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<UInt64>>)getEnumerable,
 				(SpanConstructor<UInt64, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -99,7 +99,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(Single))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new SingleArrayConverter<TEnumerable>(
+			converter = new SingleArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Single>>)getEnumerable,
 				(SpanConstructor<Single, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -107,7 +107,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(Double))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new DoubleArrayConverter<TEnumerable>(
+			converter = new DoubleArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Double>>)getEnumerable,
 				(SpanConstructor<Double, TEnumerable>?)spanConstructorToUse);
 			return true;
@@ -115,7 +115,7 @@ internal static partial class ArraysOfPrimitivesConverters
 
 		if (typeof(TElement) == typeof(Boolean))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new BooleanArrayConverter<TEnumerable>(
+			converter = new BooleanArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Boolean>>)getEnumerable,
 				(SpanConstructor<Boolean, TEnumerable>?)spanConstructorToUse);
 			return true;

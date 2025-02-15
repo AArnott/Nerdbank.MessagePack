@@ -430,11 +430,11 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 	}
 
-	internal class NonDocumentingCustomConverter : MessagePackConverter<TypeWithNonDocumentingCustomConverter>
+	internal class NonDocumentingCustomConverter : Converter<TypeWithNonDocumentingCustomConverter>
 	{
-		public override TypeWithNonDocumentingCustomConverter? Read(ref MessagePackReader reader, SerializationContext context)
+		public override TypeWithNonDocumentingCustomConverter? Read(ref Reader reader, SerializationContext context)
 		{
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return null;
 			}
@@ -443,11 +443,11 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 			return new TypeWithNonDocumentingCustomConverter();
 		}
 
-		public override void Write(ref MessagePackWriter writer, in TypeWithNonDocumentingCustomConverter? value, SerializationContext context)
+		public override void Write(ref Writer writer, in TypeWithNonDocumentingCustomConverter? value, SerializationContext context)
 		{
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 
@@ -460,7 +460,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 	}
 
-	internal class DocumentingCustomConverter : MessagePackConverter<CustomType>
+	internal class DocumentingCustomConverter : Converter<CustomType>
 	{
 		public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		{
@@ -473,9 +473,9 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 			};
 		}
 
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override CustomType? Read(ref Reader reader, SerializationContext context)
 		{
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return null;
 			}
@@ -484,11 +484,11 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 			return new CustomType();
 		}
 
-		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
+		public override void Write(ref Writer writer, in CustomType? value, SerializationContext context)
 		{
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 

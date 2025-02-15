@@ -20,14 +20,14 @@ public partial class MessagePackConverterAttributeTests(ITestOutputHelper logger
 		public override string ToString() => this.InternalProperty ?? "(null)";
 	}
 
-	public class CustomTypeConverter : MessagePackConverter<CustomType>
+	public class CustomTypeConverter : Converter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
+		public override CustomType? Read(ref Reader reader, SerializationContext context)
 		{
 			return new() { InternalProperty = reader.ReadString() };
 		}
 
-		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context)
+		public override void Write(ref Writer writer, in CustomType? value, SerializationContext context)
 		{
 			writer.Write(value?.InternalProperty);
 		}

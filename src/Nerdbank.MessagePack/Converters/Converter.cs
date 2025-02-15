@@ -151,7 +151,7 @@ public abstract class Converter(Type type)
 		return new()
 		{
 			["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
-			["description"] = $"The schema of this object is unknown as it is determined by the {undocumentingConverter.FullName} converter which does not override {nameof(MessagePackConverter<int>.GetJsonSchema)}.",
+			["description"] = $"The schema of this object is unknown as it is determined by the {undocumentingConverter.FullName} converter which does not override {nameof(GetJsonSchema)}.",
 		};
 	}
 

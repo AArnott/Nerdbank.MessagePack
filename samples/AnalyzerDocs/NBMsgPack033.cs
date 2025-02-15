@@ -9,33 +9,33 @@ namespace Samples.AnalyzerDocs.NBMsgPack033
 
     namespace Defective
     {
-        internal class MyCustomConverter : MessagePackConverter<SomeCustomType>
+        internal class MyCustomConverter : Converter<SomeCustomType>
         {
             public override bool PreferAsyncSerialization => true;
 
-            public override SomeCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+            public override SomeCustomType? Read(ref Reader reader, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
-            public override void Write(ref MessagePackWriter writer, in SomeCustomType? value, SerializationContext context)
+            public override void Write(ref Writer writer, in SomeCustomType? value, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
-            public override ValueTask<SomeCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+            public override ValueTask<SomeCustomType?> ReadAsync(AsyncReader reader, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
 #pragma warning disable NBMsgPack033
             #region Defective
-            public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, SomeCustomType? value, SerializationContext context)
+            public override async ValueTask WriteAsync(AsyncWriter writer, SomeCustomType? value, SerializationContext context)
             {
-                MessagePackWriter syncWriter = writer.CreateWriter();
+                Writer syncWriter = writer.CreateWriter();
                 if (value is null)
                 {
-                    syncWriter.WriteNil();
+                    syncWriter.WriteNull();
                     return; // OOPS: exit without returning writer
                 }
 
@@ -51,32 +51,32 @@ namespace Samples.AnalyzerDocs.NBMsgPack033
 
     namespace Fixed
     {
-        internal class MyCustomConverter : MessagePackConverter<SomeCustomType>
+        internal class MyCustomConverter : Converter<SomeCustomType>
         {
             public override bool PreferAsyncSerialization => true;
 
-            public override SomeCustomType? Read(ref MessagePackReader reader, SerializationContext context)
+            public override SomeCustomType? Read(ref Reader reader, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
-            public override void Write(ref MessagePackWriter writer, in SomeCustomType? value, SerializationContext context)
+            public override void Write(ref Writer writer, in SomeCustomType? value, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
-            public override ValueTask<SomeCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+            public override ValueTask<SomeCustomType?> ReadAsync(AsyncReader reader, SerializationContext context)
             {
                 throw new NotImplementedException();
             }
 
             #region Fix
-            public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, SomeCustomType? value, SerializationContext context)
+            public override async ValueTask WriteAsync(AsyncWriter writer, SomeCustomType? value, SerializationContext context)
             {
-                MessagePackWriter syncWriter = writer.CreateWriter();
+                Writer syncWriter = writer.CreateWriter();
                 if (value is null)
                 {
-                    syncWriter.WriteNil();
+                    syncWriter.WriteNull();
                     writer.ReturnWriter(ref syncWriter);
                     return;
                 }

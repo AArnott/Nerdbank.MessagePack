@@ -51,7 +51,7 @@ internal static partial class ArraysOfPrimitivesConverters
 #>
 		if (typeof(TElement) == typeof(<#=primitive#>))
 		{
-			converter = (MessagePackConverter<TEnumerable>)(object)new <#=primitive#>ArrayConverter<TEnumerable>(
+			converter = new <#=primitive#>ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<<#=primitive#>>>)getEnumerable,
 				(SpanConstructor<<#=primitive#>, TEnumerable>?)spanConstructorToUse);
 			return true;

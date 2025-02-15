@@ -167,17 +167,9 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		Converter<T> converter = this.GetConverter(shape);
-		if (converter is MessagePackConverter<T> messagePackConverter)
-		{
-			MessagePackReader reader = new(buffer);
-			return messagePackConverter.Read(ref reader, context.Value);
-		}
-		else
-		{
-			Reader baseReader = new(buffer, MsgPackDeformatter.Default);
-			T? result = converter.Read(ref baseReader, context.Value);
-			return result;
-		}
+		Reader baseReader = new(buffer, MsgPackDeformatter.Default);
+		T? result = converter.Read(ref baseReader, context.Value);
+		return result;
 	}
 
 	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)"/>

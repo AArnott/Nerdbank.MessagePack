@@ -123,25 +123,25 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		}
 	}
 
-	private class NoOpConverter : MessagePackConverter<CustomType>
+	private class NoOpConverter : Converter<CustomType>
 	{
-		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+		public override CustomType? Read(ref Reader reader, SerializationContext context) => throw new NotImplementedException();
 
-		public override void Write(ref MessagePackWriter writer, in CustomType? value, SerializationContext context) => throw new NotImplementedException();
+		public override void Write(ref Writer writer, in CustomType? value, SerializationContext context) => throw new NotImplementedException();
 	}
 
 	/// <summary>
 	/// A <see cref="Tree"/> converter that may be <em>optionally</em> applied at runtime.
 	/// It should <em>not</em> be referenced from <see cref="Tree"/> via <see cref="MessagePackConverterAttribute"/>.
 	/// </summary>
-	private class TreeConverter : MessagePackConverter<Tree>
+	private class TreeConverter : Converter<Tree>
 	{
 		public int InvocationCount { get; private set; }
 
-		public override Tree? Read(ref MessagePackReader reader, SerializationContext context)
+		public override Tree? Read(ref Reader reader, SerializationContext context)
 		{
 			this.InvocationCount++;
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return null;
 			}
@@ -149,12 +149,12 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 			return new Tree(reader.ReadInt32());
 		}
 
-		public override void Write(ref MessagePackWriter writer, in Tree? value, SerializationContext context)
+		public override void Write(ref Writer writer, in Tree? value, SerializationContext context)
 		{
 			this.InvocationCount++;
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 
@@ -162,16 +162,16 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		}
 	}
 
-	private class StatefulConverter : MessagePackConverter<TypeWithStatefulConverter>
+	private class StatefulConverter : Converter<TypeWithStatefulConverter>
 	{
-		public override TypeWithStatefulConverter Read(ref MessagePackReader reader, SerializationContext context)
+		public override TypeWithStatefulConverter Read(ref Reader reader, SerializationContext context)
 		{
 			int multiplier = (int)context["ValueMultiplier"]!;
 			int serializedValue = reader.ReadInt32();
 			return new TypeWithStatefulConverter(serializedValue / multiplier);
 		}
 
-		public override void Write(ref MessagePackWriter writer, in TypeWithStatefulConverter value, SerializationContext context)
+		public override void Write(ref Writer writer, in TypeWithStatefulConverter value, SerializationContext context)
 		{
 			int multiplier = (int)context["ValueMultiplier"]!;
 			writer.Write(value.Value * multiplier);
