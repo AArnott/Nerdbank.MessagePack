@@ -304,7 +304,41 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override DecodeResult TryRead(ref Reader reader, out DateTime value)
 	{
-		throw new NotImplementedException();
+		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			this.Advance(ref reader, tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
+
+		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref DateTime value, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.Advance(ref reader, tokenSize);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (reader.SequenceReader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
+						return SlowPath(ref reader, self, readResult, ref value, ref tokenSize);
+					}
+					else
+					{
+						return self.InsufficientBytes(reader);
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
 	}
 
 	/// <summary>

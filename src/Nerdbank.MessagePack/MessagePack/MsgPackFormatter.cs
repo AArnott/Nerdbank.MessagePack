@@ -158,7 +158,16 @@ public class MsgPackFormatter : Formatter
 
 	public override void Write(ref Writer writer, DateTime value)
 	{
-		throw new NotImplementedException();
+		if (this.OldSpec)
+		{
+			throw new NotSupportedException($"The MsgPack spec does not define a format for {nameof(DateTime)} in {nameof(this.OldSpec)} mode. Turn off {nameof(this.OldSpec)} mode or use NativeDateTimeFormatter.");
+		}
+		else
+		{
+			Span<byte> span = writer.Buffer.GetSpan(15);
+			Assumes.True(MessagePackPrimitives.TryWrite(span, value, out int written));
+			writer.Buffer.Advance(written);
+		}
 	}
 
 	public override unsafe void Write(ref Writer writer, string? value)
@@ -187,7 +196,8 @@ public class MsgPackFormatter : Formatter
 
 	public override void WriteEncodedString(ref Writer writer, scoped ReadOnlySpan<byte> value)
 	{
-		throw new NotImplementedException();
+		this.WriteStringHeader(ref writer, value.Length);
+		writer.Buffer.Write(value);
 	}
 
 	public override void Write(ref Writer writer, scoped ReadOnlySpan<byte> value)

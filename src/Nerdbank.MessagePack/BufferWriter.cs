@@ -181,7 +181,7 @@ public ref struct BufferWriter
 	/// </summary>
 	/// <param name="source">The buffer to copy in.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void Write(ReadOnlySpan<byte> source)
+	internal void Write(scoped ReadOnlySpan<byte> source)
 	{
 		if (this.span.Length >= source.Length)
 		{
@@ -272,7 +272,7 @@ public ref struct BufferWriter
 	/// Copies the caller's buffer into this writer, potentially across multiple buffers from the underlying writer.
 	/// </summary>
 	/// <param name="source">The buffer to copy into this writer.</param>
-	private void WriteMultiBuffer(ReadOnlySpan<byte> source)
+	private void WriteMultiBuffer(scoped ReadOnlySpan<byte> source)
 	{
 		int copiedBytes = 0;
 		int bytesLeftToCopy = source.Length;
