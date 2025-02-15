@@ -26,7 +26,8 @@ public ref struct Reader
 		this.deformatter = deformatter;
 	}
 
-	internal SequenceReader<byte> SequenceReader => this.inner;
+	[UnscopedRef]
+	internal ref SequenceReader<byte> SequenceReader => ref this.inner;
 
 	public ReadOnlySequence<byte> Sequence => this.inner.Sequence;
 
