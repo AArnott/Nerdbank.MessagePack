@@ -9,7 +9,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 
 public class MsgPackFormatter : Formatter
 {
-	public static readonly MsgPackFormatter Instance = new();
+	public static readonly MsgPackFormatter Default = new();
 
 	private MsgPackFormatter()
 	{

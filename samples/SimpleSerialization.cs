@@ -22,12 +22,12 @@ namespace Samples
             Sequence<byte> sequence = new();
 
             // Serialize the object.
-            MessagePackWriter writer = new(sequence);
+            Writer writer = new(sequence, MsgPackFormatter.Default);
             serializer.SerializeObject(ref writer, value, shape);
             writer.Flush();
 
             // Deserialize the object.
-            MessagePackReader reader = new(sequence);
+            Reader reader = new(sequence, MsgPackDeformatter.Default);
             return serializer.DeserializeObject(ref reader, shape)!;
         }
 

@@ -145,14 +145,12 @@ public partial record MessagePackSerializer
 	/// </para>
 	/// <code source="../../samples/SimpleSerialization.cs" region="NonGenericSerializeDeserialize" lang="C#" />
 	/// </example>
-	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
+	public void SerializeObject(ref Writer writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		Writer baseWriter = writer.ToWriter();
-		this.GetConverter(shape).WriteObject(ref baseWriter, value, context.Value);
-		writer = MessagePackWriter.FromWriter(baseWriter);
+		this.GetConverter(shape).WriteObject(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -163,11 +161,11 @@ public partial record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+	public void Serialize<T>(ref Writer writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.SerializeToMessagePackWriter(ref writer, value, this.GetConverter(shape), context.Value);
+		this.GetConverter(shape).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -178,17 +176,10 @@ public partial record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
-	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	public void Serialize<T>(ref Writer writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		this.SerializeToMessagePackWriter(ref writer, value, this.GetConverter<T>(provider), context.Value);
-	}
-
-	private void SerializeToMessagePackWriter<T>(ref MessagePackWriter writer, in T? value, Converter<T> converter, SerializationContext context)
-	{
-		Writer baseWriter = writer.ToWriter();
-		converter.Write(ref baseWriter, value, context);
-		writer = MessagePackWriter.FromWriter(baseWriter);
+		this.GetConverter<T>(provider).Write(ref writer, value, context.Value);
 	}
 
 	/// <summary>
@@ -201,14 +192,12 @@ public partial record MessagePackSerializer
 	/// <example>
 	/// See the <see cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, CancellationToken)"/> method for an example of using this method.
 	/// </example>
-	public object? DeserializeObject(ref MessagePackReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
+	public object? DeserializeObject(ref Reader reader, ITypeShape shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		Reader baseReader = reader.ToReader();
-		object? result = this.GetConverter(shape).ReadObject(ref baseReader, context.Value);
-		reader = MessagePackReader.FromReader(baseReader);
+		object? result = this.GetConverter(shape).ReadObject(ref reader, context.Value);
 		return result;
 	}
 
@@ -220,14 +209,12 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+	public T? Deserialize<T>(ref Reader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		Converter<T> converter = this.GetConverter(shape);
-		Reader baseReader = reader.ToReader();
-		T? result = converter.Read(ref baseReader, context.Value);
-		reader = MessagePackReader.FromReader(baseReader);
+		T? result = converter.Read(ref reader, context.Value);
 		return result;
 	}
 
@@ -243,12 +230,10 @@ public partial record MessagePackSerializer
 	/// </param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	public T? Deserialize<T>(ref Reader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		Reader baseReader = reader.ToReader();
-		T? result = this.converterCache.GetOrAddConverter<T>(provider).Read(ref baseReader, context.Value);
-		reader = MessagePackReader.FromReader(baseReader);
+		T? result = this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
 		return result;
 	}
 
@@ -337,7 +322,7 @@ public partial record MessagePackSerializer
 	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack, JsonOptions? options = null)
 	{
 		StringWriter jsonWriter = new();
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		while (!reader.End)
 		{
 			ConvertToJson(ref reader, jsonWriter, options);
@@ -352,18 +337,18 @@ public partial record MessagePackSerializer
 	/// <param name="reader">A reader of the msgpack stream.</param>
 	/// <param name="jsonWriter">The writer that will receive JSON text.</param>
 	/// <param name="options">Options to customize how the JSON is written.</param>
-	public static void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions? options = null)
+	public static void ConvertToJson(ref Reader reader, TextWriter jsonWriter, JsonOptions? options = null)
 	{
 		Requires.NotNull(jsonWriter);
 
 		WriteOneElement(ref reader, jsonWriter, options ?? new(), 0);
 
-		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, int indentationLevel)
+		static void WriteOneElement(ref Reader reader, TextWriter jsonWriter, JsonOptions options, int indentationLevel)
 		{
-			switch (reader.NextMessagePackType)
+			switch (MsgPackDeformatter.Default.PeekNextMessagePackType(reader))
 			{
 				case MessagePackType.Nil:
-					reader.ReadNil();
+					reader.ReadNull();
 					jsonWriter.Write("null");
 					break;
 				case MessagePackType.Integer:
@@ -467,13 +452,13 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Extension:
-					Extension extension = reader.ReadExtension();
+					Extension extension = MsgPackDeformatter.Default.ReadExtension(ref reader);
 					jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
 					jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Unknown:
-					throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented.");
+					throw new NotImplementedException($"{MsgPackDeformatter.Default.PeekNextMessagePackType(reader)} not yet implemented.");
 			}
 
 			static void NewLine(TextWriter writer, JsonOptions options, int indentationLevel)

@@ -10,12 +10,12 @@ public ref struct Reader
 	private readonly Deformatter deformatter;
 	private SequenceReader<byte> inner;
 
-	internal Reader(ReadOnlyMemory<byte> buffer, Deformatter deformatter)
+	public Reader(ReadOnlyMemory<byte> buffer, Deformatter deformatter)
 		: this(new ReadOnlySequence<byte>(buffer), deformatter)
 	{
 	}
 
-	internal Reader(ReadOnlySequence<byte> sequence, Deformatter deformatter)
+	public Reader(ReadOnlySequence<byte> sequence, Deformatter deformatter)
 		: this(new SequenceReader<byte>(sequence), deformatter)
 	{
 	}

@@ -17,7 +17,7 @@ internal class MessagePackVisitor : StandardVisitor
 	{
 	}
 
-	internal override Formatter Formatter => MsgPackFormatter.Instance;
+	internal override Formatter Formatter => MsgPackFormatter.Default;
 
 	internal override Deformatter Deformatter => MsgPackDeformatter.Default;
 

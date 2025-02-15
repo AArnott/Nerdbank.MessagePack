@@ -10,10 +10,25 @@ public ref struct Writer
 {
 	private BufferWriter inner;
 
-	internal Writer(BufferWriter writer, Formatter formatter)
+	public Writer(BufferWriter writer, Formatter formatter)
 	{
 		this.inner = writer;
 		this.Formatter = formatter;
+	}
+
+	public Writer(IBufferWriter<byte> writer, Formatter formatter)
+		: this(new BufferWriter(writer), formatter)
+	{
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MessagePackWriter"/> struct.
+	/// </summary>
+	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required..</param>
+	/// <param name="array">An array to start with so we can avoid accessing the <paramref name="sequencePool"/> if possible.</param>
+	internal Writer(SequencePool<byte> sequencePool, byte[] array, Formatter formatter)
+		: this(new BufferWriter(sequencePool, array), formatter)
+	{
 	}
 
 	[UnscopedRef]
@@ -22,6 +37,8 @@ public ref struct Writer
 	public Formatter Formatter { get; }
 
 	public bool ArrayLengthRequiredInHeader => this.Formatter.ArrayLengthRequiredInHeader;
+
+	public void Flush() => this.Buffer.Commit();
 
 	public void WriteArrayHeader(int length) => this.Formatter.WriteArrayStart(ref this, length);
 

@@ -7,9 +7,9 @@ using System.Text;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
+public partial class MsgPackStreamingDeformatter : StreamingDeformatter
 {
-	internal static readonly MsgPackStreamingDeformatter Default = new();
+	public static readonly MsgPackStreamingDeformatter Default = new();
 
 	private uint expectedRemainingStructures;
 
@@ -452,6 +452,30 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 					return ThrowUnreachable();
 			}
 		}
+	}
+
+	public DecodeResult TryRead(ref Reader reader, out Extension value)
+	{
+		Reader originalPosition = reader;
+		DecodeResult result = this.TryRead(ref reader, out ExtensionHeader header);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			return result;
+		}
+
+		if (reader.Remaining < header.Length)
+		{
+			// Rewind the header so we can try it again.
+			reader = originalPosition;
+			value = default;
+			return this.InsufficientBytes(reader);
+		}
+
+		ReadOnlySequence<byte> data = reader.Sequence.Slice(reader.Position, header.Length);
+		reader.Advance(header.Length);
+		value = new Extension(header.TypeCode, data);
+		return DecodeResult.Success;
 	}
 
 	public override DecodeResult TryReadRaw(ref Reader reader, long length, out ReadOnlySequence<byte> rawMsgPack)

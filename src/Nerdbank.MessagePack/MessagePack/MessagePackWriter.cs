@@ -56,7 +56,7 @@ public ref struct MessagePackWriter
 		this.OldSpec = false;
 	}
 
-	public Writer ToWriter() => new(this.writer, MsgPackFormatter.Instance);
+	public Writer ToWriter() => new(this.writer, MsgPackFormatter.Default);
 
 	public static MessagePackWriter FromWriter(scoped in Writer writer) => new(writer.Buffer);
 

@@ -282,13 +282,13 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Fruit value = new() { Seeds = 5 };
 
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		this.Serializer.SerializeObject(ref writer, value, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
 		writer.Flush();
 
 		this.LogMsgPack(seq);
 
-		MessagePackReader reader = new(seq);
+		Reader reader = new(seq, MsgPackDeformatter.Default);
 		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
 		Assert.Equal(value, deserialized);
 	}

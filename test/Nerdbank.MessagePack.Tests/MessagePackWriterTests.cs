@@ -114,7 +114,7 @@ public class MessagePackWriterTests
 	[Fact]
 	public void Write_MessagePackString()
 	{
-		PreformattedString msgpackString = new("abc", MsgPackFormatter.Instance);
+		PreformattedString msgpackString = new("abc", MsgPackFormatter.Default);
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
 		writer.Write(msgpackString);

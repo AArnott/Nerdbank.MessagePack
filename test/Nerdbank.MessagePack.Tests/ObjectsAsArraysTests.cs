@@ -255,7 +255,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		};
 
 		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		writer.WriteMapHeader(2);
 
 		writer.Write(3);
@@ -301,7 +301,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		};
 
 		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		writer.WriteMapHeader(2);
 
 		writer.Write(3);

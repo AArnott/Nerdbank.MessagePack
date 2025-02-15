@@ -3,9 +3,9 @@
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-internal class MsgPackDeformatter : Deformatter
+public class MsgPackDeformatter : Deformatter
 {
-	internal static readonly MsgPackDeformatter Default = new();
+	public static readonly MsgPackDeformatter Default = new();
 
 	private MsgPackDeformatter()
 		: base(MsgPackStreamingDeformatter.Default)
@@ -19,6 +19,22 @@ internal class MsgPackDeformatter : Deformatter
 	public ExtensionHeader ReadExtensionHeader(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out ExtensionHeader value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				throw this.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public Extension ReadExtension(ref Reader reader)
+	{
+		switch (this.StreamingDeformatter.TryRead(ref reader, out Extension value))
 		{
 			case DecodeResult.Success:
 				return value;
