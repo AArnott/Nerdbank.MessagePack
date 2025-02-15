@@ -321,10 +321,10 @@ internal class DoubleConverter : Converter<double>
 /// <summary>
 /// Serializes a <see cref="decimal"/>.
 /// </summary>
-internal class DecimalConverter : MessagePackConverter<decimal>
+internal class DecimalConverter : Converter<decimal>
 {
 	/// <inheritdoc/>
-	public override decimal Read(ref MessagePackReader reader, SerializationContext context)
+	public override decimal Read(ref Reader reader, SerializationContext context)
 	{
 		if (!(reader.ReadStringSequence() is ReadOnlySequence<byte> sequence))
 		{
@@ -389,21 +389,34 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in decimal value, SerializationContext context)
+	public override void Write(ref Writer writer, in decimal value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
-		if (System.Buffers.Text.Utf8Formatter.TryFormat(value, dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written))
+		const int MaxLength = 100; // arbitrary but large enough for most decimal values.
+		switch (writer.Formatter.Encoding)
 		{
-			// write header
-			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
-			writer.Advance(written + 1);
+			case UTF8Encoding:
+				Span<byte> utf8Bytes = stackalloc byte[MaxLength];
+				if (System.Buffers.Text.Utf8Formatter.TryFormat(value, utf8Bytes, out int written))
+				{
+					writer.WriteEncodedString(utf8Bytes[..written]);
+					return;
+				}
+
+				break;
+#if NET
+			default:
+				Span<char> utf16Bytes = stackalloc char[MaxLength];
+				if (value.TryFormat(utf16Bytes, out written, provider: CultureInfo.InvariantCulture))
+				{
+					writer.Write(utf16Bytes[..written]);
+					return;
+				}
+
+				break;
+#endif
 		}
-		else
-		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
-		}
+
+		writer.Write(value.ToString(CultureInfo.InvariantCulture));
 	}
 
 	/// <inheritdoc/>
@@ -420,10 +433,10 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 /// <summary>
 /// Serializes a <see cref="Int128"/> value.
 /// </summary>
-internal class Int128Converter : MessagePackConverter<Int128>
+internal class Int128Converter : Converter<Int128>
 {
 	/// <inheritdoc/>
-	public override Int128 Read(ref MessagePackReader reader, SerializationContext context)
+	public override Int128 Read(ref Reader reader, SerializationContext context)
 	{
 		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<Int128>();
 		if (sequence.IsSingleSegment)
@@ -469,21 +482,32 @@ internal class Int128Converter : MessagePackConverter<Int128>
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in Int128 value, SerializationContext context)
+	public override void Write(ref Writer writer, in Int128 value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
-		if (value.TryFormat(dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written, provider: CultureInfo.InvariantCulture))
+		const int LongestInt128Value = 40; // Max(Int128.MinValue.ToString().Length, Int128.MaxValue.ToString().Length)
+		switch (writer.Formatter.Encoding)
 		{
-			// write header
-			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
-			writer.Advance(written + 1);
+			case UTF8Encoding:
+				Span<byte> utf8Bytes = stackalloc byte[LongestInt128Value];
+				if (value.TryFormat(utf8Bytes, out int bytesWritten, provider: CultureInfo.InvariantCulture))
+				{
+					writer.WriteEncodedString(utf8Bytes[..bytesWritten]);
+					return;
+				}
+
+				break;
+			default:
+				Span<char> utf16Bytes = stackalloc char[LongestInt128Value];
+				if (value.TryFormat(utf16Bytes, out int charsWritten, provider: CultureInfo.InvariantCulture))
+				{
+					writer.Write(utf16Bytes[..charsWritten]);
+					return;
+				}
+
+				break;
 		}
-		else
-		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
-		}
+
+		writer.Write(value.ToString(CultureInfo.InvariantCulture));
 	}
 
 	/// <inheritdoc/>
