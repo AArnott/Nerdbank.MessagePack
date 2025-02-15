@@ -356,156 +356,155 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override DecodeResult TrySkip(ref Reader reader, ref SerializationContext context)
 	{
-		throw new NotImplementedException();
-		////uint originalCount = Math.Max(1, context.MidSkipRemainingCount);
-		////uint count = originalCount;
+		uint originalCount = Math.Max(1, context.MidSkipRemainingCount);
+		uint count = originalCount;
 
-		////// Skip as many structures as we have already predicted we must skip to complete this or a previously suspended skip operation.
-		////for (uint i = 0; i < count; i++)
-		////{
-		////	switch (TrySkipOne(ref reader, this, out uint skipMore))
-		////	{
-		////		case DecodeResult.Success:
-		////			count += skipMore;
-		////			break;
-		////		case DecodeResult.InsufficientBuffer:
-		////			context.MidSkipRemainingCount = count - i;
-		////			this.DecrementRemainingStructures((int)originalCount - (int)context.MidSkipRemainingCount);
-		////			return DecodeResult.InsufficientBuffer;
-		////		case DecodeResult other:
-		////			return other;
-		////	}
-		////}
+		// Skip as many structures as we have already predicted we must skip to complete this or a previously suspended skip operation.
+		for (uint i = 0; i < count; i++)
+		{
+			switch (TrySkipOne(ref reader, this, out uint skipMore))
+			{
+				case DecodeResult.Success:
+					count += skipMore;
+					break;
+				case DecodeResult.InsufficientBuffer:
+					context.MidSkipRemainingCount = count - i;
+					this.DecrementRemainingStructures((int)originalCount - (int)context.MidSkipRemainingCount);
+					return DecodeResult.InsufficientBuffer;
+				case DecodeResult other:
+					return other;
+			}
+		}
 
-		////this.DecrementRemainingStructures((int)originalCount);
-		////context.MidSkipRemainingCount = 0;
-		////return DecodeResult.Success;
+		this.DecrementRemainingStructures((int)originalCount);
+		context.MidSkipRemainingCount = 0;
+		return DecodeResult.Success;
 
-		////static DecodeResult TrySkipOne(ref Reader reader, MsgPackStreamingDeformatter self, out uint skipMore)
-		////{
-		////	skipMore = 0;
-		////	DecodeResult result = self.TryPeekNextCode(ref reader, out byte code);
-		////	if (result != DecodeResult.Success)
-		////	{
-		////		return result;
-		////	}
+		static DecodeResult TrySkipOne(ref Reader reader, MsgPackStreamingDeformatter self, out uint skipMore)
+		{
+			skipMore = 0;
+			DecodeResult result = self.TryPeekNextCode(ref reader, out byte code);
+			if (result != DecodeResult.Success)
+			{
+				return result;
+			}
 
-		////	switch (code)
-		////	{
-		////		case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
-		////		case MessagePackCode.Nil:
-		////		case MessagePackCode.True:
-		////		case MessagePackCode.False:
-		////			return reader.TryAdvance(1) ? DecodeResult.Success : self.InsufficientBytes;
-		////		case MessagePackCode.Int8:
-		////		case MessagePackCode.UInt8:
-		////			return reader.TryAdvance(2) ? DecodeResult.Success : self.InsufficientBytes;
-		////		case MessagePackCode.Int16:
-		////		case MessagePackCode.UInt16:
-		////			return reader.TryAdvance(3) ? DecodeResult.Success : self.InsufficientBytes;
-		////		case MessagePackCode.Int32:
-		////		case MessagePackCode.UInt32:
-		////		case MessagePackCode.Float32:
-		////			return reader.TryAdvance(5) ? DecodeResult.Success : self.InsufficientBytes;
-		////		case MessagePackCode.Int64:
-		////		case MessagePackCode.UInt64:
-		////		case MessagePackCode.Float64:
-		////			return reader.TryAdvance(9) ? DecodeResult.Success : self.InsufficientBytes;
-		////		case byte x when MessagePackCode.IsFixMap(x):
-		////		case MessagePackCode.Map16:
-		////		case MessagePackCode.Map32:
-		////			result = self.TryReadMapHeader(out int count);
-		////			if (result == DecodeResult.Success)
-		////			{
-		////				skipMore = (uint)count * 2;
-		////			}
+			switch (code)
+			{
+				case byte x when MessagePackCode.IsPositiveFixInt(x) || MessagePackCode.IsNegativeFixInt(x):
+				case MessagePackCode.Nil:
+				case MessagePackCode.True:
+				case MessagePackCode.False:
+					return reader.SequenceReader.TryAdvance(1) ? DecodeResult.Success : self.InsufficientBytes(reader);
+				case MessagePackCode.Int8:
+				case MessagePackCode.UInt8:
+					return reader.SequenceReader.TryAdvance(2) ? DecodeResult.Success : self.InsufficientBytes(reader);
+				case MessagePackCode.Int16:
+				case MessagePackCode.UInt16:
+					return reader.SequenceReader.TryAdvance(3) ? DecodeResult.Success : self.InsufficientBytes(reader);
+				case MessagePackCode.Int32:
+				case MessagePackCode.UInt32:
+				case MessagePackCode.Float32:
+					return reader.SequenceReader.TryAdvance(5) ? DecodeResult.Success : self.InsufficientBytes(reader);
+				case MessagePackCode.Int64:
+				case MessagePackCode.UInt64:
+				case MessagePackCode.Float64:
+					return reader.SequenceReader.TryAdvance(9) ? DecodeResult.Success : self.InsufficientBytes(reader);
+				case byte x when MessagePackCode.IsFixMap(x):
+				case MessagePackCode.Map16:
+				case MessagePackCode.Map32:
+					result = self.TryReadMapHeader(ref reader, out int count);
+					if (result == DecodeResult.Success)
+					{
+						skipMore = (uint)count * 2;
+					}
 
-		////			return result;
-		////		case byte x when MessagePackCode.IsFixArray(x):
-		////		case MessagePackCode.Array16:
-		////		case MessagePackCode.Array32:
-		////			result = self.TryReadArrayHeader(out count);
-		////			if (result == DecodeResult.Success)
-		////			{
-		////				skipMore = (uint)count;
-		////			}
+					return result;
+				case byte x when MessagePackCode.IsFixArray(x):
+				case MessagePackCode.Array16:
+				case MessagePackCode.Array32:
+					result = self.TryReadArrayHeader(ref reader, out count);
+					if (result == DecodeResult.Success)
+					{
+						skipMore = (uint)count;
+					}
 
-		////			return result;
-		////		case byte x when MessagePackCode.IsFixStr(x):
-		////		case MessagePackCode.Str8:
-		////		case MessagePackCode.Str16:
-		////		case MessagePackCode.Str32:
-		////			SequenceReader<byte> peekBackup = self.SequenceReader;
-		////			result = self.TryReadStringHeader(out uint length);
-		////			if (result != DecodeResult.Success)
-		////			{
-		////				return result;
-		////			}
+					return result;
+				case byte x when MessagePackCode.IsFixStr(x):
+				case MessagePackCode.Str8:
+				case MessagePackCode.Str16:
+				case MessagePackCode.Str32:
+					SequenceReader<byte> peekBackup = reader.SequenceReader;
+					result = self.TryReadStringHeader(ref reader, out uint length);
+					if (result != DecodeResult.Success)
+					{
+						return result;
+					}
 
-		////			if (reader.TryAdvance(length))
-		////			{
-		////				return DecodeResult.Success;
-		////			}
-		////			else
-		////			{
-		////				// Rewind so we can read the string header again next time.
-		////				reader = peekBackup;
-		////				return self.InsufficientBytes;
-		////			}
+					if (reader.SequenceReader.TryAdvance(length))
+					{
+						return DecodeResult.Success;
+					}
+					else
+					{
+						// Rewind so we can read the string header again next time.
+						reader.SequenceReader = peekBackup;
+						return self.InsufficientBytes(reader);
+					}
 
-		////		case MessagePackCode.Bin8:
-		////		case MessagePackCode.Bin16:
-		////		case MessagePackCode.Bin32:
-		////			peekBackup = self.SequenceReader;
-		////			result = self.TryReadBinHeader(out length);
-		////			if (result != DecodeResult.Success)
-		////			{
-		////				return result;
-		////			}
+				case MessagePackCode.Bin8:
+				case MessagePackCode.Bin16:
+				case MessagePackCode.Bin32:
+					peekBackup = reader.SequenceReader;
+					result = self.TryReadBinHeader(ref reader, out length);
+					if (result != DecodeResult.Success)
+					{
+						return result;
+					}
 
-		////			if (reader.TryAdvance(length))
-		////			{
-		////				return DecodeResult.Success;
-		////			}
-		////			else
-		////			{
-		////				// Rewind so we can read the string header again next time.
-		////				reader = peekBackup;
-		////				return self.InsufficientBytes;
-		////			}
+					if (reader.SequenceReader.TryAdvance(length))
+					{
+						return DecodeResult.Success;
+					}
+					else
+					{
+						// Rewind so we can read the string header again next time.
+						reader.SequenceReader = peekBackup;
+						return self.InsufficientBytes(reader);
+					}
 
-		////		case MessagePackCode.FixExt1:
-		////		case MessagePackCode.FixExt2:
-		////		case MessagePackCode.FixExt4:
-		////		case MessagePackCode.FixExt8:
-		////		case MessagePackCode.FixExt16:
-		////		case MessagePackCode.Ext8:
-		////		case MessagePackCode.Ext16:
-		////		case MessagePackCode.Ext32:
-		////			peekBackup = self.SequenceReader;
-		////			result = self.TryRead(out ExtensionHeader header);
-		////			if (result != DecodeResult.Success)
-		////			{
-		////				return result;
-		////			}
+				case MessagePackCode.FixExt1:
+				case MessagePackCode.FixExt2:
+				case MessagePackCode.FixExt4:
+				case MessagePackCode.FixExt8:
+				case MessagePackCode.FixExt16:
+				case MessagePackCode.Ext8:
+				case MessagePackCode.Ext16:
+				case MessagePackCode.Ext32:
+					peekBackup = reader.SequenceReader;
+					result = self.TryRead(ref reader, out ExtensionHeader header);
+					if (result != DecodeResult.Success)
+					{
+						return result;
+					}
 
-		////			if (reader.TryAdvance(header.Length))
-		////			{
-		////				return DecodeResult.Success;
-		////			}
-		////			else
-		////			{
-		////				// Rewind so we can read the string header again next time.
-		////				reader = peekBackup;
-		////				return self.InsufficientBytes;
-		////			}
+					if (reader.SequenceReader.TryAdvance(header.Length))
+					{
+						return DecodeResult.Success;
+					}
+					else
+					{
+						// Rewind so we can read the string header again next time.
+						reader.SequenceReader = peekBackup;
+						return self.InsufficientBytes(reader);
+					}
 
-		////		default:
-		////			// We don't actually expect to ever hit this point, since every code is supported.
-		////			Debug.Fail("Missing handler for code: " + code);
-		////			throw MessagePackReader.ThrowInvalidCode(code);
-		////	}
-		////}
+				default:
+					// We don't actually expect to ever hit this point, since every code is supported.
+					Debug.Fail("Missing handler for code: " + code);
+					throw MessagePackReader.ThrowInvalidCode(code);
+			}
+		}
 	}
 
 	public override PolySerializer.Converters.TypeCode ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
@@ -702,5 +701,11 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 		value = new string(charArray, 0, initializedChars);
 		ArrayPool<char>.Shared.Return(charArray);
 		return DecodeResult.Success;
+	}
+
+	private void DecrementRemainingStructures(int count)
+	{
+		uint expectedRemainingStructures = this.expectedRemainingStructures;
+		this.expectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
 	}
 }
