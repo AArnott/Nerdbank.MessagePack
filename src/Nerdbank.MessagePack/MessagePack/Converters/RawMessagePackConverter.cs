@@ -12,6 +12,8 @@ namespace Nerdbank.PolySerializer.Converters;
 [SuppressMessage("Usage", "NBMsgPack032", Justification = "This converter by design has no idea what msgpack it reads or writes.")]
 internal class RawMessagePackConverter : Converter<RawMessagePack>
 {
+	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
+
 	/// <inheritdoc/>
 	/// <remarks>
 	/// We always copy the msgpack into another buffer from the buffer we're reading from
@@ -20,16 +22,8 @@ internal class RawMessagePackConverter : Converter<RawMessagePack>
 	/// And async deserialization may invoke this (synchronous) deserializing method as an optimization,
 	/// so we really have no idea whether this buffer will last till the user has a chance to read from it.
 	/// </remarks>
-	public override RawMessagePack Read(ref Reader reader, SerializationContext context)
-	{
-		VerifyFormat<MsgPackStreamingDeformatter>(reader);
-		return new RawMessagePack(reader.ReadRaw(context)).ToOwned();
-	}
+	public override RawMessagePack Read(ref Reader reader, SerializationContext context) => new RawMessagePack(reader.ReadRaw(context)).ToOwned();
 
 	/// <inheritdoc/>
-	public override void Write(ref Writer writer, in RawMessagePack value, SerializationContext context)
-	{
-		VerifyFormat<MsgPackFormatter>(writer);
-		writer.Buffer.Write(value.MsgPack);
-	}
+	public override void Write(ref Writer writer, in RawMessagePack value, SerializationContext context) => writer.Buffer.Write(value.MsgPack);
 }

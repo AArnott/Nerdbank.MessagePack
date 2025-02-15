@@ -12,7 +12,7 @@ using System.Text.Json.Nodes;
 using Microsoft;
 using Strings = Microsoft.NET.StringTools.Strings;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes a <see cref="string"/>.
@@ -51,7 +51,7 @@ internal class StringConverter : Converter<string>
 		}
 
 		string result;
-		if (reader.Deformatter.StreamingDeformatter is MsgPackStreamingDeformatter msgpackDeformatter)
+		if (reader.Deformatter.StreamingDeformatter is MessagePack.MsgPackStreamingDeformatter msgpackDeformatter)
 		{
 			uint length;
 			while (msgpackDeformatter.TryReadStringHeader(ref streamingReader.Reader, out length).NeedsMoreBytes())
@@ -65,7 +65,7 @@ internal class StringConverter : Converter<string>
 				using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
 				Sequence<char> charSequence = sequenceRental.Value;
 
-				Decoder decoder = StringEncoding.UTF8.GetDecoder();
+				Decoder decoder = reader.Deformatter.Encoding.GetDecoder();
 				while (remainingBytesToDecode > 0)
 				{
 					// We'll always require at least a reasonable number of bytes to decode at once,
@@ -328,7 +328,7 @@ internal class DecimalConverter : Converter<decimal>
 	{
 		if (!(reader.ReadStringSequence() is ReadOnlySequence<byte> sequence))
 		{
-			throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", MessagePackCode.Nil, MessagePackCode.ToFormatName(MessagePackCode.Nil)));
+			throw new SerializationException("Unexpected null encountered.");
 		}
 
 		if (sequence.IsSingleSegment)
@@ -685,7 +685,7 @@ internal class DateTimeConverter : Converter<DateTime>
 	public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => writer.Write(value);
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => MessagePackConverter.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => MessagePack.MessagePackConverter.CreateMsgPackExtensionSchema(MessagePack.ReservedMessagePackExtensionTypeCode.DateTime);
 }
 
 /// <summary>
@@ -721,7 +721,7 @@ internal class DateTimeOffsetConverter : Converter<DateTimeOffset>
 		{
 			["type"] = "array",
 			["items"] = new JsonArray(
-				MessagePackConverter.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
+				MessagePack.MessagePackConverter.CreateMsgPackExtensionSchema(MessagePack.ReservedMessagePackExtensionTypeCode.DateTime),
 				new JsonObject { ["type"] = "integer" }),
 		};
 }

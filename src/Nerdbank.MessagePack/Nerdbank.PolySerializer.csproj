@@ -34,7 +34,7 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>IntConverters.cs</LastGenOutput>
     </None>
-    <None Update="MessagePack\Converters\PrimitiveConverterLookup.tt">
+    <None Update="Converters\PrimitiveConverterLookup.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>PrimitiveConverterLookup.cs</LastGenOutput>
     </None>
@@ -87,7 +87,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>IntConverters.tt</DependentUpon>
     </Compile>
-    <Compile Update="MessagePack\Converters\PrimitiveConverterLookup.cs">
+    <Compile Update="Converters\PrimitiveConverterLookup.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>PrimitiveConverterLookup.tt</DependentUpon>
