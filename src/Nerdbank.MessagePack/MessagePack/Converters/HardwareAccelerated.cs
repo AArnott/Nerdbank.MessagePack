@@ -34,7 +34,7 @@ internal static class HardwareAccelerated
 	/// <typeparam name="TElement">The type of element.</typeparam>
 	/// <param name="converter">Receives the hardware-accelerated converter if one is available.</param>
 	/// <returns>A value indicating whether a converter is available.</returns>
-	internal static bool TryGetConverter<TEnumerable, TElement>([NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
+	internal static bool TryGetConverter<TEnumerable, TElement>([NotNullWhen(true)] out Converter<TEnumerable>? converter)
 	{
 		Type enumerableType = typeof(TEnumerable);
 		SpanConstructorKind spanConstructorKind;
@@ -729,13 +729,15 @@ internal static class HardwareAccelerated
 		}
 	}
 
-	private sealed class BoolArrayConverter<TEnumerable>(SpanConstructorKind spanConstructorKind) : MessagePackConverter<TEnumerable>
+	private sealed class BoolArrayConverter<TEnumerable>(SpanConstructorKind spanConstructorKind) : Converter<TEnumerable>
 	{
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
-		public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.EnsureMsgPack(formatter, deformatter);
+
+		public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 		{
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return default;
 			}
@@ -802,11 +804,11 @@ internal static class HardwareAccelerated
 			return enumerable;
 		}
 
-		public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
+		public override void Write(ref Writer writer, in TEnumerable? value, SerializationContext context)
 		{
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 
@@ -824,9 +826,9 @@ internal static class HardwareAccelerated
 				return;
 			}
 
-			Span<byte> buffer = writer.GetSpan(length);
+			Span<byte> buffer = writer.Buffer.GetSpan(length);
 			nuint writtenBytes = MessagePackPrimitiveSpanUtility.Write(ref MemoryMarshal.GetReference(buffer), in reference, unchecked((nuint)length));
-			writer.Advance(unchecked((int)writtenBytes));
+			writer.Buffer.Advance(unchecked((int)writtenBytes));
 			reference = ref Unsafe.Add(ref reference, length);
 		}
 

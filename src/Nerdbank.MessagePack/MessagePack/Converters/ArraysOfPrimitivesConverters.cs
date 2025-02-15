@@ -26,7 +26,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <param name="spanConstructor">The constructor for the enumerable type.</param>
 	private abstract class PrimitiveArrayConverter<TEnumerable, TElement>(
 		Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-		SpanConstructor<TElement, TEnumerable>? spanConstructor) : MessagePackConverter<TEnumerable>
+		SpanConstructor<TElement, TEnumerable>? spanConstructor) : Converter<TEnumerable>
 		where TElement : unmanaged
 	{
 		/// <summary>
@@ -38,12 +38,14 @@ internal static partial class ArraysOfPrimitivesConverters
 		/// </remarks>
 		private static readonly unsafe int MsgPackBufferLengthFactor = typeof(TElement) == typeof(bool) ? 1 : (sizeof(TElement) + 1);
 
+		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.EnsureMsgPack(formatter, deformatter);
+
 		/// <inheritdoc/>
-		public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
+		public override void Write(ref Writer writer, in TEnumerable? value, SerializationContext context)
 		{
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 
@@ -51,7 +53,7 @@ internal static partial class ArraysOfPrimitivesConverters
 			if (TryGetSpan(value, out ReadOnlySpan<TElement> values))
 			{
 				writer.WriteArrayHeader(values.Length);
-				Span<byte> span = writer.GetSpan(values.Length * MsgPackBufferLengthFactor);
+				Span<byte> span = writer.Buffer.GetSpan(values.Length * MsgPackBufferLengthFactor);
 				for (int i = 0; i < values.Length; i++)
 				{
 					Assumes.True(this.TryWrite(span[totalBytesWritten..], values[i], out int justWritten));
@@ -64,7 +66,7 @@ internal static partial class ArraysOfPrimitivesConverters
 				if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
 				{
 					writer.WriteArrayHeader(count);
-					Span<byte> span = writer.GetSpan(count * MsgPackBufferLengthFactor);
+					Span<byte> span = writer.Buffer.GetSpan(count * MsgPackBufferLengthFactor);
 					foreach (TElement element in enumerable)
 					{
 						Assumes.True(this.TryWrite(span[totalBytesWritten..], element, out int justWritten));
@@ -75,7 +77,7 @@ internal static partial class ArraysOfPrimitivesConverters
 				{
 					TElement[] array = enumerable.ToArray();
 					writer.WriteArrayHeader(array.Length);
-					Span<byte> span = writer.GetSpan(count * MsgPackBufferLengthFactor);
+					Span<byte> span = writer.Buffer.GetSpan(count * MsgPackBufferLengthFactor);
 					for (int i = 0; i < array.Length; i++)
 					{
 						Assumes.True(this.TryWrite(span[totalBytesWritten..], array[i], out int justWritten));
@@ -84,13 +86,13 @@ internal static partial class ArraysOfPrimitivesConverters
 				}
 			}
 
-			writer.Advance(totalBytesWritten);
+			writer.Buffer.Advance(totalBytesWritten);
 		}
 
 		/// <inheritdoc/>
-		public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+		public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 		{
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return default;
 			}
@@ -136,7 +138,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		/// </summary>
 		/// <param name="reader">The reader to use.</param>
 		/// <returns>The decoded value.</returns>
-		protected abstract TElement Read(ref MessagePackReader reader);
+		protected abstract TElement Read(ref Reader reader);
 
 		private static bool TryGetSpan(TEnumerable enumerable, out ReadOnlySpan<TElement> span)
 		{

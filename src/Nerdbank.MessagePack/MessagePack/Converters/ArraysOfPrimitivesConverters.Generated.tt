@@ -38,7 +38,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	internal static bool TryGetConverter<TEnumerable, TElement>(
 		Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
 		SpanConstructor<TElement, TEnumerable> spanConstructor,
-		[NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
+		[NotNullWhen(true)] out Converter<TEnumerable>? converter)
 	{
 		// T[], Memory<T>, ReadOnlyMemory<T>, and possibly more types are all satisfiable by T[].
 		// So we avoid allocating or borrowing a temporary array only to copy from it to the span constructor
@@ -91,7 +91,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		SpanConstructor<<#=primitive#>, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, <#=primitive#>>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
-		protected override <#=primitive#> Read(ref MessagePackReader reader) => reader.Read<#=primitive#>();
+		protected override <#=primitive#> Read(ref Reader reader) => reader.Read<#=primitive#>();
 
 		/// <inheritdoc/>
 		protected override bool TryWrite(Span<byte> msgpack, <#=primitive#> value, out int written) => MessagePackPrimitives.TryWrite(msgpack, value, out written);

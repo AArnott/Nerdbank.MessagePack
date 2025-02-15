@@ -44,7 +44,7 @@ internal class MessagePackVisitor : StandardVisitor
 
 	protected override bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter)
 	{
-		if (ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, constructor, out MessagePackConverter<TArray>? msgpackConverter))
+		if (ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, constructor, out Converter<TArray>? msgpackConverter))
 		{
 			converter = msgpackConverter;
 			return true;
@@ -59,7 +59,7 @@ internal class MessagePackVisitor : StandardVisitor
 #if NET
 	protected override bool TryGetHardwareAcceleratedConverter<TArray, TElement>(out Converter<TArray>? converter)
 	{
-		if (HardwareAccelerated.TryGetConverter<TArray, TElement>(out MessagePackConverter<TArray>? msgpackConverter))
+		if (HardwareAccelerated.TryGetConverter<TArray, TElement>(out Converter<TArray>? msgpackConverter))
 		{
 			converter = msgpackConverter;
 			return true;

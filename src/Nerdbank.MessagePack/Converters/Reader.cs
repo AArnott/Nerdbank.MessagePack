@@ -103,5 +103,7 @@ public ref struct Reader
 
 	public ReadOnlySequence<byte> ReadRaw(SerializationContext context) => this.deformatter.ReadRaw(ref this, context);
 
+	public ReadOnlySequence<byte> ReadRaw(long length) => this.deformatter.ReadRaw(ref this, length);
+
 	public void Skip(SerializationContext context) => this.deformatter.Skip(ref this, context);
 }

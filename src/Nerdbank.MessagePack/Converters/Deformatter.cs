@@ -309,6 +309,13 @@ public partial class Deformatter
 		return reader.Sequence.Slice(initialPosition, reader.Position);
 	}
 
+	public ReadOnlySequence<byte> ReadRaw(ref Reader reader, long length)
+	{
+		ReadOnlySequence<byte> result = reader.Sequence.Slice(reader.Position, length);
+		reader.SequenceReader.Advance(length);
+		return result;
+	}
+
 	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
 
 	public TypeCode ToTypeCode(byte code) => this.streamingDeformatter.ToTypeCode(code);

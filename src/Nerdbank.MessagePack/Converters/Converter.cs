@@ -20,6 +20,12 @@ public abstract class Converter(Type type)
 	/// </remarks>
 	public virtual bool PreferAsyncSerialization => false;
 
+	public virtual void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter)
+	{
+		// We assume converters are compatible by default.
+		// Converters that are specialized to a particular format should override this method and throw.
+	}
+
 	/// <summary>
 	/// Serializes an instance of an object.
 	/// </summary>
