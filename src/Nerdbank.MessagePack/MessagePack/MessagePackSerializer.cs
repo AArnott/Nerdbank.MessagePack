@@ -150,7 +150,9 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.GetConverter(shape).WriteObject(ref writer, value, context.Value);
+		Writer baseWriter = writer.ToWriter();
+		this.GetConverter(shape).WriteObject(ref baseWriter, value, context.Value);
+		writer = MessagePackWriter.FromWriter(baseWriter);
 	}
 
 	/// <summary>
@@ -204,7 +206,10 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.GetConverter(shape).ReadObject(ref reader, context.Value);
+		Reader baseReader = reader.ToReader();
+		object? result = this.GetConverter(shape).ReadObject(ref baseReader, context.Value);
+		reader = MessagePackReader.FromReader(baseReader);
+		return result;
 	}
 
 	/// <summary>
@@ -553,9 +558,9 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <param name="typeShape">The type shape.</param>
 	/// <returns>A converter.</returns>
-	internal IMessagePackConverter GetConverter(ITypeShape typeShape) => (IMessagePackConverter)this.converterCache.GetOrAddConverter(typeShape);
+	internal Converter GetConverter(ITypeShape typeShape) => this.converterCache.GetOrAddConverter(typeShape);
 
-	internal Converter<T> GetConverter<T>(ITypeShape<T> typeShape) => this.converterCache.GetOrAddConverter<T>(typeShape);
+	internal Converter<T> GetConverter<T>(ITypeShape<T> typeShape) => this.converterCache.GetOrAddConverter(typeShape);
 
 	internal Converter<T> GetConverter<T>(ITypeShapeProvider shapeProvider) => this.converterCache.GetOrAddConverter<T>(shapeProvider);
 
