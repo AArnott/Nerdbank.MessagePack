@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
 using Nerdbank.PolySerializer.MessagePack;
-using Nerdbank.PolySerializer.MessagePack.Converters;
 using PolyType.Utilities;
 
 namespace Nerdbank.PolySerializer;
@@ -318,7 +317,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							this.owner.SerializeDefaultValues);
 					}
 
-					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
+					List<SerializableProperty<TDeclaringType>> propertySerializers = [.. inputs.Serializers.Properties.Span];
 
 					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = inputs.ParametersByName.Values
 						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
