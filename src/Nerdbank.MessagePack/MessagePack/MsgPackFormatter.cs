@@ -7,7 +7,7 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-public class MsgPackFormatter : Formatter
+public record MsgPackFormatter : Formatter
 {
 	public static readonly MsgPackFormatter Default = new();
 

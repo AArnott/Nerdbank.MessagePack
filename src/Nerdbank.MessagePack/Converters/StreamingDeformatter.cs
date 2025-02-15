@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class StreamingDeformatter
+public abstract record StreamingDeformatter
 {
 	/// <summary>
 	/// A value indicating whether no more bytes can be expected once we reach the end of the current buffer.

@@ -13,7 +13,7 @@
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-partial class MsgPackStreamingDeformatter
+partial record MsgPackStreamingDeformatter
 {<#
 var unsignedTypes = new Type[]
 {

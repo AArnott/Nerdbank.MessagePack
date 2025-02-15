@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class Formatter
+public abstract record Formatter
 {
 	public abstract string FormatName { get; }
 

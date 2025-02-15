@@ -11,7 +11,7 @@
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public partial class Deformatter
+public partial record Deformatter
 {
 	/// <summary>
 	/// Reads an <see cref="Byte"/> value from:

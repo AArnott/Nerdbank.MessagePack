@@ -3,7 +3,7 @@
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-public class MsgPackDeformatter : Deformatter
+public record MsgPackDeformatter : Deformatter
 {
 	public static readonly MsgPackDeformatter Default = new();
 

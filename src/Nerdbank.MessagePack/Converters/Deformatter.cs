@@ -8,7 +8,7 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public partial class Deformatter
+public partial record Deformatter
 {
 	private readonly StreamingDeformatter streamingDeformatter;
 

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-public partial class MsgPackStreamingDeformatter : StreamingDeformatter
+public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 {
 	public static readonly MsgPackStreamingDeformatter Default = new();
 
@@ -16,6 +16,8 @@ public partial class MsgPackStreamingDeformatter : StreamingDeformatter
 	private MsgPackStreamingDeformatter()
 	{
 	}
+
+	public override string FormatName => MsgPackFormatter.Default.FormatName;
 
 	public override Encoding Encoding => StringEncoding.UTF8;
 

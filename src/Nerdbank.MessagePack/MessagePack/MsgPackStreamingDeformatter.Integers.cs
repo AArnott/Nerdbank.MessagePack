@@ -11,10 +11,8 @@
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-partial class MsgPackStreamingDeformatter
+partial record MsgPackStreamingDeformatter
 {
-	public override string FormatName => "msgpack";
-
 	/// <summary>
 	/// Reads an <see cref="Byte"/> value from:
 	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
