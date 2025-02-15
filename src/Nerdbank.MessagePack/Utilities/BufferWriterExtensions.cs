@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
+using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
 namespace Nerdbank.PolySerializer.Utilities;
@@ -21,7 +22,10 @@ internal static class BufferWriterExtensions
 		Memory<byte> memory = bufferWriter.GetMemory(size);
 		if (memory.IsEmpty)
 		{
-			throw new InvalidOperationException("The underlying IBufferWriter<byte>.GetMemory(int) method returned an empty memory block, which is not allowed. This is a bug in " + bufferWriter.GetType().FullName);
+			Throw(bufferWriter);
+
+			[DoesNotReturn]
+			static void Throw<T>(IBufferWriter<T> writer) => throw new InvalidOperationException("The underlying IBufferWriter<byte>.GetMemory(int) method returned an empty memory block, which is not allowed. This is a bug in " + writer.GetType().FullName);
 		}
 
 		return memory;
