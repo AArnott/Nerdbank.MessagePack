@@ -5,7 +5,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -55,15 +54,6 @@ public ref struct MessagePackWriter
 		this.writer = writer;
 		this.OldSpec = false;
 	}
-
-	public Writer ToWriter() => new(this.writer, MsgPackFormatter.Default);
-
-	public static MessagePackWriter FromWriter(scoped in Writer writer) => new(writer.Buffer);
-
-	/// <summary>
-	/// Gets the number of bytes that have been written but not yet committed <see cref="Flush">flushed</see> to the underlying <see cref="IBufferWriter{T}"/>.
-	/// </summary>
-	public int UnflushedBytes => this.writer.UncommittedBytes;
 
 	/// <summary>
 	/// Gets or sets a value indicating whether to write in <see href="https://github.com/msgpack/msgpack/blob/master/spec-old.md">old spec</see> compatibility mode.

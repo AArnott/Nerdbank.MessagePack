@@ -74,8 +74,18 @@ public abstract class Formatter
 
 	public abstract void Write(ref Writer writer, DateTime value);
 
+	/// <summary>
+	/// Get the number of bytes required to format a value.
+	/// </summary>
+	/// <param name="value">The value to format.</param>
+	/// <returns>The byte length.</returns>
 	public abstract int GetEncodedLength(long value);
 
+	/// <summary>
+	/// Get the number of bytes required to encode a value.
+	/// </summary>
+	/// <param name="value">The value to encode.</param>
+	/// <returns>The byte length.</returns>
 	public abstract int GetEncodedLength(ulong value);
 
 	public abstract void WriteEncodedString(ref Writer writer, scoped ReadOnlySpan<byte> value);

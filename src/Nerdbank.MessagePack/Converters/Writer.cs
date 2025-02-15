@@ -31,6 +31,11 @@ public ref struct Writer
 	{
 	}
 
+	/// <summary>
+	/// Gets the number of bytes that have been written but not yet committed <see cref="Flush">flushed</see> to the underlying <see cref="IBufferWriter{T}"/>.
+	/// </summary>
+	public int UnflushedBytes => this.inner.UncommittedBytes;
+
 	[UnscopedRef]
 	public ref BufferWriter Buffer => ref this.inner;
 

@@ -15,8 +15,10 @@ public class MsgPackFormatter : Formatter
 	{
 	}
 
+	/// <inheritdoc/>
 	public override string FormatName => "msgpack";
 
+	/// <inheritdoc/>
 	public override Encoding Encoding => StringEncoding.UTF8;
 
 	/// <summary>
@@ -24,8 +26,17 @@ public class MsgPackFormatter : Formatter
 	/// </summary>
 	public bool OldSpec { get; set; }
 
+	/// <inheritdoc/>
 	public override bool ArrayLengthRequiredInHeader => true;
 
+	/// <summary>
+	/// Write the length of the next array to be written in the most compact form of
+	/// <see cref="MessagePackCode.MinFixArray"/>,
+	/// <see cref="MessagePackCode.Array16"/>, or
+	/// <see cref="MessagePackCode.Array32"/>.
+	/// </summary>
+	/// <param name="writer">The writer to receive the formatted bytes.</param>
+	/// <param name="length">The number of elements that will be written in the array.</param>
 	public override void WriteArrayStart(ref Writer writer, int length)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
@@ -43,6 +54,13 @@ public class MsgPackFormatter : Formatter
 		// msgpack has no array terminator.
 	}
 
+	/// <summary>
+	/// Write the length of the next map to be written in the most compact form of
+	/// <see cref="MessagePackCode.MinFixMap"/>,
+	/// <see cref="MessagePackCode.Map16"/>, or
+	/// <see cref="MessagePackCode.Map32"/>.
+	/// </summary>
+	/// <param name="count">The number of key=value pairs that will be written in the map.</param>
 	public override void WriteMapStart(ref Writer writer, int length)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
@@ -65,6 +83,9 @@ public class MsgPackFormatter : Formatter
 		// msgpack has no map terminator.
 	}
 
+	/// <summary>
+	/// Writes a <see cref="MessagePackCode.Nil"/> value.
+	/// </summary>
 	public override void WriteNull(ref Writer writer)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(1);
@@ -72,6 +93,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="bool"/> value using either <see cref="MessagePackCode.True"/> or <see cref="MessagePackCode.False"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, bool value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(1);
@@ -79,6 +104,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="char"/> value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.UInt8"/> or <see cref="MessagePackCode.UInt16"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, char value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(3);
@@ -86,6 +115,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="byte"/> value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.UInt8"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, byte value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(2);
@@ -93,6 +126,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes an 8-bit value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.Int8"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, sbyte value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(2);
@@ -100,6 +137,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="ushort"/> value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.UInt8"/> or <see cref="MessagePackCode.UInt16"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, ushort value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(3);
@@ -107,6 +148,15 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="short"/> using a built-in 1-byte code when within specific MessagePack-supported ranges,
+	/// or the most compact of
+	/// <see cref="MessagePackCode.UInt8"/>,
+	/// <see cref="MessagePackCode.UInt16"/>,
+	/// <see cref="MessagePackCode.Int8"/>, or
+	/// <see cref="MessagePackCode.Int16"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, short value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(3);
@@ -114,6 +164,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes an <see cref="uint"/> using <see cref="MessagePackCode.UInt32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, uint value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
@@ -121,6 +175,17 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes an <see cref="int"/> using a built-in 1-byte code when within specific MessagePack-supported ranges,
+	/// or the most compact of
+	/// <see cref="MessagePackCode.UInt8"/>,
+	/// <see cref="MessagePackCode.UInt16"/>,
+	/// <see cref="MessagePackCode.UInt32"/>,
+	/// <see cref="MessagePackCode.Int8"/>,
+	/// <see cref="MessagePackCode.Int16"/>,
+	/// <see cref="MessagePackCode.Int32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, int value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
@@ -128,6 +193,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes an <see cref="ulong"/> using <see cref="MessagePackCode.Int32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, ulong value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(9);
@@ -135,6 +204,19 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes an <see cref="long"/> using a built-in 1-byte code when within specific MessagePack-supported ranges,
+	/// or the most compact of
+	/// <see cref="MessagePackCode.UInt8"/>,
+	/// <see cref="MessagePackCode.UInt16"/>,
+	/// <see cref="MessagePackCode.UInt32"/>,
+	/// <see cref="MessagePackCode.UInt64"/>,
+	/// <see cref="MessagePackCode.Int8"/>,
+	/// <see cref="MessagePackCode.Int16"/>,
+	/// <see cref="MessagePackCode.Int32"/>,
+	/// <see cref="MessagePackCode.Int64"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, long value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(9);
@@ -142,6 +224,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="MessagePackCode.Float32"/> value.
+	/// </summary>
+	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, float value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
@@ -149,6 +235,10 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="MessagePackCode.Float64"/> value.
+	/// </summary>
+	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, double value)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(9);
@@ -156,6 +246,11 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes a <see cref="DateTime"/> using the message code <see cref="ReservedMessagePackExtensionTypeCode.DateTime"/>.
+	/// </summary>
+	/// <param name="dateTime">The value to write.</param>
+	/// <exception cref="NotSupportedException">Thrown when <see cref="OldSpec"/> is true because the old spec does not define a <see cref="DateTime"/> format.</exception>
 	public override void Write(ref Writer writer, DateTime value)
 	{
 		if (this.OldSpec)
@@ -170,6 +265,15 @@ public class MsgPackFormatter : Formatter
 		}
 	}
 
+	/// <summary>
+	/// Writes out a <see cref="string"/>, prefixed with the length using one of these message codes:
+	/// <see cref="MessagePackCode.MinFixStr"/>,
+	/// <see cref="MessagePackCode.Str8"/>,
+	/// <see cref="MessagePackCode.Str16"/>,
+	/// <see cref="MessagePackCode.Str32"/>,
+	/// or <see cref="MessagePackCode.Nil"/> if the <paramref name="value"/> is <see langword="null"/>.
+	/// </summary>
+	/// <param name="value">The value to write. May be null.</param>
 	public override unsafe void Write(ref Writer writer, string? value)
 	{
 		if (value == null)
@@ -189,6 +293,15 @@ public class MsgPackFormatter : Formatter
 		}
 	}
 
+	/// <summary>
+	/// Writes out a <see cref="string"/>, prefixed with the length using one of these message codes:
+	/// <see cref="MessagePackCode.MinFixStr"/>,
+	/// <see cref="MessagePackCode.Str8"/>,
+	/// <see cref="MessagePackCode.Str16"/>,
+	/// <see cref="MessagePackCode.Str32"/>,
+	/// or <see cref="MessagePackCode.Nil"/> if the <paramref name="value"/> is <see langword="null"/>.
+	/// </summary>
+	/// <param name="value">The value to write. May be null.</param>
 	public override void Write(ref Writer writer, scoped ReadOnlySpan<char> value)
 	{
 		throw new NotImplementedException();
@@ -200,6 +313,14 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Write(value);
 	}
 
+	/// <summary>
+	/// Writes out a <see cref="string"/>, prefixed with the length using one of these message codes:
+	/// <see cref="MessagePackCode.MinFixStr"/>,
+	/// <see cref="MessagePackCode.Str8"/>,
+	/// <see cref="MessagePackCode.Str16"/>,
+	/// <see cref="MessagePackCode.Str32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, scoped ReadOnlySpan<byte> value)
 	{
 		int length = value.Length;
@@ -209,6 +330,14 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(length);
 	}
 
+	/// <summary>
+	/// Writes out a <see cref="string"/>, prefixed with the length using one of these message codes:
+	/// <see cref="MessagePackCode.MinFixStr"/>,
+	/// <see cref="MessagePackCode.Str8"/>,
+	/// <see cref="MessagePackCode.Str16"/>,
+	/// <see cref="MessagePackCode.Str32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, ReadOnlySequence<byte> value)
 	{
 		int length = (int)value.Length;
@@ -227,6 +356,23 @@ public class MsgPackFormatter : Formatter
 	public override void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 		=> StringEncoding.GetEncodedStringBytes(value, out utf8Bytes, out msgpackEncoded);
 
+	/// <summary>
+	/// Writes the header that precedes a raw binary sequence with a length encoded as the smallest fitting from:
+	/// <see cref="MessagePackCode.Bin8"/>,
+	/// <see cref="MessagePackCode.Bin16"/>, or
+	/// <see cref="MessagePackCode.Bin32"/>.
+	/// </summary>
+	/// <param name="length">The length of bytes that will be written next.</param>
+	/// <remarks>
+	/// <para>
+	/// The caller should use <see cref="WriteRaw(in ReadOnlySequence{byte})"/> or <see cref="WriteRaw(ReadOnlySpan{byte})"/>
+	/// after calling this method to actually write the content.
+	/// Alternatively a single call to <see cref="Write(ReadOnlySpan{byte})"/> or <see cref="Write(in ReadOnlySequence{byte})"/> will take care of the header and content in one call.
+	/// </para>
+	/// <para>
+	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
+	/// </para>
+	/// </remarks>
 	public void WriteBinHeader(ref Writer writer, int length)
 	{
 		if (this.OldSpec)
@@ -264,6 +410,18 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <summary>
+	/// Writes the extension format header, using the smallest one of these codes:
+	/// <see cref="MessagePackCode.FixExt1"/>,
+	/// <see cref="MessagePackCode.FixExt2"/>,
+	/// <see cref="MessagePackCode.FixExt4"/>,
+	/// <see cref="MessagePackCode.FixExt8"/>,
+	/// <see cref="MessagePackCode.FixExt16"/>,
+	/// <see cref="MessagePackCode.Ext8"/>,
+	/// <see cref="MessagePackCode.Ext16"/>, or
+	/// <see cref="MessagePackCode.Ext32"/>.
+	/// </summary>
+	/// <param name="extensionHeader">The extension header.</param>
 	public void Write(ref Writer writer, ExtensionHeader value)
 	{
 		// When we write the header, we'll ask for all the space we need for the payload as well
@@ -271,6 +429,24 @@ public class MsgPackFormatter : Formatter
 		Span<byte> span = writer.Buffer.GetSpan((int)(value.Length + 6));
 		Assumes.True(MessagePackPrimitives.TryWriteExtensionHeader(span, value, out int written));
 		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
+	/// Writes the extension format header, using the smallest one of these codes:
+	/// <see cref="MessagePackCode.FixExt1"/>,
+	/// <see cref="MessagePackCode.FixExt2"/>,
+	/// <see cref="MessagePackCode.FixExt4"/>,
+	/// <see cref="MessagePackCode.FixExt8"/>,
+	/// <see cref="MessagePackCode.FixExt16"/>,
+	/// <see cref="MessagePackCode.Ext8"/>,
+	/// <see cref="MessagePackCode.Ext16"/>, or
+	/// <see cref="MessagePackCode.Ext32"/>.
+	/// </summary>
+	/// <param name="extensionHeader">The extension header.</param>
+	public void Write(ref Writer writer, Extension value)
+	{
+		this.Write(ref writer, value.Header);
+		writer.Buffer.Write(value.Data);
 	}
 
 	/// <summary>
@@ -393,7 +569,13 @@ public class MsgPackFormatter : Formatter
 		}
 	}
 
+	/// <inheritdoc path="/summary"/>
+	/// <inheritdoc path="/param"/>
+	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
 	public override int GetEncodedLength(long value) => MessagePackWriter.GetEncodedLength(value);
 
+	/// <inheritdoc path="/summary"/>
+	/// <inheritdoc path="/param"/>
+	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
 	public override int GetEncodedLength(ulong value) => MessagePackWriter.GetEncodedLength(value);
 }
