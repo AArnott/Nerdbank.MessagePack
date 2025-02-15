@@ -155,7 +155,29 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override DecodeResult TryRead(ref Reader reader, out bool value)
 	{
-		throw new NotImplementedException();
+		if (reader.SequenceReader.TryPeek(out byte next))
+		{
+			switch (next)
+			{
+				case MessagePackCode.True:
+					value = true;
+					break;
+				case MessagePackCode.False:
+					value = false;
+					break;
+				default:
+					value = false;
+					return DecodeResult.TokenMismatch;
+			}
+
+			reader.Advance(1);
+			return DecodeResult.Success;
+		}
+		else
+		{
+			value = false;
+			return this.InsufficientBytes(reader);
+		}
 	}
 
 	public override DecodeResult TryRead(ref Reader reader, out char value)
@@ -165,12 +187,80 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override DecodeResult TryRead(ref Reader reader, out float value)
 	{
-		throw new NotImplementedException();
+		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			reader.Advance(tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
+
+		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref float value, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.Advance(ref reader, tokenSize);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (reader.SequenceReader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
+						return SlowPath(ref reader, self, readResult, ref value, ref tokenSize);
+					}
+					else
+					{
+						return self.InsufficientBytes(reader);
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
 	}
 
 	public override DecodeResult TryRead(ref Reader reader, out double value)
 	{
-		throw new NotImplementedException();
+		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			reader.Advance(tokenSize);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
+
+		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref double value, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					reader.Advance(tokenSize);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (reader.SequenceReader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryRead(buffer, out value, out tokenSize);
+						return SlowPath(ref reader, self, readResult, ref value, ref tokenSize);
+					}
+					else
+					{
+						return self.InsufficientBytes(reader);
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
 	}
 
 	public override DecodeResult TryRead(ref Reader reader, out string value)
