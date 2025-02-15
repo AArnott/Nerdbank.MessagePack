@@ -691,10 +691,10 @@ internal class DateTimeConverter : Converter<DateTime>
 /// <summary>
 /// Serializes <see cref="DateTimeOffset"/> values.
 /// </summary>
-internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
+internal class DateTimeOffsetConverter : Converter<DateTimeOffset>
 {
 	/// <inheritdoc/>
-	public override DateTimeOffset Read(ref MessagePackReader reader, SerializationContext context)
+	public override DateTimeOffset Read(ref Reader reader, SerializationContext context)
 	{
 		int count = reader.ReadArrayHeader();
 		if (count != 2)
@@ -708,7 +708,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in DateTimeOffset value, SerializationContext context)
+	public override void Write(ref Writer writer, in DateTimeOffset value, SerializationContext context)
 	{
 		writer.WriteArrayHeader(2);
 		writer.Write(new DateTime(value.Ticks, DateTimeKind.Utc));
@@ -721,7 +721,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 		{
 			["type"] = "array",
 			["items"] = new JsonArray(
-				CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
+				MessagePackConverter<DateTimeOffset>.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
 				new JsonObject { ["type"] = "integer" }),
 		};
 }

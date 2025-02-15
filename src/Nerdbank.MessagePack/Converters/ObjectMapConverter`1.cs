@@ -3,13 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
-/// A <see cref="MessagePackConverter{T}"/> that writes objects as maps of property names to values.
+/// A <see cref="Converter{T}"/> that writes objects as maps of property names to values.
 /// Only data types with default constructors may be deserialized.
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
@@ -17,19 +15,19 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="constructor">The default constructor, if present.</param>
 /// <param name="defaultValuesPolicy">The policy for whether to serialize properties. When not <see cref="SerializeDefaultValuesPolicy.Always"/>, the <see cref="SerializableProperty{TDeclaringType}.ShouldSerialize"/> property will be consulted prior to serialization.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : MessagePackConverter<T>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : Converter<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
-	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref Writer writer, in T? value, SerializationContext context)
 #pragma warning restore NBMsgPack031
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -57,26 +55,24 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			WriteProperties(ref writer, value, serializable.Properties.Span, context);
 		}
 
-		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, SerializationContext context)
+		static void WriteProperties(ref Writer writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, SerializationContext context)
 		{
 			writer.WriteMapHeader(properties.Length);
 			foreach (SerializableProperty<T> property in properties)
 			{
-				writer.WriteRaw(property.RawPropertyNameString.Span);
-				Writer baseWriter = writer.ToWriter();
-				property.Write(value, ref baseWriter, context);
-				writer = MessagePackWriter.FromWriter(baseWriter);
+				writer.Buffer.Write(property.RawPropertyNameString.Span);
+				property.Write(value, ref writer, context);
 			}
 		}
 	}
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
+	public override async ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -100,13 +96,13 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				propertiesToSerialize = serializable.Properties;
 			}
 
-			MessagePackWriter syncWriter = writer.CreateWriter();
+			Writer syncWriter = writer.CreateWriter();
 			syncWriter.WriteMapHeader(propertiesToSerialize.Length);
 			for (int i = 0; i < propertiesToSerialize.Length; i++)
 			{
 				SerializableProperty<T> property = propertiesToSerialize.Span[i];
 
-				syncWriter.WriteRaw(property.RawPropertyNameString.Span);
+				syncWriter.Buffer.Write(property.RawPropertyNameString.Span);
 				if (property.PreferAsyncSerialization)
 				{
 					writer.ReturnWriter(ref syncWriter);
@@ -115,9 +111,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				}
 				else
 				{
-					Writer baseWriter = syncWriter.ToWriter();
-					property.Write(value, ref baseWriter, context);
-					syncWriter = MessagePackWriter.FromWriter(baseWriter);
+					property.Write(value, ref syncWriter, context);
 				}
 
 				if (writer.IsTimeToFlush(context))
@@ -140,9 +134,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	}
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override T? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -160,12 +154,10 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
-				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
+				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
 				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 				{
-					Reader baseReader = reader.ToReader();
-					propertyReader.Read(ref value, ref baseReader, context);
-					reader = MessagePackReader.FromReader(baseReader);
+					propertyReader.Read(ref value, ref reader, context);
 				}
 				else
 				{
@@ -189,11 +181,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
-		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out success).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -227,16 +219,14 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			while (remainingEntries > 0)
 			{
 				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = reader.CreateBufferedReader();
+				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
-					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
+					ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
 					if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 					{
-						Reader baseReader = syncReader.ToReader();
-						propertyReader.Read(ref value, ref baseReader, context);
-						syncReader = MessagePackReader.FromReader(baseReader);
+						propertyReader.Read(ref value, ref syncReader, context);
 					}
 					else
 					{
@@ -253,7 +243,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					if (bufferedStructures % 2 == 1)
 					{
 						// The property name has already been buffered.
-						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
+						ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
 						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 						{
 							if (propertyReader.PreferAsyncSerialization)
@@ -270,9 +260,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 								reader.ReturnReader(ref syncReader);
 								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 								syncReader = reader.CreateBufferedReader();
-								Reader baseReader = syncReader.ToReader();
-								propertyReader.Read(ref value, ref baseReader, context);
-								syncReader = MessagePackReader.FromReader(baseReader);
+								propertyReader.Read(ref value, ref syncReader, context);
 								reader.ReturnReader(ref syncReader);
 								remainingEntries--;
 								continue;
@@ -378,16 +366,16 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
+	public override async ValueTask<bool> SkipToPropertyValueAsync(AsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
-		bool isNil;
-		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		StreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNull;
+		while (streamingReader.TryReadNull(out isNull).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (isNil)
+		if (isNull)
 		{
 			reader.ReturnReader(ref streamingReader);
 			return false;

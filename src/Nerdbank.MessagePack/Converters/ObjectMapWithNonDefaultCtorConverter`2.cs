@@ -2,13 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
-/// A <see cref="MessagePackConverter{T}"/> that writes objects as maps of property names to values.
+/// A <see cref="Converter{T}"/> that writes objects as maps of property names to values.
 /// Data types with constructors and/or <see langword="init" /> properties may be deserialized.
 /// </summary>
 /// <typeparam name="TDeclaringType">The type of objects that can be serialized or deserialized with this converter.</typeparam>
@@ -26,9 +24,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, null, defaultValuesPolicy)
 {
 	/// <inheritdoc/>
-	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TDeclaringType? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -40,12 +38,10 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
-				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
+				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
 				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
 				{
-					Reader baseReader = reader.ToReader();
-					deserializeArg.Read(ref argState, ref baseReader, context);
-					reader = MessagePackReader.FromReader(baseReader);
+					deserializeArg.Read(ref argState, ref reader, context);
 				}
 				else
 				{
@@ -71,11 +67,11 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<TDeclaringType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<TDeclaringType?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
-		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out success).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -104,16 +100,14 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			while (remainingEntries > 0)
 			{
 				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = reader.CreateBufferedReader();
+				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
-					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
+					ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
 					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 					{
-						Reader baseReader = syncReader.ToReader();
-						propertyReader.Read(ref argState, ref baseReader, context);
-						syncReader = MessagePackReader.FromReader(baseReader);
+						propertyReader.Read(ref argState, ref syncReader, context);
 					}
 					else
 					{
@@ -130,7 +124,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					if (bufferedStructures % 2 == 1)
 					{
 						// The property name has already been buffered.
-						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
+						ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
 						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 						{
 							if (propertyReader.PreferAsyncSerialization)
@@ -147,9 +141,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 								reader.ReturnReader(ref syncReader);
 								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 								syncReader = reader.CreateBufferedReader();
-								Reader baseReader = syncReader.ToReader();
-								propertyReader.Read(ref argState, ref baseReader, context);
-								syncReader = MessagePackReader.FromReader(baseReader);
+								propertyReader.Read(ref argState, ref syncReader, context);
 								reader.ReturnReader(ref syncReader);
 								remainingEntries--;
 								continue;

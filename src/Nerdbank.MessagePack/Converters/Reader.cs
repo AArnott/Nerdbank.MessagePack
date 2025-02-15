@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Nerdbank.PolySerializer.Converters;
 
 public ref struct Reader
@@ -73,6 +75,9 @@ public ref struct Reader
 	public ReadOnlySequence<byte>? ReadStringSequence() => this.deformatter.ReadStringSequence(ref this);
 
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.deformatter.TryReadStringSpan(ref this, out value);
+
+	[UnscopedRef]
+	public ReadOnlySpan<byte> ReadStringSpan() => this.deformatter.ReadStringSpan(ref this);
 
 	public sbyte ReadSByte() => this.deformatter.ReadSByte(ref this);
 
