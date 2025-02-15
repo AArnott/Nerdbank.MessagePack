@@ -22,7 +22,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <exception cref="SerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeReader, MsgPackStreamingDeformatter.Deformatter)
+public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeReader, MsgPackDeformatter.Default)
 {
 	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
 	private uint expectedRemainingStructures;

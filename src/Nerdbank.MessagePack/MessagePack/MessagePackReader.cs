@@ -2,11 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -50,7 +48,7 @@ public ref partial struct MessagePackReader
 
 	public static MessagePackReader FromReader(scoped in Reader reader) => new(reader);
 
-	public Reader ToReader() => new(this.streamingReader.SequenceReader.UnreadSequence, MsgPackStreamingDeformatter.Deformatter);
+	public Reader ToReader() => new(this.streamingReader.SequenceReader.UnreadSequence, MsgPackDeformatter.Default);
 
 	/// <summary>
 	/// Gets the <see cref="ReadOnlySequence{T}"/> originally supplied to the constructor.

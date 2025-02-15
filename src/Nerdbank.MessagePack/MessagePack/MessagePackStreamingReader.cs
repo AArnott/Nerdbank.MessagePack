@@ -900,7 +900,7 @@ public ref partial struct MessagePackStreamingReader
 		GetMoreBytes = this.getMoreBytesAsync,
 		GetMoreBytesState = this.getMoreBytesState,
 		EndOfStream = this.eof,
-		Deformatter = MsgPackStreamingDeformatter.Deformatter,
+		Deformatter = MsgPackDeformatter.Default,
 	};
 
 	/// <summary>
@@ -944,7 +944,7 @@ public ref partial struct MessagePackStreamingReader
 				GetMoreBytes = getMoreBytes,
 				GetMoreBytesState = getMoreBytesState,
 				EndOfStream = moreBuffer.IsCompleted,
-				Deformatter = MsgPackStreamingDeformatter.Deformatter,
+				Deformatter = MsgPackDeformatter.Default,
 			};
 		}
 	}

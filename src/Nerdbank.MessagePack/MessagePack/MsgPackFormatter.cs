@@ -254,6 +254,15 @@ public class MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	public void Write(ref Writer writer, ExtensionHeader value)
+	{
+		// When we write the header, we'll ask for all the space we need for the payload as well
+		// as that may help ensure we only allocate a buffer once.
+		Span<byte> span = writer.Buffer.GetSpan((int)(value.Length + 6));
+		Assumes.True(MessagePackPrimitives.TryWriteExtensionHeader(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
 	/// <summary>
 	/// Estimates the length of the header required for a given string.
 	/// </summary>

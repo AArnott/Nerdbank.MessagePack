@@ -174,7 +174,7 @@ public partial record MessagePackSerializer
 		}
 		else
 		{
-			Reader baseReader = new(buffer, MsgPackStreamingDeformatter.Deformatter);
+			Reader baseReader = new(buffer, MsgPackDeformatter.Default);
 			T? result = converter.Read(ref baseReader, context.Value);
 			return result;
 		}

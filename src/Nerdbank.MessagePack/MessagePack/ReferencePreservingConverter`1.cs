@@ -6,7 +6,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
-using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -15,15 +14,17 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// </summary>
 /// <typeparam name="T">The type of value to be serialized.</typeparam>
 /// <param name="inner">The actual converter to use when a value is serialized or deserialized for the first time in a stream.</param>
-internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : MessagePackConverter<T>
+internal class ReferencePreservingConverter<T>(Converter<T> inner) : Converter<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
 
+	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.VerifyFormat(formatter, deformatter);
+
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override T? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNil())
+		if (reader.TryReadNull())
 		{
 			return default;
 		}
@@ -34,11 +35,11 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	public override async ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool isNil;
-		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		while (streamingReader.TryReadNull(out isNil).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -54,11 +55,11 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref Writer writer, in T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return;
 		}
 
@@ -68,11 +69,11 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
+	public override ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
 	{
 		if (value is null)
 		{
-			writer.WriteNil();
+			writer.WriteNull();
 			return default;
 		}
 

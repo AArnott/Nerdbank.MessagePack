@@ -733,7 +733,7 @@ internal static class HardwareAccelerated
 	{
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
-		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.EnsureMsgPack(formatter, deformatter);
+		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<int>.VerifyFormat(formatter, deformatter);
 
 		public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 		{
@@ -848,7 +848,7 @@ internal static class HardwareAccelerated
 	/// </summary>
 	/// <typeparam name="TEnumerable">The type of the enumerable to be converted.</typeparam>
 	/// <typeparam name="TElement">The type of element to be converted.</typeparam>
-	private sealed class PrimitiveArrayConverter<TEnumerable, TElement>(SpanConstructorKind spanConstructorKind) : MessagePackConverter<TEnumerable>
+	private sealed class PrimitiveArrayConverter<TEnumerable, TElement>(SpanConstructorKind spanConstructorKind) : Converter<TEnumerable>
 		where TElement : unmanaged
 	{
 		/// <summary>
@@ -864,10 +864,12 @@ internal static class HardwareAccelerated
 
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
 
+		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<TEnumerable>.VerifyFormat(formatter, deformatter);
+
 		/// <inheritdoc/>
-		public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
+		public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 		{
-			if (reader.TryReadNil())
+			if (reader.TryReadNull())
 			{
 				return default;
 			}
@@ -964,11 +966,11 @@ internal static class HardwareAccelerated
 		}
 
 		/// <inheritdoc/>
-		public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
+		public override void Write(ref Writer writer, in TEnumerable? value, SerializationContext context)
 		{
 			if (value is null)
 			{
-				writer.WriteNil();
+				writer.WriteNull();
 				return;
 			}
 
@@ -983,9 +985,9 @@ internal static class HardwareAccelerated
 			while (length > 0)
 			{
 				int consumedSpanLength = length > ElementMaxSerializableLength ? ElementMaxSerializableLength : length;
-				Span<byte> buffer = writer.GetSpan(consumedSpanLength * MsgPackBufferLengthFactor);
+				Span<byte> buffer = writer.Buffer.GetSpan(consumedSpanLength * MsgPackBufferLengthFactor);
 				nuint writtenBytes = MessagePackPrimitiveSpanUtility.Write(ref MemoryMarshal.GetReference(buffer), in reference, unchecked((nuint)consumedSpanLength));
-				writer.Advance(unchecked((int)writtenBytes));
+				writer.Buffer.Advance(unchecked((int)writtenBytes));
 				reference = ref Unsafe.Add(ref reference, consumedSpanLength);
 				length -= consumedSpanLength;
 			}

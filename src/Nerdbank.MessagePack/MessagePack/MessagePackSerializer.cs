@@ -738,7 +738,7 @@ public partial record MessagePackSerializer
 			ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
 			if (readResult.IsCompleted)
 			{
-				Reader msgpackReader = new(readResult.Buffer, MsgPackStreamingDeformatter.Deformatter);
+				Reader msgpackReader = new(readResult.Buffer, MsgPackDeformatter.Default);
 				T? result = converter.Read(ref msgpackReader, context.Value);
 				reader.AdvanceTo(msgpackReader.Position);
 				return result;

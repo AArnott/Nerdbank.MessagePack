@@ -9,13 +9,13 @@ namespace Nerdbank.PolySerializer.MessagePack;
 
 internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 {
-	internal static readonly MsgPackStreamingDeformatter Instance = new();
-
-	internal static readonly Deformatter Deformatter = new(Instance);
+	internal static readonly MsgPackStreamingDeformatter Default = new();
 
 	private uint expectedRemainingStructures;
 
-	private MsgPackStreamingDeformatter() { }
+	private MsgPackStreamingDeformatter()
+	{
+	}
 
 	public override Encoding Encoding => StringEncoding.UTF8;
 
@@ -288,6 +288,46 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	public DecodeResult TryRead(ref Reader reader, out ExtensionHeader value)
+	{
+		DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(reader.UnreadSpan, out value, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			this.Advance(ref reader, tokenSize, 0);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
+
+		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					self.Advance(ref reader, tokenSize, 0);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (reader.SequenceReader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryReadExtensionHeader(buffer, out extensionHeader, out tokenSize);
+						return SlowPath(ref reader, self, readResult, ref extensionHeader, ref tokenSize);
+					}
+					else
+					{
+						extensionHeader = default;
+						return self.InsufficientBytes(reader);
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
+
 	public override DecodeResult TryReadRaw(ref Reader reader, long length, out ReadOnlySequence<byte> rawMsgPack)
 	{
 		if (reader.Remaining >= length)
@@ -299,6 +339,19 @@ internal partial class MsgPackStreamingDeformatter : StreamingDeformatter
 
 		rawMsgPack = default;
 		return this.InsufficientBytes(reader);
+	}
+
+	public DecodeResult TryPeekNextCode(in Reader reader, out MessagePackType messagePackType)
+	{
+		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
+		if (result != DecodeResult.Success)
+		{
+			messagePackType = default;
+			return result;
+		}
+
+		messagePackType = MessagePackCode.ToMessagePackType(code);
+		return DecodeResult.Success;
 	}
 
 	public override DecodeResult TrySkip(ref Reader reader, ref SerializationContext context)

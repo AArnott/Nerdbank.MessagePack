@@ -350,7 +350,7 @@ public partial class Deformatter
 	/// </summary>
 	/// <param name="condition">A boolean value.</param>
 	/// <exception cref="EndOfStreamException">Thrown if <paramref name="condition"/> is <see langword="false"/>.</exception>
-	private static void ThrowInsufficientBufferUnless(bool condition)
+	protected static void ThrowInsufficientBufferUnless(bool condition)
 	{
 		if (!condition)
 		{
@@ -362,7 +362,7 @@ public partial class Deformatter
 	/// Throws <see cref="EndOfStreamException"/> indicating that there aren't enough bytes remaining in the buffer to store
 	/// the promised data.
 	/// </summary>
-	private static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();
+	protected static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();
 
 	/// <summary>
 	/// Throws an <see cref="SerializationException"/> explaining an unexpected code was encountered.
@@ -370,13 +370,13 @@ public partial class Deformatter
 	/// <param name="code">The code that was encountered.</param>
 	/// <returns>Nothing. This method always throws.</returns>
 	[DoesNotReturn]
-	private Exception ThrowInvalidCode(byte code)
+	protected Exception ThrowInvalidCode(byte code)
 	{
 		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, this.streamingDeformatter.ToFormatName(code)));
 	}
 
 	[DoesNotReturn]
-	private Exception ThrowInvalidCode(in Reader reader) => this.ThrowInvalidCode(this.PeekNextCode(reader));
+	protected Exception ThrowInvalidCode(in Reader reader) => this.ThrowInvalidCode(this.PeekNextCode(reader));
 
 	[DoesNotReturn]
 	internal static Exception ThrowUnreachable() => throw new UnreachableException();

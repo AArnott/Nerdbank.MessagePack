@@ -31,7 +31,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// </remarks>
 public abstract class MessagePackConverter<T> : Converter<T>, IMessagePackConverter
 {
-	internal static void EnsureMsgPack(Formatter formatter, StreamingDeformatter deformatter) => Verify.Operation(formatter is MsgPackFormatter && deformatter is MsgPackStreamingDeformatter, "This converter is specific to msgpack.");
+	internal static void VerifyFormat(Formatter formatter, StreamingDeformatter deformatter) => Verify.Operation(formatter is MsgPackFormatter && deformatter is MsgPackStreamingDeformatter, "This converter is specific to msgpack.");
 
 	object? IMessagePackConverter.ReadObject(ref MessagePackReader reader, SerializationContext context) => this.Read(ref reader, context);
 

@@ -5,8 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 using Microsoft.NET.StringTools;
-using Nerdbank.PolySerializer.Converters;
-using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -38,7 +36,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="value">The object to write.</param>
 	/// <param name="inner">The converter to use to write the object if it has not already been written.</param>
 	/// <param name="context">The serialization context.</param>
-	internal void WriteObject<T>(ref MessagePackWriter writer, T value, MessagePackConverter<T> inner, SerializationContext context)
+	internal void WriteObject<T>(ref Writer writer, T value, Converter<T> inner, SerializationContext context)
 	{
 		Requires.NotNullAllowStructs(value);
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
@@ -52,7 +50,8 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		{
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
-			writer.Write(new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
+			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
+			formatter.Write(ref writer, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			writer.Write(referenceId);
 		}
 		else
@@ -72,7 +71,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="context">The serialization context.</param>
 	/// <returns>An async task.</returns>
 	[Experimental("NBMsgPackAsync")]
-	internal async ValueTask WriteObjectAsync<T>(MessagePackAsyncWriter writer, T value, MessagePackConverter<T> inner, SerializationContext context)
+	internal async ValueTask WriteObjectAsync<T>(AsyncWriter writer, T value, Converter<T> inner, SerializationContext context)
 	{
 		Requires.NotNullAllowStructs(value);
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
@@ -86,8 +85,9 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		{
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
-			MessagePackWriter syncWriter = writer.CreateWriter();
-			syncWriter.Write(new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
+			Writer syncWriter = writer.CreateWriter();
+			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
+			formatter.Write(ref syncWriter, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			syncWriter.Write(referenceId);
 			writer.ReturnWriter(ref syncWriter);
 			await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
@@ -108,14 +108,15 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="context">The serialization context.</param>
 	/// <returns>The reference to an object, whether it was deserialized fresh or just referenced.</returns>
 	/// <exception cref="SerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
-	internal T ReadObject<T>(ref MessagePackReader reader, MessagePackConverter<T> inner, SerializationContext context)
+	internal T ReadObject<T>(ref Reader reader, Converter<T> inner, SerializationContext context)
 	{
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
-		if (reader.NextMessagePackType == MessagePackType.Extension)
+		MsgPackDeformatter deformatter = (MsgPackDeformatter)reader.Deformatter;
+		if (deformatter.PeekNextMessagePackType(reader) == MessagePackType.Extension)
 		{
-			MessagePackReader provisionaryReader = reader.CreatePeekReader();
-			ExtensionHeader extensionHeader = provisionaryReader.ReadExtensionHeader();
+			Reader provisionaryReader = reader;
+			ExtensionHeader extensionHeader = deformatter.ReadExtensionHeader(ref provisionaryReader);
 			if (extensionHeader.TypeCode == this.Owner.LibraryExtensionTypeCodes.ObjectReference)
 			{
 				int id = provisionaryReader.ReadInt32();
@@ -142,13 +143,14 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <returns>The reference to an object, whether it was deserialized fresh or just referenced.</returns>
 	/// <exception cref="SerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
 	[Experimental("NBMsgPackAsync")]
-	internal async ValueTask<T> ReadObjectAsync<T>(MessagePackAsyncReader reader, MessagePackConverter<T> inner, SerializationContext context)
+	internal async ValueTask<T> ReadObjectAsync<T>(AsyncReader reader, Converter<T> inner, SerializationContext context)
 	{
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
-		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		StreamingReader streamingReader = reader.CreateStreamingReader();
+		MsgPackDeformatter deformatter = (MsgPackDeformatter)reader.Deformatter;
 		MessagePackType peekType;
-		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
+		while (deformatter.StreamingDeformatter.TryPeekNextCode(streamingReader.Reader, out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -157,9 +159,9 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		if (peekType == MessagePackType.Extension)
 		{
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
-			MessagePackReader syncReader = reader.CreateBufferedReader();
-			MessagePackReader provisionaryReader = syncReader.CreatePeekReader();
-			ExtensionHeader extensionHeader = provisionaryReader.ReadExtensionHeader();
+			Reader syncReader = reader.CreateBufferedReader();
+			Reader provisionaryReader = syncReader;
+			ExtensionHeader extensionHeader = deformatter.ReadExtensionHeader(ref provisionaryReader);
 			if (extensionHeader.TypeCode == this.Owner.LibraryExtensionTypeCodes.ObjectReference)
 			{
 				int id = provisionaryReader.ReadInt32();
