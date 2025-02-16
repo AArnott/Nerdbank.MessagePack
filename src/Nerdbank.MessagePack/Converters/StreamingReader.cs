@@ -65,6 +65,18 @@ public ref partial struct StreamingReader
 	public ref Reader Reader => ref this.reader;
 
 	/// <summary>
+	/// Gets or sets the number of structures that have been announced but not yet read.
+	/// </summary>
+	/// <remarks>
+	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
+	/// </remarks>
+	internal uint ExpectedRemainingStructures
+	{
+		get => this.reader.ExpectedRemainingStructures;
+		set => this.reader.ExpectedRemainingStructures = value;
+	}
+
+	/// <summary>
 	/// Gets a token that may cancel deserialization.
 	/// </summary>
 	public CancellationToken CancellationToken { get; init; }

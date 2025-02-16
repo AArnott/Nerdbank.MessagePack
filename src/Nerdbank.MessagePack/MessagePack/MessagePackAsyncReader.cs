@@ -128,7 +128,7 @@ public class MessagePackAsyncReader : AsyncReader
 	/// The result must be returned with <see cref="ReturnReader(ref MessagePackStreamingReader)"/>
 	/// before using this <see cref="MessagePackAsyncReader"/> again.
 	/// </remarks>
-	public new MessagePackStreamingReader CreateStreamingReader()
+	public new StreamingReader CreateStreamingReader()
 	{
 		this.ThrowIfReaderNotReturned();
 		this.readerReturned = false;
@@ -163,7 +163,7 @@ public class MessagePackAsyncReader : AsyncReader
 	/// future reads move continuously forward in the msgpack stream.
 	/// </summary>
 	/// <param name="reader">The reader to return.</param>
-	public void ReturnReader(ref MessagePackStreamingReader reader)
+	public void ReturnReader(ref StreamingReader reader)
 	{
 		this.refresh = reader.GetExchangeInfo();
 		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
@@ -234,7 +234,7 @@ public class MessagePackAsyncReader : AsyncReader
 	{
 		if (this.expectedRemainingStructures > 0)
 		{
-			MessagePackStreamingReader reader = this.CreateStreamingReader();
+			StreamingReader reader = this.CreateStreamingReader();
 			SerializationContext context = new()
 			{
 				MidSkipRemainingCount = this.expectedRemainingStructures,

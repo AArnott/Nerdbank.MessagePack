@@ -11,8 +11,6 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 {
 	public static readonly MsgPackStreamingDeformatter Default = new();
 
-	private uint expectedRemainingStructures;
-
 	private MsgPackStreamingDeformatter()
 	{
 	}
@@ -20,18 +18,6 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	public override string FormatName => MsgPackFormatter.Default.FormatName;
 
 	public override Encoding Encoding => StringEncoding.UTF8;
-
-	/// <summary>
-	/// Gets or sets the number of structures that have been announced but not yet read.
-	/// </summary>
-	/// <remarks>
-	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
-	/// </remarks>
-	internal uint ExpectedRemainingStructures
-	{
-		get => this.expectedRemainingStructures;
-		set => this.expectedRemainingStructures = value;
-	}
 
 	public override string ToFormatName(byte code) => MessagePackCode.ToFormatName(code);
 
@@ -533,14 +519,14 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 					break;
 				case DecodeResult.InsufficientBuffer:
 					context.MidSkipRemainingCount = count - i;
-					this.DecrementRemainingStructures((int)originalCount - (int)context.MidSkipRemainingCount);
+					this.DecrementRemainingStructures(ref reader, (int)originalCount - (int)context.MidSkipRemainingCount);
 					return DecodeResult.InsufficientBuffer;
 				case DecodeResult other:
 					return other;
 			}
 		}
 
-		this.DecrementRemainingStructures((int)originalCount);
+		this.DecrementRemainingStructures(ref reader, (int)originalCount);
 		context.MidSkipRemainingCount = 0;
 		return DecodeResult.Success;
 
@@ -812,7 +798,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		// Never let the expected remaining structures go negative.
 		// If we're reading simple top-level values, we start at 0 and should remain there.
-		uint expectedRemainingStructures = this.expectedRemainingStructures;
+		uint expectedRemainingStructures = reader.ExpectedRemainingStructures;
 		if (consumed > expectedRemainingStructures)
 		{
 			expectedRemainingStructures = 0;
@@ -822,7 +808,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 			expectedRemainingStructures -= consumed;
 		}
 
-		this.expectedRemainingStructures = expectedRemainingStructures + added;
+		reader.ExpectedRemainingStructures = expectedRemainingStructures + added;
 	}
 
 	private DecodeResult ReadStringSlow(ref Reader reader, uint byteLength, out string? value)
@@ -867,9 +853,9 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return DecodeResult.Success;
 	}
 
-	private void DecrementRemainingStructures(int count)
+	private void DecrementRemainingStructures(ref Reader reader, int count)
 	{
-		uint expectedRemainingStructures = this.expectedRemainingStructures;
-		this.expectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
+		uint expectedRemainingStructures = reader.ExpectedRemainingStructures;
+		reader.ExpectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
 	}
 }

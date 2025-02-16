@@ -29,6 +29,14 @@ public ref struct Reader
 	[UnscopedRef]
 	internal ref SequenceReader<byte> SequenceReader => ref this.inner;
 
+	/// <summary>
+	/// Gets or sets the number of structures that have been announced but not yet read.
+	/// </summary>
+	/// <remarks>
+	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
+	/// </remarks>
+	internal uint ExpectedRemainingStructures { get; set; }
+
 	public ReadOnlySequence<byte> Sequence => this.inner.Sequence;
 
 	public long Remaining => this.inner.Remaining;

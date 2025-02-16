@@ -45,10 +45,10 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 
 		// Enumerate the actual sequence.
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			StreamingReader streamingReader = reader.CreateStreamingReader();
 
 			bool isNil;
-			while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+			while (streamingReader.TryReadNull(out isNil).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
@@ -230,7 +230,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 			}
 
 			// Skip the given number of elements.
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			StreamingReader streamingReader = reader.CreateStreamingReader();
 			int count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
@@ -300,9 +300,9 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 
 		private async ValueTask<bool> IsNilAsync()
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			StreamingReader streamingReader = reader.CreateStreamingReader();
 			bool isNil;
-			while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+			while (streamingReader.TryReadNull(out isNil).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
