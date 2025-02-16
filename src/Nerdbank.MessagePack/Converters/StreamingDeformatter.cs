@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Nerdbank.PolySerializer.Converters;
@@ -73,7 +74,7 @@ public abstract record StreamingDeformatter
 
 	public abstract DecodeResult TryRead(ref Reader reader, out double value);
 
-	public abstract DecodeResult TryRead(ref Reader reader, out string value);
+	public abstract DecodeResult TryRead(ref Reader reader, out string? value);
 
 	public abstract DecodeResult TryRead(ref Reader reader, out DateTime value);
 
@@ -94,6 +95,20 @@ public abstract record StreamingDeformatter
 	public abstract string ToFormatName(byte code);
 
 	public abstract TypeCode ToTypeCode(byte code);
+
+	/// <summary>
+	/// Throws an <see cref="SerializationException"/> explaining an unexpected code was encountered.
+	/// </summary>
+	/// <param name="code">The code that was encountered.</param>
+	/// <returns>Nothing. This method always throws.</returns>
+	[DoesNotReturn]
+	protected internal Exception ThrowInvalidCode(byte code)
+	{
+		throw new SerializationException(string.Format("Unexpected code {0} ({1}) encountered.", code, this.ToFormatName(code)));
+	}
+
+	[DoesNotReturn]
+	protected internal Exception ThrowInvalidCode(in Reader reader) => this.ThrowInvalidCode(this.TryPeekNextCode(reader, out byte code) == DecodeResult.Success ? code : throw new InvalidOperationException());
 
 	/// <summary>
 	/// Gets the error code to return when the buffer has insufficient bytes to finish a decode request.

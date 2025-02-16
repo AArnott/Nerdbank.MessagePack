@@ -34,9 +34,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="MessagePackReaderTests.ReadInt.tt">
+    <None Update="MsgPackDeformatterTests.ReadInt.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MessagePackReaderTests.ReadInt.cs</LastGenOutput>
+      <LastGenOutput>MsgPackDeformatterTests.ReadInt.cs</LastGenOutput>
     </None>
   </ItemGroup>
 
@@ -45,10 +45,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="MessagePackReaderTests.ReadInt.cs">
+    <Compile Update="MsgPackDeformatterTests.ReadInt.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>MessagePackReaderTests.ReadInt.tt</DependentUpon>
+      <DependentUpon>MsgPackDeformatterTests.ReadInt.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 

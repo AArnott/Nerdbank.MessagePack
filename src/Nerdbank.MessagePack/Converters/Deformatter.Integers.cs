@@ -28,7 +28,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -52,7 +52,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -76,7 +76,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -100,7 +100,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -124,7 +124,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -148,7 +148,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -172,7 +172,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -196,7 +196,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();

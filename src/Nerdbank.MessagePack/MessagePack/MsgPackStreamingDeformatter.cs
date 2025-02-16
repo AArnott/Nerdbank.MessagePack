@@ -652,7 +652,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 				default:
 					// We don't actually expect to ever hit this point, since every code is supported.
 					Debug.Fail("Missing handler for code: " + code);
-					throw MessagePackReader.ThrowInvalidCode(code);
+					throw self.ThrowInvalidCode(code);
 			}
 		}
 	}

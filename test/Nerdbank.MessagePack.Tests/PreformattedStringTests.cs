@@ -57,11 +57,11 @@ public partial class PreformattedStringTests
 	[Fact]
 	public void TryRead()
 	{
-		Reader matchingReaderContiguous = new MessagePackReader(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken)).ToReader();
-		Reader matchingReaderFragmented = new MessagePackReader(SplitSequence<byte>(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken), 2)).ToReader();
-		Reader mismatchingReader = new MessagePackReader(Serializer.Serialize<string, Witness>("def", TestContext.Current.CancellationToken)).ToReader();
-		Reader nilReader = new MessagePackReader(Serializer.Serialize<string, Witness>(null, TestContext.Current.CancellationToken)).ToReader();
-		Reader intReader = new MessagePackReader(Serializer.Serialize<int, Witness>(3, TestContext.Current.CancellationToken)).ToReader();
+		Reader matchingReaderContiguous = new Reader(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken), MsgPackDeformatter.Default);
+		Reader matchingReaderFragmented = new Reader(SplitSequence<byte>(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken), 2), MsgPackDeformatter.Default);
+		Reader mismatchingReader = new Reader(Serializer.Serialize<string, Witness>("def", TestContext.Current.CancellationToken), MsgPackDeformatter.Default);
+		Reader nilReader = new Reader(Serializer.Serialize<string, Witness>(null, TestContext.Current.CancellationToken), MsgPackDeformatter.Default);
+		Reader intReader = new Reader(Serializer.Serialize<int, Witness>(3, TestContext.Current.CancellationToken), MsgPackDeformatter.Default);
 
 		PreformattedString msgpackString = new("abc", MsgPackFormatter.Default);
 

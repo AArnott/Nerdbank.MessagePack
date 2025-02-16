@@ -47,6 +47,8 @@ public ref struct Reader
 
 	public TypeCode NextTypeCode => this.deformatter.ToTypeCode(this.NextCode);
 
+	public bool IsNull => this.NextTypeCode == TypeCode.Nil;
+
 	/// <summary>
 	/// Gets the current position of the reader within <see cref="Sequence"/>.
 	/// </summary>

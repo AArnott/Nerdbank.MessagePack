@@ -4,16 +4,18 @@
 #pragma warning disable NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 using System.Text;
-using Nerdbank.PolySerializer.Converters;
 
 public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 {
+	private static readonly MsgPackFormatter Formatter = MsgPackFormatter.Default;
+	private static readonly MsgPackDeformatter Deformatter = MsgPackDeformatter.Default;
+
 	private static readonly ReadOnlySequence<byte> ArrayOf3Bools = CreateMsgPackArrayOf3Bools();
 
 	[Fact]
 	public void ReadIncompleteBuffer()
 	{
-		MessagePackStreamingReader incompleteReader = new(ArrayOf3Bools.Slice(0, 2));
+		StreamingReader incompleteReader = new(ArrayOf3Bools.Slice(0, 2), Deformatter);
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
 		Assert.Equal(3, count);
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
@@ -25,10 +27,11 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 	public async Task ReplenishBufferAsync_AddsMoreBytesOnce()
 	{
 		// Arrange the reader to have an incomplete buffer and that upon request it will get the rest of it.
-		MessagePackStreamingReader incompleteReader = new(
+		StreamingReader incompleteReader = new(
 			ArrayOf3Bools.Slice(0, 2),
 			(_, pos, examined, ct) => new(new ReadResult(ArrayOf3Bools.Slice(pos), false, isCompleted: true)),
-			null);
+			null,
+			Deformatter);
 
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
 		Assert.Equal(3, count);
@@ -41,7 +44,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.False(boolean);
 
-		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNil());
+		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNull());
 	}
 
 	[Fact]
@@ -49,10 +52,11 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 	{
 		// Arrange the reader to have an incomplete buffer and that upon request it will get the rest of it.
 		int callCount = 0;
-		MessagePackStreamingReader incompleteReader = new(
+		StreamingReader incompleteReader = new(
 			ArrayOf3Bools.Slice(0, 2),
 			(_, pos, examined, ct) => new(new ReadResult(ArrayOf3Bools.Slice(pos), false, isCompleted: ++callCount > 1)),
-			null);
+			null,
+			Deformatter);
 
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
 		Assert.Equal(3, count);
@@ -65,16 +69,16 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out boolean));
 		Assert.False(boolean);
 
-		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNil());
+		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNull());
 		incompleteReader = new(await incompleteReader.FetchMoreBytesAsync());
-		Assert.Equal(DecodeResult.EmptyBuffer, incompleteReader.TryReadNil());
+		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNull());
 	}
 
 	[Fact]
 	public async Task SkipIncrementally()
 	{
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 
 		// For an exhaustive test, we must use at least one of every msgpack token type (at least, one for interesting branch of the internal switch statement).
 		// 0. array
@@ -88,7 +92,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		writer.Write(true);           // Boolean!
 
 		// 2. extension
-		writer.Write(new Extension(35, new byte[] { 1, 2, 3 }));
+		Formatter.Write(ref writer, new Extension(35, new byte[] { 1, 2, 3 }));
 
 		// 3. binary
 		writer.Write([6, 8]);
@@ -99,7 +103,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		writer.Flush();
 
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
-		MessagePackStreamingReader reader = new(ros.Slice(0, 1), MessagePackSerializerTestBase.FetchOneByteAtATimeAsync, ros);
+		StreamingReader reader = new(ros.Slice(0, 1), MessagePackSerializerTestBase.FetchOneByteAtATimeAsync, ros, MsgPackDeformatter.Default);
 		SerializationContext context = new();
 		int fetchCount = 0;
 		while (reader.TrySkip(ref context).NeedsMoreBytes())
@@ -126,17 +130,18 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Extension originalExtension = new(1, new byte[] { 1, 2, 3 });
 
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
-		writer.Write(originalExtension);
+		Writer writer = new(seq, MsgPackFormatter.Default);
+		Formatter.Write(ref writer, originalExtension);
 		writer.Flush();
 
 		FragmentedPipeReader pipeReader = new(seq);
-		MessagePackStreamingReader reader = new(
+		StreamingReader reader = new(
 			seq.AsReadOnlySequence.Slice(0, 3),
 			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
-			null);
+			null,
+			MsgPackDeformatter.Default);
 		Extension deserializedExtension;
-		while (reader.TryRead(out deserializedExtension).NeedsMoreBytes())
+		while (Deformatter.StreamingDeformatter.TryRead(ref reader.Reader, out deserializedExtension).NeedsMoreBytes())
 		{
 			reader = new(await reader.FetchMoreBytesAsync());
 		}
@@ -150,15 +155,16 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		byte[] originalData = [1, 2, 3];
 
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
 		FragmentedPipeReader pipeReader = new(seq);
-		MessagePackStreamingReader reader = new(
+		StreamingReader reader = new(
 			seq.AsReadOnlySequence.Slice(0, 2),
 			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
-			null);
+			null,
+			MsgPackDeformatter.Default);
 		ReadOnlySequence<byte> deserializedData;
 		while (reader.TryReadBinary(out deserializedData).NeedsMoreBytes())
 		{
@@ -174,15 +180,16 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		string originalData = "hello";
 
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
 		FragmentedPipeReader pipeReader = new(seq);
-		MessagePackStreamingReader reader = new(
+		StreamingReader reader = new(
 			seq.AsReadOnlySequence.Slice(0, 2),
 			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
-			null);
+			null,
+			Deformatter);
 		string? deserializedString;
 		while (reader.TryRead(out deserializedString).NeedsMoreBytes())
 		{
@@ -198,15 +205,16 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		string originalData = "hello";
 
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
 		FragmentedPipeReader pipeReader = new(seq);
-		MessagePackStreamingReader reader = new(
+		StreamingReader reader = new(
 			seq.AsReadOnlySequence.Slice(0, 2),
 			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
-			null);
+			null,
+			Deformatter);
 		ReadOnlySequence<byte> deserializedString;
 		while (reader.TryReadStringSequence(out deserializedString).NeedsMoreBytes())
 		{
@@ -222,15 +230,16 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		string originalData = "hello";
 
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
 		FragmentedPipeReader pipeReader = new(seq);
-		MessagePackStreamingReader reader = new(
+		StreamingReader reader = new(
 			seq.AsReadOnlySequence.Slice(0, 2),
 			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
-			null);
+			null,
+			Deformatter);
 		ReadOnlySpan<byte> deserializedString;
 		while (reader.TryReadStringSpan(out bool contiguous, out deserializedString).NeedsMoreBytes())
 		{
@@ -243,7 +252,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 	private static ReadOnlySequence<byte> CreateMsgPackArrayOf3Bools()
 	{
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		writer.WriteArrayHeader(3);
 		writer.Write(false);
 		writer.Write(true);

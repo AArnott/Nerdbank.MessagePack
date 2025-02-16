@@ -127,6 +127,19 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <summary>
+	/// Writes a <see cref="byte"/> value using <see cref="MessagePackCode.UInt8"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
+	public void WriteUInt8(ref Writer writer, byte value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(2);
+		Assumes.True(MessagePackPrimitives.TryWriteUInt8(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	public void WriteByte(ref Writer writer, byte value) => this.WriteUInt8(ref writer, value);
+
+	/// <summary>
 	/// Writes an 8-bit value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.Int8"/>.
 	/// </summary>
 	/// <param name="value">The value.</param>
@@ -138,6 +151,19 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <summary>
+	/// Writes an 8-bit value using <see cref="MessagePackCode.Int8"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
+	public void WriteInt8(ref Writer writer, sbyte value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(2);
+		Assumes.True(MessagePackPrimitives.TryWriteInt8(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	public void WriteSByte(ref Writer writer, sbyte value) => this.WriteInt8(ref writer, value);
+
+	/// <summary>
 	/// Writes a <see cref="ushort"/> value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.UInt8"/> or <see cref="MessagePackCode.UInt16"/>.
 	/// </summary>
 	/// <param name="value">The value.</param>
@@ -145,6 +171,17 @@ public record MsgPackFormatter : Formatter
 	{
 		Span<byte> span = writer.Buffer.GetSpan(3);
 		Assumes.True(MessagePackPrimitives.TryWrite(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
+	/// Writes a <see cref="ushort"/> value using <see cref="MessagePackCode.UInt16"/>.
+	/// </summary>
+	/// <param name="value">The value.</param>
+	public void WriteUInt16(ref Writer writer, ushort value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(3);
+		Assumes.True(MessagePackPrimitives.TryWriteUInt16(span, value, out int written));
 		writer.Buffer.Advance(written);
 	}
 
@@ -165,6 +202,17 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <summary>
+	/// Writes a <see cref="short"/> using <see cref="MessagePackCode.Int16"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	public void WriteInt16(ref Writer writer, short value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(3);
+		Assumes.True(MessagePackPrimitives.TryWriteInt16(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
 	/// Writes an <see cref="uint"/> using <see cref="MessagePackCode.UInt32"/>.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
@@ -172,6 +220,17 @@ public record MsgPackFormatter : Formatter
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
 		Assumes.True(MessagePackPrimitives.TryWrite(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
+	/// Writes an <see cref="uint"/> using <see cref="MessagePackCode.UInt32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	public void WriteUInt32(ref Writer writer, uint value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(5);
+		Assumes.True(MessagePackPrimitives.TryWriteUInt32(span, value, out int written));
 		writer.Buffer.Advance(written);
 	}
 
@@ -194,6 +253,17 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <summary>
+	/// Writes an <see cref="int"/> using <see cref="MessagePackCode.Int32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	public void WriteInt32(ref Writer writer, int value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(5);
+		Assumes.True(MessagePackPrimitives.TryWriteInt32(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
 	/// Writes an <see cref="ulong"/> using <see cref="MessagePackCode.Int32"/>.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
@@ -201,6 +271,17 @@ public record MsgPackFormatter : Formatter
 	{
 		Span<byte> span = writer.Buffer.GetSpan(9);
 		Assumes.True(MessagePackPrimitives.TryWrite(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
+	/// Writes an <see cref="ulong"/> using <see cref="MessagePackCode.Int32"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	public void WriteUInt64(ref Writer writer, ulong value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(9);
+		Assumes.True(MessagePackPrimitives.TryWriteUInt64(span, value, out int written));
 		writer.Buffer.Advance(written);
 	}
 
@@ -221,6 +302,17 @@ public record MsgPackFormatter : Formatter
 	{
 		Span<byte> span = writer.Buffer.GetSpan(9);
 		Assumes.True(MessagePackPrimitives.TryWrite(span, value, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
+	/// Writes a <see cref="long"/> using <see cref="MessagePackCode.Int64"/>.
+	/// </summary>
+	/// <param name="value">The value to write.</param>
+	public void WriteInt64(ref Writer writer, long value)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(9);
+		Assumes.True(MessagePackPrimitives.TryWriteInt64(span, value, out int written));
 		writer.Buffer.Advance(written);
 	}
 
@@ -572,10 +664,38 @@ public record MsgPackFormatter : Formatter
 	/// <inheritdoc path="/summary"/>
 	/// <inheritdoc path="/param"/>
 	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
-	public override int GetEncodedLength(long value) => MessagePackWriter.GetEncodedLength(value);
+	public override int GetEncodedLength(long value)
+	{
+		return value switch
+		{
+			>= 0 => value switch
+			{
+				<= MessagePackRange.MaxFixPositiveInt => 1,
+				<= byte.MaxValue => 2,
+				<= ushort.MaxValue => 3,
+				<= uint.MaxValue => 5,
+				_ => 9,
+			},
+			_ => value switch
+			{
+				>= MessagePackRange.MinFixNegativeInt => 1,
+				>= sbyte.MinValue => 2,
+				>= short.MinValue => 3,
+				>= int.MinValue => 5,
+				_ => 9,
+			},
+		};
+	}
 
 	/// <inheritdoc path="/summary"/>
 	/// <inheritdoc path="/param"/>
 	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
-	public override int GetEncodedLength(ulong value) => MessagePackWriter.GetEncodedLength(value);
+	public override int GetEncodedLength(ulong value)
+	{
+		return value switch
+		{
+			> long.MaxValue => 9,
+			_ => GetEncodedLength((long)value),
+		};
+	}
 }

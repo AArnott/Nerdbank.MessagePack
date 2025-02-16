@@ -51,7 +51,7 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 		this.Serializer.Serialize(sequence, value);
 
-		MessagePackReader reader = new(sequence);
+		Reader reader = new(sequence, MsgPackDeformatter.Default);
 		reader.ReadMapHeader();
 
 		// Assert that the naming policy is applied.
@@ -68,7 +68,7 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 		this.Serializer.Serialize(sequence, value);
 
-		MessagePackReader reader = new(sequence);
+		Reader reader = new(sequence, MsgPackDeformatter.Default);
 		reader.ReadMapHeader();
 
 		reader.Skip(new SerializationContext());

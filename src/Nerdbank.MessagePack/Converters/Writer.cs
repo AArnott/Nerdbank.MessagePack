@@ -97,6 +97,22 @@ public ref struct Writer
 	/// <param name="value">The string to write.</param>
 	public void Write(PreformattedString value) => this.Buffer.Write(Requires.NotNull(value).Formatted.Span);
 
+	/// <summary>
+	/// Writes a nullable byte buffer.
+	/// </summary>
+	/// <param name="src">The array of bytes to write. May be <see langword="null"/>.</param>
+	public void Write(byte[]? src)
+	{
+		if (src == null)
+		{
+			this.WriteNull();
+		}
+		else
+		{
+			this.Write(src.AsSpan());
+		}
+	}
+
 	public void Write(scoped ReadOnlySpan<byte> value) => this.Formatter.Write(ref this, value);
 
 	public void Write(ReadOnlySequence<byte> value) => this.Formatter.Write(ref this, value);

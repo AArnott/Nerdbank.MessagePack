@@ -150,10 +150,10 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Equal(interning, ReferenceEquals(deserialized[0], deserialized[1]));
 
 		// Only interning should produce an object reference in the serialized form.
-		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
 		Assert.Equal(2, reader.ReadArrayHeader());
 		reader.ReadString(); // city
-		Assert.Equal(interning ? MessagePackType.Extension : MessagePackType.String, reader.NextMessagePackType);
+		Assert.Equal(interning ? MessagePackType.Extension : MessagePackType.String, MsgPackDeformatter.Default.PeekNextMessagePackType(reader));
 	}
 
 	/// <summary>
@@ -192,12 +192,12 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		this.Serializer.Serialize(sequence, root, TestContext.Current.CancellationToken);
 		this.LogMsgPack(sequence);
 
-		MessagePackReader reader = new(sequence);
+		Reader reader = new(sequence, MsgPackDeformatter.Default);
 		reader.ReadMapHeader();
 		reader.Skip(this.Serializer.StartingContext); // Value1 name
 		reader.Skip(this.Serializer.StartingContext); // Value1 value
 		reader.Skip(this.Serializer.StartingContext); // Value2 name
-		Assert.Equal(100, reader.ReadExtensionHeader().TypeCode);
+		Assert.Equal(100, MsgPackDeformatter.Default.ReadExtensionHeader(ref reader).TypeCode);
 
 		RecordWithObjects? deserializedRoot = this.Serializer.Deserialize<RecordWithObjects>(sequence, TestContext.Current.CancellationToken);
 		Assert.NotNull(deserializedRoot);

@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using TypeCode = Nerdbank.PolySerializer.Converters.TypeCode;
+
 public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	public enum Simple
@@ -32,7 +34,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 		Two = 2,
 	}
 
-	public MessagePackType ExpectedType { get; set; }
+	public TypeCode ExpectedType { get; set; }
 
 	[Fact]
 	public void SimpleEnum()
@@ -50,14 +52,14 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 	[Fact]
 	public void NonExistentValue_NonFlags()
 	{
-		this.ExpectedType = MessagePackType.Integer;
+		this.ExpectedType = TypeCode.Integer;
 		this.AssertEnum<Simple, Witness>((Simple)15);
 	}
 
 	[Fact]
 	public void NonExistentValue_Flags()
 	{
-		this.ExpectedType = MessagePackType.Integer;
+		this.ExpectedType = TypeCode.Integer;
 		this.AssertEnum<FlagsEnum, Witness>((FlagsEnum)15);
 	}
 
@@ -70,7 +72,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 	[Fact]
 	public void MultipleFlags()
 	{
-		this.ExpectedType = MessagePackType.Integer;
+		this.ExpectedType = TypeCode.Integer;
 		this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One | FlagsEnum.Two);
 	}
 
@@ -84,7 +86,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 	private static ReadOnlySequence<byte> SerializeEnumName(string name)
 	{
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		writer.Write(name);
 		writer.Flush();
 		return seq;
@@ -101,10 +103,10 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 		this.Logger.WriteLine(value.ToString());
 	}
 
-	private void AssertType(ReadOnlySequence<byte> msgpack, MessagePackType expectedType)
+	private void AssertType(ReadOnlySequence<byte> msgpack, TypeCode expectedType)
 	{
-		MessagePackReader reader = new(msgpack);
-		Assert.Equal(expectedType, reader.NextMessagePackType);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Assert.Equal(expectedType, reader.NextTypeCode);
 	}
 
 	public class EnumAsStringTests : EnumTests
@@ -113,7 +115,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 			: base(logger)
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
-			this.ExpectedType = MessagePackType.String;
+			this.ExpectedType = TypeCode.String;
 		}
 
 		[Fact]
@@ -143,7 +145,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 			: base(logger)
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = false };
-			this.ExpectedType = MessagePackType.Integer;
+			this.ExpectedType = TypeCode.Integer;
 		}
 	}
 

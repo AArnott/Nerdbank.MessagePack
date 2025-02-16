@@ -34,10 +34,10 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
 		this.LogMsgPack(buffer);
 
-		MessagePackReader reader = new(buffer);
+		Reader reader = new(buffer, MsgPackDeformatter.Default);
 		Assert.Equal(3, reader.ReadArrayHeader());
 		Assert.Equal("Andrew", reader.ReadString());
-		Assert.True(reader.TryReadNil());
+		Assert.True(reader.TryReadNull());
 		Assert.Equal("Arnott", reader.ReadString());
 		Assert.True(reader.End);
 
@@ -55,7 +55,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		// Verify that this is what the converter chose.
 		Person person = new() { FirstName = "Andrew", LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 
@@ -69,7 +69,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		// Verify that this is what the converter chose.
 		Person person = new() { FirstName = null, LastName = "Arnott" };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
@@ -83,7 +83,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		// Verify that this is what the converter chose.
 		Person person = new Person { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(0, reader.ReadArrayHeader());
 	}
 
@@ -91,10 +91,10 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	public async Task Person_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		writer.WriteArrayHeader(4);
 		writer.Write("A");
-		writer.WriteNil();
+		writer.WriteNull();
 		writer.Write("B");
 		writer.Write("C"); // This should be ignored.
 		writer.Flush();
@@ -109,7 +109,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	public async Task Person_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		writer.WriteMapHeader(3);
 
 		writer.Write(0);
@@ -135,7 +135,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		// Verify that this is what the converter chose.
 		PersonWithDefaultConstructor person = new() { FirstName = "Andrew", LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 
@@ -146,7 +146,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		// Verify that this is what the converter chose.
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = "Arnott" };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
@@ -162,7 +162,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadArrayHeader());
 	}
 
@@ -170,10 +170,10 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	public async Task PersonWithDefaultConstructor_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		writer.WriteArrayHeader(4);
 		writer.Write("A");
-		writer.WriteNil();
+		writer.WriteNull();
 		writer.Write("B");
 		writer.Write("C"); // This should be ignored.
 		writer.Flush();
@@ -188,7 +188,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	public async Task PersonWithDefaultConstructor_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		writer.WriteMapHeader(3);
 
 		writer.Write(0);
@@ -219,7 +219,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		};
 
 		ReadOnlySequence<byte> msgpack = await this.AssertRoundtripAsync(family);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(5, reader.ReadArrayHeader());
 	}
 
@@ -239,7 +239,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		};
 
 		ReadOnlySequence<byte> msgpack = await this.AssertRoundtripAsync(family);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
@@ -340,7 +340,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	{
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
-		MessagePackReader reader = new(msgpack);
+		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 

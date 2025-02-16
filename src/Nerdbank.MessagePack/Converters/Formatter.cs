@@ -8,6 +8,9 @@ namespace Nerdbank.PolySerializer.Converters;
 /// <summary>
 /// A class for writing structures to a  with a particular format as determined by a derived type.
 /// </summary>
+/// <remarks>
+/// Derived types should be implemented in a thread-safe way, ideally by being immutable.
+/// </remarks>
 public abstract record Formatter
 {
 	/// <summary>

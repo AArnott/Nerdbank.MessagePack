@@ -20,6 +20,9 @@ namespace Nerdbank.PolySerializer.Converters;
 /// Particular formats may derive from this type in order to wrap unique APIs from their derived <see cref="Converters.StreamingDeformatter"/> type.
 /// Derived types should avoid adding fields since the core functionality and options are expected to be on the wrapped <see cref="Converters.StreamingDeformatter"/>.
 /// </para>
+/// <para>
+/// Derived types should be implemented in a thread-safe way, ideally by being immutable.
+/// </para>
 /// </remarks>
 public partial class Deformatter
 {
@@ -68,7 +71,7 @@ public partial class Deformatter
 	{
 		if (!this.TryReadNull(ref reader))
 		{
-			throw ThrowInvalidCode(reader);
+			throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 		}
 	}
 
@@ -91,7 +94,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.StreamingDeformatter.ThrowInvalidCode(this.PeekNextCode(reader));
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -129,7 +132,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.StreamingDeformatter.ThrowInvalidCode(this.PeekNextCode(reader));
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -145,7 +148,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -161,7 +164,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -176,7 +179,7 @@ public partial class Deformatter
 		{
 			case DecodeResult.Success:
 				return value;
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -191,7 +194,7 @@ public partial class Deformatter
 		{
 			case DecodeResult.Success:
 				return value;
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -207,7 +210,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -228,7 +231,7 @@ public partial class Deformatter
 					return null;
 				}
 
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -249,7 +252,7 @@ public partial class Deformatter
 					return null;
 				}
 
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -265,7 +268,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return contiguous ? span : this.ReadStringSequence(ref reader)!.Value.ToArray();
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -288,7 +291,7 @@ public partial class Deformatter
 					return false;
 				}
 
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -304,7 +307,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -322,6 +325,11 @@ public partial class Deformatter
 
 	public ReadOnlySequence<byte> ReadRaw(ref Reader reader, long length)
 	{
+		if (reader.Remaining < length)
+		{
+			ThrowNotEnoughBytesException();
+		}
+
 		ReadOnlySequence<byte> result = reader.Sequence.Slice(reader.Position, length);
 		reader.SequenceReader.Advance(length);
 		return result;
@@ -347,7 +355,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.StreamingDeformatter.ThrowInvalidCode(this.PeekNextCode(reader));
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -374,20 +382,6 @@ public partial class Deformatter
 	/// the promised data.
 	/// </summary>
 	protected static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();
-
-	/// <summary>
-	/// Throws an <see cref="SerializationException"/> explaining an unexpected code was encountered.
-	/// </summary>
-	/// <param name="code">The code that was encountered.</param>
-	/// <returns>Nothing. This method always throws.</returns>
-	[DoesNotReturn]
-	protected Exception ThrowInvalidCode(byte code)
-	{
-		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, this.StreamingDeformatter.ToFormatName(code)));
-	}
-
-	[DoesNotReturn]
-	protected Exception ThrowInvalidCode(in Reader reader) => this.ThrowInvalidCode(this.PeekNextCode(reader));
 
 	[DoesNotReturn]
 	internal static Exception ThrowUnreachable() => throw new UnreachableException();

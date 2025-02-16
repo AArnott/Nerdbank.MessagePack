@@ -11,7 +11,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack050
         internal class SomeClass
         {
             #region Defective
-            void SomeMethod(MessagePackReader reader)
+            void SomeMethod(Reader reader)
             {
             }
             #endregion
@@ -24,7 +24,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack050
         internal class SomeClass
         {
             #region Fix
-            void SomeMethod(ref MessagePackReader reader)
+            void SomeMethod(ref Reader reader)
             {
             }
             #endregion

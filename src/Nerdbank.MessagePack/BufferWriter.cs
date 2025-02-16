@@ -181,7 +181,7 @@ public ref struct BufferWriter
 	/// </summary>
 	/// <param name="source">The buffer to copy in.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void Write(scoped ReadOnlySpan<byte> source)
+	public void Write(scoped ReadOnlySpan<byte> source)
 	{
 		if (this.span.Length >= source.Length)
 		{

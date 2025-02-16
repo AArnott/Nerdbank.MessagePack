@@ -3,10 +3,11 @@
 
 using System.Globalization;
 using System.Text;
-using Nerdbank.PolySerializer.MessagePack;
 
 public class MessagePackWriterTests
 {
+	private static readonly MsgPackFormatter Formatter = MsgPackFormatter.Default;
+	private static readonly MsgPackDeformatter Deformatter = MsgPackDeformatter.Default;
 	private readonly ITestOutputHelper logger;
 
 	public MessagePackWriterTests(ITestOutputHelper logger)
@@ -22,7 +23,7 @@ public class MessagePackWriterTests
 	public unsafe void WriteRaw_StackAllocatedSpan()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 
 		Span<byte> bytes = stackalloc byte[8];
 		bytes[0] = 1;
@@ -30,7 +31,7 @@ public class MessagePackWriterTests
 		fixed (byte* pBytes = bytes)
 		{
 			var flexSpan = new Span<byte>(pBytes, bytes.Length);
-			writer.WriteRaw(flexSpan);
+			writer.Buffer.Write(flexSpan);
 		}
 
 		writer.Flush();
@@ -43,22 +44,22 @@ public class MessagePackWriterTests
 	public void Write_ByteArray_null()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 		writer.Write((byte[]?)null);
 		writer.Flush();
-		var reader = new MessagePackReader(sequence.AsReadOnlySequence);
-		Assert.True(reader.TryReadNil());
+		var reader = new Reader(sequence.AsReadOnlySequence, Deformatter);
+		Assert.True(reader.TryReadNull());
 	}
 
 	[Fact]
 	public void Write_ByteArray()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 		byte[] buffer = [1, 2, 3];
 		writer.Write(buffer);
 		writer.Flush();
-		var reader = new MessagePackReader(sequence.AsReadOnlySequence);
+		var reader = new Reader(sequence.AsReadOnlySequence, Deformatter);
 		Assert.Equal(buffer, reader.ReadBytes()?.ToArray());
 	}
 
@@ -66,22 +67,22 @@ public class MessagePackWriterTests
 	public void Write_String_null()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 		writer.Write((string?)null);
 		writer.Flush();
-		var reader = new MessagePackReader(sequence.AsReadOnlySequence);
-		Assert.True(reader.TryReadNil());
+		var reader = new Reader(sequence.AsReadOnlySequence, Deformatter);
+		Assert.True(reader.TryReadNull());
 	}
 
 	[Fact]
 	public void Write_String()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 		string expected = "hello";
 		writer.Write(expected);
 		writer.Flush();
-		var reader = new MessagePackReader(sequence.AsReadOnlySequence);
+		var reader = new Reader(sequence.AsReadOnlySequence, Deformatter);
 		Assert.Equal(expected, reader.ReadString());
 	}
 
@@ -89,7 +90,7 @@ public class MessagePackWriterTests
 	public void Write_String_MultibyteChars()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 		writer.Write(TestConstants.MultibyteCharString);
 		writer.Flush();
 
@@ -101,26 +102,26 @@ public class MessagePackWriterTests
 	public void WriteStringHeader()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 		byte[] strBytes = Encoding.UTF8.GetBytes("hello");
-		writer.WriteStringHeader(strBytes.Length);
-		writer.WriteRaw(strBytes);
+		Formatter.WriteStringHeader(ref writer, strBytes.Length);
+		writer.Buffer.Write(strBytes);
 		writer.Flush();
 
-		var reader = new MessagePackReader(sequence);
+		var reader = new Reader(sequence, Deformatter);
 		Assert.Equal("hello", reader.ReadString());
 	}
 
 	[Fact]
 	public void Write_MessagePackString()
 	{
-		PreformattedString msgpackString = new("abc", MsgPackFormatter.Default);
+		PreformattedString msgpackString = new("abc", Formatter);
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, Formatter);
 		writer.Write(msgpackString);
 		writer.Flush();
 
-		MessagePackReader reader = new(seq);
+		Reader reader = new(seq, Deformatter);
 		Assert.Equal("abc", reader.ReadString());
 	}
 
@@ -128,12 +129,12 @@ public class MessagePackWriterTests
 	public void WriteBinHeader()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
-		writer.WriteBinHeader(5);
-		writer.WriteRaw([1, 2, 3, 4, 5]);
+		var writer = new Writer(sequence, Formatter);
+		Formatter.WriteBinHeader(ref writer, 5);
+		writer.Buffer.Write([1, 2, 3, 4, 5]);
 		writer.Flush();
 
-		var reader = new MessagePackReader(sequence);
+		var reader = new Reader(sequence, Deformatter);
 		Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, reader.ReadBytes()?.ToArray());
 	}
 
@@ -141,16 +142,16 @@ public class MessagePackWriterTests
 	public void WriteExtensionHeader_NegativeExtension()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new MessagePackWriter(sequence);
+		var writer = new Writer(sequence, Formatter);
 
 		var header = new ExtensionHeader(-1, 10);
-		writer.Write(header);
-		writer.WriteRaw(new byte[10]);
+		Formatter.Write(ref writer, header);
+		writer.Buffer.Write(new byte[10]);
 		writer.Flush();
 
 		ReadOnlySequence<byte> written = sequence.AsReadOnlySequence;
-		var reader = new MessagePackReader(written);
-		ExtensionHeader readHeader = reader.ReadExtensionHeader();
+		var reader = new Reader(written, Deformatter);
+		ExtensionHeader readHeader = Deformatter.ReadExtensionHeader(ref reader);
 
 		Assert.Equal(header.TypeCode, readHeader.TypeCode);
 		Assert.Equal(header.Length, readHeader.Length);
@@ -161,8 +162,8 @@ public class MessagePackWriterTests
 	{
 		Assert.Throws<InvalidOperationException>(() =>
 		{
-			var writer = new MessagePackWriter(new BuggyBufferWriter());
-			writer.WriteRaw(new byte[10]);
+			var writer = new Writer(new BuggyBufferWriter(), Formatter);
+			writer.Buffer.Write(new byte[10]);
 		});
 	}
 
@@ -170,8 +171,8 @@ public class MessagePackWriterTests
 	public void WriteVeryLargeData()
 	{
 		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
-		writer.WriteRaw(new byte[1024 * 1024]);
+		Writer writer = new(sequence, Formatter);
+		writer.Buffer.Write(new byte[1024 * 1024]);
 	}
 
 	/// <summary>

@@ -49,7 +49,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		if (this.serializedObjects.TryGetValue(value, out int referenceId))
 		{
 			// This object has already been written. Skip it this time.
-			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
+			uint packLength = (uint)writer.Formatter.GetEncodedLength(referenceId);
 			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
 			formatter.Write(ref writer, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			writer.Write(referenceId);
@@ -84,7 +84,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		if (this.serializedObjects.TryGetValue(value, out int referenceId))
 		{
 			// This object has already been written. Skip it this time.
-			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
+			uint packLength = (uint)writer.Formatter.GetEncodedLength(referenceId);
 			Writer syncWriter = writer.CreateWriter();
 			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
 			formatter.Write(ref syncWriter, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));

@@ -9,7 +9,7 @@ public class MessagePackAsyncReaderTests
 	public async Task BufferNextStructureAsync_IncompleteBuffer()
 	{
 		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
+		Writer writer = new(seq, MsgPackFormatter.Default);
 		writer.WriteArrayHeader(3);
 		writer.Write(1);
 		writer.Write(2);

@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Buffers;
-
 public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	/// <summary>
@@ -93,14 +91,14 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	private ReadOnlySequence<byte> FormatDeepMsgPackMap(int depth)
 	{
 		Sequence<byte> buffer = new();
-		MessagePackWriter writer = new(buffer);
+		Writer writer = new(buffer, MsgPackFormatter.Default);
 		for (int i = 0; i < depth; i++)
 		{
 			writer.WriteMapHeader(1);
 			writer.Write(nameof(Nested.Another));
 		}
 
-		writer.WriteNil();
+		writer.WriteNull();
 		writer.Flush();
 		return buffer;
 	}

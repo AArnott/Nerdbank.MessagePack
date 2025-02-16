@@ -24,9 +24,11 @@ public class MsgPackDeformatter : Deformatter
 		switch (this.StreamingDeformatter.TryRead(ref reader, out ExtensionHeader value))
 		{
 			case DecodeResult.Success:
+				// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
+				ThrowInsufficientBufferUnless(reader.Remaining >= value.Length);
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();
@@ -42,7 +44,7 @@ public class MsgPackDeformatter : Deformatter
 			case DecodeResult.Success:
 				return value;
 			case DecodeResult.TokenMismatch:
-				throw this.ThrowInvalidCode(reader);
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				throw ThrowNotEnoughBytesException();

@@ -64,6 +64,8 @@ public ref partial struct StreamingReader
 	[UnscopedRef]
 	public ref Reader Reader => ref this.reader;
 
+	public SequencePosition Position => this.reader.Position;
+
 	/// <summary>
 	/// Gets or sets the number of structures that have been announced but not yet read.
 	/// </summary>
@@ -158,7 +160,27 @@ public ref partial struct StreamingReader
 
 	public DecodeResult TryReadNull(out bool isNull) => this.StreamingDeformatter.TryReadNull(ref this.reader, out isNull);
 
+	public DecodeResult TryRead(out bool value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out byte value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out ushort value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out uint value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out ulong value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out sbyte value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out short value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
 	public DecodeResult TryRead(out int value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out long value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryRead(out string? value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
+
+	public DecodeResult TryReadBinary(out ReadOnlySequence<byte> value) => this.StreamingDeformatter.TryReadBinary(ref this.reader, out value);
 
 	public DecodeResult TrySkip(ref SerializationContext context) => this.StreamingDeformatter.TrySkip(ref this.reader, ref context);
 

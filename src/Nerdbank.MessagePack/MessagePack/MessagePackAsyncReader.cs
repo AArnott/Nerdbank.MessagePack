@@ -78,45 +78,6 @@ public class MessagePackAsyncReader : AsyncReader
 	public override async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 
 	/// <summary>
-	/// Fills the buffer with msgpack bytes to decode.
-	/// If the buffer already has bytes, <em>more</em> will be retrieved and added.
-	/// </summary>
-	/// <returns>An async task.</returns>
-	/// <exception cref="OperationCanceledException">Thrown if <see cref="CancellationToken"/> is canceled.</exception>
-	public override async ValueTask ReadAsync()
-	{
-		this.ThrowIfReaderNotReturned();
-
-		MessagePackStreamingReader reader;
-		if (this.refresh.HasValue)
-		{
-			reader = new(this.refresh.Value);
-			this.refresh = await reader.FetchMoreBytesAsync().ConfigureAwait(false);
-		}
-		else
-		{
-			ReadResult readResult = await this.PipeReader.ReadAsync(this.CancellationToken).ConfigureAwait(false);
-			if (readResult.IsCanceled)
-			{
-				throw new OperationCanceledException();
-			}
-
-			reader = new(
-				readResult.Buffer,
-				readResult.IsCompleted ? null : FetchMoreBytesAsync,
-				this.PipeReader);
-			this.refresh = reader.GetExchangeInfo();
-
-			static ValueTask<ReadResult> FetchMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken ct)
-			{
-				PipeReader pipeReader = (PipeReader)state!;
-				pipeReader.AdvanceTo(consumed, examined);
-				return pipeReader.ReadAsync(ct);
-			}
-		}
-	}
-
-	/// <summary>
 	/// Counts how many structures are buffered, starting at the reader's current position.
 	/// </summary>
 	/// <param name="countUpTo">The max number of structures to count.</param>
@@ -138,7 +99,7 @@ public class MessagePackAsyncReader : AsyncReader
 			return 0;
 		}
 
-		MessagePackStreamingReader reader = new(this.refresh.Value);
+		StreamingReader reader = new(this.refresh.Value);
 		int skipCount = 0;
 		for (; skipCount < countUpTo; skipCount++)
 		{

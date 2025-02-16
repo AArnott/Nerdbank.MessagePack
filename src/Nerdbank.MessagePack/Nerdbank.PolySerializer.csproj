@@ -42,10 +42,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackPrimitives.Readers.Integers.cs</LastGenOutput>
     </None>
-    <None Update="MessagePack\MessagePackReader.Integers.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MessagePackReader.Integers.cs</LastGenOutput>
-    </None>
     <None Update="MessagePack\MessagePackSerializer.AutomatedFriendlyOverloads.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackSerializer.AutomatedFriendlyOverloads.cs</LastGenOutput>
@@ -53,10 +49,6 @@
     <None Update="MessagePack\MsgPackStreamingDeformatter.Integers.tt">
       <LastGenOutput>MsgPackStreamingDeformatter.Integers.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="MessagePack\MessagePackStreamingReader.Integers.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MessagePackStreamingReader.Integers.cs</LastGenOutput>
     </None>
     <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
   </ItemGroup>
@@ -97,20 +89,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackPrimitives.Readers.Integers.tt</DependentUpon>
     </Compile>
-    <Compile Update="MessagePack\MessagePackReader.Integers.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>MessagePackReader.Integers.tt</DependentUpon>
-    </Compile>
     <Compile Update="MessagePack\MessagePackSerializer.AutomatedFriendlyOverloads.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackSerializer.AutomatedFriendlyOverloads.tt</DependentUpon>
-    </Compile>
-    <Compile Update="MessagePack\MessagePackStreamingReader.Integers.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>MessagePackStreamingReader.Integers.tt</DependentUpon>
     </Compile>
     <Compile Update="MessagePack\MsgPackStreamingDeformatter.Integers.cs">
       <DesignTime>True</DesignTime>

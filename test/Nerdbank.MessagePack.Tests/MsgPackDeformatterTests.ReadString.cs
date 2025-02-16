@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class MessagePackReaderTests
+public partial class MsgPackDeformatterTests
 {
 	[Fact]
 	public void ReadString_HandlesSingleSegment()
@@ -12,7 +12,7 @@ public partial class MessagePackReaderTests
 			(byte)'A', (byte)'B',
 		});
 
-		var reader = new MessagePackReader(seq);
+		Reader reader = new(seq, MsgPackDeformatter.Default);
 		var result = reader.ReadString();
 		Assert.Equal("AB", result);
 	}
@@ -24,7 +24,7 @@ public partial class MessagePackReaderTests
 			new[] { (byte)(MessagePackCode.MinFixStr + 2), (byte)'A' },
 			new[] { (byte)'B' });
 
-		var reader = new MessagePackReader(seq);
+		Reader reader = new(seq, MsgPackDeformatter.Default);
 		var result = reader.ReadString();
 		Assert.Equal("AB", result);
 	}

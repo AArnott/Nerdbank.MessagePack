@@ -11,7 +11,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 	public async Task DeserializeEnumerableAsync_TopLevel_PipeReader()
 	{
 		using Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		for (int i = 1; i <= 10; i++)
 		{
 			writer.Write(i);
@@ -50,7 +50,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 	public async Task DeserializeEnumerableAsync_TopLevel_Stream()
 	{
 		using Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		for (int i = 1; i <= 10; i++)
 		{
 			writer.Write(i);
@@ -76,7 +76,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 	public async Task DeserializeEnumerableAsync_Array()
 	{
 		using Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
+		Writer writer = new(sequence, MsgPackFormatter.Default);
 		writer.WriteArrayHeader(10);
 		for (int i = 1; i <= 10; i++)
 		{
