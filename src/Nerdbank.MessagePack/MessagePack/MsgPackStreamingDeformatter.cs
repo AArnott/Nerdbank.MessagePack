@@ -21,6 +21,18 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override Encoding Encoding => StringEncoding.UTF8;
 
+	/// <summary>
+	/// Gets or sets the number of structures that have been announced but not yet read.
+	/// </summary>
+	/// <remarks>
+	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
+	/// </remarks>
+	internal uint ExpectedRemainingStructures
+	{
+		get => this.expectedRemainingStructures;
+		set => this.expectedRemainingStructures = value;
+	}
+
 	public override string ToFormatName(byte code) => MessagePackCode.ToFormatName(code);
 
 	public override DecodeResult TryReadArrayHeader(ref Reader reader, out int count)
@@ -172,7 +184,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 					return DecodeResult.TokenMismatch;
 			}
 
-			reader.Advance(1);
+			this.Advance(ref reader, 1);
 			return DecodeResult.Success;
 		}
 		else
@@ -194,7 +206,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			reader.Advance(tokenSize);
+			this.Advance(ref reader, tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -233,7 +245,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			reader.Advance(tokenSize);
+			this.Advance(ref reader, tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -244,7 +256,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					reader.Advance(tokenSize);
+					self.Advance(ref reader, tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -267,7 +279,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
-	public override DecodeResult TryRead(ref Reader reader, out string value)
+	public override DecodeResult TryRead(ref Reader reader, out string? value)
 	{
 		Reader originalPosition = reader;
 
@@ -370,7 +382,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 
 		value = reader.SequenceReader.Sequence.Slice(reader.SequenceReader.Position, length);
-		reader.SequenceReader.Advance(length);
+		this.Advance(ref reader, length);
 		return DecodeResult.Success;
 	}
 
@@ -403,7 +415,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		if (reader.SequenceReader.CurrentSpanIndex + length <= reader.SequenceReader.CurrentSpan.Length)
 		{
 			value = reader.SequenceReader.CurrentSpan.Slice(reader.SequenceReader.CurrentSpanIndex, checked((int)length));
-			reader.SequenceReader.Advance(length);
+			this.Advance(ref reader, length);
 			contiguous = true;
 			return DecodeResult.Success;
 		}
@@ -475,7 +487,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 
 		ReadOnlySequence<byte> data = reader.Sequence.Slice(reader.Position, header.Length);
-		reader.Advance(header.Length);
+		this.Advance(ref reader, header.Length);
 		value = new Extension(header.TypeCode, data);
 		return DecodeResult.Success;
 	}

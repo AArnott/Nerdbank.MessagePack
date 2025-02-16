@@ -83,6 +83,12 @@ public abstract record StreamingDeformatter
 
 	public abstract DecodeResult TrySkip(ref Reader reader, ref SerializationContext context);
 
+	/// <summary>
+	/// Reads a given number of bytes from the stream without decoding them.
+	/// </summary>
+	/// <param name="length">The number of bytes to read. This should always be the length of exactly one structure (e.g. scalar value, whole array or map).</param>
+	/// <param name="rawMsgPack">The bytes if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
 	public abstract DecodeResult TryReadRaw(ref Reader reader, long length, out ReadOnlySequence<byte> rawMsgPack);
 
 	public abstract string ToFormatName(byte code);
