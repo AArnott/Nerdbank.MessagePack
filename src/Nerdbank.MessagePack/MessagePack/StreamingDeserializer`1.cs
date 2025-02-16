@@ -301,14 +301,14 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 		private async ValueTask<bool> IsNilAsync()
 		{
 			StreamingReader streamingReader = reader.CreateStreamingReader();
-			bool isNil;
-			while (streamingReader.TryReadNull(out isNil).NeedsMoreBytes())
+			PolySerializer.Converters.TypeCode peekType;
+			while (streamingReader.TryPeekNextCode(out peekType).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			return isNil;
+			return peekType == PolySerializer.Converters.TypeCode.Nil;
 		}
 	}
 }

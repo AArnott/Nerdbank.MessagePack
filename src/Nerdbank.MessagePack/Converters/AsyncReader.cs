@@ -11,6 +11,9 @@ public abstract class AsyncReader : IDisposable
 	private protected bool readerReturned = true;
 	private protected BufferRefresh? refresh;
 
+	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
+	protected uint expectedRemainingStructures;
+
 	public AsyncReader(PipeReader pipeReader, Deformatter deformatter)
 	{
 		this.PipeReader = Requires.NotNull(pipeReader);
@@ -43,6 +46,7 @@ public abstract class AsyncReader : IDisposable
 		this.readerReturned = false;
 		return new(this.Refresh)
 		{
+			ExpectedRemainingStructures = this.expectedRemainingStructures,
 		};
 	}
 
@@ -61,6 +65,7 @@ public abstract class AsyncReader : IDisposable
 		this.readerReturned = false;
 		return new(this.Refresh.Buffer, this.Deformatter)
 		{
+			ExpectedRemainingStructures = this.expectedRemainingStructures,
 		};
 	}
 
@@ -73,6 +78,7 @@ public abstract class AsyncReader : IDisposable
 	public void ReturnReader(ref StreamingReader reader)
 	{
 		this.refresh = reader.GetExchangeInfo();
+		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
 
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
@@ -86,6 +92,7 @@ public abstract class AsyncReader : IDisposable
 		AsyncReader.BufferRefresh refresh = this.Refresh;
 		refresh = refresh with { Buffer = refresh.Buffer.Slice(reader.SequenceReader.Position) };
 		this.refresh = refresh;
+		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
 
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;

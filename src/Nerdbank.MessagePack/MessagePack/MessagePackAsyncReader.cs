@@ -23,9 +23,6 @@ namespace Nerdbank.PolySerializer.MessagePack;
 [Experimental("NBMsgPackAsync")]
 public class MessagePackAsyncReader : AsyncReader
 {
-	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
-	private uint expectedRemainingStructures;
-
 	/// <param name="pipeReader">The pipe reader to decode from. <see cref="PipeReader.Complete(Exception?)"/> is <em>not</em> called on this at the conclusion of deserialization, and the reader is left at the position after the last msgpack byte read.</param>
 	public MessagePackAsyncReader(PipeReader pipeReader, MsgPackDeformatter deformatter)
 		: base(pipeReader, deformatter)
@@ -117,75 +114,6 @@ public class MessagePackAsyncReader : AsyncReader
 				return pipeReader.ReadAsync(ct);
 			}
 		}
-	}
-
-	/// <summary>
-	/// Retrieves a <see cref="MessagePackStreamingReader"/>, which is suitable for
-	/// decoding msgpack from a buffer without throwing any exceptions, even if the buffer is incomplete.
-	/// </summary>
-	/// <returns>A <see cref="MessagePackStreamingReader"/>.</returns>
-	/// <remarks>
-	/// The result must be returned with <see cref="ReturnReader(ref MessagePackStreamingReader)"/>
-	/// before using this <see cref="MessagePackAsyncReader"/> again.
-	/// </remarks>
-	public new StreamingReader CreateStreamingReader()
-	{
-		this.ThrowIfReaderNotReturned();
-		this.readerReturned = false;
-		return new(this.Refresh)
-		{
-			ExpectedRemainingStructures = this.expectedRemainingStructures,
-		};
-	}
-
-	/// <summary>
-	/// Retrieves a <see cref="MessagePackReader"/>, which is suitable for
-	/// decoding msgpack from a buffer that is known to have enough bytes for the decoding.
-	/// </summary>
-	/// <returns>A <see cref="MessagePackReader"/>.</returns>
-	/// <remarks>
-	/// The result must be returned with <see cref="ReturnReader(ref MessagePackReader)"/>
-	/// before using this <see cref="MessagePackAsyncReader"/> again.
-	/// </remarks>
-	public new MessagePackReader CreateBufferedReader()
-	{
-		this.ThrowIfReaderNotReturned();
-		this.readerReturned = false;
-		return new(this.Refresh.Buffer)
-		{
-			ExpectedRemainingStructures = this.expectedRemainingStructures,
-		};
-	}
-
-	/// <summary>
-	/// Returns a previously obtained reader when the caller is done using it,
-	/// and applies the given reader's position to <em>this</em> reader so that
-	/// future reads move continuously forward in the msgpack stream.
-	/// </summary>
-	/// <param name="reader">The reader to return.</param>
-	public void ReturnReader(ref StreamingReader reader)
-	{
-		this.refresh = reader.GetExchangeInfo();
-		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
-
-		// Clear the reader to prevent accidental reuse by the caller.
-		reader = default;
-
-		this.readerReturned = true;
-	}
-
-	/// <inheritdoc cref="ReturnReader(ref MessagePackStreamingReader)"/>
-	public void ReturnReader(ref MessagePackReader reader)
-	{
-		AsyncReader.BufferRefresh refresh = this.Refresh;
-		refresh = refresh with { Buffer = refresh.Buffer.Slice(reader.Position) };
-		this.refresh = refresh;
-		this.expectedRemainingStructures = reader.ExpectedRemainingStructures;
-
-		// Clear the reader to prevent accidental reuse by the caller.
-		reader = default;
-
-		this.readerReturned = true;
 	}
 
 	/// <summary>
