@@ -425,7 +425,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		public int Value { get; set; }
 	}
 
-	[GenerateShape, MessagePackConverter(typeof(NonDocumentingCustomConverter))]
+	[GenerateShape, Converter(typeof(NonDocumentingCustomConverter))]
 	internal partial class TypeWithNonDocumentingCustomConverter
 	{
 	}

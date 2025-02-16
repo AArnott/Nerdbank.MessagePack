@@ -10,7 +10,7 @@ public partial class MessagePackConverterAttributeTests(ITestOutputHelper logger
 	}
 
 	[GenerateShape] // to allow use as a direct serialization argument
-	[MessagePackConverter(typeof(CustomTypeConverter))]
+	[Converter(typeof(CustomTypeConverter))]
 	public partial record CustomType
 	{
 		// This property is internal so that if the auto-generated serializer were used instead of the custom one,

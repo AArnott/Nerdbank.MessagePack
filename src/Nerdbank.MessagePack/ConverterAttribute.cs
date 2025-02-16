@@ -3,29 +3,29 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
-/// A class applied to a custom data type to prescribe a custom <see cref="MessagePackConverter{T}"/>
+/// A class applied to a custom data type to prescribe a custom <see cref="Converter{T}"/>
 /// implementation to use for serialization.
 /// </summary>
 [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-public class MessagePackConverterAttribute : Attribute
+public class ConverterAttribute : Attribute
 {
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackConverterAttribute"/> class.
+	/// Initializes a new instance of the <see cref="ConverterAttribute"/> class.
 	/// </summary>
 	/// <param name="converterType">
-	/// A type that implements <see cref="MessagePackConverter{T}"/>
+	/// A type that implements <see cref="Converter{T}"/>
 	/// where <c>T</c> is a type argument matching the type to which this attribute is applied.
 	/// </param>
-	public MessagePackConverterAttribute(Type converterType)
+	public ConverterAttribute(Type converterType)
 	{
 		this.ConverterType = converterType;
 	}
 
 	/// <summary>
-	/// Gets the type that implements <see cref="MessagePackConverter{T}"/>.
+	/// Gets the type that implements <see cref="Converter{T}"/>.
 	/// </summary>
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 	public Type ConverterType { get; }

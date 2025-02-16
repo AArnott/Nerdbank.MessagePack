@@ -298,7 +298,7 @@ namespace WitnessForArray
 namespace CustomConverterRegistration
 {
     #region CustomConverterByAttribute
-    [MessagePackConverter(typeof(MyCustomTypeConverter))]
+    [Converter(typeof(MyCustomTypeConverter))]
     public class MyCustomType { }
     #endregion
 
@@ -329,7 +329,7 @@ namespace CustomConverterRegistration
 
 namespace AsyncConverters
 {
-    [MessagePackConverter(typeof(MyCustomTypeConverter))]
+    [Converter(typeof(MyCustomTypeConverter))]
     public class MyCustomType { }
 
     public class MyCustomTypeConverter : Converter<MyCustomType>
@@ -377,7 +377,7 @@ namespace AsyncConverters
 namespace PerformanceConverters
 {
     #region StringUser
-    [MessagePackConverter(typeof(MyCustomTypeConverter))]
+    [Converter(typeof(MyCustomTypeConverter))]
     public class MyCustomType
     {
         public string? Message1 { get; set; }
@@ -491,7 +491,7 @@ namespace Stateful
     }
 
     [GenerateShape]
-    [MessagePackConverter(typeof(StatefulConverter))]
+    [Converter(typeof(StatefulConverter))]
     partial record struct SpecialType(int Value);
     #endregion
 #else
@@ -532,7 +532,7 @@ namespace Stateful
         }
     }
 
-    [MessagePackConverter(typeof(StatefulConverter))]
+    [Converter(typeof(StatefulConverter))]
     partial record struct SpecialType(int Value);
 
     [GenerateShape<SpecialType>]

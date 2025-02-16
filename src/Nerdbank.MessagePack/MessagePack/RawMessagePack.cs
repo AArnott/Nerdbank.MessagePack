@@ -20,7 +20,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// an independent lifetime.
 /// </para>
 /// </remarks>
-[MessagePackConverter(typeof(RawMessagePackConverter))]
+[Converter(typeof(RawMessagePackConverter))]
 public struct RawMessagePack : IEquatable<RawMessagePack>
 {
 	/// <summary>

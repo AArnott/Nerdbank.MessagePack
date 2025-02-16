@@ -64,13 +64,13 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	}
 
 	[GenerateShape]
-	[MessagePackConverter(typeof(StatefulConverter))]
+	[Converter(typeof(StatefulConverter))]
 	internal partial record struct TypeWithStatefulConverter(int Value);
 
 	[GenerateShape]
 	public partial record Tree(int FruitCount);
 
-	[GenerateShape, MessagePackConverter(typeof(CustomTypeConverter))]
+	[GenerateShape, Converter(typeof(CustomTypeConverter))]
 	public partial record CustomType
 	{
 		internal string? InternalProperty { get; set; }
@@ -132,7 +132,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 
 	/// <summary>
 	/// A <see cref="Tree"/> converter that may be <em>optionally</em> applied at runtime.
-	/// It should <em>not</em> be referenced from <see cref="Tree"/> via <see cref="MessagePackConverterAttribute"/>.
+	/// It should <em>not</em> be referenced from <see cref="Tree"/> via <see cref="ConverterAttribute"/>.
 	/// </summary>
 	private class TreeConverter : Converter<Tree>
 	{

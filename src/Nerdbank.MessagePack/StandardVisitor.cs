@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
 using PolyType.Utilities;
 
 namespace Nerdbank.PolySerializer;
@@ -134,7 +133,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					serializable ??= new();
 					deserializable ??= new();
 
-					StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+					Formatter.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
 						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize, property));
@@ -394,7 +393,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return new DeserializableProperty<TArgumentState>(
 			parameterShape.Name,
-			StringEncoding.UTF8.GetBytes(parameterShape.Name),
+			this.Formatter.Encoding.GetBytes(parameterShape.Name),
 			(ref TArgumentState state, ref Reader reader, SerializationContext context) => setter(ref state, converter.Read(ref reader, context)!),
 			async (TArgumentState state, AsyncReader reader, SerializationContext context) =>
 			{
@@ -611,14 +610,14 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	private Converter<T>? GetCustomConverter<T>(ITypeShape<T> typeShape)
 	{
-		if (typeShape.AttributeProvider?.GetCustomAttributes(typeof(MessagePackConverterAttribute), false).FirstOrDefault() is not MessagePackConverterAttribute customConverterAttribute)
+		if (typeShape.AttributeProvider?.GetCustomAttributes(typeof(ConverterAttribute), false).FirstOrDefault() is not ConverterAttribute customConverterAttribute)
 		{
 			return null;
 		}
 
 		if (customConverterAttribute.ConverterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
 		{
-			throw new SerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
+			throw new SerializationException($"{typeof(T).FullName} has {typeof(ConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
 		}
 
 		return (Converter<T>)ctor.Invoke(Array.Empty<object?>());

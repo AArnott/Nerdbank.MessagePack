@@ -314,7 +314,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape, MessagePackConverter(typeof(CustomType2Converter))]
+	[GenerateShape, Converter(typeof(CustomType2Converter))]
 	public partial record CustomType2
 	{
 		internal string? Message { get; set; }
