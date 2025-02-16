@@ -14,7 +14,7 @@ using PolyType.Utilities;
 namespace Nerdbank.PolySerializer;
 
 /// <summary>
-/// A <see cref="TypeShapeVisitor"/> that produces <see cref="MessagePackConverter{T}"/> instances for each type shape it visits.
+/// A <see cref="TypeShapeVisitor"/> that produces <see cref="Converter{T}"/> instances for each type shape it visits.
 /// </summary>
 internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 {
@@ -546,10 +546,10 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	protected Converter GetConverter(ITypeShape shape, object? state = null) => (Converter)shape.Invoke(this, state)!;
 
 	/// <summary>
-	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
+	/// Returns a dictionary of <see cref="Converter{T}"/> objects for each subtype, keyed by their alias.
 	/// </summary>
 	/// <param name="objectShape">The shape of the data type that may define derived types that are also allowed for serialization.</param>
-	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
+	/// <returns>A dictionary of <see cref="Converter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
 	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
 	{

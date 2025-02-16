@@ -17,7 +17,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <param name="provider">The provider to use to obtain the <see cref="ITypeShape"/> objects we need along the way.</param>
 /// <param name="reader">The async reader of the msgpack data.</param>
 /// <param name="context">Deserialization context.</param>
-internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer serializer, ITypeShapeProvider provider, MessagePackAsyncReader reader, SerializationContext context)
+internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer serializer, ITypeShapeProvider provider, AsyncReader reader, SerializationContext context)
 {
 	/// <summary>
 	/// Enumerates the elements of an array at the given path in the MessagePack stream.
@@ -145,7 +145,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 		return new AsyncExpressionVisitor(serializer, reader, provider, context).VisitAsync(path);
 	}
 
-	private struct AsyncExpressionVisitor(MessagePackSerializer serializer, MessagePackAsyncReader reader, ITypeShapeProvider provider, SerializationContext context)
+	private struct AsyncExpressionVisitor(MessagePackSerializer serializer, AsyncReader reader, ITypeShapeProvider provider, SerializationContext context)
 	{
 		internal async ValueTask<Expression?> VisitAsync(Expression? expression)
 		{

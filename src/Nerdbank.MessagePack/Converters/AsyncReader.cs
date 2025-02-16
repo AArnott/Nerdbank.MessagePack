@@ -6,7 +6,7 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class AsyncReader : IDisposable
+public class AsyncReader : IDisposable
 {
 	private protected bool readerReturned = true;
 	private protected BufferRefresh? refresh;
@@ -140,10 +140,6 @@ public abstract class AsyncReader : IDisposable
 		}
 	}
 
-	public abstract ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context);
-
-	public abstract ValueTask BufferNextStructureAsync(SerializationContext context);
-
 	/// <inheritdoc/>
 	public void Dispose()
 	{
@@ -173,9 +169,113 @@ public abstract class AsyncReader : IDisposable
 		return this.Refresh.EndOfStream && this.Refresh.Buffer.IsEmpty;
 	}
 
-	internal abstract int GetBufferedStructuresCount(int countUpTo, SerializationContext context, out bool reachedMaxCount);
+	/// <summary>
+	/// Gets the fully-capable, synchronous reader.
+	/// </summary>
+	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
+	/// <param name="countUpTo">The number of top-level structures to count and report on in the result.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <returns>
+	/// The buffer, for use in creating a <see cref="MessagePackReader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
+	/// Also returns the number of top-level structures included in the buffer that were counted (up to <paramref name="countUpTo"/>).
+	/// </returns>
+	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
+	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
+	public virtual async ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
+	{
+		Requires.Argument(minimumDesiredBufferedStructures >= 0, nameof(minimumDesiredBufferedStructures), "A non-negative integer is required.");
+		Requires.Argument(countUpTo >= minimumDesiredBufferedStructures, nameof(countUpTo), "Count must be at least as large as minimumDesiredBufferedStructures.");
+		this.ThrowIfReaderNotReturned();
 
-	internal abstract ValueTask AdvanceToEndOfTopLevelStructureAsync();
+		int skipCount = 0;
+		while (skipCount < minimumDesiredBufferedStructures)
+		{
+			if (this.refresh is null)
+			{
+				await this.ReadAsync().ConfigureAwait(false);
+			}
+
+			skipCount = this.GetBufferedStructuresCount(countUpTo, context, out _);
+			if (skipCount >= minimumDesiredBufferedStructures)
+			{
+				break;
+			}
+
+			await this.ReadAsync().ConfigureAwait(false);
+		}
+
+		return skipCount;
+	}
+
+	/// <summary>
+	/// Retrieves enough data from the pipe to read the next msgpack structure.
+	/// </summary>
+	/// <param name="context">The serialization context.</param>
+	/// <returns>A task that completes when enough bytes have been retrieved into local buffers.</returns>
+	/// <remarks>
+	/// After awaiting this method, the next msgpack structure can be retrieved by a call to <see cref="PipeReader.ReadAsync(CancellationToken)"/>.
+	/// </remarks>
+	public virtual async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+
+	/// <summary>
+	/// Counts how many structures are buffered, starting at the reader's current position.
+	/// </summary>
+	/// <param name="countUpTo">The max number of structures to count.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="reachedMaxCount">Receives a value indicating whether we reached <paramref name="countUpTo"/> before running out of buffer, so there could be even more full structures in the buffer left uncounted.</param>
+	/// <returns>The number of structures in the buffer, up to <paramref name="countUpTo"/>.</returns>
+	/// <remarks>
+	/// If the reader is positioned at something other than the start of a stream, and somewhere deep in an object graph,
+	/// the <paramref name="countUpTo"/> should be set to avoid walking *up* the graph to count shallower structures.
+	/// Behavior is undefined if this is not followed.
+	/// </remarks>
+	internal virtual int GetBufferedStructuresCount(int countUpTo, SerializationContext context, out bool reachedMaxCount)
+	{
+		this.ThrowIfReaderNotReturned();
+
+		reachedMaxCount = false;
+		if (this.refresh is null)
+		{
+			return 0;
+		}
+
+		StreamingReader reader = new(this.refresh.Value);
+		int skipCount = 0;
+		for (; skipCount < countUpTo; skipCount++)
+		{
+			// Present a copy of the context because we don't want TrySkip to retain state between each of our calls.
+			SerializationContext contextCopy = context;
+			if (reader.TrySkip(ref contextCopy) is not DecodeResult.Success)
+			{
+				return skipCount;
+			}
+		}
+
+		reachedMaxCount = true;
+		return skipCount;
+	}
+
+	/// <summary>
+	/// Advances the reader to the end of the top-level structure that we started reading.
+	/// </summary>
+	/// <returns>An async task representing the advance operation.</returns>
+	internal virtual async ValueTask AdvanceToEndOfTopLevelStructureAsync()
+	{
+		if (this.expectedRemainingStructures > 0)
+		{
+			StreamingReader reader = this.CreateStreamingReader();
+			SerializationContext context = new()
+			{
+				MidSkipRemainingCount = this.expectedRemainingStructures,
+			};
+			while (reader.TrySkip(ref context).NeedsMoreBytes())
+			{
+				reader = new(await reader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			this.ReturnReader(ref reader);
+		}
+	}
 
 	private protected void ThrowIfReaderNotReturned()
 	{
