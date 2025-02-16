@@ -3,12 +3,15 @@
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-public record MsgPackDeformatter : Deformatter
+/// <summary>
+/// A <see cref="Deformatter"/>-derived type that adds msgpack-specific read functions.
+/// </summary>
+public class MsgPackDeformatter : Deformatter
 {
-	public static readonly MsgPackDeformatter Default = new();
+	public static readonly MsgPackDeformatter Default = new(MsgPackStreamingDeformatter.Default);
 
-	private MsgPackDeformatter()
-		: base(MsgPackStreamingDeformatter.Default)
+	public MsgPackDeformatter(MsgPackStreamingDeformatter streamingDeformatter)
+		: base(streamingDeformatter)
 	{
 	}
 

@@ -6,14 +6,20 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class AsyncReader(PipeReader pipeReader, Deformatter deformatter) : IDisposable
+public abstract class AsyncReader : IDisposable
 {
 	private protected bool readerReturned = true;
 	private protected BufferRefresh? refresh;
 
-	public PipeReader PipeReader => pipeReader;
+	public AsyncReader(PipeReader pipeReader, Deformatter deformatter)
+	{
+		this.PipeReader = Requires.NotNull(pipeReader);
+		this.Deformatter = Requires.NotNull(deformatter);
+	}
 
-	public Deformatter Deformatter => deformatter;
+	public PipeReader PipeReader { get; }
+
+	public Deformatter Deformatter { get; }
 
 	/// <summary>
 	/// Gets a cancellation token to consider for calls into this object.

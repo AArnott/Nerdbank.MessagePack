@@ -13,7 +13,7 @@
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public partial record Deformatter
+public partial class Deformatter
 {<#
 var unsignedTypes = new Type[]
 {
@@ -44,7 +44,7 @@ foreach (var intType in allTypes) {
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public <#=intType.Name#> Read<#=intType.Name#>(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out <#=intType.Name#> value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out <#=intType.Name#> value))
 		{
 			case DecodeResult.Success:
 				return value;

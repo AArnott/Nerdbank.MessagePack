@@ -11,7 +11,7 @@
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public partial record Deformatter
+public partial class Deformatter
 {
 	/// <summary>
 	/// Reads an <see cref="Byte"/> value from:
@@ -23,7 +23,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Byte ReadByte(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out Byte value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out Byte value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -47,7 +47,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public UInt16 ReadUInt16(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out UInt16 value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out UInt16 value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -71,7 +71,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public UInt32 ReadUInt32(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out UInt32 value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out UInt32 value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -95,7 +95,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public UInt64 ReadUInt64(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out UInt64 value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out UInt64 value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -119,7 +119,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public SByte ReadSByte(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out SByte value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out SByte value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -143,7 +143,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Int16 ReadInt16(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out Int16 value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out Int16 value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -167,7 +167,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Int32 ReadInt32(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out Int32 value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out Int32 value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -191,7 +191,7 @@ public partial record Deformatter
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Int64 ReadInt64(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out Int64 value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out Int64 value))
 		{
 			case DecodeResult.Success:
 				return value;

@@ -17,9 +17,9 @@ internal class MessagePackVisitor : StandardVisitor
 	{
 	}
 
-	internal override Formatter Formatter => MsgPackFormatter.Default;
+	internal override Formatter Formatter => MessagePackSerializer.Formatter;
 
-	internal override Deformatter Deformatter => MsgPackDeformatter.Default;
+	internal override Deformatter Deformatter => MessagePackSerializer.Deformatter;
 
 	protected override Converter GetInterningStringConverter() => InterningStringConverter;
 

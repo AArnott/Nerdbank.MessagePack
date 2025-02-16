@@ -5,10 +5,19 @@ using System.Text;
 
 namespace Nerdbank.PolySerializer.Converters;
 
+/// <summary>
+/// A class for writing structures to a  with a particular format as determined by a derived type.
+/// </summary>
 public abstract record Formatter
 {
+	/// <summary>
+	/// Gets the name of the format implemented by the derived type.
+	/// </summary>
 	public abstract string FormatName { get; }
 
+	/// <summary>
+	/// Gets the encoding used by this formatter for characters.
+	/// </summary>
 	public abstract Encoding Encoding { get; }
 
 	/// <summary>

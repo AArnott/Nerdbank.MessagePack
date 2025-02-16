@@ -24,7 +24,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Gets or sets a value indicating whether to write in <see href="https://github.com/msgpack/msgpack/blob/master/spec-old.md">old spec</see> compatibility mode.
 	/// </summary>
-	public bool OldSpec { get; set; }
+	public bool OldSpec { get; init; }
 
 	/// <inheritdoc/>
 	public override bool ArrayLengthRequiredInHeader => true;

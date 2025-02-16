@@ -10,7 +10,6 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <summary>
 /// A primitive types reader for the MessagePack format that reads from a <see cref="PipeReader"/>.
 /// </summary>
-/// <param name="pipeReader">The pipe reader to decode from. <see cref="PipeReader.Complete(Exception?)"/> is <em>not</em> called on this at the conclusion of deserialization, and the reader is left at the position after the last msgpack byte read.</param>
 /// <remarks>
 /// <para>
 /// This is an async capable and slower alternative to <see cref="MessagePackReader"/> with fewer methods,
@@ -22,10 +21,16 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <exception cref="SerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
 [Experimental("NBMsgPackAsync")]
-public class MessagePackAsyncReader(PipeReader pipeReader) : AsyncReader(pipeReader, MsgPackDeformatter.Default)
+public class MessagePackAsyncReader : AsyncReader
 {
 	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
 	private uint expectedRemainingStructures;
+
+	/// <param name="pipeReader">The pipe reader to decode from. <see cref="PipeReader.Complete(Exception?)"/> is <em>not</em> called on this at the conclusion of deserialization, and the reader is left at the position after the last msgpack byte read.</param>
+	public MessagePackAsyncReader(PipeReader pipeReader, MsgPackDeformatter deformatter)
+		: base(pipeReader, deformatter)
+	{
+	}
 
 	/// <summary>
 	/// Gets the fully-capable, synchronous reader.

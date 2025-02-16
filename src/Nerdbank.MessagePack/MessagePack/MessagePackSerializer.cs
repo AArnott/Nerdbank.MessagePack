@@ -27,6 +27,12 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// </devremarks>
 public partial record MessagePackSerializer
 {
+	internal static MsgPackFormatter Formatter => MsgPackFormatter.Default;
+
+	internal static MsgPackDeformatter Deformatter => MsgPackDeformatter.Default;
+
+	internal static MsgPackStreamingDeformatter StreamingDeformatter => MsgPackStreamingDeformatter.Default;
+
 	private ConverterCache converterCache = new();
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
@@ -322,7 +328,7 @@ public partial record MessagePackSerializer
 	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack, JsonOptions? options = null)
 	{
 		StringWriter jsonWriter = new();
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, Deformatter);
 		while (!reader.End)
 		{
 			ConvertToJson(ref reader, jsonWriter, options);
@@ -345,7 +351,7 @@ public partial record MessagePackSerializer
 
 		static void WriteOneElement(ref Reader reader, TextWriter jsonWriter, JsonOptions options, int indentationLevel)
 		{
-			switch (MsgPackDeformatter.Default.PeekNextMessagePackType(reader))
+			switch (Deformatter.PeekNextMessagePackType(reader))
 			{
 				case MessagePackType.Nil:
 					reader.ReadNull();
@@ -452,13 +458,13 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Extension:
-					Extension extension = MsgPackDeformatter.Default.ReadExtension(ref reader);
+					Extension extension = Deformatter.ReadExtension(ref reader);
 					jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
 					jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Unknown:
-					throw new NotImplementedException($"{MsgPackDeformatter.Default.PeekNextMessagePackType(reader)} not yet implemented.");
+					throw new NotImplementedException($"{Deformatter.PeekNextMessagePackType(reader)} not yet implemented.");
 			}
 
 			static void NewLine(TextWriter writer, JsonOptions options, int indentationLevel)
@@ -592,7 +598,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(reader, Deformatter) { CancellationToken = cancellationToken };
 		bool readMore = false;
 		while (!await asyncReader.GetIsEndOfStreamAsync().ConfigureAwait(false))
 		{
@@ -666,7 +672,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(reader, Deformatter) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 
 		StreamingDeserializer<TElement> helper = new(this, provider, asyncReader, context.Value);
@@ -717,7 +723,7 @@ public partial record MessagePackSerializer
 			ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
 			if (readResult.IsCompleted)
 			{
-				Reader msgpackReader = new(readResult.Buffer, MsgPackDeformatter.Default);
+				Reader msgpackReader = new(readResult.Buffer, Deformatter);
 				T? result = converter.Read(ref msgpackReader, context.Value);
 				reader.AdvanceTo(msgpackReader.Position);
 				return result;
@@ -729,7 +735,7 @@ public partial record MessagePackSerializer
 		}
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+		MessagePackAsyncReader asyncReader = new(reader, Deformatter) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 		T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
 		asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.

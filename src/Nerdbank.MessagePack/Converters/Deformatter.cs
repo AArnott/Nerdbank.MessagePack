@@ -8,19 +8,30 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public partial record Deformatter
+/// <summary>
+/// A convenience API for reading formatted data (e.g. MessagePack, JSON) from a complete buffer.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This type is a wrapper around <see cref="Converters.StreamingDeformatter"/>, which is designed to support
+/// reading from potentially incomplete buffers without throwing exceptions.
+/// </para>
+/// <para>
+/// Particular formats may derive from this type in order to wrap unique APIs from their derived <see cref="Converters.StreamingDeformatter"/> type.
+/// Derived types should avoid adding fields since the core functionality and options are expected to be on the wrapped <see cref="Converters.StreamingDeformatter"/>.
+/// </para>
+/// </remarks>
+public partial class Deformatter
 {
-	private readonly StreamingDeformatter streamingDeformatter;
-
 	public Deformatter(StreamingDeformatter streamingDeformatter)
 	{
 		Requires.NotNull(streamingDeformatter);
-		this.streamingDeformatter = streamingDeformatter;
+		this.StreamingDeformatter = streamingDeformatter;
 	}
 
-	public StreamingDeformatter StreamingDeformatter => this.streamingDeformatter;
+	public StreamingDeformatter StreamingDeformatter { get; }
 
-	public Encoding Encoding => this.streamingDeformatter.Encoding;
+	public Encoding Encoding => this.StreamingDeformatter.Encoding;
 
 	/// <summary>
 	/// Gets the type of the next MessagePack block.
@@ -31,7 +42,7 @@ public partial record Deformatter
 	/// </remarks>
 	public byte PeekNextCode(in Reader reader)
 	{
-		return this.streamingDeformatter.TryPeekNextCode(reader, out byte code) switch
+		return this.StreamingDeformatter.TryPeekNextCode(reader, out byte code) switch
 		{
 			DecodeResult.Success => code,
 			DecodeResult.EmptyBuffer or DecodeResult.InsufficientBuffer => throw ThrowNotEnoughBytesException(),
@@ -41,7 +52,7 @@ public partial record Deformatter
 
 	public bool TryReadNull(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryReadNull(ref reader))
+		switch (this.StreamingDeformatter.TryReadNull(ref reader))
 		{
 			case DecodeResult.Success:
 				return true;
@@ -75,7 +86,7 @@ public partial record Deformatter
 
 	public bool TryReadArrayHeader(ref Reader reader, out int count)
 	{
-		switch (this.streamingDeformatter.TryReadArrayHeader(ref reader, out count))
+		switch (this.StreamingDeformatter.TryReadArrayHeader(ref reader, out count))
 		{
 			case DecodeResult.Success:
 				return true;
@@ -113,7 +124,7 @@ public partial record Deformatter
 	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
 	public bool TryReadMapHeader(ref Reader reader, out int count)
 	{
-		switch (this.streamingDeformatter.TryReadMapHeader(ref reader, out count))
+		switch (this.StreamingDeformatter.TryReadMapHeader(ref reader, out count))
 		{
 			case DecodeResult.Success:
 				return true;
@@ -129,7 +140,7 @@ public partial record Deformatter
 
 	public bool ReadBoolean(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out bool value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out bool value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -145,7 +156,7 @@ public partial record Deformatter
 
 	public char ReadChar(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out char value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out char value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -161,7 +172,7 @@ public partial record Deformatter
 
 	public unsafe float ReadSingle(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out float value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out float value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -176,7 +187,7 @@ public partial record Deformatter
 
 	public unsafe double ReadDouble(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out double value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out double value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -191,7 +202,7 @@ public partial record Deformatter
 
 	public string? ReadString(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out string? value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out string? value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -207,7 +218,7 @@ public partial record Deformatter
 
 	public ReadOnlySequence<byte>? ReadBytes(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryReadBinary(ref reader, out ReadOnlySequence<byte> value))
+		switch (this.StreamingDeformatter.TryReadBinary(ref reader, out ReadOnlySequence<byte> value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -228,7 +239,7 @@ public partial record Deformatter
 
 	public ReadOnlySequence<byte>? ReadStringSequence(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
+		switch (this.StreamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -249,7 +260,7 @@ public partial record Deformatter
 
 	public ReadOnlySpan<byte> ReadStringSpan(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out ReadOnlySpan<byte> span))
+		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out ReadOnlySpan<byte> span))
 		{
 			case DecodeResult.Success:
 				return contiguous ? span : this.ReadStringSequence(ref reader)!.Value.ToArray();
@@ -265,12 +276,12 @@ public partial record Deformatter
 
 	public bool TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> span)
 	{
-		switch (this.streamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
+		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
 		{
 			case DecodeResult.Success:
 				return contiguous;
 			case DecodeResult.TokenMismatch:
-				if (this.streamingDeformatter.TryPeekNextCode(reader, out TypeCode code) == DecodeResult.Success
+				if (this.StreamingDeformatter.TryPeekNextCode(reader, out TypeCode code) == DecodeResult.Success
 					&& code == TypeCode.Nil)
 				{
 					span = default;
@@ -288,7 +299,7 @@ public partial record Deformatter
 
 	public DateTime ReadDateTime(ref Reader reader)
 	{
-		switch (this.streamingDeformatter.TryRead(ref reader, out DateTime value))
+		switch (this.StreamingDeformatter.TryRead(ref reader, out DateTime value))
 		{
 			case DecodeResult.Success:
 				return value;
@@ -318,7 +329,7 @@ public partial record Deformatter
 
 	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
 
-	public TypeCode ToTypeCode(byte code) => this.streamingDeformatter.ToTypeCode(code);
+	public TypeCode ToTypeCode(byte code) => this.StreamingDeformatter.ToTypeCode(code);
 
 	/// <summary>
 	/// Advances the reader to the next MessagePack structure to be read.
@@ -372,7 +383,7 @@ public partial record Deformatter
 	[DoesNotReturn]
 	protected Exception ThrowInvalidCode(byte code)
 	{
-		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, this.streamingDeformatter.ToFormatName(code)));
+		throw new SerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, this.StreamingDeformatter.ToFormatName(code)));
 	}
 
 	[DoesNotReturn]

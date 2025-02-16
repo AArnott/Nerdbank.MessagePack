@@ -32,7 +32,7 @@ public partial record MessagePackSerializer
 		(byte[] array, scratchArray) = (scratchArray ?? new byte[65536], null);
 		try
 		{
-			Writer writer = new(SequencePool<byte>.Shared, array, MsgPackFormatter.Default);
+			Writer writer = new(SequencePool<byte>.Shared, array, Formatter);
 			this.Serialize(ref writer, value, shape, cancellationToken);
 			return writer.FlushAndGetArray();
 		}
@@ -45,7 +45,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)"/>
 	public void Serialize<T>(IBufferWriter<byte> bufferWriter, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		Writer writer = new(new BufferWriter(bufferWriter), MsgPackFormatter.Default);
+		Writer writer = new(new BufferWriter(bufferWriter), Formatter);
 		this.Serialize(ref writer, value, shape, cancellationToken);
 		writer.Flush();
 	}
@@ -97,7 +97,7 @@ public partial record MessagePackSerializer
 		(byte[] array, scratchArray) = (scratchArray ?? new byte[65536], null);
 		try
 		{
-			Writer writer = new(SequencePool<byte>.Shared, array, MsgPackFormatter.Default);
+			Writer writer = new(SequencePool<byte>.Shared, array, Formatter);
 			this.Serialize(ref writer, value, provider, cancellationToken);
 			return writer.FlushAndGetArray();
 		}
@@ -110,7 +110,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)"/>
 	public void Serialize<T>(IBufferWriter<byte> bufferWriter, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
-		Writer writer = new(new BufferWriter(bufferWriter), MsgPackFormatter.Default);
+		Writer writer = new(new BufferWriter(bufferWriter), Formatter);
 		this.Serialize(ref writer, value, provider, cancellationToken);
 		writer.Flush();
 	}
@@ -154,7 +154,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Deserialize{T}(in ReadOnlySequence{byte}, ITypeShape{T}, CancellationToken)"/>
 	public T? Deserialize<T>(ReadOnlyMemory<byte> buffer, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		Reader reader = new(buffer, MsgPackDeformatter.Default);
+		Reader reader = new(buffer, Deformatter);
 		return this.Deserialize(ref reader, shape, cancellationToken);
 	}
 
@@ -167,7 +167,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		Converter<T> converter = this.GetConverter(shape);
-		Reader baseReader = new(buffer, MsgPackDeformatter.Default);
+		Reader baseReader = new(buffer, Deformatter);
 		T? result = converter.Read(ref baseReader, context.Value);
 		return result;
 	}
@@ -234,7 +234,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Deserialize{T}(in ReadOnlySequence{byte}, ITypeShapeProvider, CancellationToken)"/>
 	public T? Deserialize<T>(ReadOnlyMemory<byte> buffer, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
-		Reader reader = new(buffer, MsgPackDeformatter.Default);
+		Reader reader = new(buffer, Deformatter);
 		return this.Deserialize<T>(ref reader, provider, cancellationToken);
 	}
 
@@ -244,7 +244,7 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(scoped in ReadOnlySequence<byte> buffer, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
-		Reader reader = new(buffer, MsgPackDeformatter.Default);
+		Reader reader = new(buffer, Deformatter);
 		return this.Deserialize<T>(ref reader, provider, cancellationToken);
 	}
 
