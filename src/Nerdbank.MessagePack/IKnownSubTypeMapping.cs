@@ -3,7 +3,7 @@
 
 using System.Collections.Frozen;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
 /// <summary>
 /// A non-generic accessor for <see cref="KnownSubTypeMapping{TBase}"/>

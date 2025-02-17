@@ -1,11 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
-using Nerdbank.PolySerializer.Converters;
 
 namespace Nerdbank.PolySerializer.Converters;
 
