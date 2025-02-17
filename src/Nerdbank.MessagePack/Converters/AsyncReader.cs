@@ -176,7 +176,7 @@ public class AsyncReader : IDisposable
 	/// <param name="countUpTo">The number of top-level structures to count and report on in the result.</param>
 	/// <param name="context">The serialization context.</param>
 	/// <returns>
-	/// The buffer, for use in creating a <see cref="MessagePackReader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
+	/// The buffer, for use in creating a <see cref="Reader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
 	/// Also returns the number of top-level structures included in the buffer that were counted (up to <paramref name="countUpTo"/>).
 	/// </returns>
 	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
@@ -300,7 +300,7 @@ public class AsyncReader : IDisposable
 	public delegate ValueTask<ReadResult> GetMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// A non-<see langword="ref" /> structure that can be used to recreate a <see cref="MessagePackStreamingReader"/> after
+	/// A non-<see langword="ref" /> structure that can be used to recreate a <see cref="StreamingReader"/> after
 	/// an <see langword="await" /> expression.
 	/// </summary>
 	public struct BufferRefresh

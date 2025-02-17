@@ -82,7 +82,7 @@ public abstract record Formatter
 
 	public abstract void Write(ref Writer writer, scoped ReadOnlySpan<byte> value);
 
-	public abstract void Write(ref Writer writer, ReadOnlySequence<byte> value);
+	public abstract void Write(ref Writer writer, in ReadOnlySequence<byte> value);
 
 	/// <summary>
 	/// Get the number of bytes required to format a value.
@@ -99,6 +99,8 @@ public abstract record Formatter
 	public abstract int GetEncodedLength(ulong value);
 
 	public abstract void WriteEncodedString(ref Writer writer, scoped ReadOnlySpan<byte> value);
+
+	public abstract void WriteEncodedString(ref Writer writer, in ReadOnlySequence<byte> value);
 
 	public virtual bool TryWriteBinHeader(ref Writer writer, int length) => false;
 }

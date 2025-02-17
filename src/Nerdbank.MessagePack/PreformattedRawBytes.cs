@@ -13,7 +13,7 @@ namespace Nerdbank.PolySerializer;
 /// The envelope could use this <see cref="PreformattedRawBytes"/> in order to facilitate this by allowing pre-serialization and deferred deserialization of user data.
 /// </para>
 /// <para>
-/// The <see cref="MessagePackConverter{T}"/> for this type will always copy the memory from the buffers being read so that this struct has
+/// The <see cref="Converter{T}"/> for this type will always copy the memory from the buffers being read so that this struct has
 /// an independent lifetime.
 /// </para>
 /// </remarks>

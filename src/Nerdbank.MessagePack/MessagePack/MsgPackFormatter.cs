@@ -405,6 +405,12 @@ public record MsgPackFormatter : Formatter
 		writer.Buffer.Write(value);
 	}
 
+	public override void WriteEncodedString(ref Writer writer, in ReadOnlySequence<byte> value)
+	{
+		this.WriteStringHeader(ref writer, checked((int)value.Length));
+		writer.Buffer.Write(value);
+	}
+
 	/// <summary>
 	/// Writes out a <see cref="string"/>, prefixed with the length using one of these message codes:
 	/// <see cref="MessagePackCode.MinFixStr"/>,
@@ -430,7 +436,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Str32"/>.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
-	public override void Write(ref Writer writer, ReadOnlySequence<byte> value)
+	public override void Write(ref Writer writer, in ReadOnlySequence<byte> value)
 	{
 		int length = (int)value.Length;
 		this.WriteBinHeader(ref writer, length);
@@ -457,9 +463,10 @@ public record MsgPackFormatter : Formatter
 	/// <param name="length">The length of bytes that will be written next.</param>
 	/// <remarks>
 	/// <para>
-	/// The caller should use <see cref="WriteRaw(in ReadOnlySequence{byte})"/> or <see cref="WriteRaw(ReadOnlySpan{byte})"/>
+	/// The caller should use <see cref="BufferWriter.Write(in ReadOnlySequence{byte})"/> or <see cref="BufferWriter.Write(ReadOnlySpan{byte})"/>
+	/// on <see cref="Writer.Buffer"/>
 	/// after calling this method to actually write the content.
-	/// Alternatively a single call to <see cref="Write(ReadOnlySpan{byte})"/> or <see cref="Write(in ReadOnlySequence{byte})"/> will take care of the header and content in one call.
+	/// Alternatively a single call to <see cref="Write(ref Writer, ReadOnlySpan{byte})"/> or <see cref="Write(ref Writer, in ReadOnlySequence{byte})"/> will take care of the header and content in one call.
 	/// </para>
 	/// <para>
 	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
@@ -489,9 +496,10 @@ public record MsgPackFormatter : Formatter
 	/// </summary>
 	/// <param name="byteCount">The number of bytes in the string that will follow this header.</param>
 	/// <remarks>
-	/// The caller should use <see cref="WriteRaw(in ReadOnlySequence{byte})"/> or <see cref="WriteRaw(ReadOnlySpan{byte})"/>
+	/// The caller should use <see cref="BufferWriter.Write(in ReadOnlySequence{byte})"/> or <see cref="BufferWriter.Write(ReadOnlySpan{byte})"/>
+	/// on <see cref="Writer.Buffer"/>
 	/// after calling this method to actually write the content.
-	/// Alternatively a single call to <see cref="WriteString(ReadOnlySpan{byte})"/> or <see cref="WriteString(in ReadOnlySequence{byte})"/> will take care of the header and content in one call.
+	/// Alternatively a single call to <see cref="WriteEncodedString(ref Writer, ReadOnlySpan{byte})"/> or <see cref="WriteEncodedString(ref Writer, in ReadOnlySequence{byte})"/> will take care of the header and content in one call.
 	/// </remarks>
 	public void WriteStringHeader(ref Writer writer, int byteCount)
 	{

@@ -717,7 +717,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	/// <param name="length">Receives the length of the next string, when successful.</param>
 	/// <returns>The result classification of the read operation.</returns>
 	/// <remarks>
-	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(ref Reader, long, out ReadOnlySequence{byte})"/>,
 	/// with the length of bytes specified by the extension (even if zero), so that the overall structure can be recorded as read.
 	/// </remarks>
 	/// <inheritdoc cref="MessagePackPrimitives.TryReadStringHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
@@ -768,7 +768,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	/// <returns>The result classification of the read operation.</returns>
 	/// <inheritdoc cref="MessagePackPrimitives.TryReadBinHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
 	/// <remarks>
-	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(ref Reader, long, out ReadOnlySequence{byte})"/>,
 	/// with the length specified by <paramref name="length"/> (even if zero), so that the overall structure can be recorded as read.
 	/// </remarks>
 	public DecodeResult TryReadBinHeader(ref Reader reader, out uint length)

@@ -43,7 +43,7 @@ public abstract class Converter<T>() : Converter(typeof(T))
 	/// <para>
 	/// Derived classes should only override this method if they may write a lot of data.
 	/// They should do so with the intent of writing fragments of data at a time and periodically call
-	/// <see cref="MessagePackAsyncWriter.FlushIfAppropriateAsync"/>
+	/// <see cref="AsyncWriter.FlushIfAppropriateAsync"/>
 	/// in order to keep the size of memory buffers from growing too much.
 	/// </para>
 	/// </remarks>

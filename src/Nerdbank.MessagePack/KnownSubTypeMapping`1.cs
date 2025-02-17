@@ -37,7 +37,7 @@ public class KnownSubTypeMapping<TBase> : IKnownSubTypeMapping
 	/// <inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/summary" />
 	/// <inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/exception" />
 	/// <param name="alias"><inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/param[@name='alias']" /></param>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="SerializerBase.Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	public void Add<TDerived>(int alias, ITypeShapeProvider provider)
 		where TDerived : TBase
 	{

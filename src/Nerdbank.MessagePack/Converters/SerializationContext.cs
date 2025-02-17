@@ -11,7 +11,7 @@ namespace Nerdbank.PolySerializer.Converters;
 /// Context that flows through the serialization process.
 /// </summary>
 /// <example>
-/// <para>The default values on this struct may be changed and the modified struct applied to <see cref="MessagePackSerializer.StartingContext"/>
+/// <para>The default values on this struct may be changed and the modified struct applied to <see cref="SerializerBase.StartingContext"/>
 /// in order to serialize with the updated settings.</para>
 /// <code source="../../samples/ApplyingSerializationContext.cs" region="ApplyingStartingContext" lang="C#" />
 /// </example>
@@ -63,7 +63,7 @@ public record struct SerializationContext
 	public ITypeShapeProvider? TypeShapeProvider { get; internal init; }
 
 	/// <summary>
-	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
+	/// Gets the <see cref="ConverterCache"/> that owns this context.
 	/// </summary>
 	internal ConverterCache? Cache { get; private init; }
 
@@ -94,7 +94,7 @@ public record struct SerializationContext
 	/// </para>
 	/// </remarks>
 	/// <example>
-	/// To add, modify or remove a key in this state as applied to a <see cref="MessagePackSerializer.StartingContext"/>,
+	/// To add, modify or remove a key in this state as applied to a <see cref="SerializerBase.StartingContext"/>,
 	/// capture and change the <see cref="SerializationContext"/> as a local variable, then reassign it to the serializer.
 	/// <code source="../../samples/ApplyingSerializationContext.cs" region="ModifyingStartingContextState" lang="C#" />
 	/// </example>
@@ -155,7 +155,7 @@ public record struct SerializationContext
 	/// </summary>
 	/// <typeparam name="T">The type to be converted.</typeparam>
 	/// <param name="provider">
-	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/>
+	/// <inheritdoc cref="SerializerBase.Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/>
 	/// It can also come from <see cref="TypeShapeProvider"/>.
 	/// A <see langword="null" /> value will be filled in with <see cref="TypeShapeProvider"/>.
 	/// </param>
@@ -210,7 +210,7 @@ public record struct SerializationContext
 	/// <param name="owner">The owning serializer.</param>
 	/// <param name="cache">The converter cache.</param>
 	/// <param name="referenceTrackingPool">A reference equality tracker pool, if the formatter supports it.</param>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="SerializerBase.Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token to associate with this serialization operation.</param>
 	/// <returns>The new context for the operation.</returns>
 	internal SerializationContext Start(SerializerBase owner, ConverterCache cache, ReusableObjectPool<IReferenceEqualityTracker>? referenceTrackingPool, ITypeShapeProvider provider, CancellationToken cancellationToken)

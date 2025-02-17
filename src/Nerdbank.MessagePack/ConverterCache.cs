@@ -15,8 +15,8 @@ namespace Nerdbank.PolySerializer;
 /// <remarks>
 /// This type offers something of an information barrier to converter construction.
 /// The <see cref="StandardVisitor"/> only gets a reference to this object,
-/// and this object does <em>not</em> have a reference to <see cref="MessagePackSerializer"/>.
-/// This ensures that properties on <see cref="MessagePackSerializer"/> cannot serve as inputs to the converters.
+/// and this object does <em>not</em> have a reference to <see cref="SerializerBase"/>.
+/// This ensures that properties on <see cref="SerializerBase"/> cannot serve as inputs to the converters.
 /// Thus, the only properties that should reset the <see cref="cachedConverters"/> are those declared on this type.
 /// </remarks>
 internal abstract record ConverterCache
@@ -243,7 +243,7 @@ internal abstract record ConverterCache
 	/// <remarks>
 	/// If a converter for the data type has already been cached, the new value takes its place.
 	/// Custom converters should be registered before serializing anything on this
-	/// instance of <see cref="MessagePackSerializer" />.
+	/// instance of <see cref="SerializerBase" />.
 	/// </remarks>
 	internal void RegisterConverter<T>(Converter<T> converter)
 	{

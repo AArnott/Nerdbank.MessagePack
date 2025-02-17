@@ -12,7 +12,7 @@ namespace Nerdbank.PolySerializer;
 /// </summary>
 /// <remarks>
 /// This class is <em>not</em> a substitute for string interning.
-/// Activate string interning via the <see cref="MessagePackSerializer.InternStrings"/> property.
+/// Activate string interning via the <see cref="SerializerBase.InternStrings"/> property.
 /// This class avoids the need to encode/decode strings, which is even more efficient than interning strings,
 /// but it is meant only for a finite sized set of well-known strings.
 /// </remarks>
@@ -53,7 +53,8 @@ public class PreformattedString : IEquatable<PreformattedString>
 	/// The msgpack encoded bytes are the UTF-8 encoded bytes of the string, prefixed with the msgpack encoding of the string length.
 	/// </value>
 	/// <remarks>
-	/// The value of this property is suitable for providing to the <see cref="MessagePackWriter.WriteRaw(ReadOnlySpan{byte})"/> method.
+	/// The value of this property is suitable for providing to the <see cref="BufferWriter.Write(ReadOnlySpan{byte})"/> method
+	/// on <see cref="Writer.Buffer"/>.
 	/// </remarks>
 	public ReadOnlyMemory<byte> Formatted { get; }
 

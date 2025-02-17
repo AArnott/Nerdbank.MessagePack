@@ -7,7 +7,7 @@ using Microsoft;
 namespace Nerdbank.PolySerializer;
 
 /// <summary>
-/// The context provided to <see cref="MessagePackConverter{T}.GetJsonSchema"/>
+/// The context provided to <see cref="Converter.GetJsonSchema"/>
 /// to aid in the generation of JSON schemas for types.
 /// </summary>
 public class JsonSchemaContext

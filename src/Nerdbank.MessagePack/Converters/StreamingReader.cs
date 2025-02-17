@@ -89,12 +89,12 @@ public ref partial struct StreamingReader
 	/// Adds more bytes to the buffer being decoded, if they are available.
 	/// </summary>
 	/// <param name="minimumLength">The minimum number of bytes to fetch before returning.</param>
-	/// <returns>The value to pass to <see cref="MessagePackStreamingReader(in BufferRefresh)"/>.</returns>
+	/// <returns>The value to pass to <see cref="StreamingReader(in AsyncReader.BufferRefresh)"/>.</returns>
 	/// <exception cref="EndOfStreamException">Thrown if no more bytes are available.</exception>
 	/// <remarks>
-	/// This is a destructive operation to this <see cref="MessagePackStreamingReader"/> value.
+	/// This is a destructive operation to this <see cref="StreamingReader"/> value.
 	/// It must not be used after calling this method.
-	/// Instead, the result can use the result of this method to recreate a new <see cref="MessagePackStreamingReader"/> value.
+	/// Instead, the result can use the result of this method to recreate a new <see cref="StreamingReader"/> value.
 	/// </remarks>
 	public ValueTask<AsyncReader.BufferRefresh> FetchMoreBytesAsync(uint minimumLength = 1)
 	{
@@ -135,7 +135,7 @@ public ref partial struct StreamingReader
 	/// Gets the information to return from an async method that has been using this reader
 	/// so that the caller knows how to resume reading.
 	/// </summary>
-	/// <returns>The value to pass to <see cref="MessagePackStreamingReader(in BufferRefresh)"/>.</returns>
+	/// <returns>The value to pass to <see cref="StreamingReader(in AsyncReader.BufferRefresh)"/>.</returns>
 	public readonly AsyncReader.BufferRefresh GetExchangeInfo() => new()
 	{
 		CancellationToken = this.CancellationToken,
