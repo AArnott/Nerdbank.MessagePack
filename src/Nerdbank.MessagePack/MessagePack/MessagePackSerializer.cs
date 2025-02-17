@@ -4,6 +4,8 @@
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
 
+using Microsoft;
+
 namespace Nerdbank.PolySerializer.MessagePack;
 
 /// <summary>
@@ -70,7 +72,9 @@ public partial record MessagePackSerializer : SerializerBase
 
 	protected internal override void RenderAsJson(ref Reader reader, TextWriter writer)
 	{
-		switch (MessagePackCode.ToMessagePackType(reader.NextCode))
+		Requires.NotNull(writer);
+
+		switch (((MsgPackDeformatter)reader.Deformatter).PeekNextMessagePackType(reader))
 		{
 			case MessagePackType.Extension:
 				Extension extension = ((MsgPackDeformatter)this.Deformatter).ReadExtension(ref reader);

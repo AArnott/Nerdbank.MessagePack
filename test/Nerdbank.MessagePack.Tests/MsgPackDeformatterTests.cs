@@ -319,7 +319,6 @@ public partial class MsgPackDeformatterTests
 	{
 		ReadOnlySequence<byte> partialMessage = default;
 
-		AssertThrowsEndOfStreamException(partialMessage, (ref Reader reader) => reader.NextCode);
 		AssertThrowsEndOfStreamException(partialMessage, (ref Reader reader) => reader.NextTypeCode);
 
 		// These Try methods are meant to return false when it's not a matching code. End of stream when calling these methods is still unexpected.

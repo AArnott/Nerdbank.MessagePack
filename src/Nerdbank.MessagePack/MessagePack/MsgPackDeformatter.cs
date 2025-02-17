@@ -17,6 +17,23 @@ public class MsgPackDeformatter : Deformatter
 
 	public new MsgPackStreamingDeformatter StreamingDeformatter => (MsgPackStreamingDeformatter)base.StreamingDeformatter;
 
+	/// <summary>
+	/// Gets the type of the next MessagePack block.
+	/// </summary>
+	/// <exception cref="EndOfStreamException">Thrown if the end of the sequence provided to the constructor is reached before the expected end of the data.</exception>
+	/// <remarks>
+	/// See <see cref="TypeCode"/> for valid codes and ranges.
+	/// </remarks>
+	public byte PeekNextCode(in Reader reader)
+	{
+		return this.StreamingDeformatter.TryPeekNextCode(reader, out byte code) switch
+		{
+			DecodeResult.Success => code,
+			DecodeResult.EmptyBuffer or DecodeResult.InsufficientBuffer => throw ThrowNotEnoughBytesException(),
+			_ => throw ThrowUnreachable(),
+		};
+	}
+
 	public MessagePackType PeekNextMessagePackType(in Reader reader) => MessagePackCode.ToMessagePackType(this.PeekNextCode(reader));
 
 	public ExtensionHeader ReadExtensionHeader(ref Reader reader)

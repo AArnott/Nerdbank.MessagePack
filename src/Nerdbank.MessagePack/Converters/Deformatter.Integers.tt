@@ -35,11 +35,9 @@ foreach (var intType in allTypes) {
 #>
 
 	/// <summary>
-	/// Reads an <see cref="<#=intType.Name#>"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="<#=intType.Name#>"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public <#=intType.Name#> Read<#=intType.Name#>(ref Reader reader)

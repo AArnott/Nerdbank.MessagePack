@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json.Nodes;
-using Nerdbank.PolySerializer.MessagePack.Converters;
 
 namespace Nerdbank.PolySerializer.Converters;
 
@@ -226,7 +225,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					// We use a nested loop here because even during synchronous writing, we may need to occasionally yield to
 					// flush what we've written so far, but then we want to come right back to synchronous writing.
 					syncWriter = writer.CreateWriter();
-					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context); i++)
+					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context, syncWriter); i++)
 					{
 						syncWriter.Write(properties.Span[i]);
 
@@ -291,7 +290,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					// We use a nested loop here because even during synchronous writing, we may need to occasionally yield to
 					// flush what we've written so far, but then we want to come right back to synchronous writing.
 					syncWriter = writer.CreateWriter();
-					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context); i++)
+					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context, syncWriter); i++)
 					{
 						if (properties.Span[i] is { MsgPackWriters: var (serialize, _) })
 						{

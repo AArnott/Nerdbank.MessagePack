@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -19,7 +20,34 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override Encoding Encoding => StringEncoding.UTF8;
 
-	public override string ToFormatName(byte code) => MessagePackCode.ToFormatName(code);
+	/// <summary>
+	/// Peeks at the next msgpack byte without advancing the reader.
+	/// </summary>
+	/// <param name="code">When successful, receives the next msgpack byte.</param>
+	/// <returns>The success or error code.</returns>
+	public DecodeResult TryPeekNextCode(in Reader reader, out byte code)
+	{
+		return reader.SequenceReader.TryPeek(out code) ? DecodeResult.Success : this.InsufficientBytes(reader);
+	}
+
+	public override DecodeResult TryPeekNextCode(in Reader reader, out PolySerializer.Converters.TypeCode typeCode)
+	{
+		DecodeResult result = TryPeekNextCode(reader, out byte code);
+		if (result != DecodeResult.Success)
+		{
+			typeCode = default;
+			return result;
+		}
+
+		typeCode = this.ToTypeCode(code);
+		return DecodeResult.Success;
+	}
+
+	protected internal override Exception ThrowInvalidCode(in Reader reader)
+	{
+		Verify.Operation(this.TryPeekNextCode(reader, out byte code) == DecodeResult.Success, "Expected to be able to peek the next code.");
+		throw new SerializationException(string.Format("Unexpected code {0} ({1}) encountered.", code, MessagePackCode.ToFormatName(code)));
+	}
 
 	public override DecodeResult TryPeekIsFloat32(in Reader reader, out bool float32)
 	{
@@ -104,6 +132,16 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <summary>
+	/// Reads a map header from
+	/// <see cref="MessagePackCode.Map16"/>,
+	/// <see cref="MessagePackCode.Map32"/>, or
+	/// some built-in code between <see cref="MessagePackCode.MinFixMap"/> and <see cref="MessagePackCode.MaxFixMap"/>
+	/// if there is sufficient buffer to read it.
+	/// </summary>
+	/// <param name="count">Receives the number of key=value pairs in the map if the entire map header can be read.</param>
+	/// <returns><see langword="true"/> if there was sufficient buffer and a map header was found; <see langword="false"/> if the buffer incompletely describes an map header.</returns>
+	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
 	public override DecodeResult TryReadMapHeader(ref Reader reader, out int count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadMapHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
@@ -693,12 +731,12 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 				default:
 					// We don't actually expect to ever hit this point, since every code is supported.
 					Debug.Fail("Missing handler for code: " + code);
-					throw self.ThrowInvalidCode(code);
+					throw self.ThrowInvalidCode(reader);
 			}
 		}
 	}
 
-	public override PolySerializer.Converters.TypeCode ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
+	public PolySerializer.Converters.TypeCode ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
 	{
 		MessagePackType.Integer => PolySerializer.Converters.TypeCode.Integer,
 		MessagePackType.Boolean => PolySerializer.Converters.TypeCode.Boolean,

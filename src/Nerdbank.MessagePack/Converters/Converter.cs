@@ -8,8 +8,17 @@ using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.Converters;
 
-public abstract class Converter(Type type)
+/// <summary>
+/// An abstract, non-generic base class for all converters.
+/// </summary>
+public abstract class Converter
 {
+	/// <summary>Initializes a new instance of the <see cref="Converter"/> class.</summary>
+	/// <param name="type">The specific type that this converter can convert.</param>
+	public Converter(Type type)
+	{
+	}
+
 	/// <summary>
 	/// Gets a value indicating whether callers should prefer the async methods on this object.
 	/// </summary>
@@ -54,7 +63,7 @@ public abstract class Converter(Type type)
 	[Experimental("NBMsgPackAsync")]
 	public abstract ValueTask<object?> ReadObjectAsync(AsyncReader reader, SerializationContext context);
 
-	/// <inheritdoc cref="MessagePackConverter{T}.GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
+	/// <inheritdoc cref="GetJsonSchema(JsonSchemaContext, ITypeShape)"/>
 	public virtual JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => null;
 
 	/// <summary>
@@ -64,7 +73,7 @@ public abstract class Converter(Type type)
 	/// <param name="propertyShape">The shape of the property whose value is to be skipped to.</param>
 	/// <param name="context">The serialization context.</param>
 	/// <returns><see langword="true" /> if the specified property was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
-	/// <remarks><inheritdoc cref="SkipToIndexValueAsync(MessagePackAsyncReader, object?, SerializationContext)" path="/remarks"/></remarks>
+	/// <remarks><inheritdoc cref="SkipToIndexValueAsync(AsyncReader, object?, SerializationContext)" path="/remarks"/></remarks>
 	[Experimental("NBMsgPackAsync")]
 	public virtual ValueTask<bool> SkipToPropertyValueAsync(AsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
 		=> throw this.ThrowNotSupported();
@@ -77,7 +86,7 @@ public abstract class Converter(Type type)
 	/// <param name="context">The serialization context.</param>
 	/// <returns><see langword="true" /> if the specified index was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
 	/// <remarks>
-	/// This method is used by <see cref="MessagePackSerializer.DeserializeEnumerableAsync{T, TElement}(System.IO.Pipelines.PipeReader, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
+	/// This method is used by <see cref="SerializerBase.DeserializeEnumerableAsync{T, TElement}(System.IO.Pipelines.PipeReader, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
 	/// to skip to the starting position of a sequence that should be asynchronously enumerated.
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]

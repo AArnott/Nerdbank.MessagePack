@@ -36,23 +36,6 @@ public partial class Deformatter
 
 	public Encoding Encoding => this.StreamingDeformatter.Encoding;
 
-	/// <summary>
-	/// Gets the type of the next MessagePack block.
-	/// </summary>
-	/// <exception cref="EndOfStreamException">Thrown if the end of the sequence provided to the constructor is reached before the expected end of the data.</exception>
-	/// <remarks>
-	/// See <see cref="MessagePackCode"/> for valid message pack codes and ranges.
-	/// </remarks>
-	public byte PeekNextCode(in Reader reader)
-	{
-		return this.StreamingDeformatter.TryPeekNextCode(reader, out byte code) switch
-		{
-			DecodeResult.Success => code,
-			DecodeResult.EmptyBuffer or DecodeResult.InsufficientBuffer => throw ThrowNotEnoughBytesException(),
-			_ => throw ThrowUnreachable(),
-		};
-	}
-
 	public bool TryReadNull(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadNull(ref reader))
@@ -94,7 +77,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw this.StreamingDeformatter.ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -115,16 +98,6 @@ public partial class Deformatter
 		return count;
 	}
 
-	/// <summary>
-	/// Reads a map header from
-	/// <see cref="MessagePackCode.Map16"/>,
-	/// <see cref="MessagePackCode.Map32"/>, or
-	/// some built-in code between <see cref="MessagePackCode.MinFixMap"/> and <see cref="MessagePackCode.MaxFixMap"/>
-	/// if there is sufficient buffer to read it.
-	/// </summary>
-	/// <param name="count">Receives the number of key=value pairs in the map if the entire map header can be read.</param>
-	/// <returns><see langword="true"/> if there was sufficient buffer and a map header was found; <see langword="false"/> if the buffer incompletely describes an map header.</returns>
-	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
 	public bool TryReadMapHeader(ref Reader reader, out int count)
 	{
 		switch (this.StreamingDeformatter.TryReadMapHeader(ref reader, out count))
@@ -132,7 +105,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw this.StreamingDeformatter.ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;
@@ -321,7 +294,21 @@ public partial class Deformatter
 
 	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
 
-	public TypeCode ToTypeCode(byte code) => this.StreamingDeformatter.ToTypeCode(code);
+	public TypeCode PeekNextCode(in Reader reader)
+	{
+		switch (this.StreamingDeformatter.TryPeekNextCode(reader, out TypeCode typeCode))
+		{
+			case DecodeResult.Success:
+				return typeCode;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
 
 	public bool PeekIsSignedInteger(in Reader reader)
 	{
@@ -359,10 +346,10 @@ public partial class Deformatter
 	/// Advances the reader to the next MessagePack structure to be read.
 	/// </summary>
 	/// <param name="context">The serialization context. Used for the stack guard.</param>
-	/// <returns><see langword="true"/> if the entire structure beginning at the current <see cref="Position"/> is found in the <see cref="Sequence"/>; <see langword="false"/> otherwise.</returns>
+	/// <returns><see langword="true"/> if the entire structure beginning at the current <see cref="Reader.Position"/> is found in the <see cref="Reader.Sequence"/>; <see langword="false"/> otherwise.</returns>
 	/// <remarks>
 	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
-	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw(SerializationContext)"/> instead.
+	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw(ref Reader, SerializationContext)"/> instead.
 	/// </remarks>
 	internal bool TrySkip(ref Reader reader, SerializationContext context)
 	{
@@ -371,7 +358,7 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return true;
 			case DecodeResult.TokenMismatch:
-				throw this.StreamingDeformatter.ThrowInvalidCode(this.PeekNextCode(reader));
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
 				return false;

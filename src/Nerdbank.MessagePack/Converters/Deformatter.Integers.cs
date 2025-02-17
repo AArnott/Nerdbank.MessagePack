@@ -14,11 +14,9 @@ namespace Nerdbank.PolySerializer.Converters;
 public partial class Deformatter
 {
 	/// <summary>
-	/// Reads an <see cref="Byte"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="Byte"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Byte ReadByte(ref Reader reader)
@@ -38,11 +36,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads an <see cref="UInt16"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="UInt16"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public UInt16 ReadUInt16(ref Reader reader)
@@ -62,11 +58,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads an <see cref="UInt32"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="UInt32"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public UInt32 ReadUInt32(ref Reader reader)
@@ -86,11 +80,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads an <see cref="UInt64"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="UInt64"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public UInt64 ReadUInt64(ref Reader reader)
@@ -110,11 +102,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads an <see cref="SByte"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="SByte"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public SByte ReadSByte(ref Reader reader)
@@ -134,11 +124,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads an <see cref="Int16"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="Int16"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Int16 ReadInt16(ref Reader reader)
@@ -158,11 +146,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads an <see cref="Int32"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="Int32"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Int32 ReadInt32(ref Reader reader)
@@ -182,11 +168,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads an <see cref="Int64"/> value from:
-	/// Some value between <see cref="MessagePackCode.MinNegativeFixInt"/> and <see cref="MessagePackCode.MaxNegativeFixInt"/>,
-	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
-	/// or any of the other MsgPack integer types.
+	/// Reads an <see cref="Int64"/> value.
 	/// </summary>
+	/// <param name="reader">The reader.</param>
 	/// <returns>The value.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
 	public Int64 ReadInt64(ref Reader reader)

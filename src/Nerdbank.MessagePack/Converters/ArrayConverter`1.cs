@@ -81,7 +81,7 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 			{
 				Writer syncWriter = writer.CreateWriter();
 				syncWriter.WriteArrayHeader(value.Length);
-				for (; progress < value.Length && !writer.IsTimeToFlush(context); progress++)
+				for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
 				{
 					elementConverter.Write(ref syncWriter, value[progress], context);
 					context.CancellationToken.ThrowIfCancellationRequested();

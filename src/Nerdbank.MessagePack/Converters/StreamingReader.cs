@@ -146,8 +146,6 @@ public ref partial struct StreamingReader
 		Deformatter = this.reader.Deformatter,
 	};
 
-	public DecodeResult TryPeekNextCode(out byte code) => this.StreamingDeformatter.TryPeekNextCode(this.reader, out code);
-
 	public DecodeResult TryPeekNextCode(out TypeCode typeCode) => this.StreamingDeformatter.TryPeekNextCode(this.reader, out typeCode);
 
 	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawMsgPack) => this.StreamingDeformatter.TryReadRaw(ref this.reader, length, out rawMsgPack);

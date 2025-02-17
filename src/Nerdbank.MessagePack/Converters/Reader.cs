@@ -43,9 +43,7 @@ public ref struct Reader
 
 	public Deformatter Deformatter => this.deformatter;
 
-	public byte NextCode => this.deformatter.PeekNextCode(this);
-
-	public TypeCode NextTypeCode => this.deformatter.ToTypeCode(this.NextCode);
+	public TypeCode NextTypeCode => this.deformatter.PeekNextCode(this);
 
 	public bool IsNull => this.NextTypeCode == TypeCode.Nil;
 

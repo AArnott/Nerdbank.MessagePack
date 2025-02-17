@@ -17,28 +17,7 @@ public abstract record StreamingDeformatter
 
 	public abstract Encoding Encoding { get; }
 
-	/// <summary>
-	/// Peeks at the next msgpack byte without advancing the reader.
-	/// </summary>
-	/// <param name="code">When successful, receives the next msgpack byte.</param>
-	/// <returns>The success or error code.</returns>
-	public DecodeResult TryPeekNextCode(in Reader reader, out byte code)
-	{
-		return reader.SequenceReader.TryPeek(out code) ? DecodeResult.Success : this.InsufficientBytes(reader);
-	}
-
-	public DecodeResult TryPeekNextCode(in Reader reader, out TypeCode typeCode)
-	{
-		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
-		if (result != DecodeResult.Success)
-		{
-			typeCode = default;
-			return result;
-		}
-
-		typeCode = this.ToTypeCode(code);
-		return DecodeResult.Success;
-	}
+	public abstract DecodeResult TryPeekNextCode(in Reader reader, out TypeCode typeCode);
 
 	public abstract DecodeResult TryReadNull(ref Reader reader);
 
@@ -90,10 +69,6 @@ public abstract record StreamingDeformatter
 	/// <returns>The success or error code.</returns>
 	public abstract DecodeResult TryReadRaw(ref Reader reader, long length, out ReadOnlySequence<byte> rawMsgPack);
 
-	public abstract string ToFormatName(byte code);
-
-	public abstract TypeCode ToTypeCode(byte code);
-
 	/// <summary>
 	/// Tests whether the next token is an integer which <em>may</em> be negative.
 	/// </summary>
@@ -121,16 +96,10 @@ public abstract record StreamingDeformatter
 	/// <summary>
 	/// Throws an <see cref="SerializationException"/> explaining an unexpected code was encountered.
 	/// </summary>
-	/// <param name="code">The code that was encountered.</param>
+	/// <param name="reader">The reader positioned at the unexpected token.</param>
 	/// <returns>Nothing. This method always throws.</returns>
 	[DoesNotReturn]
-	protected internal Exception ThrowInvalidCode(byte code)
-	{
-		throw new SerializationException(string.Format("Unexpected code {0} ({1}) encountered.", code, this.ToFormatName(code)));
-	}
-
-	[DoesNotReturn]
-	protected internal Exception ThrowInvalidCode(in Reader reader) => this.ThrowInvalidCode(this.TryPeekNextCode(reader, out byte code) == DecodeResult.Success ? code : throw new InvalidOperationException());
+	protected internal abstract Exception ThrowInvalidCode(in Reader reader);
 
 	/// <summary>
 	/// Gets the error code to return when the buffer has insufficient bytes to finish a decode request.
