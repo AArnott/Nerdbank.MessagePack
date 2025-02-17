@@ -21,9 +21,9 @@ public abstract partial record SerializerBase
 {
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
-	internal SerializerBase(IReferencePreservingManager referencePreservingManager)
+	internal SerializerBase(ConverterCache converterCache)
 	{
-		this.ConverterCache = new(referencePreservingManager);
+		this.ConverterCache = converterCache;
 	}
 
 	/// <inheritdoc cref="ConverterCache.InternStrings"/>

@@ -7,11 +7,12 @@ using PolyType.Utilities;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
-internal class MessagePackVisitor(ConverterCache owner, TypeGenerationContext context) : StandardVisitor(owner, context)
+internal class MessagePackVisitor(ConverterCache owner, TypeGenerationContext context, MsgPackFormatter formatter, MsgPackDeformatter deformatter)
+	: StandardVisitor(owner, context)
 {
-	internal override Formatter Formatter => MessagePackSerializer.MyFormatter;
+	internal override Formatter Formatter => formatter;
 
-	internal override Deformatter Deformatter => MessagePackSerializer.MyDeformatter;
+	internal override Deformatter Deformatter => deformatter;
 
 	protected override bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter)
 	{

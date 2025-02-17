@@ -5,7 +5,6 @@
 
 using System.Globalization;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -28,17 +27,21 @@ public partial record MessagePackSerializer : SerializerBase
 	internal override ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; } = new(() => new ReferenceEqualityTracker());
 
 	public MessagePackSerializer()
-		: base(MsgPackReferencePreservingManager.Instance)
+		: base(new MsgPackConverterCache(MsgPackFormatter.Default, MsgPackDeformatter.Default))
 	{
 	}
 
-	internal static MsgPackFormatter MyFormatter => MsgPackFormatter.Default;
-
 	internal static MsgPackDeformatter MyDeformatter => MsgPackDeformatter.Default;
 
-	protected override Formatter Formatter => MyFormatter;
+	internal new MsgPackConverterCache ConverterCache
+	{
+		get => (MsgPackConverterCache)base.ConverterCache;
+		init => base.ConverterCache = value;
+	}
 
-	protected override Deformatter Deformatter => MyDeformatter;
+	protected override Formatter Formatter => this.ConverterCache.Formatter;
+
+	protected override Deformatter Deformatter => this.ConverterCache.Deformatter;
 
 	internal static MsgPackStreamingDeformatter StreamingDeformatter => MsgPackStreamingDeformatter.Default;
 

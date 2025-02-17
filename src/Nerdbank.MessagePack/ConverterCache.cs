@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
 using PolyType.Utilities;
 
 namespace Nerdbank.PolySerializer;
@@ -20,11 +19,10 @@ namespace Nerdbank.PolySerializer;
 /// This ensures that properties on <see cref="MessagePackSerializer"/> cannot serve as inputs to the converters.
 /// Thus, the only properties that should reset the <see cref="cachedConverters"/> are those declared on this type.
 /// </remarks>
-internal record class ConverterCache
+internal abstract record ConverterCache
 {
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
 	private readonly ConcurrentDictionary<Type, IKnownSubTypeMapping> userProvidedKnownSubTypes = new();
-
 	private MultiProviderTypeCache? cachedConverters;
 
 #if NET
@@ -216,7 +214,7 @@ internal record class ConverterCache
 					DelayedValueFactory = new DelayedConverterFactory(),
 					ValueBuilderFactory = ctx =>
 					{
-						StandardVisitor standardVisitor = new MessagePackVisitor(this, ctx);
+						StandardVisitor standardVisitor = this.CreateStandardVisitor(ctx);
 						if (!this.PreserveReferences)
 						{
 							return standardVisitor;
@@ -232,6 +230,8 @@ internal record class ConverterCache
 			return this.cachedConverters;
 		}
 	}
+
+	protected abstract StandardVisitor CreateStandardVisitor(TypeGenerationContext context);
 
 	private IReferencePreservingManager? ReferencePreservationIfApplicable => this.preserveReferences ? this.ReferencePreservingManager! : null;
 
