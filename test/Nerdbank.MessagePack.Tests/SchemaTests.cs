@@ -315,7 +315,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 			foreach (T? item in sampleData)
 			{
 				byte[] msgpack = this.Serializer.Serialize(item);
-				string json = MessagePackSerializer.ConvertToJson(msgpack);
+				string json = new JsonExporter(this.Serializer).ConvertToJson(msgpack);
 				this.Logger.WriteLine($"Sample data {++sampleCounter}:");
 				var parsed = JsonNode.Parse(json);
 				this.Logger.WriteLine(parsed is null ? "null" : parsed.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));

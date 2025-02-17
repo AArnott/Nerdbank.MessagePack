@@ -339,6 +339,38 @@ public partial class Deformatter
 
 	public TypeCode ToTypeCode(byte code) => this.StreamingDeformatter.ToTypeCode(code);
 
+	public bool PeekIsSignedInteger(in Reader reader)
+	{
+		switch (this.StreamingDeformatter.TryPeekIsSignedInteger(reader, out bool signed))
+		{
+			case DecodeResult.Success:
+				return signed;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	public bool PeekIsFloat32(in Reader reader)
+	{
+		switch (this.StreamingDeformatter.TryPeekIsFloat32(reader, out bool float32))
+		{
+			case DecodeResult.Success:
+				return float32;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
 	/// <summary>
 	/// Advances the reader to the next MessagePack structure to be read.
 	/// </summary>

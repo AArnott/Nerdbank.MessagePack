@@ -21,6 +21,47 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 	public override string ToFormatName(byte code) => MessagePackCode.ToFormatName(code);
 
+	public override DecodeResult TryPeekIsFloat32(in Reader reader, out bool float32)
+	{
+		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
+		if (result != DecodeResult.Success)
+		{
+			float32 = false;
+			return result;
+		}
+
+		switch (code)
+		{
+			case MessagePackCode.Float32:
+				float32 = true;
+				return DecodeResult.Success;
+			case MessagePackCode.Float64:
+				float32 = false;
+				return DecodeResult.Success;
+			default:
+				float32 = false;
+				return DecodeResult.TokenMismatch;
+		}
+	}
+
+	public override DecodeResult TryPeekIsSignedInteger(in Reader reader, out bool signed)
+	{
+		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
+		if (result != DecodeResult.Success)
+		{
+			signed = false;
+			return result;
+		}
+
+		signed = MessagePackCode.IsSignedInteger(code);
+		if (!signed && MessagePackCode.ToMessagePackType(code) != MessagePackType.Integer)
+		{
+			return DecodeResult.TokenMismatch;
+		}
+
+		return DecodeResult.Success;
+	}
+
 	public override DecodeResult TryReadArrayHeader(ref Reader reader, out int count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);

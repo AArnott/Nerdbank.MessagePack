@@ -5,6 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 
 public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
+	public JsonExporter JsonExporter => new(this.Serializer);
+
 	[Fact]
 	public void Null() => this.AssertConvertToJson<Primitives>("null", null);
 
@@ -21,7 +23,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 	/// Verifies the behavior of the simpler method that takes a buffer and returns a string.
 	/// </summary>
 	[Fact]
-	public void Sequence() => Assert.Equal("null", MessagePackSerializer.ConvertToJson(new([0xc0])));
+	public void Sequence() => Assert.Equal("null", this.JsonExporter.ConvertToJson(new([0xc0])));
 
 	[Fact]
 	public void Indented_Object_Tabs()
@@ -139,7 +141,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 			new() { Indentation = "\t", TrailingCommas = true });
 	}
 
-	private void AssertConvertToJson<T>([StringSyntax("json")] string expected, T? value, MessagePackSerializer.JsonOptions? options = null)
+	private void AssertConvertToJson<T>([StringSyntax("json")] string expected, T? value, JsonExporter.JsonOptions? options = null)
 #if NET
 		where T : IShapeable<T>
 #endif
@@ -149,7 +151,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 		Assert.Equal(expected, json);
 	}
 
-	private void AssertConvertToJson5<T>([StringSyntax("json5")] string expected, T? value, MessagePackSerializer.JsonOptions? options = null)
+	private void AssertConvertToJson5<T>([StringSyntax("json5")] string expected, T? value, JsonExporter.JsonOptions? options = null)
 #if NET
 		where T : IShapeable<T>
 #endif
@@ -159,7 +161,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 		Assert.Equal(expected, json);
 	}
 
-	private string ConvertToJson<T>(T? value, MessagePackSerializer.JsonOptions? options)
+	private string ConvertToJson<T>(T? value, JsonExporter.JsonOptions? options)
 #if NET
 		where T : IShapeable<T>
 #endif
@@ -172,7 +174,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 #endif
 		StringWriter jsonWriter = new();
 		Reader reader = new(sequence, MsgPackDeformatter.Default);
-		MessagePackSerializer.ConvertToJson(ref reader, jsonWriter, options);
+		this.JsonExporter.ConvertToJson(ref reader, jsonWriter, options);
 		return jsonWriter.ToString();
 	}
 

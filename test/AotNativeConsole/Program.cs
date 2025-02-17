@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO.Pipelines;
+using Nerdbank.PolySerializer;
 using Nerdbank.PolySerializer.MessagePack;
 using PolyType;
 
@@ -14,7 +15,7 @@ MessagePackSerializer serializer = new();
 
 byte[] bytes = serializer.Serialize(tree);
 
-Console.WriteLine(MessagePackSerializer.ConvertToJson(bytes));
+Console.WriteLine(new JsonExporter(serializer).ConvertToJson(bytes));
 
 // synchronous deserialization
 Tree deserializedTree = serializer.Deserialize<Tree>(bytes)!;

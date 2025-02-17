@@ -2,13 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using Nerdbank.PolySerializer.Converters;
 
 namespace CustomConverter
 {
     #region YourOwnConverter
-    using Nerdbank.PolySerializer;
-
     public record Foo(int MyProperty1, string? MyProperty2);
 
     class FooConverter : Converter<Foo?>
@@ -468,7 +465,7 @@ namespace Stateful
             SpecialType original = new(5);
             Console.WriteLine($"Original value: {original}");
             byte[] msgpack = serializer.Serialize(original);
-            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            Console.WriteLine(new JsonExporter(serializer).ConvertToJson(msgpack));
             SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack);
             Console.WriteLine($"Deserialized value: {deserialized}");
         }
@@ -510,7 +507,7 @@ namespace Stateful
             SpecialType original = new(5);
             Console.WriteLine($"Original value: {original}");
             byte[] msgpack = serializer.Serialize(original, Witness.ShapeProvider);
-            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            Console.WriteLine(new JsonExporter(serializer).ConvertToJson(msgpack));
             SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack, Witness.ShapeProvider);
             Console.WriteLine($"Deserialized value: {deserialized}");
         }

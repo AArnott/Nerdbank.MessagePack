@@ -99,9 +99,9 @@ public abstract partial record SerializerBase
 
 	internal ConverterCache ConverterCache { get; init; }
 
-	protected abstract Formatter Formatter { get; }
+	protected internal abstract Formatter Formatter { get; }
 
-	protected abstract Deformatter Deformatter { get; }
+	protected internal abstract Deformatter Deformatter { get; }
 
 	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(MessagePackConverter{T})"/>
 	public void RegisterConverter<T>(Converter<T> converter) => this.ConverterCache.RegisterConverter(converter);
@@ -302,6 +302,28 @@ public abstract partial record SerializerBase
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.GetConverter<TElement>(provider), cancellationToken);
+
+	/// <summary>
+	/// A best-effort (possibly lossy or un-parseable) attempt to translate the structure
+	/// at the current reader position into a JSON token.
+	/// </summary>
+	/// <param name="reader">The reader. This should only be advanced by one structure.</param>
+	/// <param name="writer">The writer to emit JSON to.</param>
+	/// <remarks>
+	/// <para>
+	/// Overridding methods need only handle tokens that would be <see cref="Converters.TypeCode.Unknown"/>,
+	/// since format-agnostic token types are already handled by the caller.
+	/// </para>
+	/// <para>
+	/// When writing a JSON string, implementations should take care to apply proper JSON escaping as required.
+	/// </para>
+	/// </remarks>
+	protected internal virtual void RenderAsJson(ref Reader reader, TextWriter writer)
+	{
+		writer.Write('"');
+		writer.Write(Convert.ToBase64String(reader.ReadRaw(this.StartingContext).ToArray()));
+		writer.Write('"');
+	}
 
 	/// <summary>
 	/// Deserializes a sequence of values such that each element is produced individually.

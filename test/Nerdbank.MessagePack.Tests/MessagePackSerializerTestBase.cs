@@ -211,6 +211,6 @@ public abstract class MessagePackSerializerTestBase
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
 	{
-		this.logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));
+		this.logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(msgPack));
 	}
 }
