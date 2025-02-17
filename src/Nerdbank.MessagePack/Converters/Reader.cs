@@ -110,8 +110,6 @@ public ref struct Reader
 
 	public double ReadDouble() => this.deformatter.ReadDouble(ref this);
 
-	public DateTime ReadDateTime() => this.deformatter.ReadDateTime(ref this);
-
 	public ReadOnlySequence<byte> ReadRaw(SerializationContext context) => this.deformatter.ReadRaw(ref this, context);
 
 	public ReadOnlySequence<byte> ReadRaw(long length) => this.deformatter.ReadRaw(ref this, length);

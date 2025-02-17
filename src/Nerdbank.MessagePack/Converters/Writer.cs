@@ -89,8 +89,6 @@ public ref struct Writer
 
 	public void Write(scoped ReadOnlySpan<char> value) => this.Formatter.Write(ref this, value);
 
-	public void Write(DateTime value) => this.Formatter.Write(ref this, value);
-
 	/// <summary>
 	/// Writes a pre-encoded msgpack string.
 	/// </summary>

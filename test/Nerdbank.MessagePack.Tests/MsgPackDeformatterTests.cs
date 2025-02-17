@@ -353,7 +353,6 @@ public partial class MsgPackDeformatterTests
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadByte());
 		AssertIncomplete((ref Writer writer) => writer.WriteEncodedString(Encoding.UTF8.GetBytes("hi")), (ref Reader reader) => reader.ReadBytes());
 		AssertIncomplete((ref Writer writer) => writer.Write('c'), (ref Reader reader) => reader.ReadChar());
-		AssertIncomplete((ref Writer writer) => writer.Write(DateTime.Now), (ref Reader reader) => reader.ReadDateTime());
 		AssertIncomplete((ref Writer writer) => writer.Write(double.MaxValue), (ref Reader reader) => reader.ReadDouble());
 		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer, new Extension(5, new byte[3])), (ref Reader reader) => Deformatter.ReadExtension(ref reader));
 		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer, new ExtensionHeader(5, 3)), (ref Reader reader) => Deformatter.ReadExtensionHeader(ref reader));

@@ -17,7 +17,6 @@ namespace Nerdbank.PolySerializer.Converters;
 /// <summary>
 /// Serializes a <see cref="string"/>.
 /// </summary>
-[GeneralWithFormatterSpecialCasing]
 internal class StringConverter : Converter<string>
 {
 #if NET
@@ -52,68 +51,21 @@ internal class StringConverter : Converter<string>
 		}
 
 		string result;
-		if (reader.Deformatter.StreamingDeformatter is MessagePack.MsgPackStreamingDeformatter msgpackDeformatter)
+		bool contiguous;
+		ReadOnlySpan<byte> bytesSpan;
+		while (streamingReader.TryReadStringSpan(out contiguous, out bytesSpan).NeedsMoreBytes())
 		{
-			uint length;
-			while (msgpackDeformatter.TryReadStringHeader(ref streamingReader.Reader, out length).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
 
-			if (streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> utf8BytesSequence).NeedsMoreBytes())
-			{
-				uint remainingBytesToDecode = length;
-				using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
-				Sequence<char> charSequence = sequenceRental.Value;
-
-				Decoder decoder = reader.Deformatter.Encoding.GetDecoder();
-				while (remainingBytesToDecode > 0)
-				{
-					// We'll always require at least a reasonable number of bytes to decode at once,
-					// to keep overhead to a minimum.
-					uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
-					if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
-					{
-						// We don't have enough bytes to decode this round. Fetch more.
-						streamingReader = new(await streamingReader.FetchMoreBytesAsync(desiredBytesThisRound).ConfigureAwait(false));
-					}
-
-					int thisLoopLength = unchecked((int)Math.Min(int.MaxValue, Math.Min(checked((uint)streamingReader.SequenceReader.Remaining), remainingBytesToDecode)));
-					Assumes.True(streamingReader.TryReadRaw(thisLoopLength, out utf8BytesSequence) == DecodeResult.Success);
-					bool flush = utf8BytesSequence.Length == remainingBytesToDecode;
-					decoder.Convert(utf8BytesSequence, charSequence, flush, out _, out _);
-					remainingBytesToDecode -= checked((uint)utf8BytesSequence.Length);
-				}
-
-				result = string.Create(
-					checked((int)charSequence.Length),
-					charSequence,
-					static (span, seq) => seq.AsReadOnlySequence.CopyTo(span));
-			}
-			else
-			{
-				// We happened to get all bytes at once. Decode now.
-				result = reader.Deformatter.Encoding.GetString(utf8BytesSequence);
-			}
+		if (contiguous)
+		{
+			result = reader.Deformatter.Encoding.GetString(bytesSpan);
 		}
 		else
 		{
-			bool contiguous;
-			ReadOnlySpan<byte> bytesSpan;
-			while (streamingReader.TryReadStringSpan(out contiguous, out bytesSpan).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
-			if (contiguous)
-			{
-				result = reader.Deformatter.Encoding.GetString(bytesSpan);
-			}
-			else
-			{
-				Assumes.True(streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> bytesSequence) == DecodeResult.Success);
-				result = reader.Deformatter.Encoding.GetString(bytesSequence);
-			}
+			Assumes.True(streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> bytesSequence) == DecodeResult.Success);
+			result = reader.Deformatter.Encoding.GetString(bytesSequence);
 		}
 
 		reader.ReturnReader(ref streamingReader);
@@ -672,59 +624,6 @@ internal class BigIntegerConverter : Converter<BigInteger>
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		=> CreateBase64EncodedBinarySchema("The binary representation of a BigInteger.");
-}
-
-/// <summary>
-/// Serializes <see cref="DateTime"/> values.
-/// </summary>
-internal class DateTimeConverter : Converter<DateTime>
-{
-	/// <inheritdoc/>
-	public override DateTime Read(ref Reader reader, SerializationContext context) => reader.ReadDateTime();
-
-	/// <inheritdoc/>
-	public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => writer.Write(value);
-
-	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => MessagePack.MessagePackConverter.CreateMsgPackExtensionSchema(MessagePack.ReservedMessagePackExtensionTypeCode.DateTime);
-}
-
-/// <summary>
-/// Serializes <see cref="DateTimeOffset"/> values.
-/// </summary>
-internal class DateTimeOffsetConverter : Converter<DateTimeOffset>
-{
-	/// <inheritdoc/>
-	public override DateTimeOffset Read(ref Reader reader, SerializationContext context)
-	{
-		int count = reader.ReadArrayHeader();
-		if (count != 2)
-		{
-			throw new SerializationException("Expected array of length 2.");
-		}
-
-		DateTime utcDateTime = reader.ReadDateTime();
-		short offsetMinutes = reader.ReadInt16();
-		return new DateTimeOffset(utcDateTime.Ticks, TimeSpan.FromMinutes(offsetMinutes));
-	}
-
-	/// <inheritdoc/>
-	public override void Write(ref Writer writer, in DateTimeOffset value, SerializationContext context)
-	{
-		writer.WriteArrayHeader(2);
-		writer.Write(new DateTime(value.Ticks, DateTimeKind.Utc));
-		writer.Write((short)value.Offset.TotalMinutes);
-	}
-
-	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
-		{
-			["type"] = "array",
-			["items"] = new JsonArray(
-				MessagePack.MessagePackConverter.CreateMsgPackExtensionSchema(MessagePack.ReservedMessagePackExtensionTypeCode.DateTime),
-				new JsonObject { ["type"] = "integer" }),
-		};
 }
 
 #if NET

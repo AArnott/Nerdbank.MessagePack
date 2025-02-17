@@ -8,7 +8,7 @@ public class ArchitectureRules(ITestOutputHelper logger)
 	[Fact]
 	public void FormatAgnosticism()
 	{
-		IReadOnlyList<string> failingTypeNames =
+		IReadOnlyList<string>? failingTypeNames =
 			Types.InAssembly(typeof(MessagePackSerializer).Assembly)
 				.That()
 				.ResideInNamespace("Nerdbank.PolySerializer")
@@ -21,11 +21,14 @@ public class ArchitectureRules(ITestOutputHelper logger)
 				.GetResult()
 				.FailingTypeNames;
 
-		foreach (string name in failingTypeNames)
+		if (failingTypeNames is not null)
 		{
-			logger.WriteLine(name);
-		}
+			foreach (string name in failingTypeNames)
+			{
+				logger.WriteLine(name);
+			}
 
-		Assert.Empty(failingTypeNames);
+			Assert.Empty(failingTypeNames);
+		}
 	}
 }

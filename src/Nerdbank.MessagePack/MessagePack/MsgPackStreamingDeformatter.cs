@@ -345,7 +345,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
-	public override DecodeResult TryRead(ref Reader reader, out DateTime value)
+	public DecodeResult TryRead(ref Reader reader, out DateTime value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)

@@ -40,28 +40,13 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 	}
 
+	protected ConverterCache ConverterCache => this.owner;
+
 	internal abstract Formatter Formatter { get; }
 
 	internal abstract Deformatter Deformatter { get; }
 
-	protected virtual bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(true)] out Converter<T>? converter)
-	{
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(out converter))
-		{
-			if (preserveReferences)
-			{
-				Verify.Operation(this.owner.ReferencePreservingManager is not null, "This serializer does not support reference preservation.");
-				converter = this.owner.ReferencePreservingManager.WrapWithReferencePreservingConverter(converter);
-			}
-
-			return true;
-		}
-		else
-		{
-			converter = null;
-			return false;
-		}
-	}
+	protected virtual bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter) => PrimitiveConverterLookup.TryGetPrimitiveConverter(out converter);
 
 	/// <summary>
 	/// Gets or sets the visitor that will be used to generate converters for new types that are encountered.
@@ -87,8 +72,14 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Check if the type has a built-in converter.
-		if (this.TryGetPrimitiveConverter(this.owner.PreserveReferences, out Converter<T>? defaultConverter))
+		if (this.TryGetPrimitiveConverter(out Converter<T>? defaultConverter))
 		{
+			if (this.owner.PreserveReferences)
+			{
+				Verify.Operation(this.owner.ReferencePreservingManager is not null, "This serializer does not support reference preservation.");
+				defaultConverter = this.owner.ReferencePreservingManager.WrapWithReferencePreservingConverter(defaultConverter);
+			}
+
 			return defaultConverter;
 		}
 

@@ -12,40 +12,14 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace Nerdbank.PolySerializer.MessagePack.Converters;
 
 <#
 var convertersByType = new List<ConverterInfo>
 {
-	new ConverterInfo("char", "CharConverter"),
-	new ConverterInfo("byte", "ByteConverter"),
-	new ConverterInfo("sbyte", "SByteConverter"),
-	new ConverterInfo("short", "Int16Converter"),
-	new ConverterInfo("ushort", "UInt16Converter"),
-	new ConverterInfo("int", "Int32Converter"),
-	new ConverterInfo("uint", "UInt32Converter"),
-	new ConverterInfo("long", "Int64Converter"),
-	new ConverterInfo("ulong", "UInt64Converter"),
-	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerConverter"),
-	new ConverterInfo("bool", "BooleanConverter"),
-	new ConverterInfo("float", "SingleConverter"),
-	new ConverterInfo("double", "DoubleConverter"),
-	new ConverterInfo("decimal", "DecimalConverter"),
-	new ConverterInfo("TimeSpan", "TimeSpanConverter"),
-	new ConverterInfo("Guid", "GuidConverter"),
-	new ConverterInfo("System.Text.Rune", "RuneConverter", "NET"),
-	new ConverterInfo("Int128", "Int128Converter", "NET"),
-	new ConverterInfo("UInt128", "UInt128Converter", "NET"),
-	new ConverterInfo("Half", "HalfConverter", "NET"),
-	new ConverterInfo("TimeOnly", "TimeOnlyConverter", "NET"),
-	new ConverterInfo("DateOnly", "DateOnlyConverter", "NET"),
-	new ConverterInfo("System.Drawing.Color", "SystemDrawingColorConverter"),
-	new ConverterInfo("Memory<byte>", "MemoryOfByteConverter"),
-	new ConverterInfo("ReadOnlyMemory<byte>", "ReadOnlyMemoryOfByteConverter"),
+	new ConverterInfo("DateTime", "DateTimeConverter"),
+	new ConverterInfo("DateTimeOffset", "DateTimeOffsetConverter"),
 	new ConverterInfo("string", "StringConverter", IsRefType: true),
-	new ConverterInfo("Version", "VersionConverter", IsRefType: true),
-	new ConverterInfo("Uri", "UriConverter", IsRefType: true),
-	new ConverterInfo("byte[]", "ByteArrayConverter", IsRefType: true),
 };
 #>
 /// <summary>
@@ -58,7 +32,7 @@ var convertersByType = new List<ConverterInfo>
 /// JIT/AOT compiler the opportunity to only reference types that match the type argument
 /// (at least for the value types).
 /// </remarks>
-internal static class PrimitiveConverterLookup
+internal static class MsgPackPrimitiveConverterLookup
 {
 <# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
 	 if (converterGroup.Key is not null) { #>

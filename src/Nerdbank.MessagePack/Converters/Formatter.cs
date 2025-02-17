@@ -84,8 +84,6 @@ public abstract record Formatter
 
 	public abstract void Write(ref Writer writer, ReadOnlySequence<byte> value);
 
-	public abstract void Write(ref Writer writer, DateTime value);
-
 	/// <summary>
 	/// Get the number of bytes required to format a value.
 	/// </summary>

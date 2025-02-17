@@ -37,8 +37,6 @@ internal static class PrimitiveConverterLookup
 	private static Converter? _SingleConverter;
 	private static Converter? _DoubleConverter;
 	private static Converter? _DecimalConverter;
-	private static Converter? _DateTimeConverter;
-	private static Converter? _DateTimeOffsetConverter;
 	private static Converter? _TimeSpanConverter;
 	private static Converter? _GuidConverter;
 	private static Converter? _SystemDrawingColorConverter;
@@ -146,18 +144,6 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(decimal))
 		{
 			converter = (Converter<T>)(_DecimalConverter ??= new DecimalConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(DateTime))
-		{
-			converter = (Converter<T>)(_DateTimeConverter ??= new DateTimeConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(DateTimeOffset))
-		{
-			converter = (Converter<T>)(_DateTimeOffsetConverter ??= new DateTimeOffsetConverter());
 			return true;
 		}
 

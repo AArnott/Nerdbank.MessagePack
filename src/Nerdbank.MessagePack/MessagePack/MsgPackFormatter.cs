@@ -343,11 +343,11 @@ public record MsgPackFormatter : Formatter
 	/// </summary>
 	/// <param name="dateTime">The value to write.</param>
 	/// <exception cref="NotSupportedException">Thrown when <see cref="OldSpec"/> is true because the old spec does not define a <see cref="DateTime"/> format.</exception>
-	public override void Write(ref Writer writer, DateTime value)
+	public void Write(ref Writer writer, DateTime value)
 	{
 		if (this.OldSpec)
 		{
-			throw new NotSupportedException($"The MsgPack spec does not define a format for {nameof(DateTime)} in {nameof(this.OldSpec)} mode. Turn off {nameof(this.OldSpec)} mode or use NativeDateTimeFormatter.");
+			throw new NotSupportedException($"The MsgPack spec does not define a format for {nameof(DateTime)} in {nameof(this.OldSpec)} mode. Turn off {nameof(this.OldSpec)} mode.");
 		}
 		else
 		{
