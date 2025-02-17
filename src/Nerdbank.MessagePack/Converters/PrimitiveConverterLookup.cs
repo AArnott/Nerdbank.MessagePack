@@ -45,13 +45,9 @@ internal static class PrimitiveConverterLookup
 	private static Converter? _MemoryOfByteConverter;
 	private static Converter? _ReadOnlyMemoryOfByteConverter;
 	private static Converter? _StringConverter;
-	private static Converter? _StringConverterReferencePreserving;
 	private static Converter? _VersionConverter;
-	private static Converter? _VersionConverterReferencePreserving;
 	private static Converter? _UriConverter;
-	private static Converter? _UriConverterReferencePreserving;
 	private static Converter? _ByteArrayConverter;
-	private static Converter? _ByteArrayConverterReferencePreserving;
 #if NET
 	private static Converter? _RuneConverter;
 	private static Converter? _Int128Converter;
@@ -65,10 +61,9 @@ internal static class PrimitiveConverterLookup
 	/// Gets a built-in converter for the given type, if one is available.
 	/// </summary>
 	/// <typeparam name="T">The type to get a converter for.</typeparam>
-	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
 	/// <param name="converter">Receives the converter, if one is available.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
-	internal static bool TryGetPrimitiveConverter<T>(bool referencePreserving, [NotNullWhen(true)] out Converter<T>? converter)
+	internal static bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
 	{
 		if (typeof(T) == typeof(char))
 		{
@@ -198,57 +193,25 @@ internal static class PrimitiveConverterLookup
 
 		if (typeof(T) == typeof(string))
 		{
-			if (referencePreserving)
-			{
-				converter = (Converter<T>)(_StringConverterReferencePreserving ??= new StringConverter().WrapWithReferencePreservation());
-			}
-			else
-			{
-				converter = (Converter<T>)(_StringConverter ??= new StringConverter());
-			}
-
+			converter = (Converter<T>)(_StringConverter ??= new StringConverter());
 			return true;
 		}
 
 		if (typeof(T) == typeof(Version))
 		{
-			if (referencePreserving)
-			{
-				converter = (Converter<T>)(_VersionConverterReferencePreserving ??= new VersionConverter().WrapWithReferencePreservation());
-			}
-			else
-			{
-				converter = (Converter<T>)(_VersionConverter ??= new VersionConverter());
-			}
-
+			converter = (Converter<T>)(_VersionConverter ??= new VersionConverter());
 			return true;
 		}
 
 		if (typeof(T) == typeof(Uri))
 		{
-			if (referencePreserving)
-			{
-				converter = (Converter<T>)(_UriConverterReferencePreserving ??= new UriConverter().WrapWithReferencePreservation());
-			}
-			else
-			{
-				converter = (Converter<T>)(_UriConverter ??= new UriConverter());
-			}
-
+			converter = (Converter<T>)(_UriConverter ??= new UriConverter());
 			return true;
 		}
 
 		if (typeof(T) == typeof(byte[]))
 		{
-			if (referencePreserving)
-			{
-				converter = (Converter<T>)(_ByteArrayConverterReferencePreserving ??= new ByteArrayConverter().WrapWithReferencePreservation());
-			}
-			else
-			{
-				converter = (Converter<T>)(_ByteArrayConverter ??= new ByteArrayConverter());
-			}
-
+			converter = (Converter<T>)(_ByteArrayConverter ??= new ByteArrayConverter());
 			return true;
 		}
 

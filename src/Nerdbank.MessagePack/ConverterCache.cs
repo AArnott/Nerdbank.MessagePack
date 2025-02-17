@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft;
-using Nerdbank.PolySerializer.Converters;
 using Nerdbank.PolySerializer.MessagePack;
 using PolyType.Utilities;
 
@@ -38,6 +37,13 @@ internal record class ConverterCache
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private NamingPolicy? propertyNamingPolicy;
+
+	internal ConverterCache(IReferencePreservingManager? referencePreservingManager)
+	{
+		this.ReferencePreservingManager = referencePreservingManager;
+	}
+
+	internal IReferencePreservingManager? ReferencePreservingManager { get; }
 
 #if NET
 
@@ -81,6 +87,8 @@ internal record class ConverterCache
 		get => this.preserveReferences;
 		init
 		{
+			Verify.Operation(!value || this.ReferencePreservingManager is not null, "This format does not support reference preservation.");
+
 			if (this.ChangeSetting(ref this.preserveReferences, value))
 			{
 				// Extra steps must be taken when this property changes because
@@ -214,7 +222,7 @@ internal record class ConverterCache
 							return standardVisitor;
 						}
 
-						ReferencePreservingVisitor visitor = new(standardVisitor);
+						ReferencePreservingVisitor visitor = new(standardVisitor, this.ReferencePreservingManager!);
 						standardVisitor.OutwardVisitor = visitor;
 						return standardVisitor;
 					},
@@ -224,6 +232,8 @@ internal record class ConverterCache
 			return this.cachedConverters;
 		}
 	}
+
+	private IReferencePreservingManager? ReferencePreservationIfApplicable => this.preserveReferences ? this.ReferencePreservingManager! : null;
 
 	/// <summary>
 	/// Registers a converter for use with this serializer.
@@ -239,9 +249,7 @@ internal record class ConverterCache
 	{
 		Requires.NotNull(converter);
 		this.OnChangingConfiguration();
-		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
-			? converter.WrapWithReferencePreservation()
-			: converter;
+		this.userProvidedConverters[typeof(T)] = this.ReferencePreservationIfApplicable?.WrapWithReferencePreservingConverter(converter) ?? converter;
 	}
 
 	/// <summary>
@@ -386,10 +394,15 @@ internal record class ConverterCache
 
 	private void ReconfigureUserProvidedConverters()
 	{
-		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
+		if (this.ReferencePreservingManager is not null)
 		{
-			Converter converter = (Converter)pair.Value;
-			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
+			foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
+			{
+				Converter converter = (Converter)pair.Value;
+				this.userProvidedConverters[pair.Key] = this.PreserveReferences
+					? this.ReferencePreservingManager.WrapWithReferencePreservingConverter(converter)
+					: this.ReferencePreservingManager.UnwrapFromReferencePreservingConverter(converter);
+			}
 		}
 	}
 

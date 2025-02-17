@@ -7,7 +7,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// A visitor that wraps the result of another visitor with a reference-preserving converter.
 /// </summary>
 /// <param name="inner">The inner visitor.</param>
-internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVisitor
+internal class ReferencePreservingVisitor(ITypeShapeVisitor inner, IReferencePreservingManager manager) : TypeShapeVisitor
 {
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
@@ -19,17 +19,17 @@ internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVi
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
-		=> ((Converter)inner.VisitDictionary(dictionaryShape, state)!).WrapWithReferencePreservation();
+		=> manager.WrapWithReferencePreservingConverter((Converter)inner.VisitDictionary(dictionaryShape, state)!);
 
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
-		=> ((Converter)inner.VisitEnumerable(enumerableShape, state)!).WrapWithReferencePreservation();
+		=> manager.WrapWithReferencePreservingConverter((Converter)inner.VisitEnumerable(enumerableShape, state)!);
 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
-		=> ((Converter)inner.VisitObject(objectShape, state)!).WrapWithReferencePreservation();
+		=> manager.WrapWithReferencePreservingConverter((Converter)inner.VisitObject(objectShape, state)!);
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
-		=> ((Converter)inner.VisitSurrogate(surrogateShape, state)!).WrapWithReferencePreservation();
+		=> manager.WrapWithReferencePreservingConverter((Converter)inner.VisitSurrogate(surrogateShape, state)!);
 }

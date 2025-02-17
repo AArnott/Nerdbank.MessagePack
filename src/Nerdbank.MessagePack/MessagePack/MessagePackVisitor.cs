@@ -10,7 +10,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 internal class MessagePackVisitor : StandardVisitor
 {
 	private static readonly InterningStringConverter InterningStringConverter = new();
-	private static readonly Converter<string> ReferencePreservingInterningStringConverter = (Converter<string>)InterningStringConverter.WrapWithReferencePreservation();
+	private static readonly Converter<string> ReferencePreservingInterningStringConverter = MsgPackReferencePreservingManager.Instance.WrapWithReferencePreservingConverter(InterningStringConverter);
 
 	public MessagePackVisitor(ConverterCache owner, TypeGenerationContext context)
 		: base(owner, context)
@@ -27,9 +27,13 @@ internal class MessagePackVisitor : StandardVisitor
 
 	protected override bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(true)] out Converter<T>? converter)
 	{
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter<T>(preserveReferences, out Converter<T>? msgpackConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(out converter))
 		{
-			converter = msgpackConverter;
+			if (preserveReferences)
+			{
+				converter = MsgPackReferencePreservingManager.Instance.WrapWithReferencePreservingConverter(converter);
+			}
+
 			return true;
 		}
 		else

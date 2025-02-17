@@ -68,10 +68,7 @@ internal static class PrimitiveConverterLookup
 <#   } 
 	 foreach (var converter in converterGroup) { #>
 	private static Converter? <#=converter.FieldName#>;
-<#	  if (converter.IsRefType) { #>
-	private static Converter? <#=converter.ReferencePreservingFieldName#>;
-<#	  }
-	 }
+<#	 }
 	 if (converterGroup.Key is not null) { #>
 #endif
 <#   }
@@ -81,10 +78,9 @@ internal static class PrimitiveConverterLookup
 	/// Gets a built-in converter for the given type, if one is available.
 	/// </summary>
 	/// <typeparam name="T">The type to get a converter for.</typeparam>
-	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
 	/// <param name="converter">Receives the converter, if one is available.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
-	internal static bool TryGetPrimitiveConverter<T>(bool referencePreserving, [NotNullWhen(true)] out Converter<T>? converter)
+	internal static bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
 	{
 <# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
 	 if (converterGroup.Key is not null) { #>
@@ -93,21 +89,7 @@ internal static class PrimitiveConverterLookup
 	 foreach (var converter in converterGroup) { #>
 		if (typeof(T) == typeof(<#=converter.TypeName#>))
 		{
-<#
-	if (converter.IsRefType) {
-#>
-			if (referencePreserving)
-			{
-				converter = (Converter<T>)(<#=converter.ReferencePreservingFieldName#> ??= new <#=converter.ConverterName#>().WrapWithReferencePreservation());
-			}
-			else
-			{
-				converter = (Converter<T>)(<#=converter.FieldName#> ??= new <#=converter.ConverterName#>());
-			}
-
-<# } else { #>
 			converter = (Converter<T>)(<#=converter.FieldName#> ??= new <#=converter.ConverterName#>());
-<# } #>
 			return true;
 		}
 
@@ -124,6 +106,5 @@ internal static class PrimitiveConverterLookup
 record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false)
 {
 	internal string FieldName => $"_{ConverterName}";
-	internal string ReferencePreservingFieldName => $"{FieldName}ReferencePreserving";
 }
 #>

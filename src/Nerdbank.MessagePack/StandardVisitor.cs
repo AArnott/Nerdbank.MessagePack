@@ -581,10 +581,16 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			FormattedSubTypeAlias alias = pair.Key.Format(this.Formatter);
 			ITypeShape shape = pair.Value;
 
+			Converter converter = this.GetConverter(shape);
+
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			Converter converter = this.GetConverter(shape).UnwrapReferencePreservation();
+			if (owner.ReferencePreservingManager is not null)
+			{
+				converter = owner.ReferencePreservingManager.UnwrapFromReferencePreservingConverter(converter);
+			}
+
 			switch (alias.Type)
 			{
 				case SubTypeAlias.AliasType.Integer:

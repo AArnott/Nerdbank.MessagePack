@@ -4,7 +4,6 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.Converters;
 
@@ -105,5 +104,5 @@ public abstract class Converter<T>() : Converter(typeof(T))
 	[EditorBrowsable(EditorBrowsableState.Never)] // Use the generic methods instead.
 	public override sealed async ValueTask<object?> ReadObjectAsync(AsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
 
-	internal override Converter WrapWithReferencePreservationCore() => new ReferencePreservingConverter<T>(this);
+	internal override TResult Invoke<TState, TResult>(ITypedConverterInvoke<TState, TResult> invoker, TState state) => invoker.Invoke(this, state);
 }

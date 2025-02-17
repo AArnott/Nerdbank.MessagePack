@@ -127,7 +127,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		Converter<T> result = this.Cache.GetOrAddConverter(T.GetShape());
-		return this.ReferenceEqualityTracker is null ? result : (Converter<T>)result.WrapWithReferencePreservation();
+		return this.ReferenceEqualityTracker?.Manager.WrapWithReferencePreservingConverter(result) ?? result;
 	}
 
 	/// <summary>
@@ -145,7 +145,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		Converter<T> result = this.Cache.GetOrAddConverter(TProvider.GetShape());
-		return this.ReferenceEqualityTracker is null ? result : (Converter<T>)result.WrapWithReferencePreservation();
+		return this.ReferenceEqualityTracker?.Manager.WrapWithReferencePreservingConverter(result) ?? result;
 	}
 #endif
 
@@ -167,7 +167,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		Converter<T> result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
-		return this.ReferenceEqualityTracker is null ? result : (Converter<T>)result.WrapWithReferencePreservation();
+		return this.ReferenceEqualityTracker?.Manager.WrapWithReferencePreservingConverter(result) ?? result;
 	}
 
 	/// <summary>
@@ -183,7 +183,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		Converter result = this.Cache.GetOrAddConverter(shape);
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		return this.ReferenceEqualityTracker?.Manager.WrapWithReferencePreservingConverter(result) ?? result;
 	}
 
 	/// <summary>
@@ -200,7 +200,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		Converter result = this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
-		return this.ReferenceEqualityTracker is null ? (Converter)result : result.WrapWithReferencePreservation();
+		return this.ReferenceEqualityTracker?.Manager.WrapWithReferencePreservingConverter(result) ?? result;
 	}
 
 	/// <summary>

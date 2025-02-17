@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 using Microsoft.NET.StringTools;
+using Nerdbank.PolySerializer.MessagePack.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -19,6 +20,8 @@ internal class ReferenceEqualityTracker : IPoolableObject
 
 	/// <inheritdoc/>
 	public MessagePackSerializer? Owner { get; set; }
+
+	internal IReferencePreservingManager Manager => MsgPackReferencePreservingManager.Instance;
 
 	/// <inheritdoc/>
 	void IPoolableObject.Recycle()

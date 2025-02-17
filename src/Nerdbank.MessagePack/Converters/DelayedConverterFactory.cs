@@ -40,11 +40,5 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 		[Experimental("NBMsgPackAsync")]
 		public override ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
 			=> self.Result.WriteAsync(writer, value, context);
-
-		internal override Converter UnwrapReferencePreservation()
-			=> self.Result.UnwrapReferencePreservation();
-
-		internal override Converter WrapWithReferencePreservationCore()
-			=> self.Result.WrapWithReferencePreservation();
 	}
 }

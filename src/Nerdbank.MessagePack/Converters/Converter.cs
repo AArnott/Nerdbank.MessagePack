@@ -84,19 +84,7 @@ public abstract class Converter(Type type)
 	public virtual ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
 		=> throw this.ThrowNotSupported();
 
-	internal Converter WrapWithReferencePreservation() => type.IsValueType ? this : this.WrapWithReferencePreservationCore();
-
-	/// <summary>
-	/// Wraps this converter with a reference preservation converter.
-	/// </summary>
-	/// <returns>A converter. Possibly <see langword="this"/> if this instance is already reference preserving.</returns>
-	internal virtual Converter WrapWithReferencePreservationCore() => throw this.ThrowNotSupported();
-
-	/// <summary>
-	/// Removes the outer reference preserving converter, if present.
-	/// </summary>
-	/// <returns>The unwrapped converter.</returns>
-	internal virtual Converter UnwrapReferencePreservation() => this;
+	internal abstract TResult Invoke<TState, TResult>(ITypedConverterInvoke<TState, TResult> invoker, TState state);
 
 	/// <summary>
 	/// Transforms a JSON schema to include "null" as a possible value for the schema.
@@ -227,4 +215,9 @@ public abstract class Converter(Type type)
 
 	[DoesNotReturn]
 	protected Exception ThrowNotSupported() => throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+}
+
+public interface ITypedConverterInvoke<TState, TResult>
+{
+	TResult Invoke<T>(Converter<T> converter, TState state);
 }

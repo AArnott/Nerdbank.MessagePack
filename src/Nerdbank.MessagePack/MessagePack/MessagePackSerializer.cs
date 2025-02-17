@@ -8,6 +8,7 @@ using System.IO.Pipelines;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Microsoft;
+using Nerdbank.PolySerializer.MessagePack.Converters;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
@@ -33,7 +34,7 @@ public partial record MessagePackSerializer
 
 	internal static MsgPackStreamingDeformatter StreamingDeformatter => MsgPackStreamingDeformatter.Default;
 
-	private ConverterCache converterCache = new();
+	private ConverterCache converterCache = new(MsgPackReferencePreservingManager.Instance);
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
 #if NET

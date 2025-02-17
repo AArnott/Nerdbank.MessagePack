@@ -7,7 +7,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer.MessagePack.Converters;
 
 /// <summary>
 /// A converter that wraps another converter and ensures that references are preserved during serialization.
@@ -16,6 +16,8 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <param name="inner">The actual converter to use when a value is serialized or deserialized for the first time in a stream.</param>
 internal class ReferencePreservingConverter<T>(Converter<T> inner) : Converter<T>
 {
+	internal Converter<T> Inner => inner;
+
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
 
@@ -80,10 +82,4 @@ internal class ReferencePreservingConverter<T>(Converter<T> inner) : Converter<T
 		Assumes.NotNull(context.ReferenceEqualityTracker);
 		return context.ReferenceEqualityTracker.WriteObjectAsync(writer, value, inner, context);
 	}
-
-	/// <inheritdoc/>
-	internal override Converter WrapWithReferencePreservationCore() => this;
-
-	/// <inheritdoc/>
-	internal override Converter UnwrapReferencePreservation() => inner;
 }
