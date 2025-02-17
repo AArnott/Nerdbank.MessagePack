@@ -8,9 +8,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
-public partial record MessagePackSerializer
+public partial record SerializerBase
 {
 	/// <inheritdoc cref="Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]

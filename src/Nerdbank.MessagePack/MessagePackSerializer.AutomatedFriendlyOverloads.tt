@@ -9,9 +9,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
-public partial record MessagePackSerializer
+public partial record SerializerBase
 {<#
     static void AssembleInputs(string firstParameterType, string firstParameterName, bool moreParameters, out string firstParameter, out string firstArg, out string firstParameterDocId)
     {

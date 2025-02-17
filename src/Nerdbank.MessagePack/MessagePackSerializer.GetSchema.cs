@@ -4,9 +4,9 @@
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace Nerdbank.PolySerializer;
 
-public partial record MessagePackSerializer
+public partial record SerializerBase
 {
 #if NET
 	/// <summary>
@@ -48,14 +48,14 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(typeShape);
 
-		if (this.PreserveReferences)
+		if (this.ConverterCache.PreserveReferences)
 		{
 			// This could be enhanced to support schema generation when PreserveReferences is enabled by changing every reference typed property
 			// to describe that it may be either a msgpack extension or the object itself.
-			throw new NotSupportedException($"Schema generation is not supported when {nameof(this.PreserveReferences)} is enabled.");
+			throw new NotSupportedException($"Schema generation is not supported when {nameof(this.ConverterCache.PreserveReferences)} is enabled.");
 		}
 
-		return new JsonSchemaGenerator(this.converterCache).GenerateSchema(typeShape);
+		return new JsonSchemaGenerator(this.ConverterCache).GenerateSchema(typeShape);
 	}
 
 	private sealed class JsonSchemaGenerator : ITypeShapeFunc
