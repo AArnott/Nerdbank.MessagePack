@@ -552,7 +552,7 @@ public partial record MessagePackSerializer : SerializerBase
 	/// </summary>
 	/// <param name="typeShape">The type shape.</param>
 	/// <returns>A converter.</returns>
-	internal Converter GetConverter(ITypeShape typeShape) => this.converterCache.GetOrAddConverter(typeShape);
+	internal override Converter GetConverter(ITypeShape typeShape) => this.converterCache.GetOrAddConverter(typeShape);
 
 	internal Converter<T> GetConverter<T>(ITypeShape<T> typeShape) => this.converterCache.GetOrAddConverter(typeShape);
 

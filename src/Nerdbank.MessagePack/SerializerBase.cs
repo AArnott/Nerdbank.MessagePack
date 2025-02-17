@@ -5,4 +5,5 @@ namespace Nerdbank.PolySerializer;
 
 public abstract record SerializerBase
 {
+	internal abstract Converter GetConverter(ITypeShape typeShape);
 }
