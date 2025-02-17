@@ -21,7 +21,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// <remarks>
 /// These aren't strictly necessary, but because we can predict their max encoded representation and embed the
 /// direct reader/writer calls, we can avoid the overhead of many tiny calls to
-/// <see cref="MessagePackWriter.GetSpan(int)"/> and <see cref="MessagePackWriter.Advance(int)"/>,
+/// <see cref="BufferWriter.GetSpan(int)"/> and <see cref="BufferWriter.Advance(int)"/>,
 /// which speeds things up considerably.
 /// </remarks>
 internal static partial class ArraysOfPrimitivesConverters

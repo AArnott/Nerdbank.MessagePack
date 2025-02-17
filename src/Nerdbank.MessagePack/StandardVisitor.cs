@@ -144,7 +144,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					serializable ??= new();
 					deserializable ??= new();
 
-					Formatter.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+					this.Formatter.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
 						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize, property));
@@ -602,9 +602,9 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			if (owner.ReferencePreservingManager is not null)
+			if (this.owner.ReferencePreservingManager is not null)
 			{
-				converter = owner.ReferencePreservingManager.UnwrapFromReferencePreservingConverter(converter);
+				converter = this.owner.ReferencePreservingManager.UnwrapFromReferencePreservingConverter(converter);
 			}
 
 			switch (alias.Type)

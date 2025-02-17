@@ -12,7 +12,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// <remarks>
 /// These aren't strictly necessary, but because we can predict their max encoded representation and embed the
 /// direct reader/writer calls, we can avoid the overhead of many tiny calls to
-/// <see cref="MessagePackWriter.GetSpan(int)"/> and <see cref="MessagePackWriter.Advance(int)"/>,
+/// <see cref="BufferWriter.GetSpan(int)"/> and <see cref="BufferWriter.Advance(int)"/>,
 /// which speeds things up considerably.
 /// </remarks>
 internal static partial class ArraysOfPrimitivesConverters
@@ -26,7 +26,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <param name="spanConstructor">The constructor for the enumerable type.</param>
 	private abstract class PrimitiveArrayConverter<TEnumerable, TElement>(
 		Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-		SpanConstructor<TElement, TEnumerable>? spanConstructor) : Converter<TEnumerable>
+		SpanConstructor<TElement, TEnumerable>? spanConstructor) : MessagePackConverter<TEnumerable>
 		where TElement : unmanaged
 	{
 		/// <summary>
@@ -37,8 +37,6 @@ internal static partial class ArraysOfPrimitivesConverters
 		/// All other primitives are assumed to take a max of their own full memory size + a single byte for the msgpack header.
 		/// </remarks>
 		private static readonly unsafe int MsgPackBufferLengthFactor = typeof(TElement) == typeof(bool) ? 1 : (sizeof(TElement) + 1);
-
-		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 		/// <inheritdoc/>
 		public override void Write(ref Writer writer, in TEnumerable? value, SerializationContext context)

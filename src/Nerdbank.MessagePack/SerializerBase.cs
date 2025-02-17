@@ -103,7 +103,7 @@ public abstract partial record SerializerBase
 
 	protected internal abstract Deformatter Deformatter { get; }
 
-	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(MessagePackConverter{T})"/>
+	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(Converter{T})"/>
 	public void RegisterConverter<T>(Converter<T> converter) => this.ConverterCache.RegisterConverter(converter);
 
 	/// <inheritdoc cref="ConverterCache.RegisterKnownSubTypes{TBase}(KnownSubTypeMapping{TBase})"/>
@@ -151,7 +151,7 @@ public abstract partial record SerializerBase
 	/// <typeparam name="T">The type to be serialized.</typeparam>
 	/// <param name="writer">The msgpack writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	public void Serialize<T>(ref Writer writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
@@ -188,7 +188,7 @@ public abstract partial record SerializerBase
 	/// <typeparam name="T">The type to be serialized.</typeparam>
 	/// <param name="writer">The writer to use.</param>
 	/// <param name="value">The value to serialize.</param>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
 	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
@@ -212,7 +212,7 @@ public abstract partial record SerializerBase
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	/// <example>
-	/// See the <see cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, CancellationToken)"/> method for an example of using this method.
+	/// See the <see cref="SerializeObject(ref Writer, object?, ITypeShape, CancellationToken)"/> method for an example of using this method.
 	/// </example>
 	public object? DeserializeObject(ref Reader reader, ITypeShape shape, CancellationToken cancellationToken = default)
 	{
@@ -275,31 +275,31 @@ public abstract partial record SerializerBase
 	/// </summary>
 	/// <typeparam name="T">The type of value to deserialize.</typeparam>
 	/// <param name="reader">The reader to deserialize from.</param>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.GetConverter<T>(provider), cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, Converter{T}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.GetConverter(shape), cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, Converter{T}, CancellationToken)"/>
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.GetConverter<T>(provider), cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, Converter{TElement}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.GetConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, Converter{TElement}, CancellationToken)"/>
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.GetConverter<TElement>(provider), cancellationToken);
 
@@ -320,6 +320,8 @@ public abstract partial record SerializerBase
 	/// </remarks>
 	protected internal virtual void RenderAsJson(ref Reader reader, TextWriter writer)
 	{
+		Requires.NotNull(writer);
+
 		writer.Write('"');
 		writer.Write(Convert.ToBase64String(reader.ReadRaw(this.StartingContext).ToArray()));
 		writer.Write('"');
@@ -460,7 +462,7 @@ public abstract partial record SerializerBase
 	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
 	/// </summary>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token for the operation.</param>
 	/// <returns>The serialization context.</returns>
 	/// <remarks>
@@ -469,7 +471,7 @@ public abstract partial record SerializerBase
 	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(provider);
-		return new(this.StartingContext.Start(this, this.ConverterCache, ReferenceTrackingPool, provider, cancellationToken));
+		return new(this.StartingContext.Start(this, this.ConverterCache, this.ReferenceTrackingPool, provider, cancellationToken));
 	}
 
 	private void ThrowIfPreservingReferencesDuringEnumeration()
@@ -489,7 +491,7 @@ public abstract partial record SerializerBase
 	/// </summary>
 	/// <typeparam name="T">The type of value to be deserialized.</typeparam>
 	/// <param name="reader">The <see cref="PipeReader"/> to read from.</param>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="converter">The msgpack converter for the root data type.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>

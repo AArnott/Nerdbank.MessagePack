@@ -22,7 +22,7 @@ internal class ReusableObjectPool<T>(Func<T> factory)
 	/// <returns>The object.</returns>
 	internal T Take(SerializerBase? serializer)
 	{
-		if (!Pool.Value!.TryPop(out T? result))
+		if (!this.Pool.Value!.TryPop(out T? result))
 		{
 			result = factory();
 		}
@@ -39,6 +39,6 @@ internal class ReusableObjectPool<T>(Func<T> factory)
 	{
 		item.Recycle();
 		item.Owner = null;
-		Pool.Value!.Push(item);
+		this.Pool.Value!.Push(item);
 	}
 }

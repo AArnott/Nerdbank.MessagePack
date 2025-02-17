@@ -9,7 +9,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 
 internal class StringConverter : PolySerializer.Converters.StringConverter
 {
-	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
+	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<string>.VerifyFormat(formatter, deformatter);
 
 #if NET
 	[Experimental("NBMsgPackAsync")]

@@ -695,7 +695,7 @@ public record MsgPackFormatter : Formatter
 		return value switch
 		{
 			> long.MaxValue => 9,
-			_ => GetEncodedLength((long)value),
+			_ => this.GetEncodedLength((long)value),
 		};
 	}
 }

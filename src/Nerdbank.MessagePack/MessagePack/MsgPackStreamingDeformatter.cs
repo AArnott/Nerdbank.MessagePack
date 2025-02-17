@@ -574,7 +574,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		static DecodeResult TrySkipOne(ref Reader reader, MsgPackStreamingDeformatter self, out uint skipMore)
 		{
 			skipMore = 0;
-			DecodeResult result = self.TryPeekNextCode(ref reader, out byte code);
+			DecodeResult result = self.TryPeekNextCode(reader, out byte code);
 			if (result != DecodeResult.Success)
 			{
 				return result;

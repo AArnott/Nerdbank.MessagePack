@@ -31,7 +31,7 @@ public partial record SerializerBase
 	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
 	/// </summary>
 	/// <typeparam name="T">The type whose schema should be produced.</typeparam>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
 	public JsonObject GetJsonSchema<T>(ITypeShapeProvider provider)
 	{

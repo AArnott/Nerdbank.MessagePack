@@ -35,8 +35,6 @@ internal class StringConverter : Converter<string>
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<string?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
-		const uint MinChunkSize = 2048;
-
 		StreamingReader streamingReader = reader.CreateStreamingReader();
 		bool wasNil;
 		if (streamingReader.TryReadNull(out wasNil).NeedsMoreBytes())

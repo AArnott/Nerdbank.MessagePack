@@ -51,8 +51,8 @@ public record struct SerializationContext
 	/// Gets a cancellation token that can be used to cancel the serialization operation.
 	/// </summary>
 	/// <remarks>
-	/// In <see cref="Converter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext)" />
-	/// or <see cref="Converter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext)"/> methods,
+	/// In <see cref="Converter{T}.WriteAsync(AsyncWriter, T, SerializationContext)" />
+	/// or <see cref="Converter{T}.ReadAsync(AsyncReader, SerializationContext)"/> methods,
 	/// this will tend to be equivalent to the <c>cancellationToken</c> parameter passed to those methods.
 	/// </remarks>
 	public CancellationToken CancellationToken { get; init; }
@@ -209,7 +209,8 @@ public record struct SerializationContext
 	/// </summary>
 	/// <param name="owner">The owning serializer.</param>
 	/// <param name="cache">The converter cache.</param>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="referenceTrackingPool">A reference equality tracker pool, if the formatter supports it.</param>
+	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token to associate with this serialization operation.</param>
 	/// <returns>The new context for the operation.</returns>
 	internal SerializationContext Start(SerializerBase owner, ConverterCache cache, ReusableObjectPool<IReferenceEqualityTracker>? referenceTrackingPool, ITypeShapeProvider provider, CancellationToken cancellationToken)

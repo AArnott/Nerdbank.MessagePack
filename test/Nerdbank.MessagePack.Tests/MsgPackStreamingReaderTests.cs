@@ -5,7 +5,7 @@
 
 using System.Text;
 
-public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
+public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 {
 	private static readonly MsgPackFormatter Formatter = MsgPackFormatter.Default;
 	private static readonly MsgPackDeformatter Deformatter = MsgPackDeformatter.Default;

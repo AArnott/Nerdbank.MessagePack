@@ -8,11 +8,11 @@ namespace Nerdbank.PolySerializer.Converters;
 
 public class AsyncReader : IDisposable
 {
-	private protected bool readerReturned = true;
-	private protected BufferRefresh? refresh;
+	private bool readerReturned = true;
+	private BufferRefresh? refresh;
 
-	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
-	protected uint expectedRemainingStructures;
+	/// <inheritdoc cref="StreamingReader.ExpectedRemainingStructures"/>
+	private uint expectedRemainingStructures;
 
 	public AsyncReader(PipeReader pipeReader, Deformatter deformatter)
 	{
@@ -32,13 +32,13 @@ public class AsyncReader : IDisposable
 	private protected BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
 
 	/// <summary>
-	/// Retrieves a <see cref="MessagePackStreamingReader"/>, which is suitable for
+	/// Retrieves a <see cref="StreamingReader"/>, which is suitable for
 	/// decoding msgpack from a buffer without throwing any exceptions, even if the buffer is incomplete.
 	/// </summary>
-	/// <returns>A <see cref="MessagePackStreamingReader"/>.</returns>
+	/// <returns>A <see cref="StreamingReader"/>.</returns>
 	/// <remarks>
-	/// The result must be returned with <see cref="ReturnReader(ref MessagePackStreamingReader)"/>
-	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// The result must be returned with <see cref="ReturnReader(ref StreamingReader)"/>
+	/// before using this <see cref="AsyncReader"/> again.
 	/// </remarks>
 	public StreamingReader CreateStreamingReader()
 	{
@@ -51,13 +51,13 @@ public class AsyncReader : IDisposable
 	}
 
 	/// <summary>
-	/// Retrieves a <see cref="MessagePackReader"/>, which is suitable for
+	/// Retrieves a <see cref="Reader"/>, which is suitable for
 	/// decoding msgpack from a buffer that is known to have enough bytes for the decoding.
 	/// </summary>
-	/// <returns>A <see cref="MessagePackReader"/>.</returns>
+	/// <returns>A <see cref="Reader"/>.</returns>
 	/// <remarks>
-	/// The result must be returned with <see cref="ReturnReader(ref MessagePackReader)"/>
-	/// before using this <see cref="MessagePackAsyncReader"/> again.
+	/// The result must be returned with <see cref="ReturnReader(ref Reader)"/>
+	/// before using this <see cref="AsyncReader"/> again.
 	/// </remarks>
 	public Reader CreateBufferedReader()
 	{
@@ -86,7 +86,7 @@ public class AsyncReader : IDisposable
 		this.readerReturned = true;
 	}
 
-	/// <inheritdoc cref="ReturnReader(ref MessagePackStreamingReader)"/>
+	/// <inheritdoc cref="ReturnReader(ref StreamingReader)"/>
 	public void ReturnReader(ref Reader reader)
 	{
 		AsyncReader.BufferRefresh refresh = this.Refresh;

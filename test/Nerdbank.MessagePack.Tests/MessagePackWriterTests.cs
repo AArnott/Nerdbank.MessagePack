@@ -16,7 +16,7 @@ public class MessagePackWriterTests
 	}
 
 	/// <summary>
-	/// Verifies that <see cref="MessagePackWriter.WriteRaw(ReadOnlySpan{byte})"/>
+	/// Verifies that <see cref="BufferWriter.Write(ReadOnlySpan{byte})"/>
 	/// accepts a span that came from stackalloc.
 	/// </summary>
 	[Fact]

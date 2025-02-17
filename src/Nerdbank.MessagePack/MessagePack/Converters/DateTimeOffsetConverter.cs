@@ -11,7 +11,7 @@ namespace Nerdbank.PolySerializer.MessagePack.Converters;
 /// <summary>
 /// Serializes <see cref="DateTimeOffset"/> values.
 /// </summary>
-internal class DateTimeOffsetConverter : Converter<DateTimeOffset>
+internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 {
 	/// <inheritdoc/>
 	public override DateTimeOffset Read(ref Reader reader, SerializationContext context)
@@ -41,7 +41,7 @@ internal class DateTimeOffsetConverter : Converter<DateTimeOffset>
 		{
 			["type"] = "array",
 			["items"] = new JsonArray(
-				MessagePack.MessagePackConverter.CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
+				CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
 				new JsonObject { ["type"] = "integer" }),
 		};
 }

@@ -16,7 +16,7 @@ public class JsonExporter
 	}
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte}, JsonOptions?)"/>
-	public string ConvertToJson(ReadOnlyMemory<byte> buffer, JsonOptions? options = null) => ConvertToJson(new ReadOnlySequence<byte>(buffer), options);
+	public string ConvertToJson(ReadOnlyMemory<byte> buffer, JsonOptions? options = null) => this.ConvertToJson(new ReadOnlySequence<byte>(buffer), options);
 
 	/// <summary>
 	/// Converts a formatted byte sequence into equivalent JSON.
@@ -36,7 +36,7 @@ public class JsonExporter
 		Reader reader = new(buffer, this.serializerBase.Deformatter);
 		while (!reader.End)
 		{
-			ConvertToJson(ref reader, jsonWriter, options);
+			this.ConvertToJson(ref reader, jsonWriter, options);
 		}
 
 		return jsonWriter.ToString();

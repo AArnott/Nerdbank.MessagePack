@@ -21,7 +21,7 @@ public partial record SerializerBase
 	[ThreadStatic]
 	private static byte[]? scratchArray;
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)" />
+	/// <inheritdoc cref="Serialize{T}(ref Writer, in T, ITypeShape{T}, CancellationToken)" />
 	/// <returns>A byte array containing the serialized msgpack.</returns>
 	public byte[] Serialize<T>(in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
@@ -42,7 +42,7 @@ public partial record SerializerBase
 		}
 	}
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)"/>
+	/// <inheritdoc cref="Serialize{T}(ref Writer, in T, ITypeShape{T}, CancellationToken)"/>
 	public void Serialize<T>(IBufferWriter<byte> bufferWriter, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Writer writer = new(new BufferWriter(bufferWriter), this.Formatter);
@@ -50,7 +50,7 @@ public partial record SerializerBase
 		writer.Flush();
 	}
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)"/>
+	/// <inheritdoc cref="Serialize{T}(ref Writer, in T, ITypeShape{T}, CancellationToken)"/>
 	/// <param name="stream">The stream to write to.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public void Serialize<T>(Stream stream, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
@@ -86,7 +86,7 @@ public partial record SerializerBase
 		await pipeWriter.CompleteAsync().ConfigureAwait(false);
 	}
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)" />
+	/// <inheritdoc cref="Serialize{T}(ref Writer, in T, ITypeShapeProvider, CancellationToken)" />
 	/// <returns>A byte array containing the serialized msgpack.</returns>
 	public byte[] Serialize<T>(in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
@@ -107,7 +107,7 @@ public partial record SerializerBase
 		}
 	}
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)"/>
+	/// <inheritdoc cref="Serialize{T}(ref Writer, in T, ITypeShapeProvider, CancellationToken)"/>
 	public void Serialize<T>(IBufferWriter<byte> bufferWriter, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Writer writer = new(new BufferWriter(bufferWriter), this.Formatter);
@@ -115,7 +115,7 @@ public partial record SerializerBase
 		writer.Flush();
 	}
 
-	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShapeProvider, CancellationToken)"/>
+	/// <inheritdoc cref="Serialize{T}(ref Writer, in T, ITypeShapeProvider, CancellationToken)"/>
 	/// <param name="stream">The stream to write to.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public void Serialize<T>(Stream stream, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
@@ -131,7 +131,7 @@ public partial record SerializerBase
 	/// <typeparam name="T"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShapeProvider, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
 	/// <param name="stream">The stream to write to.</param>
 	/// <param name="value"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" path="/param[@name='value']"/></param>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
@@ -158,7 +158,7 @@ public partial record SerializerBase
 		return this.Deserialize(ref reader, shape, cancellationToken);
 	}
 
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)"/>
+	/// <inheritdoc cref="Deserialize{T}(ref Reader, ITypeShape{T}, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public T? Deserialize<T>(scoped in ReadOnlySequence<byte> buffer, ITypeShape<T> shape, CancellationToken cancellationToken = default)
@@ -172,7 +172,7 @@ public partial record SerializerBase
 		return result;
 	}
 
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)"/>
+	/// <inheritdoc cref="Deserialize{T}(ref Reader, ITypeShape{T}, CancellationToken)"/>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
 	/// <remarks>
 	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
@@ -238,7 +238,7 @@ public partial record SerializerBase
 		return this.Deserialize<T>(ref reader, provider, cancellationToken);
 	}
 
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)"/>
+	/// <inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public T? Deserialize<T>(scoped in ReadOnlySequence<byte> buffer, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
@@ -248,7 +248,7 @@ public partial record SerializerBase
 		return this.Deserialize<T>(ref reader, provider, cancellationToken);
 	}
 
-	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)"/>
+	/// <inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)"/>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
 	/// <remarks>
 	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.

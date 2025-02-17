@@ -729,11 +729,9 @@ internal static class HardwareAccelerated
 		}
 	}
 
-	private sealed class BoolArrayConverter<TEnumerable>(SpanConstructorKind spanConstructorKind) : Converter<TEnumerable>
+	private sealed class BoolArrayConverter<TEnumerable>(SpanConstructorKind spanConstructorKind) : MessagePackConverter<TEnumerable>
 	{
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
-
-		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 		public override TEnumerable? Read(ref Reader reader, SerializationContext context)
 		{
@@ -848,7 +846,7 @@ internal static class HardwareAccelerated
 	/// </summary>
 	/// <typeparam name="TEnumerable">The type of the enumerable to be converted.</typeparam>
 	/// <typeparam name="TElement">The type of element to be converted.</typeparam>
-	private sealed class PrimitiveArrayConverter<TEnumerable, TElement>(SpanConstructorKind spanConstructorKind) : Converter<TEnumerable>
+	private sealed class PrimitiveArrayConverter<TEnumerable, TElement>(SpanConstructorKind spanConstructorKind) : MessagePackConverter<TEnumerable>
 		where TElement : unmanaged
 	{
 		/// <summary>
@@ -863,8 +861,6 @@ internal static class HardwareAccelerated
 		private static readonly unsafe int ElementMaxSerializableLength = Array.MaxLength / MsgPackBufferLengthFactor;
 
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
-
-		public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 		/// <inheritdoc/>
 		public override TEnumerable? Read(ref Reader reader, SerializationContext context)
