@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Pipelines;
 
 public class MessagePackAsyncWriterTests
 {
@@ -10,7 +9,7 @@ public class MessagePackAsyncWriterTests
 	[Experimental("NBMsgPackAsync")]
 	public void WriteVeryLargeData()
 	{
-		MessagePackAsyncWriter writer = new(PipeWriter.Create(Stream.Null));
+		AsyncWriter writer = new(PipeWriter.Create(Stream.Null), MsgPackFormatter.Default);
 		writer.WriteRaw(new byte[1024 * 1024]);
 	}
 }

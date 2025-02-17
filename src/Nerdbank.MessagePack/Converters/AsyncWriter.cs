@@ -117,4 +117,7 @@ public class AsyncWriter(PipeWriter pipeWriter, Formatter formatter)
 	public void WriteRaw(ReadOnlySequence<byte> bytes) => pipeWriter.Write(bytes);
 
 	public void WriteRaw(ReadOnlySpan<byte> bytes) => pipeWriter.Write(bytes);
+
+	/// <inheritdoc cref="MessagePackWriter.WriteNil"/>
+	public void WriteNil() => this.WriteNull();
 }
