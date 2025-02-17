@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
+using Nerdbank.PolySerializer.MessagePack.Converters;
 using PolyType.Utilities;
 
 namespace Nerdbank.PolySerializer;
@@ -18,8 +19,10 @@ namespace Nerdbank.PolySerializer;
 /// </summary>
 internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 {
+	private static readonly InterningStringConverter InterningStringConverter = new();
 	private readonly ConverterCache owner;
 	private readonly TypeGenerationContext context;
+	private readonly Converter<string>? referencePreservingInterningStringConverter;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="StandardVisitor"/> class.
@@ -31,17 +34,34 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		this.owner = owner;
 		this.context = context;
 		this.OutwardVisitor = this;
+
+		if (owner.ReferencePreservingManager is not null)
+		{
+			this.referencePreservingInterningStringConverter = owner.ReferencePreservingManager.WrapWithReferencePreservingConverter(InterningStringConverter);
+		}
 	}
 
 	internal abstract Formatter Formatter { get; }
 
 	internal abstract Deformatter Deformatter { get; }
 
-	protected abstract Converter GetInterningStringConverter();
+	protected virtual bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(true)] out Converter<T>? converter)
+	{
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(out converter))
+		{
+			if (preserveReferences)
+			{
+				converter = MsgPackReferencePreservingManager.Instance.WrapWithReferencePreservingConverter(converter);
+			}
 
-	protected abstract Converter GetReferencePreservingInterningStringConverter();
-
-	protected abstract bool TryGetPrimitiveConverter<T>(bool preserveReferences, [NotNullWhen(true)] out Converter<T>? converter);
+			return true;
+		}
+		else
+		{
+			converter = null;
+			return false;
+		}
+	}
 
 	/// <summary>
 	/// Gets or sets the visitor that will be used to generate converters for new types that are encountered.
@@ -63,7 +83,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		if (this.owner.InternStrings && typeof(T) == typeof(string))
 		{
-			return this.owner.PreserveReferences ? this.GetReferencePreservingInterningStringConverter() : this.GetInterningStringConverter();
+			return this.owner.PreserveReferences ? this.referencePreservingInterningStringConverter : InterningStringConverter;
 		}
 
 		// Check if the type has a built-in converter.
@@ -185,7 +205,8 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return unionTypes is null ? converter : this.CreateSubTypeUnionConverter<T>(unionTypes, converter);
 	}
 
-	protected abstract Converter CreateSubTypeUnionConverter<T>(SubTypes unionTypes, Converter<T> baseConverter);
+	protected virtual Converter CreateSubTypeUnionConverter<T>(SubTypes unionTypes, Converter<T> baseConverter)
+		=> new SubTypeUnionConverter<T>(unionTypes, baseConverter);
 
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
@@ -507,13 +528,17 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		};
 	}
 
-	protected abstract Converter CreateEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter);
+	protected virtual Converter CreateEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter)
+		=> new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter);
 
-	protected abstract Converter CreateMutableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Setter<TEnumerable, TElement> addElement, Func<TEnumerable> defaultConstructor);
+	protected virtual Converter CreateMutableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Setter<TEnumerable, TElement> addElement, Func<TEnumerable> defaultConstructor)
+		=> new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, addElement, defaultConstructor);
 
-	protected abstract Converter CreateSpanEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, SpanConstructor<TElement, TEnumerable> spanConstructor);
+	protected virtual Converter CreateSpanEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, SpanConstructor<TElement, TEnumerable> spanConstructor)
+		=> new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, spanConstructor);
 
-	protected abstract Converter CreateEnumerableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Func<IEnumerable<TElement>, TEnumerable> enumerableConstructor);
+	protected virtual Converter CreateEnumerableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Func<IEnumerable<TElement>, TEnumerable> enumerableConstructor)
+		=> new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableConstructor);
 
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
