@@ -4,7 +4,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
 
 namespace Nerdbank.PolySerializer.Converters;
 
@@ -71,13 +70,15 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets the reference equality tracker for this serialization operation.
 	/// </summary>
-	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
+	internal IReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
 
 	/// <summary>
 	/// Gets or sets the number of elements that must still be skipped to complete a skip operation.
 	/// </summary>
 	/// <value>0 when no skip operation was suspended and is still incomplete.</value>
 	internal uint MidSkipRemainingCount { get; set; }
+
+	private ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; init; }
 
 	/// <summary>
 	/// Gets or sets special state to be exposed to converters during serialization.
@@ -211,12 +212,14 @@ public record struct SerializationContext
 	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token to associate with this serialization operation.</param>
 	/// <returns>The new context for the operation.</returns>
-	internal SerializationContext Start(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
+	internal SerializationContext Start(SerializerBase owner, ConverterCache cache, ReusableObjectPool<IReferenceEqualityTracker>? referenceTrackingPool, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
+		Assumes.True(!cache.PreserveReferences || referenceTrackingPool is not null);
 		return this with
 		{
+			ReferenceTrackingPool = referenceTrackingPool,
 			Cache = cache,
-			ReferenceEqualityTracker = cache.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
+			ReferenceEqualityTracker = referenceTrackingPool?.Take(owner),
 			TypeShapeProvider = provider,
 			CancellationToken = cancellationToken,
 		};
@@ -227,9 +230,9 @@ public record struct SerializationContext
 	/// </summary>
 	internal void End()
 	{
-		if (this.ReferenceEqualityTracker is not null)
+		if (this.ReferenceEqualityTracker is not null && this.ReferenceTrackingPool is not null)
 		{
-			ReusableObjectPool<ReferenceEqualityTracker>.Return(this.ReferenceEqualityTracker);
+			this.ReferenceTrackingPool.Return(this.ReferenceEqualityTracker);
 		}
 	}
 }

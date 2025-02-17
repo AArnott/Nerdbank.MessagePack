@@ -26,8 +26,10 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// because generated ones have already locked-in their dependencies.
 /// </para>
 /// </devremarks>
-public partial record MessagePackSerializer
+public partial record MessagePackSerializer : SerializerBase
 {
+	private static readonly ReusableObjectPool<IReferenceEqualityTracker> ReferenceTrackingPool = new(() => new ReferenceEqualityTracker());
+
 	internal static MsgPackFormatter Formatter => MsgPackFormatter.Default;
 
 	internal static MsgPackDeformatter Deformatter => MsgPackDeformatter.Default;
@@ -568,7 +570,7 @@ public partial record MessagePackSerializer
 	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(provider);
-		return new(this.StartingContext.Start(this, this.converterCache, provider, cancellationToken));
+		return new(this.StartingContext.Start(this, this.converterCache, ReferenceTrackingPool, provider, cancellationToken));
 	}
 
 	/// <summary>

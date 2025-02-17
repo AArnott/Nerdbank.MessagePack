@@ -12,7 +12,7 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// <summary>
 /// Tracks the state for a particular serialization/deserialization operation to preserve object references.
 /// </summary>
-internal class ReferenceEqualityTracker : IPoolableObject
+internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTracker
 {
 	private readonly Dictionary<object, int> serializedObjects = new(ReferenceEqualityComparer.Instance);
 	private readonly List<object?> deserializedObjects = new();
@@ -21,7 +21,13 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <inheritdoc/>
 	public MessagePackSerializer? Owner { get; set; }
 
-	internal IReferencePreservingManager Manager => MsgPackReferencePreservingManager.Instance;
+	SerializerBase? IPoolableObject.Owner
+	{
+		get => this.Owner;
+		set => this.Owner = (MessagePackSerializer?)value;
+	}
+
+	public IReferencePreservingManager Manager => MsgPackReferencePreservingManager.Instance;
 
 	/// <inheritdoc/>
 	void IPoolableObject.Recycle()
@@ -39,7 +45,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="value">The object to write.</param>
 	/// <param name="inner">The converter to use to write the object if it has not already been written.</param>
 	/// <param name="context">The serialization context.</param>
-	internal void WriteObject<T>(ref Writer writer, T value, Converter<T> inner, SerializationContext context)
+	public void WriteObject<T>(ref Writer writer, T value, Converter<T> inner, SerializationContext context)
 	{
 		Requires.NotNullAllowStructs(value);
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
@@ -74,7 +80,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="context">The serialization context.</param>
 	/// <returns>An async task.</returns>
 	[Experimental("NBMsgPackAsync")]
-	internal async ValueTask WriteObjectAsync<T>(AsyncWriter writer, T value, Converter<T> inner, SerializationContext context)
+	public async ValueTask WriteObjectAsync<T>(AsyncWriter writer, T value, Converter<T> inner, SerializationContext context)
 	{
 		Requires.NotNullAllowStructs(value);
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
@@ -111,7 +117,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <param name="context">The serialization context.</param>
 	/// <returns>The reference to an object, whether it was deserialized fresh or just referenced.</returns>
 	/// <exception cref="SerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
-	internal T ReadObject<T>(ref Reader reader, Converter<T> inner, SerializationContext context)
+	public T ReadObject<T>(ref Reader reader, Converter<T> inner, SerializationContext context)
 	{
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
@@ -146,7 +152,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <returns>The reference to an object, whether it was deserialized fresh or just referenced.</returns>
 	/// <exception cref="SerializationException">Thrown if there is a dependency cycle detected or the <paramref name="inner"/> converter returned null unexpectedly.</exception>
 	[Experimental("NBMsgPackAsync")]
-	internal async ValueTask<T> ReadObjectAsync<T>(AsyncReader reader, Converter<T> inner, SerializationContext context)
+	public async ValueTask<T> ReadObjectAsync<T>(AsyncReader reader, Converter<T> inner, SerializationContext context)
 	{
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 

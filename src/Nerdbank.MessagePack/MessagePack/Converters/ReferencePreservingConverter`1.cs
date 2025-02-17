@@ -7,7 +7,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// A converter that wraps another converter and ensures that references are preserved during serialization.
@@ -20,8 +20,6 @@ internal class ReferencePreservingConverter<T>(Converter<T> inner) : Converter<T
 
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
-
-	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter.VerifyFormat(formatter, deformatter);
 
 	/// <inheritdoc/>
 	public override T? Read(ref Reader reader, SerializationContext context)
