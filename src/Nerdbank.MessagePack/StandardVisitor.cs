@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack.Converters;
 using PolyType.Utilities;
 
 namespace Nerdbank.PolySerializer;
@@ -51,7 +50,8 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			if (preserveReferences)
 			{
-				converter = MsgPackReferencePreservingManager.Instance.WrapWithReferencePreservingConverter(converter);
+				Verify.Operation(this.owner.ReferencePreservingManager is not null, "This serializer does not support reference preservation.");
+				converter = this.owner.ReferencePreservingManager.WrapWithReferencePreservingConverter(converter);
 			}
 
 			return true;

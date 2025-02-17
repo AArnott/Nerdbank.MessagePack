@@ -17,6 +17,7 @@ namespace Nerdbank.PolySerializer.Converters;
 /// <summary>
 /// Serializes a <see cref="string"/>.
 /// </summary>
+[GeneralWithFormatterSpecialCasing]
 internal class StringConverter : Converter<string>
 {
 #if NET

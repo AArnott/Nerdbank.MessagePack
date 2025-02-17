@@ -6,7 +6,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
 /// Serializes an enumerable.

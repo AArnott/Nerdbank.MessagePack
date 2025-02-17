@@ -24,6 +24,7 @@
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="Newtonsoft.Json.Schema" />
     <PackageReference Include="PolyType.TestCases" />
     <!-- Override S.T.J. version just until we get a PolyType update that includes https://github.com/eiriktsarpalis/PolyType/pull/90 -->
