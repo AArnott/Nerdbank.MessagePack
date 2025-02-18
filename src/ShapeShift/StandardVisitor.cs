@@ -154,12 +154,12 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					this.Formatter.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
-						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize, property));
+						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.Converter, accessors.ShouldSerialize, property));
 					}
 
 					if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
 					{
-						deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.PreferAsyncSerialization));
+						deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter));
 					}
 				}
 			}
@@ -313,7 +313,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return suppressIfNoConstructorParameter && constructorParameterShape is null
 			? null
-			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize, propertyShape);
+			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter, shouldSerialize, propertyShape);
 	}
 
 	/// <inheritdoc/>
@@ -416,7 +416,7 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
 				return state;
 			},
-			converter.PreferAsyncSerialization);
+			converter);
 	}
 
 	/// <inheritdoc/>
