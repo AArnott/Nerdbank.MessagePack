@@ -7,34 +7,33 @@ abstract ShapeShift.Converters.Formatter.Encoding.get -> System.Text.Encoding!
 abstract ShapeShift.Converters.Formatter.FormatName.get -> string!
 abstract ShapeShift.Converters.Formatter.GetEncodedLength(long value) -> int
 abstract ShapeShift.Converters.Formatter.GetEncodedLength(ulong value) -> int
-abstract ShapeShift.Converters.Formatter.GetEncodedStringBytes(string! value, out System.ReadOnlyMemory<byte> encodedBytes, out System.ReadOnlyMemory<byte> formattedBytes) -> void
+abstract ShapeShift.Converters.Formatter.GetEncodedStringBytes(System.ReadOnlySpan<char> value, out System.ReadOnlyMemory<byte> encodedBytes, out System.ReadOnlyMemory<byte> formattedBytes) -> void
 abstract ShapeShift.Converters.Formatter.VectorsMustHaveLengthPrefix.get -> bool
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, bool value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, byte value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, char value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, double value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, float value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, int value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, long value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, sbyte value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, scoped System.ReadOnlySpan<char> value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, short value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, string? value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, uint value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, ulong value) -> void
-abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.Writer writer, ushort value) -> void
-abstract ShapeShift.Converters.Formatter.WriteEncodedString(ref ShapeShift.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
-abstract ShapeShift.Converters.Formatter.WriteEncodedString(ref ShapeShift.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
-abstract ShapeShift.Converters.Formatter.WriteEndMap(ref ShapeShift.Converters.Writer writer) -> void
-abstract ShapeShift.Converters.Formatter.WriteEndVector(ref ShapeShift.Converters.Writer writer) -> void
-abstract ShapeShift.Converters.Formatter.WriteMapKeyValueSeparator(ref ShapeShift.Converters.Writer writer) -> void
-abstract ShapeShift.Converters.Formatter.WriteMapPairSeparator(ref ShapeShift.Converters.Writer writer) -> void
-abstract ShapeShift.Converters.Formatter.WriteNull(ref ShapeShift.Converters.Writer writer) -> void
-abstract ShapeShift.Converters.Formatter.WriteStartMap(ref ShapeShift.Converters.Writer writer, int count) -> void
-abstract ShapeShift.Converters.Formatter.WriteStartVector(ref ShapeShift.Converters.Writer writer, int length) -> void
-abstract ShapeShift.Converters.Formatter.WriteVectorElementSeparator(ref ShapeShift.Converters.Writer writer) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, bool value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, byte value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, char value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, double value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, float value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, int value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, long value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, sbyte value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, scoped System.ReadOnlySpan<byte> value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, scoped System.ReadOnlySpan<char> value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, short value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, uint value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, ulong value) -> void
+abstract ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, ushort value) -> void
+abstract ShapeShift.Converters.Formatter.WriteEncodedString(ref ShapeShift.Converters.BufferWriter writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+abstract ShapeShift.Converters.Formatter.WriteEncodedString(ref ShapeShift.Converters.BufferWriter writer, scoped System.ReadOnlySpan<byte> value) -> void
+abstract ShapeShift.Converters.Formatter.WriteEndMap(ref ShapeShift.Converters.BufferWriter writer) -> void
+abstract ShapeShift.Converters.Formatter.WriteEndVector(ref ShapeShift.Converters.BufferWriter writer) -> void
+abstract ShapeShift.Converters.Formatter.WriteMapKeyValueSeparator(ref ShapeShift.Converters.BufferWriter writer) -> void
+abstract ShapeShift.Converters.Formatter.WriteMapPairSeparator(ref ShapeShift.Converters.BufferWriter writer) -> void
+abstract ShapeShift.Converters.Formatter.WriteNull(ref ShapeShift.Converters.BufferWriter writer) -> void
+abstract ShapeShift.Converters.Formatter.WriteStartMap(ref ShapeShift.Converters.BufferWriter writer, int count) -> void
+abstract ShapeShift.Converters.Formatter.WriteStartVector(ref ShapeShift.Converters.BufferWriter writer, int length) -> void
+abstract ShapeShift.Converters.Formatter.WriteVectorElementSeparator(ref ShapeShift.Converters.BufferWriter writer) -> void
 abstract ShapeShift.Converters.StreamingDeformatter.<Clone>$() -> ShapeShift.Converters.StreamingDeformatter!
 abstract ShapeShift.Converters.StreamingDeformatter.Encoding.get -> System.Text.Encoding!
 abstract ShapeShift.Converters.StreamingDeformatter.FormatName.get -> string!
@@ -66,8 +65,6 @@ abstract ShapeShift.Converters.StreamingDeformatter.TryReadStringSpan(scoped ref
 abstract ShapeShift.Converters.StreamingDeformatter.TrySkip(ref ShapeShift.Converters.Reader reader, ref ShapeShift.Converters.SerializationContext context) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.NamingPolicy.ConvertName(string! name) -> string!
 abstract ShapeShift.SerializerBase.<Clone>$() -> ShapeShift.SerializerBase!
-abstract ShapeShift.SerializerBase.Deformatter.get -> ShapeShift.Converters.Deformatter!
-abstract ShapeShift.SerializerBase.Formatter.get -> ShapeShift.Converters.Formatter!
 const ShapeShift.MessagePack.MessagePackCode.Array16 = 220 -> byte
 const ShapeShift.MessagePack.MessagePackCode.Array32 = 221 -> byte
 const ShapeShift.MessagePack.MessagePackCode.Bin16 = 197 -> byte
@@ -113,6 +110,7 @@ const ShapeShift.MessagePack.MessagePackCode.UInt8 = 204 -> byte
 const ShapeShift.MessagePack.ReservedMessagePackExtensionTypeCode.DateTime = -1 -> sbyte
 override sealed ShapeShift.Converters.Converter<T>.ReadObject(ref ShapeShift.Converters.Reader reader, ShapeShift.Converters.SerializationContext context) -> object?
 override sealed ShapeShift.Converters.Converter<T>.WriteObject(ref ShapeShift.Converters.Writer writer, object? value, ShapeShift.Converters.SerializationContext context) -> void
+override sealed ShapeShift.JsonSerializer.Equals(ShapeShift.SerializerBase? other) -> bool
 override sealed ShapeShift.MessagePack.MsgPackFormatter.Equals(ShapeShift.Converters.Formatter? other) -> bool
 override sealed ShapeShift.MessagePack.MsgPackStreamingDeformatter.Equals(ShapeShift.Converters.StreamingDeformatter? other) -> bool
 override sealed ShapeShift.MessagePackSerializer.Equals(ShapeShift.SerializerBase? other) -> bool
@@ -124,6 +122,12 @@ override ShapeShift.Converters.StreamingDeformatter.Equals(object? obj) -> bool
 override ShapeShift.Converters.StreamingDeformatter.GetHashCode() -> int
 override ShapeShift.Converters.StreamingDeformatter.ToString() -> string!
 override ShapeShift.JsonExporter.JsonOptions.GetHashCode() -> int
+override ShapeShift.JsonSerializer.<Clone>$() -> ShapeShift.JsonSerializer!
+override ShapeShift.JsonSerializer.EqualityContract.get -> System.Type!
+override ShapeShift.JsonSerializer.Equals(object? obj) -> bool
+override ShapeShift.JsonSerializer.GetHashCode() -> int
+override ShapeShift.JsonSerializer.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override ShapeShift.JsonSerializer.ToString() -> string!
 override ShapeShift.KnownSubTypeAttribute<TSubType, TShapeProvider>.Shape.get -> PolyType.Abstractions.ITypeShape?
 override ShapeShift.MessagePack.Extension.GetHashCode() -> int
 override ShapeShift.MessagePack.ExtensionHeader.GetHashCode() -> int
@@ -137,38 +141,37 @@ override ShapeShift.MessagePack.MsgPackFormatter.Equals(object? obj) -> bool
 override ShapeShift.MessagePack.MsgPackFormatter.FormatName.get -> string!
 override ShapeShift.MessagePack.MsgPackFormatter.GetEncodedLength(long value) -> int
 override ShapeShift.MessagePack.MsgPackFormatter.GetEncodedLength(ulong value) -> int
-override ShapeShift.MessagePack.MsgPackFormatter.GetEncodedStringBytes(string! value, out System.ReadOnlyMemory<byte> utf8Bytes, out System.ReadOnlyMemory<byte> msgpackEncoded) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.GetEncodedStringBytes(System.ReadOnlySpan<char> value, out System.ReadOnlyMemory<byte> utf8Bytes, out System.ReadOnlyMemory<byte> msgpackEncoded) -> void
 override ShapeShift.MessagePack.MsgPackFormatter.GetHashCode() -> int
 override ShapeShift.MessagePack.MsgPackFormatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
 override ShapeShift.MessagePack.MsgPackFormatter.ToString() -> string!
-override ShapeShift.MessagePack.MsgPackFormatter.TryWriteStartBinary(ref ShapeShift.Converters.Writer writer, int length) -> bool
+override ShapeShift.MessagePack.MsgPackFormatter.TryWriteStartBinary(ref ShapeShift.Converters.BufferWriter writer, int length) -> bool
 override ShapeShift.MessagePack.MsgPackFormatter.VectorsMustHaveLengthPrefix.get -> bool
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, bool value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, byte value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, char value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, double value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, float value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, int value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, long value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, sbyte value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, scoped System.ReadOnlySpan<char> value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, short value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, string? value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, uint value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, ulong value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, ushort value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteEncodedString(ref ShapeShift.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteEncodedString(ref ShapeShift.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteEndMap(ref ShapeShift.Converters.Writer writer) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteEndVector(ref ShapeShift.Converters.Writer writer) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteMapKeyValueSeparator(ref ShapeShift.Converters.Writer writer) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteMapPairSeparator(ref ShapeShift.Converters.Writer writer) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteNull(ref ShapeShift.Converters.Writer writer) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteStartMap(ref ShapeShift.Converters.Writer writer, int length) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteStartVector(ref ShapeShift.Converters.Writer writer, int length) -> void
-override ShapeShift.MessagePack.MsgPackFormatter.WriteVectorElementSeparator(ref ShapeShift.Converters.Writer writer) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, bool value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, byte value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, char value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, double value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, float value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, int value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, long value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, sbyte value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, scoped System.ReadOnlySpan<byte> value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, scoped System.ReadOnlySpan<char> value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, short value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, uint value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, ulong value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, ushort value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteEncodedString(ref ShapeShift.Converters.BufferWriter writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteEncodedString(ref ShapeShift.Converters.BufferWriter writer, scoped System.ReadOnlySpan<byte> value) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteEndMap(ref ShapeShift.Converters.BufferWriter writer) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteEndVector(ref ShapeShift.Converters.BufferWriter writer) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteMapKeyValueSeparator(ref ShapeShift.Converters.BufferWriter writer) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteMapPairSeparator(ref ShapeShift.Converters.BufferWriter writer) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteNull(ref ShapeShift.Converters.BufferWriter writer) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteStartMap(ref ShapeShift.Converters.BufferWriter writer, int length) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteStartVector(ref ShapeShift.Converters.BufferWriter writer, int length) -> void
+override ShapeShift.MessagePack.MsgPackFormatter.WriteVectorElementSeparator(ref ShapeShift.Converters.BufferWriter writer) -> void
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.<Clone>$() -> ShapeShift.MessagePack.MsgPackStreamingDeformatter!
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.Encoding.get -> System.Text.Encoding!
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.EqualityContract.get -> System.Type!
@@ -204,10 +207,8 @@ override ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryReadStringSequenc
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out bool contiguous, out System.ReadOnlySpan<byte> value) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.TrySkip(ref ShapeShift.Converters.Reader reader, ref ShapeShift.Converters.SerializationContext context) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePackSerializer.<Clone>$() -> ShapeShift.MessagePackSerializer!
-override ShapeShift.MessagePackSerializer.Deformatter.get -> ShapeShift.Converters.Deformatter!
 override ShapeShift.MessagePackSerializer.EqualityContract.get -> System.Type!
 override ShapeShift.MessagePackSerializer.Equals(object? obj) -> bool
-override ShapeShift.MessagePackSerializer.Formatter.get -> ShapeShift.Converters.Formatter!
 override ShapeShift.MessagePackSerializer.GetHashCode() -> int
 override ShapeShift.MessagePackSerializer.PrintMembers(System.Text.StringBuilder! builder) -> bool
 override ShapeShift.MessagePackSerializer.RenderAsJson(ref ShapeShift.Converters.Reader reader, System.IO.TextWriter! writer) -> void
@@ -299,6 +300,8 @@ ShapeShift.Converters.Deformatter.TryReadStringSpan(scoped ref ShapeShift.Conver
 ShapeShift.Converters.Formatter
 ShapeShift.Converters.Formatter.Formatter() -> void
 ShapeShift.Converters.Formatter.Formatter(ShapeShift.Converters.Formatter! original) -> void
+ShapeShift.Converters.Formatter.GetEncodedStringBytes(string! value, out System.ReadOnlyMemory<byte> encodedBytes, out System.ReadOnlyMemory<byte> formattedBytes) -> void
+ShapeShift.Converters.Formatter.Write(ref ShapeShift.Converters.BufferWriter writer, string? value) -> void
 ShapeShift.Converters.JsonSchemaContext
 ShapeShift.Converters.JsonSchemaContext.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
 ShapeShift.Converters.Reader
@@ -431,6 +434,7 @@ ShapeShift.Converters.Writer.WriteEncodedString(scoped System.ReadOnlySpan<byte>
 ShapeShift.Converters.Writer.WriteEndMap() -> void
 ShapeShift.Converters.Writer.WriteEndVector() -> void
 ShapeShift.Converters.Writer.WriteMapKeyValueSeparator() -> void
+ShapeShift.Converters.Writer.WriteMapPairSeparator() -> void
 ShapeShift.Converters.Writer.WriteNull() -> void
 ShapeShift.Converters.Writer.Writer() -> void
 ShapeShift.Converters.Writer.Writer(ShapeShift.Converters.BufferWriter writer, ShapeShift.Converters.Formatter! formatter) -> void
@@ -459,6 +463,10 @@ ShapeShift.JsonExporter.JsonOptions.NewLine.get -> string!
 ShapeShift.JsonExporter.JsonOptions.NewLine.set -> void
 ShapeShift.JsonExporter.JsonOptions.TrailingCommas.get -> bool
 ShapeShift.JsonExporter.JsonOptions.TrailingCommas.set -> void
+ShapeShift.JsonSerializer
+ShapeShift.JsonSerializer.Encoding.get -> System.Text.Encoding!
+ShapeShift.JsonSerializer.JsonSerializer() -> void
+ShapeShift.JsonSerializer.JsonSerializer(ShapeShift.JsonSerializer! original) -> void
 ShapeShift.KeyAttribute
 ShapeShift.KeyAttribute.Index.get -> int
 ShapeShift.KeyAttribute.KeyAttribute(int index) -> void
@@ -531,21 +539,21 @@ ShapeShift.MessagePack.MsgPackFormatter
 ShapeShift.MessagePack.MsgPackFormatter.MsgPackFormatter(ShapeShift.MessagePack.MsgPackFormatter! original) -> void
 ShapeShift.MessagePack.MsgPackFormatter.OldSpec.get -> bool
 ShapeShift.MessagePack.MsgPackFormatter.OldSpec.init -> void
-ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, ShapeShift.MessagePack.Extension value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, ShapeShift.MessagePack.ExtensionHeader value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.Writer writer, System.DateTime value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteBinHeader(ref ShapeShift.Converters.Writer writer, int length) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteByte(ref ShapeShift.Converters.Writer writer, byte value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteInt16(ref ShapeShift.Converters.Writer writer, short value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteInt32(ref ShapeShift.Converters.Writer writer, int value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteInt64(ref ShapeShift.Converters.Writer writer, long value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteInt8(ref ShapeShift.Converters.Writer writer, sbyte value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteSByte(ref ShapeShift.Converters.Writer writer, sbyte value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteStringHeader(ref ShapeShift.Converters.Writer writer, int byteCount) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteUInt16(ref ShapeShift.Converters.Writer writer, ushort value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteUInt32(ref ShapeShift.Converters.Writer writer, uint value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteUInt64(ref ShapeShift.Converters.Writer writer, ulong value) -> void
-ShapeShift.MessagePack.MsgPackFormatter.WriteUInt8(ref ShapeShift.Converters.Writer writer, byte value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, ShapeShift.MessagePack.Extension value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, ShapeShift.MessagePack.ExtensionHeader value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.Write(ref ShapeShift.Converters.BufferWriter writer, System.DateTime value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteBinHeader(ref ShapeShift.Converters.BufferWriter writer, int length) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteByte(ref ShapeShift.Converters.BufferWriter writer, byte value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteInt16(ref ShapeShift.Converters.BufferWriter writer, short value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteInt32(ref ShapeShift.Converters.BufferWriter writer, int value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteInt64(ref ShapeShift.Converters.BufferWriter writer, long value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteInt8(ref ShapeShift.Converters.BufferWriter writer, sbyte value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteSByte(ref ShapeShift.Converters.BufferWriter writer, sbyte value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteStringHeader(ref ShapeShift.Converters.BufferWriter writer, int byteCount) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteUInt16(ref ShapeShift.Converters.BufferWriter writer, ushort value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteUInt32(ref ShapeShift.Converters.BufferWriter writer, uint value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteUInt64(ref ShapeShift.Converters.BufferWriter writer, ulong value) -> void
+ShapeShift.MessagePack.MsgPackFormatter.WriteUInt8(ref ShapeShift.Converters.BufferWriter writer, byte value) -> void
 ShapeShift.MessagePack.MsgPackStreamingDeformatter
 ShapeShift.MessagePack.MsgPackStreamingDeformatter.MsgPackStreamingDeformatter(ShapeShift.MessagePack.MsgPackStreamingDeformatter! original) -> void
 ShapeShift.MessagePack.MsgPackStreamingDeformatter.ToTypeCode(byte code) -> ShapeShift.Converters.TokenType
@@ -598,6 +606,7 @@ ShapeShift.SerializeDefaultValuesPolicy.Required = 1 -> ShapeShift.SerializeDefa
 ShapeShift.SerializeDefaultValuesPolicy.ValueTypes = 2 -> ShapeShift.SerializeDefaultValuesPolicy
 ShapeShift.SerializerBase
 ShapeShift.SerializerBase.CreateSerializationContext(PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> ShapeShift.SerializerBase.DisposableSerializationContext
+ShapeShift.SerializerBase.Deformatter.get -> ShapeShift.Converters.Deformatter!
 ShapeShift.SerializerBase.Deserialize<T, TProvider>(scoped in System.Buffers.ReadOnlySequence<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
 ShapeShift.SerializerBase.Deserialize<T, TProvider>(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
 ShapeShift.SerializerBase.Deserialize<T, TProvider>(System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
@@ -642,6 +651,7 @@ ShapeShift.SerializerBase.DisposableSerializationContext.DisposableSerialization
 ShapeShift.SerializerBase.DisposableSerializationContext.DisposableSerializationContext(ShapeShift.Converters.SerializationContext context) -> void
 ShapeShift.SerializerBase.DisposableSerializationContext.Dispose() -> void
 ShapeShift.SerializerBase.DisposableSerializationContext.Value.get -> ShapeShift.Converters.SerializationContext
+ShapeShift.SerializerBase.Formatter.get -> ShapeShift.Converters.Formatter!
 ShapeShift.SerializerBase.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
 ShapeShift.SerializerBase.GetJsonSchema<T, TProvider>() -> System.Text.Json.Nodes.JsonObject!
 ShapeShift.SerializerBase.GetJsonSchema<T>() -> System.Text.Json.Nodes.JsonObject!
@@ -712,6 +722,8 @@ static ShapeShift.Converters.StreamingDeformatter.operator !=(ShapeShift.Convert
 static ShapeShift.Converters.StreamingDeformatter.operator ==(ShapeShift.Converters.StreamingDeformatter? left, ShapeShift.Converters.StreamingDeformatter? right) -> bool
 static ShapeShift.JsonExporter.JsonOptions.operator !=(ShapeShift.JsonExporter.JsonOptions left, ShapeShift.JsonExporter.JsonOptions right) -> bool
 static ShapeShift.JsonExporter.JsonOptions.operator ==(ShapeShift.JsonExporter.JsonOptions left, ShapeShift.JsonExporter.JsonOptions right) -> bool
+static ShapeShift.JsonSerializer.operator !=(ShapeShift.JsonSerializer? left, ShapeShift.JsonSerializer? right) -> bool
+static ShapeShift.JsonSerializer.operator ==(ShapeShift.JsonSerializer? left, ShapeShift.JsonSerializer? right) -> bool
 static ShapeShift.MessagePack.Extension.operator !=(ShapeShift.MessagePack.Extension left, ShapeShift.MessagePack.Extension right) -> bool
 static ShapeShift.MessagePack.Extension.operator ==(ShapeShift.MessagePack.Extension left, ShapeShift.MessagePack.Extension right) -> bool
 static ShapeShift.MessagePack.ExtensionHeader.operator !=(ShapeShift.MessagePack.ExtensionHeader left, ShapeShift.MessagePack.ExtensionHeader right) -> bool
@@ -804,11 +816,12 @@ virtual ShapeShift.Converters.Converter.VerifyCompatibility(ShapeShift.Converter
 virtual ShapeShift.Converters.Formatter.EqualityContract.get -> System.Type!
 virtual ShapeShift.Converters.Formatter.Equals(ShapeShift.Converters.Formatter? other) -> bool
 virtual ShapeShift.Converters.Formatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
-virtual ShapeShift.Converters.Formatter.TryWriteStartBinary(ref ShapeShift.Converters.Writer writer, int length) -> bool
+virtual ShapeShift.Converters.Formatter.TryWriteStartBinary(ref ShapeShift.Converters.BufferWriter writer, int length) -> bool
 virtual ShapeShift.Converters.StreamingDeformatter.EqualityContract.get -> System.Type!
 virtual ShapeShift.Converters.StreamingDeformatter.Equals(ShapeShift.Converters.StreamingDeformatter? other) -> bool
 virtual ShapeShift.Converters.StreamingDeformatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
 virtual ShapeShift.Converters.StreamingDeformatter.TryReadRaw(ref ShapeShift.Converters.Reader reader, ShapeShift.Converters.SerializationContext context, out System.Buffers.ReadOnlySequence<byte> bytes) -> ShapeShift.Converters.DecodeResult
+virtual ShapeShift.JsonSerializer.Equals(ShapeShift.JsonSerializer? other) -> bool
 virtual ShapeShift.KnownSubTypeAttribute.Shape.get -> PolyType.Abstractions.ITypeShape?
 virtual ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.<Clone>$() -> ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 virtual ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.EqualityContract.get -> System.Type!
