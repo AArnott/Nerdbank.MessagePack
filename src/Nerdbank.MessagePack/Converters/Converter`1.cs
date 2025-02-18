@@ -11,7 +11,9 @@ namespace Nerdbank.PolySerializer.Converters;
 /// An abstract base class for all converters.
 /// </summary>
 /// <typeparam name="T">The type that this converter can translate between runtime values and encoded bytes.</typeparam>
+#pragma warning disable RS0022 // Constructor make noninheritable base class inheritable -- BY DESIGN
 public abstract class Converter<T>() : Converter(typeof(T))
+#pragma warning restore RS0022 // Constructor make noninheritable base class inheritable
 {
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
