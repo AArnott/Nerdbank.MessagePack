@@ -5,6 +5,76 @@ abstract Nerdbank.MessagePack.MessagePackConverter.WriteObject(ref Nerdbank.Mess
 abstract Nerdbank.MessagePack.MessagePackConverter<T>.Read(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> T?
 abstract Nerdbank.MessagePack.MessagePackConverter<T>.Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in T? value, Nerdbank.MessagePack.SerializationContext context) -> void
 abstract Nerdbank.MessagePack.MessagePackNamingPolicy.ConvertName(string! name) -> string!
+abstract Nerdbank.PolySerializer.Converters.Converter.ReadObject(ref Nerdbank.PolySerializer.Converters.Reader reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> object?
+abstract Nerdbank.PolySerializer.Converters.Converter.WriteObject(ref Nerdbank.PolySerializer.Converters.Writer writer, object? value, Nerdbank.PolySerializer.Converters.SerializationContext context) -> void
+abstract Nerdbank.PolySerializer.Converters.Converter<T>.Read(ref Nerdbank.PolySerializer.Converters.Reader reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> T?
+abstract Nerdbank.PolySerializer.Converters.Converter<T>.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, in T? value, Nerdbank.PolySerializer.Converters.SerializationContext context) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.<Clone>$() -> Nerdbank.PolySerializer.Converters.Formatter!
+abstract Nerdbank.PolySerializer.Converters.Formatter.ArrayLengthRequiredInHeader.get -> bool
+abstract Nerdbank.PolySerializer.Converters.Formatter.Encoding.get -> System.Text.Encoding!
+abstract Nerdbank.PolySerializer.Converters.Formatter.FormatName.get -> string!
+abstract Nerdbank.PolySerializer.Converters.Formatter.GetEncodedLength(long value) -> int
+abstract Nerdbank.PolySerializer.Converters.Formatter.GetEncodedLength(ulong value) -> int
+abstract Nerdbank.PolySerializer.Converters.Formatter.GetEncodedStringBytes(string! value, out System.ReadOnlyMemory<byte> encodedBytes, out System.ReadOnlyMemory<byte> formattedBytes) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, bool value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, byte value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, char value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, double value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, float value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, int value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, long value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, sbyte value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, scoped System.ReadOnlySpan<char> value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, short value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, string? value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, uint value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, ulong value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, ushort value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteArrayElementSeparator(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteArrayEnd(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteArrayStart(ref Nerdbank.PolySerializer.Converters.Writer writer, int length) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteEncodedString(ref Nerdbank.PolySerializer.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteEncodedString(ref Nerdbank.PolySerializer.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteMapEnd(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteMapKeyValueSeparator(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteMapPairSeparator(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteMapStart(ref Nerdbank.PolySerializer.Converters.Writer writer, int count) -> void
+abstract Nerdbank.PolySerializer.Converters.Formatter.WriteNull(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.<Clone>$() -> Nerdbank.PolySerializer.Converters.StreamingDeformatter!
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.Encoding.get -> System.Text.Encoding!
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.FormatName.get -> string!
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.ThrowInvalidCode(in Nerdbank.PolySerializer.Converters.Reader reader) -> System.Exception!
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryPeekIsFloat32(in Nerdbank.PolySerializer.Converters.Reader reader, out bool float32) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryPeekIsSignedInteger(in Nerdbank.PolySerializer.Converters.Reader reader, out bool signed) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryPeekNextTypeCode(in Nerdbank.PolySerializer.Converters.Reader reader, out Nerdbank.PolySerializer.Converters.TypeCode typeCode) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out bool value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out byte value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out char value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out double value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out float value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out int value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out long value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out sbyte value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out short value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out string? value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out uint value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out ulong value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out ushort value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadArrayHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out int length) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadBinary(ref Nerdbank.PolySerializer.Converters.Reader reader, out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadMapHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out int count) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadNull(ref Nerdbank.PolySerializer.Converters.Reader reader) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadNull(ref Nerdbank.PolySerializer.Converters.Reader reader, out bool isNull) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadRaw(ref Nerdbank.PolySerializer.Converters.Reader reader, long length, out System.Buffers.ReadOnlySequence<byte> rawBytes) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadStringSequence(ref Nerdbank.PolySerializer.Converters.Reader reader, out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadStringSpan(scoped ref Nerdbank.PolySerializer.Converters.Reader reader, out bool contiguous, out System.ReadOnlySpan<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.Converters.StreamingDeformatter.TrySkip(ref Nerdbank.PolySerializer.Converters.Reader reader, ref Nerdbank.PolySerializer.Converters.SerializationContext context) -> Nerdbank.PolySerializer.Converters.DecodeResult
+abstract Nerdbank.PolySerializer.NamingPolicy.ConvertName(string! name) -> string!
+abstract Nerdbank.PolySerializer.SerializerBase.<Clone>$() -> Nerdbank.PolySerializer.SerializerBase!
+abstract Nerdbank.PolySerializer.SerializerBase.Deformatter.get -> Nerdbank.PolySerializer.Converters.Deformatter!
+abstract Nerdbank.PolySerializer.SerializerBase.Formatter.get -> Nerdbank.PolySerializer.Converters.Formatter!
 const Nerdbank.MessagePack.MessagePackCode.Array16 = 220 -> byte
 const Nerdbank.MessagePack.MessagePackCode.Array32 = 221 -> byte
 const Nerdbank.MessagePack.MessagePackCode.Bin16 = 197 -> byte
@@ -48,6 +118,49 @@ const Nerdbank.MessagePack.MessagePackCode.UInt32 = 206 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt64 = 207 -> byte
 const Nerdbank.MessagePack.MessagePackCode.UInt8 = 204 -> byte
 const Nerdbank.MessagePack.ReservedMessagePackExtensionTypeCode.DateTime = -1 -> sbyte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Array16 = 220 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Array32 = 221 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Bin16 = 197 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Bin32 = 198 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Bin8 = 196 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Ext16 = 200 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Ext32 = 201 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Ext8 = 199 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.False = 194 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.FixExt1 = 212 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.FixExt16 = 216 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.FixExt2 = 213 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.FixExt4 = 214 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.FixExt8 = 215 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Float32 = 202 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Float64 = 203 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Int16 = 209 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Int32 = 210 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Int64 = 211 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Int8 = 208 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Map16 = 222 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Map32 = 223 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MaxFixArray = 159 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MaxFixInt = 127 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MaxFixMap = 143 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MaxFixStr = 191 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MaxNegativeFixInt = 255 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MinFixArray = 144 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MinFixInt = 0 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MinFixMap = 128 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MinFixStr = 160 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.MinNegativeFixInt = 224 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.NeverUsed = 193 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Nil = 192 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Str16 = 218 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Str32 = 219 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.Str8 = 217 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.True = 195 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.UInt16 = 205 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.UInt32 = 206 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.UInt64 = 207 -> byte
+const Nerdbank.PolySerializer.MessagePack.MessagePackCode.UInt8 = 204 -> byte
+const Nerdbank.PolySerializer.MessagePack.ReservedMessagePackExtensionTypeCode.DateTime = -1 -> sbyte
 Nerdbank.MessagePack.DecodeResultExtensions
 Nerdbank.MessagePack.Extension
 Nerdbank.MessagePack.Extension.Data.get -> System.Buffers.ReadOnlySequence<byte>
@@ -342,6 +455,433 @@ Nerdbank.MessagePack.SerializeDefaultValuesPolicy.ReferenceTypes = 4 -> Nerdbank
 Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Required = 1 -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
 Nerdbank.MessagePack.SerializeDefaultValuesPolicy.ValueTypes = 2 -> Nerdbank.MessagePack.SerializeDefaultValuesPolicy
 Nerdbank.MessagePack.StructuralEqualityComparer
+Nerdbank.PolySerializer.BufferWriter
+Nerdbank.PolySerializer.BufferWriter.BufferWriter() -> void
+Nerdbank.PolySerializer.BufferWriter.Write(in System.Buffers.ReadOnlySequence<byte> rawMessagePackBlock) -> void
+Nerdbank.PolySerializer.BufferWriter.Write(scoped System.ReadOnlySpan<byte> source) -> void
+Nerdbank.PolySerializer.ConverterAttribute
+Nerdbank.PolySerializer.ConverterAttribute.ConverterAttribute(System.Type! converterType) -> void
+Nerdbank.PolySerializer.ConverterAttribute.ConverterType.get -> System.Type!
+Nerdbank.PolySerializer.Converters.AsyncReader
+Nerdbank.PolySerializer.Converters.AsyncReader.AsyncReader(System.IO.Pipelines.PipeReader! pipeReader, Nerdbank.PolySerializer.Converters.Deformatter! deformatter) -> void
+Nerdbank.PolySerializer.Converters.AsyncReader.BufferRefresh
+Nerdbank.PolySerializer.Converters.AsyncReader.BufferRefresh.BufferRefresh() -> void
+Nerdbank.PolySerializer.Converters.AsyncReader.CancellationToken.get -> System.Threading.CancellationToken
+Nerdbank.PolySerializer.Converters.AsyncReader.CancellationToken.init -> void
+Nerdbank.PolySerializer.Converters.AsyncReader.CreateBufferedReader() -> Nerdbank.PolySerializer.Converters.Reader
+Nerdbank.PolySerializer.Converters.AsyncReader.CreateStreamingReader() -> Nerdbank.PolySerializer.Converters.StreamingReader
+Nerdbank.PolySerializer.Converters.AsyncReader.Deformatter.get -> Nerdbank.PolySerializer.Converters.Deformatter!
+Nerdbank.PolySerializer.Converters.AsyncReader.Dispose() -> void
+Nerdbank.PolySerializer.Converters.AsyncReader.GetMoreBytesAsync
+Nerdbank.PolySerializer.Converters.AsyncReader.PipeReader.get -> System.IO.Pipelines.PipeReader!
+Nerdbank.PolySerializer.Converters.AsyncReader.ReturnReader(ref Nerdbank.PolySerializer.Converters.Reader reader) -> void
+Nerdbank.PolySerializer.Converters.AsyncReader.ReturnReader(ref Nerdbank.PolySerializer.Converters.StreamingReader reader) -> void
+Nerdbank.PolySerializer.Converters.AsyncWriter
+Nerdbank.PolySerializer.Converters.AsyncWriter.AsyncWriter(System.IO.Pipelines.PipeWriter! pipeWriter, Nerdbank.PolySerializer.Converters.Formatter! formatter) -> void
+Nerdbank.PolySerializer.Converters.AsyncWriter.CreateWriter() -> Nerdbank.PolySerializer.Converters.Writer
+Nerdbank.PolySerializer.Converters.AsyncWriter.Flush() -> void
+Nerdbank.PolySerializer.Converters.AsyncWriter.FlushIfAppropriateAsync(Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask
+Nerdbank.PolySerializer.Converters.AsyncWriter.Formatter.get -> Nerdbank.PolySerializer.Converters.Formatter!
+Nerdbank.PolySerializer.Converters.AsyncWriter.IsTimeToFlush(Nerdbank.PolySerializer.Converters.SerializationContext context) -> bool
+Nerdbank.PolySerializer.Converters.AsyncWriter.IsTimeToFlush(Nerdbank.PolySerializer.Converters.SerializationContext context, Nerdbank.PolySerializer.Converters.Writer writer) -> bool
+Nerdbank.PolySerializer.Converters.AsyncWriter.ReturnWriter(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+Nerdbank.PolySerializer.Converters.AsyncWriter.WriteNull() -> void
+Nerdbank.PolySerializer.Converters.Converter
+Nerdbank.PolySerializer.Converters.Converter<T>
+Nerdbank.PolySerializer.Converters.Converter<T>.Converter() -> void
+Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.DecodeResult.EmptyBuffer = 2 -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.DecodeResult.InsufficientBuffer = 3 -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.DecodeResult.Success = 0 -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.DecodeResult.TokenMismatch = 1 -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.DecodeResultExtensions
+Nerdbank.PolySerializer.Converters.Deformatter
+Nerdbank.PolySerializer.Converters.Deformatter.Deformatter(Nerdbank.PolySerializer.Converters.StreamingDeformatter! streamingDeformatter) -> void
+Nerdbank.PolySerializer.Converters.Deformatter.Encoding.get -> System.Text.Encoding!
+Nerdbank.PolySerializer.Converters.Deformatter.PeekIsFloat32(in Nerdbank.PolySerializer.Converters.Reader reader) -> bool
+Nerdbank.PolySerializer.Converters.Deformatter.PeekIsSignedInteger(in Nerdbank.PolySerializer.Converters.Reader reader) -> bool
+Nerdbank.PolySerializer.Converters.Deformatter.PeekNextTypeCode(in Nerdbank.PolySerializer.Converters.Reader reader) -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.Deformatter.ReadArrayHeader(ref Nerdbank.PolySerializer.Converters.Reader reader) -> int
+Nerdbank.PolySerializer.Converters.Deformatter.ReadBoolean(ref Nerdbank.PolySerializer.Converters.Reader reader) -> bool
+Nerdbank.PolySerializer.Converters.Deformatter.ReadByte(ref Nerdbank.PolySerializer.Converters.Reader reader) -> byte
+Nerdbank.PolySerializer.Converters.Deformatter.ReadBytes(ref Nerdbank.PolySerializer.Converters.Reader reader) -> System.Buffers.ReadOnlySequence<byte>?
+Nerdbank.PolySerializer.Converters.Deformatter.ReadChar(ref Nerdbank.PolySerializer.Converters.Reader reader) -> char
+Nerdbank.PolySerializer.Converters.Deformatter.ReadDouble(ref Nerdbank.PolySerializer.Converters.Reader reader) -> double
+Nerdbank.PolySerializer.Converters.Deformatter.ReadInt16(ref Nerdbank.PolySerializer.Converters.Reader reader) -> short
+Nerdbank.PolySerializer.Converters.Deformatter.ReadInt32(ref Nerdbank.PolySerializer.Converters.Reader reader) -> int
+Nerdbank.PolySerializer.Converters.Deformatter.ReadInt64(ref Nerdbank.PolySerializer.Converters.Reader reader) -> long
+Nerdbank.PolySerializer.Converters.Deformatter.ReadMapHeader(ref Nerdbank.PolySerializer.Converters.Reader reader) -> int
+Nerdbank.PolySerializer.Converters.Deformatter.ReadNull(ref Nerdbank.PolySerializer.Converters.Reader reader) -> void
+Nerdbank.PolySerializer.Converters.Deformatter.ReadRaw(ref Nerdbank.PolySerializer.Converters.Reader reader, long length) -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.PolySerializer.Converters.Deformatter.ReadRaw(ref Nerdbank.PolySerializer.Converters.Reader reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.PolySerializer.Converters.Deformatter.ReadSByte(ref Nerdbank.PolySerializer.Converters.Reader reader) -> sbyte
+Nerdbank.PolySerializer.Converters.Deformatter.ReadSingle(ref Nerdbank.PolySerializer.Converters.Reader reader) -> float
+Nerdbank.PolySerializer.Converters.Deformatter.ReadString(ref Nerdbank.PolySerializer.Converters.Reader reader) -> string?
+Nerdbank.PolySerializer.Converters.Deformatter.ReadStringSequence(ref Nerdbank.PolySerializer.Converters.Reader reader) -> System.Buffers.ReadOnlySequence<byte>?
+Nerdbank.PolySerializer.Converters.Deformatter.ReadStringSpan(ref Nerdbank.PolySerializer.Converters.Reader reader) -> System.ReadOnlySpan<byte>
+Nerdbank.PolySerializer.Converters.Deformatter.ReadUInt16(ref Nerdbank.PolySerializer.Converters.Reader reader) -> ushort
+Nerdbank.PolySerializer.Converters.Deformatter.ReadUInt32(ref Nerdbank.PolySerializer.Converters.Reader reader) -> uint
+Nerdbank.PolySerializer.Converters.Deformatter.ReadUInt64(ref Nerdbank.PolySerializer.Converters.Reader reader) -> ulong
+Nerdbank.PolySerializer.Converters.Deformatter.Skip(ref Nerdbank.PolySerializer.Converters.Reader reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> void
+Nerdbank.PolySerializer.Converters.Deformatter.StreamingDeformatter.get -> Nerdbank.PolySerializer.Converters.StreamingDeformatter!
+Nerdbank.PolySerializer.Converters.Deformatter.TryReadArrayHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out int count) -> bool
+Nerdbank.PolySerializer.Converters.Deformatter.TryReadMapHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out int count) -> bool
+Nerdbank.PolySerializer.Converters.Deformatter.TryReadNull(ref Nerdbank.PolySerializer.Converters.Reader reader) -> bool
+Nerdbank.PolySerializer.Converters.Deformatter.TryReadStringSpan(scoped ref Nerdbank.PolySerializer.Converters.Reader reader, out System.ReadOnlySpan<byte> span) -> bool
+Nerdbank.PolySerializer.Converters.Formatter
+Nerdbank.PolySerializer.Converters.Formatter.Formatter() -> void
+Nerdbank.PolySerializer.Converters.Formatter.Formatter(Nerdbank.PolySerializer.Converters.Formatter! original) -> void
+Nerdbank.PolySerializer.Converters.Reader
+Nerdbank.PolySerializer.Converters.Reader.Deformatter.get -> Nerdbank.PolySerializer.Converters.Deformatter!
+Nerdbank.PolySerializer.Converters.Reader.End.get -> bool
+Nerdbank.PolySerializer.Converters.Reader.IsNull.get -> bool
+Nerdbank.PolySerializer.Converters.Reader.NextTypeCode.get -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.Reader.Position.get -> System.SequencePosition
+Nerdbank.PolySerializer.Converters.Reader.ReadArrayHeader() -> int
+Nerdbank.PolySerializer.Converters.Reader.ReadBoolean() -> bool
+Nerdbank.PolySerializer.Converters.Reader.ReadByte() -> byte
+Nerdbank.PolySerializer.Converters.Reader.ReadBytes() -> System.Buffers.ReadOnlySequence<byte>?
+Nerdbank.PolySerializer.Converters.Reader.ReadChar() -> char
+Nerdbank.PolySerializer.Converters.Reader.ReadDouble() -> double
+Nerdbank.PolySerializer.Converters.Reader.Reader() -> void
+Nerdbank.PolySerializer.Converters.Reader.Reader(System.Buffers.ReadOnlySequence<byte> sequence, Nerdbank.PolySerializer.Converters.Deformatter! deformatter) -> void
+Nerdbank.PolySerializer.Converters.Reader.Reader(System.ReadOnlyMemory<byte> buffer, Nerdbank.PolySerializer.Converters.Deformatter! deformatter) -> void
+Nerdbank.PolySerializer.Converters.Reader.ReadInt16() -> short
+Nerdbank.PolySerializer.Converters.Reader.ReadInt32() -> int
+Nerdbank.PolySerializer.Converters.Reader.ReadInt64() -> long
+Nerdbank.PolySerializer.Converters.Reader.ReadMapHeader() -> int
+Nerdbank.PolySerializer.Converters.Reader.ReadNull() -> void
+Nerdbank.PolySerializer.Converters.Reader.ReadRaw(long length) -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.PolySerializer.Converters.Reader.ReadRaw(Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.PolySerializer.Converters.Reader.ReadSByte() -> sbyte
+Nerdbank.PolySerializer.Converters.Reader.ReadSingle() -> float
+Nerdbank.PolySerializer.Converters.Reader.ReadString() -> string?
+Nerdbank.PolySerializer.Converters.Reader.ReadStringSequence() -> System.Buffers.ReadOnlySequence<byte>?
+Nerdbank.PolySerializer.Converters.Reader.ReadStringSpan() -> System.ReadOnlySpan<byte>
+Nerdbank.PolySerializer.Converters.Reader.ReadUInt16() -> ushort
+Nerdbank.PolySerializer.Converters.Reader.ReadUInt32() -> uint
+Nerdbank.PolySerializer.Converters.Reader.ReadUInt64() -> ulong
+Nerdbank.PolySerializer.Converters.Reader.Remaining.get -> long
+Nerdbank.PolySerializer.Converters.Reader.Sequence.get -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.PolySerializer.Converters.Reader.Skip(Nerdbank.PolySerializer.Converters.SerializationContext context) -> void
+Nerdbank.PolySerializer.Converters.Reader.TryReadArrayHeader(out int count) -> bool
+Nerdbank.PolySerializer.Converters.Reader.TryReadMapHeader(out int count) -> bool
+Nerdbank.PolySerializer.Converters.Reader.TryReadNull() -> bool
+Nerdbank.PolySerializer.Converters.Reader.TryReadStringSpan(out System.ReadOnlySpan<byte> value) -> bool
+Nerdbank.PolySerializer.Converters.Reader.UnreadSpan.get -> System.ReadOnlySpan<byte>
+Nerdbank.PolySerializer.Converters.SerializationContext
+Nerdbank.PolySerializer.Converters.SerializationContext.CancellationToken.get -> System.Threading.CancellationToken
+Nerdbank.PolySerializer.Converters.SerializationContext.CancellationToken.init -> void
+Nerdbank.PolySerializer.Converters.SerializationContext.DepthStep() -> void
+Nerdbank.PolySerializer.Converters.SerializationContext.Equals(Nerdbank.PolySerializer.Converters.SerializationContext other) -> bool
+Nerdbank.PolySerializer.Converters.SerializationContext.GetConverter(PolyType.Abstractions.ITypeShape! shape) -> Nerdbank.PolySerializer.Converters.Converter!
+Nerdbank.PolySerializer.Converters.SerializationContext.GetConverter(System.Type! type, PolyType.ITypeShapeProvider? provider) -> Nerdbank.PolySerializer.Converters.Converter!
+Nerdbank.PolySerializer.Converters.SerializationContext.GetConverter<T>(PolyType.ITypeShapeProvider? provider) -> Nerdbank.PolySerializer.Converters.Converter<T>!
+Nerdbank.PolySerializer.Converters.SerializationContext.MaxDepth.get -> int
+Nerdbank.PolySerializer.Converters.SerializationContext.MaxDepth.set -> void
+Nerdbank.PolySerializer.Converters.SerializationContext.SerializationContext() -> void
+Nerdbank.PolySerializer.Converters.SerializationContext.this[object! key].get -> object?
+Nerdbank.PolySerializer.Converters.SerializationContext.this[object! key].set -> void
+Nerdbank.PolySerializer.Converters.SerializationContext.TypeShapeProvider.get -> PolyType.ITypeShapeProvider?
+Nerdbank.PolySerializer.Converters.SerializationContext.UnflushedBytesThreshold.get -> int
+Nerdbank.PolySerializer.Converters.SerializationContext.UnflushedBytesThreshold.init -> void
+Nerdbank.PolySerializer.Converters.StreamingDeformatter
+Nerdbank.PolySerializer.Converters.StreamingDeformatter.InsufficientBytes(in Nerdbank.PolySerializer.Converters.Reader reader) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingDeformatter.StreamingDeformatter() -> void
+Nerdbank.PolySerializer.Converters.StreamingDeformatter.StreamingDeformatter(Nerdbank.PolySerializer.Converters.StreamingDeformatter! original) -> void
+Nerdbank.PolySerializer.Converters.StreamingReader
+Nerdbank.PolySerializer.Converters.StreamingReader.CancellationToken.get -> System.Threading.CancellationToken
+Nerdbank.PolySerializer.Converters.StreamingReader.CancellationToken.init -> void
+Nerdbank.PolySerializer.Converters.StreamingReader.FetchMoreBytesAsync(uint minimumLength = 1) -> System.Threading.Tasks.ValueTask<Nerdbank.PolySerializer.Converters.AsyncReader.BufferRefresh>
+Nerdbank.PolySerializer.Converters.StreamingReader.GetExchangeInfo() -> Nerdbank.PolySerializer.Converters.AsyncReader.BufferRefresh
+Nerdbank.PolySerializer.Converters.StreamingReader.Position.get -> System.SequencePosition
+Nerdbank.PolySerializer.Converters.StreamingReader.Reader.get -> Nerdbank.PolySerializer.Converters.Reader
+Nerdbank.PolySerializer.Converters.StreamingReader.StreamingReader() -> void
+Nerdbank.PolySerializer.Converters.StreamingReader.StreamingReader(scoped in Nerdbank.PolySerializer.Converters.AsyncReader.BufferRefresh refresh) -> void
+Nerdbank.PolySerializer.Converters.StreamingReader.StreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence, Nerdbank.PolySerializer.Converters.AsyncReader.GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState, Nerdbank.PolySerializer.Converters.Deformatter! deformatter) -> void
+Nerdbank.PolySerializer.Converters.StreamingReader.StreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence, Nerdbank.PolySerializer.Converters.Deformatter! deformatter) -> void
+Nerdbank.PolySerializer.Converters.StreamingReader.TryPeekNextTypeCode(out Nerdbank.PolySerializer.Converters.TypeCode typeCode) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out bool value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out byte value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out int value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out long value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out sbyte value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out short value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out string? value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out uint value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out ulong value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryRead(out ushort value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadArrayHeader(out int length) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadBinary(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadMapHeader(out int count) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadNull() -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadNull(out bool isNull) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadRaw(long length, out System.Buffers.ReadOnlySequence<byte> rawBytes) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadStringSequence(out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TryReadStringSpan(out bool contiguous, out System.ReadOnlySpan<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.StreamingReader.TrySkip(ref Nerdbank.PolySerializer.Converters.SerializationContext context) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Binary = 6 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Boolean = 3 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Float = 4 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Integer = 1 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Map = 8 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Nil = 2 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.String = 5 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Unknown = 0 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.TypeCode.Vector = 7 -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.Converters.Writer
+Nerdbank.PolySerializer.Converters.Writer.ArrayLengthRequiredInHeader.get -> bool
+Nerdbank.PolySerializer.Converters.Writer.Buffer.get -> Nerdbank.PolySerializer.BufferWriter
+Nerdbank.PolySerializer.Converters.Writer.Flush() -> void
+Nerdbank.PolySerializer.Converters.Writer.Formatter.get -> Nerdbank.PolySerializer.Converters.Formatter!
+Nerdbank.PolySerializer.Converters.Writer.TryWriteBinHeader(int length) -> bool
+Nerdbank.PolySerializer.Converters.Writer.UnflushedBytes.get -> int
+Nerdbank.PolySerializer.Converters.Writer.Write(bool value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(byte value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(byte[]? src) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(char value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(double value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(float value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(in System.Buffers.ReadOnlySequence<byte> value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(int value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(long value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(Nerdbank.PolySerializer.PreformattedString! value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(sbyte value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(scoped System.ReadOnlySpan<byte> value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(scoped System.ReadOnlySpan<char> value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(short value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(string? value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(uint value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(ulong value) -> void
+Nerdbank.PolySerializer.Converters.Writer.Write(ushort value) -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteArrayElementSeparator() -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteArrayEnd() -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteArrayHeader(int length) -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteEncodedString(scoped System.ReadOnlySpan<byte> value) -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteMapEnd() -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteMapHeader(int count) -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteMapKeyValueSeparator() -> void
+Nerdbank.PolySerializer.Converters.Writer.WriteNull() -> void
+Nerdbank.PolySerializer.Converters.Writer.Writer() -> void
+Nerdbank.PolySerializer.Converters.Writer.Writer(Nerdbank.PolySerializer.BufferWriter writer, Nerdbank.PolySerializer.Converters.Formatter! formatter) -> void
+Nerdbank.PolySerializer.Converters.Writer.Writer(System.Buffers.IBufferWriter<byte>! writer, Nerdbank.PolySerializer.Converters.Formatter! formatter) -> void
+Nerdbank.PolySerializer.IDeepSecureEqualityComparer<T>
+Nerdbank.PolySerializer.IDeepSecureEqualityComparer<T>.DeepEquals(T? other) -> bool
+Nerdbank.PolySerializer.IDeepSecureEqualityComparer<T>.GetHashCode() -> int
+Nerdbank.PolySerializer.IDeepSecureEqualityComparer<T>.GetSecureHashCode() -> long
+Nerdbank.PolySerializer.ISerializationCallbacks
+Nerdbank.PolySerializer.ISerializationCallbacks.OnAfterDeserialize() -> void
+Nerdbank.PolySerializer.ISerializationCallbacks.OnBeforeSerialize() -> void
+Nerdbank.PolySerializer.JsonExporter
+Nerdbank.PolySerializer.JsonExporter.ConvertToJson(in System.Buffers.ReadOnlySequence<byte> buffer, Nerdbank.PolySerializer.JsonExporter.JsonOptions? options = null) -> string!
+Nerdbank.PolySerializer.JsonExporter.ConvertToJson(ref Nerdbank.PolySerializer.Converters.Reader reader, System.IO.TextWriter! jsonWriter, Nerdbank.PolySerializer.JsonExporter.JsonOptions? options = null) -> void
+Nerdbank.PolySerializer.JsonExporter.ConvertToJson(System.ReadOnlyMemory<byte> buffer, Nerdbank.PolySerializer.JsonExporter.JsonOptions? options = null) -> string!
+Nerdbank.PolySerializer.JsonExporter.JsonExporter(Nerdbank.PolySerializer.SerializerBase! serializerBase) -> void
+Nerdbank.PolySerializer.JsonExporter.JsonOptions
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.Equals(Nerdbank.PolySerializer.JsonExporter.JsonOptions other) -> bool
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.Indentation.get -> string?
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.Indentation.set -> void
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.JsonOptions() -> void
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.NewLine.get -> string!
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.NewLine.set -> void
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.TrailingCommas.get -> bool
+Nerdbank.PolySerializer.JsonExporter.JsonOptions.TrailingCommas.set -> void
+Nerdbank.PolySerializer.JsonSchemaContext
+Nerdbank.PolySerializer.JsonSchemaContext.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
+Nerdbank.PolySerializer.KeyAttribute
+Nerdbank.PolySerializer.KeyAttribute.Index.get -> int
+Nerdbank.PolySerializer.KeyAttribute.KeyAttribute(int index) -> void
+Nerdbank.PolySerializer.KnownSubTypeAttribute
+Nerdbank.PolySerializer.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType) -> void
+Nerdbank.PolySerializer.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType, int alias) -> void
+Nerdbank.PolySerializer.KnownSubTypeAttribute.KnownSubTypeAttribute(System.Type! subType, string! alias) -> void
+Nerdbank.PolySerializer.KnownSubTypeAttribute.SubType.get -> System.Type!
+Nerdbank.PolySerializer.KnownSubTypeMapping<TBase>
+Nerdbank.PolySerializer.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.Abstractions.ITypeShape<TDerived>! typeShape) -> void
+Nerdbank.PolySerializer.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.ITypeShapeProvider! provider) -> void
+Nerdbank.PolySerializer.KnownSubTypeMapping<TBase>.KnownSubTypeMapping() -> void
+Nerdbank.PolySerializer.MessagePack.Extension
+Nerdbank.PolySerializer.MessagePack.Extension.Data.get -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.PolySerializer.MessagePack.Extension.Data.set -> void
+Nerdbank.PolySerializer.MessagePack.Extension.Deconstruct(out sbyte TypeCode, out System.Buffers.ReadOnlySequence<byte> Data) -> void
+Nerdbank.PolySerializer.MessagePack.Extension.Equals(Nerdbank.PolySerializer.MessagePack.Extension other) -> bool
+Nerdbank.PolySerializer.MessagePack.Extension.Extension() -> void
+Nerdbank.PolySerializer.MessagePack.Extension.Extension(sbyte TypeCode, System.Buffers.ReadOnlySequence<byte> Data) -> void
+Nerdbank.PolySerializer.MessagePack.Extension.Extension(sbyte typeCode, System.ReadOnlyMemory<byte> data) -> void
+Nerdbank.PolySerializer.MessagePack.Extension.Header.get -> Nerdbank.PolySerializer.MessagePack.ExtensionHeader
+Nerdbank.PolySerializer.MessagePack.Extension.TypeCode.get -> sbyte
+Nerdbank.PolySerializer.MessagePack.Extension.TypeCode.set -> void
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.Deconstruct(out sbyte TypeCode, out uint Length) -> void
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.Equals(Nerdbank.PolySerializer.MessagePack.ExtensionHeader other) -> bool
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.ExtensionHeader() -> void
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.ExtensionHeader(sbyte TypeCode, uint Length) -> void
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.Length.get -> uint
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.Length.set -> void
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.TypeCode.get -> sbyte
+Nerdbank.PolySerializer.MessagePack.ExtensionHeader.TypeCode.set -> void
+Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode
+Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.LibraryReservedMessagePackExtensionTypeCode() -> void
+Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.LibraryReservedMessagePackExtensionTypeCode(Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode! original) -> void
+Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.get -> sbyte
+Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.init -> void
+Nerdbank.PolySerializer.MessagePack.MessagePackCode
+Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives
+Nerdbank.PolySerializer.MessagePack.MessagePackSerializer
+Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.get -> Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
+Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.MessagePackSerializer() -> void
+Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.MessagePackSerializer(Nerdbank.PolySerializer.MessagePack.MessagePackSerializer! original) -> void
+Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.PreserveReferences.get -> bool
+Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.PreserveReferences.init -> void
+Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Array = 7 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Binary = 6 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Boolean = 3 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Extension = 9 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Float = 4 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Integer = 1 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Map = 8 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Nil = 2 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.String = 5 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MessagePackType.Unknown = 0 -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.MsgPackDeformatter(Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter! streamingDeformatter) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.PeekNextCode(in Nerdbank.PolySerializer.Converters.Reader reader) -> byte
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.PeekNextMessagePackType(in Nerdbank.PolySerializer.Converters.Reader reader) -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.ReadDateTime(ref Nerdbank.PolySerializer.Converters.Reader reader) -> System.DateTime
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.ReadExtension(ref Nerdbank.PolySerializer.Converters.Reader reader) -> Nerdbank.PolySerializer.MessagePack.Extension
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.ReadExtensionHeader(ref Nerdbank.PolySerializer.Converters.Reader reader) -> Nerdbank.PolySerializer.MessagePack.ExtensionHeader
+Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.StreamingDeformatter.get -> Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter!
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.MsgPackFormatter(Nerdbank.PolySerializer.MessagePack.MsgPackFormatter! original) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.OldSpec.get -> bool
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.OldSpec.init -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, Nerdbank.PolySerializer.MessagePack.Extension value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, Nerdbank.PolySerializer.MessagePack.ExtensionHeader value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, System.DateTime value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteBinHeader(ref Nerdbank.PolySerializer.Converters.Writer writer, int length) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteByte(ref Nerdbank.PolySerializer.Converters.Writer writer, byte value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteInt16(ref Nerdbank.PolySerializer.Converters.Writer writer, short value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteInt32(ref Nerdbank.PolySerializer.Converters.Writer writer, int value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteInt64(ref Nerdbank.PolySerializer.Converters.Writer writer, long value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteInt8(ref Nerdbank.PolySerializer.Converters.Writer writer, sbyte value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteSByte(ref Nerdbank.PolySerializer.Converters.Writer writer, sbyte value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteStringHeader(ref Nerdbank.PolySerializer.Converters.Writer writer, int byteCount) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteUInt16(ref Nerdbank.PolySerializer.Converters.Writer writer, ushort value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteUInt32(ref Nerdbank.PolySerializer.Converters.Writer writer, uint value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteUInt64(ref Nerdbank.PolySerializer.Converters.Writer writer, ulong value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteUInt8(ref Nerdbank.PolySerializer.Converters.Writer writer, byte value) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.MsgPackStreamingDeformatter(Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter! original) -> void
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.ToTypeCode(byte code) -> Nerdbank.PolySerializer.Converters.TypeCode
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryPeekNextCode(in Nerdbank.PolySerializer.Converters.Reader reader, out byte code) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryPeekNextCode(in Nerdbank.PolySerializer.Converters.Reader reader, out Nerdbank.PolySerializer.MessagePack.MessagePackType messagePackType) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out Nerdbank.PolySerializer.MessagePack.Extension value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out Nerdbank.PolySerializer.MessagePack.ExtensionHeader value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out System.DateTime value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadBinHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out uint length) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadStringHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out uint length) -> Nerdbank.PolySerializer.Converters.DecodeResult
+Nerdbank.PolySerializer.MessagePack.ReservedMessagePackExtensionTypeCode
+Nerdbank.PolySerializer.NamingPolicy
+Nerdbank.PolySerializer.NamingPolicy.NamingPolicy() -> void
+Nerdbank.PolySerializer.PreformattedRawBytes
+Nerdbank.PolySerializer.PreformattedRawBytes.Equals(Nerdbank.PolySerializer.PreformattedRawBytes other) -> bool
+Nerdbank.PolySerializer.PreformattedRawBytes.IsOwned.get -> bool
+Nerdbank.PolySerializer.PreformattedRawBytes.MsgPack.get -> System.Buffers.ReadOnlySequence<byte>
+Nerdbank.PolySerializer.PreformattedRawBytes.PreformattedRawBytes() -> void
+Nerdbank.PolySerializer.PreformattedRawBytes.PreformattedRawBytes(System.Buffers.ReadOnlySequence<byte> msgpack) -> void
+Nerdbank.PolySerializer.PreformattedRawBytes.ToOwned() -> Nerdbank.PolySerializer.PreformattedRawBytes
+Nerdbank.PolySerializer.PreformattedString
+Nerdbank.PolySerializer.PreformattedString.Encoded.get -> System.ReadOnlyMemory<byte>
+Nerdbank.PolySerializer.PreformattedString.Equals(Nerdbank.PolySerializer.PreformattedString? other) -> bool
+Nerdbank.PolySerializer.PreformattedString.Formatted.get -> System.ReadOnlyMemory<byte>
+Nerdbank.PolySerializer.PreformattedString.Formatter.get -> Nerdbank.PolySerializer.Converters.Formatter!
+Nerdbank.PolySerializer.PreformattedString.IsMatch(System.Buffers.ReadOnlySequence<byte> utf8String) -> bool
+Nerdbank.PolySerializer.PreformattedString.IsMatch(System.ReadOnlySpan<byte> utf8String) -> bool
+Nerdbank.PolySerializer.PreformattedString.PreformattedString(string! value, Nerdbank.PolySerializer.Converters.Formatter! formatter) -> void
+Nerdbank.PolySerializer.PreformattedString.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader) -> bool
+Nerdbank.PolySerializer.PreformattedString.Value.get -> string!
+Nerdbank.PolySerializer.SerializationException
+Nerdbank.PolySerializer.SerializationException.SerializationException() -> void
+Nerdbank.PolySerializer.SerializationException.SerializationException(string? message) -> void
+Nerdbank.PolySerializer.SerializationException.SerializationException(string? message, System.Exception? innerException) -> void
+Nerdbank.PolySerializer.SerializeDefaultValuesPolicy
+Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.Always = Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.Required | Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.ValueTypes | Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.ReferenceTypes -> Nerdbank.PolySerializer.SerializeDefaultValuesPolicy
+Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.Never = 0 -> Nerdbank.PolySerializer.SerializeDefaultValuesPolicy
+Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.ReferenceTypes = 4 -> Nerdbank.PolySerializer.SerializeDefaultValuesPolicy
+Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.Required = 1 -> Nerdbank.PolySerializer.SerializeDefaultValuesPolicy
+Nerdbank.PolySerializer.SerializeDefaultValuesPolicy.ValueTypes = 2 -> Nerdbank.PolySerializer.SerializeDefaultValuesPolicy
+Nerdbank.PolySerializer.SerializerBase
+Nerdbank.PolySerializer.SerializerBase.CreateSerializationContext(PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Nerdbank.PolySerializer.SerializerBase.DisposableSerializationContext
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(ref Nerdbank.PolySerializer.Converters.Reader reader, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(ref Nerdbank.PolySerializer.Converters.Reader reader, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(scoped in System.Buffers.ReadOnlySequence<byte> buffer, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(scoped in System.Buffers.ReadOnlySequence<byte> buffer, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(System.IO.Stream! stream, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(System.IO.Stream! stream, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(System.ReadOnlyMemory<byte> buffer, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.Deserialize<T>(System.ReadOnlyMemory<byte> buffer, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T?
+Nerdbank.PolySerializer.SerializerBase.DeserializeAsync<T>(System.IO.Pipelines.PipeReader! reader, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
+Nerdbank.PolySerializer.SerializerBase.DeserializeAsync<T>(System.IO.Pipelines.PipeReader! reader, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
+Nerdbank.PolySerializer.SerializerBase.DeserializeAsync<T>(System.IO.Stream! stream, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
+Nerdbank.PolySerializer.SerializerBase.DeserializeAsync<T>(System.IO.Stream! stream, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T?>
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T, TElement>(System.IO.Pipelines.PipeReader! reader, PolyType.Abstractions.ITypeShape<T>! shape, Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T, TElement>(System.IO.Pipelines.PipeReader! reader, PolyType.ITypeShapeProvider! provider, Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T, TElement>(System.IO.Stream! stream, PolyType.Abstractions.ITypeShape<T>! shape, Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T, TElement>(System.IO.Stream! stream, PolyType.ITypeShapeProvider! provider, Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>! options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T>(System.IO.Pipelines.PipeReader! reader, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T>(System.IO.Pipelines.PipeReader! reader, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T>(System.IO.Stream! stream, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeEnumerableAsync<T>(System.IO.Stream! stream, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<T?>!
+Nerdbank.PolySerializer.SerializerBase.DeserializeObject(ref Nerdbank.PolySerializer.Converters.Reader reader, PolyType.Abstractions.ITypeShape! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> object?
+Nerdbank.PolySerializer.SerializerBase.DisposableSerializationContext
+Nerdbank.PolySerializer.SerializerBase.DisposableSerializationContext.DisposableSerializationContext() -> void
+Nerdbank.PolySerializer.SerializerBase.DisposableSerializationContext.DisposableSerializationContext(Nerdbank.PolySerializer.Converters.SerializationContext context) -> void
+Nerdbank.PolySerializer.SerializerBase.DisposableSerializationContext.Dispose() -> void
+Nerdbank.PolySerializer.SerializerBase.DisposableSerializationContext.Value.get -> Nerdbank.PolySerializer.Converters.SerializationContext
+Nerdbank.PolySerializer.SerializerBase.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
+Nerdbank.PolySerializer.SerializerBase.GetJsonSchema<T>(PolyType.ITypeShapeProvider! provider) -> System.Text.Json.Nodes.JsonObject!
+Nerdbank.PolySerializer.SerializerBase.InternStrings.get -> bool
+Nerdbank.PolySerializer.SerializerBase.InternStrings.init -> void
+Nerdbank.PolySerializer.SerializerBase.MaxAsyncBuffer.get -> int
+Nerdbank.PolySerializer.SerializerBase.MaxAsyncBuffer.init -> void
+Nerdbank.PolySerializer.SerializerBase.PropertyNamingPolicy.get -> Nerdbank.PolySerializer.NamingPolicy?
+Nerdbank.PolySerializer.SerializerBase.PropertyNamingPolicy.init -> void
+Nerdbank.PolySerializer.SerializerBase.RegisterConverter<T>(Nerdbank.PolySerializer.Converters.Converter<T>! converter) -> void
+Nerdbank.PolySerializer.SerializerBase.RegisterKnownSubTypes<TBase>(Nerdbank.PolySerializer.KnownSubTypeMapping<TBase>! mapping) -> void
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(in T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> byte[]!
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(in T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> byte[]!
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(ref Nerdbank.PolySerializer.Converters.Writer writer, in T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(ref Nerdbank.PolySerializer.Converters.Writer writer, in T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(System.Buffers.IBufferWriter<byte>! bufferWriter, in T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(System.Buffers.IBufferWriter<byte>! bufferWriter, in T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(System.IO.Stream! stream, in T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
+Nerdbank.PolySerializer.SerializerBase.Serialize<T>(System.IO.Stream! stream, in T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
+Nerdbank.PolySerializer.SerializerBase.SerializeAsync<T>(System.IO.Pipelines.PipeWriter! writer, T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Nerdbank.PolySerializer.SerializerBase.SerializeAsync<T>(System.IO.Pipelines.PipeWriter! writer, T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Nerdbank.PolySerializer.SerializerBase.SerializeAsync<T>(System.IO.Stream! stream, T? value, PolyType.Abstractions.ITypeShape<T>! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Nerdbank.PolySerializer.SerializerBase.SerializeAsync<T>(System.IO.Stream! stream, T? value, PolyType.ITypeShapeProvider! provider, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Nerdbank.PolySerializer.SerializerBase.SerializeDefaultValues.get -> Nerdbank.PolySerializer.SerializeDefaultValuesPolicy
+Nerdbank.PolySerializer.SerializerBase.SerializeDefaultValues.init -> void
+Nerdbank.PolySerializer.SerializerBase.SerializeEnumValuesByName.get -> bool
+Nerdbank.PolySerializer.SerializerBase.SerializeEnumValuesByName.init -> void
+Nerdbank.PolySerializer.SerializerBase.SerializeObject(ref Nerdbank.PolySerializer.Converters.Writer writer, object? value, PolyType.Abstractions.ITypeShape! shape, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
+Nerdbank.PolySerializer.SerializerBase.SerializerBase(Nerdbank.PolySerializer.SerializerBase! original) -> void
+Nerdbank.PolySerializer.SerializerBase.StartingContext.get -> Nerdbank.PolySerializer.Converters.SerializationContext
+Nerdbank.PolySerializer.SerializerBase.StartingContext.init -> void
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.Deconstruct(out System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement>!>!>! Path) -> void
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.EmptySequenceForUndiscoverablePath.get -> bool
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.EmptySequenceForUndiscoverablePath.init -> void
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.LeaveOpen.get -> bool
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.LeaveOpen.init -> void
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.Path.get -> System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement>!>!>!
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.Path.init -> void
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.StreamingEnumerationOptions(Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>! original) -> void
+Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.StreamingEnumerationOptions(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement>!>!>! Path) -> void
+Nerdbank.PolySerializer.StructuralEqualityComparer
 override Nerdbank.MessagePack.Extension.GetHashCode() -> int
 override Nerdbank.MessagePack.ExtensionHeader.GetHashCode() -> int
 override Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(object? obj) -> bool
@@ -359,8 +899,116 @@ override Nerdbank.MessagePack.MessagePackSerializer.ToString() -> string!
 override Nerdbank.MessagePack.PreformattedString.Equals(object? obj) -> bool
 override Nerdbank.MessagePack.PreformattedString.GetHashCode() -> int
 override Nerdbank.MessagePack.SerializationContext.GetHashCode() -> int
+override Nerdbank.PolySerializer.Converters.Formatter.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.Converters.Formatter.GetHashCode() -> int
+override Nerdbank.PolySerializer.Converters.Formatter.ToString() -> string!
+override Nerdbank.PolySerializer.Converters.SerializationContext.GetHashCode() -> int
+override Nerdbank.PolySerializer.Converters.StreamingDeformatter.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.Converters.StreamingDeformatter.GetHashCode() -> int
+override Nerdbank.PolySerializer.Converters.StreamingDeformatter.ToString() -> string!
+override Nerdbank.PolySerializer.JsonExporter.JsonOptions.GetHashCode() -> int
+override Nerdbank.PolySerializer.MessagePack.Extension.GetHashCode() -> int
+override Nerdbank.PolySerializer.MessagePack.ExtensionHeader.GetHashCode() -> int
+override Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.GetHashCode() -> int
+override Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ToString() -> string!
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.<Clone>$() -> Nerdbank.PolySerializer.SerializerBase!
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.Deformatter.get -> Nerdbank.PolySerializer.Converters.Deformatter!
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.EqualityContract.get -> System.Type!
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.Formatter.get -> Nerdbank.PolySerializer.Converters.Formatter!
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.GetHashCode() -> int
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.RenderAsJson(ref Nerdbank.PolySerializer.Converters.Reader reader, System.IO.TextWriter! writer) -> void
+override Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.ToString() -> string!
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.<Clone>$() -> Nerdbank.PolySerializer.Converters.Formatter!
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.ArrayLengthRequiredInHeader.get -> bool
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Encoding.get -> System.Text.Encoding!
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.EqualityContract.get -> System.Type!
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.FormatName.get -> string!
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.GetEncodedLength(long value) -> int
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.GetEncodedLength(ulong value) -> int
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.GetEncodedStringBytes(string! value, out System.ReadOnlyMemory<byte> utf8Bytes, out System.ReadOnlyMemory<byte> msgpackEncoded) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.GetHashCode() -> int
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.ToString() -> string!
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.TryWriteBinHeader(ref Nerdbank.PolySerializer.Converters.Writer writer, int length) -> bool
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, bool value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, byte value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, char value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, double value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, float value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, int value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, long value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, sbyte value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, scoped System.ReadOnlySpan<char> value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, short value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, string? value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, uint value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, ulong value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Write(ref Nerdbank.PolySerializer.Converters.Writer writer, ushort value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteArrayElementSeparator(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteArrayEnd(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteArrayStart(ref Nerdbank.PolySerializer.Converters.Writer writer, int length) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteEncodedString(ref Nerdbank.PolySerializer.Converters.Writer writer, in System.Buffers.ReadOnlySequence<byte> value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteEncodedString(ref Nerdbank.PolySerializer.Converters.Writer writer, scoped System.ReadOnlySpan<byte> value) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteMapEnd(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteMapKeyValueSeparator(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteMapPairSeparator(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteMapStart(ref Nerdbank.PolySerializer.Converters.Writer writer, int length) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.WriteNull(ref Nerdbank.PolySerializer.Converters.Writer writer) -> void
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.<Clone>$() -> Nerdbank.PolySerializer.Converters.StreamingDeformatter!
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.Encoding.get -> System.Text.Encoding!
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.EqualityContract.get -> System.Type!
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.FormatName.get -> string!
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.GetHashCode() -> int
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.ThrowInvalidCode(in Nerdbank.PolySerializer.Converters.Reader reader) -> System.Exception!
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.ToString() -> string!
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryPeekIsFloat32(in Nerdbank.PolySerializer.Converters.Reader reader, out bool float32) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryPeekIsSignedInteger(in Nerdbank.PolySerializer.Converters.Reader reader, out bool signed) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryPeekNextTypeCode(in Nerdbank.PolySerializer.Converters.Reader reader, out Nerdbank.PolySerializer.Converters.TypeCode typeCode) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out bool value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out byte value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out char value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out double value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out float value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out int value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out long value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out sbyte value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out short value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out string? value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out uint value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out ulong value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryRead(ref Nerdbank.PolySerializer.Converters.Reader reader, out ushort value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadArrayHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out int count) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadBinary(ref Nerdbank.PolySerializer.Converters.Reader reader, out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadMapHeader(ref Nerdbank.PolySerializer.Converters.Reader reader, out int count) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadNull(ref Nerdbank.PolySerializer.Converters.Reader reader) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadNull(ref Nerdbank.PolySerializer.Converters.Reader reader, out bool isNull) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadRaw(ref Nerdbank.PolySerializer.Converters.Reader reader, long length, out System.Buffers.ReadOnlySequence<byte> rawMsgPack) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadStringSequence(ref Nerdbank.PolySerializer.Converters.Reader reader, out System.Buffers.ReadOnlySequence<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TryReadStringSpan(scoped ref Nerdbank.PolySerializer.Converters.Reader reader, out bool contiguous, out System.ReadOnlySpan<byte> value) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.TrySkip(ref Nerdbank.PolySerializer.Converters.Reader reader, ref Nerdbank.PolySerializer.Converters.SerializationContext context) -> Nerdbank.PolySerializer.Converters.DecodeResult
+override Nerdbank.PolySerializer.PreformattedString.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.PreformattedString.GetHashCode() -> int
+override Nerdbank.PolySerializer.SerializerBase.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.SerializerBase.GetHashCode() -> int
+override Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.Equals(object? obj) -> bool
+override Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.GetHashCode() -> int
+override Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.ToString() -> string!
+override Nerdbank.PolySerializer.SerializerBase.ToString() -> string!
 override sealed Nerdbank.MessagePack.MessagePackConverter<T>.ReadObject(ref Nerdbank.MessagePack.MessagePackReader reader, Nerdbank.MessagePack.SerializationContext context) -> object?
 override sealed Nerdbank.MessagePack.MessagePackConverter<T>.WriteObject(ref Nerdbank.MessagePack.MessagePackWriter writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> void
+override sealed Nerdbank.PolySerializer.Converters.Converter<T>.ReadObject(ref Nerdbank.PolySerializer.Converters.Reader reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> object?
+override sealed Nerdbank.PolySerializer.Converters.Converter<T>.WriteObject(ref Nerdbank.PolySerializer.Converters.Writer writer, object? value, Nerdbank.PolySerializer.Converters.SerializationContext context) -> void
+override sealed Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.Equals(Nerdbank.PolySerializer.SerializerBase? other) -> bool
+override sealed Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Equals(Nerdbank.PolySerializer.Converters.Formatter? other) -> bool
+override sealed Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.Equals(Nerdbank.PolySerializer.Converters.StreamingDeformatter? other) -> bool
 static Nerdbank.MessagePack.DecodeResultExtensions.NeedsMoreBytes(this Nerdbank.MessagePack.DecodeResult result) -> bool
 static Nerdbank.MessagePack.Extension.operator !=(Nerdbank.MessagePack.Extension left, Nerdbank.MessagePack.Extension right) -> bool
 static Nerdbank.MessagePack.Extension.operator ==(Nerdbank.MessagePack.Extension left, Nerdbank.MessagePack.Extension right) -> bool
@@ -448,7 +1096,100 @@ static Nerdbank.MessagePack.StructuralEqualityComparer.GetDefault<T>(PolyType.Ab
 static Nerdbank.MessagePack.StructuralEqualityComparer.GetDefault<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
 static Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.PolySerializer.Converters.DecodeResultExtensions.NeedsMoreBytes(this Nerdbank.PolySerializer.Converters.DecodeResult result) -> bool
+static Nerdbank.PolySerializer.Converters.Deformatter.ThrowInsufficientBufferUnless(bool condition) -> void
+static Nerdbank.PolySerializer.Converters.Deformatter.ThrowNotEnoughBytesException() -> System.IO.EndOfStreamException!
+static Nerdbank.PolySerializer.Converters.Formatter.operator !=(Nerdbank.PolySerializer.Converters.Formatter? left, Nerdbank.PolySerializer.Converters.Formatter? right) -> bool
+static Nerdbank.PolySerializer.Converters.Formatter.operator ==(Nerdbank.PolySerializer.Converters.Formatter? left, Nerdbank.PolySerializer.Converters.Formatter? right) -> bool
+static Nerdbank.PolySerializer.Converters.SerializationContext.operator !=(Nerdbank.PolySerializer.Converters.SerializationContext left, Nerdbank.PolySerializer.Converters.SerializationContext right) -> bool
+static Nerdbank.PolySerializer.Converters.SerializationContext.operator ==(Nerdbank.PolySerializer.Converters.SerializationContext left, Nerdbank.PolySerializer.Converters.SerializationContext right) -> bool
+static Nerdbank.PolySerializer.Converters.StreamingDeformatter.operator !=(Nerdbank.PolySerializer.Converters.StreamingDeformatter? left, Nerdbank.PolySerializer.Converters.StreamingDeformatter? right) -> bool
+static Nerdbank.PolySerializer.Converters.StreamingDeformatter.operator ==(Nerdbank.PolySerializer.Converters.StreamingDeformatter? left, Nerdbank.PolySerializer.Converters.StreamingDeformatter? right) -> bool
+static Nerdbank.PolySerializer.JsonExporter.JsonOptions.operator !=(Nerdbank.PolySerializer.JsonExporter.JsonOptions left, Nerdbank.PolySerializer.JsonExporter.JsonOptions right) -> bool
+static Nerdbank.PolySerializer.JsonExporter.JsonOptions.operator ==(Nerdbank.PolySerializer.JsonExporter.JsonOptions left, Nerdbank.PolySerializer.JsonExporter.JsonOptions right) -> bool
+static Nerdbank.PolySerializer.MessagePack.Extension.operator !=(Nerdbank.PolySerializer.MessagePack.Extension left, Nerdbank.PolySerializer.MessagePack.Extension right) -> bool
+static Nerdbank.PolySerializer.MessagePack.Extension.operator ==(Nerdbank.PolySerializer.MessagePack.Extension left, Nerdbank.PolySerializer.MessagePack.Extension right) -> bool
+static Nerdbank.PolySerializer.MessagePack.ExtensionHeader.operator !=(Nerdbank.PolySerializer.MessagePack.ExtensionHeader left, Nerdbank.PolySerializer.MessagePack.ExtensionHeader right) -> bool
+static Nerdbank.PolySerializer.MessagePack.ExtensionHeader.operator ==(Nerdbank.PolySerializer.MessagePack.ExtensionHeader left, Nerdbank.PolySerializer.MessagePack.ExtensionHeader right) -> bool
+static Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.operator !=(Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode? left, Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode? right) -> bool
+static Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.operator ==(Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode? left, Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode? right) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackCode.ToFormatName(byte code) -> string!
+static Nerdbank.PolySerializer.MessagePack.MessagePackCode.ToMessagePackType(byte code) -> Nerdbank.PolySerializer.MessagePack.MessagePackType
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, Nerdbank.PolySerializer.MessagePack.ExtensionHeader header, out System.DateTime value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out bool value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out byte value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out char value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out double value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out float value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out int value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out long value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out sbyte value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out short value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out System.DateTime value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out uint value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out ulong value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryRead(System.ReadOnlySpan<byte> source, out ushort value, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadArrayHeader(System.Buffers.ReadOnlySequence<byte> source, out uint count, out System.SequencePosition readTo) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadArrayHeader(System.ReadOnlySpan<byte> source, out uint count, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadBinHeader(System.ReadOnlySpan<byte> source, out uint length, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadExtensionHeader(System.ReadOnlySpan<byte> source, out Nerdbank.PolySerializer.MessagePack.ExtensionHeader extensionHeader, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadMapHeader(System.Buffers.ReadOnlySequence<byte> source, out uint count, out System.SequencePosition readTo) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadMapHeader(System.ReadOnlySpan<byte> source, out uint count, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadNil(System.ReadOnlySpan<byte> source, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryReadStringHeader(System.ReadOnlySpan<byte> source, out uint length, out int tokenSize) -> Nerdbank.PolySerializer.Converters.DecodeResult
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, bool value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, byte value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, char value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, double value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, float value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, int value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, long value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, sbyte value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, short value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, System.DateTime value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, uint value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, ulong value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWrite(System.Span<byte> destination, ushort value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteArrayHeader(System.Span<byte> destination, uint count, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteBinHeader(System.Span<byte> destination, uint length, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteExtensionHeader(System.Span<byte> destination, Nerdbank.PolySerializer.MessagePack.ExtensionHeader extensionHeader, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteInt16(System.Span<byte> destination, short value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteInt32(System.Span<byte> destination, int value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteInt64(System.Span<byte> destination, long value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteInt8(System.Span<byte> destination, sbyte value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteMapHeader(System.Span<byte> destination, uint count, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteNil(System.Span<byte> destination, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteStringHeader(System.Span<byte> destination, uint byteCount, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteUInt16(System.Span<byte> destination, ushort value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteUInt32(System.Span<byte> destination, uint value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteUInt64(System.Span<byte> destination, ulong value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackPrimitives.TryWriteUInt8(System.Span<byte> destination, byte value, out int bytesWritten) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.operator !=(Nerdbank.PolySerializer.MessagePack.MessagePackSerializer? left, Nerdbank.PolySerializer.MessagePack.MessagePackSerializer? right) -> bool
+static Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.operator ==(Nerdbank.PolySerializer.MessagePack.MessagePackSerializer? left, Nerdbank.PolySerializer.MessagePack.MessagePackSerializer? right) -> bool
+static Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.operator !=(Nerdbank.PolySerializer.MessagePack.MsgPackFormatter? left, Nerdbank.PolySerializer.MessagePack.MsgPackFormatter? right) -> bool
+static Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.operator ==(Nerdbank.PolySerializer.MessagePack.MsgPackFormatter? left, Nerdbank.PolySerializer.MessagePack.MsgPackFormatter? right) -> bool
+static Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.operator !=(Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter? left, Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter? right) -> bool
+static Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.operator ==(Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter? left, Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter? right) -> bool
+static Nerdbank.PolySerializer.NamingPolicy.CamelCase.get -> Nerdbank.PolySerializer.NamingPolicy!
+static Nerdbank.PolySerializer.NamingPolicy.PascalCase.get -> Nerdbank.PolySerializer.NamingPolicy!
+static Nerdbank.PolySerializer.PreformattedRawBytes.explicit operator Nerdbank.PolySerializer.PreformattedRawBytes(byte[]! msgpack) -> Nerdbank.PolySerializer.PreformattedRawBytes
+static Nerdbank.PolySerializer.PreformattedRawBytes.explicit operator Nerdbank.PolySerializer.PreformattedRawBytes(System.Buffers.ReadOnlySequence<byte> msgpack) -> Nerdbank.PolySerializer.PreformattedRawBytes
+static Nerdbank.PolySerializer.PreformattedRawBytes.explicit operator Nerdbank.PolySerializer.PreformattedRawBytes(System.Memory<byte> msgpack) -> Nerdbank.PolySerializer.PreformattedRawBytes
+static Nerdbank.PolySerializer.PreformattedRawBytes.explicit operator Nerdbank.PolySerializer.PreformattedRawBytes(System.ReadOnlyMemory<byte> msgpack) -> Nerdbank.PolySerializer.PreformattedRawBytes
+static Nerdbank.PolySerializer.PreformattedRawBytes.implicit operator System.Buffers.ReadOnlySequence<byte>(Nerdbank.PolySerializer.PreformattedRawBytes msgpack) -> System.Buffers.ReadOnlySequence<byte>
+static Nerdbank.PolySerializer.SerializerBase.operator !=(Nerdbank.PolySerializer.SerializerBase? left, Nerdbank.PolySerializer.SerializerBase? right) -> bool
+static Nerdbank.PolySerializer.SerializerBase.operator ==(Nerdbank.PolySerializer.SerializerBase? left, Nerdbank.PolySerializer.SerializerBase? right) -> bool
+static Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.operator !=(Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>? left, Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>? right) -> bool
+static Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.operator ==(Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>? left, Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>? right) -> bool
+static Nerdbank.PolySerializer.StructuralEqualityComparer.GetDefault<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.PolySerializer.StructuralEqualityComparer.GetDefault<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.PolySerializer.StructuralEqualityComparer.GetHashCollisionResistant<T>(PolyType.Abstractions.ITypeShape<T>! shape) -> System.Collections.Generic.IEqualityComparer<T>!
+static Nerdbank.PolySerializer.StructuralEqualityComparer.GetHashCollisionResistant<T>(PolyType.ITypeShapeProvider! provider) -> System.Collections.Generic.IEqualityComparer<T>!
 static readonly Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Default -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+static readonly Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Default -> Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+static readonly Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter.Default -> Nerdbank.PolySerializer.MessagePack.MsgPackDeformatter!
+static readonly Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Default -> Nerdbank.PolySerializer.MessagePack.MsgPackFormatter!
+static readonly Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.Default -> Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter!
 virtual Nerdbank.MessagePack.KnownSubTypeAttribute.Shape.get -> PolyType.Abstractions.ITypeShape?
 virtual Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.<Clone>$() -> Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
 virtual Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.EqualityContract.get -> System.Type!
@@ -462,10 +1203,43 @@ virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T
 virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.EqualityContract.get -> System.Type!
 virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.Equals(Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>? other) -> bool
 virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T, TElement>.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Nerdbank.PolySerializer.Converters.AsyncReader.BufferNextStructureAsync(Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask
+virtual Nerdbank.PolySerializer.Converters.AsyncReader.BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask<int>
+virtual Nerdbank.PolySerializer.Converters.AsyncReader.GetMoreBytesAsync.Invoke(object? state, System.SequencePosition consumed, System.SequencePosition examined, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult>
+virtual Nerdbank.PolySerializer.Converters.AsyncReader.ReadAsync() -> System.Threading.Tasks.ValueTask
+virtual Nerdbank.PolySerializer.Converters.Converter.GetJsonSchema(Nerdbank.PolySerializer.JsonSchemaContext! context, PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject?
+virtual Nerdbank.PolySerializer.Converters.Converter.PreferAsyncSerialization.get -> bool
+virtual Nerdbank.PolySerializer.Converters.Converter.VerifyCompatibility(Nerdbank.PolySerializer.Converters.Formatter! formatter, Nerdbank.PolySerializer.Converters.StreamingDeformatter! deformatter) -> void
+virtual Nerdbank.PolySerializer.Converters.Formatter.EqualityContract.get -> System.Type!
+virtual Nerdbank.PolySerializer.Converters.Formatter.Equals(Nerdbank.PolySerializer.Converters.Formatter? other) -> bool
+virtual Nerdbank.PolySerializer.Converters.Formatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Nerdbank.PolySerializer.Converters.Formatter.TryWriteBinHeader(ref Nerdbank.PolySerializer.Converters.Writer writer, int length) -> bool
+virtual Nerdbank.PolySerializer.Converters.StreamingDeformatter.EqualityContract.get -> System.Type!
+virtual Nerdbank.PolySerializer.Converters.StreamingDeformatter.Equals(Nerdbank.PolySerializer.Converters.StreamingDeformatter? other) -> bool
+virtual Nerdbank.PolySerializer.Converters.StreamingDeformatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Nerdbank.PolySerializer.Converters.StreamingDeformatter.TryReadRaw(ref Nerdbank.PolySerializer.Converters.Reader reader, Nerdbank.PolySerializer.Converters.SerializationContext context, out System.Buffers.ReadOnlySequence<byte> bytes) -> Nerdbank.PolySerializer.Converters.DecodeResult
+virtual Nerdbank.PolySerializer.KnownSubTypeAttribute.Shape.get -> PolyType.Abstractions.ITypeShape?
+virtual Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.<Clone>$() -> Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+virtual Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.EqualityContract.get -> System.Type!
+virtual Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode? other) -> bool
+virtual Nerdbank.PolySerializer.MessagePack.LibraryReservedMessagePackExtensionTypeCode.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Nerdbank.PolySerializer.MessagePack.MessagePackSerializer.Equals(Nerdbank.PolySerializer.MessagePack.MessagePackSerializer? other) -> bool
+virtual Nerdbank.PolySerializer.MessagePack.MsgPackFormatter.Equals(Nerdbank.PolySerializer.MessagePack.MsgPackFormatter? other) -> bool
+virtual Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter.Equals(Nerdbank.PolySerializer.MessagePack.MsgPackStreamingDeformatter? other) -> bool
+virtual Nerdbank.PolySerializer.SerializerBase.EqualityContract.get -> System.Type!
+virtual Nerdbank.PolySerializer.SerializerBase.Equals(Nerdbank.PolySerializer.SerializerBase? other) -> bool
+virtual Nerdbank.PolySerializer.SerializerBase.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Nerdbank.PolySerializer.SerializerBase.RenderAsJson(ref Nerdbank.PolySerializer.Converters.Reader reader, System.IO.TextWriter! writer) -> void
+virtual Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.<Clone>$() -> Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>!
+virtual Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.EqualityContract.get -> System.Type!
+virtual Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.Equals(Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>? other) -> bool
+virtual Nerdbank.PolySerializer.SerializerBase.StreamingEnumerationOptions<T, TElement>.PrintMembers(System.Text.StringBuilder! builder) -> bool
 [NBMsgPackAsync]abstract Nerdbank.MessagePack.MessagePackConverter.ReadObjectAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
 [NBMsgPackAsync]abstract Nerdbank.MessagePack.MessagePackConverter.SkipToIndexValueAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, object? index, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
 [NBMsgPackAsync]abstract Nerdbank.MessagePack.MessagePackConverter.SkipToPropertyValueAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, PolyType.Abstractions.IPropertyShape! propertyShape, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
 [NBMsgPackAsync]abstract Nerdbank.MessagePack.MessagePackConverter.WriteObjectAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
+[NBMsgPackAsync]abstract Nerdbank.PolySerializer.Converters.Converter.ReadObjectAsync(Nerdbank.PolySerializer.Converters.AsyncReader! reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
+[NBMsgPackAsync]abstract Nerdbank.PolySerializer.Converters.Converter.WriteObjectAsync(Nerdbank.PolySerializer.Converters.AsyncWriter! writer, object? value, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.BufferNextStructureAsync(Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
 [NBMsgPackAsync]Nerdbank.MessagePack.MessagePackAsyncReader.BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<int>
@@ -541,10 +1315,16 @@ virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T
 [NBMsgPackAsync]override Nerdbank.MessagePack.MessagePackConverter<T>.SkipToPropertyValueAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, PolyType.Abstractions.IPropertyShape! propertyShape, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
 [NBMsgPackAsync]override sealed Nerdbank.MessagePack.MessagePackConverter<T>.ReadObjectAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
 [NBMsgPackAsync]override sealed Nerdbank.MessagePack.MessagePackConverter<T>.WriteObjectAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, object? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
+[NBMsgPackAsync]override sealed Nerdbank.PolySerializer.Converters.Converter<T>.ReadObjectAsync(Nerdbank.PolySerializer.Converters.AsyncReader! reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask<object?>
+[NBMsgPackAsync]override sealed Nerdbank.PolySerializer.Converters.Converter<T>.WriteObjectAsync(Nerdbank.PolySerializer.Converters.AsyncWriter! writer, object? value, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackAsyncWriter.SyncWriter<T>.Invoke(ref Nerdbank.MessagePack.MessagePackWriter writer, T state) -> void
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.ReadAsync(Nerdbank.MessagePack.MessagePackAsyncReader! reader, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask<T?>
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackConverter<T>.WriteAsync(Nerdbank.MessagePack.MessagePackAsyncWriter! writer, T? value, Nerdbank.MessagePack.SerializationContext context) -> System.Threading.Tasks.ValueTask
 [NBMsgPackAsync]virtual Nerdbank.MessagePack.MessagePackStreamingReader.GetMoreBytesAsync.Invoke(object? state, System.SequencePosition consumed, System.SequencePosition examined, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult>
+[NBMsgPackAsync]virtual Nerdbank.PolySerializer.Converters.Converter.SkipToIndexValueAsync(Nerdbank.PolySerializer.Converters.AsyncReader! reader, object? index, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
+[NBMsgPackAsync]virtual Nerdbank.PolySerializer.Converters.Converter.SkipToPropertyValueAsync(Nerdbank.PolySerializer.Converters.AsyncReader! reader, PolyType.Abstractions.IPropertyShape! propertyShape, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask<bool>
+[NBMsgPackAsync]virtual Nerdbank.PolySerializer.Converters.Converter<T>.ReadAsync(Nerdbank.PolySerializer.Converters.AsyncReader! reader, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask<T?>
+[NBMsgPackAsync]virtual Nerdbank.PolySerializer.Converters.Converter<T>.WriteAsync(Nerdbank.PolySerializer.Converters.AsyncWriter! writer, T? value, Nerdbank.PolySerializer.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask
 ~override Nerdbank.MessagePack.Extension.Equals(object obj) -> bool
 ~override Nerdbank.MessagePack.Extension.ToString() -> string
 ~override Nerdbank.MessagePack.ExtensionHeader.Equals(object obj) -> bool
@@ -553,3 +1333,11 @@ virtual Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions<T
 ~override Nerdbank.MessagePack.MessagePackSerializer.JsonOptions.ToString() -> string
 ~override Nerdbank.MessagePack.SerializationContext.Equals(object obj) -> bool
 ~override Nerdbank.MessagePack.SerializationContext.ToString() -> string
+~override Nerdbank.PolySerializer.Converters.SerializationContext.Equals(object obj) -> bool
+~override Nerdbank.PolySerializer.Converters.SerializationContext.ToString() -> string
+~override Nerdbank.PolySerializer.JsonExporter.JsonOptions.Equals(object obj) -> bool
+~override Nerdbank.PolySerializer.JsonExporter.JsonOptions.ToString() -> string
+~override Nerdbank.PolySerializer.MessagePack.Extension.Equals(object obj) -> bool
+~override Nerdbank.PolySerializer.MessagePack.Extension.ToString() -> string
+~override Nerdbank.PolySerializer.MessagePack.ExtensionHeader.Equals(object obj) -> bool
+~override Nerdbank.PolySerializer.MessagePack.ExtensionHeader.ToString() -> string
