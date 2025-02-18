@@ -181,7 +181,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 		string schemaString = schema
 			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-			.Replace("ShapeShift.Tests, Version=0.3.0.0", "ShapeShift.Tests, Version=x.x.x.x");
+			.Replace($"{ThisAssembly.AssemblyName}, Version={ThisAssembly.AssemblyVersion}", $"{ThisAssembly.AssemblyName}, Version=x.x.x.x");
 
 #if NETFRAMEWORK
 		// Normalize from .NET Framework specific strings to .NET strings.
