@@ -3,7 +3,6 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
-
 using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
@@ -24,26 +23,13 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// </devremarks>
 public partial record MessagePackSerializer : SerializerBase
 {
-	internal override ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; } = new(() => new ReferenceEqualityTracker());
-
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MessagePackSerializer"/> class.
+	/// </summary>
 	public MessagePackSerializer()
 		: base(new MsgPackConverterCache(MsgPackFormatter.Default, MsgPackDeformatter.Default))
 	{
 	}
-
-	internal static MsgPackDeformatter MyDeformatter => MsgPackDeformatter.Default;
-
-	internal new MsgPackConverterCache ConverterCache
-	{
-		get => (MsgPackConverterCache)base.ConverterCache;
-		init => base.ConverterCache = value;
-	}
-
-	protected internal override Formatter Formatter => this.ConverterCache.Formatter;
-
-	protected internal override Deformatter Deformatter => this.ConverterCache.Deformatter;
-
-	internal static MsgPackStreamingDeformatter StreamingDeformatter => MsgPackStreamingDeformatter.Default;
 
 	/// <inheritdoc cref="ConverterCache.PreserveReferences"/>
 	public bool PreserveReferences
@@ -70,6 +56,23 @@ public partial record MessagePackSerializer : SerializerBase
 		init => this.ConverterCache = this.ConverterCache with { DisableHardwareAcceleration = value };
 	}
 
+	/// <inheritdoc cref="SerializerBase.ConverterCache" />
+	internal new MsgPackConverterCache ConverterCache
+	{
+		get => (MsgPackConverterCache)base.ConverterCache;
+		init => base.ConverterCache = value;
+	}
+
+	/// <inheritdoc />
+	internal override ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; } = new(() => new ReferenceEqualityTracker());
+
+	/// <inheritdoc />
+	protected internal override Formatter Formatter => this.ConverterCache.Formatter;
+
+	/// <inheritdoc />
+	protected internal override Deformatter Deformatter => this.ConverterCache.Deformatter;
+
+	/// <inheritdoc />
 	protected internal override void RenderAsJson(ref Reader reader, TextWriter writer)
 	{
 		Requires.NotNull(writer);

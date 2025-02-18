@@ -7,16 +7,27 @@ using PolyType.Utilities;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
+/// <summary>
+/// A messagepack-specific implementation of <see cref="StandardVisitor"/>.
+/// </summary>
+/// <param name="owner">The owning converter cache.</param>
+/// <param name="context">The context given by the <see cref="MultiProviderTypeCache"/> factory.</param>
+/// <param name="formatter">The formatter.</param>
+/// <param name="deformatter">The deformatter.</param>
 internal class MessagePackVisitor(ConverterCache owner, TypeGenerationContext context, MsgPackFormatter formatter, MsgPackDeformatter deformatter)
 	: StandardVisitor(owner, context)
 {
+	/// <inheritdoc/>
 	internal override Formatter Formatter => formatter;
 
+	/// <inheritdoc/>
 	internal override Deformatter Deformatter => deformatter;
 
+	/// <inheritdoc/>
 	protected override bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
 		=> MsgPackPrimitiveConverterLookup.TryGetPrimitiveConverter(out converter) || base.TryGetPrimitiveConverter(out converter);
 
+	/// <inheritdoc/>
 	protected override bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter)
 	{
 		if (ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, constructor, out Converter<TArray>? msgpackConverter))
@@ -32,6 +43,7 @@ internal class MessagePackVisitor(ConverterCache owner, TypeGenerationContext co
 	}
 
 #if NET
+	/// <inheritdoc/>
 	protected override bool TryGetHardwareAcceleratedConverter<TArray, TElement>(out Converter<TArray>? converter)
 	{
 		if (HardwareAccelerated.TryGetConverter<TArray, TElement>(out Converter<TArray>? msgpackConverter))

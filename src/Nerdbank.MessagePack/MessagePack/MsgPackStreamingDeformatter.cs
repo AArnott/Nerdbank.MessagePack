@@ -8,21 +8,30 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
+/// <summary>
+/// A <see cref="StreamingDeformatter"/> that can decode <see href="https://msgpack.org/">messagepack</see> data.
+/// </summary>
 public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 {
+	/// <summary>
+	/// The default instance of <see cref="MsgPackStreamingDeformatter"/>.
+	/// </summary>
 	public static readonly MsgPackStreamingDeformatter Default = new();
 
 	private MsgPackStreamingDeformatter()
 	{
 	}
 
+	/// <inheritdoc/>
 	public override string FormatName => MsgPackFormatter.Default.FormatName;
 
+	/// <inheritdoc/>
 	public override Encoding Encoding => StringEncoding.UTF8;
 
 	/// <summary>
 	/// Peeks at the next msgpack byte without advancing the reader.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryPeekNextTypeCode" path="/param[@name='reader']" /></param>
 	/// <param name="code">When successful, receives the next msgpack byte.</param>
 	/// <returns>The success or error code.</returns>
 	public DecodeResult TryPeekNextCode(in Reader reader, out byte code)
@@ -30,9 +39,10 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return reader.SequenceReader.TryPeek(out code) ? DecodeResult.Success : this.InsufficientBytes(reader);
 	}
 
-	public override DecodeResult TryPeekNextCode(in Reader reader, out PolySerializer.Converters.TypeCode typeCode)
+	/// <inheritdoc/>
+	public override DecodeResult TryPeekNextTypeCode(in Reader reader, out PolySerializer.Converters.TypeCode typeCode)
 	{
-		DecodeResult result = TryPeekNextCode(reader, out byte code);
+		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
 		if (result != DecodeResult.Success)
 		{
 			typeCode = default;
@@ -43,12 +53,26 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return DecodeResult.Success;
 	}
 
-	protected internal override Exception ThrowInvalidCode(in Reader reader)
+	/// <summary>
+	/// Gets the type of the next msgpack token.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="messagePackType">Receives the next msgpack token.</param>
+	/// <returns>The result of the decode operation.</returns>
+	public DecodeResult TryPeekNextCode(in Reader reader, out MessagePackType messagePackType)
 	{
-		Verify.Operation(this.TryPeekNextCode(reader, out byte code) == DecodeResult.Success, "Expected to be able to peek the next code.");
-		throw new SerializationException(string.Format("Unexpected code {0} ({1}) encountered.", code, MessagePackCode.ToFormatName(code)));
+		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
+		if (result != DecodeResult.Success)
+		{
+			messagePackType = default;
+			return result;
+		}
+
+		messagePackType = MessagePackCode.ToMessagePackType(code);
+		return DecodeResult.Success;
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryPeekIsFloat32(in Reader reader, out bool float32)
 	{
 		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
@@ -72,6 +96,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryPeekIsSignedInteger(in Reader reader, out bool signed)
 	{
 		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
@@ -90,6 +115,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return DecodeResult.Success;
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryReadArrayHeader(ref Reader reader, out int count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
@@ -139,6 +165,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	/// some built-in code between <see cref="MessagePackCode.MinFixMap"/> and <see cref="MessagePackCode.MaxFixMap"/>
 	/// if there is sufficient buffer to read it.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="count">Receives the number of key=value pairs in the map if the entire map header can be read.</param>
 	/// <returns><see langword="true"/> if there was sufficient buffer and a map header was found; <see langword="false"/> if the buffer incompletely describes an map header.</returns>
 	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
@@ -184,6 +211,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryReadNull(ref Reader reader)
 	{
 		if (reader.SequenceReader.TryPeek(out byte next))
@@ -202,6 +230,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryReadNull(ref Reader reader, out bool isNull)
 	{
 		DecodeResult result = this.TryReadNull(ref reader);
@@ -209,6 +238,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return result == DecodeResult.TokenMismatch ? DecodeResult.Success : result;
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryReadBinary(ref Reader reader, out ReadOnlySequence<byte> value)
 	{
 		Reader originalPosition = reader;
@@ -232,6 +262,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return DecodeResult.Success;
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out bool value)
 	{
 		if (reader.SequenceReader.TryPeek(out byte next))
@@ -259,6 +290,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out char value)
 	{
 		DecodeResult result = this.TryRead(ref reader, out ushort charOrdinal);
@@ -266,6 +298,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return result;
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out float value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
@@ -305,6 +338,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out double value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
@@ -344,6 +378,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out string? value)
 	{
 		Reader originalPosition = reader;
@@ -383,6 +418,10 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc cref="MessagePackPrimitives.TryRead(ReadOnlySpan{byte}, out DateTime, out int)" path="/summary"/>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="value"><inheritdoc cref="MessagePackPrimitives.TryRead(ReadOnlySpan{byte}, out DateTime, out int)" path="/param[@name='value']"/></param>
+	/// <returns><inheritdoc cref="MessagePackPrimitives.TryRead(ReadOnlySpan{byte}, out DateTime, out int)" path="/returns" /></returns>
 	public DecodeResult TryRead(ref Reader reader, out DateTime value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(reader.UnreadSpan, out value, out int tokenSize);
@@ -422,11 +461,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
-	/// <summary>
-	/// Reads a byte sequence backing a UTF-8 encoded string with an appropriate msgpack header from the msgpack stream.
-	/// </summary>
-	/// <param name="value">The byte sequence if the read was successful.</param>
-	/// <returns>The success or error code.</returns>
+	/// <inheritdoc/>
 	public override DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value)
 	{
 		Reader originalPosition = reader;
@@ -451,13 +486,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return DecodeResult.Success;
 	}
 
-	/// <summary>
-	/// Reads a span backing a UTF-8 encoded string with an appropriate msgpack header from the msgpack stream,
-	/// if the string is contiguous in memory.
-	/// </summary>
-	/// <param name="contiguous">Receives a value indicating whether the string was present and contiguous in memory.</param>
-	/// <param name="value">The span of bytes if the read was successful.</param>
-	/// <returns>The success or error code.</returns>
+	/// <inheritdoc/>
 	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value)
 	{
 		Reader oldReader = reader;
@@ -493,6 +522,12 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <summary>
+	/// Decodes a msgpack extension header from the data stream.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="value">Receives the extension header.</param>
+	/// <returns>The result of the decode operation.</returns>
 	public DecodeResult TryRead(ref Reader reader, out ExtensionHeader value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadExtensionHeader(reader.UnreadSpan, out value, out int tokenSize);
@@ -533,6 +568,12 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <summary>
+	/// Decodes a msgpack extension (header and data) from the data stream.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="value">Receives the extension.</param>
+	/// <returns>The result of the decode operation.</returns>
 	public DecodeResult TryRead(ref Reader reader, out Extension value)
 	{
 		Reader originalPosition = reader;
@@ -557,6 +598,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return DecodeResult.Success;
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryReadRaw(ref Reader reader, long length, out ReadOnlySequence<byte> rawMsgPack)
 	{
 		if (reader.Remaining >= length)
@@ -570,19 +612,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		return this.InsufficientBytes(reader);
 	}
 
-	public DecodeResult TryPeekNextCode(in Reader reader, out MessagePackType messagePackType)
-	{
-		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
-		if (result != DecodeResult.Success)
-		{
-			messagePackType = default;
-			return result;
-		}
-
-		messagePackType = MessagePackCode.ToMessagePackType(code);
-		return DecodeResult.Success;
-	}
-
+	/// <inheritdoc/>
 	public override DecodeResult TrySkip(ref Reader reader, ref SerializationContext context)
 	{
 		uint originalCount = Math.Max(1, context.MidSkipRemainingCount);
@@ -736,6 +766,11 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <summary>
+	/// Converts a msgpack code to a <see cref="PolySerializer.Converters.TypeCode"/>.
+	/// </summary>
+	/// <param name="code">The byte code that encodes the type of the next msgpack token.</param>
+	/// <returns>The format-agnostic <see cref="PolySerializer.Converters.TypeCode"/>.</returns>
 	public PolySerializer.Converters.TypeCode ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
 	{
 		MessagePackType.Integer => PolySerializer.Converters.TypeCode.Integer,
@@ -752,6 +787,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	/// <summary>
 	/// Tries to read the header of a string.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="length">Receives the length of the next string, when successful.</param>
 	/// <returns>The result classification of the read operation.</returns>
 	/// <remarks>
@@ -802,6 +838,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	/// <summary>
 	/// Tries to read the header of binary data.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="length">Receives the length of the binary data, when successful.</param>
 	/// <returns>The result classification of the read operation.</returns>
 	/// <inheritdoc cref="MessagePackPrimitives.TryReadBinHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
@@ -862,18 +899,27 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		}
 	}
 
+	/// <inheritdoc/>
+	[DoesNotReturn]
+	protected internal override Exception ThrowInvalidCode(in Reader reader)
+	{
+		Verify.Operation(this.TryPeekNextCode(reader, out byte code) == DecodeResult.Success, "Expected to be able to peek the next code.");
+		throw new SerializationException(string.Format("Unexpected code {0} ({1}) encountered.", code, MessagePackCode.ToFormatName(code)));
+	}
+
 	[DoesNotReturn]
 	private static DecodeResult ThrowUnreachable() => throw new UnreachableException();
 
 	/// <summary>
 	/// Advances the reader past the specified number of bytes.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="bytes">The number of bytes to advance.</param>
 	/// <param name="consumed">The number of msgpack structures that has been read. Typically 1, sometimes 0.</param>
 	/// <param name="added">The number of msgpack structures added to the expected count. Typically 0, but for array/map headers will be non-zero.</param>
 	private void Advance(ref Reader reader, long bytes, uint consumed = 1, uint added = 0)
 	{
-		reader.Advance(bytes);
+		reader.SequenceReader.Advance(bytes);
 
 		// Never let the expected remaining structures go negative.
 		// If we're reading simple top-level values, we start at 0 and should remain there.

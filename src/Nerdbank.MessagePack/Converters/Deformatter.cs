@@ -9,7 +9,7 @@ using Microsoft;
 namespace Nerdbank.PolySerializer.Converters;
 
 /// <summary>
-/// A convenience API for reading formatted data (e.g. MessagePack, JSON) from a complete buffer.
+/// A convenience API for reading formatted primitive values (e.g. MessagePack, JSON) from a complete buffer.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,16 +26,31 @@ namespace Nerdbank.PolySerializer.Converters;
 /// </remarks>
 public partial class Deformatter
 {
+	/// <summary>
+	/// Initializes a new instance of the <see cref="Deformatter"/> class.
+	/// </summary>
+	/// <param name="streamingDeformatter">The streaming deformatter to wrap.</param>
 	public Deformatter(StreamingDeformatter streamingDeformatter)
 	{
 		Requires.NotNull(streamingDeformatter);
 		this.StreamingDeformatter = streamingDeformatter;
 	}
 
+	/// <summary>
+	/// Gets the streaming deformatter underlying this deformatter.
+	/// </summary>
 	public StreamingDeformatter StreamingDeformatter { get; }
 
+	/// <inheritdoc cref="StreamingDeformatter.Encoding"/>
 	public Encoding Encoding => this.StreamingDeformatter.Encoding;
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns><see langword="true" /> if the next token was <see cref="TypeCode.Nil"/>; otherwise <see langword="false" />.</returns>
+	/// <remarks>
+	/// The reader is only advanced if the token was <see cref="TypeCode.Nil"/>.
+	/// </remarks>
+	/// <exception cref="EndOfStreamException">Thrown when there is insufficient buffer to decode the next token.</exception>
 	public bool TryReadNull(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadNull(ref reader))
@@ -50,6 +65,12 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary>
+	/// Reads a <see cref="TypeCode.Nil"/> token from the reader.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Nil"/>.</exception>
 	public void ReadNull(ref Reader reader)
 	{
 		if (!this.TryReadNull(ref reader))
@@ -58,6 +79,14 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadArrayHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The number of elements in the vector.</returns>
+	/// <exception cref="EndOfStreamException">
+	/// Thrown when there is insufficient buffer to decode the next token or the buffer is obviously insufficient to store all the elements in the vector.
+	/// Use <see cref="TryReadArrayHeader(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
+	/// </exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Vector"/>.</exception>
 	public int ReadArrayHeader(ref Reader reader)
 	{
 		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(ref reader, out int count));
@@ -70,6 +99,13 @@ public partial class Deformatter
 		return count;
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadArrayHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="count">Receives the number of elements in the vector, if the read is successful.</param>
+	/// <returns>
+	/// <see langword="true"/> when the read operation is successful; <see langword="false"/> when the buffer is empty or insufficient.
+	/// </returns>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Vector"/>.</exception>
 	public bool TryReadArrayHeader(ref Reader reader, out int count)
 	{
 		switch (this.StreamingDeformatter.TryReadArrayHeader(ref reader, out count))
@@ -86,6 +122,14 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadMapHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The number of elements in the map.</returns>
+	/// <exception cref="EndOfStreamException">
+	/// Thrown when there is insufficient buffer to decode the next token or the buffer is obviously insufficient to store all the elements in the map.
+	/// Use <see cref="TryReadMapHeader(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
+	/// </exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Map"/>.</exception>
 	public int ReadMapHeader(ref Reader reader)
 	{
 		ThrowInsufficientBufferUnless(this.TryReadMapHeader(ref reader, out int count));
@@ -98,6 +142,13 @@ public partial class Deformatter
 		return count;
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadMapHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="count">Receives the number of elements in the map, if the read is successful.</param>
+	/// <returns>
+	/// <see langword="true"/> when the read operation is successful; <see langword="false"/> when the buffer is empty or insufficient.
+	/// </returns>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Map"/>.</exception>
 	public bool TryReadMapHeader(ref Reader reader, out int count)
 	{
 		switch (this.StreamingDeformatter.TryReadMapHeader(ref reader, out count))
@@ -114,6 +165,11 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryRead(ref Reader, out bool)"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Boolean"/>.</exception>
 	public bool ReadBoolean(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out bool value))
@@ -130,6 +186,11 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryRead(ref Reader, out char)"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Integer"/>.</exception>
 	public char ReadChar(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out char value))
@@ -146,6 +207,11 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryRead(ref Reader, out float)"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Float"/>.</exception>
 	public unsafe float ReadSingle(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out float value))
@@ -161,6 +227,11 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryRead(ref Reader, out double)"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Float"/>.</exception>
 	public unsafe double ReadDouble(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out double value))
@@ -176,6 +247,11 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryRead(ref Reader, out string)"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/> or <see cref="TypeCode.Nil"/>.</exception>
 	public string? ReadString(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out string? value))
@@ -192,6 +268,11 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadBinary(ref Reader, out ReadOnlySequence{byte})"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Binary"/> or <see cref="TypeCode.Nil"/>.</exception>
 	public ReadOnlySequence<byte>? ReadBytes(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadBinary(ref reader, out ReadOnlySequence<byte> value))
@@ -213,6 +294,11 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStringSequence(ref Reader, out ReadOnlySequence{byte})"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/> or <see cref="TypeCode.Nil"/>.</exception>
 	public ReadOnlySequence<byte>? ReadStringSequence(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
@@ -234,6 +320,21 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary>Reads a string from the data stream (with appropriate envelope) without decoding it.</summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/>.</exception>
+	/// <remarks>
+	/// <para>
+	/// This method will often be alloc-free if the string is contiguous in the buffer.
+	/// If the string is <em>not</em> contiguous, then the result will be a copy of the string.
+	/// Use <see cref="TryReadStringSpan(ref Reader, out ReadOnlySpan{byte})"/> to avoid allocating a copy of the string.
+	/// </para>
+	/// <para>
+	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TypeCode.Nil"/> or any other non-<see cref="TypeCode.String"/> token.
+	/// </para>
+	/// </remarks>
 	public ReadOnlySpan<byte> ReadStringSpan(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out ReadOnlySpan<byte> span))
@@ -250,6 +351,16 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary>Reads a string from the data stream (with appropriate envelope) without decoding it.</summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="span">Receives the encoded bytes of the string <em>if</em> they were contiguous in memory.</param>
+	/// <returns><see langword="true" /> if the string was contiguous in memory; <see langword="false" /> if the string was not contiguous.</returns>
+	/// <remarks>
+	/// When <see langword="false"/>, the caller should use <see cref="ReadStringSequence(ref Reader)"/> to read the string
+	/// without allocations or <see cref="ReadStringSpan(ref Reader)"/> with allocations.
+	/// </remarks>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/>.</exception>
 	public bool TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> span)
 	{
 		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
@@ -257,13 +368,6 @@ public partial class Deformatter
 			case DecodeResult.Success:
 				return contiguous;
 			case DecodeResult.TokenMismatch:
-				if (this.StreamingDeformatter.TryPeekNextCode(reader, out TypeCode code) == DecodeResult.Success
-					&& code == TypeCode.Nil)
-				{
-					span = default;
-					return false;
-				}
-
 				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:
 			case DecodeResult.InsufficientBuffer:
@@ -273,30 +377,74 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadRaw(ref Reader, SerializationContext, out ReadOnlySequence{byte})" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="context"><inheritdoc cref="StreamingDeformatter.TryReadRaw(ref Reader, SerializationContext, out ReadOnlySequence{byte})" path="/param[@name='context']" /></param>
+	/// <returns>The raw bytes of the next structure.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next structure contains unrecognized or invalid tokens.</exception>
 	public ReadOnlySequence<byte> ReadRaw(ref Reader reader, SerializationContext context)
 	{
-		SequencePosition initialPosition = reader.Position;
-		this.Skip(ref reader, context);
-		return reader.Sequence.Slice(initialPosition, reader.Position);
+		switch (this.StreamingDeformatter.TryReadRaw(ref reader, context, out ReadOnlySequence<byte> value))
+		{
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadRaw(ref Reader, long, out ReadOnlySequence{byte})" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="length"><inheritdoc cref="StreamingDeformatter.TryReadRaw(ref Reader, long, out ReadOnlySequence{byte})" path="/param[@name='length']" /></param>
+	/// <returns>The raw bytes of the next structure.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next structure contains unrecognized or invalid tokens.</exception>
 	public ReadOnlySequence<byte> ReadRaw(ref Reader reader, long length)
 	{
-		if (reader.Remaining < length)
+		switch (this.StreamingDeformatter.TryReadRaw(ref reader, length, out ReadOnlySequence<byte> value))
 		{
-			ThrowNotEnoughBytesException();
+			case DecodeResult.Success:
+				return value;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
 		}
-
-		ReadOnlySequence<byte> result = reader.Sequence.Slice(reader.Position, length);
-		reader.SequenceReader.Advance(length);
-		return result;
 	}
 
-	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, context));
+	/// <summary>
+	/// Advances the reader to the next structure in the data stream.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="context">The serialization context. Used for the stack guard.</param>
+	/// <remarks>
+	/// <para>
+	/// The entire structure is skipped, including content of maps or vectors, or any other type with payloads.
+	/// To get the raw data sequence that was skipped, use <see cref="ReadRaw(ref Reader, SerializationContext)"/> instead.
+	/// </para>
+	/// </remarks>
+	/// <exception cref="EndOfStreamException">Thrown when the next structure is not wholly contained in the buffer. The position of the reader at this point is undefined.</exception>
+	public void Skip(ref Reader reader, SerializationContext context) => ThrowInsufficientBufferUnless(this.TrySkip(ref reader, ref context));
 
-	public TypeCode PeekNextCode(in Reader reader)
+	/// <summary>
+	/// Retrieves the type of the next token without advancing the reader.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The type of the next token.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is unrecognized.</exception>
+	public TypeCode PeekNextTypeCode(in Reader reader)
 	{
-		switch (this.StreamingDeformatter.TryPeekNextCode(reader, out TypeCode typeCode))
+		switch (this.StreamingDeformatter.TryPeekNextTypeCode(reader, out TypeCode typeCode))
 		{
 			case DecodeResult.Success:
 				return typeCode;
@@ -310,6 +458,17 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary>
+	/// Checks whether the next token (which must be an <see cref="TypeCode.Integer"/>) is an integer which <em>may</em> be negative without advancing the reader.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns><see langword="true" /> when the integer is encoded as a signed integer; <see langword="false" /> otherwise.</returns>
+	/// <remarks>
+	/// This is useful for readers that wish to know whether they should use <see cref="ReadInt64(ref Reader)"/>
+	/// instead of <see cref="ReadUInt64(ref Reader)"/> to read a token typed as <see cref="TypeCode.Integer"/>.
+	/// </remarks>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not an <see cref="TypeCode.Integer"/>.</exception>
 	public bool PeekIsSignedInteger(in Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryPeekIsSignedInteger(reader, out bool signed))
@@ -326,6 +485,17 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary>
+	/// Checks whether the next token (which must be an <see cref="TypeCode.Float"/>) is as encoded as a 32-bit float without advancing the reader.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns><see langword="true" /> when the integer is encoded as a signed integer; <see langword="false" /> otherwise.</returns>
+	/// <remarks>
+	/// This is useful for readers that wish to know whether they should use <see cref="ReadSingle(ref Reader)"/>
+	/// instead of <see cref="ReadDouble(ref Reader)"/> to read a token typed as <see cref="TypeCode.Float"/>.
+	/// </remarks>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not an <see cref="TypeCode.Float"/>.</exception>
 	public bool PeekIsFloat32(in Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryPeekIsFloat32(reader, out bool float32))
@@ -343,15 +513,33 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Advances the reader to the next MessagePack structure to be read.
+	/// Throws <see cref="UnreachableException"/>.
 	/// </summary>
+	/// <returns>Nothing. This method always throws.</returns>
+	[DoesNotReturn]
+	internal static Exception ThrowUnreachable() => throw new UnreachableException();
+
+	/// <summary>
+	/// Advances the reader to the next structure in the data stream.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="context">The serialization context. Used for the stack guard.</param>
-	/// <returns><see langword="true"/> if the entire structure beginning at the current <see cref="Reader.Position"/> is found in the <see cref="Reader.Sequence"/>; <see langword="false"/> otherwise.</returns>
+	/// <returns>
+	/// <see langword="true"/> if the entire structure beginning at the current <see cref="Reader.Position"/> is found in the <see cref="Reader.Sequence"/>;
+	/// <see langword="false"/> otherwise.
+	/// </returns>
 	/// <remarks>
-	/// The entire structure is skipped, including content of maps or arrays, or any other type with payloads.
-	/// To get the raw MessagePack sequence that was skipped, use <see cref="ReadRaw(ref Reader, SerializationContext)"/> instead.
+	/// <para>
+	/// The entire structure is skipped, including content of maps or vectors, or any other type with payloads.
+	/// To get the raw data sequence that was skipped, use <see cref="ReadRaw(ref Reader, SerializationContext)"/> instead.
+	/// </para>
+	/// <para>
+	/// The reader position is changed when the return value is <see langword="true"/>.
+	/// The reader position and the <paramref name="context"/> may also be changed when the return value is <see langword="false"/>,
+	/// such that after fetching more bytes, a follow-up call to this method can resume skipping.
+	/// </para>
 	/// </remarks>
-	internal bool TrySkip(ref Reader reader, SerializationContext context)
+	internal bool TrySkip(ref Reader reader, ref SerializationContext context)
 	{
 		switch (this.StreamingDeformatter.TrySkip(ref reader, ref context))
 		{
@@ -381,11 +569,9 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Throws <see cref="EndOfStreamException"/> indicating that there aren't enough bytes remaining in the buffer to store
-	/// the promised data.
+	/// Throws <see cref="EndOfStreamException"/> indicating that there aren't enough bytes remaining in the buffer to read the next token.
 	/// </summary>
-	protected static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();
-
+	/// <returns>Nothing. This method always throws.</returns>
 	[DoesNotReturn]
-	internal static Exception ThrowUnreachable() => throw new UnreachableException();
+	protected static EndOfStreamException ThrowNotEnoughBytesException() => throw new EndOfStreamException();
 }

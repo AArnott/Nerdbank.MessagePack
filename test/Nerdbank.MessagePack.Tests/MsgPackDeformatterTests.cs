@@ -122,7 +122,7 @@ public partial class MsgPackDeformatterTests
 	[Fact]
 	public void TryReadString_Ranges()
 	{
-		this.AssertCodeRange((ref Reader r) => r.TryReadStringSpan(out _), c => c is MessagePackCode.Nil, c => c is (>= MessagePackCode.MinFixStr and <= MessagePackCode.MaxFixStr) or MessagePackCode.Str8 or MessagePackCode.Str16 or MessagePackCode.Str32);
+		this.AssertCodeRange((ref Reader r) => r.TryReadStringSpan(out _), c => false, c => c is (>= MessagePackCode.MinFixStr and <= MessagePackCode.MaxFixStr) or MessagePackCode.Str8 or MessagePackCode.Str16 or MessagePackCode.Str32);
 	}
 
 	[Fact]
@@ -196,8 +196,18 @@ public partial class MsgPackDeformatterTests
 		writer.WriteNull();
 		writer.Flush();
 
+		ReadOnlySpan<byte> span = default;
 		var reader = new Reader(sequence, MsgPackDeformatter.Default);
-		Assert.False(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
+		try
+		{
+			reader.TryReadStringSpan(out span);
+			Assert.Fail("Expected exception not thrown.");
+		}
+		catch (SerializationException)
+		{
+			// This exception is expected.
+		}
+
 		Assert.Equal(0, span.Length);
 		Assert.Equal(sequence.AsReadOnlySequence.Start, reader.Position);
 	}

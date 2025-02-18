@@ -5,46 +5,67 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.PolySerializer.Converters;
 
+/// <summary>
+/// Provides methods for decoding primitive values from a buffer.
+/// </summary>
 public ref struct Reader
 {
-	private readonly Deformatter deformatter;
 	private SequenceReader<byte> inner;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="Reader"/> struct.
+	/// </summary>
+	/// <param name="buffer">The buffer to read from.</param>
+	/// <param name="deformatter">The deformatter that can interpret the <paramref name="buffer" />.</param>
 	public Reader(ReadOnlyMemory<byte> buffer, Deformatter deformatter)
 		: this(new ReadOnlySequence<byte>(buffer), deformatter)
 	{
 	}
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="Reader"/> struct.
+	/// </summary>
+	/// <param name="sequence">The buffer to read from.</param>
+	/// <param name="deformatter">The deformatter that can interpret the <paramref name="sequence" />.</param>
 	public Reader(ReadOnlySequence<byte> sequence, Deformatter deformatter)
 		: this(new SequenceReader<byte>(sequence), deformatter)
 	{
 	}
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="Reader"/> struct.
+	/// </summary>
+	/// <param name="reader">The buffer to read from.</param>
+	/// <param name="deformatter">The deformatter that can interpret the <paramref name="reader" />.</param>
 	internal Reader(SequenceReader<byte> reader, Deformatter deformatter)
 	{
 		this.inner = reader;
-		this.deformatter = deformatter;
+		this.Deformatter = deformatter;
 	}
 
-	[UnscopedRef]
-	internal ref SequenceReader<byte> SequenceReader => ref this.inner;
-
 	/// <summary>
-	/// Gets or sets the number of structures that have been announced but not yet read.
+	/// Gets the sequence being read.
 	/// </summary>
-	/// <remarks>
-	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
-	/// </remarks>
-	internal uint ExpectedRemainingStructures { get; set; }
-
 	public ReadOnlySequence<byte> Sequence => this.inner.Sequence;
 
+	/// <inheritdoc cref="SequenceReader{T}.Remaining"/>
 	public long Remaining => this.inner.Remaining;
 
-	public Deformatter Deformatter => this.deformatter;
+	/// <summary>
+	/// Gets the deformatter used to interpret the <see cref="Sequence"/>.
+	/// </summary>
+	public Deformatter Deformatter { get; }
 
-	public TypeCode NextTypeCode => this.deformatter.PeekNextCode(this);
+	/// <summary>
+	/// Gets the next <see cref="TypeCode"/> that will be read from the sequence.
+	/// </summary>
+	/// <inheritdoc cref="Deformatter.PeekNextTypeCode(in Reader)" path="/exception"/>
+	public TypeCode NextTypeCode => this.Deformatter.PeekNextTypeCode(this);
 
+	/// <summary>
+	/// Gets a value indicating whether the next value to be read is <see langword="null" />.
+	/// </summary>
+	/// <inheritdoc cref="NextTypeCode" path="/exception"/>
 	public bool IsNull => this.NextTypeCode == TypeCode.Nil;
 
 	/// <summary>
@@ -57,60 +78,101 @@ public ref struct Reader
 	/// </summary>
 	public bool End => this.SequenceReader.End;
 
+	/// <summary>
+	/// Gets the unread portion of the current span. This may not contain all remaining bytes in the original <see cref="Sequence"/>.
+	/// </summary>
 	public ReadOnlySpan<byte> UnreadSpan => this.inner.UnreadSpan;
 
-	public void Advance(long count) => this.inner.Advance(count);
-
-	public bool TryReadNull() => this.deformatter.TryReadNull(ref this);
-
-	public void ReadNull() => this.deformatter.ReadNull(ref this);
-
-	public int ReadArrayHeader() => this.deformatter.ReadArrayHeader(ref this);
-
-	public bool TryReadArrayHeader(out int count) => this.deformatter.TryReadArrayHeader(ref this, out count);
-
-	public int ReadMapHeader() => this.deformatter.ReadMapHeader(ref this);
-
-	public bool TryReadMapHeader(out int count) => this.deformatter.TryReadMapHeader(ref this, out count);
-
-	public bool ReadBoolean() => this.deformatter.ReadBoolean(ref this);
-
-	public char ReadChar() => this.deformatter.ReadChar(ref this);
-
-	public string? ReadString() => this.deformatter.ReadString(ref this);
-
-	public ReadOnlySequence<byte>? ReadBytes() => this.deformatter.ReadBytes(ref this);
-
-	public ReadOnlySequence<byte>? ReadStringSequence() => this.deformatter.ReadStringSequence(ref this);
-
-	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.deformatter.TryReadStringSpan(ref this, out value);
-
+	/// <summary>
+	/// Gets the underlying <see cref="SequenceReader{T}"/>.
+	/// </summary>
 	[UnscopedRef]
-	public ReadOnlySpan<byte> ReadStringSpan() => this.deformatter.ReadStringSpan(ref this);
+	internal ref SequenceReader<byte> SequenceReader => ref this.inner;
 
-	public sbyte ReadSByte() => this.deformatter.ReadSByte(ref this);
+	/// <summary>
+	/// Gets or sets the number of structures that have been announced but not yet read.
+	/// </summary>
+	/// <remarks>
+	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
+	/// </remarks>
+	internal uint ExpectedRemainingStructures { get; set; }
 
-	public short ReadInt16() => this.deformatter.ReadInt16(ref this);
+	/// <inheritdoc cref="Deformatter.TryReadNull(ref Reader)"/>
+	public bool TryReadNull() => this.Deformatter.TryReadNull(ref this);
 
-	public int ReadInt32() => this.deformatter.ReadInt32(ref this);
+	/// <inheritdoc cref="Deformatter.ReadNull(ref Reader)"/>
+	public void ReadNull() => this.Deformatter.ReadNull(ref this);
 
-	public long ReadInt64() => this.deformatter.ReadInt64(ref this);
+	/// <inheritdoc cref="Deformatter.ReadArrayHeader(ref Reader)"/>
+	public int ReadArrayHeader() => this.Deformatter.ReadArrayHeader(ref this);
 
-	public byte ReadByte() => this.deformatter.ReadByte(ref this);
+	/// <inheritdoc cref="Deformatter.TryReadArrayHeader(ref Reader, out int)"/>
+	public bool TryReadArrayHeader(out int count) => this.Deformatter.TryReadArrayHeader(ref this, out count);
 
-	public ushort ReadUInt16() => this.deformatter.ReadUInt16(ref this);
+	/// <inheritdoc cref="Deformatter.ReadMapHeader(ref Reader)"/>
+	public int ReadMapHeader() => this.Deformatter.ReadMapHeader(ref this);
 
-	public uint ReadUInt32() => this.deformatter.ReadUInt32(ref this);
+	/// <inheritdoc cref="Deformatter.TryReadMapHeader(ref Reader, out int)"/>
+	public bool TryReadMapHeader(out int count) => this.Deformatter.TryReadMapHeader(ref this, out count);
 
-	public ulong ReadUInt64() => this.deformatter.ReadUInt64(ref this);
+	/// <inheritdoc cref="Deformatter.ReadBoolean(ref Reader)"/>
+	public bool ReadBoolean() => this.Deformatter.ReadBoolean(ref this);
 
-	public float ReadSingle() => this.deformatter.ReadSingle(ref this);
+	/// <inheritdoc cref="Deformatter.ReadChar(ref Reader)"/>
+	public char ReadChar() => this.Deformatter.ReadChar(ref this);
 
-	public double ReadDouble() => this.deformatter.ReadDouble(ref this);
+	/// <inheritdoc cref="Deformatter.ReadString(ref Reader)"/>
+	public string? ReadString() => this.Deformatter.ReadString(ref this);
 
-	public ReadOnlySequence<byte> ReadRaw(SerializationContext context) => this.deformatter.ReadRaw(ref this, context);
+	/// <inheritdoc cref="Deformatter.ReadBytes(ref Reader)"/>
+	public ReadOnlySequence<byte>? ReadBytes() => this.Deformatter.ReadBytes(ref this);
 
-	public ReadOnlySequence<byte> ReadRaw(long length) => this.deformatter.ReadRaw(ref this, length);
+	/// <inheritdoc cref="Deformatter.ReadStringSequence(ref Reader)"/>
+	public ReadOnlySequence<byte>? ReadStringSequence() => this.Deformatter.ReadStringSequence(ref this);
 
-	public void Skip(SerializationContext context) => this.deformatter.Skip(ref this, context);
+	/// <inheritdoc cref="Deformatter.TryReadStringSpan(ref Reader, out ReadOnlySpan{byte})"/>
+	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.Deformatter.TryReadStringSpan(ref this, out value);
+
+	/// <inheritdoc cref="Deformatter.ReadStringSpan(ref Reader)"/>
+	[UnscopedRef]
+	public ReadOnlySpan<byte> ReadStringSpan() => this.Deformatter.ReadStringSpan(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadSByte(ref Reader)"/>
+	public sbyte ReadSByte() => this.Deformatter.ReadSByte(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadInt16(ref Reader)"/>
+	public short ReadInt16() => this.Deformatter.ReadInt16(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadInt32(ref Reader)"/>
+	public int ReadInt32() => this.Deformatter.ReadInt32(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadInt64(ref Reader)"/>
+	public long ReadInt64() => this.Deformatter.ReadInt64(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadByte(ref Reader)"/>
+	public byte ReadByte() => this.Deformatter.ReadByte(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadUInt16(ref Reader)"/>
+	public ushort ReadUInt16() => this.Deformatter.ReadUInt16(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadUInt32(ref Reader)"/>
+	public uint ReadUInt32() => this.Deformatter.ReadUInt32(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadUInt64(ref Reader)"/>
+	public ulong ReadUInt64() => this.Deformatter.ReadUInt64(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadSingle(ref Reader)"/>
+	public float ReadSingle() => this.Deformatter.ReadSingle(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadDouble(ref Reader)"/>
+	public double ReadDouble() => this.Deformatter.ReadDouble(ref this);
+
+	/// <inheritdoc cref="Deformatter.ReadRaw(ref Reader, SerializationContext)"/>
+	public ReadOnlySequence<byte> ReadRaw(SerializationContext context) => this.Deformatter.ReadRaw(ref this, context);
+
+	/// <inheritdoc cref="Deformatter.ReadRaw(ref Reader, long)"/>
+	public ReadOnlySequence<byte> ReadRaw(long length) => this.Deformatter.ReadRaw(ref this, length);
+
+	/// <inheritdoc cref="Deformatter.Skip(ref Reader, SerializationContext)"/>
+	public void Skip(SerializationContext context) => this.Deformatter.Skip(ref this, context);
 }

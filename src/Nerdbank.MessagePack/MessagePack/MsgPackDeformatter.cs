@@ -10,6 +10,10 @@ public class MsgPackDeformatter : Deformatter
 {
 	public static readonly MsgPackDeformatter Default = new(MsgPackStreamingDeformatter.Default);
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MsgPackDeformatter"/> class.
+	/// </summary>
+	/// <param name="streamingDeformatter">The streaming deformatter to wrap.</param>
 	public MsgPackDeformatter(MsgPackStreamingDeformatter streamingDeformatter)
 		: base(streamingDeformatter)
 	{

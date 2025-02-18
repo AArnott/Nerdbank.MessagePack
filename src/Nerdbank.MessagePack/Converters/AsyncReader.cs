@@ -6,6 +6,9 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
+/// <summary>
+/// An async, streaming reader for deserializing a data stream.
+/// </summary>
 public class AsyncReader : IDisposable
 {
 	private bool readerReturned = true;
@@ -14,14 +17,42 @@ public class AsyncReader : IDisposable
 	/// <inheritdoc cref="StreamingReader.ExpectedRemainingStructures"/>
 	private uint expectedRemainingStructures;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="AsyncReader"/> class.
+	/// </summary>
+	/// <param name="pipeReader">The pipe to read data from.</param>
+	/// <param name="deformatter">The deformatter that can decode the data.</param>
 	public AsyncReader(PipeReader pipeReader, Deformatter deformatter)
 	{
 		this.PipeReader = Requires.NotNull(pipeReader);
 		this.Deformatter = Requires.NotNull(deformatter);
 	}
 
+	/// <summary>
+	/// A delegate that can be used to get more bytes to complete the operation.
+	/// </summary>
+	/// <param name="state">A state object.</param>
+	/// <param name="consumed">
+	/// The position after the last consumed byte (i.e. the last byte from the original buffer that is not expected to be included to the new buffer).
+	/// Any bytes at or following this position that were in the original buffer must be included to the buffer returned from this method.
+	/// </param>
+	/// <param name="examined">
+	/// The position of the last examined byte.
+	/// This should be passed to <see cref="PipeReader.AdvanceTo(SequencePosition, SequencePosition)"/>
+	/// when applicable to ensure that the request to get more bytes is filled with actual more bytes rather than the existing buffer.
+	/// </param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <returns>The available buffer, which must contain more bytes than remained after <paramref name="consumed"/> if there are any more bytes to be had.</returns>
+	public delegate ValueTask<ReadResult> GetMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken);
+
+	/// <summary>
+	/// Gets the pipe reader to read data from.
+	/// </summary>
 	public PipeReader PipeReader { get; }
 
+	/// <summary>
+	/// Gets the deformatter that can decode the data.
+	/// </summary>
 	public Deformatter Deformatter { get; }
 
 	/// <summary>
@@ -29,7 +60,7 @@ public class AsyncReader : IDisposable
 	/// </summary>
 	public required CancellationToken CancellationToken { get; init; }
 
-	private protected BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
+	private BufferRefresh Refresh => this.refresh ?? throw new InvalidOperationException($"Call {nameof(this.ReadAsync)} first.");
 
 	/// <summary>
 	/// Retrieves a <see cref="StreamingReader"/>, which is suitable for
@@ -156,20 +187,6 @@ public class AsyncReader : IDisposable
 	}
 
 	/// <summary>
-	/// Gets a value indicating whether we've reached the end of the stream.
-	/// </summary>
-	/// <returns>A boolean value.</returns>
-	internal async ValueTask<bool> GetIsEndOfStreamAsync()
-	{
-		if (this.refresh is null or { Buffer.IsEmpty: true, EndOfStream: false })
-		{
-			await this.ReadAsync().ConfigureAwait(false);
-		}
-
-		return this.Refresh.EndOfStream && this.Refresh.Buffer.IsEmpty;
-	}
-
-	/// <summary>
 	/// Gets the fully-capable, synchronous reader.
 	/// </summary>
 	/// <param name="minimumDesiredBufferedStructures">The number of top-level structures expected by the caller that must be included in the returned buffer.</param>
@@ -277,27 +294,24 @@ public class AsyncReader : IDisposable
 		}
 	}
 
-	private protected void ThrowIfReaderNotReturned()
+	/// <summary>
+	/// Gets a value indicating whether we've reached the end of the stream.
+	/// </summary>
+	/// <returns>A boolean value.</returns>
+	internal async ValueTask<bool> GetIsEndOfStreamAsync()
+	{
+		if (this.refresh is null or { Buffer.IsEmpty: true, EndOfStream: false })
+		{
+			await this.ReadAsync().ConfigureAwait(false);
+		}
+
+		return this.Refresh.EndOfStream && this.Refresh.Buffer.IsEmpty;
+	}
+
+	private void ThrowIfReaderNotReturned()
 	{
 		Verify.Operation(this.readerReturned, "The previous reader must be returned before creating a new one.");
 	}
-
-	/// <summary>
-	/// A delegate that can be used to get more bytes to complete the operation.
-	/// </summary>
-	/// <param name="state">A state object.</param>
-	/// <param name="consumed">
-	/// The position after the last consumed byte (i.e. the last byte from the original buffer that is not expected to be included to the new buffer).
-	/// Any bytes at or following this position that were in the original buffer must be included to the buffer returned from this method.
-	/// </param>
-	/// <param name="examined">
-	/// The position of the last examined byte.
-	/// This should be passed to <see cref="PipeReader.AdvanceTo(SequencePosition, SequencePosition)"/>
-	/// when applicable to ensure that the request to get more bytes is filled with actual more bytes rather than the existing buffer.
-	/// </param>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	/// <returns>The available buffer, which must contain more bytes than remained after <paramref name="consumed"/> if there are any more bytes to be had.</returns>
-	public delegate ValueTask<ReadResult> GetMoreBytesAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// A non-<see langword="ref" /> structure that can be used to recreate a <see cref="StreamingReader"/> after
@@ -328,6 +342,9 @@ public class AsyncReader : IDisposable
 		/// </summary>
 		internal bool EndOfStream { get; init; }
 
+		/// <summary>
+		/// Gets the deformatter used by the reader.
+		/// </summary>
 		internal Deformatter Deformatter { get; init; }
 	}
 }

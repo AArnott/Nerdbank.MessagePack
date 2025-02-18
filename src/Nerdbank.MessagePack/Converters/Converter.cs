@@ -15,7 +15,7 @@ public abstract class Converter
 {
 	/// <summary>Initializes a new instance of the <see cref="Converter"/> class.</summary>
 	/// <param name="type">The specific type that this converter can convert.</param>
-	public Converter(Type type)
+	internal Converter(Type type)
 	{
 	}
 
@@ -29,6 +29,12 @@ public abstract class Converter
 	/// </remarks>
 	public virtual bool PreferAsyncSerialization => false;
 
+	/// <summary>
+	/// Throws an exception if the converter is specialized to a particular format that differs from the format used by its caller.
+	/// </summary>
+	/// <param name="formatter">The formatter in use by the serializer.</param>
+	/// <param name="deformatter">The deformatter in use by the serializer.</param>
+	/// <exception cref="InvalidOperationException">Thrown when the converter is not compatible with the given format.</exception>
 	public virtual void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter)
 	{
 		// We assume converters are compatible by default.
@@ -93,6 +99,14 @@ public abstract class Converter
 	public virtual ValueTask<bool> SkipToIndexValueAsync(AsyncReader reader, object? index, SerializationContext context)
 		=> throw this.ThrowNotSupported();
 
+	/// <summary>
+	/// Invokes a callback using this converter's generic type argument to close the generic callback method.
+	/// </summary>
+	/// <typeparam name="TState">The type of state that the caller wishes to pass to the callback object.</typeparam>
+	/// <typeparam name="TResult">The type of result value returned from the callback object.</typeparam>
+	/// <param name="invoker">The receiver of the callback.</param>
+	/// <param name="state">The state to pass to the callback.</param>
+	/// <returns>The value returned from the <see cref="ITypedConverterInvoke{TState, TResult}.Invoke{T}(Converter{T}, TState)"/> method on the <paramref name="invoker"/>.</returns>
 	internal abstract TResult Invoke<TState, TResult>(ITypedConverterInvoke<TState, TResult> invoker, TState state);
 
 	/// <summary>
@@ -177,18 +191,6 @@ public abstract class Converter
 		return schema;
 	}
 
-	protected static void VerifyFormat<T>(in Reader reader)
-		where T : StreamingDeformatter
-	{
-		Verify.Operation(reader.Deformatter.StreamingDeformatter is T, $"This is a {reader.Deformatter.StreamingDeformatter.FormatName} sequence, but this converter expects to use {typeof(T).Name}.");
-	}
-
-	protected static void VerifyFormat<T>(in Writer writer)
-		where T : Formatter
-	{
-		Verify.Operation(writer.Formatter is T, $"This is a {writer.Formatter.FormatName} sequence, but this converter expects to use {typeof(T).Name}.");
-	}
-
 	/// <summary>
 	/// Wraps a boxed primitive as a <see cref="JsonValue"/>.
 	/// </summary>
@@ -222,11 +224,11 @@ public abstract class Converter
 		};
 	}
 
+	/// <summary>
+	/// Throws a <see cref="NotSupportedException"/> with a message indicating that the converter does not support the operation.
+	/// </summary>
+	/// <returns>Nothing is ever returned from this method.</returns>
+	/// <exception cref="NotSupportedException">Always thrown.</exception>
 	[DoesNotReturn]
 	protected Exception ThrowNotSupported() => throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
-}
-
-public interface ITypedConverterInvoke<TState, TResult>
-{
-	TResult Invoke<T>(Converter<T> converter, TState state);
 }

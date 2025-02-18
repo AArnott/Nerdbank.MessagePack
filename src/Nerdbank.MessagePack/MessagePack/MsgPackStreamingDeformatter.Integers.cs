@@ -19,6 +19,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
@@ -67,6 +68,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
@@ -115,6 +117,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
@@ -163,6 +166,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
@@ -211,6 +215,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
@@ -259,6 +264,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
@@ -307,6 +313,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>
@@ -355,6 +362,7 @@ partial record MsgPackStreamingDeformatter
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>

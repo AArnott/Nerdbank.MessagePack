@@ -28,6 +28,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : Converter<TEnum>
 	/// Initializes a new instance of the <see cref="EnumAsStringConverter{TEnum, TUnderlyingType}"/> class.
 	/// </summary>
 	/// <param name="primitiveConverter">The converter for the primitive underlying type.</param>
+	/// <param name="formatter">The formatter that can encode strings.</param>
 	public EnumAsStringConverter(Converter<TUnderlyingType> primitiveConverter, Formatter formatter)
 	{
 		this.primitiveConverter = primitiveConverter;

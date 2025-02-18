@@ -111,6 +111,36 @@ public ref struct BufferWriter
 	[UnscopedRef]
 	internal ref BufferMemoryWriter BufferMemoryWriter => ref this.memoryWriter;
 
+	/// <summary>
+	/// Copies the caller's buffer into this writer and calls <see cref="Advance(int)"/> with the length of the source buffer.
+	/// </summary>
+	/// <param name="source">The buffer to copy in.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Write(scoped ReadOnlySpan<byte> source)
+	{
+		if (this.span.Length >= source.Length)
+		{
+			source.CopyTo(this.span);
+			this.Advance(source.Length);
+		}
+		else
+		{
+			this.WriteMultiBuffer(source);
+		}
+	}
+
+	/// <summary>
+	/// Copies bytes directly into the buffer.
+	/// </summary>
+	/// <param name="rawMessagePackBlock">The span of bytes to copy from.</param>
+	public void Write(in ReadOnlySequence<byte> rawMessagePackBlock)
+	{
+		foreach (ReadOnlyMemory<byte> segment in rawMessagePackBlock)
+		{
+			this.Write(segment.Span);
+		}
+	}
+
 	/// <inheritdoc cref="IBufferWriter{T}.GetSpan(int)"/>
 	internal Span<byte> GetSpan(int sizeHint = 0)
 	{
@@ -174,36 +204,6 @@ public ref struct BufferWriter
 	{
 		this.buffered += count;
 		this.span = this.span[count..];
-	}
-
-	/// <summary>
-	/// Copies the caller's buffer into this writer and calls <see cref="Advance(int)"/> with the length of the source buffer.
-	/// </summary>
-	/// <param name="source">The buffer to copy in.</param>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Write(scoped ReadOnlySpan<byte> source)
-	{
-		if (this.span.Length >= source.Length)
-		{
-			source.CopyTo(this.span);
-			this.Advance(source.Length);
-		}
-		else
-		{
-			this.WriteMultiBuffer(source);
-		}
-	}
-
-	/// <summary>
-	/// Copies bytes directly into the buffer.
-	/// </summary>
-	/// <param name="rawMessagePackBlock">The span of bytes to copy from.</param>
-	public void Write(in ReadOnlySequence<byte> rawMessagePackBlock)
-	{
-		foreach (ReadOnlyMemory<byte> segment in rawMessagePackBlock)
-		{
-			this.Write(segment.Span);
-		}
 	}
 
 	/// <summary>

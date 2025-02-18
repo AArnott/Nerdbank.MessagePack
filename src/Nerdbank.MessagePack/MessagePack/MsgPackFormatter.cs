@@ -7,8 +7,14 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack;
 
+/// <summary>
+/// A <see cref="Formatter"/> that can encode <see href="https://msgpack.org/">messagepack</see> data.
+/// </summary>
 public record MsgPackFormatter : Formatter
 {
+	/// <summary>
+	/// The default configuration of <see cref="MsgPackFormatter"/>.
+	/// </summary>
 	public static readonly MsgPackFormatter Default = new();
 
 	private MsgPackFormatter()
@@ -22,7 +28,7 @@ public record MsgPackFormatter : Formatter
 	public override Encoding Encoding => StringEncoding.UTF8;
 
 	/// <summary>
-	/// Gets or sets a value indicating whether to write in <see href="https://github.com/msgpack/msgpack/blob/master/spec-old.md">old spec</see> compatibility mode.
+	/// Gets a value indicating whether to write in <see href="https://github.com/msgpack/msgpack/blob/master/spec-old.md">old spec</see> compatibility mode.
 	/// </summary>
 	public bool OldSpec { get; init; }
 
@@ -30,12 +36,23 @@ public record MsgPackFormatter : Formatter
 	public override bool ArrayLengthRequiredInHeader => true;
 
 	/// <summary>
+	/// Writes a <see cref="MessagePackCode.Nil"/> value.
+	/// </summary>
+	/// <param name="writer">The writer to receive the formatted bytes.</param>
+	public override void WriteNull(ref Writer writer)
+	{
+		Span<byte> span = writer.Buffer.GetSpan(1);
+		Assumes.True(MessagePackPrimitives.TryWriteNil(span, out int written));
+		writer.Buffer.Advance(written);
+	}
+
+	/// <summary>
 	/// Write the length of the next array to be written in the most compact form of
 	/// <see cref="MessagePackCode.MinFixArray"/>,
 	/// <see cref="MessagePackCode.Array16"/>, or
 	/// <see cref="MessagePackCode.Array32"/>.
 	/// </summary>
-	/// <param name="writer">The writer to receive the formatted bytes.</param>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="length">The number of elements that will be written in the array.</param>
 	public override void WriteArrayStart(ref Writer writer, int length)
 	{
@@ -44,11 +61,13 @@ public record MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <inheritdoc />
 	public override void WriteArrayElementSeparator(ref Writer writer)
 	{
 		// msgpack doesn't have one.
 	}
 
+	/// <inheritdoc />
 	public override void WriteArrayEnd(ref Writer writer)
 	{
 		// msgpack has no array terminator.
@@ -60,7 +79,8 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Map16"/>, or
 	/// <see cref="MessagePackCode.Map32"/>.
 	/// </summary>
-	/// <param name="count">The number of key=value pairs that will be written in the map.</param>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
+	/// <param name="length">The number of key=value pairs that will be written in the map.</param>
 	public override void WriteMapStart(ref Writer writer, int length)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
@@ -68,34 +88,28 @@ public record MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <inheritdoc />
 	public override void WriteMapKeyValueSeparator(ref Writer writer)
 	{
 		// msgpack doesn't have one.
 	}
 
+	/// <inheritdoc />
 	public override void WriteMapValueTrailer(ref Writer writer)
 	{
 		// msgpack doesn't have one.
 	}
 
+	/// <inheritdoc />
 	public override void WriteMapEnd(ref Writer writer)
 	{
 		// msgpack has no map terminator.
 	}
 
 	/// <summary>
-	/// Writes a <see cref="MessagePackCode.Nil"/> value.
-	/// </summary>
-	public override void WriteNull(ref Writer writer)
-	{
-		Span<byte> span = writer.Buffer.GetSpan(1);
-		Assumes.True(MessagePackPrimitives.TryWriteNil(span, out int written));
-		writer.Buffer.Advance(written);
-	}
-
-	/// <summary>
 	/// Writes a <see cref="bool"/> value using either <see cref="MessagePackCode.True"/> or <see cref="MessagePackCode.False"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, bool value)
 	{
@@ -107,6 +121,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="char"/> value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.UInt8"/> or <see cref="MessagePackCode.UInt16"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, char value)
 	{
@@ -118,6 +133,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="byte"/> value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.UInt8"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, byte value)
 	{
@@ -129,6 +145,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="byte"/> value using <see cref="MessagePackCode.UInt8"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public void WriteUInt8(ref Writer writer, byte value)
 	{
@@ -137,11 +154,13 @@ public record MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <inheritdoc cref="WriteUInt8(ref Writer, byte)"/>
 	public void WriteByte(ref Writer writer, byte value) => this.WriteUInt8(ref writer, value);
 
 	/// <summary>
 	/// Writes an 8-bit value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.Int8"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, sbyte value)
 	{
@@ -153,6 +172,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes an 8-bit value using <see cref="MessagePackCode.Int8"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public void WriteInt8(ref Writer writer, sbyte value)
 	{
@@ -161,11 +181,13 @@ public record MsgPackFormatter : Formatter
 		writer.Buffer.Advance(written);
 	}
 
+	/// <inheritdoc cref="WriteInt8(ref Writer, sbyte)"/>
 	public void WriteSByte(ref Writer writer, sbyte value) => this.WriteInt8(ref writer, value);
 
 	/// <summary>
 	/// Writes a <see cref="ushort"/> value using a 1-byte code when possible, otherwise as <see cref="MessagePackCode.UInt8"/> or <see cref="MessagePackCode.UInt16"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, ushort value)
 	{
@@ -177,6 +199,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="ushort"/> value using <see cref="MessagePackCode.UInt16"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public void WriteUInt16(ref Writer writer, ushort value)
 	{
@@ -193,6 +216,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Int8"/>, or
 	/// <see cref="MessagePackCode.Int16"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, short value)
 	{
@@ -204,6 +228,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="short"/> using <see cref="MessagePackCode.Int16"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public void WriteInt16(ref Writer writer, short value)
 	{
@@ -215,6 +240,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes an <see cref="uint"/> using <see cref="MessagePackCode.UInt32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, uint value)
 	{
@@ -226,6 +252,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes an <see cref="uint"/> using <see cref="MessagePackCode.UInt32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public void WriteUInt32(ref Writer writer, uint value)
 	{
@@ -244,6 +271,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Int16"/>,
 	/// <see cref="MessagePackCode.Int32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, int value)
 	{
@@ -255,6 +283,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes an <see cref="int"/> using <see cref="MessagePackCode.Int32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public void WriteInt32(ref Writer writer, int value)
 	{
@@ -266,6 +295,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes an <see cref="ulong"/> using <see cref="MessagePackCode.Int32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, ulong value)
 	{
@@ -277,6 +307,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes an <see cref="ulong"/> using <see cref="MessagePackCode.Int32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public void WriteUInt64(ref Writer writer, ulong value)
 	{
@@ -297,6 +328,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Int32"/>,
 	/// <see cref="MessagePackCode.Int64"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, long value)
 	{
@@ -308,6 +340,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="long"/> using <see cref="MessagePackCode.Int64"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public void WriteInt64(ref Writer writer, long value)
 	{
@@ -319,6 +352,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="MessagePackCode.Float32"/> value.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, float value)
 	{
@@ -330,6 +364,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="MessagePackCode.Float64"/> value.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value.</param>
 	public override void Write(ref Writer writer, double value)
 	{
@@ -341,7 +376,8 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Writes a <see cref="DateTime"/> using the message code <see cref="ReservedMessagePackExtensionTypeCode.DateTime"/>.
 	/// </summary>
-	/// <param name="dateTime">The value to write.</param>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
+	/// <param name="value">The value to write.</param>
 	/// <exception cref="NotSupportedException">Thrown when <see cref="OldSpec"/> is true because the old spec does not define a <see cref="DateTime"/> format.</exception>
 	public void Write(ref Writer writer, DateTime value)
 	{
@@ -365,6 +401,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Str32"/>,
 	/// or <see cref="MessagePackCode.Nil"/> if the <paramref name="value"/> is <see langword="null"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write. May be null.</param>
 	public override unsafe void Write(ref Writer writer, string? value)
 	{
@@ -393,18 +430,21 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Str32"/>,
 	/// or <see cref="MessagePackCode.Nil"/> if the <paramref name="value"/> is <see langword="null"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write. May be null.</param>
 	public override void Write(ref Writer writer, scoped ReadOnlySpan<char> value)
 	{
 		throw new NotImplementedException();
 	}
 
+	/// <inheritdoc/>
 	public override void WriteEncodedString(ref Writer writer, scoped ReadOnlySpan<byte> value)
 	{
 		this.WriteStringHeader(ref writer, value.Length);
 		writer.Buffer.Write(value);
 	}
 
+	/// <inheritdoc/>
 	public override void WriteEncodedString(ref Writer writer, in ReadOnlySequence<byte> value)
 	{
 		this.WriteStringHeader(ref writer, checked((int)value.Length));
@@ -418,6 +458,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Str16"/>,
 	/// <see cref="MessagePackCode.Str32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, scoped ReadOnlySpan<byte> value)
 	{
@@ -435,6 +476,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Str16"/>,
 	/// <see cref="MessagePackCode.Str32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public override void Write(ref Writer writer, in ReadOnlySequence<byte> value)
 	{
@@ -445,12 +487,14 @@ public record MsgPackFormatter : Formatter
 		writer.Buffer.Advance(length);
 	}
 
+	/// <inheritdoc/>
 	public override bool TryWriteBinHeader(ref Writer writer, int length)
 	{
 		this.WriteBinHeader(ref writer, length);
 		return true;
 	}
 
+	/// <inheritdoc/>
 	public override void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 		=> StringEncoding.GetEncodedStringBytes(value, out utf8Bytes, out msgpackEncoded);
 
@@ -460,6 +504,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Bin16"/>, or
 	/// <see cref="MessagePackCode.Bin32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="length">The length of bytes that will be written next.</param>
 	/// <remarks>
 	/// <para>
@@ -494,6 +539,7 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Str16"/>, or
 	/// <see cref="MessagePackCode.Str32"/>.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="byteCount">The number of bytes in the string that will follow this header.</param>
 	/// <remarks>
 	/// The caller should use <see cref="BufferWriter.Write(in ReadOnlySequence{byte})"/> or <see cref="BufferWriter.Write(ReadOnlySpan{byte})"/>
@@ -521,7 +567,8 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Ext16"/>, or
 	/// <see cref="MessagePackCode.Ext32"/>.
 	/// </summary>
-	/// <param name="extensionHeader">The extension header.</param>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
+	/// <param name="value">The extension header.</param>
 	public void Write(ref Writer writer, ExtensionHeader value)
 	{
 		// When we write the header, we'll ask for all the space we need for the payload as well
@@ -542,16 +589,56 @@ public record MsgPackFormatter : Formatter
 	/// <see cref="MessagePackCode.Ext16"/>, or
 	/// <see cref="MessagePackCode.Ext32"/>.
 	/// </summary>
-	/// <param name="extensionHeader">The extension header.</param>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
+	/// <param name="value">The extension header.</param>
 	public void Write(ref Writer writer, Extension value)
 	{
 		this.Write(ref writer, value.Header);
 		writer.Buffer.Write(value.Data);
 	}
 
+	/// <inheritdoc path="/summary"/>
+	/// <inheritdoc path="/param"/>
+	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
+	public override int GetEncodedLength(long value)
+	{
+		return value switch
+		{
+			>= 0 => value switch
+			{
+				<= MessagePackRange.MaxFixPositiveInt => 1,
+				<= byte.MaxValue => 2,
+				<= ushort.MaxValue => 3,
+				<= uint.MaxValue => 5,
+				_ => 9,
+			},
+			_ => value switch
+			{
+				>= MessagePackRange.MinFixNegativeInt => 1,
+				>= sbyte.MinValue => 2,
+				>= short.MinValue => 3,
+				>= int.MinValue => 5,
+				_ => 9,
+			},
+		};
+	}
+
+	/// <inheritdoc path="/summary"/>
+	/// <inheritdoc path="/param"/>
+	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
+	public override int GetEncodedLength(ulong value)
+	{
+		return value switch
+		{
+			> long.MaxValue => 9,
+			_ => this.GetEncodedLength((long)value),
+		};
+	}
+
 	/// <summary>
 	/// Estimates the length of the header required for a given string.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="characterLength">The length of the string to be written, in characters.</param>
 	/// <param name="bufferSize">Receives the guaranteed length of the returned buffer.</param>
 	/// <param name="encodedBytesOffset">Receives the offset within the returned buffer to write the encoded string to.</param>
@@ -593,6 +680,7 @@ public record MsgPackFormatter : Formatter
 	/// <summary>
 	/// Finalizes an encoding of a string.
 	/// </summary>
+	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="pBuffer">A pointer obtained from a prior call to <see cref="WriteString_PrepareSpan"/>.</param>
 	/// <param name="estimatedOffset">The offset obtained from a prior call to <see cref="WriteString_PrepareSpan"/>.</param>
 	/// <param name="byteCount">The number of bytes used to actually encode the string.</param>
@@ -667,43 +755,5 @@ public record MsgPackFormatter : Formatter
 			span[2] = (byte)(value >> 8);
 			span[3] = (byte)value;
 		}
-	}
-
-	/// <inheritdoc path="/summary"/>
-	/// <inheritdoc path="/param"/>
-	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
-	public override int GetEncodedLength(long value)
-	{
-		return value switch
-		{
-			>= 0 => value switch
-			{
-				<= MessagePackRange.MaxFixPositiveInt => 1,
-				<= byte.MaxValue => 2,
-				<= ushort.MaxValue => 3,
-				<= uint.MaxValue => 5,
-				_ => 9,
-			},
-			_ => value switch
-			{
-				>= MessagePackRange.MinFixNegativeInt => 1,
-				>= sbyte.MinValue => 2,
-				>= short.MinValue => 3,
-				>= int.MinValue => 5,
-				_ => 9,
-			},
-		};
-	}
-
-	/// <inheritdoc path="/summary"/>
-	/// <inheritdoc path="/param"/>
-	/// <returns>The byte length; One of 1, 2, 3, 5 or 9 bytes.</returns>
-	public override int GetEncodedLength(ulong value)
-	{
-		return value switch
-		{
-			> long.MaxValue => 9,
-			_ => this.GetEncodedLength((long)value),
-		};
 	}
 }

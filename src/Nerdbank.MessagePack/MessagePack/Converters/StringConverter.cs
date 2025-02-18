@@ -7,11 +7,16 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.MessagePack.Converters;
 
+/// <summary>
+/// A msgpack-optimized converter for <see cref="string"/>.
+/// </summary>
 internal class StringConverter : PolySerializer.Converters.StringConverter
 {
+	/// <inheritdoc/>
 	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<string>.VerifyFormat(formatter, deformatter);
 
 #if NET
+	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<string?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{

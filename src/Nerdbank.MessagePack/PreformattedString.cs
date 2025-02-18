@@ -23,9 +23,11 @@ public class PreformattedString : IEquatable<PreformattedString>
 	/// Initializes a new instance of the <see cref="PreformattedString"/> class.
 	/// </summary>
 	/// <param name="value">The string to pre-encode for msgpack serialization.</param>
+	/// <param name="formatter">The formatter to use to encode the string.</param>
 	public PreformattedString(string value, Formatter formatter)
 	{
 		Requires.NotNull(value);
+		Requires.NotNull(formatter);
 
 		this.Formatter = formatter;
 		this.Value = value;
@@ -39,6 +41,9 @@ public class PreformattedString : IEquatable<PreformattedString>
 	/// </summary>
 	public string Value { get; }
 
+	/// <summary>
+	/// Gets the formatter used to pre-format the string.
+	/// </summary>
 	public Formatter Formatter { get; }
 
 	/// <summary>

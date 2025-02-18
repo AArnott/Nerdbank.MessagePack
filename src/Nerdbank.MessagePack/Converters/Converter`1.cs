@@ -7,6 +7,10 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer.Converters;
 
+/// <summary>
+/// An abstract base class for all converters.
+/// </summary>
+/// <typeparam name="T">The type that this converter can translate between runtime values and encoded bytes.</typeparam>
 public abstract class Converter<T>() : Converter(typeof(T))
 {
 	/// <summary>
@@ -104,5 +108,6 @@ public abstract class Converter<T>() : Converter(typeof(T))
 	[EditorBrowsable(EditorBrowsableState.Never)] // Use the generic methods instead.
 	public override sealed async ValueTask<object?> ReadObjectAsync(AsyncReader reader, SerializationContext context) => await this.ReadAsync(reader, context).ConfigureAwait(false);
 
+	/// <inheritdoc/>
 	internal override TResult Invoke<TState, TResult>(ITypedConverterInvoke<TState, TResult> invoker, TState state) => invoker.Invoke(this, state);
 }

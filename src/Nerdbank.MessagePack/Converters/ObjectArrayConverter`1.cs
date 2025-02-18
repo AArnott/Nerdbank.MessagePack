@@ -365,7 +365,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		T value = constructor();
 
 		PolySerializer.Converters.TypeCode peekType;
-		while (streamingReader.TryPeekNextCode(out peekType).NeedsMoreBytes())
+		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
@@ -623,7 +623,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		context.DepthStep();
 
 		PolySerializer.Converters.TypeCode peekType;
-		while (streamingReader.TryPeekNextCode(out peekType).NeedsMoreBytes())
+		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}

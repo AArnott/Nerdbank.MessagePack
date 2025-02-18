@@ -19,9 +19,14 @@ public abstract record Formatter
 	public abstract string FormatName { get; }
 
 	/// <summary>
-	/// Gets the encoding used by this formatter for characters.
+	/// Gets the text encoding used by this formatter.
 	/// </summary>
 	public abstract Encoding Encoding { get; }
+
+	/// <summary>
+	/// Gets a value indicating whether the format requires arrays must be prefixed with their length.
+	/// </summary>
+	public abstract bool ArrayLengthRequiredInHeader { get; }
 
 	/// <summary>
 	/// Encodes and formats a given string.
@@ -33,8 +38,6 @@ public abstract record Formatter
 	/// This is useful as an optimization so that common strings need not be repeatedly encoded/decoded.
 	/// </remarks>
 	public abstract void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes);
-
-	public abstract bool ArrayLengthRequiredInHeader { get; }
 
 	public abstract void WriteArrayStart(ref Writer writer, int length);
 

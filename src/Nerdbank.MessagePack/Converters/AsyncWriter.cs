@@ -5,12 +5,26 @@ using System.IO.Pipelines;
 
 namespace Nerdbank.PolySerializer.Converters;
 
+/// <summary>
+/// A means of writing to a <see cref="PipeWriter"/> with periodic async pauses to flush the data.
+/// </summary>
+/// <param name="pipeWriter">The pipe to write to.</param>
+/// <param name="formatter">The formatter that can encode primitive values.</param>
 public class AsyncWriter(PipeWriter pipeWriter, Formatter formatter)
 {
-	public Formatter Formatter => formatter;
-
+	/// <summary>
+	/// The async-compatible buffered writer.
+	/// </summary>
 	private BufferMemoryWriter bufferWriter = new(pipeWriter);
 
+	/// <summary>
+	/// Gets the formatter that can encode primitive values written by this struct.
+	/// </summary>
+	public Formatter Formatter => formatter;
+
+	/// <summary>
+	/// Gets the async-compatible write buffer.
+	/// </summary>
 	internal ref BufferMemoryWriter Buffer => ref this.bufferWriter;
 
 	/// <summary>
@@ -106,13 +120,13 @@ public class AsyncWriter(PipeWriter pipeWriter, Formatter formatter)
 		return pipeWriter.CanGetUnflushedBytes && (pipeWriter.UnflushedBytes + writer.UnflushedBytes) > context.UnflushedBytesThreshold;
 	}
 
+	/// <summary>
+	/// A convenience method for writing a <see langword="null" /> value.
+	/// </summary>
 	public void WriteNull()
 	{
 		Writer writer = this.CreateWriter();
 		writer.WriteNull();
 		this.ReturnWriter(ref writer);
 	}
-
-	/// <inheritdoc cref="Writer.WriteNull"/>
-	public void WriteNil() => this.WriteNull();
 }

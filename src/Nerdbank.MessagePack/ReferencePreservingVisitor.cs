@@ -7,6 +7,7 @@ namespace Nerdbank.PolySerializer;
 /// A visitor that wraps the result of another visitor with a reference-preserving converter.
 /// </summary>
 /// <param name="inner">The inner visitor.</param>
+/// <param name="manager">The reference preserving manager.</param>
 internal class ReferencePreservingVisitor(ITypeShapeVisitor inner, IReferencePreservingManager manager) : TypeShapeVisitor
 {
 	/// <inheritdoc/>

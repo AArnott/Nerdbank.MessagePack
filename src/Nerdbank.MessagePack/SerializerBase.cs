@@ -21,6 +21,10 @@ public abstract partial record SerializerBase
 {
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="SerializerBase"/> class.
+	/// </summary>
+	/// <param name="converterCache">A new converter cache.</param>
 	internal SerializerBase(ConverterCache converterCache)
 	{
 		this.ConverterCache = converterCache;
@@ -97,10 +101,24 @@ public abstract partial record SerializerBase
 	/// </summary>
 	public SerializationContext StartingContext { get; init; } = new();
 
+	/// <summary>
+	/// Gets the converter cache for this serializer.
+	/// </summary>
 	internal ConverterCache ConverterCache { get; init; }
 
+	/// <summary>
+	/// Gets a pool of reference equality trackers, if the format supports reference preserving.
+	/// </summary>
+	internal virtual ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; }
+
+	/// <summary>
+	/// Gets the formatter associated with this particular serializer.
+	/// </summary>
 	protected internal abstract Formatter Formatter { get; }
 
+	/// <summary>
+	/// Gets the deformatter associated with this particular serializer.
+	/// </summary>
 	protected internal abstract Deformatter Deformatter { get; }
 
 	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(Converter{T})"/>
@@ -304,6 +322,29 @@ public abstract partial record SerializerBase
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.GetConverter<TElement>(provider), cancellationToken);
 
 	/// <summary>
+	/// Gets a converter for a given type shape.
+	/// </summary>
+	/// <param name="typeShape">The type shape.</param>
+	/// <returns>A converter.</returns>
+	internal Converter GetConverter(ITypeShape typeShape) => this.ConverterCache.GetOrAddConverter(typeShape);
+
+	/// <summary>
+	/// Gets a converter for a given type shape.
+	/// </summary>
+	/// <typeparam name="T">The type whose shape is given by <paramref name="typeShape"/>.</typeparam>
+	/// <param name="typeShape">The type shape.</param>
+	/// <returns>A converter.</returns>
+	internal Converter<T> GetConverter<T>(ITypeShape<T> typeShape) => this.ConverterCache.GetOrAddConverter(typeShape);
+
+	/// <summary>
+	/// Gets a converter for a type, given a type provider.
+	/// </summary>
+	/// <typeparam name="T">The type whose shape is given by <paramref name="shapeProvider"/>.</typeparam>
+	/// <param name="shapeProvider">The type shape provider.</param>
+	/// <returns>A converter.</returns>
+	internal Converter<T> GetConverter<T>(ITypeShapeProvider shapeProvider) => this.ConverterCache.GetOrAddConverter<T>(shapeProvider);
+
+	/// <summary>
 	/// A best-effort (possibly lossy or un-parseable) attempt to translate the structure
 	/// at the current reader position into a JSON token.
 	/// </summary>
@@ -325,6 +366,21 @@ public abstract partial record SerializerBase
 		writer.Write('"');
 		writer.Write(Convert.ToBase64String(reader.ReadRaw(this.StartingContext).ToArray()));
 		writer.Write('"');
+	}
+
+	/// <summary>
+	/// Creates a new serialization context that is ready to process a serialization job.
+	/// </summary>
+	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="cancellationToken">A cancellation token for the operation.</param>
+	/// <returns>The serialization context.</returns>
+	/// <remarks>
+	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
+	/// </remarks>
+	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(provider);
+		return new(this.StartingContext.Start(this, this.ConverterCache, this.ReferenceTrackingPool, provider, cancellationToken));
 	}
 
 	/// <summary>
@@ -446,34 +502,6 @@ public abstract partial record SerializerBase
 		}
 	}
 
-	/// <summary>
-	/// Gets a converter for a given type shape.
-	/// </summary>
-	/// <param name="typeShape">The type shape.</param>
-	/// <returns>A converter.</returns>
-	internal Converter GetConverter(ITypeShape typeShape) => this.ConverterCache.GetOrAddConverter(typeShape);
-
-	internal Converter<T> GetConverter<T>(ITypeShape<T> typeShape) => this.ConverterCache.GetOrAddConverter(typeShape);
-
-	internal Converter<T> GetConverter<T>(ITypeShapeProvider shapeProvider) => this.ConverterCache.GetOrAddConverter<T>(shapeProvider);
-
-	internal virtual ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; }
-
-	/// <summary>
-	/// Creates a new serialization context that is ready to process a serialization job.
-	/// </summary>
-	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref Reader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
-	/// <param name="cancellationToken">A cancellation token for the operation.</param>
-	/// <returns>The serialization context.</returns>
-	/// <remarks>
-	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
-	/// </remarks>
-	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-	{
-		Requires.NotNull(provider);
-		return new(this.StartingContext.Start(this, this.ConverterCache, this.ReferenceTrackingPool, provider, cancellationToken));
-	}
-
 	private void ThrowIfPreservingReferencesDuringEnumeration()
 	{
 		if (this.ConverterCache.PreserveReferences)
@@ -529,6 +557,23 @@ public abstract partial record SerializerBase
 	}
 
 	/// <summary>
+	/// A wrapper around <see cref="SerializationContext"/> that makes disposal easier.
+	/// </summary>
+	/// <param name="context">The <see cref="SerializationContext"/> to wrap.</param>
+	protected struct DisposableSerializationContext(SerializationContext context) : IDisposable
+	{
+		/// <summary>
+		/// Gets the actual <see cref="SerializationContext"/>.
+		/// </summary>
+		public SerializationContext Value => context;
+
+		/// <summary>
+		/// Disposes of any resources held by the serialization context.
+		/// </summary>
+		public void Dispose() => context.End();
+	}
+
+	/// <summary>
 	/// Options for streaming a sequence of values from a msgpack stream.
 	/// </summary>
 	/// <typeparam name="T">The envelope type; i.e. the outer-most structure that contains the sequence.</typeparam>
@@ -551,22 +596,5 @@ public abstract partial record SerializerBase
 		/// When this value is <see langword="false"/>, a <see cref="SerializationException"/> is thrown when <see cref="Path"/> does not lead to a sequence.
 		/// </remarks>
 		public bool EmptySequenceForUndiscoverablePath { get; init; }
-	}
-
-	/// <summary>
-	/// A wrapper around <see cref="SerializationContext"/> that makes disposal easier.
-	/// </summary>
-	/// <param name="context">The <see cref="SerializationContext"/> to wrap.</param>
-	protected struct DisposableSerializationContext(SerializationContext context) : IDisposable
-	{
-		/// <summary>
-		/// Gets the actual <see cref="SerializationContext"/>.
-		/// </summary>
-		public SerializationContext Value => context;
-
-		/// <summary>
-		/// Disposes of any resources held by the serialization context.
-		/// </summary>
-		public void Dispose() => context.End();
 	}
 }

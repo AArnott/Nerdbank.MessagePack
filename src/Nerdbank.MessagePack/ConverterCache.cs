@@ -36,11 +36,18 @@ internal abstract record ConverterCache
 	private bool disableHardwareAcceleration;
 	private NamingPolicy? propertyNamingPolicy;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="ConverterCache"/> class.
+	/// </summary>
+	/// <param name="referencePreservingManager">The reference preserving manager, if the format supports it.</param>
 	internal ConverterCache(IReferencePreservingManager? referencePreservingManager)
 	{
 		this.ReferencePreservingManager = referencePreservingManager;
 	}
 
+	/// <summary>
+	/// Gets the reference preserving manager, if the format supports it.
+	/// </summary>
 	internal IReferencePreservingManager? ReferencePreservingManager { get; }
 
 #if NET
@@ -231,8 +238,6 @@ internal abstract record ConverterCache
 		}
 	}
 
-	protected abstract StandardVisitor CreateStandardVisitor(TypeGenerationContext context);
-
 	private IReferencePreservingManager? ReferencePreservationIfApplicable => this.preserveReferences ? this.ReferencePreservingManager! : null;
 
 	/// <summary>
@@ -378,6 +383,13 @@ internal abstract record ConverterCache
 
 		return this.PropertyNamingPolicy.ConvertName(name);
 	}
+
+	/// <summary>
+	/// Creates a new <see cref="StandardVisitor"/>-derived object for the given context.
+	/// </summary>
+	/// <param name="context">The context from the <see cref="MultiProviderTypeCache"/> factory.</param>
+	/// <returns>The <see cref="StandardVisitor"/> object.</returns>
+	protected abstract StandardVisitor CreateStandardVisitor(TypeGenerationContext context);
 
 	/// <summary>
 	/// Throws <see cref="InvalidOperationException"/> if this object should not be mutated any more

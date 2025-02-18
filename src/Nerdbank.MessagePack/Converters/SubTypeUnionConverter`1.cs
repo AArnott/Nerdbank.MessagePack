@@ -144,7 +144,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		}
 
 		TypeCode nextType;
-		if (streamingReader.TryPeekNextCode(out nextType).NeedsMoreBytes())
+		if (streamingReader.TryPeekNextTypeCode(out nextType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}

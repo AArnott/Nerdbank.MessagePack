@@ -302,7 +302,7 @@ internal readonly struct StreamingDeserializer<TElement>(SerializerBase serializ
 		{
 			StreamingReader streamingReader = reader.CreateStreamingReader();
 			PolySerializer.Converters.TypeCode peekType;
-			while (streamingReader.TryPeekNextCode(out peekType).NeedsMoreBytes())
+			while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}

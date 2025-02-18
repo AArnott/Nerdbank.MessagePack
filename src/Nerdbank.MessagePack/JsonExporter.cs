@@ -6,10 +6,17 @@ using Microsoft;
 
 namespace Nerdbank.PolySerializer;
 
+/// <summary>
+/// Converts formatted data into JSON.
+/// </summary>
 public class JsonExporter
 {
 	private readonly SerializerBase serializerBase;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="JsonExporter"/> class.
+	/// </summary>
+	/// <param name="serializerBase">The serializer associated with the format to be converted.</param>
 	public JsonExporter(SerializerBase serializerBase)
 	{
 		this.serializerBase = serializerBase;
