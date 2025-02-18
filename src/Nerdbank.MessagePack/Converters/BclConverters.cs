@@ -7,7 +7,7 @@
 using System.Drawing;
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 internal class SystemDrawingColorConverter : Converter<Color>
 {

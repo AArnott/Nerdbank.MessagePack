@@ -33,19 +33,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{36CCE840-6
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D8954A17-45FA-4893-A5D6-83C0F6269631}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.PolySerializer", "src\Nerdbank.MessagePack\Nerdbank.PolySerializer.csproj", "{EC0B20E6-6236-459F-8AB9-F92A73F19D57}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShapeShift", "src\Nerdbank.MessagePack\ShapeShift.csproj", "{EC0B20E6-6236-459F-8AB9-F92A73F19D57}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A9500399-3916-4C15-8456-E17FCA73EF9F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Tests", "test\Nerdbank.MessagePack.Tests\Nerdbank.MessagePack.Tests.csproj", "{3C96A147-ACDD-49D7-A0E5-01461E032FB1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShapeShift.Tests", "test\Nerdbank.MessagePack.Tests\ShapeShift.Tests.csproj", "{3C96A147-ACDD-49D7-A0E5-01461E032FB1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "test\Benchmarks\Benchmarks.csproj", "{14818214-87CD-4FA4-8EED-9ABC785BC79B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyzers", "src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj", "{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShapeShift.Analyzers", "src\Nerdbank.MessagePack.Analyzers\ShapeShift.Analyzers.csproj", "{A2922A54-B0A4-4D86-A6E8-530AA7DC6C07}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyzers.Tests", "test\Nerdbank.MessagePack.Analyzers.Tests\Nerdbank.MessagePack.Analyzers.Tests.csproj", "{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShapeShift.Analyzers.Tests", "test\Nerdbank.MessagePack.Analyzers.Tests\ShapeShift.Analyzers.Tests.csproj", "{3BD28BD0-7C27-47F5-B9BA-A3A1B868A6AA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nerdbank.MessagePack.Analyzers.CodeFixes", "src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj", "{B4123457-1704-46DF-BEC8-9F92D7A51C05}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShapeShift.Analyzers.CodeFixes", "src\Nerdbank.MessagePack.Analyzers.CodeFixes\ShapeShift.Analyzers.CodeFixes.csproj", "{B4123457-1704-46DF-BEC8-9F92D7A51C05}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples", "samples\Samples.csproj", "{8FCFC10B-A713-4EB6-9C68-3A082FD2BF31}"
 EndProject

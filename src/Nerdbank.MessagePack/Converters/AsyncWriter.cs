@@ -3,7 +3,7 @@
 
 using System.IO.Pipelines;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A means of writing to a <see cref="PipeWriter"/> with periodic async pauses to flush the data.

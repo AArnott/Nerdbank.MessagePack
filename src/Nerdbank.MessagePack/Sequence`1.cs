@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// Manages a sequence of elements, readily castable as a <see cref="ReadOnlySequence{T}"/>.

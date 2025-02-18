@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text.Json.Nodes;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A base class for converters that handle object types.

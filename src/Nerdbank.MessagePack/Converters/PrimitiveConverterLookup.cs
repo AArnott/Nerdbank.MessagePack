@@ -9,7 +9,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Provides access to built-in converters for primitive types.

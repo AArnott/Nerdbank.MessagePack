@@ -6,7 +6,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Serializes a dictionary.

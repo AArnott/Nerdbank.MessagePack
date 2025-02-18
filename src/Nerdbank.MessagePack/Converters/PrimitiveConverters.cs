@@ -12,7 +12,7 @@ using System.Text.Json.Nodes;
 using Microsoft;
 using Strings = Microsoft.NET.StringTools.Strings;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Serializes a <see cref="string"/>.
@@ -753,10 +753,10 @@ internal partial class ByteArrayConverter : Converter<byte[]?>
 	{
 		switch (reader.NextTypeCode)
 		{
-			case PolySerializer.Converters.TokenType.Null:
+			case TokenType.Null:
 				reader.ReadNull();
 				return null;
-			case PolySerializer.Converters.TokenType.Binary:
+			case TokenType.Binary:
 				return reader.ReadBytes()?.ToArray();
 			default:
 				return Fallback.Read(ref reader, context);

@@ -4,7 +4,7 @@
 using System.IO.Pipelines;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// An async, streaming reader for deserializing a data stream.

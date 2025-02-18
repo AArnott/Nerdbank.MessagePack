@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// A base class for serializers of all formats.

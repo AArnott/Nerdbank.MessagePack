@@ -6,7 +6,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// A .NET Framework implementation of the SequenceReader from .NET.

@@ -2,10 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using Nerdbank.PolySerializer.MessagePack;
-using Nerdbank.PolySerializer.MessagePack.Converters;
+using ShapeShift.MessagePack;
+using ShapeShift.MessagePack.Converters;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A <see cref="Converter{T}"/> that writes objects as maps of property names to values.
@@ -36,7 +36,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		if (reader.NextTypeCode == PolySerializer.Converters.TokenType.Map)
+		if (reader.NextTypeCode == TokenType.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int count = reader.ReadStartMap();
@@ -99,13 +99,13 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		PolySerializer.Converters.TokenType peekType;
+		TokenType peekType;
 		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == PolySerializer.Converters.TokenType.Map)
+		if (peekType == TokenType.Map)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())

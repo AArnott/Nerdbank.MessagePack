@@ -12,7 +12,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace ShapeShift.MessagePack.Converters;
 
 /// <summary>
 /// Hardware-accelerated converters for arrays of various primitive types.

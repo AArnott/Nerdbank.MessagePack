@@ -8,7 +8,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.SecureHash;
+namespace ShapeShift.SecureHash;
 
 /// <summary>
 /// An equality comparer that focuses on just one property for a given type.

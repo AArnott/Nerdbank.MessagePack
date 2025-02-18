@@ -9,9 +9,9 @@
 #pragma warning disable SA1121 // Simplify type syntax
 #pragma warning disable SA1601 // Partial elements should be documented
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
-partial record MsgPackStreamingDeformatter
+public partial record MsgPackStreamingDeformatter
 {
 	/// <summary>
 	/// Reads an <see cref="Byte"/> value from:

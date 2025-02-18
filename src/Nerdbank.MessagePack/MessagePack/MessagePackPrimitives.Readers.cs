@@ -5,9 +5,8 @@ using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Nerdbank.PolySerializer.Converters;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 #pragma warning disable SA1205 // Partial elements should declare access
 

@@ -8,7 +8,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>Serializes the primitive integer type <see cref="SByte"/>.</summary>
 internal class SByteConverter : Converter<SByte>

@@ -3,7 +3,7 @@
 
 using System.Text;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A class for writing structures to a  with a particular format as determined by a derived type.

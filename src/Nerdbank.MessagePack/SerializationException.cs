@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// Represents errors that occur during MessagePack serialization.

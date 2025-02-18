@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.SecureHash;
+namespace ShapeShift.SecureHash;
 
 /// <summary>
 /// A <see cref="SecureEqualityComparer{T}"/> that operates on values through their surrogates.

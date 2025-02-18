@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A convenience API for reading formatted primitive values (e.g. MessagePack, JSON) from a complete buffer.

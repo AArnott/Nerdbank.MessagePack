@@ -3,7 +3,7 @@
 
 using System.Collections.Frozen;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// A non-generic accessor for <see cref="KnownSubTypeMapping{TBase}"/>

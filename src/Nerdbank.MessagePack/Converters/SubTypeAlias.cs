@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Acts as a type union between a <see cref="string"/> and an <see cref="int"/>, which are the allowed types for sub-type aliases.

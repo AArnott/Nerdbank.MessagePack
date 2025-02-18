@@ -10,7 +10,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 <# var types = new Type[] { typeof(sbyte), typeof(short), typeof(int), typeof(long), typeof(byte), typeof(ushort), typeof(uint), typeof(ulong) }.Select(t => t.Name);
 foreach (string type in types) { #>
 

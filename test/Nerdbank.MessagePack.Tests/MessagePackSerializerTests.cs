@@ -204,7 +204,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<byte[], Witness>([1, 2, 3]);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(Nerdbank.PolySerializer.Converters.TokenType.Binary, reader.NextTypeCode);
+		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -215,7 +215,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Memory<byte> deserialized = this.Roundtrip<Memory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
-		Assert.Equal(Nerdbank.PolySerializer.Converters.TokenType.Binary, reader.NextTypeCode);
+		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -226,7 +226,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		ReadOnlyMemory<byte> deserialized = this.Roundtrip<ReadOnlyMemory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
-		Assert.Equal(Nerdbank.PolySerializer.Converters.TokenType.Binary, reader.NextTypeCode);
+		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 

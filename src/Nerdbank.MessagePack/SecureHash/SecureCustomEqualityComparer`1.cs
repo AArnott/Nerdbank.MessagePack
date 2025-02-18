@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.SecureHash;
+namespace ShapeShift.SecureHash;
 
 /// <summary>
 /// An implementation of <see cref="SecureEqualityComparer{T}"/> that delegates to <see cref="IDeepSecureEqualityComparer{T}"/> on an object.

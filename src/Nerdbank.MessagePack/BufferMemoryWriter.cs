@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// A fast access struct that wraps <see cref="IBufferWriter{T}"/>.

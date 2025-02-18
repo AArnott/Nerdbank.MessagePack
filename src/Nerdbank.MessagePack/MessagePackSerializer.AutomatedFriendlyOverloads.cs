@@ -8,7 +8,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 public partial record SerializerBase
 {

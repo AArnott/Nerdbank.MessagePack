@@ -4,7 +4,7 @@
 using System.Runtime.InteropServices;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace ShapeShift.MessagePack.Converters;
 
 /// <summary>
 /// Contains a bunch of converters for arrays of primitives.

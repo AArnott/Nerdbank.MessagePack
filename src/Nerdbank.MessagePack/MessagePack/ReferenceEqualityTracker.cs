@@ -5,9 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 using Microsoft.NET.StringTools;
-using Nerdbank.PolySerializer.MessagePack.Converters;
+using ShapeShift.MessagePack.Converters;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// Tracks the state for a particular serialization/deserialization operation to preserve object references.

@@ -11,9 +11,9 @@
 #pragma warning disable SA1121 // Simplify type syntax
 #pragma warning disable SA1601 // Partial elements should be documented
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
-partial record MsgPackStreamingDeformatter
+public partial record MsgPackStreamingDeformatter
 {<#
 var unsignedTypes = new Type[]
 {
@@ -40,6 +40,7 @@ foreach (var intType in allTypes) {
 	/// Some value between <see cref="MessagePackCode.MinFixInt"/> and <see cref="MessagePackCode.MaxFixInt"/>,
 	/// or any of the other MsgPack integer types.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="value">Receives the decoded value.</param>
 	/// <returns>The success or error code.</returns>
 	/// <exception cref="OverflowException">Thrown when the value exceeds what can be stored in the returned type.</exception>

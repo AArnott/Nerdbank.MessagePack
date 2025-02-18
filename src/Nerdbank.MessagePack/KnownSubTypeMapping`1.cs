@@ -4,7 +4,7 @@
 using System.Collections.Frozen;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// Describes a mapping between a base type and its known sub-types, along with the aliases that identify them.

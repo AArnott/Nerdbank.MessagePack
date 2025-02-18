@@ -8,7 +8,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A delegate that can read a property from a data type and serialize it to a <see cref="Writer"/>.

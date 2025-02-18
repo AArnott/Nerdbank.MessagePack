@@ -4,9 +4,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
-using Nerdbank.PolySerializer.MessagePack;
+using ShapeShift.MessagePack;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// An abstract, non-generic base class for all converters.

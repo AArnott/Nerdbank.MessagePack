@@ -7,7 +7,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A converter that wraps another converter and ensures that references are preserved during serialization.

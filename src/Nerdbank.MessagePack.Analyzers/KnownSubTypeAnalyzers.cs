@@ -3,7 +3,7 @@
 
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Nerdbank.MessagePack.Analyzers;
+namespace ShapeShift.Analyzers;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class KnownSubTypeAnalyzers : DiagnosticAnalyzer

@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.MigrationAnalyzer, Nerdbank.MessagePack.Analyzers.CodeFixes.MigrationCodeFix>;
+using VerifyCS = CodeFixVerifier<ShapeShift.Analyzers.MigrationAnalyzer, ShapeShift.Analyzers.CodeFixes.MigrationCodeFix>;
 
 public class MigrationAnalyzerTests
 {

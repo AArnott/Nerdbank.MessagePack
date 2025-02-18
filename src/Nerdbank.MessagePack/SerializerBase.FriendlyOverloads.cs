@@ -8,7 +8,7 @@ using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 public partial record SerializerBase
 {

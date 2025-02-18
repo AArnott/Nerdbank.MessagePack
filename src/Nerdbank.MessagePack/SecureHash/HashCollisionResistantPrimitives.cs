@@ -17,7 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.SecureHash;
+namespace ShapeShift.SecureHash;
 
 internal static class HashCollisionResistantPrimitives
 {

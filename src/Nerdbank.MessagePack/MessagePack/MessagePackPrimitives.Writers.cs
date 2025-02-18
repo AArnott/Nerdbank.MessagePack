@@ -6,9 +6,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Nerdbank.PolySerializer.MessagePack;
+using ShapeShift.MessagePack;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// Primitive msgpack encoding/decoding methods.

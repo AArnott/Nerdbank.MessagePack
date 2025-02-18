@@ -5,7 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Utilities;
+namespace ShapeShift.Utilities;
 
 /// <summary>
 /// Extensions for the <see cref="IBufferWriter{T}"/> type.

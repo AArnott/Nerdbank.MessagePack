@@ -8,7 +8,7 @@
 #pragma warning disable SA1602 // Enumeration items should be documented
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// https://github.com/msgpack/msgpack/blob/master/spec.md#serialization-type-to-format-conversion.

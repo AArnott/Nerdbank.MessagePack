@@ -9,7 +9,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.SecureHash;
+namespace ShapeShift.SecureHash;
 
 /// <summary>
 /// A secure equality comparer that aggregates the results of multiple other secure equality comparers.

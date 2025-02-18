@@ -4,7 +4,7 @@
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Serializes <see langword="enum" /> types as a string if possible.

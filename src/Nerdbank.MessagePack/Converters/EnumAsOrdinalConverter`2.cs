@@ -4,7 +4,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Serializes <see langword="enum" /> types as their underlying integral type.

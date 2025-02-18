@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A <see cref="Converter{T}"/> that writes objects as arrays of property values.
@@ -35,7 +35,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
-		if (reader.NextTypeCode == PolySerializer.Converters.TokenType.Map)
+		if (reader.NextTypeCode == TokenType.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int count = reader.ReadStartMap();
@@ -364,13 +364,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		context.DepthStep();
 		T value = constructor();
 
-		PolySerializer.Converters.TokenType peekType;
+		TokenType peekType;
 		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == PolySerializer.Converters.TokenType.Map)
+		if (peekType == TokenType.Map)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -622,13 +622,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 
-		PolySerializer.Converters.TokenType peekType;
+		TokenType peekType;
 		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == PolySerializer.Converters.TokenType.Map)
+		if (peekType == TokenType.Map)
 		{
 			int count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())

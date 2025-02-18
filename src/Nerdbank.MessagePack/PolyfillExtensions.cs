@@ -13,7 +13,7 @@ using System.Text;
 using Microsoft;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer
+namespace ShapeShift
 {
 	/// <content>
 	/// Utility methods to help make up for cross-targeting support.

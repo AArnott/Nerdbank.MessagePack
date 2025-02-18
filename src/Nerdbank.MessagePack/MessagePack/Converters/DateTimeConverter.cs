@@ -6,7 +6,7 @@
 
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace ShapeShift.MessagePack.Converters;
 
 /// <summary>
 /// Serializes <see cref="DateTime"/> values using the message code <see cref="ReservedMessagePackExtensionTypeCode.DateTime"/>.

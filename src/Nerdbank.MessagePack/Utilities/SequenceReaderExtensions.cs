@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
-namespace Nerdbank.PolySerializer.Utilities;
+namespace ShapeShift.Utilities;
 
 /// <summary>
 /// Extension methods for the <see cref="SequenceReader{T}"/> type.

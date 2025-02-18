@@ -4,7 +4,7 @@
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 public partial record SerializerBase
 {

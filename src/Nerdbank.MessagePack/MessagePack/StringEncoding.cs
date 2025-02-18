@@ -4,7 +4,7 @@
 using System.Text;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// Shareable values related to string encoding.

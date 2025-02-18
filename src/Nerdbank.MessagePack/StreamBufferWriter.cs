@@ -3,7 +3,7 @@
 
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// Adapts a <see cref="Stream"/> to operate as an <see cref="IBufferWriter{T}"/>.

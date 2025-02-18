@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// A <see cref="Formatter"/> that can encode <see href="https://msgpack.org/">messagepack</see> data.

@@ -11,7 +11,7 @@ using System.Text;
 using Microsoft;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// A <see cref="TypeShapeVisitor"/> that produces <see cref="Converter{T}"/> instances for each type shape it visits.

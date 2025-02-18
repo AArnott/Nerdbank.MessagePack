@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 #pragma warning disable NBMsgPackAsync
 
@@ -301,14 +301,14 @@ internal readonly struct StreamingDeserializer<TElement>(SerializerBase serializ
 		private async ValueTask<bool> IsNullAsync()
 		{
 			StreamingReader streamingReader = reader.CreateStreamingReader();
-			PolySerializer.Converters.TokenType peekType;
+			TokenType peekType;
 			while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			return peekType == PolySerializer.Converters.TokenType.Null;
+			return peekType == TokenType.Null;
 		}
 	}
 }

@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using TokenType = Nerdbank.PolySerializer.Converters.TokenType;
-
 public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	public enum Simple

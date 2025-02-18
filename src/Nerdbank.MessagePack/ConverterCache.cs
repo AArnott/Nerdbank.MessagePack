@@ -7,7 +7,7 @@ using System.Reflection;
 using Microsoft;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// Tracks all inputs to converter construction and caches the results of construction itself.

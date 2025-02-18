@@ -6,6 +6,5 @@ global using Microsoft.CodeAnalysis.CodeFixes;
 global using Microsoft.CodeAnalysis.CSharp;
 global using Microsoft.CodeAnalysis.Diagnostics;
 global using Microsoft.CodeAnalysis.Testing;
-global using Nerdbank.PolySerializer;
-global using Nerdbank.PolySerializer.MessagePack;
+global using ShapeShift.MessagePack;
 global using Xunit;

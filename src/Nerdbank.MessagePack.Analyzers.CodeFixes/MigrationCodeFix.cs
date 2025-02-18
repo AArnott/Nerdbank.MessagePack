@@ -14,7 +14,7 @@ using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.Text;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Nerdbank.MessagePack.Analyzers.CodeFixes;
+namespace ShapeShift.Analyzers.CodeFixes;
 
 [ExportCodeFixProvider(LanguageNames.CSharp)]
 public class MigrationCodeFix : CodeFixProvider

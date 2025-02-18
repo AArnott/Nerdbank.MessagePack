@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace Nerdbank.PolySerializer.Utilities;
+namespace ShapeShift.Utilities;
 
 /// <summary>Defines factory methods for <see cref="SpanDictionary{TKey, TValue}"/>.</summary>
 internal static class SpanDictionary

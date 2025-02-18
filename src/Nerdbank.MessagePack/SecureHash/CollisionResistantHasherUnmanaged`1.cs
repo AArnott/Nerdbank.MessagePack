@@ -7,7 +7,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace Nerdbank.PolySerializer.SecureHash;
+namespace ShapeShift.SecureHash;
 
 /// <summary>
 /// Provides a default implementation of <see cref="IEqualityComparer{T}"/> for blittable structs.

@@ -4,7 +4,7 @@
 // This is a copy of the Sequence<T> class from the Nerdbank.Streams library.
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Utilities;
+namespace ShapeShift.Utilities;
 
 /// <summary>
 /// Extension methods for the <see cref="ReadOnlySequence{T}"/> type.

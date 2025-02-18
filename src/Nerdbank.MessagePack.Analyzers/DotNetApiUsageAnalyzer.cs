@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Nerdbank.MessagePack.Analyzers;
+namespace ShapeShift.Analyzers;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class DotNetApiUsageAnalyzer : DiagnosticAnalyzer

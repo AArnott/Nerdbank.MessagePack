@@ -6,7 +6,7 @@
 
 using System.Text.Json.Nodes;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace ShapeShift.MessagePack.Converters;
 
 /// <summary>
 /// Serializes <see cref="DateTimeOffset"/> values.

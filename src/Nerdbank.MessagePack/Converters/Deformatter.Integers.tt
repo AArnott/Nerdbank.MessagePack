@@ -11,7 +11,7 @@
 #pragma warning disable SA1121 // Simplify type syntax
 #pragma warning disable SA1601 // Partial elements should be documented
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 public partial class Deformatter
 {<#

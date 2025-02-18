@@ -4,7 +4,7 @@
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 internal abstract class MessagePackConverter<T> : Converter<T>
 {

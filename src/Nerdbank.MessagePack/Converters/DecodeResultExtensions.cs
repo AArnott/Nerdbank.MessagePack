@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Extension methods for the <see cref="DecodeResult"/> enum.

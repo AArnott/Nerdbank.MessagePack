@@ -3,7 +3,7 @@
 
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// Serializes .NET objects using the MessagePack format.

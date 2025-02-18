@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A synchronous, streaming reader of serialized data.

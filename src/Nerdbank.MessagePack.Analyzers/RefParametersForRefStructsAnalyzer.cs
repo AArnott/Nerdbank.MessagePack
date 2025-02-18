@@ -4,7 +4,7 @@
 using System.Collections.Frozen;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Nerdbank.MessagePack.Analyzers;
+namespace ShapeShift.Analyzers;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class RefParametersForRefStructsAnalyzer : DiagnosticAnalyzer

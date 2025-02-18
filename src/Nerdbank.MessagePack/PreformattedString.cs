@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// A .NET string together with its msgpack encoding parts, to optimize serialization of well-known, often seen strings

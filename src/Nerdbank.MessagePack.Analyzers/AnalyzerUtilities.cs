@@ -4,7 +4,7 @@
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Nerdbank.MessagePack.Analyzers;
+namespace ShapeShift.Analyzers;
 
 public static class AnalyzerUtilities
 {

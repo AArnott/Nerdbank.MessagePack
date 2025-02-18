@@ -2,10 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using Nerdbank.PolySerializer.MessagePack.Converters;
+using ShapeShift.MessagePack.Converters;
 using PolyType.Utilities;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// A messagepack-specific implementation of <see cref="StandardVisitor"/>.

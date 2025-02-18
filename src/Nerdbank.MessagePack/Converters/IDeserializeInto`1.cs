@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// An interface that may be optionally implemented by a <see cref="Converter{T}"/> to support deserializing into an existing collection instance.

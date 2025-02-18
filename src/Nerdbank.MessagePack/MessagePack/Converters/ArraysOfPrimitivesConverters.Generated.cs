@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace ShapeShift.MessagePack.Converters;
 
 
 /// <summary>

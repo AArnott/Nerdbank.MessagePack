@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 internal struct FormattedSubTypeAlias : IEquatable<FormattedSubTypeAlias>
 {

@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack;
+namespace ShapeShift.MessagePack;
 
 /// <summary>
 /// A <see cref="StreamingDeformatter"/> that can decode <see href="https://msgpack.org/">messagepack</see> data.
@@ -40,7 +40,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryPeekNextTypeCode(in Reader reader, out PolySerializer.Converters.TokenType typeCode)
+	public override DecodeResult TryPeekNextTypeCode(in Reader reader, out ShapeShift.Converters.TokenType typeCode)
 	{
 		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
 		if (result != DecodeResult.Success)
@@ -767,21 +767,21 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <summary>
-	/// Converts a msgpack code to a <see cref="PolySerializer.Converters.TokenType"/>.
+	/// Converts a msgpack code to a <see cref="TokenType"/>.
 	/// </summary>
 	/// <param name="code">The byte code that encodes the type of the next msgpack token.</param>
-	/// <returns>The format-agnostic <see cref="PolySerializer.Converters.TokenType"/>.</returns>
-	public PolySerializer.Converters.TokenType ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
+	/// <returns>The format-agnostic <see cref="TokenType"/>.</returns>
+	public TokenType ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
 	{
-		MessagePackType.Integer => PolySerializer.Converters.TokenType.Integer,
-		MessagePackType.Boolean => PolySerializer.Converters.TokenType.Boolean,
-		MessagePackType.Float => PolySerializer.Converters.TokenType.Float,
-		MessagePackType.String => PolySerializer.Converters.TokenType.String,
-		MessagePackType.Binary => PolySerializer.Converters.TokenType.Binary,
-		MessagePackType.Array => PolySerializer.Converters.TokenType.Vector,
-		MessagePackType.Map => PolySerializer.Converters.TokenType.Map,
-		MessagePackType.Nil => PolySerializer.Converters.TokenType.Null,
-		_ => PolySerializer.Converters.TokenType.Unknown,
+		MessagePackType.Integer => TokenType.Integer,
+		MessagePackType.Boolean => TokenType.Boolean,
+		MessagePackType.Float => TokenType.Float,
+		MessagePackType.String => TokenType.String,
+		MessagePackType.Binary => TokenType.Binary,
+		MessagePackType.Array => TokenType.Vector,
+		MessagePackType.Map => TokenType.Map,
+		MessagePackType.Nil => TokenType.Null,
+		_ => TokenType.Unknown,
 	};
 
 	/// <summary>

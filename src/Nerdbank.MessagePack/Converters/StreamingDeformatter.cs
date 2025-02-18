@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// An abstract base class for streaming deformatters.

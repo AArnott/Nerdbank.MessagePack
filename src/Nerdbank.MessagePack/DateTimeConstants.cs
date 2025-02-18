@@ -3,7 +3,7 @@
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
 // with Yoshifumi Kawai getting credit for the original implementation.
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// Provides constants related to DateTime operations.

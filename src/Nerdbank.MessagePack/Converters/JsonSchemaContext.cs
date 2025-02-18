@@ -4,7 +4,7 @@
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer;
+namespace ShapeShift;
 
 /// <summary>
 /// The context provided to <see cref="Converter.GetJsonSchema"/>

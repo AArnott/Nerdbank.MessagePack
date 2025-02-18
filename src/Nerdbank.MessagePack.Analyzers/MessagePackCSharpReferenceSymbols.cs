@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Nerdbank.MessagePack.Analyzers;
+namespace ShapeShift.Analyzers;
 
 public record MessagePackCSharpReferenceSymbols(
 	INamedTypeSymbol MessagePackSerializer,

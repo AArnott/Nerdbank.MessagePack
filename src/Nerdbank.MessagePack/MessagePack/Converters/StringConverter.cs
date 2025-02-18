@@ -5,12 +5,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.MessagePack.Converters;
+namespace ShapeShift.MessagePack.Converters;
 
 /// <summary>
 /// A msgpack-optimized converter for <see cref="string"/>.
 /// </summary>
-internal class StringConverter : PolySerializer.Converters.StringConverter
+internal class StringConverter : ShapeShift.Converters.StringConverter
 {
 	/// <inheritdoc/>
 	public override void VerifyCompatibility(Formatter formatter, StreamingDeformatter deformatter) => MessagePackConverter<string>.VerifyFormat(formatter, deformatter);

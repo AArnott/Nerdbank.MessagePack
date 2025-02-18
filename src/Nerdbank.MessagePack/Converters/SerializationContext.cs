@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft;
 
-namespace Nerdbank.PolySerializer.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Context that flows through the serialization process.
