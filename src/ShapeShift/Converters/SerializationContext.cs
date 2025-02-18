@@ -13,11 +13,11 @@ namespace ShapeShift.Converters;
 /// <example>
 /// <para>The default values on this struct may be changed and the modified struct applied to <see cref="SerializerBase.StartingContext"/>
 /// in order to serialize with the updated settings.</para>
-/// <code source="../../samples/ApplyingSerializationContext.cs" region="ApplyingStartingContext" lang="C#" />
+/// <code source="../../../samples/ApplyingSerializationContext.cs" region="ApplyingStartingContext" lang="C#" />
 /// </example>
 /// <example>
 /// <para>To modify the starting context on an existing serializer, you can use the with keyword to create a new serializer with the updated context.</para>
-/// <code source="../../samples/ApplyingSerializationContext.cs" region="ModifyingStartingContext" lang="C#" />
+/// <code source="../../../samples/ApplyingSerializationContext.cs" region="ModifyingStartingContext" lang="C#" />
 /// </example>
 [DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
 public record struct SerializationContext
@@ -96,7 +96,7 @@ public record struct SerializationContext
 	/// <example>
 	/// To add, modify or remove a key in this state as applied to a <see cref="SerializerBase.StartingContext"/>,
 	/// capture and change the <see cref="SerializationContext"/> as a local variable, then reassign it to the serializer.
-	/// <code source="../../samples/ApplyingSerializationContext.cs" region="ModifyingStartingContextState" lang="C#" />
+	/// <code source="../../../samples/ApplyingSerializationContext.cs" region="ModifyingStartingContextState" lang="C#" />
 	/// </example>
 	public object? this[object key]
 	{

@@ -1,13 +1,13 @@
 # NBMsgPack035: Async converters should return readers
 
-Custom converters (classes that derive from @"ShapeShift.MessagePackConverter`1") that override the @ShapeShift.MessagePackConverter`1.ReadAsync* method should [return](xref:ShapeShift.MessagePackAsyncReader.ReturnReader*) the @ShapeShift.MessagePackReader or @ShapeShift.MessagePackStreamingReader struct that it creates with @ShapeShift.MessagePackAsyncReader.CreateBufferedReader* or @ShapeShift.MessagePackAsyncReader.CreateStreamingReader*, respectively.
+Custom converters (classes that derive from @"ShapeShift.MessagePackConverter`1") that override the @ShapeShift.MessagePackConverter`1.ReadAsync* method should [return](xref:ShapeShift.Converters.AsyncReader.ReturnReader*) the @ShapeShift.MessagePackReader or @ShapeShift.Converters.StreamingReader struct that it creates with @ShapeShift.Converters.AsyncReader.CreateBufferedReader* or @ShapeShift.Converters.AsyncReader.CreateStreamingReader*, respectively.
 
 Consider that the location of the diagnostic may not always indicate the location of the underlying issue.
 When resolving this violation, consider the various branching, loops, etc. as the problem may only be present when the code takes certain code paths.
 
 ## Example violation
 
-In the following example, the @ShapeShift.MessagePackConverter`1.ReadAsync\* method creates a @ShapeShift.MessagePackStreamingReader then switches to a @ShapeShift.MessagePackReader.
+In the following example, the @ShapeShift.Converters.Converter`1.ReadAsync\* method creates a @ShapeShift.Converters.StreamingReader then switches to a @ShapeShift.MessagePackReader.
 Neither reader is returned, which is a bug.
 
 [!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack035.cs#Defective)]
