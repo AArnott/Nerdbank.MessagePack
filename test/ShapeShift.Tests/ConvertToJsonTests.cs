@@ -173,7 +173,7 @@ public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackS
 		this.Serializer.Serialize(sequence, value, Witness.ShapeProvider);
 #endif
 		StringWriter jsonWriter = new();
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		this.JsonExporter.ConvertToJson(ref reader, jsonWriter, options);
 		return jsonWriter.ToString();
 	}

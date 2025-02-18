@@ -50,8 +50,8 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackSerializer.AutomatedFriendlyOverloads.cs</LastGenOutput>
     </None>
-    <None Update="MessagePack\MsgPackStreamingDeformatter.Integers.tt">
-      <LastGenOutput>MsgPackStreamingDeformatter.Integers.cs</LastGenOutput>
+    <None Update="MessagePack\MessagePackStreamingDeformatter.Integers.tt">
+      <LastGenOutput>MessagePackStreamingDeformatter.Integers.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
     <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
@@ -103,10 +103,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackSerializer.AutomatedFriendlyOverloads.tt</DependentUpon>
     </Compile>
-    <Compile Update="MessagePack\MsgPackStreamingDeformatter.Integers.cs">
+    <Compile Update="MessagePack\MessagePackStreamingDeformatter.Integers.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>MsgPackStreamingDeformatter.Integers.tt</DependentUpon>
+      <DependentUpon>MessagePackStreamingDeformatter.Integers.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

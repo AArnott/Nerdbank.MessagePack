@@ -11,19 +11,19 @@ namespace ShapeShift.MessagePack;
 /// <summary>
 /// A <see cref="StreamingDeformatter"/> that can decode <see href="https://msgpack.org/">messagepack</see> data.
 /// </summary>
-public partial record MsgPackStreamingDeformatter : StreamingDeformatter
+public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 {
 	/// <summary>
-	/// The default instance of <see cref="MsgPackStreamingDeformatter"/>.
+	/// The default instance of <see cref="MessagePackStreamingDeformatter"/>.
 	/// </summary>
-	public static readonly MsgPackStreamingDeformatter Default = new();
+	public static readonly MessagePackStreamingDeformatter Default = new();
 
-	private MsgPackStreamingDeformatter()
+	private MessagePackStreamingDeformatter()
 	{
 	}
 
 	/// <inheritdoc/>
-	public override string FormatName => MsgPackFormatter.Default.FormatName;
+	public override string FormatName => MessagePackFormatter.Default.FormatName;
 
 	/// <inheritdoc/>
 	public override Encoding Encoding => StringEncoding.UTF8;
@@ -128,7 +128,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref count, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref int count, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref int count, ref int tokenSize)
 		{
 			switch (readResult)
 			{
@@ -181,7 +181,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref count, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref int count, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref int count, ref int tokenSize)
 		{
 			switch (readResult)
 			{
@@ -310,7 +310,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref float value, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref float value, ref int tokenSize)
 		{
 			switch (readResult)
 			{
@@ -350,7 +350,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref double value, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref double value, ref int tokenSize)
 		{
 			switch (readResult)
 			{
@@ -433,7 +433,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref DateTime value, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref DateTime value, ref int tokenSize)
 		{
 			switch (readResult)
 			{
@@ -539,7 +539,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref ExtensionHeader extensionHeader, ref int tokenSize)
 		{
 			switch (readResult)
 			{
@@ -639,7 +639,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 		context.MidSkipRemainingCount = 0;
 		return DecodeResult.Success;
 
-		static DecodeResult TrySkipOne(ref Reader reader, MsgPackStreamingDeformatter self, out uint skipMore)
+		static DecodeResult TrySkipOne(ref Reader reader, MessagePackStreamingDeformatter self, out uint skipMore)
 		{
 			skipMore = 0;
 			DecodeResult result = self.TryPeekNextCode(reader, out byte code);
@@ -806,7 +806,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref length, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref uint length, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref uint length, ref int tokenSize)
 		{
 			switch (readResult)
 			{
@@ -858,7 +858,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, usingBinaryHeader, ref length, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, bool usingBinaryHeader, ref uint length, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, bool usingBinaryHeader, ref uint length, ref int tokenSize)
 		{
 			switch (readResult)
 			{

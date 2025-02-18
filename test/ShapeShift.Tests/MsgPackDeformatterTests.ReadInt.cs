@@ -17,125 +17,125 @@ public partial class MsgPackDeformatterTests
 	{
 		// * FixInt
 		// ** non-boundary
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 3))),
 
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, -3))),
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, -3))),
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, -3))),
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, -3))),
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, -3))),
 
 		// ** Boundary conditions
 		/* MaxFixInt */
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, MessagePackCode.MaxFixInt))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, checked((Byte)MessagePackCode.MaxFixInt)))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, checked((UInt16)MessagePackCode.MaxFixInt)))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, checked((UInt32)MessagePackCode.MaxFixInt)))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, checked((UInt64)MessagePackCode.MaxFixInt)))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, checked((SByte)MessagePackCode.MaxFixInt)))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, checked((Int16)MessagePackCode.MaxFixInt)))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, checked((Int32)MessagePackCode.MaxFixInt)))),
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, checked((Int64)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, MessagePackCode.MaxFixInt))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, checked((Byte)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, checked((UInt16)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, checked((UInt32)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, checked((UInt64)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, checked((SByte)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, checked((Int16)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, checked((Int32)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, checked((Int64)MessagePackCode.MaxFixInt)))),
 		/* MinFixInt */
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, MessagePackCode.MinFixInt))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, checked((Byte)MessagePackCode.MinFixInt)))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, checked((UInt16)MessagePackCode.MinFixInt)))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, checked((UInt32)MessagePackCode.MinFixInt)))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, checked((UInt64)MessagePackCode.MinFixInt)))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, checked((SByte)MessagePackCode.MinFixInt)))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, checked((Int16)MessagePackCode.MinFixInt)))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, checked((Int32)MessagePackCode.MinFixInt)))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, checked((Int64)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, MessagePackCode.MinFixInt))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, checked((Byte)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, checked((UInt16)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, checked((UInt32)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, checked((UInt64)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, checked((SByte)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, checked((Int16)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, checked((Int32)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, checked((Int64)MessagePackCode.MinFixInt)))),
 		/* MinNegativeFixInt */
-		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, MinNegativeFixInt))),
-		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, MinNegativeFixInt))),
-		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MinNegativeFixInt))),
-		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, MinNegativeFixInt))),
+		(MinNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, MinNegativeFixInt))),
+		(MinNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, MinNegativeFixInt))),
+		(MinNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, MinNegativeFixInt))),
+		(MinNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, MinNegativeFixInt))),
 		/* MaxNegativeFixInt */
-		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, MaxNegativeFixInt))),
-		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, MaxNegativeFixInt))),
-		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MaxNegativeFixInt))),
-		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, MaxNegativeFixInt))),
+		(MaxNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, MaxNegativeFixInt))),
+		(MaxNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, MaxNegativeFixInt))),
+		(MaxNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, MaxNegativeFixInt))),
+		(MaxNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, MaxNegativeFixInt))),
 
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MessagePackCode.MaxFixInt))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MessagePackCode.MinFixInt))),
-		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MaxNegativeFixInt))),
-		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MinNegativeFixInt))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, MessagePackCode.MaxFixInt))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, MessagePackCode.MinFixInt))),
+		(MaxNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, MaxNegativeFixInt))),
+		(MinNegativeFixInt, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, MinNegativeFixInt))),
 
 		// * Encoded as each type of at least 8 bits
 		// ** Small positive value
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, 3))),
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, 3))),
+		(3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 3))),
 
 		// ** Small negative value
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, -3))),
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, -3))),
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, -3))),
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, -3))),
+		(-3, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, -3))),
 
 		// ** Max values
 		/* Positive */
-		(0x0ff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, 255))),
-		(0x0ff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, 255))),
-		(0x0ff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 255))),
-		(0x0ff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 255))),
-		(0x0ff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, 255))),
-		(0x0ff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, 255))),
-		(0x0ff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 255))),
-		(0x0ffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, 65535))),
-		(0x0ffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 65535))),
-		(0x0ffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 65535))),
-		(0x0ffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, 65535))),
-		(0x0ffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 65535))),
-		(0x0ffffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 4294967295))),
-		(0x0ffffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 4294967295))),
-		(0x0ffffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 4294967295))),
-		(0x0ffffffffffffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 18446744073709551615))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, 127))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, 127))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 127))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 127))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, 127))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, 127))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, 127))),
-		(0x7f, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 127))),
-		(0x7fff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt16(ref w.Buffer, 32767))),
-		(0x7fff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 32767))),
-		(0x7fff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 32767))),
-		(0x7fff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, 32767))),
-		(0x7fff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, 32767))),
-		(0x7fff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 32767))),
-		(0x7fffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt32(ref w.Buffer, 2147483647))),
-		(0x7fffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 2147483647))),
-		(0x7fffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, 2147483647))),
-		(0x7fffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 2147483647))),
-		(0x7fffffffffffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteUInt64(ref w.Buffer, 9223372036854775807))),
-		(0x7fffffffffffffff, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, 9223372036854775807))),
+		(0x0ff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, 255))),
+		(0x0ff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, 255))),
+		(0x0ff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 255))),
+		(0x0ff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 255))),
+		(0x0ff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, 255))),
+		(0x0ff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, 255))),
+		(0x0ff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 255))),
+		(0x0ffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, 65535))),
+		(0x0ffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 65535))),
+		(0x0ffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 65535))),
+		(0x0ffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, 65535))),
+		(0x0ffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 65535))),
+		(0x0ffffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 4294967295))),
+		(0x0ffffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 4294967295))),
+		(0x0ffffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 4294967295))),
+		(0x0ffffffffffffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 18446744073709551615))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteByte(ref w.Buffer, 127))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, 127))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 127))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 127))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, 127))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, 127))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, 127))),
+		(0x7f, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 127))),
+		(0x7fff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt16(ref w.Buffer, 32767))),
+		(0x7fff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 32767))),
+		(0x7fff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 32767))),
+		(0x7fff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, 32767))),
+		(0x7fff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, 32767))),
+		(0x7fff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 32767))),
+		(0x7fffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt32(ref w.Buffer, 2147483647))),
+		(0x7fffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 2147483647))),
+		(0x7fffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, 2147483647))),
+		(0x7fffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 2147483647))),
+		(0x7fffffffffffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteUInt64(ref w.Buffer, 9223372036854775807))),
+		(0x7fffffffffffffff, Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, 9223372036854775807))),
 		/* Negative */
-		(unchecked((SByte)0x80), Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, -128))),
-		(unchecked((SByte)0x80), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, -128))),
-		(unchecked((SByte)0x80), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, -128))),
-		(unchecked((SByte)0x80), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, -128))),
-		(unchecked((Int16)0x8000), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt16(ref w.Buffer, -32768))),
-		(unchecked((Int16)0x8000), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, -32768))),
-		(unchecked((Int16)0x8000), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, -32768))),
-		(unchecked((Int32)0x80000000), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, -2147483648))),
-		(unchecked((Int32)0x80000000), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, -2147483648))),
-		(unchecked((Int64)0x8000000000000000), Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt64(ref w.Buffer, -9223372036854775808))),
+		(unchecked((SByte)0x80), Encode((ref Writer w) => MessagePackFormatter.Default.WriteSByte(ref w.Buffer, -128))),
+		(unchecked((SByte)0x80), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, -128))),
+		(unchecked((SByte)0x80), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, -128))),
+		(unchecked((SByte)0x80), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, -128))),
+		(unchecked((Int16)0x8000), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt16(ref w.Buffer, -32768))),
+		(unchecked((Int16)0x8000), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, -32768))),
+		(unchecked((Int16)0x8000), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, -32768))),
+		(unchecked((Int32)0x80000000), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt32(ref w.Buffer, -2147483648))),
+		(unchecked((Int32)0x80000000), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, -2147483648))),
+		(unchecked((Int64)0x8000000000000000), Encode((ref Writer w) => MessagePackFormatter.Default.WriteInt64(ref w.Buffer, -9223372036854775808))),
 	};
 
 	[Fact]
@@ -146,16 +146,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Byte.MaxValue && value >= Byte.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadByte(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadByte(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadByte(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadByte(ref reader);
 				});
 #endif
 			}
@@ -167,8 +167,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadByte(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadByte(ref reader);
 		});
 	}
 
@@ -180,16 +180,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= UInt16.MaxValue && value >= UInt16.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadUInt16(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadUInt16(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadUInt16(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadUInt16(ref reader);
 				});
 #endif
 			}
@@ -201,8 +201,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadUInt16(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadUInt16(ref reader);
 		});
 	}
 
@@ -214,16 +214,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= UInt32.MaxValue && value >= UInt32.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadUInt32(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadUInt32(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadUInt32(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadUInt32(ref reader);
 				});
 #endif
 			}
@@ -235,8 +235,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadUInt32(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadUInt32(ref reader);
 		});
 	}
 
@@ -248,16 +248,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= UInt64.MaxValue && value >= UInt64.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadUInt64(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadUInt64(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadUInt64(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadUInt64(ref reader);
 				});
 #endif
 			}
@@ -269,8 +269,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadUInt64(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadUInt64(ref reader);
 		});
 	}
 
@@ -282,16 +282,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= SByte.MaxValue && value >= SByte.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadSByte(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadSByte(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadSByte(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadSByte(ref reader);
 				});
 #endif
 			}
@@ -303,8 +303,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadSByte(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadSByte(ref reader);
 		});
 	}
 
@@ -316,16 +316,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Int16.MaxValue && value >= Int16.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadInt16(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadInt16(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadInt16(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadInt16(ref reader);
 				});
 #endif
 			}
@@ -337,8 +337,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadInt16(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadInt16(ref reader);
 		});
 	}
 
@@ -350,16 +350,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Int32.MaxValue && value >= Int32.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadInt32(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadInt32(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadInt32(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadInt32(ref reader);
 				});
 #endif
 			}
@@ -371,8 +371,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadInt32(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadInt32(ref reader);
 		});
 	}
 
@@ -384,16 +384,16 @@ public partial class MsgPackDeformatterTests
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Int64.MaxValue && value >= Int64.MinValue)
 			{
-				Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-				Assert.Equal(value, MsgPackDeformatter.Default.ReadInt64(ref reader));
+				Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+				Assert.Equal(value, MessagePackDeformatter.Default.ReadInt64(ref reader));
 			}
 			else
 			{
 #if !ENABLE_IL2CPP
 				Assert.Throws<OverflowException>(delegate
 				{
-					Reader reader = new Reader(encoded, MsgPackDeformatter.Default);
-					MsgPackDeformatter.Default.ReadInt64(ref reader);
+					Reader reader = new Reader(encoded, MessagePackDeformatter.Default);
+					MessagePackDeformatter.Default.ReadInt64(ref reader);
 				});
 #endif
 			}
@@ -405,8 +405,8 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<SerializationException>(delegate
 		{
-			Reader reader = new Reader(StringEncodedAsFixStr, MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadInt64(ref reader);
+			Reader reader = new Reader(StringEncodedAsFixStr, MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadInt64(ref reader);
 		});
 	}
 }

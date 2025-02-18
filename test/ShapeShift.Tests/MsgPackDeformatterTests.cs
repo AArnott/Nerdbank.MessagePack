@@ -8,8 +8,8 @@ public partial class MsgPackDeformatterTests
 	private const sbyte ByteNegativeValue = -3;
 	private const byte BytePositiveValue = 3;
 	private static readonly ReadOnlySequence<byte> StringEncodedAsFixStr = Encode((ref Writer w) => w.Write("hi"));
-	private static readonly MsgPackDeformatter Deformatter = MsgPackDeformatter.Default;
-	private static readonly MsgPackFormatter Formatter = MsgPackFormatter.Default;
+	private static readonly MessagePackDeformatter Deformatter = MessagePackDeformatter.Default;
+	private static readonly MessagePackFormatter Formatter = MessagePackFormatter.Default;
 
 	private readonly ITestOutputHelper logger;
 
@@ -32,14 +32,14 @@ public partial class MsgPackDeformatterTests
 		foreach ((System.Numerics.BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
 			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
-			Assert.Equal((float)(double)value, new Reader(encoded, MsgPackDeformatter.Default).ReadSingle());
+			Assert.Equal((float)(double)value, new Reader(encoded, MessagePackDeformatter.Default).ReadSingle());
 		}
 	}
 
 	[Fact]
 	public void ReadSingle_CanReadDouble()
 	{
-		Reader reader = new(Encode((ref Writer w) => w.Write(1.23)), MsgPackDeformatter.Default);
+		Reader reader = new(Encode((ref Writer w) => w.Write(1.23)), MessagePackDeformatter.Default);
 		Assert.Equal(1.23f, reader.ReadSingle());
 	}
 
@@ -47,13 +47,13 @@ public partial class MsgPackDeformatterTests
 	public void ReadArrayHeader_MitigatesLargeAllocations()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		writer.WriteStartVector(9999);
 		writer.Flush();
 
 		Assert.Throws<EndOfStreamException>(() =>
 		{
-			var reader = new Reader(sequence, MsgPackDeformatter.Default);
+			var reader = new Reader(sequence, MessagePackDeformatter.Default);
 			reader.ReadStartVector();
 		});
 	}
@@ -62,15 +62,15 @@ public partial class MsgPackDeformatterTests
 	public void TryReadArrayHeader()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		const int expectedCount = 100;
 		writer.WriteStartVector(expectedCount);
 		writer.Flush();
 
-		Reader reader = new(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MsgPackDeformatter.Default);
+		Reader reader = new(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MessagePackDeformatter.Default);
 		Assert.False(reader.TryReadStartVector(out _));
 
-		reader = new Reader(sequence, MsgPackDeformatter.Default);
+		reader = new Reader(sequence, MessagePackDeformatter.Default);
 		Assert.True(reader.TryReadStartVector(out int actualCount));
 		Assert.Equal(expectedCount, actualCount);
 	}
@@ -79,13 +79,13 @@ public partial class MsgPackDeformatterTests
 	public void ReadMapHeader_MitigatesLargeAllocations()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		writer.WriteStartMap(9999);
 		writer.Flush();
 
 		Assert.Throws<EndOfStreamException>(() =>
 		{
-			var reader = new Reader(sequence, MsgPackDeformatter.Default);
+			var reader = new Reader(sequence, MessagePackDeformatter.Default);
 			reader.ReadStartMap();
 		});
 	}
@@ -94,15 +94,15 @@ public partial class MsgPackDeformatterTests
 	public void TryReadMapHeader()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		const int expectedCount = 100;
 		writer.WriteStartMap(expectedCount);
 		writer.Flush();
 
-		Reader reader = new(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MsgPackDeformatter.Default);
+		Reader reader = new(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MessagePackDeformatter.Default);
 		Assert.False(reader.TryReadStartMap(out _));
 
-		reader = new Reader(sequence, MsgPackDeformatter.Default);
+		reader = new Reader(sequence, MessagePackDeformatter.Default);
 		Assert.True(reader.TryReadStartMap(out int actualCount));
 		Assert.Equal(expectedCount, actualCount);
 	}
@@ -135,19 +135,19 @@ public partial class MsgPackDeformatterTests
 	public void ReadExtensionHeader_MitigatesLargeAllocations()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
-		MsgPackFormatter.Default.Write(ref writer.Buffer, new ExtensionHeader(3, 1));
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
+		MessagePackFormatter.Default.Write(ref writer.Buffer, new ExtensionHeader(3, 1));
 		writer.Buffer.Write(new byte[1]);
 		writer.Flush();
 
 		Assert.Throws<EndOfStreamException>(() =>
 		{
-			var truncatedReader = new Reader(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MsgPackDeformatter.Default);
-			MsgPackDeformatter.Default.ReadExtensionHeader(ref truncatedReader);
+			var truncatedReader = new Reader(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MessagePackDeformatter.Default);
+			MessagePackDeformatter.Default.ReadExtensionHeader(ref truncatedReader);
 		});
 
-		var reader = new Reader(sequence, MsgPackDeformatter.Default);
-		MsgPackDeformatter.Default.ReadExtensionHeader(ref reader);
+		var reader = new Reader(sequence, MessagePackDeformatter.Default);
+		MessagePackDeformatter.Default.ReadExtensionHeader(ref reader);
 	}
 
 	[Fact]
@@ -162,7 +162,7 @@ public partial class MsgPackDeformatterTests
 		   contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
 		   contiguousSequence.AsReadOnlySequence.First.Slice(2));
 
-		var reader = new Reader(fragmentedSequence, MsgPackDeformatter.Default);
+		var reader = new Reader(fragmentedSequence, MessagePackDeformatter.Default);
 		Assert.False(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
 		Assert.Equal(0, span.Length);
 
@@ -177,12 +177,12 @@ public partial class MsgPackDeformatterTests
 	public void TryReadStringSpan_Contiguous()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		byte[] expected = new byte[] { 0x1, 0x2, 0x3 };
 		writer.WriteEncodedString(expected);
 		writer.Flush();
 
-		var reader = new Reader(sequence, MsgPackDeformatter.Default);
+		var reader = new Reader(sequence, MessagePackDeformatter.Default);
 		Assert.True(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
 		Assert.Equal(expected, span.ToArray());
 		Assert.True(reader.End);
@@ -192,12 +192,12 @@ public partial class MsgPackDeformatterTests
 	public void TryReadStringSpan_Nil()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		writer.WriteNull();
 		writer.Flush();
 
 		ReadOnlySpan<byte> span = default;
-		var reader = new Reader(sequence, MsgPackDeformatter.Default);
+		var reader = new Reader(sequence, MessagePackDeformatter.Default);
 		try
 		{
 			reader.TryReadStringSpan(out span);
@@ -216,13 +216,13 @@ public partial class MsgPackDeformatterTests
 	public void TryReadStringSpan_WrongType()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		writer.Write(3);
 		writer.Flush();
 
 		Assert.Throws<SerializationException>(() =>
 		{
-			var reader = new Reader(sequence, MsgPackDeformatter.Default);
+			var reader = new Reader(sequence, MessagePackDeformatter.Default);
 			reader.TryReadStringSpan(out ReadOnlySpan<byte> span);
 		});
 	}
@@ -239,7 +239,7 @@ public partial class MsgPackDeformatterTests
 		   contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
 		   contiguousSequence.AsReadOnlySequence.First.Slice(2));
 
-		var reader = new Reader(fragmentedSequence, MsgPackDeformatter.Default);
+		var reader = new Reader(fragmentedSequence, MessagePackDeformatter.Default);
 		ReadOnlySpan<byte> span = reader.ReadStringSpan();
 		Assert.Equal([1, 2, 3], span.ToArray());
 	}
@@ -248,12 +248,12 @@ public partial class MsgPackDeformatterTests
 	public void ReadStringSpan_Contiguous()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		byte[] expected = [0x1, 0x2, 0x3];
 		writer.WriteEncodedString(expected);
 		writer.Flush();
 
-		var reader = new Reader(sequence, MsgPackDeformatter.Default);
+		var reader = new Reader(sequence, MessagePackDeformatter.Default);
 		ReadOnlySpan<byte> span = reader.ReadStringSpan();
 		Assert.Equal(expected, span.ToArray());
 		Assert.True(reader.End);
@@ -263,13 +263,13 @@ public partial class MsgPackDeformatterTests
 	public void ReadStringSpan_Nil()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		writer.WriteNull();
 		writer.Flush();
 
 		Assert.Throws<SerializationException>(() =>
 		{
-			var reader = new Reader(sequence, MsgPackDeformatter.Default);
+			var reader = new Reader(sequence, MessagePackDeformatter.Default);
 			reader.ReadStringSpan();
 		});
 	}
@@ -278,13 +278,13 @@ public partial class MsgPackDeformatterTests
 	public void ReadStringSpan_WrongType()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		writer.Write(3);
 		writer.Flush();
 
 		Assert.Throws<SerializationException>(() =>
 		{
-			var reader = new Reader(sequence, MsgPackDeformatter.Default);
+			var reader = new Reader(sequence, MessagePackDeformatter.Default);
 			reader.ReadStringSpan();
 		});
 	}
@@ -292,7 +292,7 @@ public partial class MsgPackDeformatterTests
 	[Fact]
 	public void ReadString_MultibyteChars()
 	{
-		var reader = new Reader(TestConstants.MsgPackEncodedMultibyteCharString, MsgPackDeformatter.Default);
+		var reader = new Reader(TestConstants.MsgPackEncodedMultibyteCharString, MessagePackDeformatter.Default);
 		string? actual = reader.ReadString();
 		Assert.Equal(TestConstants.MultibyteCharString, actual);
 	}
@@ -301,7 +301,7 @@ public partial class MsgPackDeformatterTests
 	public void ReadRaw()
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		writer.Write(3);
 		writer.WriteStartVector(2);
 		writer.Write(1);
@@ -309,11 +309,11 @@ public partial class MsgPackDeformatterTests
 		writer.Write(5);
 		writer.Flush();
 
-		var reader = new Reader(sequence.AsReadOnlySequence, MsgPackDeformatter.Default);
+		var reader = new Reader(sequence.AsReadOnlySequence, MessagePackDeformatter.Default);
 
 		ReadOnlySequence<byte> first = reader.ReadRaw(new SerializationContext());
 		Assert.Equal(1, first.Length);
-		Assert.Equal(3, new Reader(first, MsgPackDeformatter.Default).ReadInt32());
+		Assert.Equal(3, new Reader(first, MessagePackDeformatter.Default).ReadInt32());
 
 		ReadOnlySequence<byte> second = reader.ReadRaw(new SerializationContext());
 		Assert.Equal(5, second.Length);
@@ -386,7 +386,7 @@ public partial class MsgPackDeformatterTests
 	[Fact]
 	public void CreatePeekReader()
 	{
-		Reader reader = new(StringEncodedAsFixStr, MsgPackDeformatter.Default);
+		Reader reader = new(StringEncodedAsFixStr, MessagePackDeformatter.Default);
 		reader.ReadRaw(1); // advance to test that the peek reader starts from a non-initial position.
 		Reader peek = reader;
 
@@ -405,7 +405,7 @@ public partial class MsgPackDeformatterTests
 	{
 		Assert.Throws<EndOfStreamException>(() =>
 		{
-			var reader = new Reader(sequence, MsgPackDeformatter.Default);
+			var reader = new Reader(sequence, MessagePackDeformatter.Default);
 			readOperation(ref reader);
 		});
 	}
@@ -420,14 +420,14 @@ public partial class MsgPackDeformatterTests
 
 	private static T Decode<T>(ReadOnlySequence<byte> sequence, ReadOperation<T> readOperation)
 	{
-		var reader = new Reader(sequence, MsgPackDeformatter.Default);
+		var reader = new Reader(sequence, MessagePackDeformatter.Default);
 		return readOperation(ref reader);
 	}
 
 	private static ReadOnlySequence<byte> Encode(WriterEncoder cb)
 	{
 		var sequence = new Sequence<byte>();
-		var writer = new Writer(sequence, MsgPackFormatter.Default);
+		var writer = new Writer(sequence, MessagePackFormatter.Default);
 		cb(ref writer);
 		writer.Flush();
 		return sequence.AsReadOnlySequence;
@@ -466,7 +466,7 @@ public partial class MsgPackDeformatterTests
 
 				bool expectedMatch = expectedOneByte || expectedLeadingByte;
 				buffer[0] = code;
-				Reader reader = new(buffer, MsgPackDeformatter.Default);
+				Reader reader = new(buffer, MessagePackDeformatter.Default);
 				bool actual;
 				try
 				{
@@ -514,7 +514,7 @@ public partial class MsgPackDeformatterTests
 
 		public MySequenceReader(ReadOnlySequence<byte> seq)
 		{
-			this.reader = new Reader(seq, MsgPackDeformatter.Default);
+			this.reader = new Reader(seq, MessagePackDeformatter.Default);
 		}
 	}
 

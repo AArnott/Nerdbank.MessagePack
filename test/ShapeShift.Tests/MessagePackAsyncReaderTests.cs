@@ -9,7 +9,7 @@ public class MessagePackAsyncReaderTests
 	public async Task BufferNextStructureAsync_IncompleteBuffer()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.WriteStartVector(3);
 		writer.Write(1);
 		writer.Write(2);
@@ -20,7 +20,7 @@ public class MessagePackAsyncReaderTests
 		FragmentedPipeReader pipeReader = new(ros, ros.GetPosition(1));
 
 		SerializationContext context = new();
-		using AsyncReader reader = new(pipeReader, MsgPackDeformatter.Default) { CancellationToken = default };
+		using AsyncReader reader = new(pipeReader, MessagePackDeformatter.Default) { CancellationToken = default };
 		await reader.BufferNextStructureAsync(context);
 	}
 }

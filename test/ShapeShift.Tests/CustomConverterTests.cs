@@ -56,7 +56,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new TypeWithStatefulConverter(5));
 
 		// Assert that the multiplier state had the intended impact.
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(5 * 3, reader.ReadInt32());
 
 		// Assert that state dictionary changes made by the converter do not impact the caller.

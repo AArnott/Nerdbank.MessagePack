@@ -16,7 +16,7 @@ public record MessagePackSerializer : SerializerBase
 	/// Initializes a new instance of the <see cref="MessagePackSerializer"/> class.
 	/// </summary>
 	public MessagePackSerializer()
-		: base(new MsgPackConverterCache(MsgPackFormatter.Default, MsgPackDeformatter.Default))
+		: base(new MessagePackConverterCache(MessagePackFormatter.Default, MessagePackDeformatter.Default))
 	{
 	}
 
@@ -46,9 +46,9 @@ public record MessagePackSerializer : SerializerBase
 	}
 
 	/// <inheritdoc cref="SerializerBase.ConverterCache" />
-	internal new MsgPackConverterCache ConverterCache
+	internal new MessagePackConverterCache ConverterCache
 	{
-		get => (MsgPackConverterCache)base.ConverterCache;
+		get => (MessagePackConverterCache)base.ConverterCache;
 		init => base.ConverterCache = value;
 	}
 
@@ -60,10 +60,10 @@ public record MessagePackSerializer : SerializerBase
 	{
 		Requires.NotNull(writer);
 
-		switch (((MsgPackDeformatter)reader.Deformatter).PeekNextMessagePackType(reader))
+		switch (((MessagePackDeformatter)reader.Deformatter).PeekNextMessagePackType(reader))
 		{
 			case MessagePackType.Extension:
-				Extension extension = ((MsgPackDeformatter)this.Deformatter).ReadExtension(ref reader);
+				Extension extension = ((MessagePackDeformatter)this.Deformatter).ReadExtension(ref reader);
 				writer.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
 				writer.Write(Convert.ToBase64String(extension.Data.ToArray()));
 				writer.Write('\"');

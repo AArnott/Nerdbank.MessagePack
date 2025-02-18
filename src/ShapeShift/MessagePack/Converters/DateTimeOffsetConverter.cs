@@ -22,7 +22,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 			throw new SerializationException("Expected array of length 2.");
 		}
 
-		DateTime utcDateTime = ((MsgPackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
+		DateTime utcDateTime = ((MessagePackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
 		short offsetMinutes = reader.ReadInt16();
 		return new DateTimeOffset(utcDateTime.Ticks, TimeSpan.FromMinutes(offsetMinutes));
 	}
@@ -31,7 +31,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 	public override void Write(ref Writer writer, in DateTimeOffset value, SerializationContext context)
 	{
 		writer.WriteStartVector(2);
-		((MsgPackFormatter)writer.Formatter).Write(ref writer.Buffer, new DateTime(value.Ticks, DateTimeKind.Utc));
+		((MessagePackFormatter)writer.Formatter).Write(ref writer.Buffer, new DateTime(value.Ticks, DateTimeKind.Utc));
 		writer.Write((short)value.Offset.TotalMinutes);
 	}
 

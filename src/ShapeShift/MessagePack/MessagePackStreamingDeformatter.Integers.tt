@@ -13,7 +13,7 @@
 
 namespace ShapeShift.MessagePack;
 
-public partial record MsgPackStreamingDeformatter
+public partial record MessagePackStreamingDeformatter
 {<#
 var unsignedTypes = new Type[]
 {
@@ -55,7 +55,7 @@ foreach (var intType in allTypes) {
 
 		return SlowPath(ref reader, this, readResult, ref value, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MsgPackStreamingDeformatter self, DecodeResult readResult, ref <#= intType.Name #> value, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref <#= intType.Name #> value, ref int tokenSize)
 		{
 			switch (readResult)
 			{

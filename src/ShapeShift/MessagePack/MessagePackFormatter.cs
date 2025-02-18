@@ -10,14 +10,14 @@ namespace ShapeShift.MessagePack;
 /// <summary>
 /// A <see cref="Formatter"/> that can encode <see href="https://msgpack.org/">messagepack</see> data.
 /// </summary>
-public record MsgPackFormatter : Formatter
+public record MessagePackFormatter : Formatter
 {
 	/// <summary>
-	/// The default configuration of <see cref="MsgPackFormatter"/>.
+	/// The default configuration of <see cref="MessagePackFormatter"/>.
 	/// </summary>
-	public static readonly MsgPackFormatter Default = new();
+	public static readonly MessagePackFormatter Default = new();
 
-	private MsgPackFormatter()
+	private MessagePackFormatter()
 	{
 	}
 

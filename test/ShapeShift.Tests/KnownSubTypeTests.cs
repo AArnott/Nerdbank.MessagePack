@@ -10,7 +10,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
 
 		// Assert that it's serialized in its special syntax that allows for derived types.
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		reader.ReadNull();
 		Assert.Equal(1, reader.ReadStartMap());
@@ -23,7 +23,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 });
 
 		// Assert that this has no special header because it has no Union attribute of its own.
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartMap());
 		Assert.Equal(nameof(DerivedA.DerivedAProperty), reader.ReadString());
 		Assert.Equal(6, reader.ReadInt32());
@@ -82,7 +82,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	public void UnrecognizedAlias()
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MsgPackFormatter.Default);
+		Writer writer = new(sequence, MessagePackFormatter.Default);
 		writer.WriteStartVector(2);
 		writer.Write(100);
 		writer.WriteStartMap(0);
@@ -96,7 +96,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	public void UnrecognizedArraySize()
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MsgPackFormatter.Default);
+		Writer writer = new(sequence, MessagePackFormatter.Default);
 		writer.WriteStartVector(3);
 		writer.Write(100);
 		writer.WriteNull();
@@ -119,13 +119,13 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	{
 		MixedAliasBase value = new MixedAliasDerivedA();
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		Assert.Equal("A", reader.ReadString());
 
 		value = new MixedAliasDerived1();
 		msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
-		reader = new(msgpack, MsgPackDeformatter.Default);
+		reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		Assert.Equal(1, reader.ReadInt32());
 	}
@@ -134,7 +134,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	public void ImpliedAlias()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<ImpliedAliasBase>(new ImpliedAliasDerived());
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		Assert.Equal(typeof(ImpliedAliasDerived).FullName, reader.ReadString());
 	}
@@ -184,14 +184,14 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 
 		// Verify that the base type has just one header.
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<BaseClass>(new BaseClass { BaseClassProperty = 5 });
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		reader.ReadNull();
 		Assert.Equal(1, reader.ReadStartMap());
 
 		// Verify that the header type value is the runtime-specified 1 instead of the static 3.
 		msgpack = this.AssertRoundtrip<BaseClass>(new DerivedB(13));
-		reader = new(msgpack, MsgPackDeformatter.Default);
+		reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		Assert.Equal(1, reader.ReadInt32());
 
@@ -209,7 +209,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
 		this.Serializer.RegisterKnownSubTypes(mapping);
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		reader.ReadNull();
 		Assert.Equal(0, reader.ReadStartMap());

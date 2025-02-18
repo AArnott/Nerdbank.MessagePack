@@ -37,7 +37,7 @@ internal class StringConverter : ShapeShift.Converters.StringConverter
 
 		string result;
 		uint length;
-		MsgPackStreamingDeformatter msgpackDeformatter = (MsgPackStreamingDeformatter)reader.Deformatter.StreamingDeformatter;
+		MessagePackStreamingDeformatter msgpackDeformatter = (MessagePackStreamingDeformatter)reader.Deformatter.StreamingDeformatter;
 		while (msgpackDeformatter.TryReadStringHeader(ref streamingReader.Reader, out length).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));

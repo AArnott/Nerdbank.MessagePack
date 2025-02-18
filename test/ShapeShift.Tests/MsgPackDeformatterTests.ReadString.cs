@@ -12,7 +12,7 @@ public partial class MsgPackDeformatterTests
 			(byte)'A', (byte)'B',
 		});
 
-		Reader reader = new(seq, MsgPackDeformatter.Default);
+		Reader reader = new(seq, MessagePackDeformatter.Default);
 		var result = reader.ReadString();
 		Assert.Equal("AB", result);
 	}
@@ -24,7 +24,7 @@ public partial class MsgPackDeformatterTests
 			new[] { (byte)(MessagePackCode.MinFixStr + 2), (byte)'A' },
 			new[] { (byte)'B' });
 
-		Reader reader = new(seq, MsgPackDeformatter.Default);
+		Reader reader = new(seq, MessagePackDeformatter.Default);
 		var result = reader.ReadString();
 		Assert.Equal("AB", result);
 	}

@@ -65,7 +65,7 @@ internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTra
 		{
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)writer.Formatter.GetEncodedLength(referenceId);
-			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
+			MessagePackFormatter formatter = (MessagePackFormatter)writer.Formatter;
 			formatter.Write(ref writer.Buffer, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			writer.Write(referenceId);
 		}
@@ -101,7 +101,7 @@ internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTra
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)writer.Formatter.GetEncodedLength(referenceId);
 			Writer syncWriter = writer.CreateWriter();
-			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
+			MessagePackFormatter formatter = (MessagePackFormatter)writer.Formatter;
 			formatter.Write(ref syncWriter.Buffer, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			syncWriter.Write(referenceId);
 			writer.ReturnWriter(ref syncWriter);
@@ -127,7 +127,7 @@ internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTra
 	{
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
-		MsgPackDeformatter deformatter = (MsgPackDeformatter)reader.Deformatter;
+		MessagePackDeformatter deformatter = (MessagePackDeformatter)reader.Deformatter;
 		if (deformatter.PeekNextMessagePackType(reader) == MessagePackType.Extension)
 		{
 			Reader provisionaryReader = reader;
@@ -163,7 +163,7 @@ internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTra
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
 		StreamingReader streamingReader = reader.CreateStreamingReader();
-		MsgPackDeformatter deformatter = (MsgPackDeformatter)reader.Deformatter;
+		MessagePackDeformatter deformatter = (MessagePackDeformatter)reader.Deformatter;
 		MessagePackType peekType;
 		while (deformatter.StreamingDeformatter.TryPeekNextCode(streamingReader.Reader, out peekType).NeedsMoreBytes())
 		{

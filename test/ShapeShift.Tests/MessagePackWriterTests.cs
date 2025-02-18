@@ -6,8 +6,8 @@ using System.Text;
 
 public class MessagePackWriterTests
 {
-	private static readonly MsgPackFormatter Formatter = MsgPackFormatter.Default;
-	private static readonly MsgPackDeformatter Deformatter = MsgPackDeformatter.Default;
+	private static readonly MessagePackFormatter Formatter = MessagePackFormatter.Default;
+	private static readonly MessagePackDeformatter Deformatter = MessagePackDeformatter.Default;
 	private readonly ITestOutputHelper logger;
 
 	public MessagePackWriterTests(ITestOutputHelper logger)

@@ -20,7 +20,7 @@ internal abstract class MessagePackConverter<T> : Converter<T>
 	/// </summary>
 	/// <param name="formatter">The formatter.</param>
 	/// <param name="deformatter">The deformatter.</param>
-	protected internal static void VerifyFormat(Formatter formatter, StreamingDeformatter deformatter) => Verify.Operation(formatter is MsgPackFormatter && deformatter is MsgPackStreamingDeformatter, "This converter is specific to msgpack.");
+	protected internal static void VerifyFormat(Formatter formatter, StreamingDeformatter deformatter) => Verify.Operation(formatter is MessagePackFormatter && deformatter is MessagePackStreamingDeformatter, "This converter is specific to msgpack.");
 
 	/// <summary>
 	/// Creates a JSON object that describes the schema for a messagepack extension type.

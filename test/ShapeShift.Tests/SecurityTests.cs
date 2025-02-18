@@ -91,7 +91,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 	private ReadOnlySequence<byte> FormatDeepMsgPackMap(int depth)
 	{
 		Sequence<byte> buffer = new();
-		Writer writer = new(buffer, MsgPackFormatter.Default);
+		Writer writer = new(buffer, MessagePackFormatter.Default);
 		for (int i = 0; i < depth; i++)
 		{
 			writer.WriteStartMap(1);

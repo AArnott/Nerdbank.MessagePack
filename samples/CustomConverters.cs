@@ -384,8 +384,8 @@ namespace PerformanceConverters
 
     public class MyCustomTypeConverter : Converter<MyCustomType>
     {
-        private static readonly PreformattedString Message1 = new(nameof(MyCustomType.Message1), MsgPackFormatter.Default);
-        private static readonly PreformattedString Message2 = new(nameof(MyCustomType.Message2), MsgPackFormatter.Default);
+        private static readonly PreformattedString Message1 = new(nameof(MyCustomType.Message1), MessagePackFormatter.Default);
+        private static readonly PreformattedString Message2 = new(nameof(MyCustomType.Message2), MessagePackFormatter.Default);
 
         public override MyCustomType? Read(ref Reader reader, SerializationContext context)
         {

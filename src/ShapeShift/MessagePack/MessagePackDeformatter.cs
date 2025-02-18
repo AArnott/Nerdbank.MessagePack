@@ -6,24 +6,24 @@ namespace ShapeShift.MessagePack;
 /// <summary>
 /// A <see cref="Deformatter"/>-derived type that adds msgpack-specific read functions.
 /// </summary>
-public class MsgPackDeformatter : Deformatter
+public class MessagePackDeformatter : Deformatter
 {
 	/// <summary>
-	/// Gets the default instance of <see cref="MsgPackDeformatter"/>, which wraps a <see cref="MsgPackStreamingDeformatter.Default"/> instance of <see cref="MsgPackStreamingDeformatter"/>.
+	/// Gets the default instance of <see cref="MessagePackDeformatter"/>, which wraps a <see cref="MessagePackStreamingDeformatter.Default"/> instance of <see cref="MessagePackStreamingDeformatter"/>.
 	/// </summary>
-	public static readonly MsgPackDeformatter Default = new(MsgPackStreamingDeformatter.Default);
+	public static readonly MessagePackDeformatter Default = new(MessagePackStreamingDeformatter.Default);
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MsgPackDeformatter"/> class.
+	/// Initializes a new instance of the <see cref="MessagePackDeformatter"/> class.
 	/// </summary>
 	/// <param name="streamingDeformatter">The streaming deformatter to wrap.</param>
-	public MsgPackDeformatter(MsgPackStreamingDeformatter streamingDeformatter)
+	public MessagePackDeformatter(MessagePackStreamingDeformatter streamingDeformatter)
 		: base(streamingDeformatter)
 	{
 	}
 
 	/// <inheritdoc cref="Deformatter.StreamingDeformatter"/>
-	public new MsgPackStreamingDeformatter StreamingDeformatter => (MsgPackStreamingDeformatter)base.StreamingDeformatter;
+	public new MessagePackStreamingDeformatter StreamingDeformatter => (MessagePackStreamingDeformatter)base.StreamingDeformatter;
 
 	/// <summary>
 	/// Gets the next byte in the buffer which, if the reader is properly positioned at the start of a token, can identify the next token type.

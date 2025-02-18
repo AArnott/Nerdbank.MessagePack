@@ -9,14 +9,14 @@ namespace ShapeShift.MessagePack;
 /// <summary>
 /// A messagepack-specific implementation of <see cref="ConverterCache"/>.
 /// </summary>
-internal record MsgPackConverterCache : ConverterCache
+internal record MessagePackConverterCache : ConverterCache
 {
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MsgPackConverterCache"/> class.
+	/// Initializes a new instance of the <see cref="MessagePackConverterCache"/> class.
 	/// </summary>
 	/// <param name="formatter">The formatter.</param>
 	/// <param name="deformatter">The deformatter.</param>
-	internal MsgPackConverterCache(MsgPackFormatter formatter, MsgPackDeformatter deformatter)
+	internal MessagePackConverterCache(MessagePackFormatter formatter, MessagePackDeformatter deformatter)
 		: base(MsgPackReferencePreservingManager.Instance)
 	{
 		this.Formatter = formatter;

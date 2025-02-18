@@ -14,10 +14,10 @@ namespace ShapeShift.MessagePack.Converters;
 internal class DateTimeConverter : MessagePackConverter<DateTime>
 {
 	/// <inheritdoc/>
-	public override DateTime Read(ref Reader reader, SerializationContext context) => ((MsgPackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
+	public override DateTime Read(ref Reader reader, SerializationContext context) => ((MessagePackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
 
 	/// <inheritdoc/>
-	public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => ((MsgPackFormatter)writer.Formatter).Write(ref writer.Buffer, value);
+	public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => ((MessagePackFormatter)writer.Formatter).Write(ref writer.Buffer, value);
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);

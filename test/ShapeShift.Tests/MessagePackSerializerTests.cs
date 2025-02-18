@@ -128,7 +128,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		RecordWithReadOnlyProperties obj = new(1, 2);
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 
 		// The Sum field should not be serialized.
 		Assert.Equal(2, reader.ReadStartMap());
@@ -140,7 +140,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		RecordWithReadOnlyProperties_NoConstructor obj = new(1, 2);
 		byte[] msgpack = this.Serializer.Serialize(obj, TestContext.Current.CancellationToken);
 		this.Logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(msgpack));
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 
 		// The Sum field should not be serialized.
 		Assert.Equal(2, reader.ReadStartMap());
@@ -151,7 +151,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		RecordWithReadOnlyPropertiesKeyed obj = new(1, 2);
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 
 		// The Sum field should not be serialized.
 		Assert.Equal(2, reader.ReadStartVector());
@@ -188,7 +188,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Sequence<byte> PrepareSequence()
 		{
 			Sequence<byte> sequence = new();
-			Writer writer = new(sequence, MsgPackFormatter.Default);
+			Writer writer = new(sequence, MessagePackFormatter.Default);
 			writer.WriteStartMap(2);
 			writer.Write("List");
 			writer.WriteNull();
@@ -203,7 +203,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void ByteArraySerializedOptimally()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<byte[], Witness>([1, 2, 3]);
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
@@ -214,7 +214,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Memory<byte> original = new byte[] { 1, 2, 3 };
 		Memory<byte> deserialized = this.Roundtrip<Memory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
-		Reader reader = new(this.lastRoundtrippedFormattedBytes, MsgPackDeformatter.Default);
+		Reader reader = new(this.lastRoundtrippedFormattedBytes, MessagePackDeformatter.Default);
 		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
@@ -225,7 +225,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		ReadOnlyMemory<byte> original = new byte[] { 1, 2, 3 };
 		ReadOnlyMemory<byte> deserialized = this.Roundtrip<ReadOnlyMemory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
-		Reader reader = new(this.lastRoundtrippedFormattedBytes, MsgPackDeformatter.Default);
+		Reader reader = new(this.lastRoundtrippedFormattedBytes, MessagePackDeformatter.Default);
 		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
@@ -282,13 +282,13 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Fruit value = new() { Seeds = 5 };
 
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		this.Serializer.SerializeObject(ref writer, value, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
 		writer.Flush();
 
 		this.LogFormattedBytes(seq);
 
-		Reader reader = new(seq, MsgPackDeformatter.Default);
+		Reader reader = new(seq, MessagePackDeformatter.Default);
 		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
 		Assert.Equal(value, deserialized);
 	}
@@ -303,7 +303,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void CtorParameterNameMatchesSerializedInsteadOfDeclaredName_DefaultValueWorks()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.WriteStartMap(0);
 		writer.Flush();
 
@@ -325,7 +325,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	private static Sequence<byte> GetByteArrayAsActualMsgPackArray()
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MsgPackFormatter.Default);
+		Writer writer = new(sequence, MessagePackFormatter.Default);
 		writer.WriteStartVector(3);
 		writer.Write(1);
 		writer.Write(2);

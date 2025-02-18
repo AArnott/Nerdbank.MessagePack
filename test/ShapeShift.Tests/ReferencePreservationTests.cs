@@ -150,10 +150,10 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Equal(interning, ReferenceEquals(deserialized[0], deserialized[1]));
 
 		// Only interning should produce an object reference in the serialized form.
-		Reader reader = new(this.lastRoundtrippedFormattedBytes, MsgPackDeformatter.Default);
+		Reader reader = new(this.lastRoundtrippedFormattedBytes, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		reader.ReadString(); // city
-		Assert.Equal(interning ? MessagePackType.Extension : MessagePackType.String, MsgPackDeformatter.Default.PeekNextMessagePackType(reader));
+		Assert.Equal(interning ? MessagePackType.Extension : MessagePackType.String, MessagePackDeformatter.Default.PeekNextMessagePackType(reader));
 	}
 
 	/// <summary>
@@ -192,12 +192,12 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		this.Serializer.Serialize(sequence, root, TestContext.Current.CancellationToken);
 		this.LogFormattedBytes(sequence);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		reader.ReadStartMap();
 		reader.Skip(this.Serializer.StartingContext); // Value1 name
 		reader.Skip(this.Serializer.StartingContext); // Value1 value
 		reader.Skip(this.Serializer.StartingContext); // Value2 name
-		Assert.Equal(100, MsgPackDeformatter.Default.ReadExtensionHeader(ref reader).TypeCode);
+		Assert.Equal(100, MessagePackDeformatter.Default.ReadExtensionHeader(ref reader).TypeCode);
 
 		RecordWithObjects? deserializedRoot = this.Serializer.Deserialize<RecordWithObjects>(sequence, TestContext.Current.CancellationToken);
 		Assert.NotNull(deserializedRoot);

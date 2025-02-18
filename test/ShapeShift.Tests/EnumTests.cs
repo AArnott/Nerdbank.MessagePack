@@ -84,7 +84,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 	private static ReadOnlySequence<byte> SerializeEnumName(string name)
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.Write(name);
 		writer.Flush();
 		return seq;
@@ -103,7 +103,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 
 	private void AssertType(ReadOnlySequence<byte> msgpack, TokenType expectedType)
 	{
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(expectedType, reader.NextTypeCode);
 	}
 

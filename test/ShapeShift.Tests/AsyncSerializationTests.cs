@@ -81,7 +81,7 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	{
 		this.Serializer = this.Serializer with { MaxAsyncBuffer = forceAsync ? 0 : 1024 };
 		using Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MsgPackFormatter.Default);
+		Writer writer = new(sequence, MessagePackFormatter.Default);
 		writer.Write(42);
 		writer.Flush();
 		sequence.Write("a"u8);

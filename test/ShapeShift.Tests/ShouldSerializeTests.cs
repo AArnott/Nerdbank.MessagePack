@@ -25,7 +25,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		Person person = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(0, reader.ReadStartMap());
 	}
 
@@ -35,7 +35,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		Person person = new();
 		ReadOnlySequence<byte> sequence = await this.AssertRoundtripAsync(person);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(0, reader.ReadStartMap());
 	}
 
@@ -46,7 +46,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		PersonWithPrimaryConstructor person = new(null, 0, null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 		Assert.Equal(nameof(PersonWithPrimaryConstructor.FavoriteColor), reader.ReadString());
 		Assert.True(reader.TryReadNull());
@@ -59,7 +59,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		PersonWithPrimaryConstructor person = new(null, 0, "Blue");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(0, reader.ReadStartMap());
 	}
 
@@ -70,7 +70,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		Person person = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(Person.PropertyCount, reader.ReadStartMap());
 	}
 
@@ -80,7 +80,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		Person person = new() { Name = "Andrew" };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 		Assert.Equal(nameof(Person.Name), reader.ReadString());
 	}
@@ -91,7 +91,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		Person person = new() { Age = 42 };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 		Assert.Equal(nameof(Person.Age), reader.ReadString());
 	}
@@ -101,7 +101,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 	{
 		Person person = new() { FavoriteColor = "Red" };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
 	}
@@ -112,7 +112,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, "Red");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
 	}
@@ -122,7 +122,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 	{
 		Person person = new() { FavoriteColor = null };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
 		Assert.True(reader.TryReadNull());
@@ -134,7 +134,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, FavoriteColor: null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
 		Assert.True(reader.TryReadNull());
@@ -146,7 +146,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		CtorWithRenamedProperty obj = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(0, reader.ReadStartMap());
 	}
 
@@ -156,7 +156,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		CtorWithRenamedProperty obj = new("Gal");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 	}
 
@@ -166,7 +166,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		CtorWithRenamedProperty obj = new(null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 	}
 
@@ -188,7 +188,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 			+ (hasAge ? 1 : 0)
 			+ (hasFavoriteColor ? 1 : 0);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 		Assert.Equal(expectedCount, reader.ReadStartMap());
 
 		if (hasName)
@@ -225,7 +225,7 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		PersonWithRequiredAndOptionalParameters obj = new(null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MsgPackDeformatter.Default);
+		Reader reader = new(sequence, MessagePackDeformatter.Default);
 
 		if (policy.HasFlag(SerializeDefaultValuesPolicy.Required))
 		{

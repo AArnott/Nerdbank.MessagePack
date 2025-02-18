@@ -13,7 +13,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
 		this.LogFormattedBytes(buffer);
 
-		Reader reader = new(buffer, MsgPackDeformatter.Default);
+		Reader reader = new(buffer, MessagePackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartMap());
 		Assert.Equal("first_name", reader.ReadString());
 		Assert.Equal("Andrew", reader.ReadString());
@@ -31,7 +31,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 	{
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
-		Reader reader = new(msgpack, MsgPackDeformatter.Default);
+		Reader reader = new(msgpack, MessagePackDeformatter.Default);
 		Assert.Equal(1, reader.ReadStartMap());
 	}
 
@@ -39,7 +39,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 	public async Task FetchRequiredBetweenPropertyAndItsSyncValue()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.WriteStartMap(2);
 		writer.Write("Name");
 		writer.Write("Andrew");
@@ -58,7 +58,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 	public async Task FetchRequiredBetweenPropertyAndItsSyncValue_DefaultCtor()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.WriteStartMap(2);
 		writer.Write("Name");
 		writer.Write("Andrew");

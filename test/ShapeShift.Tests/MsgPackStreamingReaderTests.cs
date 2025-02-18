@@ -7,8 +7,8 @@ using System.Text;
 
 public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 {
-	private static readonly MsgPackFormatter Formatter = MsgPackFormatter.Default;
-	private static readonly MsgPackDeformatter Deformatter = MsgPackDeformatter.Default;
+	private static readonly MessagePackFormatter Formatter = MessagePackFormatter.Default;
+	private static readonly MessagePackDeformatter Deformatter = MessagePackDeformatter.Default;
 
 	private static readonly ReadOnlySequence<byte> ArrayOf3Bools = CreateMsgPackArrayOf3Bools();
 
@@ -78,7 +78,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 	public async Task SkipIncrementally()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 
 		// For an exhaustive test, we must use at least one of every msgpack token type (at least, one for interesting branch of the internal switch statement).
 		// 0. array
@@ -103,7 +103,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 		writer.Flush();
 
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
-		StreamingReader reader = new(ros.Slice(0, 1), MessagePackSerializerTestBase.FetchOneByteAtATimeAsync, ros, MsgPackDeformatter.Default);
+		StreamingReader reader = new(ros.Slice(0, 1), MessagePackSerializerTestBase.FetchOneByteAtATimeAsync, ros, MessagePackDeformatter.Default);
 		SerializationContext context = new();
 		int fetchCount = 0;
 		while (reader.TrySkip(ref context).NeedsMoreBytes())
@@ -130,7 +130,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 		Extension originalExtension = new(1, new byte[] { 1, 2, 3 });
 
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		Formatter.Write(ref writer.Buffer, originalExtension);
 		writer.Flush();
 
@@ -139,7 +139,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 			seq.AsReadOnlySequence.Slice(0, 3),
 			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
 			null,
-			MsgPackDeformatter.Default);
+			MessagePackDeformatter.Default);
 		Extension deserializedExtension;
 		while (Deformatter.StreamingDeformatter.TryRead(ref reader.Reader, out deserializedExtension).NeedsMoreBytes())
 		{
@@ -155,7 +155,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 		byte[] originalData = [1, 2, 3];
 
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
@@ -164,7 +164,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 			seq.AsReadOnlySequence.Slice(0, 2),
 			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
 			null,
-			MsgPackDeformatter.Default);
+			MessagePackDeformatter.Default);
 		ReadOnlySequence<byte> deserializedData;
 		while (reader.TryReadBinary(out deserializedData).NeedsMoreBytes())
 		{
@@ -180,7 +180,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 		string originalData = "hello";
 
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
@@ -205,7 +205,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 		string originalData = "hello";
 
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
@@ -230,7 +230,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 		string originalData = "hello";
 
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.Write(originalData);
 		writer.Flush();
 
@@ -252,7 +252,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 	private static ReadOnlySequence<byte> CreateMsgPackArrayOf3Bools()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MsgPackFormatter.Default);
+		Writer writer = new(seq, MessagePackFormatter.Default);
 		writer.WriteStartVector(3);
 		writer.Write(false);
 		writer.Write(true);
