@@ -9,7 +9,7 @@ public class ReflectionShapeProviderTests(ITestOutputHelper logger) : MessagePac
 		Person person = new("Andrew", "Arnott");
 		ITypeShape<Person> shape = PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default.GetShape<Person>();
 		byte[] msgpack = this.Serializer.Serialize(person, shape, TestContext.Current.CancellationToken);
-		this.LogMsgPack(new(msgpack));
+		this.LogFormattedBytes(new(msgpack));
 		Person? deserialized = this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken);
 		Assert.Equal(person, deserialized);
 	}

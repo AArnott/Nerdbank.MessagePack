@@ -150,7 +150,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Equal(interning, ReferenceEquals(deserialized[0], deserialized[1]));
 
 		// Only interning should produce an object reference in the serialized form.
-		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
+		Reader reader = new(this.lastRoundtrippedFormattedBytes, MsgPackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartVector());
 		reader.ReadString(); // city
 		Assert.Equal(interning ? MessagePackType.Extension : MessagePackType.String, MsgPackDeformatter.Default.PeekNextMessagePackType(reader));
@@ -190,7 +190,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		RecordWithObjects root = new() { Value1 = value, Value2 = value };
 		Sequence<byte> sequence = new();
 		this.Serializer.Serialize(sequence, root, TestContext.Current.CancellationToken);
-		this.LogMsgPack(sequence);
+		this.LogFormattedBytes(sequence);
 
 		Reader reader = new(sequence, MsgPackDeformatter.Default);
 		reader.ReadStartMap();

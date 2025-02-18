@@ -11,7 +11,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		Person person = new Person { FirstName = "Andrew", LastName = "Arnott" };
 		Sequence<byte> buffer = new();
 		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
-		this.LogMsgPack(buffer);
+		this.LogFormattedBytes(buffer);
 
 		Reader reader = new(buffer, MsgPackDeformatter.Default);
 		Assert.Equal(2, reader.ReadStartMap());

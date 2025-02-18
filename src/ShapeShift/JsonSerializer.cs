@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text;
 using ShapeShift.Json;
 
 namespace ShapeShift;
@@ -24,4 +25,9 @@ public record JsonSerializer : SerializerBase
 		: base(new JsonConverterCache(JsonFormatter.Default, new Deformatter(JsonStreamingDeformatter.Default)))
 	{
 	}
+
+	/// <summary>
+	/// Gets the encoding used to format JSON.
+	/// </summary>
+	public Encoding Encoding => this.ConverterCache.Formatter.Encoding;
 }

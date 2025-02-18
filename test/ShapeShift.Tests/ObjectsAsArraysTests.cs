@@ -32,7 +32,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Person person = new() { FirstName = "Andrew", LastName = "Arnott" };
 		Sequence<byte> buffer = new();
 		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
-		this.LogMsgPack(buffer);
+		this.LogFormattedBytes(buffer);
 
 		Reader reader = new(buffer, MsgPackDeformatter.Default);
 		Assert.Equal(3, reader.ReadStartVector());
@@ -269,7 +269,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>(), TestContext.Current.CancellationToken);
 		writer.Flush();
-		this.LogMsgPack(sequence);
+		this.LogFormattedBytes(sequence);
 
 		// Split the buffer up.
 		long splitPosition = breakBeforeIndex ? positionBeforeIndex : positionAfterIndex;
@@ -315,7 +315,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>(), TestContext.Current.CancellationToken);
 		writer.Flush();
-		this.LogMsgPack(sequence);
+		this.LogFormattedBytes(sequence);
 
 		// Split the buffer up.
 		long splitPosition = breakBeforeIndex ? positionBeforeIndex : positionAfterIndex;

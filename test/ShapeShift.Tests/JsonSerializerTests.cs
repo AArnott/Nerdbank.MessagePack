@@ -3,17 +3,13 @@
 
 using System.Text;
 
-public partial class JsonSerializerTests
+public partial class JsonSerializerTests : JsonSerializerTestBase
 {
 	[Fact]
 	public void BasicTest()
 	{
-		JsonSerializer serializer = new();
-		Person original = new() { Name = "Andrew", Age = 42 };
-		byte[] utf8Json = serializer.Serialize(original, Witness.ShapeProvider, TestContext.Current.CancellationToken);
-		Assert.Equal("{\"Name\":\"Andrew\",\"Age\":42}", Encoding.UTF8.GetString(utf8Json));
-		Person? deserialized = serializer.Deserialize<Person>(utf8Json, Witness.ShapeProvider, TestContext.Current.CancellationToken);
-		Assert.Equal(original, deserialized);
+		ReadOnlySequence<byte> utf8Bytes = this.AssertRoundtrip(new Person() { Name = "Andrew", Age = 42 });
+		Assert.Equal("{\"Name\":\"Andrew\",\"Age\":42}", this.Serializer.Encoding.GetString(utf8Bytes.ToArray()));
 	}
 
 	[GenerateShape]
@@ -23,7 +19,4 @@ public partial class JsonSerializerTests
 
 		public int Age { get; set; }
 	}
-
-	[GenerateShape<Person>]
-	private partial class Witness;
 }

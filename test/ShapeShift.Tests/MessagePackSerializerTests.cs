@@ -214,7 +214,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Memory<byte> original = new byte[] { 1, 2, 3 };
 		Memory<byte> deserialized = this.Roundtrip<Memory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
-		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
+		Reader reader = new(this.lastRoundtrippedFormattedBytes, MsgPackDeformatter.Default);
 		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
@@ -225,7 +225,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		ReadOnlyMemory<byte> original = new byte[] { 1, 2, 3 };
 		ReadOnlyMemory<byte> deserialized = this.Roundtrip<ReadOnlyMemory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
-		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
+		Reader reader = new(this.lastRoundtrippedFormattedBytes, MsgPackDeformatter.Default);
 		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
@@ -263,7 +263,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		this.Serializer.RegisterConverter(new CustomStringConverter());
 		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello", TestContext.Current.CancellationToken);
-		this.LogMsgPack(new(msgpack));
+		this.LogFormattedBytes(new(msgpack));
 		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack, TestContext.Current.CancellationToken));
 	}
 
@@ -272,7 +272,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		this.Serializer.RegisterConverter(new CustomStringConverter());
 		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0), TestContext.Current.CancellationToken);
-		this.LogMsgPack(new(msgpack));
+		this.LogFormattedBytes(new(msgpack));
 		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack, TestContext.Current.CancellationToken)?.AString);
 	}
 
@@ -286,7 +286,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		this.Serializer.SerializeObject(ref writer, value, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
 		writer.Flush();
 
-		this.LogMsgPack(seq);
+		this.LogFormattedBytes(seq);
 
 		Reader reader = new(seq, MsgPackDeformatter.Default);
 		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.ShapeProvider.GetShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
