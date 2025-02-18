@@ -4,7 +4,7 @@
 namespace ShapeShift;
 
 /// <summary>
-/// Represents a sequence of raw msgpack bytes.
+/// Represents a sequence of raw formatted bytes.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,19 +23,19 @@ public struct PreformattedRawBytes : IEquatable<PreformattedRawBytes>
 	/// <summary>
 	/// Initializes a new instance of the <see cref="PreformattedRawBytes"/> struct.
 	/// </summary>
-	/// <param name="msgpack">The actual sequence of msgpack bytes.</param>
-	public PreformattedRawBytes(ReadOnlySequence<byte> msgpack)
+	/// <param name="rawBytes">The actual sequence of formatted bytes.</param>
+	public PreformattedRawBytes(ReadOnlySequence<byte> rawBytes)
 	{
-		this.MsgPack = msgpack;
+		this.RawBytes = rawBytes;
 	}
 
 	/// <summary>
-	/// Gets a sequence of raw MessagePack bytes.
+	/// Gets a sequence of raw formatted bytes.
 	/// </summary>
-	public ReadOnlySequence<byte> MsgPack { get; private set; }
+	public ReadOnlySequence<byte> RawBytes { get; private set; }
 
 	/// <summary>
-	/// Gets a value indicating whether the <see cref="MsgPack"/> is owned by this instance,
+	/// Gets a value indicating whether the <see cref="RawBytes"/> is owned by this instance,
 	/// and thus can be relied on to be immutable and not recycled by others.
 	/// </summary>
 	public bool IsOwned { get; internal set; }
@@ -43,40 +43,40 @@ public struct PreformattedRawBytes : IEquatable<PreformattedRawBytes>
 	/// <summary>
 	/// Explicitly converts a <see cref="ReadOnlySequence{T}"/> of bytes to a <see cref="PreformattedRawBytes"/>.
 	/// </summary>
-	/// <param name="msgpack">The sequence of MessagePack bytes.</param>
+	/// <param name="rawBytes">The sequence of raw formatted bytes.</param>
 	/// <returns>A new instance of <see cref="PreformattedRawBytes"/> containing the provided bytes.</returns>
-	public static explicit operator PreformattedRawBytes(ReadOnlySequence<byte> msgpack) => new(msgpack);
+	public static explicit operator PreformattedRawBytes(ReadOnlySequence<byte> rawBytes) => new(rawBytes);
 
 	/// <summary>
 	/// Explicitly converts a <see cref="ReadOnlyMemory{T}"/> of bytes to a <see cref="PreformattedRawBytes"/>.
 	/// </summary>
-	/// <param name="msgpack">The memory containing MessagePack bytes.</param>
+	/// <param name="rawBytes">The memory containing formatted bytes.</param>
 	/// <returns>A new instance of <see cref="PreformattedRawBytes"/> containing the provided bytes.</returns>
-	public static explicit operator PreformattedRawBytes(ReadOnlyMemory<byte> msgpack) => new(new ReadOnlySequence<byte>(msgpack));
+	public static explicit operator PreformattedRawBytes(ReadOnlyMemory<byte> rawBytes) => new(new ReadOnlySequence<byte>(rawBytes));
 
 	/// <summary>
 	/// Explicitly converts a <see cref="Memory{T}"/> of bytes to a <see cref="PreformattedRawBytes"/>.
 	/// </summary>
-	/// <param name="msgpack">The memory containing MessagePack bytes.</param>
+	/// <param name="rawBytes">The memory containing formatted bytes.</param>
 	/// <returns>A new instance of <see cref="PreformattedRawBytes"/> containing the provided bytes.</returns>
-	public static explicit operator PreformattedRawBytes(Memory<byte> msgpack) => new(new ReadOnlySequence<byte>(msgpack));
+	public static explicit operator PreformattedRawBytes(Memory<byte> rawBytes) => new(new ReadOnlySequence<byte>(rawBytes));
 
 	/// <summary>
 	/// Explicitly converts an array of bytes to a <see cref="PreformattedRawBytes"/>.
 	/// </summary>
-	/// <param name="msgpack">The memory containing MessagePack bytes.</param>
+	/// <param name="rawBytes">The memory containing formatted bytes.</param>
 	/// <returns>A new instance of <see cref="PreformattedRawBytes"/> containing the provided bytes.</returns>
-	public static explicit operator PreformattedRawBytes(byte[] msgpack) => new(new ReadOnlySequence<byte>(msgpack));
+	public static explicit operator PreformattedRawBytes(byte[] rawBytes) => new(new ReadOnlySequence<byte>(rawBytes));
 
 	/// <summary>
 	/// Implicitly converts a <see cref="PreformattedRawBytes"/> to a <see cref="ReadOnlySequence{T}"/> of bytes.
 	/// </summary>
-	/// <param name="msgpack">The <see cref="PreformattedRawBytes"/> instance.</param>
+	/// <param name="rawBytes">The <see cref="PreformattedRawBytes"/> instance.</param>
 	/// <returns>The <see cref="ReadOnlySequence{T}"/> of bytes contained in the <see cref="PreformattedRawBytes"/>.</returns>
-	public static implicit operator ReadOnlySequence<byte>(PreformattedRawBytes msgpack) => msgpack.MsgPack;
+	public static implicit operator ReadOnlySequence<byte>(PreformattedRawBytes rawBytes) => rawBytes.RawBytes;
 
 	/// <inheritdoc/>
-	public readonly bool Equals(PreformattedRawBytes other) => this.MsgPack.SequenceEqual(other.MsgPack);
+	public readonly bool Equals(PreformattedRawBytes other) => this.RawBytes.SequenceEqual(other.RawBytes);
 
 	/// <summary>
 	/// Produces a self-sustaining copy of this struct that will outlive whatever the original source buffer was from which this was created.
@@ -103,7 +103,7 @@ public struct PreformattedRawBytes : IEquatable<PreformattedRawBytes>
 			return this;
 		}
 
-		this.MsgPack = this.MsgPack.Clone();
+		this.RawBytes = this.RawBytes.Clone();
 		this.IsOwned = true;
 
 		return this;

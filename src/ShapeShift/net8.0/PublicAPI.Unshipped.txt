@@ -572,9 +572,9 @@ ShapeShift.NamingPolicy.NamingPolicy() -> void
 ShapeShift.PreformattedRawBytes
 ShapeShift.PreformattedRawBytes.Equals(ShapeShift.PreformattedRawBytes other) -> bool
 ShapeShift.PreformattedRawBytes.IsOwned.get -> bool
-ShapeShift.PreformattedRawBytes.MsgPack.get -> System.Buffers.ReadOnlySequence<byte>
+ShapeShift.PreformattedRawBytes.RawBytes.get -> System.Buffers.ReadOnlySequence<byte>
 ShapeShift.PreformattedRawBytes.PreformattedRawBytes() -> void
-ShapeShift.PreformattedRawBytes.PreformattedRawBytes(System.Buffers.ReadOnlySequence<byte> msgpack) -> void
+ShapeShift.PreformattedRawBytes.PreformattedRawBytes(System.Buffers.ReadOnlySequence<byte> rawBytes) -> void
 ShapeShift.PreformattedRawBytes.ToOwned() -> ShapeShift.PreformattedRawBytes
 ShapeShift.PreformattedString
 ShapeShift.PreformattedString.Encoded.get -> System.ReadOnlyMemory<byte>
@@ -777,11 +777,11 @@ static ShapeShift.MessagePackSerializer.operator !=(ShapeShift.MessagePackSerial
 static ShapeShift.MessagePackSerializer.operator ==(ShapeShift.MessagePackSerializer? left, ShapeShift.MessagePackSerializer? right) -> bool
 static ShapeShift.NamingPolicy.CamelCase.get -> ShapeShift.NamingPolicy!
 static ShapeShift.NamingPolicy.PascalCase.get -> ShapeShift.NamingPolicy!
-static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(byte[]! msgpack) -> ShapeShift.PreformattedRawBytes
-static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(System.Buffers.ReadOnlySequence<byte> msgpack) -> ShapeShift.PreformattedRawBytes
-static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(System.Memory<byte> msgpack) -> ShapeShift.PreformattedRawBytes
-static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(System.ReadOnlyMemory<byte> msgpack) -> ShapeShift.PreformattedRawBytes
-static ShapeShift.PreformattedRawBytes.implicit operator System.Buffers.ReadOnlySequence<byte>(ShapeShift.PreformattedRawBytes msgpack) -> System.Buffers.ReadOnlySequence<byte>
+static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(byte[]! rawBytes) -> ShapeShift.PreformattedRawBytes
+static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(System.Buffers.ReadOnlySequence<byte> rawBytes) -> ShapeShift.PreformattedRawBytes
+static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(System.Memory<byte> rawBytes) -> ShapeShift.PreformattedRawBytes
+static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(System.ReadOnlyMemory<byte> rawBytes) -> ShapeShift.PreformattedRawBytes
+static ShapeShift.PreformattedRawBytes.implicit operator System.Buffers.ReadOnlySequence<byte>(ShapeShift.PreformattedRawBytes rawBytes) -> System.Buffers.ReadOnlySequence<byte>
 static ShapeShift.SerializerBase.operator !=(ShapeShift.SerializerBase? left, ShapeShift.SerializerBase? right) -> bool
 static ShapeShift.SerializerBase.operator ==(ShapeShift.SerializerBase? left, ShapeShift.SerializerBase? right) -> bool
 static ShapeShift.SerializerBase.StreamingEnumerationOptions<T, TElement>.operator !=(ShapeShift.SerializerBase.StreamingEnumerationOptions<T, TElement>? left, ShapeShift.SerializerBase.StreamingEnumerationOptions<T, TElement>? right) -> bool

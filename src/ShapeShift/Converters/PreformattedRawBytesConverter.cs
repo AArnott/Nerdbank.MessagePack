@@ -22,5 +22,5 @@ internal class PreformattedRawBytesConverter : Converter<PreformattedRawBytes>
 	public override PreformattedRawBytes Read(ref Reader reader, SerializationContext context) => new PreformattedRawBytes(reader.ReadRaw(context)).ToOwned();
 
 	/// <inheritdoc/>
-	public override void Write(ref Writer writer, in PreformattedRawBytes value, SerializationContext context) => writer.Buffer.Write(value.MsgPack);
+	public override void Write(ref Writer writer, in PreformattedRawBytes value, SerializationContext context) => writer.Buffer.Write(value.RawBytes);
 }

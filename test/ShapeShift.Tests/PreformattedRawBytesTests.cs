@@ -7,7 +7,7 @@ public partial class PreformattedRawBytesTests(ITestOutputHelper logger) : Messa
 	public void DefaultCtor()
 	{
 		PreformattedRawBytes raw = default;
-		Assert.True(raw.MsgPack.IsEmpty);
+		Assert.True(raw.RawBytes.IsEmpty);
 	}
 
 	[Fact]
@@ -16,7 +16,7 @@ public partial class PreformattedRawBytesTests(ITestOutputHelper logger) : Messa
 		Sequence<byte> bytes = new();
 		bytes.Write((Span<byte>)[1, 2, 3]);
 		PreformattedRawBytes raw = new(bytes);
-		Assert.Equal(bytes, raw.MsgPack);
+		Assert.Equal(bytes, raw.RawBytes);
 	}
 
 	[Fact]
@@ -90,18 +90,18 @@ public partial class PreformattedRawBytesTests(ITestOutputHelper logger) : Messa
 		// Verify that we consider an initial version to be borrowed.
 		PreformattedRawBytes msgpack = (PreformattedRawBytes)new byte[] { 1, 2, 3 };
 		Assert.False(msgpack.IsOwned);
-		ReadOnlySequence<byte> borrowedSequence = msgpack.MsgPack;
+		ReadOnlySequence<byte> borrowedSequence = msgpack.RawBytes;
 
 		// Verify that owning the data makes a copy.
 		PreformattedRawBytes owned = msgpack.ToOwned();
 		Assert.True(owned.IsOwned);
 		Assert.True(msgpack.IsOwned);
-		Assert.NotEqual(borrowedSequence, owned.MsgPack);
-		Assert.Equal(msgpack.MsgPack, owned.MsgPack);
+		Assert.NotEqual(borrowedSequence, owned.RawBytes);
+		Assert.Equal(msgpack.RawBytes, owned.RawBytes);
 
 		// Verify that owning again doesn't allocate new buffers.
 		PreformattedRawBytes reowned = owned.ToOwned();
-		Assert.Equal(owned.MsgPack, reowned.MsgPack);
+		Assert.Equal(owned.RawBytes, reowned.RawBytes);
 	}
 
 	[GenerateShape]
