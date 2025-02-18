@@ -373,6 +373,50 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_MsgPackFormatterCall()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using System.Text.Json.Nodes;
+			using PolyType.Abstractions;
+			using ShapeShift.Converters;
+			using ShapeShift.MessagePack;
+			
+			internal class DateTimeConverter : Converter<DateTime>
+			{
+				public override DateTime Read(ref Reader reader, SerializationContext context) => ((MsgPackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
+
+				public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => ((MsgPackFormatter)writer.Formatter).Write(ref writer, value);
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+			}
+			""";
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NoIssues_WriteToBuffer()
+	{
+		string source = /* lang=c#-test */ """
+			using System;
+			using System.Text.Json.Nodes;
+			using PolyType.Abstractions;
+			using ShapeShift;
+			using ShapeShift.Converters;
+			
+			internal class PreformattedRawBytesConverter : Converter<PreformattedRawBytes>
+			{
+				public override PreformattedRawBytes Read(ref Reader reader, SerializationContext context) => new PreformattedRawBytes(reader.ReadRaw(context)).ToOwned();
+
+				public override void Write(ref Writer writer, in PreformattedRawBytes value, SerializationContext context) => writer.Buffer.Write(value.RawBytes);
+
+				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
+			}
+			""";
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task NoIssues_ReadHasAttribute()
 	{
 		string source = /* lang=c#-test */ """

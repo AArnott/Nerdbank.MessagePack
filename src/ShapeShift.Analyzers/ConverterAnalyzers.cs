@@ -255,7 +255,15 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					{
 						return i.TargetMethod.Name switch
 						{
-							"GetSpan" or "Advance" => (null, true), // Advance case, which we'll just assume they're doing correctly.
+							"GetSpan" or "Advance" or "Write" => (null, true), // Advance case, which we'll just assume they're doing correctly.
+							_ => (0, true),
+						};
+					}
+					else if (i.TargetMethod.ContainingType is ITypeSymbol s3 && s3.IsOrDerivedFrom(referenceSymbols.Formatter))
+					{
+						return i.TargetMethod.Name switch
+						{
+							string t when t.StartsWith("Write", StringComparison.Ordinal) => (1, true),
 							_ => (0, true),
 						};
 					}
@@ -287,6 +295,14 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 						return i.TargetMethod.Name switch
 						{
 							"Read" or "ReadAsync" or "ReadObject" or "ReadObjectAsync" => (1, true),
+							_ => (0, true),
+						};
+					}
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s2 && s2.IsOrDerivedFrom(referenceSymbols.Deformatter))
+					{
+						return i.TargetMethod.Name switch
+						{
+							string t when t.StartsWith("Read", StringComparison.Ordinal) => (1, true),
 							_ => (0, true),
 						};
 					}

@@ -12,8 +12,10 @@ public record ReferenceSymbols(
 	INamedTypeSymbol ConverterAttribute,
 	INamedTypeSymbol Reader,
 	INamedTypeSymbol StreamingReader,
+	INamedTypeSymbol Deformatter,
 	INamedTypeSymbol Writer,
 	INamedTypeSymbol BufferWriter,
+	INamedTypeSymbol Formatter,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol KnownSubTypeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
@@ -82,6 +84,13 @@ public record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? deformatter = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Deformatter");
+		if (deformatter is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? writer = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Writer");
 		if (writer is null)
 		{
@@ -91,6 +100,13 @@ public record ReferenceSymbols(
 
 		INamedTypeSymbol? bufferWriter = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.BufferWriter");
 		if (bufferWriter is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? formatter = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Formatter");
+		if (formatter is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -145,8 +161,10 @@ public record ReferenceSymbols(
 			converterAttribute,
 			reader,
 			streamingReader,
+			deformatter,
 			writer,
 			bufferWriter,
+			formatter,
 			keyAttribute,
 			knownSubTypeAttribute,
 			generateShapeAttribute,
