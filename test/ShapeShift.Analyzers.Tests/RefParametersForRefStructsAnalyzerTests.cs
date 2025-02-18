@@ -11,19 +11,19 @@ public class RefParametersForRefStructsAnalyzerTests
 		string testSource = /* lang=c#-test */ """
 			#pragma warning disable NBMsgPackAsync
 
-			using ShapeShift;
+			using ShapeShift.Converters;
 
 			class Test
 			{
-				public void Method(ref MessagePackReader reader)
+				public void Method(ref Reader reader)
 				{
 				}
 
-				public void Method(ref MessagePackStreamingReader reader)
+				public void Method(ref StreamingReader reader)
 				{
 				}
 
-				public void Method(ref MessagePackWriter writer)
+				public void Method(ref Writer writer)
 				{
 				}
 			}
@@ -38,19 +38,19 @@ public class RefParametersForRefStructsAnalyzerTests
 		string testSource = /* lang=c#-test */ """
 			#pragma warning disable NBMsgPackAsync
 
-			using ShapeShift;
+			using ShapeShift.Converters;
 
 			class Test
 			{
-				public void Method({|NBMsgPack050:MessagePackReader|} reader)
+				public void Method({|NBMsgPack050:Reader|} reader)
 				{
 				}
 
-				public void Method({|NBMsgPack050:MessagePackStreamingReader|} reader)
+				public void Method({|NBMsgPack050:StreamingReader|} reader)
 				{
 				}
 
-				public void Method({|NBMsgPack050:MessagePackWriter|} writer)
+				public void Method({|NBMsgPack050:Writer|} writer)
 				{
 				}
 			}

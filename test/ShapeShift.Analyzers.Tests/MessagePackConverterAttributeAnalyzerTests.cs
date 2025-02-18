@@ -11,8 +11,9 @@ public class MessagePackConverterAttributeAnalyzerTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using ShapeShift;
+			using ShapeShift.Converters;
 
-			[MessagePackConverter(typeof(MyTypeConverter))]
+			[Converter(typeof(MyTypeConverter))]
 			public class MyType
 			{
 			}
@@ -33,8 +34,9 @@ public class MessagePackConverterAttributeAnalyzerTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using ShapeShift;
-
-			[MessagePackConverter({|NBMsgPack021:typeof(MyTypeConverter)|})]
+			using ShapeShift.Converters;
+			
+			[Converter({|NBMsgPack021:typeof(MyTypeConverter)|})]
 			public class MyType
 			{
 			}
@@ -56,8 +58,9 @@ public class MessagePackConverterAttributeAnalyzerTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using ShapeShift;
-
-			[MessagePackConverter({|NBMsgPack020:typeof(MyTypeConverter)|})]
+			using ShapeShift.Converters;
+			
+			[Converter({|NBMsgPack020:typeof(MyTypeConverter)|})]
 			public class MyType
 			{
 			}
@@ -78,8 +81,9 @@ public class MessagePackConverterAttributeAnalyzerTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using ShapeShift;
-
-			[MessagePackConverter({|NBMsgPack020:typeof(IntConverter)|})]
+			using ShapeShift.Converters;
+			
+			[Converter({|NBMsgPack020:typeof(IntConverter)|})]
 			public class MyType
 			{
 			}

@@ -16,12 +16,12 @@ public static class Constants
 	{
 		public const string TypeName = "KeyAttribute";
 		public const string IndexProperty = "Index";
-		public static readonly ImmutableArray<string> Namespace = ["Nerdbank", "MessagePack"];
+		public static readonly ImmutableArray<string> Namespace = ["ShapeShift"];
 	}
 
 	public static class PreferDotNetAlternativeApiAttribute
 	{
 		public const string TypeName = "PreferDotNetAlternativeApiAttribute";
-		public static readonly ImmutableArray<string> Namespace = ["Nerdbank", "MessagePack"];
+		public static readonly ImmutableArray<string> Namespace = ["ShapeShift"];
 	}
 }
