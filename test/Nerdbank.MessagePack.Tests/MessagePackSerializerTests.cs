@@ -131,7 +131,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 
 		// The Sum field should not be serialized.
-		Assert.Equal(2, reader.ReadMapHeader());
+		Assert.Equal(2, reader.ReadStartMap());
 	}
 
 	[Fact]
@@ -143,7 +143,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 
 		// The Sum field should not be serialized.
-		Assert.Equal(2, reader.ReadMapHeader());
+		Assert.Equal(2, reader.ReadStartMap());
 	}
 
 	[Fact]
@@ -154,7 +154,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 
 		// The Sum field should not be serialized.
-		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(2, reader.ReadStartVector());
 	}
 
 	[Fact]
@@ -189,7 +189,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		{
 			Sequence<byte> sequence = new();
 			Writer writer = new(sequence, MsgPackFormatter.Default);
-			writer.WriteMapHeader(2);
+			writer.WriteStartMap(2);
 			writer.Write("List");
 			writer.WriteNull();
 			writer.Write("Dictionary");
@@ -204,7 +204,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<byte[], Witness>([1, 2, 3]);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(Nerdbank.PolySerializer.Converters.TypeCode.Binary, reader.NextTypeCode);
+		Assert.Equal(Nerdbank.PolySerializer.Converters.TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -215,7 +215,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Memory<byte> deserialized = this.Roundtrip<Memory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
-		Assert.Equal(Nerdbank.PolySerializer.Converters.TypeCode.Binary, reader.NextTypeCode);
+		Assert.Equal(Nerdbank.PolySerializer.Converters.TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -226,7 +226,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		ReadOnlyMemory<byte> deserialized = this.Roundtrip<ReadOnlyMemory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
-		Assert.Equal(Nerdbank.PolySerializer.Converters.TypeCode.Binary, reader.NextTypeCode);
+		Assert.Equal(Nerdbank.PolySerializer.Converters.TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -304,7 +304,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, MsgPackFormatter.Default);
-		writer.WriteMapHeader(0);
+		writer.WriteStartMap(0);
 		writer.Flush();
 
 		TypeWithConstructorParameterMatchingSerializedPropertyName? deserialized =
@@ -326,7 +326,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteArrayHeader(3);
+		writer.WriteStartVector(3);
 		writer.Write(1);
 		writer.Write(2);
 		writer.Write(3);

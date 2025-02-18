@@ -602,7 +602,7 @@ internal class BigIntegerConverter : Converter<BigInteger>
 	{
 #if NET
 		int byteCount = value.GetByteCount();
-		if (writer.TryWriteBinHeader(byteCount))
+		if (writer.TryWriteStartBinary(byteCount))
 		{
 			Span<byte> span = writer.Buffer.GetSpan(byteCount);
 			Assumes.True(value.TryWriteBytes(span, out int written));
@@ -753,10 +753,10 @@ internal partial class ByteArrayConverter : Converter<byte[]?>
 	{
 		switch (reader.NextTypeCode)
 		{
-			case PolySerializer.Converters.TypeCode.Nil:
+			case PolySerializer.Converters.TokenType.Null:
 				reader.ReadNull();
 				return null;
-			case PolySerializer.Converters.TypeCode.Binary:
+			case PolySerializer.Converters.TokenType.Binary:
 				return reader.ReadBytes()?.ToArray();
 			default:
 				return Fallback.Read(ref reader, context);
@@ -847,7 +847,7 @@ internal class GuidConverter : Converter<Guid>
 	/// <inheritdoc/>
 	public override void Write(ref Writer writer, in Guid value, SerializationContext context)
 	{
-		if (writer.TryWriteBinHeader(GuidLength))
+		if (writer.TryWriteStartBinary(GuidLength))
 		{
 			Assumes.True(value.TryWriteBytes(writer.Buffer.GetSpan(GuidLength)));
 			writer.Buffer.Advance(GuidLength);

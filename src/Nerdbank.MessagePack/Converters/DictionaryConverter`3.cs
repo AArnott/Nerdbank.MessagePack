@@ -48,7 +48,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 
 		context.DepthStep();
 		IReadOnlyDictionary<TKey, TValue> dictionary = getReadable(value);
-		writer.WriteMapHeader(dictionary.Count);
+		writer.WriteStartMap(dictionary.Count);
 		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
 		{
 			TKey? entryKey = pair.Key;
@@ -229,7 +229,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	public void DeserializeInto(ref Reader reader, ref TDictionary collection, SerializationContext context)
 	{
 		context.DepthStep();
-		int count = reader.ReadMapHeader();
+		int count = reader.ReadStartMap();
 		for (int i = 0; i < count; i++)
 		{
 			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
@@ -262,7 +262,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
-			int count = syncReader.ReadMapHeader();
+			int count = syncReader.ReadStartMap();
 			for (int i = 0; i < count; i++)
 			{
 				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
@@ -298,7 +298,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadMapHeader();
+		int count = reader.ReadStartMap();
 		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
 		try
 		{
@@ -341,7 +341,7 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadMapHeader();
+		int count = reader.ReadStartMap();
 		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
 		try
 		{

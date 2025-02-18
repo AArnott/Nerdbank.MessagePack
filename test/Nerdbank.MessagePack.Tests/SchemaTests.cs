@@ -451,7 +451,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 				return;
 			}
 
-			writer.WriteMapHeader(0);
+			writer.WriteStartMap(0);
 		}
 	}
 
@@ -492,7 +492,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 				return;
 			}
 
-			writer.WriteMapHeader(0);
+			writer.WriteStartMap(0);
 		}
 	}
 }

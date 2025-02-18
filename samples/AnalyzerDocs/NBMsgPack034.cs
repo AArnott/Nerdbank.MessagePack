@@ -40,7 +40,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack034
                     return;
                 }
 
-                syncWriter.WriteArrayHeader(2);
+                syncWriter.WriteStartVector(2);
                 syncWriter.Write(value.SeedCount);
 
                 writer.ReturnWriter(ref syncWriter); // syncWriter returned here
@@ -86,7 +86,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack034
                     return;
                 }
 
-                syncWriter.WriteArrayHeader(2);
+                syncWriter.WriteStartVector(2);
                 syncWriter.Write(value.SeedCount);
                 syncWriter.Write("Hi");
 

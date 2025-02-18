@@ -99,7 +99,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : Converter<TEnum>
 	/// <inheritdoc/>
 	public override TEnum Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.NextTypeCode == TypeCode.String)
+		if (reader.NextTypeCode == TokenType.String)
 		{
 			string stringValue;
 			TEnum value;

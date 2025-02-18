@@ -82,10 +82,10 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 
 		// For an exhaustive test, we must use at least one of every msgpack token type (at least, one for interesting branch of the internal switch statement).
 		// 0. array
-		writer.WriteArrayHeader(3);
+		writer.WriteStartVector(3);
 
 		// 1. map
-		writer.WriteMapHeader(2);
+		writer.WriteStartMap(2);
 		writer.Write("key1");   // String!
 		writer.Write(1);        // Integer!
 		writer.Write("key2");
@@ -253,7 +253,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 	{
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, MsgPackFormatter.Default);
-		writer.WriteArrayHeader(3);
+		writer.WriteStartVector(3);
 		writer.Write(false);
 		writer.Write(true);
 		writer.Write(false);

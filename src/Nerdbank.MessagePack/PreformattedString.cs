@@ -125,9 +125,9 @@ public class PreformattedString : IEquatable<PreformattedString>
 		// TODO: assert that the formatter of the string matches the (de)formatter in the Reader.
 		switch (reader.NextTypeCode)
 		{
-			case Converters.TypeCode.Nil:
+			case Converters.TokenType.Null:
 				return false;
-			case Converters.TypeCode.String:
+			case Converters.TokenType.String:
 				Reader peekReader = reader;
 				bool success = peekReader.TryReadStringSpan(out ReadOnlySpan<byte> span)
 					? this.IsMatch(span)

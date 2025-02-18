@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using TypeCode = Nerdbank.PolySerializer.Converters.TypeCode;
+using TokenType = Nerdbank.PolySerializer.Converters.TokenType;
 
 public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
@@ -34,7 +34,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 		Two = 2,
 	}
 
-	public TypeCode ExpectedType { get; set; }
+	public TokenType ExpectedType { get; set; }
 
 	[Fact]
 	public void SimpleEnum()
@@ -52,14 +52,14 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 	[Fact]
 	public void NonExistentValue_NonFlags()
 	{
-		this.ExpectedType = TypeCode.Integer;
+		this.ExpectedType = TokenType.Integer;
 		this.AssertEnum<Simple, Witness>((Simple)15);
 	}
 
 	[Fact]
 	public void NonExistentValue_Flags()
 	{
-		this.ExpectedType = TypeCode.Integer;
+		this.ExpectedType = TokenType.Integer;
 		this.AssertEnum<FlagsEnum, Witness>((FlagsEnum)15);
 	}
 
@@ -72,7 +72,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 	[Fact]
 	public void MultipleFlags()
 	{
-		this.ExpectedType = TypeCode.Integer;
+		this.ExpectedType = TokenType.Integer;
 		this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One | FlagsEnum.Two);
 	}
 
@@ -103,7 +103,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 		this.Logger.WriteLine(value.ToString());
 	}
 
-	private void AssertType(ReadOnlySequence<byte> msgpack, TypeCode expectedType)
+	private void AssertType(ReadOnlySequence<byte> msgpack, TokenType expectedType)
 	{
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
 		Assert.Equal(expectedType, reader.NextTypeCode);
@@ -115,7 +115,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 			: base(logger)
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
-			this.ExpectedType = TypeCode.String;
+			this.ExpectedType = TokenType.String;
 		}
 
 		[Fact]
@@ -145,7 +145,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 			: base(logger)
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = false };
-			this.ExpectedType = TypeCode.Integer;
+			this.ExpectedType = TokenType.Integer;
 		}
 	}
 

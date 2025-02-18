@@ -52,7 +52,7 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 		this.Serializer.Serialize(sequence, value);
 
 		Reader reader = new(sequence, MsgPackDeformatter.Default);
-		reader.ReadMapHeader();
+		reader.ReadStartMap();
 
 		// Assert that the naming policy is applied.
 		Assert.Equal("someProperty", reader.ReadString());
@@ -69,7 +69,7 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 		this.Serializer.Serialize(sequence, value);
 
 		Reader reader = new(sequence, MsgPackDeformatter.Default);
-		reader.ReadMapHeader();
+		reader.ReadStartMap();
 
 		reader.Skip(new SerializationContext());
 		reader.Skip(new SerializationContext());

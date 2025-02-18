@@ -22,7 +22,7 @@ internal interface IDeserializeInto<TCollectionType>
 	/// <param name="collection">The collection instance to inflate with elements.</param>
 	/// <param name="context">The deserialization context.</param>
 	/// <remarks>
-	/// Implementations may assume that the messagepack token is not <see cref="TypeCode.Nil"/>.
+	/// Implementations may assume that the messagepack token is not <see cref="TokenType.Null"/>.
 	/// </remarks>
 	void DeserializeInto(ref Reader reader, ref TCollectionType collection, SerializationContext context);
 
@@ -34,7 +34,7 @@ internal interface IDeserializeInto<TCollectionType>
 	/// <param name="context">The deserialization context.</param>
 	/// <returns>A task that tracks the async operation.</returns>
 	/// <remarks>
-	/// Implementations may assume that the messagepack token is not <see cref="TypeCode.Nil"/>.
+	/// Implementations may assume that the messagepack token is not <see cref="TokenType.Null"/>.
 	/// </remarks>
 	[Experimental("NBMsgPackAsync")]
 	ValueTask DeserializeIntoAsync(AsyncReader reader, TCollectionType collection, SerializationContext context);

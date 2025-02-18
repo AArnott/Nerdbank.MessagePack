@@ -35,7 +35,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		this.LogMsgPack(buffer);
 
 		Reader reader = new(buffer, MsgPackDeformatter.Default);
-		Assert.Equal(3, reader.ReadArrayHeader());
+		Assert.Equal(3, reader.ReadStartVector());
 		Assert.Equal("Andrew", reader.ReadString());
 		Assert.True(reader.TryReadNull());
 		Assert.Equal("Arnott", reader.ReadString());
@@ -56,7 +56,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Person person = new() { FirstName = "Andrew", LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(1, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadStartVector());
 	}
 
 	[Trait("ShouldSerialize", "true")]
@@ -70,7 +70,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Person person = new() { FirstName = null, LastName = "Arnott" };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadStartMap());
 	}
 
 	[Trait("ShouldSerialize", "true")]
@@ -84,7 +84,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		Person person = new Person { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(0, reader.ReadArrayHeader());
+		Assert.Equal(0, reader.ReadStartVector());
 	}
 
 	[Theory, PairwiseData]
@@ -92,7 +92,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	{
 		Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteArrayHeader(4);
+		writer.WriteStartVector(4);
 		writer.Write("A");
 		writer.WriteNull();
 		writer.Write("B");
@@ -110,7 +110,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	{
 		Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteMapHeader(3);
+		writer.WriteStartMap(3);
 
 		writer.Write(0);
 		writer.Write("A");
@@ -136,7 +136,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		PersonWithDefaultConstructor person = new() { FirstName = "Andrew", LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(1, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadStartVector());
 	}
 
 	[Theory, PairwiseData]
@@ -147,7 +147,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = "Arnott" };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadStartMap());
 	}
 
 	[Trait("ShouldSerialize", "true")]
@@ -163,7 +163,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadArrayHeader());
+		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadStartVector());
 	}
 
 	[Theory, PairwiseData]
@@ -171,7 +171,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	{
 		Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteArrayHeader(4);
+		writer.WriteStartVector(4);
 		writer.Write("A");
 		writer.WriteNull();
 		writer.Write("B");
@@ -189,7 +189,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	{
 		Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteMapHeader(3);
+		writer.WriteStartMap(3);
 
 		writer.Write(0);
 		writer.Write("A");
@@ -220,7 +220,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		ReadOnlySequence<byte> msgpack = await this.AssertRoundtripAsync(family);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(5, reader.ReadArrayHeader());
+		Assert.Equal(5, reader.ReadStartVector());
 	}
 
 	[Trait("ShouldSerialize", "true")]
@@ -240,7 +240,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		ReadOnlySequence<byte> msgpack = await this.AssertRoundtripAsync(family);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadStartMap());
 	}
 
 	[Theory, PairwiseData]
@@ -256,7 +256,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteMapHeader(2);
+		writer.WriteStartMap(2);
 
 		writer.Write(3);
 		writer.Write(expectedFamily.FamilySize);
@@ -302,7 +302,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 
 		Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteMapHeader(2);
+		writer.WriteStartMap(2);
 
 		writer.Write(3);
 		writer.Write(expectedFamily.FamilySize);
@@ -341,7 +341,7 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(1, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadStartVector());
 	}
 
 	[Fact]

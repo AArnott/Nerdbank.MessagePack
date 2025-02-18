@@ -35,13 +35,13 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter
 		}
 
 		context.DepthStep();
-		int outerCount = reader.ReadArrayHeader();
+		int outerCount = reader.ReadStartVector();
 		if (outerCount != 2)
 		{
 			throw new SerializationException($"Expected array length of 2 but was {outerCount}.");
 		}
 
-		int rank = reader.ReadArrayHeader();
+		int rank = reader.ReadStartVector();
 		int[] dimensions = dimensionsReusable ??= new int[rank];
 		for (int i = 0; i < rank; i++)
 		{
@@ -50,7 +50,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter
 
 		Array array = Array.CreateInstance(typeof(TElement), dimensions);
 		Span<TElement> elements = AsSpan(array);
-		int elementCount = reader.ReadArrayHeader();
+		int elementCount = reader.ReadStartVector();
 		if (elementCount != elements.Length)
 		{
 			throw new SerializationException($"Expected {elements.Length} elements but found {elementCount}.");
@@ -76,18 +76,18 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter
 		context.DepthStep();
 		Array array = (Array)(object)value;
 
-		writer.WriteArrayHeader(2);
+		writer.WriteStartVector(2);
 
 		// Write the first inner array, which contains the dimensions of the array.
 		int rank = array.Rank;
-		writer.WriteArrayHeader(rank);
+		writer.WriteStartVector(rank);
 		for (int i = 0; i < rank; i++)
 		{
 			writer.Write(array.GetLength(i));
 		}
 
 		Span<TElement> elements = AsSpan(array);
-		writer.WriteArrayHeader(elements.Length);
+		writer.WriteStartVector(elements.Length);
 		for (int i = 0; i < elements.Length; i++)
 		{
 			elementConverter.Write(ref writer, elements[i], context);

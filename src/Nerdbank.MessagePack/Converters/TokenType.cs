@@ -6,7 +6,7 @@ namespace Nerdbank.PolySerializer.Converters;
 /// <summary>
 /// Enumerates the kinds of tokens that tend to be defined across a variety of formats.
 /// </summary>
-public enum TypeCode : byte
+public enum TokenType : byte
 {
 	/// <summary>
 	/// An unknown token, either because none has been read or it is a format-specific token type.
@@ -21,7 +21,7 @@ public enum TypeCode : byte
 	/// <summary>
 	/// A <see langword="null" /> value.
 	/// </summary>
-	Nil,
+	Null,
 
 	/// <summary>
 	/// A <see langword="bool"/> value.

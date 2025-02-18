@@ -50,7 +50,7 @@ internal static partial class ArraysOfPrimitivesConverters
 			int totalBytesWritten = 0;
 			if (TryGetSpan(value, out ReadOnlySpan<TElement> values))
 			{
-				writer.WriteArrayHeader(values.Length);
+				writer.WriteStartVector(values.Length);
 				Span<byte> span = writer.Buffer.GetSpan(values.Length * MsgPackBufferLengthFactor);
 				for (int i = 0; i < values.Length; i++)
 				{
@@ -63,7 +63,7 @@ internal static partial class ArraysOfPrimitivesConverters
 				IEnumerable<TElement> enumerable = getEnumerable(value);
 				if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
 				{
-					writer.WriteArrayHeader(count);
+					writer.WriteStartVector(count);
 					Span<byte> span = writer.Buffer.GetSpan(count * MsgPackBufferLengthFactor);
 					foreach (TElement element in enumerable)
 					{
@@ -74,7 +74,7 @@ internal static partial class ArraysOfPrimitivesConverters
 				else
 				{
 					TElement[] array = enumerable.ToArray();
-					writer.WriteArrayHeader(array.Length);
+					writer.WriteStartVector(array.Length);
 					Span<byte> span = writer.Buffer.GetSpan(count * MsgPackBufferLengthFactor);
 					for (int i = 0; i < array.Length; i++)
 					{
@@ -95,7 +95,7 @@ internal static partial class ArraysOfPrimitivesConverters
 				return default;
 			}
 
-			int count = reader.ReadArrayHeader();
+			int count = reader.ReadStartVector();
 			if (count == 0)
 			{
 				return spanConstructor is null ? (TEnumerable)(object)Array.Empty<TElement>() : spanConstructor(default);

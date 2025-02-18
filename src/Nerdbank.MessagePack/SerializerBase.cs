@@ -352,7 +352,7 @@ public abstract partial record SerializerBase
 	/// <param name="writer">The writer to emit JSON to.</param>
 	/// <remarks>
 	/// <para>
-	/// Overridding methods need only handle tokens that would be <see cref="Converters.TypeCode.Unknown"/>,
+	/// Overridding methods need only handle tokens that would be <see cref="Converters.TokenType.Unknown"/>,
 	/// since format-agnostic token types are already handled by the caller.
 	/// </para>
 	/// <para>

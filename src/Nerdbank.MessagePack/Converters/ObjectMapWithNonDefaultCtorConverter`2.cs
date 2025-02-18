@@ -35,7 +35,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		TArgumentState argState = argStateCtor();
 		if (parameters.Readers is not null)
 		{
-			int count = reader.ReadMapHeader();
+			int count = reader.ReadStartMap();
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();

@@ -32,10 +32,10 @@ public abstract record StreamingDeformatter
 	/// <see cref="DecodeResult.TokenMismatch"/> if the token is invalid or unrecognized by the deformatter.
 	/// Other values for incomplete buffers.
 	/// </returns>
-	public abstract DecodeResult TryPeekNextTypeCode(in Reader reader, out TypeCode typeCode);
+	public abstract DecodeResult TryPeekNextTypeCode(in Reader reader, out TokenType typeCode);
 
 	/// <summary>
-	/// Reads the next token if it is <see cref="TypeCode.Nil"/>.
+	/// Reads the next token if it is <see cref="TokenType.Null"/>.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
 	/// <returns>
@@ -46,7 +46,7 @@ public abstract record StreamingDeformatter
 	public abstract DecodeResult TryReadNull(ref Reader reader);
 
 	/// <summary>
-	/// Reads the next token if it is <see cref="TypeCode.Nil"/>.
+	/// Reads the next token if it is <see cref="TokenType.Null"/>.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="isNull">A value indicating whether the next token was nil.</param>
@@ -62,7 +62,7 @@ public abstract record StreamingDeformatter
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="length">The number of elements in the array, if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
-	public abstract DecodeResult TryReadArrayHeader(ref Reader reader, out int length);
+	public abstract DecodeResult TryReadStartVector(ref Reader reader, out int length);
 
 	/// <summary>
 	/// Reads a map header from the data stream.
@@ -70,7 +70,7 @@ public abstract record StreamingDeformatter
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="count">The number of elements in the map, if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
-	public abstract DecodeResult TryReadMapHeader(ref Reader reader, out int count);
+	public abstract DecodeResult TryReadStartMap(ref Reader reader, out int count);
 
 	/// <summary>
 	/// Reads a binary sequence (with its envelope) from the data stream.
@@ -191,7 +191,7 @@ public abstract record StreamingDeformatter
 	/// <param name="value"><inheritdoc cref="TryRead(ref Reader, out bool)" path="/param[@name='value']" /></param>
 	/// <returns><inheritdoc cref="TryRead(ref Reader, out bool)" path="/returns" /></returns>
 	/// <remarks>
-	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TypeCode.Nil"/> or any other non-<see cref="TypeCode.String"/> token.
+	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TokenType.Null"/> or any other non-<see cref="TokenType.String"/> token.
 	/// </remarks>
 	public abstract DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value);
 
@@ -215,7 +215,7 @@ public abstract record StreamingDeformatter
 	/// Other error codes also apply.
 	/// </returns>
 	/// <remarks>
-	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TypeCode.Nil"/> or any other non-<see cref="TypeCode.String"/> token.
+	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TokenType.Null"/> or any other non-<see cref="TokenType.String"/> token.
 	/// </remarks>
 	public abstract DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value);
 
@@ -264,7 +264,7 @@ public abstract record StreamingDeformatter
 	/// <returns>Result of the decoding operation. <see cref="DecodeResult.TokenMismatch"/> if the next token is not an integer at all.</returns>
 	/// <remarks>
 	/// This is useful for readers that wish to know whether they should use <see cref="TryRead(ref Reader, out long)"/>
-	/// instead of <see cref="TryRead(ref Reader, out ulong)"/> to read a token typed as <see cref="TypeCode.Integer"/>.
+	/// instead of <see cref="TryRead(ref Reader, out ulong)"/> to read a token typed as <see cref="TokenType.Integer"/>.
 	/// </remarks>
 	public abstract DecodeResult TryPeekIsSignedInteger(in Reader reader, out bool signed);
 
@@ -276,7 +276,7 @@ public abstract record StreamingDeformatter
 	/// <returns>Result of the decoding operation. <see cref="DecodeResult.TokenMismatch"/> if the next token is not a floating point number.</returns>
 	/// <remarks>
 	/// This is useful for readers that wish to know whether they should use <see cref="TryRead(ref Reader, out float)"/>
-	/// instead of <see cref="TryRead(ref Reader, out double)"/> to read a token typed as <see cref="TypeCode.Float"/>.
+	/// instead of <see cref="TryRead(ref Reader, out double)"/> to read a token typed as <see cref="TokenType.Float"/>.
 	/// </remarks>
 	public abstract DecodeResult TryPeekIsFloat32(in Reader reader, out bool float32);
 

@@ -36,10 +36,10 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		if (reader.NextTypeCode == PolySerializer.Converters.TypeCode.Map)
+		if (reader.NextTypeCode == PolySerializer.Converters.TokenType.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
-			int count = reader.ReadMapHeader();
+			int count = reader.ReadStartMap();
 			for (int i = 0; i < count; i++)
 			{
 				int index = reader.ReadInt32();
@@ -55,7 +55,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 		else
 		{
-			int count = reader.ReadArrayHeader();
+			int count = reader.ReadStartVector();
 			for (int i = 0; i < count; i++)
 			{
 				if (parameters.Length > i && parameters[i] is { } deserialize)
@@ -99,13 +99,13 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 
-		PolySerializer.Converters.TypeCode peekType;
+		PolySerializer.Converters.TokenType peekType;
 		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == PolySerializer.Converters.TypeCode.Map)
+		if (peekType == PolySerializer.Converters.TokenType.Map)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())

@@ -94,7 +94,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		Writer writer = new(buffer, MsgPackFormatter.Default);
 		for (int i = 0; i < depth; i++)
 		{
-			writer.WriteMapHeader(1);
+			writer.WriteStartMap(1);
 			writer.Write(nameof(Nested.Another));
 		}
 

@@ -65,11 +65,11 @@ public class JsonExporter
 		{
 			switch (reader.NextTypeCode)
 			{
-				case Converters.TypeCode.Nil:
+				case Converters.TokenType.Null:
 					reader.ReadNull();
 					jsonWriter.Write("null");
 					break;
-				case Converters.TypeCode.Integer:
+				case Converters.TokenType.Integer:
 					if (reader.Deformatter.PeekIsSignedInteger(reader))
 					{
 						jsonWriter.Write(reader.ReadInt64());
@@ -80,10 +80,10 @@ public class JsonExporter
 					}
 
 					break;
-				case Converters.TypeCode.Boolean:
+				case Converters.TokenType.Boolean:
 					jsonWriter.Write(reader.ReadBoolean() ? "true" : "false");
 					break;
-				case Converters.TypeCode.Float:
+				case Converters.TokenType.Float:
 					// Emit with only the precision inherent in the format.
 					// Use "R" to preserve full precision in the string version so it isn't lossy.
 					if (reader.Deformatter.PeekIsFloat32(reader))
@@ -96,12 +96,12 @@ public class JsonExporter
 					}
 
 					break;
-				case Converters.TypeCode.String:
+				case Converters.TokenType.String:
 					WriteJsonString(reader.ReadString()!, jsonWriter);
 					break;
-				case Converters.TypeCode.Vector:
+				case Converters.TokenType.Vector:
 					jsonWriter.Write('[');
-					int count = reader.ReadArrayHeader();
+					int count = reader.ReadStartVector();
 					if (count > 0)
 					{
 						NewLine(jsonWriter, options, indentationLevel + 1);
@@ -127,9 +127,9 @@ public class JsonExporter
 
 					jsonWriter.Write(']');
 					break;
-				case Converters.TypeCode.Map:
+				case Converters.TokenType.Map:
 					jsonWriter.Write('{');
-					count = reader.ReadMapHeader();
+					count = reader.ReadStartMap();
 					if (count > 0)
 					{
 						NewLine(jsonWriter, options, indentationLevel + 1);
@@ -164,12 +164,12 @@ public class JsonExporter
 
 					jsonWriter.Write('}');
 					break;
-				case Converters.TypeCode.Binary:
+				case Converters.TokenType.Binary:
 					jsonWriter.Write("\"Binary as base64: ");
 					jsonWriter.Write(Convert.ToBase64String(reader.ReadBytes()!.Value.ToArray()));
 					jsonWriter.Write('\"');
 					break;
-				case Converters.TypeCode.Unknown:
+				case Converters.TokenType.Unknown:
 					this.serializerBase.RenderAsJson(ref reader, jsonWriter);
 					break;
 			}

@@ -39,7 +39,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			return default;
 		}
 
-		int count = reader.ReadArrayHeader();
+		int count = reader.ReadStartVector();
 		if (count != 2)
 		{
 			throw new SerializationException($"Expected an array of 2 elements, but found {count}.");
@@ -52,7 +52,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		}
 
 		Converter? converter;
-		if (reader.NextTypeCode == TypeCode.Integer)
+		if (reader.NextTypeCode == TokenType.Integer)
 		{
 			int alias = reader.ReadInt32();
 			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
@@ -81,7 +81,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			return;
 		}
 
-		writer.WriteArrayHeader(2);
+		writer.WriteStartVector(2);
 
 		Type valueType = value.GetType();
 		if (valueType.IsEquivalentTo(typeof(TBase)))
@@ -143,14 +143,14 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			return result;
 		}
 
-		TypeCode nextType;
+		TokenType nextType;
 		if (streamingReader.TryPeekNextTypeCode(out nextType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
 		Converter? converter;
-		if (nextType == TypeCode.Integer)
+		if (nextType == TokenType.Integer)
 		{
 			int alias;
 			while (streamingReader.TryRead(out alias).NeedsMoreBytes())
@@ -199,7 +199,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		}
 
 		Writer syncWriter = writer.CreateWriter();
-		syncWriter.WriteArrayHeader(2);
+		syncWriter.WriteStartVector(2);
 
 		Type valueType = value.GetType();
 		if (valueType.IsEquivalentTo(typeof(TBase)))

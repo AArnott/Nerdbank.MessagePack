@@ -48,13 +48,13 @@ public partial class MsgPackDeformatterTests
 	{
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, MsgPackFormatter.Default);
-		writer.WriteArrayHeader(9999);
+		writer.WriteStartVector(9999);
 		writer.Flush();
 
 		Assert.Throws<EndOfStreamException>(() =>
 		{
 			var reader = new Reader(sequence, MsgPackDeformatter.Default);
-			reader.ReadArrayHeader();
+			reader.ReadStartVector();
 		});
 	}
 
@@ -64,14 +64,14 @@ public partial class MsgPackDeformatterTests
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, MsgPackFormatter.Default);
 		const int expectedCount = 100;
-		writer.WriteArrayHeader(expectedCount);
+		writer.WriteStartVector(expectedCount);
 		writer.Flush();
 
 		Reader reader = new(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MsgPackDeformatter.Default);
-		Assert.False(reader.TryReadArrayHeader(out _));
+		Assert.False(reader.TryReadStartVector(out _));
 
 		reader = new Reader(sequence, MsgPackDeformatter.Default);
-		Assert.True(reader.TryReadArrayHeader(out int actualCount));
+		Assert.True(reader.TryReadStartVector(out int actualCount));
 		Assert.Equal(expectedCount, actualCount);
 	}
 
@@ -80,13 +80,13 @@ public partial class MsgPackDeformatterTests
 	{
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, MsgPackFormatter.Default);
-		writer.WriteMapHeader(9999);
+		writer.WriteStartMap(9999);
 		writer.Flush();
 
 		Assert.Throws<EndOfStreamException>(() =>
 		{
 			var reader = new Reader(sequence, MsgPackDeformatter.Default);
-			reader.ReadMapHeader();
+			reader.ReadStartMap();
 		});
 	}
 
@@ -96,27 +96,27 @@ public partial class MsgPackDeformatterTests
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, MsgPackFormatter.Default);
 		const int expectedCount = 100;
-		writer.WriteMapHeader(expectedCount);
+		writer.WriteStartMap(expectedCount);
 		writer.Flush();
 
 		Reader reader = new(sequence.AsReadOnlySequence.Slice(0, sequence.Length - 1), MsgPackDeformatter.Default);
-		Assert.False(reader.TryReadMapHeader(out _));
+		Assert.False(reader.TryReadStartMap(out _));
 
 		reader = new Reader(sequence, MsgPackDeformatter.Default);
-		Assert.True(reader.TryReadMapHeader(out int actualCount));
+		Assert.True(reader.TryReadStartMap(out int actualCount));
 		Assert.Equal(expectedCount, actualCount);
 	}
 
 	[Fact]
 	public void TryReadMapHeader_Ranges()
 	{
-		this.AssertCodeRange((ref Reader r) => r.TryReadMapHeader(out _), c => c is >= MessagePackCode.MinFixMap and <= MessagePackCode.MaxFixMap, c => c is MessagePackCode.Map16 or MessagePackCode.Map32);
+		this.AssertCodeRange((ref Reader r) => r.TryReadStartMap(out _), c => c is >= MessagePackCode.MinFixMap and <= MessagePackCode.MaxFixMap, c => c is MessagePackCode.Map16 or MessagePackCode.Map32);
 	}
 
 	[Fact]
 	public void TryReadArrayHeader_Ranges()
 	{
-		this.AssertCodeRange((ref Reader r) => r.TryReadArrayHeader(out _), c => c is >= MessagePackCode.MinFixArray and <= MessagePackCode.MaxFixArray, c => c is MessagePackCode.Array16 or MessagePackCode.Array32);
+		this.AssertCodeRange((ref Reader r) => r.TryReadStartVector(out _), c => c is >= MessagePackCode.MinFixArray and <= MessagePackCode.MaxFixArray, c => c is MessagePackCode.Array16 or MessagePackCode.Array32);
 	}
 
 	[Fact]
@@ -303,7 +303,7 @@ public partial class MsgPackDeformatterTests
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, MsgPackFormatter.Default);
 		writer.Write(3);
-		writer.WriteArrayHeader(2);
+		writer.WriteStartVector(2);
 		writer.Write(1);
 		writer.Write("Hi");
 		writer.Write(5);
@@ -357,7 +357,7 @@ public partial class MsgPackDeformatterTests
 			}
 		}
 
-		AssertIncomplete((ref Writer writer) => writer.WriteArrayHeader(0xfffffff), (ref Reader reader) => reader.ReadArrayHeader());
+		AssertIncomplete((ref Writer writer) => writer.WriteStartVector(0xfffffff), (ref Reader reader) => reader.ReadStartVector());
 		AssertIncomplete((ref Writer writer) => writer.Write(true), (ref Reader reader) => reader.ReadBoolean());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadByte());
 		AssertIncomplete((ref Writer writer) => writer.WriteEncodedString(Encoding.UTF8.GetBytes("hi")), (ref Reader reader) => reader.ReadBytes());
@@ -368,7 +368,7 @@ public partial class MsgPackDeformatterTests
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt16());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt32());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt64());
-		AssertIncomplete((ref Writer writer) => writer.WriteMapHeader(0xfffffff), (ref Reader reader) => reader.ReadMapHeader());
+		AssertIncomplete((ref Writer writer) => writer.WriteStartMap(0xfffffff), (ref Reader reader) => reader.ReadStartMap());
 #pragma warning disable SA1107 // Code should not contain multiple statements on one line
 		AssertIncomplete((ref Writer writer) => writer.WriteNull(), (ref Reader reader) => { reader.ReadNull(); return MessagePackCode.Nil; });
 #pragma warning restore SA1107 // Code should not contain multiple statements on one line

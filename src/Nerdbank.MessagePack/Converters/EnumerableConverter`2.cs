@@ -45,7 +45,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		IEnumerable<TElement> enumerable = getEnumerable(value);
 		if (enumerable.TryGetNonEnumeratedCount(out int count))
 		{
-			writer.WriteArrayHeader(count);
+			writer.WriteStartVector(count);
 			foreach (TElement element in enumerable)
 			{
 				elementConverter.Write(ref writer, element, context);
@@ -54,7 +54,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		else
 		{
 			TElement[] array = enumerable.ToArray();
-			writer.WriteArrayHeader(array.Length);
+			writer.WriteStartVector(array.Length);
 			for (int i = 0; i < array.Length; i++)
 			{
 				elementConverter.Write(ref writer, array[i], context);
@@ -168,7 +168,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	public void DeserializeInto(ref Reader reader, ref TEnumerable collection, SerializationContext context)
 	{
 		context.DepthStep();
-		int count = reader.ReadArrayHeader();
+		int count = reader.ReadStartVector();
 		for (int i = 0; i < count; i++)
 		{
 			addElement(ref collection, this.ReadElement(ref reader, context));
@@ -199,7 +199,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		{
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
-			int count = syncReader.ReadArrayHeader();
+			int count = syncReader.ReadStartVector();
 			for (int i = 0; i < count; i++)
 			{
 				addElement(ref collection, this.ReadElement(ref syncReader, context));
@@ -231,7 +231,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadArrayHeader();
+		int count = reader.ReadStartVector();
 		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
 		try
 		{
@@ -270,7 +270,7 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadArrayHeader();
+		int count = reader.ReadStartVector();
 		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
 		try
 		{

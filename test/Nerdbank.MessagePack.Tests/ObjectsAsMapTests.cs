@@ -14,7 +14,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		this.LogMsgPack(buffer);
 
 		Reader reader = new(buffer, MsgPackDeformatter.Default);
-		Assert.Equal(2, reader.ReadMapHeader());
+		Assert.Equal(2, reader.ReadStartMap());
 		Assert.Equal("first_name", reader.ReadString());
 		Assert.Equal("Andrew", reader.ReadString());
 		Assert.Equal("last_name", reader.ReadString());
@@ -32,7 +32,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
 		Reader reader = new(msgpack, MsgPackDeformatter.Default);
-		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadStartMap());
 	}
 
 	[Fact]
@@ -40,7 +40,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 	{
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, MsgPackFormatter.Default);
-		writer.WriteMapHeader(2);
+		writer.WriteStartMap(2);
 		writer.Write("Name");
 		writer.Write("Andrew");
 		writer.Write("Age");
@@ -59,7 +59,7 @@ public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSe
 	{
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, MsgPackFormatter.Default);
-		writer.WriteMapHeader(2);
+		writer.WriteStartMap(2);
 		writer.Write("Name");
 		writer.Write("Andrew");
 		writer.Write("Age");

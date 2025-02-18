@@ -57,16 +57,16 @@ public ref struct Reader
 	public Deformatter Deformatter { get; }
 
 	/// <summary>
-	/// Gets the next <see cref="TypeCode"/> that will be read from the sequence.
+	/// Gets the next <see cref="TokenType"/> that will be read from the sequence.
 	/// </summary>
 	/// <inheritdoc cref="Deformatter.PeekNextTypeCode(in Reader)" path="/exception"/>
-	public TypeCode NextTypeCode => this.Deformatter.PeekNextTypeCode(this);
+	public TokenType NextTypeCode => this.Deformatter.PeekNextTypeCode(this);
 
 	/// <summary>
 	/// Gets a value indicating whether the next value to be read is <see langword="null" />.
 	/// </summary>
 	/// <inheritdoc cref="NextTypeCode" path="/exception"/>
-	public bool IsNull => this.NextTypeCode == TypeCode.Nil;
+	public bool IsNull => this.NextTypeCode == TokenType.Null;
 
 	/// <summary>
 	/// Gets the current position of the reader within <see cref="Sequence"/>.
@@ -103,17 +103,17 @@ public ref struct Reader
 	/// <inheritdoc cref="Deformatter.ReadNull(ref Reader)"/>
 	public void ReadNull() => this.Deformatter.ReadNull(ref this);
 
-	/// <inheritdoc cref="Deformatter.ReadArrayHeader(ref Reader)"/>
-	public int ReadArrayHeader() => this.Deformatter.ReadArrayHeader(ref this);
+	/// <inheritdoc cref="Deformatter.ReadStartVector(ref Reader)"/>
+	public int ReadStartVector() => this.Deformatter.ReadStartVector(ref this);
 
-	/// <inheritdoc cref="Deformatter.TryReadArrayHeader(ref Reader, out int)"/>
-	public bool TryReadArrayHeader(out int count) => this.Deformatter.TryReadArrayHeader(ref this, out count);
+	/// <inheritdoc cref="Deformatter.TryReadStartVector(ref Reader, out int)"/>
+	public bool TryReadStartVector(out int count) => this.Deformatter.TryReadStartVector(ref this, out count);
 
-	/// <inheritdoc cref="Deformatter.ReadMapHeader(ref Reader)"/>
-	public int ReadMapHeader() => this.Deformatter.ReadMapHeader(ref this);
+	/// <inheritdoc cref="Deformatter.ReadStartMap(ref Reader)"/>
+	public int ReadStartMap() => this.Deformatter.ReadStartMap(ref this);
 
-	/// <inheritdoc cref="Deformatter.TryReadMapHeader(ref Reader, out int)"/>
-	public bool TryReadMapHeader(out int count) => this.Deformatter.TryReadMapHeader(ref this, out count);
+	/// <inheritdoc cref="Deformatter.TryReadStartMap(ref Reader, out int)"/>
+	public bool TryReadStartMap(out int count) => this.Deformatter.TryReadStartMap(ref this, out count);
 
 	/// <inheritdoc cref="Deformatter.ReadBoolean(ref Reader)"/>
 	public bool ReadBoolean() => this.Deformatter.ReadBoolean(ref this);

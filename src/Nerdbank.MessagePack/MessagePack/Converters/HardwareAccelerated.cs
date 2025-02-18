@@ -741,7 +741,7 @@ internal static class HardwareAccelerated
 			}
 
 			context.DepthStep();
-			int count = reader.ReadArrayHeader();
+			int count = reader.ReadStartVector();
 			if (count == 0)
 			{
 				return GetEmptyEnumerable<TEnumerable, bool>(this.spanConstructorKind);
@@ -814,11 +814,11 @@ internal static class HardwareAccelerated
 			ref bool reference = ref GetReferenceAndLength<TEnumerable, bool>(this.spanConstructorKind, value, out int length);
 			if (Unsafe.IsNullRef(ref reference))
 			{
-				writer.WriteArrayHeader(0);
+				writer.WriteStartVector(0);
 				return;
 			}
 
-			writer.WriteArrayHeader(length);
+			writer.WriteStartVector(length);
 			if (length <= 0)
 			{
 				return;
@@ -871,7 +871,7 @@ internal static class HardwareAccelerated
 			}
 
 			context.DepthStep();
-			int count = reader.ReadArrayHeader();
+			int count = reader.ReadStartVector();
 			if (count == 0)
 			{
 				return GetEmptyEnumerable<TEnumerable, TElement>(this.spanConstructorKind);
@@ -972,7 +972,7 @@ internal static class HardwareAccelerated
 
 			context.DepthStep();
 			ref TElement reference = ref GetReferenceAndLength<TEnumerable, TElement>(this.spanConstructorKind, value, out int length);
-			writer.WriteArrayHeader(length);
+			writer.WriteStartVector(length);
 			if (length == 0 || Unsafe.IsNullRef(ref reference))
 			{
 				return;

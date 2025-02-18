@@ -10,7 +10,7 @@ public class MessagePackAsyncReaderTests
 	{
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, MsgPackFormatter.Default);
-		writer.WriteArrayHeader(3);
+		writer.WriteStartVector(3);
 		writer.Write(1);
 		writer.Write(2);
 		writer.Write(3);

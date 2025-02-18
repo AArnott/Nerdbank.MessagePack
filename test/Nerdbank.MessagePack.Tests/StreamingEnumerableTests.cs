@@ -77,7 +77,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 	{
 		using Sequence<byte> sequence = new();
 		Writer writer = new(sequence, MsgPackFormatter.Default);
-		writer.WriteArrayHeader(10);
+		writer.WriteStartVector(10);
 		for (int i = 1; i <= 10; i++)
 		{
 			writer.Write(i);

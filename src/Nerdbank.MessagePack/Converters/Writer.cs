@@ -57,31 +57,31 @@ public ref struct Writer
 	/// </summary>
 	public Formatter Formatter { get; }
 
-	/// <inheritdoc cref="Formatter.ArrayLengthRequiredInHeader"/>
-	public bool ArrayLengthRequiredInHeader => this.Formatter.ArrayLengthRequiredInHeader;
+	/// <inheritdoc cref="Formatter.VectorsMustHaveLengthPrefix"/>
+	public bool VectorsMustHaveLengthPrefix => this.Formatter.VectorsMustHaveLengthPrefix;
 
 	/// <summary>
 	/// Flushes the data that has been written but not yet committed to the underlying <see cref="BufferWriter"/>.
 	/// </summary>
 	public void Flush() => this.Buffer.Commit();
 
-	/// <inheritdoc cref="Formatter.WriteArrayStart(ref Writer, int)"/>
-	public void WriteArrayHeader(int length) => this.Formatter.WriteArrayStart(ref this, length);
+	/// <inheritdoc cref="Formatter.WriteStartVector(ref Writer, int)"/>
+	public void WriteStartVector(int length) => this.Formatter.WriteStartVector(ref this, length);
 
-	/// <inheritdoc cref="Formatter.WriteArrayElementSeparator(ref Writer)"/>
-	public void WriteArrayElementSeparator() => this.Formatter.WriteArrayElementSeparator(ref this);
+	/// <inheritdoc cref="Formatter.WriteVectorElementSeparator(ref Writer)"/>
+	public void WriteVectorElementSeparator() => this.Formatter.WriteVectorElementSeparator(ref this);
 
-	/// <inheritdoc cref="Formatter.WriteArrayEnd(ref Writer)"/>
-	public void WriteArrayEnd() => this.Formatter.WriteArrayEnd(ref this);
+	/// <inheritdoc cref="Formatter.WriteEndVector(ref Writer)"/>
+	public void WriteEndVector() => this.Formatter.WriteEndVector(ref this);
 
-	/// <inheritdoc cref="Formatter.WriteMapStart(ref Writer, int)"/>
-	public void WriteMapHeader(int count) => this.Formatter.WriteMapStart(ref this, count);
+	/// <inheritdoc cref="Formatter.WriteStartMap(ref Writer, int)"/>
+	public void WriteStartMap(int count) => this.Formatter.WriteStartMap(ref this, count);
 
 	/// <inheritdoc cref="Formatter.WriteMapKeyValueSeparator(ref Writer)"/>
 	public void WriteMapKeyValueSeparator() => this.Formatter.WriteMapKeyValueSeparator(ref this);
 
-	/// <inheritdoc cref="Formatter.WriteMapEnd(ref Writer)"/>
-	public void WriteMapEnd() => this.Formatter.WriteMapEnd(ref this);
+	/// <inheritdoc cref="Formatter.WriteEndMap(ref Writer)"/>
+	public void WriteEndMap() => this.Formatter.WriteEndMap(ref this);
 
 	/// <inheritdoc cref="Formatter.WriteNull(ref Writer)"/>
 	public void WriteNull() => this.Formatter.WriteNull(ref this);
@@ -171,7 +171,7 @@ public ref struct Writer
 	/// <see cref="Write(ReadOnlySpan{byte})"/> or <see cref="Write(in ReadOnlySequence{byte})"/> instead.
 	/// </para>
 	/// </remarks>
-	public bool TryWriteBinHeader(int length) => this.Formatter.TryWriteBinHeader(ref this, length);
+	public bool TryWriteStartBinary(int length) => this.Formatter.TryWriteStartBinary(ref this, length);
 
 	/// <inheritdoc cref="Formatter.WriteEncodedString(ref Writer, ReadOnlySpan{byte})"/>
 	public void WriteEncodedString(scoped ReadOnlySpan<byte> value) => this.Formatter.WriteEncodedString(ref this, value);

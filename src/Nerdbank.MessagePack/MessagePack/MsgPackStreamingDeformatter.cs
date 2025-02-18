@@ -40,7 +40,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryPeekNextTypeCode(in Reader reader, out PolySerializer.Converters.TypeCode typeCode)
+	public override DecodeResult TryPeekNextTypeCode(in Reader reader, out PolySerializer.Converters.TokenType typeCode)
 	{
 		DecodeResult result = this.TryPeekNextCode(reader, out byte code);
 		if (result != DecodeResult.Success)
@@ -116,7 +116,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryReadArrayHeader(ref Reader reader, out int count)
+	public override DecodeResult TryReadStartVector(ref Reader reader, out int count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
 		count = checked((int)uintCount);
@@ -169,7 +169,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	/// <param name="count">Receives the number of key=value pairs in the map if the entire map header can be read.</param>
 	/// <returns><see langword="true"/> if there was sufficient buffer and a map header was found; <see langword="false"/> if the buffer incompletely describes an map header.</returns>
 	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
-	public override DecodeResult TryReadMapHeader(ref Reader reader, out int count)
+	public override DecodeResult TryReadStartMap(ref Reader reader, out int count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadMapHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
 		count = checked((int)uintCount);
@@ -672,7 +672,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 				case byte x when MessagePackCode.IsFixMap(x):
 				case MessagePackCode.Map16:
 				case MessagePackCode.Map32:
-					result = self.TryReadMapHeader(ref reader, out int count);
+					result = self.TryReadStartMap(ref reader, out int count);
 					if (result == DecodeResult.Success)
 					{
 						skipMore = (uint)count * 2;
@@ -682,7 +682,7 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 				case byte x when MessagePackCode.IsFixArray(x):
 				case MessagePackCode.Array16:
 				case MessagePackCode.Array32:
-					result = self.TryReadArrayHeader(ref reader, out count);
+					result = self.TryReadStartVector(ref reader, out count);
 					if (result == DecodeResult.Success)
 					{
 						skipMore = (uint)count;
@@ -767,21 +767,21 @@ public partial record MsgPackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <summary>
-	/// Converts a msgpack code to a <see cref="PolySerializer.Converters.TypeCode"/>.
+	/// Converts a msgpack code to a <see cref="PolySerializer.Converters.TokenType"/>.
 	/// </summary>
 	/// <param name="code">The byte code that encodes the type of the next msgpack token.</param>
-	/// <returns>The format-agnostic <see cref="PolySerializer.Converters.TypeCode"/>.</returns>
-	public PolySerializer.Converters.TypeCode ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
+	/// <returns>The format-agnostic <see cref="PolySerializer.Converters.TokenType"/>.</returns>
+	public PolySerializer.Converters.TokenType ToTypeCode(byte code) => MessagePackCode.ToMessagePackType(code) switch
 	{
-		MessagePackType.Integer => PolySerializer.Converters.TypeCode.Integer,
-		MessagePackType.Boolean => PolySerializer.Converters.TypeCode.Boolean,
-		MessagePackType.Float => PolySerializer.Converters.TypeCode.Float,
-		MessagePackType.String => PolySerializer.Converters.TypeCode.String,
-		MessagePackType.Binary => PolySerializer.Converters.TypeCode.Binary,
-		MessagePackType.Array => PolySerializer.Converters.TypeCode.Vector,
-		MessagePackType.Map => PolySerializer.Converters.TypeCode.Map,
-		MessagePackType.Nil => PolySerializer.Converters.TypeCode.Nil,
-		_ => PolySerializer.Converters.TypeCode.Unknown,
+		MessagePackType.Integer => PolySerializer.Converters.TokenType.Integer,
+		MessagePackType.Boolean => PolySerializer.Converters.TokenType.Boolean,
+		MessagePackType.Float => PolySerializer.Converters.TokenType.Float,
+		MessagePackType.String => PolySerializer.Converters.TokenType.String,
+		MessagePackType.Binary => PolySerializer.Converters.TokenType.Binary,
+		MessagePackType.Array => PolySerializer.Converters.TokenType.Vector,
+		MessagePackType.Map => PolySerializer.Converters.TokenType.Map,
+		MessagePackType.Nil => PolySerializer.Converters.TokenType.Null,
+		_ => PolySerializer.Converters.TokenType.Unknown,
 	};
 
 	/// <summary>

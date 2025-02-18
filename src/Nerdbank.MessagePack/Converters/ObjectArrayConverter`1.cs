@@ -35,10 +35,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
-		if (reader.NextTypeCode == PolySerializer.Converters.TypeCode.Map)
+		if (reader.NextTypeCode == PolySerializer.Converters.TokenType.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
-			int count = reader.ReadMapHeader();
+			int count = reader.ReadStartMap();
 			for (int i = 0; i < count; i++)
 			{
 				int index = reader.ReadInt32();
@@ -54,7 +54,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 		else
 		{
-			int count = reader.ReadArrayHeader();
+			int count = reader.ReadStartVector();
 			for (int i = 0; i < count; i++)
 			{
 				if (properties.Length > i && properties.Span[i]?.MsgPackReaders is var (deserialize, _))
@@ -101,7 +101,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			{
 				if (this.ShouldUseMap(writer.Formatter, value, ref indexesToIncludeArray, out _, out ReadOnlySpan<int> indexesToInclude))
 				{
-					writer.WriteMapHeader(indexesToInclude.Length);
+					writer.WriteStartMap(indexesToInclude.Length);
 					for (int i = 0; i < indexesToInclude.Length; i++)
 					{
 						int index = indexesToInclude[i];
@@ -117,7 +117,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				}
 				else if (indexesToInclude.Length == 0)
 				{
-					writer.WriteArrayHeader(0);
+					writer.WriteStartVector(0);
 				}
 				else
 				{
@@ -141,7 +141,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		static void WriteArray(ref Writer writer, in T value, ReadOnlySpan<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
-			writer.WriteArrayHeader(properties.Length);
+			writer.WriteStartVector(properties.Length);
 			for (int i = 0; i < properties.Length; i++)
 			{
 				if (properties[i]?.MsgPackWriters is var (serialize, _))
@@ -185,7 +185,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				else if (indexesToInclude.Length == 0)
 				{
 					Writer syncWriter = writer.CreateWriter();
-					syncWriter.WriteArrayHeader(0);
+					syncWriter.WriteStartVector(0);
 					writer.ReturnWriter(ref syncWriter);
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
@@ -212,7 +212,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		static async ValueTask WriteAsMapAsync(AsyncWriter writer, T value, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
 		{
 			Writer syncWriter = writer.CreateWriter();
-			syncWriter.WriteMapHeader(properties.Length);
+			syncWriter.WriteStartMap(properties.Length);
 			writer.ReturnWriter(ref syncWriter);
 			int i = 0;
 			while (i < properties.Length)
@@ -277,7 +277,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		static async ValueTask WriteAsArrayAsync(AsyncWriter writer, T value, ReadOnlyMemory<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
 			Writer syncWriter = writer.CreateWriter();
-			syncWriter.WriteArrayHeader(properties.Length);
+			syncWriter.WriteStartVector(properties.Length);
 			writer.ReturnWriter(ref syncWriter);
 			int i = 0;
 			while (i < properties.Length)
@@ -364,13 +364,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		context.DepthStep();
 		T value = constructor();
 
-		PolySerializer.Converters.TypeCode peekType;
+		PolySerializer.Converters.TokenType peekType;
 		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == PolySerializer.Converters.TypeCode.Map)
+		if (peekType == PolySerializer.Converters.TokenType.Map)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -622,13 +622,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 
-		PolySerializer.Converters.TypeCode peekType;
+		PolySerializer.Converters.TokenType peekType;
 		while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (peekType == PolySerializer.Converters.TypeCode.Map)
+		if (peekType == PolySerializer.Converters.TokenType.Map)
 		{
 			int count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())

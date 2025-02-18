@@ -46,9 +46,9 @@ public partial class Deformatter
 
 	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
-	/// <returns><see langword="true" /> if the next token was <see cref="TypeCode.Nil"/>; otherwise <see langword="false" />.</returns>
+	/// <returns><see langword="true" /> if the next token was <see cref="TokenType.Null"/>; otherwise <see langword="false" />.</returns>
 	/// <remarks>
-	/// The reader is only advanced if the token was <see cref="TypeCode.Nil"/>.
+	/// The reader is only advanced if the token was <see cref="TokenType.Null"/>.
 	/// </remarks>
 	/// <exception cref="EndOfStreamException">Thrown when there is insufficient buffer to decode the next token.</exception>
 	public bool TryReadNull(ref Reader reader)
@@ -66,11 +66,11 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Reads a <see cref="TypeCode.Nil"/> token from the reader.
+	/// Reads a <see cref="TokenType.Null"/> token from the reader.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Nil"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Null"/>.</exception>
 	public void ReadNull(ref Reader reader)
 	{
 		if (!this.TryReadNull(ref reader))
@@ -79,17 +79,17 @@ public partial class Deformatter
 		}
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadArrayHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The number of elements in the vector.</returns>
 	/// <exception cref="EndOfStreamException">
 	/// Thrown when there is insufficient buffer to decode the next token or the buffer is obviously insufficient to store all the elements in the vector.
-	/// Use <see cref="TryReadArrayHeader(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
+	/// Use <see cref="TryReadStartVector(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
 	/// </exception>
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Vector"/>.</exception>
-	public int ReadArrayHeader(ref Reader reader)
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Vector"/>.</exception>
+	public int ReadStartVector(ref Reader reader)
 	{
-		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(ref reader, out int count));
+		ThrowInsufficientBufferUnless(this.TryReadStartVector(ref reader, out int count));
 
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
 		// We allow for each primitive to be the minimal 1 byte in size.
@@ -99,16 +99,16 @@ public partial class Deformatter
 		return count;
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadArrayHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="count">Receives the number of elements in the vector, if the read is successful.</param>
 	/// <returns>
 	/// <see langword="true"/> when the read operation is successful; <see langword="false"/> when the buffer is empty or insufficient.
 	/// </returns>
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Vector"/>.</exception>
-	public bool TryReadArrayHeader(ref Reader reader, out int count)
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Vector"/>.</exception>
+	public bool TryReadStartVector(ref Reader reader, out int count)
 	{
-		switch (this.StreamingDeformatter.TryReadArrayHeader(ref reader, out count))
+		switch (this.StreamingDeformatter.TryReadStartVector(ref reader, out count))
 		{
 			case DecodeResult.Success:
 				return true;
@@ -122,17 +122,17 @@ public partial class Deformatter
 		}
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadMapHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The number of elements in the map.</returns>
 	/// <exception cref="EndOfStreamException">
 	/// Thrown when there is insufficient buffer to decode the next token or the buffer is obviously insufficient to store all the elements in the map.
-	/// Use <see cref="TryReadMapHeader(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
+	/// Use <see cref="TryReadStartMap(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
 	/// </exception>
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Map"/>.</exception>
-	public int ReadMapHeader(ref Reader reader)
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Map"/>.</exception>
+	public int ReadStartMap(ref Reader reader)
 	{
-		ThrowInsufficientBufferUnless(this.TryReadMapHeader(ref reader, out int count));
+		ThrowInsufficientBufferUnless(this.TryReadStartMap(ref reader, out int count));
 
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
 		// We allow for each primitive to be the minimal 1 byte in size, and we have a key=value map, so that's 2 bytes.
@@ -142,16 +142,16 @@ public partial class Deformatter
 		return count;
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadMapHeader(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="count">Receives the number of elements in the map, if the read is successful.</param>
 	/// <returns>
 	/// <see langword="true"/> when the read operation is successful; <see langword="false"/> when the buffer is empty or insufficient.
 	/// </returns>
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Map"/>.</exception>
-	public bool TryReadMapHeader(ref Reader reader, out int count)
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Map"/>.</exception>
+	public bool TryReadStartMap(ref Reader reader, out int count)
 	{
-		switch (this.StreamingDeformatter.TryReadMapHeader(ref reader, out count))
+		switch (this.StreamingDeformatter.TryReadStartMap(ref reader, out count))
 		{
 			case DecodeResult.Success:
 				return true;
@@ -169,7 +169,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Boolean"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Boolean"/>.</exception>
 	public bool ReadBoolean(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out bool value))
@@ -190,7 +190,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Integer"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Integer"/>.</exception>
 	public char ReadChar(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out char value))
@@ -211,7 +211,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Float"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Float"/>.</exception>
 	public unsafe float ReadSingle(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out float value))
@@ -231,7 +231,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Float"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Float"/>.</exception>
 	public unsafe double ReadDouble(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out double value))
@@ -251,7 +251,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/> or <see cref="TypeCode.Nil"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/> or <see cref="TokenType.Null"/>.</exception>
 	public string? ReadString(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out string? value))
@@ -272,7 +272,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.Binary"/> or <see cref="TypeCode.Nil"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Binary"/> or <see cref="TokenType.Null"/>.</exception>
 	public ReadOnlySequence<byte>? ReadBytes(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadBinary(ref reader, out ReadOnlySequence<byte> value))
@@ -298,7 +298,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/> or <see cref="TypeCode.Nil"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/> or <see cref="TokenType.Null"/>.</exception>
 	public ReadOnlySequence<byte>? ReadStringSequence(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
@@ -324,7 +324,7 @@ public partial class Deformatter
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/>.</exception>
 	/// <remarks>
 	/// <para>
 	/// This method will often be alloc-free if the string is contiguous in the buffer.
@@ -332,7 +332,7 @@ public partial class Deformatter
 	/// Use <see cref="TryReadStringSpan(ref Reader, out ReadOnlySpan{byte})"/> to avoid allocating a copy of the string.
 	/// </para>
 	/// <para>
-	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TypeCode.Nil"/> or any other non-<see cref="TypeCode.String"/> token.
+	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TokenType.Null"/> or any other non-<see cref="TokenType.String"/> token.
 	/// </para>
 	/// </remarks>
 	public ReadOnlySpan<byte> ReadStringSpan(ref Reader reader)
@@ -360,7 +360,7 @@ public partial class Deformatter
 	/// without allocations or <see cref="ReadStringSpan(ref Reader)"/> with allocations.
 	/// </remarks>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TypeCode.String"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/>.</exception>
 	public bool TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> span)
 	{
 		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
@@ -442,9 +442,9 @@ public partial class Deformatter
 	/// <returns>The type of the next token.</returns>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
 	/// <exception cref="SerializationException">Thrown when the next token is unrecognized.</exception>
-	public TypeCode PeekNextTypeCode(in Reader reader)
+	public TokenType PeekNextTypeCode(in Reader reader)
 	{
-		switch (this.StreamingDeformatter.TryPeekNextTypeCode(reader, out TypeCode typeCode))
+		switch (this.StreamingDeformatter.TryPeekNextTypeCode(reader, out TokenType typeCode))
 		{
 			case DecodeResult.Success:
 				return typeCode;
@@ -459,16 +459,16 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Checks whether the next token (which must be an <see cref="TypeCode.Integer"/>) is an integer which <em>may</em> be negative without advancing the reader.
+	/// Checks whether the next token (which must be an <see cref="TokenType.Integer"/>) is an integer which <em>may</em> be negative without advancing the reader.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns><see langword="true" /> when the integer is encoded as a signed integer; <see langword="false" /> otherwise.</returns>
 	/// <remarks>
 	/// This is useful for readers that wish to know whether they should use <see cref="ReadInt64(ref Reader)"/>
-	/// instead of <see cref="ReadUInt64(ref Reader)"/> to read a token typed as <see cref="TypeCode.Integer"/>.
+	/// instead of <see cref="ReadUInt64(ref Reader)"/> to read a token typed as <see cref="TokenType.Integer"/>.
 	/// </remarks>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not an <see cref="TypeCode.Integer"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not an <see cref="TokenType.Integer"/>.</exception>
 	public bool PeekIsSignedInteger(in Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryPeekIsSignedInteger(reader, out bool signed))
@@ -486,16 +486,16 @@ public partial class Deformatter
 	}
 
 	/// <summary>
-	/// Checks whether the next token (which must be an <see cref="TypeCode.Float"/>) is as encoded as a 32-bit float without advancing the reader.
+	/// Checks whether the next token (which must be an <see cref="TokenType.Float"/>) is as encoded as a 32-bit float without advancing the reader.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns><see langword="true" /> when the integer is encoded as a signed integer; <see langword="false" /> otherwise.</returns>
 	/// <remarks>
 	/// This is useful for readers that wish to know whether they should use <see cref="ReadSingle(ref Reader)"/>
-	/// instead of <see cref="ReadDouble(ref Reader)"/> to read a token typed as <see cref="TypeCode.Float"/>.
+	/// instead of <see cref="ReadDouble(ref Reader)"/> to read a token typed as <see cref="TokenType.Float"/>.
 	/// </remarks>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not an <see cref="TypeCode.Float"/>.</exception>
+	/// <exception cref="SerializationException">Thrown when the next token is not an <see cref="TokenType.Float"/>.</exception>
 	public bool PeekIsFloat32(in Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryPeekIsFloat32(reader, out bool float32))

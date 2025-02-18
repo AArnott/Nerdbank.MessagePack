@@ -21,7 +21,7 @@ namespace CustomConverter
             int property1 = 0;
             string? property2 = null;
 
-            int count = reader.ReadMapHeader();
+            int count = reader.ReadStartMap();
             for (int i = 0; i < count; i++)
             {
                 string? key = reader.ReadString();
@@ -52,7 +52,7 @@ namespace CustomConverter
             }
 
             context.DepthStep();
-            writer.WriteMapHeader(2);
+            writer.WriteStartMap(2);
 
             writer.Write("MyProperty");
             writer.Write(value.MyProperty1);
@@ -76,7 +76,7 @@ namespace CustomConverter
             context.DepthStep();
             int property1 = 0;
             string? property2 = null;
-            int count = reader.ReadArrayHeader();
+            int count = reader.ReadStartVector();
             for (int i = 0; i < count; i++)
             {
                 switch (i)
@@ -125,7 +125,7 @@ namespace SubValues
             SomeOtherType? property1 = null;
             string? property2 = null;
 
-            int count = reader.ReadMapHeader();
+            int count = reader.ReadStartMap();
             for (int i = 0; i < count; i++)
             {
                 string? key = reader.ReadString();
@@ -162,7 +162,7 @@ namespace SubValues
             }
 
             context.DepthStep();
-            writer.WriteMapHeader(2);
+            writer.WriteStartMap(2);
 
             writer.Write("MyProperty");
             SomeOtherType? propertyValue = value.MyProperty1;
@@ -183,7 +183,7 @@ namespace SubValues
             }
 
             context.DepthStep();
-            writer.WriteMapHeader(2);
+            writer.WriteStartMap(2);
 
             writer.Write("MyProperty");
             SomeOtherType? propertyValue = value.MyProperty1;
@@ -397,7 +397,7 @@ namespace PerformanceConverters
             string? message1 = null;
             string? message2 = null;
 
-            int count = reader.ReadMapHeader();
+            int count = reader.ReadStartMap();
 
             // It is critical that we read or skip every element of the map, even if we don't recognize the key.
             for (int i = 0; i < count; i++)
@@ -434,7 +434,7 @@ namespace PerformanceConverters
                 return;
             }
 
-            writer.WriteMapHeader(2);
+            writer.WriteStartMap(2);
 
             // Write the pre-encoded msgpack for the property names to avoid repeatedly paying encoding costs.
             writer.Write(Message1);

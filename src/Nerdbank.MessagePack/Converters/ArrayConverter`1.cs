@@ -24,7 +24,7 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 		}
 
 		context.DepthStep();
-		int count = reader.ReadArrayHeader();
+		int count = reader.ReadStartVector();
 		var array = new TElement[count];
 		for (int i = 0; i < count; i++)
 		{
@@ -44,7 +44,7 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 		}
 
 		context.DepthStep();
-		writer.WriteArrayHeader(value.Length);
+		writer.WriteStartVector(value.Length);
 		for (int i = 0; i < value.Length; i++)
 		{
 			elementConverter.Write(ref writer, value[i], context);
@@ -65,7 +65,7 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 		if (elementConverter.PreferAsyncSerialization)
 		{
 			Writer syncWriter = writer.CreateWriter();
-			syncWriter.WriteArrayHeader(value.Length);
+			syncWriter.WriteStartVector(value.Length);
 			writer.ReturnWriter(ref syncWriter);
 
 			for (int i = 0; i < value.Length; i++)
@@ -80,7 +80,7 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 			do
 			{
 				Writer syncWriter = writer.CreateWriter();
-				syncWriter.WriteArrayHeader(value.Length);
+				syncWriter.WriteStartVector(value.Length);
 				for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
 				{
 					elementConverter.Write(ref syncWriter, value[progress], context);
@@ -136,7 +136,7 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
 
-			int count = syncReader.ReadArrayHeader();
+			int count = syncReader.ReadStartVector();
 			var array = new TElement[count];
 			for (int i = 0; i < count; i++)
 			{

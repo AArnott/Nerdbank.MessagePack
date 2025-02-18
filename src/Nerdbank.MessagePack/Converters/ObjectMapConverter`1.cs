@@ -57,7 +57,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		static void WriteProperties(ref Writer writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, SerializationContext context)
 		{
-			writer.WriteMapHeader(properties.Length);
+			writer.WriteStartMap(properties.Length);
 			foreach (SerializableProperty<T> property in properties)
 			{
 				writer.Buffer.Write(property.RawPropertyNameString.Span);
@@ -97,7 +97,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			}
 
 			Writer syncWriter = writer.CreateWriter();
-			syncWriter.WriteMapHeader(propertiesToSerialize.Length);
+			syncWriter.WriteStartMap(propertiesToSerialize.Length);
 			for (int i = 0; i < propertiesToSerialize.Length; i++)
 			{
 				SerializableProperty<T> property = propertiesToSerialize.Span[i];
@@ -151,7 +151,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (deserializable.Value.Readers is not null)
 		{
-			int count = reader.ReadMapHeader();
+			int count = reader.ReadStartMap();
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();

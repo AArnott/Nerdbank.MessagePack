@@ -151,7 +151,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 		// Only interning should produce an object reference in the serialized form.
 		Reader reader = new(this.lastRoundtrippedMsgpack, MsgPackDeformatter.Default);
-		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(2, reader.ReadStartVector());
 		reader.ReadString(); // city
 		Assert.Equal(interning ? MessagePackType.Extension : MessagePackType.String, MsgPackDeformatter.Default.PeekNextMessagePackType(reader));
 	}
@@ -193,7 +193,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		this.LogMsgPack(sequence);
 
 		Reader reader = new(sequence, MsgPackDeformatter.Default);
-		reader.ReadMapHeader();
+		reader.ReadStartMap();
 		reader.Skip(this.Serializer.StartingContext); // Value1 name
 		reader.Skip(this.Serializer.StartingContext); // Value1 value
 		reader.Skip(this.Serializer.StartingContext); // Value2 name
@@ -291,7 +291,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				return null;
 			}
 
-			int count = reader.ReadArrayHeader();
+			int count = reader.ReadStartVector();
 			if (count != 1)
 			{
 				throw new SerializationException("Expected an array of length 1.");
@@ -309,7 +309,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				return;
 			}
 
-			writer.WriteArrayHeader(1);
+			writer.WriteStartVector(1);
 			context.GetConverter<string, CustomTypeConverter>().Write(ref writer, value.Message, context);
 		}
 	}
@@ -331,7 +331,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				return null;
 			}
 
-			int count = reader.ReadArrayHeader();
+			int count = reader.ReadStartVector();
 			if (count != 1)
 			{
 				throw new SerializationException("Expected an array of length 1.");
@@ -349,7 +349,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				return;
 			}
 
-			writer.WriteArrayHeader(1);
+			writer.WriteStartVector(1);
 			context.GetConverter<string, CustomType2Converter>().Write(ref writer, value.Message, context);
 		}
 	}

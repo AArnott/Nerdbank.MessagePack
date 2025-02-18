@@ -26,7 +26,7 @@ public abstract record Formatter
 	/// <summary>
 	/// Gets a value indicating whether the format requires arrays must be prefixed with their length.
 	/// </summary>
-	public abstract bool ArrayLengthRequiredInHeader { get; }
+	public abstract bool VectorsMustHaveLengthPrefix { get; }
 
 	/// <summary>
 	/// Encodes and formats a given string.
@@ -44,55 +44,55 @@ public abstract record Formatter
 	/// </summary>
 	/// <param name="writer">The writer.</param>
 	/// <param name="length">The number of elements in the collection.</param>
-	public abstract void WriteArrayStart(ref Writer writer, int length);
+	public abstract void WriteStartVector(ref Writer writer, int length);
 
 	/// <summary>
 	/// Writes a separator between two array elements (if the format requires it).
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
-	public abstract void WriteArrayElementSeparator(ref Writer writer);
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
+	public abstract void WriteVectorElementSeparator(ref Writer writer);
 
 	/// <summary>
 	/// Writes a trailer after the last array element (if the format requires it).
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
-	public abstract void WriteArrayEnd(ref Writer writer);
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
+	public abstract void WriteEndVector(ref Writer writer);
 
 	/// <summary>
 	/// Introduces a map with a prefixed size.
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
 	/// <param name="count">The number of key=value pairs in the map.</param>
-	public abstract void WriteMapStart(ref Writer writer, int count);
+	public abstract void WriteStartMap(ref Writer writer, int count);
 
 	/// <summary>
 	/// Writes a separator between two key=value pairs (if the format requires it).
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
 	public abstract void WriteMapPairSeparator(ref Writer writer);
 
 	/// <summary>
 	/// Writes a separator between a key and matching value (if the format requires it).
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
 	public abstract void WriteMapKeyValueSeparator(ref Writer writer);
 
 	/// <summary>
 	/// Writes a marker that indicates the end of a map has been reached (if the format requires it).
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
-	public abstract void WriteMapEnd(ref Writer writer);
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
+	public abstract void WriteEndMap(ref Writer writer);
 
 	/// <summary>
 	/// Writes the token representing a <see langword="null" /> value.
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
 	public abstract void WriteNull(ref Writer writer);
 
 	/// <summary>
 	/// Writes a <see langword="bool" /> value.
 	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteArrayStart(ref Writer, int)" path="/param[@name='writer']"/></param>
+	/// <param name="writer"><inheritdoc cref="WriteStartVector(ref Writer, int)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write.</param>
 	public abstract void Write(ref Writer writer, bool value);
 
@@ -181,21 +181,21 @@ public abstract record Formatter
 	public abstract void Write(ref Writer writer, string? value);
 
 	/// <summary>
-	/// Writes a span of characters as a <see cref="TypeCode.String"/>.
+	/// Writes a span of characters as a <see cref="TokenType.String"/>.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='value']"/></param>
 	public abstract void Write(ref Writer writer, scoped ReadOnlySpan<char> value);
 
 	/// <summary>
-	/// Writes a span of bytes as a <see cref="TypeCode.Binary"/> blob.
+	/// Writes a span of bytes as a <see cref="TokenType.Binary"/> blob.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='value']"/></param>
 	public abstract void Write(ref Writer writer, scoped ReadOnlySpan<byte> value);
 
 	/// <summary>
-	/// Writes a sequence of bytes as a <see cref="TypeCode.Binary"/> blob.
+	/// Writes a sequence of bytes as a <see cref="TokenType.Binary"/> blob.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='value']"/></param>
@@ -216,14 +216,14 @@ public abstract record Formatter
 	public abstract int GetEncodedLength(ulong value);
 
 	/// <summary>
-	/// Writes a span of bytes as a <see cref="TypeCode.String"/> token that has already been encoded with <see cref="Encoding"/>.
+	/// Writes a span of bytes as a <see cref="TokenType.String"/> token that has already been encoded with <see cref="Encoding"/>.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='value']"/></param>
 	public abstract void WriteEncodedString(ref Writer writer, scoped ReadOnlySpan<byte> value);
 
 	/// <summary>
-	/// Writes a sequence of bytes as a <see cref="TypeCode.String"/> token that has already been encoded with <see cref="Encoding"/>.
+	/// Writes a sequence of bytes as a <see cref="TokenType.String"/> token that has already been encoded with <see cref="Encoding"/>.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref Writer, bool)" path="/param[@name='value']"/></param>
@@ -239,5 +239,5 @@ public abstract record Formatter
 	/// When this method returns <see langword="false"/>, the caller should use <see cref="Write(ref Writer, ReadOnlySpan{byte})"/>
 	/// or <see cref="Write(ref Writer, in ReadOnlySequence{byte})"/> instead.
 	/// </remarks>
-	public virtual bool TryWriteBinHeader(ref Writer writer, int length) => false;
+	public virtual bool TryWriteStartBinary(ref Writer writer, int length) => false;
 }

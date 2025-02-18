@@ -33,7 +33,7 @@ public record MsgPackFormatter : Formatter
 	public bool OldSpec { get; init; }
 
 	/// <inheritdoc/>
-	public override bool ArrayLengthRequiredInHeader => true;
+	public override bool VectorsMustHaveLengthPrefix => true;
 
 	/// <summary>
 	/// Writes a <see cref="MessagePackCode.Nil"/> value.
@@ -54,7 +54,7 @@ public record MsgPackFormatter : Formatter
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="length">The number of elements that will be written in the array.</param>
-	public override void WriteArrayStart(ref Writer writer, int length)
+	public override void WriteStartVector(ref Writer writer, int length)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
 		Assumes.True(MessagePackPrimitives.TryWriteArrayHeader(span, checked((uint)length), out int written));
@@ -62,13 +62,13 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <inheritdoc />
-	public override void WriteArrayElementSeparator(ref Writer writer)
+	public override void WriteVectorElementSeparator(ref Writer writer)
 	{
 		// msgpack doesn't have one.
 	}
 
 	/// <inheritdoc />
-	public override void WriteArrayEnd(ref Writer writer)
+	public override void WriteEndVector(ref Writer writer)
 	{
 		// msgpack has no array terminator.
 	}
@@ -81,7 +81,7 @@ public record MsgPackFormatter : Formatter
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="WriteNull(ref Writer)" path="/param[@name='writer']"/></param>
 	/// <param name="length">The number of key=value pairs that will be written in the map.</param>
-	public override void WriteMapStart(ref Writer writer, int length)
+	public override void WriteStartMap(ref Writer writer, int length)
 	{
 		Span<byte> span = writer.Buffer.GetSpan(5);
 		Assumes.True(MessagePackPrimitives.TryWriteMapHeader(span, checked((uint)length), out int written));
@@ -101,7 +101,7 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <inheritdoc />
-	public override void WriteMapEnd(ref Writer writer)
+	public override void WriteEndMap(ref Writer writer)
 	{
 		// msgpack has no map terminator.
 	}
@@ -488,7 +488,7 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <inheritdoc/>
-	public override bool TryWriteBinHeader(ref Writer writer, int length)
+	public override bool TryWriteStartBinary(ref Writer writer, int length)
 	{
 		this.WriteBinHeader(ref writer, length);
 		return true;

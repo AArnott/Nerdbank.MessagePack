@@ -161,7 +161,7 @@ internal readonly struct StreamingDeserializer<TElement>(SerializerBase serializ
 			};
 
 			// If the visit worked, but the next value is nil, we return the expression that led us to the nil value.
-			if (result is null && await this.IsNilAsync().ConfigureAwait(false))
+			if (result is null && await this.IsNullAsync().ConfigureAwait(false))
 			{
 				return expression;
 			}
@@ -298,17 +298,17 @@ internal readonly struct StreamingDeserializer<TElement>(SerializerBase serializ
 		}
 #pragma warning restore VSTHRD200 // Use "Async" suffix for async methods
 
-		private async ValueTask<bool> IsNilAsync()
+		private async ValueTask<bool> IsNullAsync()
 		{
 			StreamingReader streamingReader = reader.CreateStreamingReader();
-			PolySerializer.Converters.TypeCode peekType;
+			PolySerializer.Converters.TokenType peekType;
 			while (streamingReader.TryPeekNextTypeCode(out peekType).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			return peekType == PolySerializer.Converters.TypeCode.Nil;
+			return peekType == PolySerializer.Converters.TokenType.Null;
 		}
 	}
 }
