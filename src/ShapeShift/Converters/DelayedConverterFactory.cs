@@ -24,6 +24,9 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 	internal class DelayedConverter<T>(DelayedValue<Converter<T>> self) : Converter<T>
 	{
 		/// <inheritdoc/>
+		public override bool PreferAsyncSerialization => self.Result.PreferAsyncSerialization;
+
+		/// <inheritdoc/>
 		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 			=> self.Result.GetJsonSchema(context, typeShape);
 

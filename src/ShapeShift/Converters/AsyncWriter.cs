@@ -115,7 +115,7 @@ public class AsyncWriter(PipeWriter pipeWriter, Formatter formatter)
 	/// <param name="context">The serialization context.</param>
 	/// <param name="writer">The synchronous writer that may have unflushed bytes to consider as well.</param>
 	/// <returns><see langword="true" /> if the pipe buffers are reaching their preferred capacity; <see langword="false" /> otherwise.</returns>
-	public bool IsTimeToFlush(SerializationContext context, Writer writer)
+	public bool IsTimeToFlush(SerializationContext context, in Writer writer)
 	{
 		return pipeWriter.CanGetUnflushedBytes && (pipeWriter.UnflushedBytes + writer.UnflushedBytes) > context.UnflushedBytesThreshold;
 	}

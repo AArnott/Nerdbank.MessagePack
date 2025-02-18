@@ -244,7 +244,7 @@ ShapeShift.Converters.AsyncWriter.Flush() -> void
 ShapeShift.Converters.AsyncWriter.FlushIfAppropriateAsync(ShapeShift.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask
 ShapeShift.Converters.AsyncWriter.Formatter.get -> ShapeShift.Converters.Formatter!
 ShapeShift.Converters.AsyncWriter.IsTimeToFlush(ShapeShift.Converters.SerializationContext context) -> bool
-ShapeShift.Converters.AsyncWriter.IsTimeToFlush(ShapeShift.Converters.SerializationContext context, ShapeShift.Converters.Writer writer) -> bool
+ShapeShift.Converters.AsyncWriter.IsTimeToFlush(ShapeShift.Converters.SerializationContext context, in ShapeShift.Converters.Writer writer) -> bool
 ShapeShift.Converters.AsyncWriter.ReturnWriter(ref ShapeShift.Converters.Writer writer) -> void
 ShapeShift.Converters.AsyncWriter.WriteNull() -> void
 ShapeShift.Converters.BufferWriter
