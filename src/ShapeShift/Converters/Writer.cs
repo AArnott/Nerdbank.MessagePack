@@ -80,6 +80,9 @@ public ref struct Writer
 	/// <inheritdoc cref="Formatter.WriteMapKeyValueSeparator(ref BufferWriter)"/>
 	public void WriteMapKeyValueSeparator() => this.Formatter.WriteMapKeyValueSeparator(ref this.Buffer);
 
+	/// <inheritdoc cref="Formatter.WriteMapPairSeparator(ref BufferWriter)"/>
+	public void WriteMapPairSeparator() => this.Formatter.WriteMapPairSeparator(ref this.Buffer);
+
 	/// <inheritdoc cref="Formatter.WriteEndMap(ref BufferWriter)"/>
 	public void WriteEndMap() => this.Formatter.WriteEndMap(ref this.Buffer);
 

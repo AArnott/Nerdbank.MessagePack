@@ -58,11 +58,21 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		static void WriteProperties(ref Writer writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, SerializationContext context)
 		{
 			writer.WriteStartMap(properties.Length);
+			bool first = true;
 			foreach (SerializableProperty<T> property in properties)
 			{
+				if (!first)
+				{
+					writer.WriteMapPairSeparator();
+				}
+
+				first = false;
 				writer.Buffer.Write(property.RawPropertyNameString.Span);
+				writer.WriteMapKeyValueSeparator();
 				property.Write(value, ref writer, context);
 			}
+
+			writer.WriteEndMap();
 		}
 	}
 

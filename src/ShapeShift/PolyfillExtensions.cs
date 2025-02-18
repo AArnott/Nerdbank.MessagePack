@@ -58,6 +58,14 @@ namespace ShapeShift
 	/// </content>
 	internal static partial class PolyfillExtensions
 	{
+		internal static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> value)
+		{
+			fixed (char* pValue = value)
+			{
+				return encoding.GetByteCount(pValue, value.Length);
+			}
+		}
+
 		internal static unsafe int GetChars(this Encoding encoding, ReadOnlySpan<byte> source, Span<char> destination)
 		{
 			fixed (byte* pSource = source)

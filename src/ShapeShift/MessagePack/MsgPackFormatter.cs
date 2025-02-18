@@ -403,38 +403,26 @@ public record MsgPackFormatter : Formatter
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="WriteNull(ref BufferWriter)" path="/param[@name='writer']"/></param>
 	/// <param name="value">The value to write. May be null.</param>
-	public override unsafe void Write(ref BufferWriter writer, string? value)
+	public override unsafe void Write(ref BufferWriter writer, scoped ReadOnlySpan<char> value)
 	{
-		if (value == null)
+		if (value.IsEmpty)
 		{
-			this.WriteNull(ref writer);
-			return;
+			Span<byte> span = writer.GetSpan(1);
+			Assumes.True(MessagePackPrimitives.TryWriteStringHeader(span, 0, out int bytesWritten));
+			writer.Advance(bytesWritten);
 		}
-
-		ref byte buffer = ref this.WriteString_PrepareSpan(ref writer, value.Length, out int bufferSize, out int useOffset);
-		fixed (char* pValue = value)
+		else
 		{
-			fixed (byte* pBuffer = &buffer)
+			ref byte buffer = ref this.WriteString_PrepareSpan(ref writer, value.Length, out int bufferSize, out int useOffset);
+			fixed (char* pValue = value)
 			{
-				int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
-				this.WriteString_PostEncoding(ref writer, pBuffer, useOffset, byteCount);
+				fixed (byte* pBuffer = &buffer)
+				{
+					int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
+					this.WriteString_PostEncoding(ref writer, pBuffer, useOffset, byteCount);
+				}
 			}
 		}
-	}
-
-	/// <summary>
-	/// Writes out a <see cref="string"/>, prefixed with the length using one of these message codes:
-	/// <see cref="MessagePackCode.MinFixStr"/>,
-	/// <see cref="MessagePackCode.Str8"/>,
-	/// <see cref="MessagePackCode.Str16"/>,
-	/// <see cref="MessagePackCode.Str32"/>,
-	/// or <see cref="MessagePackCode.Nil"/> if the <paramref name="value"/> is <see langword="null"/>.
-	/// </summary>
-	/// <param name="writer"><inheritdoc cref="WriteNull(ref BufferWriter)" path="/param[@name='writer']"/></param>
-	/// <param name="value">The value to write. May be null.</param>
-	public override void Write(ref BufferWriter writer, scoped ReadOnlySpan<char> value)
-	{
-		throw new NotImplementedException();
 	}
 
 	/// <inheritdoc/>
@@ -495,7 +483,7 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <inheritdoc/>
-	public override void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
+	public override void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 		=> StringEncoding.GetEncodedStringBytes(value, out utf8Bytes, out msgpackEncoded);
 
 	/// <summary>

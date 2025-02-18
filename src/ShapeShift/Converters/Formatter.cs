@@ -37,7 +37,11 @@ public abstract record Formatter
 	/// <remarks>
 	/// This is useful as an optimization so that common strings need not be repeatedly encoded/decoded.
 	/// </remarks>
-	public abstract void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes);
+	public abstract void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes);
+
+	/// <inheritdoc cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte})"/>
+	public void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes)
+		=> this.GetEncodedStringBytes(value.AsSpan(), out encodedBytes, out formattedBytes);
 
 	/// <summary>
 	/// Introduces a collection with a prefixed size.
@@ -178,7 +182,17 @@ public abstract record Formatter
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='value']"/></param>
-	public abstract void Write(ref BufferWriter writer, string? value);
+	public void Write(ref BufferWriter writer, string? value)
+	{
+		if (value is null)
+		{
+			this.WriteNull(ref writer);
+		}
+		else
+		{
+			this.Write(ref writer, value.AsSpan());
+		}
+	}
 
 	/// <summary>
 	/// Writes a span of characters as a <see cref="TokenType.String"/>.

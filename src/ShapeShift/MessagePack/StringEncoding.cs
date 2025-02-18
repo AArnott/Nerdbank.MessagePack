@@ -25,12 +25,12 @@ internal static class StringEncoding
 	/// <remarks>
 	/// Because msgpack encodes with UTF-8 bytes, the two output parameter share most of the memory.
 	/// </remarks>
-	internal static void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
+	internal static void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
 	{
 		int byteCount = UTF8.GetByteCount(value);
 		Memory<byte> bytes = new byte[byteCount + 5];
 		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(bytes.Span, (uint)byteCount, out int msgpackHeaderLength));
-		UTF8.GetBytes(value.AsSpan(), bytes.Span[msgpackHeaderLength..]);
+		UTF8.GetBytes(value, bytes.Span[msgpackHeaderLength..]);
 		utf8Bytes = bytes.Slice(msgpackHeaderLength, byteCount);
 		msgpackEncoded = bytes.Slice(0, byteCount + msgpackHeaderLength);
 	}
