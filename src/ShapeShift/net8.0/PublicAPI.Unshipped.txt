@@ -248,7 +248,10 @@ ShapeShift.Converters.AsyncWriter.IsTimeToFlush(ShapeShift.Converters.Serializat
 ShapeShift.Converters.AsyncWriter.ReturnWriter(ref ShapeShift.Converters.Writer writer) -> void
 ShapeShift.Converters.AsyncWriter.WriteNull() -> void
 ShapeShift.Converters.BufferWriter
+ShapeShift.Converters.BufferWriter.Advance(int count) -> void
 ShapeShift.Converters.BufferWriter.BufferWriter() -> void
+ShapeShift.Converters.BufferWriter.GetPointer(int sizeHint = 0) -> byte
+ShapeShift.Converters.BufferWriter.GetSpan(int sizeHint = 0) -> System.Span<byte>
 ShapeShift.Converters.BufferWriter.Write(in System.Buffers.ReadOnlySequence<byte> rawMessagePackBlock) -> void
 ShapeShift.Converters.BufferWriter.Write(scoped System.ReadOnlySpan<byte> source) -> void
 ShapeShift.Converters.Converter

@@ -139,7 +139,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 				return;
 			}
 
-			INamedTypeSymbol unboundConverterBase = referenceSymbols.MessagePackConverter.ConstructUnboundGenericType();
+			INamedTypeSymbol unboundConverterBase = referenceSymbols.Converter.ConstructUnboundGenericType();
 			context.RegisterSymbolStartAction(
 				context =>
 				{
@@ -186,7 +186,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							}
 						});
 
-						if (!SymbolEqualityComparer.Default.Equals(target, referenceSymbols.MessagePackConverter) && !target.IsAbstract)
+						if (!SymbolEqualityComparer.Default.Equals(target, referenceSymbols.Converter) && !target.IsAbstract)
 						{
 							context.RegisterSymbolEndAction(context =>
 							{
@@ -234,7 +234,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 			case "Write":
 				relevantMethodTest = i =>
 				{
-					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.MessagePackWriter, i.TargetMethod.ContainingSymbol))
+					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.Writer, i.TargetMethod.ContainingSymbol))
 					{
 						return i.TargetMethod.Name switch
 						{
@@ -245,7 +245,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							_ => (0, true),
 						};
 					}
-					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterNonGeneric) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.ConverterNonGeneric) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
 					{
 						return i.TargetMethod.Name switch
 						{
@@ -263,7 +263,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 			case "Read":
 				relevantMethodTest = i =>
 				{
-					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.MessagePackReader, i.TargetMethod.ContainingSymbol))
+					if (SymbolEqualityComparer.Default.Equals(referenceSymbols.Reader, i.TargetMethod.ContainingSymbol))
 					{
 						return i.TargetMethod.Name switch
 						{
@@ -276,7 +276,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							_ => (0, true),
 						};
 					}
-					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterNonGeneric) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.ConverterNonGeneric) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
 					{
 						return i.TargetMethod.Name switch
 						{

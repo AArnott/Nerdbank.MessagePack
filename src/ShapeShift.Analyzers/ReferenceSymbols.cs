@@ -7,28 +7,28 @@ namespace ShapeShift.Analyzers;
 
 public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackSerializer,
-	INamedTypeSymbol MessagePackConverter,
-	INamedTypeSymbol MessagePackConverterNonGeneric,
-	INamedTypeSymbol MessagePackConverterAttribute,
-	INamedTypeSymbol MessagePackReader,
-	INamedTypeSymbol MessagePackStreamingReader,
-	INamedTypeSymbol MessagePackWriter,
+	INamedTypeSymbol Converter,
+	INamedTypeSymbol ConverterNonGeneric,
+	INamedTypeSymbol ConverterAttribute,
+	INamedTypeSymbol Reader,
+	INamedTypeSymbol StreamingReader,
+	INamedTypeSymbol Writer,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol KnownSubTypeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute,
 	INamedTypeSymbol ConstructorShapeAttribute)
 {
-	public INamedTypeSymbol MessagePackConverterUnbound { get; } = MessagePackConverter.ConstructUnboundGenericType();
+	public INamedTypeSymbol MessagePackConverterUnbound { get; } = Converter.ConstructUnboundGenericType();
 
 	public static bool TryCreate(Compilation compilation, [NotNullWhen(true)] out ReferenceSymbols? referenceSymbols)
 	{
 		IAssemblySymbol libraryAssembly;
-		if (compilation.AssemblyName == "Nerdbank.MessagePack")
+		if (compilation.AssemblyName == "ShapeShift")
 		{
 			libraryAssembly = compilation.Assembly;
 		}
-		else if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "Nerdbank.MessagePack.dll", StringComparison.OrdinalIgnoreCase)) is MetadataReference libraryReference &&
+		else if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "ShapeShift.dll", StringComparison.OrdinalIgnoreCase)) is MetadataReference libraryReference &&
 			compilation.GetAssemblyOrModuleSymbol(libraryReference) is IAssemblySymbol assembly)
 		{
 			libraryAssembly = assembly;
@@ -39,63 +39,63 @@ public record ReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackSerializer = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackSerializer");
+		INamedTypeSymbol? messagePackSerializer = libraryAssembly.GetTypeByMetadataName("ShapeShift.MessagePackSerializer");
 		if (messagePackSerializer is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackConverter = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverter`1");
-		if (messagePackConverter is null)
+		INamedTypeSymbol? converter = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Converter`1");
+		if (converter is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackConverterNonGeneric = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverter");
-		if (messagePackConverterNonGeneric is null)
+		INamedTypeSymbol? converterNonGeneric = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Converter");
+		if (converterNonGeneric is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackConverterAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackConverterAttribute");
-		if (messagePackConverterAttribute is null)
+		INamedTypeSymbol? converterAttribute = libraryAssembly.GetTypeByMetadataName("ShapeShift.ConverterAttribute");
+		if (converterAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackReader = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackReader");
-		if (messagePackReader is null)
+		INamedTypeSymbol? reader = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Reader");
+		if (reader is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackStreamingReader = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackStreamingReader");
-		if (messagePackStreamingReader is null)
+		INamedTypeSymbol? streamingReader = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.StreamingReader");
+		if (streamingReader is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackWriter = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.MessagePackWriter");
-		if (messagePackWriter is null)
+		INamedTypeSymbol? writer = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Writer");
+		if (writer is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? keyAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.KeyAttribute");
+		INamedTypeSymbol? keyAttribute = libraryAssembly.GetTypeByMetadataName("ShapeShift.KeyAttribute");
 		if (keyAttribute is null)
 		{
 			referenceSymbols = null;
 			return false;
 		}
 
-		INamedTypeSymbol? knownSubTypeAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.KnownSubTypeAttribute");
+		INamedTypeSymbol? knownSubTypeAttribute = libraryAssembly.GetTypeByMetadataName("ShapeShift.KnownSubTypeAttribute");
 		if (knownSubTypeAttribute is null)
 		{
 			referenceSymbols = null;
@@ -132,12 +132,12 @@ public record ReferenceSymbols(
 
 		referenceSymbols = new ReferenceSymbols(
 			messagePackSerializer,
-			messagePackConverter,
-			messagePackConverterNonGeneric,
-			messagePackConverterAttribute,
-			messagePackReader,
-			messagePackStreamingReader,
-			messagePackWriter,
+			converter,
+			converterNonGeneric,
+			converterAttribute,
+			reader,
+			streamingReader,
+			writer,
 			keyAttribute,
 			knownSubTypeAttribute,
 			generateShapeAttribute,

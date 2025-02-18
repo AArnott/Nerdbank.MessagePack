@@ -39,9 +39,9 @@ public class RefParametersForRefStructsAnalyzer : DiagnosticAnalyzer
 
 				FrozenSet<ISymbol> guardedRefStructs = new[]
 				{
-					referenceSymbols.MessagePackReader,
-					referenceSymbols.MessagePackStreamingReader,
-					referenceSymbols.MessagePackWriter,
+					referenceSymbols.Reader,
+					referenceSymbols.StreamingReader,
+					referenceSymbols.Writer,
 				}.ToFrozenSet<ISymbol>(SymbolEqualityComparer.Default);
 
 				context.RegisterSymbolAction(

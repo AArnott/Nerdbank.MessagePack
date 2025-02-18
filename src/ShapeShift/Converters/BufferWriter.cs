@@ -142,7 +142,7 @@ public ref struct BufferWriter
 	}
 
 	/// <inheritdoc cref="IBufferWriter{T}.GetSpan(int)"/>
-	internal Span<byte> GetSpan(int sizeHint = 0)
+	public Span<byte> GetSpan(int sizeHint = 0)
 	{
 		this.Ensure(sizeHint);
 		return this.Span;
@@ -154,7 +154,7 @@ public ref struct BufferWriter
 	/// <param name="sizeHint">The minimum size to guarantee is available in the buffer.</param>
 	/// <returns>The first byte in the buffer.</returns>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal ref byte GetPointer(int sizeHint = 0)
+	public ref byte GetPointer(int sizeHint = 0)
 	{
 		this.Ensure(sizeHint);
 
@@ -166,6 +166,17 @@ public ref struct BufferWriter
 		{
 			return ref this.span.GetPinnableReference();
 		}
+	}
+
+	/// <summary>
+	/// Used to indicate that part of the buffer has been written to.
+	/// </summary>
+	/// <param name="count">The number of bytes written to.</param>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Advance(int count)
+	{
+		this.buffered += count;
+		this.span = this.span[count..];
 	}
 
 	/// <summary>
@@ -193,17 +204,6 @@ public ref struct BufferWriter
 			this.buffered = 0;
 			this.span = default;
 		}
-	}
-
-	/// <summary>
-	/// Used to indicate that part of the buffer has been written to.
-	/// </summary>
-	/// <param name="count">The number of bytes written to.</param>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void Advance(int count)
-	{
-		this.buffered += count;
-		this.span = this.span[count..];
 	}
 
 	/// <summary>

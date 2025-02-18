@@ -10,7 +10,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[GenerateShape]
 			public partial class MyType
@@ -34,7 +34,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[GenerateShape]
 			public partial class MyType
@@ -55,7 +55,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[GenerateShape]
 			public partial class MyBaseType
@@ -80,7 +80,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[GenerateShape]
 			public partial class MyType
@@ -100,7 +100,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[GenerateShape]
 			public partial class MyBaseType
@@ -124,7 +124,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[GenerateShape]
 			public partial class MyType
@@ -145,7 +145,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[GenerateShape]
 			public partial class MyType
@@ -166,7 +166,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 			
 			[GenerateShape]
 			public partial record ClassWithUnserializedPropertyGetters
@@ -186,7 +186,7 @@ public class KeyAttributeUseAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 			
 			[GenerateShape]
 			public partial record ClassWithUnserializedPropertyGetters

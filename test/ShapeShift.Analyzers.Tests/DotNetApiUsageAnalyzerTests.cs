@@ -12,7 +12,7 @@ public class DotNetApiUsageAnalyzerTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[{|NBMsgPack051:KnownSubTypeAttribute(typeof(MyDerived))|}]
 			class MyType { }
@@ -24,7 +24,7 @@ public class DotNetApiUsageAnalyzerTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubTypeAttribute(typeof(MyDerived))]
 			class MyType { }
@@ -42,7 +42,7 @@ public class DotNetApiUsageAnalyzerTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubTypeAttribute<MyDerived>]
 			class MyType { }

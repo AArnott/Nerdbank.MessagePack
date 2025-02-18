@@ -11,7 +11,7 @@ public class RefParametersForRefStructsAnalyzerTests
 		string testSource = /* lang=c#-test */ """
 			#pragma warning disable NBMsgPackAsync
 
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			class Test
 			{
@@ -38,7 +38,7 @@ public class RefParametersForRefStructsAnalyzerTests
 		string testSource = /* lang=c#-test */ """
 			#pragma warning disable NBMsgPackAsync
 
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			class Test
 			{

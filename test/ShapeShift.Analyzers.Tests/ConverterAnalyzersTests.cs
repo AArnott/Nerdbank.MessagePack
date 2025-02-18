@@ -10,7 +10,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -30,7 +30,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -38,12 +38,12 @@ public class ConverterAnalyzersTests
 			{
 				public override MyType Read(ref Reader reader, SerializationContext context)
 				{
-					if (reader.TryReadNil())
+					if (reader.TryReadNull())
 					{
 						return null;
 					}
 
-					int count = reader.ReadArrayHeader();
+					int count = reader.ReadStartVector();
 					for (int i = 0; i < count; i++)
 					{
 						reader.Skip(context);
@@ -56,11 +56,11 @@ public class ConverterAnalyzersTests
 				{
 					if (value is null)
 					{
-						writer.WriteNil();
+						writer.WriteNull();
 						return;
 					}
 
-					writer.WriteArrayHeader(3);
+					writer.WriteStartVector(3);
 					writer.Write(1);
 					writer.Write(2);
 					writer.Write(3);
@@ -78,7 +78,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -86,9 +86,9 @@ public class ConverterAnalyzersTests
 			{
 				public override MyType Read(ref Reader reader, SerializationContext context)
 				{
-					if (!reader.TryReadNil())
+					if (!reader.TryReadNull())
 					{
-						int count = reader.ReadMapHeader();
+						int count = reader.ReadStartMap();
 						for (int i = 0; i < count; i++)
 						{
 							reader.Skip(context);
@@ -107,11 +107,11 @@ public class ConverterAnalyzersTests
 				{
 					if (value is null)
 					{
-						writer.WriteNil();
+						writer.WriteNull();
 						return;
 					}
 
-					writer.WriteMapHeader(3);
+					writer.WriteStartMap(3);
 					writer.Write("p1");
 					writer.Write(1);
 					writer.Write("p2");
@@ -133,7 +133,7 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType
 			{
@@ -155,7 +155,7 @@ public class ConverterAnalyzersTests
 			{
 				public override MyType Read(ref Reader reader, SerializationContext context)
 				{
-					if (reader.TryReadNil())
+					if (reader.TryReadNull())
 					{
 						return null;
 					}
@@ -176,7 +176,7 @@ public class ConverterAnalyzersTests
 				{
 					if (value is null)
 					{
-						writer.WriteNil();
+						writer.WriteNull();
 						return;
 					}
 
@@ -200,7 +200,7 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType
 			{
@@ -222,7 +222,7 @@ public class ConverterAnalyzersTests
 			{
 				public override MyType Read(ref Reader reader, SerializationContext context)
 				{
-					if (reader.TryReadNil())
+					if (reader.TryReadNull())
 					{
 						return null;
 					}
@@ -239,7 +239,7 @@ public class ConverterAnalyzersTests
 				{
 					if (value is null)
 					{
-						writer.WriteNil();
+						writer.WriteNull();
 						return;
 					}
 
@@ -260,7 +260,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			internal class TimeSpanConverter : Converter<TimeSpan>
 			{
@@ -282,7 +282,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			internal class Int16Converter : Converter<Int16>
 			{
@@ -304,7 +304,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			internal class VersionConverter : Converter<Version>
 			{
@@ -326,7 +326,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			internal class VersionConverter : Converter<Version>
 			{
@@ -334,9 +334,9 @@ public class ConverterAnalyzersTests
 
 				public override void Write(ref Writer writer, in Version value, SerializationContext context)
 				{
-					Span<byte> span = writer.GetSpan(5);
+					Span<byte> span = writer.Buffer.GetSpan(5);
 					// Assume something is written to the span.
-					writer.Advance(3);
+					writer.Buffer.Advance(3);
 				}
 
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
@@ -354,7 +354,7 @@ public class ConverterAnalyzersTests
 			using System.Diagnostics.CodeAnalysis;
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement> : Converter<TArray>
 			{
@@ -380,7 +380,7 @@ public class ConverterAnalyzersTests
 			using System.Diagnostics.CodeAnalysis;
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			internal class ArrayWithFlattenedDimensionsConverter : Converter<int>
 			{
@@ -409,13 +409,13 @@ public class ConverterAnalyzersTests
 			using System.Diagnostics.CodeAnalysis;
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			internal class ArrayWithFlattenedDimensionsConverter(Converter<int> primitiveConverter) : Converter<int>
 			{
 				public override int Read(ref Reader reader, SerializationContext context)
 				{
-					if (reader.NextMessagePackType == MessagePackType.String)
+					if (reader.NextTypeCode == TokenType.String)
 					{
 						string stringValue;
 
@@ -452,7 +452,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -471,7 +471,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -496,7 +496,8 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using PolyType;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
+			using ShapeShift.Converters;
 
 			#if NET
 			[GenerateShape]
@@ -535,7 +536,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -566,7 +567,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -601,7 +602,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			class CustomStringConverter : Converter<string>
 			{
@@ -622,7 +623,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			class CustomStringConverter : Converter<string>
 			{
@@ -643,7 +644,7 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			public class MyType { }
 
@@ -667,7 +668,7 @@ public class ConverterAnalyzersTests
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			class {|NBMsgPack037:MyConverter|} : Converter<int>
 			{
@@ -677,9 +678,9 @@ public class ConverterAnalyzersTests
 
 				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
 
-				public override ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context) => throw new NotImplementedException();
+				public override ValueTask WriteAsync(AsyncWriter writer, int value, SerializationContext context) => throw new NotImplementedException();
 
-				public override ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => throw new NotImplementedException();
+				public override ValueTask<int> ReadAsync(AsyncReader reader, SerializationContext context) => throw new NotImplementedException();
 			}
 			""";
 
@@ -696,7 +697,7 @@ public class ConverterAnalyzersTests
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			class MyConverter : Converter<int>
 			{
@@ -708,7 +709,7 @@ public class ConverterAnalyzersTests
 
 				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
 
-				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				public override async ValueTask WriteAsync(AsyncWriter writer, int value, SerializationContext context)
 				{
 					Writer syncWriter = writer.CreateWriter();
 					syncWriter.Write(value);
@@ -722,13 +723,13 @@ public class ConverterAnalyzersTests
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 
-				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				public override async ValueTask<int> ReadAsync(AsyncReader reader, SerializationContext context)
 				{
 					Reader bufferedReader = reader.CreateBufferedReader();
 					bufferedReader.ReadInt32();
 					reader.ReturnReader(ref bufferedReader);
 
-					MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+					StreamingReader streamingReader = reader.CreateStreamingReader();
 					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
 					{
 						streamingReader = new(await streamingReader.FetchMoreBytesAsync());
@@ -754,7 +755,7 @@ public class ConverterAnalyzersTests
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			class MyConverter : Converter<int>
 			{
@@ -766,7 +767,7 @@ public class ConverterAnalyzersTests
 
 				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
 
-				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				public override async ValueTask WriteAsync(AsyncWriter writer, int value, SerializationContext context)
 				{
 					Writer syncWriter = writer.CreateWriter();
 					syncWriter.Write(value);
@@ -776,7 +777,7 @@ public class ConverterAnalyzersTests
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 
-				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				public override async ValueTask<int> ReadAsync(AsyncReader reader, SerializationContext context)
 				{
 					Reader bufferedReader = reader.CreateBufferedReader();
 					bufferedReader.ReadInt32();
@@ -784,7 +785,7 @@ public class ConverterAnalyzersTests
 					reader.ReturnReader(ref {|NBMsgPack036:bufferedReader|});
 					{|NBMsgPack036:bufferedReader|}.ReadInt32();
 
-					MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+					StreamingReader streamingReader = reader.CreateStreamingReader();
 					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
 					{
 						streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
@@ -812,7 +813,7 @@ public class ConverterAnalyzersTests
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			class MyConverter : Converter<int>
 			{
@@ -824,7 +825,7 @@ public class ConverterAnalyzersTests
 
 				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
 
-				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				public override async ValueTask WriteAsync(AsyncWriter writer, int value, SerializationContext context)
 				{
 					Writer syncWriter = writer.CreateWriter();
 					syncWriter.Write(value);
@@ -834,13 +835,13 @@ public class ConverterAnalyzersTests
 					{|NBMsgPack033:writer.CreateWriter()|};
 				{|NBMsgPack033:}|}
 
-				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				public override async ValueTask<int> ReadAsync(AsyncReader reader, SerializationContext context)
 				{
 					Reader bufferedReader = reader.CreateBufferedReader();
 					bufferedReader.ReadInt32();
 					//reader.ReturnReader(ref bufferedReader);
 
-					MessagePackStreamingReader streamingReader = {|NBMsgPack035:reader.CreateStreamingReader()|};
+					StreamingReader streamingReader = {|NBMsgPack035:reader.CreateStreamingReader()|};
 					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
 					{
 						streamingReader = new(await streamingReader.FetchMoreBytesAsync());
@@ -866,7 +867,7 @@ public class ConverterAnalyzersTests
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
 			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
+			using ShapeShift.Converters;
 
 			class MyConverter : Converter<int>
 			{
@@ -878,19 +879,18 @@ public class ConverterAnalyzersTests
 
 				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
 
-				public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, int value, SerializationContext context)
+				public override async ValueTask WriteAsync(AsyncWriter writer, int value, SerializationContext context)
 				{
 					Writer syncWriter = writer.CreateWriter();
-					{|NBMsgPack033:writer.WriteNil()|};
+					{|NBMsgPack033:writer.WriteNull()|};
 					{|NBMsgPack033:await|} {|NBMsgPack033:writer.FlushIfAppropriateAsync(context)|};
-					{|NBMsgPack033:writer.Write((ref Writer w, int s) => { }, 5)|};
 					syncWriter.Write(value);
 					writer.ReturnWriter(ref syncWriter);
 
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 
-				public override async ValueTask<int> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+				public override async ValueTask<int> ReadAsync(AsyncReader reader, SerializationContext context)
 				{
 					Reader bufferedReader = reader.CreateBufferedReader();
 					{|NBMsgPack035:await|} {|NBMsgPack035:reader.ReadAsync()|};
@@ -898,7 +898,7 @@ public class ConverterAnalyzersTests
 					bufferedReader.ReadInt32();
 					reader.ReturnReader(ref bufferedReader);
 
-					MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+					StreamingReader streamingReader = reader.CreateStreamingReader();
 					while (streamingReader.TryRead(out int value).NeedsMoreBytes())
 					{
 						streamingReader = new(await streamingReader.FetchMoreBytesAsync());

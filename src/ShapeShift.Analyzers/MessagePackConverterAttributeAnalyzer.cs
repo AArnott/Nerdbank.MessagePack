@@ -48,7 +48,7 @@ public class MessagePackConverterAttributeAnalyzer : DiagnosticAnalyzer
 				context =>
 				{
 					var appliedType = (INamedTypeSymbol)context.Symbol;
-					if (appliedType.FindAttributes(referenceSymbols.MessagePackConverterAttribute).FirstOrDefault() is not { } att)
+					if (appliedType.FindAttributes(referenceSymbols.ConverterAttribute).FirstOrDefault() is not { } att)
 					{
 						return;
 					}
@@ -58,7 +58,7 @@ public class MessagePackConverterAttributeAnalyzer : DiagnosticAnalyzer
 						return;
 					}
 
-					if (!converterType.IsOrDerivedFrom(referenceSymbols.MessagePackConverter.Construct(appliedType)))
+					if (!converterType.IsOrDerivedFrom(referenceSymbols.Converter.Construct(appliedType)))
 					{
 						context.ReportDiagnostic(Diagnostic.Create(InvalidConverterTypeDescriptor, GetArgumentLocation(0), appliedType.Name));
 					}

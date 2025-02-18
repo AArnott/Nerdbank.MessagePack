@@ -10,7 +10,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType>(1)]
 			public interface IMyType
@@ -24,7 +24,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType), 1)]
 			public interface IMyType
@@ -44,7 +44,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType>(1)]
 			public class MyType
@@ -58,7 +58,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType), 1)]
 			public class MyType
@@ -79,7 +79,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType1>(1)]
 			[KnownSubType<DerivedTypeA>("A")]
@@ -99,7 +99,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType1), 1)]
 			[KnownSubType(typeof(DerivedTypeA), "A")]
@@ -125,7 +125,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType>("A")]
 			public class MyType
@@ -139,7 +139,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType), "A")]
 			public class MyType
@@ -160,7 +160,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType>]
 			public class MyType
@@ -174,7 +174,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType))]
 			public class MyType
@@ -195,7 +195,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<{|NBMsgPack010:NonDerivedType|}>(1)]
 			public class MyType
@@ -209,7 +209,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType({|NBMsgPack010:typeof(NonDerivedType)|}, 1)]
 			public class MyType
@@ -230,7 +230,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<{|NBMsgPack010:NonDerivedType|}>]
 			public class MyType
@@ -244,7 +244,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType({|NBMsgPack010:typeof(NonDerivedType)|})]
 			public class MyType
@@ -265,7 +265,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType1>(1)]
 			public class MyType
@@ -289,7 +289,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType1), 1)]
 			public class MyType
@@ -319,7 +319,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType1>(1)]
 			[KnownSubType<DerivedType2>({|NBMsgPack011:1|})]
@@ -339,7 +339,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType1), 1)]
 			[KnownSubType(typeof(DerivedType2), {|NBMsgPack011:1|})]
@@ -365,7 +365,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType1>("A")]
 			[KnownSubType<DerivedType2>({|NBMsgPack011:"A"|})]
@@ -385,7 +385,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType1), "A")]
 			[KnownSubType(typeof(DerivedType2), {|NBMsgPack011:"A"|})]
@@ -411,7 +411,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			namespace A;
 
@@ -436,7 +436,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			namespace A;
 
@@ -467,7 +467,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedTypeA>("A")]
 			[KnownSubType<DerivedTypeB>({|NBMsgPack011:"A"|})]
@@ -499,7 +499,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType1), "A")]
 			[KnownSubType(typeof(DerivedType2), {|NBMsgPack011:"A"|})]
@@ -535,7 +535,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType1>(1)]
 			[KnownSubType<{|NBMsgPack012:DerivedType1|}>(2)]
@@ -550,7 +550,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType1), 1)]
 			[KnownSubType({|NBMsgPack012:typeof(DerivedType1)|}, 2)]
@@ -572,7 +572,7 @@ public class KnownSubTypeAnalyzersTests
 	{
 #if NET
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType<DerivedType<int>, Witness>(1)]
 			[KnownSubType<DerivedType<bool>, Witness>(2)]
@@ -592,7 +592,7 @@ public class KnownSubTypeAnalyzersTests
 			""";
 #else
 		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[KnownSubType(typeof(DerivedType<int>), 1)]
 			[KnownSubType(typeof(DerivedType<bool>), 2)]

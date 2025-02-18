@@ -75,7 +75,7 @@ public class MigrationAnalyzerTests
 
 			using MessagePack;
 			using MessagePack.Formatters;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 			using PolyType;
 
 			[MessagePackConverter(typeof(MyTypeFormatter))]
@@ -316,7 +316,7 @@ public class MigrationAnalyzerTests
 
 		string fixedSource = /* lang=c#-test */ """
 			using MessagePack;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			class A : IMessagePackSerializationCallbacks
 			{
@@ -357,7 +357,7 @@ public class MigrationAnalyzerTests
 
 		string fixedSource = /* lang=c#-test */ """
 			using MessagePack;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			class A : IMessagePackSerializationCallbacks
 			{

@@ -10,7 +10,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[MessagePackConverter(typeof(MyTypeConverter))]
 			public class MyType
@@ -32,7 +32,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[MessagePackConverter({|NBMsgPack021:typeof(MyTypeConverter)|})]
 			public class MyType
@@ -55,7 +55,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[MessagePackConverter({|NBMsgPack020:typeof(MyTypeConverter)|})]
 			public class MyType
@@ -77,7 +77,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using Nerdbank.MessagePack;
+			using ShapeShift;
 
 			[MessagePackConverter({|NBMsgPack020:typeof(IntConverter)|})]
 			public class MyType
