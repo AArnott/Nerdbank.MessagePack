@@ -10,7 +10,7 @@ Surrogate types are simpler and utilize efficient, tested converters that are au
 
 Consider class `Foo` that cannot be serialized automatically.
 
-Declare a class that derives from @"ShapeShift.MessagePackConverter`1":
+Declare a class that derives from @"ShapeShift.Converters.Converter`1":
 
 [!code-csharp[](../../samples/CustomConverters.cs#YourOwnConverter)]
 
@@ -22,27 +22,27 @@ Msgpack is a structured, self-describing format similar to JSON.
 In JSON, an individual array element or object property value must be described as a single element or the JSON would be invalid.
 
 If you have more than one value to serialize or deserialize (e.g. multiple fields on an object) you MUST use a map or array header with the appropriate number of elements you intend to serialize.
-In the @"ShapeShift.MessagePackConverter`1.Write*" method, use @ShapeShift.MessagePackWriter.WriteMapHeader* or @ShapeShift.MessagePackWriter.WriteArrayHeader*.
-In the @"ShapeShift.MessagePackConverter`1.Read\*" method, use @ShapeShift.MessagePackReader.ReadMapHeader or @ShapeShift.MessagePackReader.ReadArrayHeader.
+In the @"ShapeShift.Converters.Converter`1.Write*" method, use @ShapeShift.Converters.Writer.WriteStartMap* or @ShapeShift.Converters.Writer.WriteStartVector*.
+In the @"ShapeShift.Converters.Converter`1.Read*" method, use @ShapeShift.Converters.Reader.ReadStartMap or @ShapeShift.Converters.Reader.ReadStartVector.
 
-Custom converters are encouraged to override @ShapeShift.MessagePackConverter`1.GetJsonSchema*?displayProperty=nameWithType to support the @ShapeShift.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType methods.
+Custom converters are encouraged to override @ShapeShift.Converters.Converter.GetJsonSchema*?displayProperty=nameWithType to support the @ShapeShift.SerializerBase.GetJsonSchema*?displayProperty=nameWithType methods.
 
 ### Security considerations
 
-Any custom converter should call @ShapeShift.SerializationContext.DepthStep\*?displayProperty=nameWithType on the @ShapeShift.SerializationContext argument provided to it to ensure that the depth of the msgpack structure is within acceptable bounds.
+Any custom converter should call @ShapeShift.Converters.SerializationContext.DepthStep*?displayProperty=nameWithType on the @ShapeShift.Converters.SerializationContext argument provided to it to ensure that the depth of the msgpack structure is within acceptable bounds.
 This call should be made before reading or writing any msgpack structure (other than nil).
 
 This is important to prevent maliciously crafted msgpack from causing a stack overflow or other denial-of-service attack.
-A stack overflow tends to crash the process, whereas a call to @ShapeShift.SerializationContext.DepthStep\* merely throws a typical @ShapeShift.MessagePackSerializationException which is catchable and more likely to be caught.
+A stack overflow tends to crash the process, whereas a call to @ShapeShift.Converters.SerializationContext.DepthStep* merely throws a typical @ShapeShift.SerializationException which is catchable and more likely to be caught.
 
 While checking the depth only guards against exploits during *de*serialization, converters should call it during serialization as well to help an application avoid serializing a data structure that they will later be unable to deserialize.
 It also taps into the built-in cancellation token checks built into depth tracking.
 
-Applications that have a legitimate need to exceed the default stack depth limit can adjust it by setting @ShapeShift.SerializationContext.MaxDepth?displayProperty=nameWithType to a higher value.
+Applications that have a legitimate need to exceed the default stack depth limit can adjust it by setting @ShapeShift.Converters.SerializationContext.MaxDepth?displayProperty=nameWithType to a higher value.
 
 ### Delegating to sub-values
 
-The @ShapeShift.SerializationContext.GetConverter\*?displayProperty=nameWithType method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
+The @ShapeShift.Converters.SerializationContext.GetConverter*?displayProperty=nameWithType method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
 
 # [.NET](#tab/net)
 
@@ -106,8 +106,8 @@ It also implicitly skips values in any unknown array index, such that reading _a
 
 #### Cancellation handling
 
-A custom converter should honor the @ShapeShift.SerializationContext.CancellationToken?displayProperty=nameWithType.
-This is mostly automatic because most converters should already be calling @ShapeShift.SerializationContext.DepthStep?displayProperty=nameWithType, which will throw @System.OperationCanceledException if the token is canceled.
+A custom converter should honor the @ShapeShift.Converters.SerializationContext.CancellationToken?displayProperty=nameWithType.
+This is mostly automatic because most converters should already be calling @ShapeShift.Converters.SerializationContext.DepthStep?displayProperty=nameWithType, which will throw @System.OperationCanceledException if the token is canceled.
 
 For particularly expensive converters, it may be beneficial to check the token periodically through the conversion process.
 
@@ -117,9 +117,9 @@ The built-in converters take special considerations to avoid allocating, encodin
 This reduces GC pressure and removes redundant CPU time spent repeatedly converting UTF-8 encoded property names as strings.
 Your custom converters _may_ follow similar patterns if tuning performance for your particular type's serialization is important.
 
-The following sample demonstrates using the @ShapeShift.MessagePackString class to avoid allocations and repeated encoding operations for strings used for property names:
+The following sample demonstrates using the @ShapeShift.PreformattedString class to avoid allocations and repeated encoding operations for strings used for property names:
 
-[!code-csharp[](../../samples/CustomConverters.cs#MessagePackStringUser)]
+[!code-csharp[](../../samples/CustomConverters.cs#PreformattedStringUser)]
 
 ### Stateful converters
 
@@ -129,14 +129,14 @@ When converters have stateful fields, they cannot be used concurrently with diff
 Creating multiple instances of those converters with different values in those fields requires creating unique instances of @ShapeShift.MessagePackSerializer which each incur a startup cost while they create and cache the rest of the converters necessary for your data model.
 
 For higher performance, configure one @ShapeShift.MessagePackSerializer instance with one set of converters.
-Your converters can be stateful by accessing state in the @ShapeShift.SerializationContext parameter instead of fields on the converter itself.
+Your converters can be stateful by accessing state in the @ShapeShift.Converters.SerializationContext parameter instead of fields on the converter itself.
 
 For example, suppose your custom converter serializes data bound for a particular RPC connection and must access state associated with that connection.
 This can be achieved as follows:
 
-1. Store the state in the @ShapeShift.SerializationContext via its @ShapeShift.SerializationContext.Item(System.Object)?displayProperty=nameWithType indexer.
-1. Apply that @ShapeShift.SerializationContext to a @ShapeShift.MessagePackSerializer by setting its @ShapeShift.MessagePackSerializer.StartingContext property.
-1. Your custom converter can then retrieve that state during serialization/deserialization via that same @ShapeShift.SerializationContext.Item(System.Object)?displayProperty=nameWithType indexer.
+1. Store the state in the @ShapeShift.Converters.SerializationContext via its @ShapeShift.Converters.SerializationContext.Item(System.Object)?displayProperty=nameWithType indexer.
+1. Apply that @ShapeShift.Converters.SerializationContext to a @ShapeShift.SerializerBase by setting its @ShapeShift.SerializerBase.StartingContext property.
+1. Your custom converter can then retrieve that state during serialization/deserialization via that same @ShapeShift.Converters.SerializationContext.Item(System.Object)?displayProperty=nameWithType indexer.
 
 # [.NET](#tab/net)
 
@@ -148,10 +148,10 @@ This can be achieved as follows:
 
 ---
 
-When the state object stored in the @ShapeShift.SerializationContext is a mutable reference type, the converters _may_ mutate it such that they or others can observe those changes later.
+When the state object stored in the @ShapeShift.Converters.SerializationContext is a mutable reference type, the converters _may_ mutate it such that they or others can observe those changes later.
 Consider the thread-safety implications of doing this if that same mutable state object is shared across multiple serializations that may happen on different threads in parallel.
 
-Converters that change the state dictionary itself (by using @"ShapeShift.SerializationContext.Item(System.Object)?displayProperty=nameWithType") can expect those changes to propagate only to their callees.
+Converters that change the state dictionary itself (by using @"ShapeShift.Converters.SerializationContext.Item(System.Object)?displayProperty=nameWithType") can expect those changes to propagate only to their callees.
 
 Strings can serve as convenient keys, but may collide with the same string used by another part of the data model for another purpose.
 Make your strings sufficiently unique to avoid collisions, or use a `static readonly object MyKey = new object()` field that you expose such that all interested parties can access the object for a key that is guaranteed to be unique.
@@ -162,12 +162,12 @@ Modify state on an existing @ShapeShift.MessagePackSerializer by capturing the c
 
 ### Async converters
 
-@ShapeShift.MessagePackConverter`1 is an abstract class that requires a derived converter to implement synchronous @ShapeShift.MessagePackConverter`1.Write* and @ShapeShift.MessagePackConverter`1.Read* methods.
-The base class also declares `virtual` async alternatives to these methods (@ShapeShift.MessagePackConverter`1.WriteAsync* and @ShapeShift.MessagePackConverter`1.ReadAsync*, respectively) which a derived class may *optionally\* override.
+@ShapeShift.Converters.Converter`1 is an abstract class that requires a derived converter to implement synchronous @ShapeShift.Converters.Converter`1.Write* and @ShapeShift.Converters.Converter`1.Read* methods.
+The base class also declares `virtual` async alternatives to these methods (@ShapeShift.Converters.Converter`1.WriteAsync* and @ShapeShift.Converters.Converter`1.ReadAsync*, respectively) which a derived class may *optionally\* override.
 These default async implementations are correct, and essentially buffer the whole msgpack representation while deferring the actual serialization work to the synchronous methods.
 
 For types that may represent a great deal of data (e.g. arrays and maps), overriding the async methods in order to read or flush msgpack in smaller portions may reduce memory pressure and/or improve performance.
-When a derived type overrides the async methods, it should also override @ShapeShift.MessagePackConverter`1.PreferAsyncSerialization to return `true` so that callers know that you have optimized async paths.
+When a derived type overrides the async methods, it should also override @ShapeShift.Converters.Converter.PreferAsyncSerialization to return `true` so that callers know that you have optimized async paths.
 
 The built-in converters, including those that serialize your custom data types by default, already override the async methods with optimal implementations.
 
@@ -179,12 +179,12 @@ Note that if your custom type is used as the top-level data type to be serialize
 
 ### Attribute approach
 
-To get your converter to be automatically used wherever the data type that it formats needs to be serialized, apply a @ShapeShift.MessagePackConverterAttribute to your custom data type that points to your custom converter.
+To get your converter to be automatically used wherever the data type that it formats needs to be serialized, apply a @ShapeShift.ConverterAttribute to your custom data type that points to your custom converter.
 
 [!code-csharp[](../../samples/CustomConverters.cs#CustomConverterByAttribute)]
 
 ### Runtime registration
 
-For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @ShapeShift.MessagePackSerializer using the @ShapeShift.MessagePackSerializer.RegisterConverter\*.
+For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @ShapeShift.MessagePackSerializer using the @ShapeShift.SerializerBase.RegisterConverter*.
 
 [!code-csharp[](../../samples/CustomConverters.cs#CustomConverterByRegister)]

@@ -70,7 +70,7 @@ In fact unless you use `[MessagePackObject(true)]`, you must also annotate every
 With ShapeShift, you can remove the `[MessagePackObject]` attribute from your types, as it is not required.
 ShapeShift supports something of a hybrid between MessagePack-CSharp's `[MessagePackObject]` and "contractless" modes, to achieve something much easier to use and yet flexible when you need to tweak it.
 
-Top-level classes and structs that you need to serialize (that is, the ones you pass directly to @ShapeShift.MessagePackSerializer.Serialize* or @"ShapeShift.MessagePackSerializer.Deserialize*") need only that you annotate the type with @PolyType.GenerateShapeAttribute.
+Top-level classes and structs that you need to serialize (that is, the ones you pass directly to @ShapeShift.SerializerBase.Serialize* or @"ShapeShift.SerializerBase.Deserialize*") need only that you annotate the type with @PolyType.GenerateShapeAttribute.
 Such annotated types _must_ be declared with the `partial` modifier to enable source generation to add the necessary serialization code to the type.
 Learn more about this in our [Getting Started](getting-started.md) guide.
 
@@ -131,17 +131,18 @@ Any types referenced by the @ShapeShift.KnownSubTypeAttribute must be annotated 
 ### `IMessagePackFormatter<T>`
 
 MessagePack-CSharp allows you to define custom formatters for types that it doesn't know how to serialize by default by implementing the `IMessagePackFormatter<T>` interface.
-In ShapeShift, that use case is addressed by deriving a class from the @ShapeShift.MessagePackConverter`1 class.
+In ShapeShift, that use case is addressed by deriving a class from the @ShapeShift.Converters.Converter`1 class.
 These two APIs are very similar, but the method signatures are slightly different, as well as the patterns that provide security mitigations.
 
 ```diff
 -public class MyTypeFormatter : IMessagePackFormatter<MyType>
-+public class MyTypeFormatter : MessagePackConverter<MyType>
++public class MyTypeFormatter : Converter<MyType>
  {
 -    public MyType Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
-+    public override MyType Read(ref MessagePackReader reader, SerializationContext context)
++    public override MyType Read(ref Reader reader, SerializationContext context)
      {
-         if (reader.TryReadNil())
+-        if (reader.TryReadNil())
++        if (reader.TryReadNull())
          {
              return null;
          }
@@ -151,7 +152,8 @@ These two APIs are very similar, but the method signatures are slightly differen
 +        context.DepthStep();
 -        try
 -        {
-             int count = reader.ReadArrayHeader();
+-            int count = reader.ReadArrayHeader();
++            int count = reader.ReadStartVector();
              for (int i = 0; i < count; i++)
              {
                  switch (i)
@@ -176,15 +178,16 @@ These two APIs are very similar, but the method signatures are slightly differen
      }
 
 -    public void Serialize(ref MessagePackWriter writer, MyType value, MessagePackSerializerOptions options)
-+    public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
++    public override void Write(ref Writer writer, in MyType value, SerializationContext context)
      {
          if (value is null)
          {
-             writer.WriteNil();
+-            writer.WriteNil();
++            writer.WriteNull();
              return;
          }
 
-         writer.WriteArrayHeader(1);
+         writer.WriteStartVector(1);
 -        options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, value.Name, options);
 +        context.GetConverter<string>().Write(ref writer, value.Name, context);
      }
@@ -194,11 +197,11 @@ These two APIs are very similar, but the method signatures are slightly differen
 ### `MessagePackFormatterAttribute`
 
 A custom type may be annotated with the `MessagePackFormatterAttribute` to specify a custom formatter for that type.
-In ShapeShift, this attribute is replaced with the @ShapeShift.MessagePackConverterAttribute in a straightforward replacement.
+In ShapeShift, this attribute is replaced with the @ShapeShift.ConverterAttribute in a straightforward replacement.
 
 ```diff
 -[MessagePackFormatter(typeof(MyTypeFormatter))]
-+[MessagePackConverter(typeof(MyTypeFormatter))]
++[Converter(typeof(MyTypeFormatter))]
  public class MyType
  {
      public string Name { get; set; }
@@ -209,7 +212,7 @@ In ShapeShift, this attribute is replaced with the @ShapeShift.MessagePackConver
 
 In MessagePack-CSharp, security mitigations are provided by the `MessagePackSecurity` class, as referenced by the `MessagePackSerializerOptions` class.
 
-In ShapeShift, security mitigations are provided by the @ShapeShift.SerializationContext struct, as referenced by @ShapeShift.MessagePackSerializer.StartingContext?displayProperty=nameWithType.
+In ShapeShift, security mitigations are provided by the @ShapeShift.Converters.SerializationContext struct, as referenced by @ShapeShift.SerializerBase.StartingContext?displayProperty=nameWithType.
 
 ### Incompatibilities
 
@@ -227,9 +230,11 @@ To help with migration, the following table lists some of the most common APIs t
 
 | MessagePack-CSharp                             | ShapeShift                                                                                   |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `ExtensionResult`                              | @ShapeShift.Extension                                                                        |
-| `MessagePackReader.ReadExtensionFormat`        | @ShapeShift.MessagePackReader.ReadExtension?displayProperty=nameWithType                     |
-| `MessagePackReader.ReadExtensionFormatHeader`  | @ShapeShift.MessagePackReader.ReadExtensionHeader?displayProperty=nameWithType               |
-| `MessagePackWriter.WriteExtensionFormat`       | @ShapeShift.MessagePackWriter.Write(ShapeShift.Extension)?displayProperty=nameWithType       |
-| `MessagePackWriter.WriteExtensionFormatHeader` | @ShapeShift.MessagePackWriter.Write(ShapeShift.ExtensionHeader)?displayProperty=nameWithType |
+| `ExtensionResult`                              | @ShapeShift.MessagePack.Extension                                                            |
+| `MessagePackReader.TryReadNil`                 | @ShapeShift.Converters.Reader.TryReadNull?displayProperty=nameWithType        |
+| `MessagePackReader.ReadExtensionFormat`        | @ShapeShift.MessagePack.MsgPackDeformatter.ReadExtension(ShapeShift.Converters.Reader@)?displayProperty=nameWithType        |
+| `MessagePackReader.ReadExtensionFormatHeader`  | @ShapeShift.MessagePack.MsgPackDeformatter.ReadExtensionHeader(ShapeShift.Converters.Reader@)?displayProperty=nameWithType  |
+| `MessagePackWriter.WriteNil`                   | @ShapeShift.Converters.Writer.WriteNull?displayProperty=nameWithType       |
+| `MessagePackWriter.WriteExtensionFormat`       | @ShapeShift.MessagePack.MsgPackFormatter.Write(ShapeShift.Converters.Writer@,ShapeShift.MessagePack.Extension)?displayProperty=nameWithType       |
+| `MessagePackWriter.WriteExtensionFormatHeader` | @ShapeShift.MessagePack.MsgPackFormatter.Write(ShapeShift.Converters.Writer@,ShapeShift.MessagePack.ExtensionHeader)?displayProperty=nameWithType |
 | `IMessagePackSerializationCallbackReceiver`    | @ShapeShift.ISerializationCallbacks                                                          |

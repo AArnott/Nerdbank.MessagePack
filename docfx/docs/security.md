@@ -13,7 +13,7 @@ This stack space is limited and if exceeded, the process will crash.
 It can take less than 500 bytes of msgpack to crash a deserializing application that does not guard against such stack overflows.
 
 ShapeShift protects against such attacks by artificially limiting the level of nesting that is allowed before a deserializer will throw an exception that can be caught and processed by an application rather than crash it.
-This limit is set by @ShapeShift.SerializationContext.MaxDepth, which by default is set to a conservative default value that should prevent stack overflows.
+This limit is set by @ShapeShift.Converters.SerializationContext.MaxDepth, which by default is set to a conservative default value that should prevent stack overflows.
 When the data to be deserialized has a legitimate need for deeper nesting than the default limit allows, this limit may be adjusted, like this:
 
 [!code-csharp[](../../samples/Security.cs#SetMaxDepth)]

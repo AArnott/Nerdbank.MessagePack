@@ -62,7 +62,7 @@ Reference cycles in the object graph are not supported.
 It can sometimes be useful to understand what msgpack is actually being serialized.
 Msgpack being a binary format makes looking at the serialized buffer less than helpful for most folks.
 
-You may use the @"ShapeShift.MessagePackSerializer.ConvertToJson\*" method to convert most msgpack buffers to JSON for human inspection.
+You may use the @"ShapeShift.JsonExporter.ConvertToJson*" method to convert most msgpack buffers to JSON for human inspection.
 
 It is important to note that not all msgpack is expressible as JSON.
 In particular the following limitations apply:

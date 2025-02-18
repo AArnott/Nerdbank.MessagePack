@@ -373,7 +373,7 @@ namespace AsyncConverters
 
 namespace PerformanceConverters
 {
-    #region StringUser
+    #region PreformattedStringUser
     [Converter(typeof(MyCustomTypeConverter))]
     public class MyCustomType
     {

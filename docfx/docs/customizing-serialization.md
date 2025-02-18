@@ -25,9 +25,9 @@ The serialized name for a property may be changed from its declared C# name by a
 
 [!code-csharp[](../../samples/CustomizingSerialization.cs#ChangingPropertyNames)]
 
-Alternatively you can apply a consistent transformation policy for _all_ property names by setting the @ShapeShift.MessagePackSerializer.PropertyNamingPolicy?displayProperty=nameWithType property.
+Alternatively you can apply a consistent transformation policy for _all_ property names by setting the @ShapeShift.SerializerBase.PropertyNamingPolicy?displayProperty=nameWithType property.
 
-For example, you can apply a camelCase transformation with @ShapeShift.MessagePackNamingPolicy.CamelCase like this:
+For example, you can apply a camelCase transformation with @ShapeShift.NamingPolicy.CamelCase like this:
 
 [!code-csharp[](../../samples/CustomizingSerialization.cs#ApplyNamePolicy)]
 
@@ -35,9 +35,9 @@ At which point all serialization/deserialization done with that instance will us
 
 A property name set explicitly with @PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType will override the naming policy.
 
-You can use any of the naming policies provided with the @ShapeShift.MessagePackNamingPolicy class, or you can provide your own implementation by deriving from the class yourself.
+You can use any of the naming policies provided with the @ShapeShift.NamingPolicy class, or you can provide your own implementation by deriving from the class yourself.
 
-When using a deserializing constructor, the parameter names on the constructor should match the C# property name -- _not_ the serialized name specified by @PolyType.PropertyShapeAttribute.Name or some @ShapeShift.MessagePackNamingPolicy.
+When using a deserializing constructor, the parameter names on the constructor should match the C# property name -- _not_ the serialized name specified by @PolyType.PropertyShapeAttribute.Name or some @ShapeShift.NamingPolicy.
 
 ## Deserializing constructors
 
@@ -69,7 +69,7 @@ To identify the intended constructor, apply the @PolyType.ConstructorShapeAttrib
 
 ## Callbacks
 
-A type may implement @ShapeShift.IMessagePackSerializationCallbacks in order to be notified of when it is about to be serialized or has just been deserialized.
+A type may implement @ShapeShift.ISerializationCallbacks in order to be notified of when it is about to be serialized or has just been deserialized.
 
 ## Serialize objects with indexes for keys
 
@@ -127,7 +127,7 @@ When all values on an object are set to non-default values and there are no gaps
 When some properties of the object would ideally be skipped because the values are their defaults and/or there are gaps in assigned indexes, a map may be more compact.
 A map has its own overhead because indexes are not implicit.
 
-When @ShapeShift.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is set to @ShapeShift.SerializeDefaultValuesPolicy.Always?displayProperty=nameWithType, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
+When @ShapeShift.SerializerBase.SerializeDefaultValues?displayProperty=nameWithType is set to @ShapeShift.SerializeDefaultValuesPolicy.Always?displayProperty=nameWithType, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
 But when this property is set to @ShapeShift.SerializeDefaultValuesPolicy.Never, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
 
 In the case above, the array format would have been chosen because there are two non-default values and no gaps.
@@ -138,14 +138,14 @@ Let's now consider another case:
 Note the large gap between assigned indexes 0 and 5 in this class.
 This could be justified by the removal of properties with indexes 1-4 and a desire to retain compatibility with previous versions of the serialized schema.
 
-Serializing this object with @ShapeShift.MessagePackSerializer.SerializeDefaultValues set to @ShapeShift.SerializeDefaultValuesPolicy.Always, we'd get a 6-element array.
+Serializing this object with @ShapeShift.SerializerBase.SerializeDefaultValues set to @ShapeShift.SerializeDefaultValuesPolicy.Always, we'd get a 6-element array.
 If both properties were set, the serialized form might look like this:
 
 ```json
 ["value1", null, null, null, null, "value2"]
 ```
 
-For the rest of this section, let's assume @ShapeShift.MessagePackSerializer.SerializeDefaultValues is set to @ShapeShift.SerializeDefaultValuesPolicy.Never.
+For the rest of this section, let's assume @ShapeShift.SerializerBase.SerializeDefaultValues is set to @ShapeShift.SerializeDefaultValuesPolicy.Never.
 This immediately changes the binary representation of the serialized object above to just this:
 
 ```json
@@ -187,7 +187,7 @@ The msgpack binary format does not specify how multi-dimensional arrays are to b
 As a result, this library has chosen a default format for them.
 For interoperability with other libraries you may want to change this format to another option.
 
-Use the @ShapeShift.MessagePackSerializer.MultiDimensionalArrayFormat?displayProperty=nameWithType property to change the format.
+Use the @ShapeShift.SerializerBase.MultiDimensionalArrayFormat?displayProperty=nameWithType property to change the format.
 
 ## Resolving extension type code conflicts
 
@@ -202,15 +202,15 @@ If these conflict with extensions that your application defines or that other li
 ## Understanding the schema
 
 It can be useful to periodically audit your data type graph to ensure that it is serializing what you expect.
-One way to do this is serialize an actual object graph and convert the msgpack to JSON using the @ShapeShift.MessagePackSerializer.ConvertToJson*?displayProperty=nameWithType method.
+One way to do this is serialize an actual object graph and convert the msgpack to JSON using the @ShapeShift.JsonExporter.ConvertToJson*?displayProperty=nameWithType method.
 This will show you the serialized form of your object graph and help you understand how it is being serialized.
 But this approach will only show you data that actually got serialized.
-Optional values left to their default values may *not* be serialized, giving you an incomplete idea of what *might\* be serialized.
+Optional values left to their default values may *not* be serialized, giving you an incomplete idea of what *might* be serialized.
 
-To see a full description of what will or might be serialized, use the @ShapeShift.MessagePackSerializer.GetJsonSchema\*?displayProperty=nameWithType method.
+To see a full description of what will or might be serialized, use the @ShapeShift.SerializerBase.GetJsonSchema*?displayProperty=nameWithType method.
 Obtaining a JSON schema can be useful for aiding in publishing a formal spec for your data type for interoperability with other systems that may need to redefine the types in their native syntax.
 
-Consider that custom converters registered with an @ShapeShift.MessagePackSerializer instance and properties set on it can affect the schema.
-Be sure to set these properties before calling @ShapeShift.MessagePackSerializer.GetJsonSchema\*.
+Consider that custom converters registered with an @ShapeShift.SerializerBase instance and properties set on it can affect the schema.
+Be sure to set these properties before calling @ShapeShift.SerializerBase.GetJsonSchema*.
 
 The schema generator has no insight into custom converters, so a warning will be included in the schema at locations where custom converters would be used, but the schema will attempt to represent what would typically be serialized without a custom converter.
