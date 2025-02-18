@@ -42,50 +42,50 @@ string GetMinValue(Type intType) => $"0x{intType.GetField(nameof(int.MinValue)).
 	{
 		// * FixInt
 		// ** non-boundary
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w, 3))),
+		(3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, 3))),
 <# foreach (Type type in allTypes) { #>
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w, 3))),
+		(3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w.Buffer, 3))),
 <# } #>
 
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w, -3))),
+		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.WriteSByte(ref w.Buffer, -3))),
 <# foreach (Type type in signedTypes) { #>
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w, -3))),
+		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w.Buffer, -3))),
 <# } #>
 
 		// ** Boundary conditions
 		/* MaxFixInt */
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w, MessagePackCode.MaxFixInt))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, MessagePackCode.MaxFixInt))),
 <# foreach (Type type in allTypes) { #>
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w, checked((<#=type.Name#>)MessagePackCode.MaxFixInt)))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w.Buffer, checked((<#=type.Name#>)MessagePackCode.MaxFixInt)))),
 <# } #>
 		/* MinFixInt */
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w, MessagePackCode.MinFixInt))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteByte(ref w.Buffer, MessagePackCode.MinFixInt))),
 <# foreach (Type type in allTypes) { #>
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w, checked((<#=type.Name#>)MessagePackCode.MinFixInt)))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w.Buffer, checked((<#=type.Name#>)MessagePackCode.MinFixInt)))),
 <# } #>
 		/* MinNegativeFixInt */
 <# foreach (Type type in signedTypes) { #>
-		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w, MinNegativeFixInt))),
+		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w.Buffer, MinNegativeFixInt))),
 <# } #>
 		/* MaxNegativeFixInt */
 <# foreach (Type type in signedTypes) { #>
-		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w, MaxNegativeFixInt))),
+		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=type.Name#>(ref w.Buffer, MaxNegativeFixInt))),
 <# } #>
 
-		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w, MessagePackCode.MaxFixInt))),
-		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w, MessagePackCode.MinFixInt))),
-		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w, MaxNegativeFixInt))),
-		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w, MinNegativeFixInt))),
+		(MessagePackCode.MaxFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MessagePackCode.MaxFixInt))),
+		(MessagePackCode.MinFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MessagePackCode.MinFixInt))),
+		(MaxNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MaxNegativeFixInt))),
+		(MinNegativeFixInt, Encode((ref Writer w) => MsgPackFormatter.Default.WriteInt32(ref w.Buffer, MinNegativeFixInt))),
 
 		// * Encoded as each type of at least 8 bits
 		// ** Small positive value
 <# foreach (Type t1 in allTypes) { #>
-		(3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=t1.Name#>(ref w, 3))),
+		(3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=t1.Name#>(ref w.Buffer, 3))),
 <# } #>
 
 		// ** Small negative value
 <# foreach (Type t1 in signedTypes) { #>
-		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=t1.Name#>(ref w, -3))),
+		(-3, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=t1.Name#>(ref w.Buffer, -3))),
 <# } #>
 
 		// ** Max values
@@ -94,7 +94,7 @@ string GetMinValue(Type intType) => $"0x{intType.GetField(nameof(int.MinValue)).
 	var maxValue = GetMaxValueAsInt(typeForMaxValue);
 	foreach (var encodedType in allTypes) {
 		if (GetMaxValueAsInt(encodedType) >= maxValue) { #>
-		(0x<#=maxValue.ToString("x")#>, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=encodedType.Name#>(ref w, <#=maxValue#>))),
+		(0x<#=maxValue.ToString("x")#>, Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=encodedType.Name#>(ref w.Buffer, <#=maxValue#>))),
 <#	  }
 	}
 } #>
@@ -103,7 +103,7 @@ string GetMinValue(Type intType) => $"0x{intType.GetField(nameof(int.MinValue)).
 	var minValue = GetMinValueAsInt(typeForMinValue);
 	foreach (var encodedType in signedTypes) {
 		if (GetMinValueAsInt(encodedType) <= minValue) { #>
-		(unchecked((<#=typeForMinValue.Name#>)0x<#=minValue.ToString("x")#>), Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=encodedType.Name#>(ref w, <#=minValue#>))),
+		(unchecked((<#=typeForMinValue.Name#>)0x<#=minValue.ToString("x")#>), Encode((ref Writer w) => MsgPackFormatter.Default.Write<#=encodedType.Name#>(ref w.Buffer, <#=minValue#>))),
 <#	  }
 	}
 } #>

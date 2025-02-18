@@ -10,19 +10,11 @@ namespace ShapeShift.MessagePack;
 /// <summary>
 /// A messagepack-specific implementation of <see cref="StandardVisitor"/>.
 /// </summary>
-/// <param name="owner">The owning converter cache.</param>
-/// <param name="context">The context given by the <see cref="MultiProviderTypeCache"/> factory.</param>
-/// <param name="formatter">The formatter.</param>
-/// <param name="deformatter">The deformatter.</param>
-internal class MessagePackVisitor(ConverterCache owner, TypeGenerationContext context, MsgPackFormatter formatter, MsgPackDeformatter deformatter)
+/// <param name="owner"><inheritdoc cref="StandardVisitor.StandardVisitor(ShapeShift.ConverterCache, TypeGenerationContext)" path="/param[@name='owner']"/></param>
+/// <param name="context"><inheritdoc cref="StandardVisitor.StandardVisitor(ShapeShift.ConverterCache, TypeGenerationContext)" path="/param[@name='context']"/></param>
+internal class MessagePackVisitor(ConverterCache owner, TypeGenerationContext context)
 	: StandardVisitor(owner, context)
 {
-	/// <inheritdoc/>
-	internal override Formatter Formatter => formatter;
-
-	/// <inheritdoc/>
-	internal override Deformatter Deformatter => deformatter;
-
 	/// <inheritdoc/>
 	protected override bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
 		=> MsgPackPrimitiveConverterLookup.TryGetPrimitiveConverter(out converter) || base.TryGetPrimitiveConverter(out converter);

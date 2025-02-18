@@ -15,6 +15,11 @@ namespace ShapeShift;
 /// </summary>
 /// <remarks>
 /// <para>
+/// This and derived classes may declare properties that customize how serialization is performed.
+/// These properties must use <see langword="init"/> accessors to prevent modification after construction,
+/// since there is no means to replace converters once they are created.
+/// </para>
+/// <para>
 /// Derived types may choose to expose <see cref="ConverterCache.PreserveReferences"/> as a public property
 /// if the formatters support it.
 /// </para>
@@ -116,12 +121,12 @@ public abstract partial record SerializerBase
 	/// <summary>
 	/// Gets the formatter associated with this particular serializer.
 	/// </summary>
-	protected internal abstract Formatter Formatter { get; }
+	protected internal Formatter Formatter => this.ConverterCache.Formatter;
 
 	/// <summary>
 	/// Gets the deformatter associated with this particular serializer.
 	/// </summary>
-	protected internal abstract Deformatter Deformatter { get; }
+	protected internal Deformatter Deformatter => this.ConverterCache.Deformatter;
 
 	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(Converter{T})"/>
 	public void RegisterConverter<T>(Converter<T> converter) => this.ConverterCache.RegisterConverter(converter);

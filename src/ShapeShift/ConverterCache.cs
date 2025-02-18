@@ -208,6 +208,16 @@ internal abstract record ConverterCache
 	}
 
 	/// <summary>
+	/// Gets the formatter.
+	/// </summary>
+	internal abstract Formatter Formatter { get; }
+
+	/// <summary>
+	/// Gets the deformatter.
+	/// </summary>
+	internal abstract Deformatter Deformatter { get; }
+
+	/// <summary>
 	/// Gets all the converters this instance knows about so far.
 	/// </summary>
 	private MultiProviderTypeCache CachedConverters

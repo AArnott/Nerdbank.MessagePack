@@ -26,14 +26,14 @@ internal record MsgPackConverterCache : ConverterCache
 	/// <summary>
 	/// Gets the formatter.
 	/// </summary>
-	internal MsgPackFormatter Formatter { get; }
+	internal override Formatter Formatter { get; }
 
 	/// <summary>
 	/// Gets the deformatter.
 	/// </summary>
-	internal MsgPackDeformatter Deformatter { get; }
+	internal override Deformatter Deformatter { get; }
 
 	/// <inheritdoc/>
 	protected override StandardVisitor CreateStandardVisitor(TypeGenerationContext context)
-		=> new MessagePackVisitor(this, context, this.Formatter, this.Deformatter);
+		=> new MessagePackVisitor(this, context);
 }

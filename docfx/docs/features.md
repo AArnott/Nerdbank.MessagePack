@@ -1,6 +1,6 @@
 # Features
 
-- Serializes in the compact and fast [MessagePack format](https://msgpack.org/).
+- Serializes in any of an open set of formats, including the compact and fast [MessagePack format](https://msgpack.org/), with a common set of attributes and properties that are format-independent.
 - [Performance](performance.md) is on par with the highly tuned and popular MessagePack-CSharp library.
 - Automatically serialize any type annotated with the [PolyType `[GenerateShape]`](xref:PolyType.GenerateShapeAttribute) attribute
   or non-annotated types by adding [a 'witness' type](type-shapes.md#witness-classes) with a similar annotation.

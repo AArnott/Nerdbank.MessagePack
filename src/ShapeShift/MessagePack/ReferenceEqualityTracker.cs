@@ -66,7 +66,7 @@ internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTra
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)writer.Formatter.GetEncodedLength(referenceId);
 			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
-			formatter.Write(ref writer, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
+			formatter.Write(ref writer.Buffer, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			writer.Write(referenceId);
 		}
 		else
@@ -102,7 +102,7 @@ internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTra
 			uint packLength = (uint)writer.Formatter.GetEncodedLength(referenceId);
 			Writer syncWriter = writer.CreateWriter();
 			MsgPackFormatter formatter = (MsgPackFormatter)writer.Formatter;
-			formatter.Write(ref syncWriter, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
+			formatter.Write(ref syncWriter.Buffer, new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
 			syncWriter.Write(referenceId);
 			writer.ReturnWriter(ref syncWriter);
 			await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);

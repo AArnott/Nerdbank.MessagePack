@@ -16,7 +16,7 @@ namespace ShapeShift;
 /// <summary>
 /// A <see cref="TypeShapeVisitor"/> that produces <see cref="Converter{T}"/> instances for each type shape it visits.
 /// </summary>
-internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
+internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 {
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private readonly ConverterCache owner;
@@ -43,12 +43,12 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <summary>
 	/// Gets the formatter used to encode primitive values.
 	/// </summary>
-	internal abstract Formatter Formatter { get; }
+	internal Formatter Formatter => this.owner.Formatter;
 
 	/// <summary>
 	/// Gets the deformatter used to decode primitive values.
 	/// </summary>
-	internal abstract Deformatter Deformatter { get; }
+	internal Deformatter Deformatter => this.owner.Deformatter;
 
 	/// <summary>
 	/// Gets or sets the visitor that will be used to generate converters for new types that are encountered.
@@ -619,7 +619,11 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="constructor">The factory for the array for deserializing.</param>
 	/// <param name="converter">Receives the converter, if available.</param>
 	/// <returns><see langword="true" /> if an optimized converter is available; <see langword="false" /> otherwise.</returns>
-	protected abstract bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter);
+	protected virtual bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter)
+	{
+		converter = null;
+		return false;
+	}
 
 	/// <summary>
 	/// Gets a converter that is hardware-accelerated for arrays of primitive values, if available.

@@ -10,17 +10,6 @@ namespace ShapeShift;
 /// <summary>
 /// Serializes .NET objects using the MessagePack format.
 /// </summary>
-/// <devremarks>
-/// <para>
-/// This class may declare properties that customize how msgpack serialization is performed.
-/// These properties must use <see langword="init"/> accessors to prevent modification after construction,
-/// since there is no means to replace converters once they are created.
-/// </para>
-/// <para>
-/// If the ability to add custom converters is exposed publicly, such a method should throw once generated converters have started being generated
-/// because generated ones have already locked-in their dependencies.
-/// </para>
-/// </devremarks>
 public record MessagePackSerializer : SerializerBase
 {
 	/// <summary>
@@ -65,12 +54,6 @@ public record MessagePackSerializer : SerializerBase
 
 	/// <inheritdoc />
 	internal override ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; } = new(() => new ReferenceEqualityTracker());
-
-	/// <inheritdoc />
-	protected internal override Formatter Formatter => this.ConverterCache.Formatter;
-
-	/// <inheritdoc />
-	protected internal override Deformatter Deformatter => this.ConverterCache.Deformatter;
 
 	/// <inheritdoc />
 	protected internal override void RenderAsJson(ref Reader reader, TextWriter writer)

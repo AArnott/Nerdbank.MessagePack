@@ -104,7 +104,7 @@ public class MessagePackWriterTests
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, Formatter);
 		byte[] strBytes = Encoding.UTF8.GetBytes("hello");
-		Formatter.WriteStringHeader(ref writer, strBytes.Length);
+		Formatter.WriteStringHeader(ref writer.Buffer, strBytes.Length);
 		writer.Buffer.Write(strBytes);
 		writer.Flush();
 
@@ -130,7 +130,7 @@ public class MessagePackWriterTests
 	{
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, Formatter);
-		Formatter.WriteBinHeader(ref writer, 5);
+		Formatter.WriteBinHeader(ref writer.Buffer, 5);
 		writer.Buffer.Write([1, 2, 3, 4, 5]);
 		writer.Flush();
 
@@ -145,7 +145,7 @@ public class MessagePackWriterTests
 		var writer = new Writer(sequence, Formatter);
 
 		var header = new ExtensionHeader(-1, 10);
-		Formatter.Write(ref writer, header);
+		Formatter.Write(ref writer.Buffer, header);
 		writer.Buffer.Write(new byte[10]);
 		writer.Flush();
 

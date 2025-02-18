@@ -65,68 +65,68 @@ public ref struct Writer
 	/// </summary>
 	public void Flush() => this.Buffer.Commit();
 
-	/// <inheritdoc cref="Formatter.WriteStartVector(ref Writer, int)"/>
-	public void WriteStartVector(int length) => this.Formatter.WriteStartVector(ref this, length);
+	/// <inheritdoc cref="Formatter.WriteStartVector(ref BufferWriter, int)"/>
+	public void WriteStartVector(int length) => this.Formatter.WriteStartVector(ref this.Buffer, length);
 
-	/// <inheritdoc cref="Formatter.WriteVectorElementSeparator(ref Writer)"/>
-	public void WriteVectorElementSeparator() => this.Formatter.WriteVectorElementSeparator(ref this);
+	/// <inheritdoc cref="Formatter.WriteVectorElementSeparator(ref BufferWriter)"/>
+	public void WriteVectorElementSeparator() => this.Formatter.WriteVectorElementSeparator(ref this.Buffer);
 
-	/// <inheritdoc cref="Formatter.WriteEndVector(ref Writer)"/>
-	public void WriteEndVector() => this.Formatter.WriteEndVector(ref this);
+	/// <inheritdoc cref="Formatter.WriteEndVector(ref BufferWriter)"/>
+	public void WriteEndVector() => this.Formatter.WriteEndVector(ref this.Buffer);
 
-	/// <inheritdoc cref="Formatter.WriteStartMap(ref Writer, int)"/>
-	public void WriteStartMap(int count) => this.Formatter.WriteStartMap(ref this, count);
+	/// <inheritdoc cref="Formatter.WriteStartMap(ref BufferWriter, int)"/>
+	public void WriteStartMap(int count) => this.Formatter.WriteStartMap(ref this.Buffer, count);
 
-	/// <inheritdoc cref="Formatter.WriteMapKeyValueSeparator(ref Writer)"/>
-	public void WriteMapKeyValueSeparator() => this.Formatter.WriteMapKeyValueSeparator(ref this);
+	/// <inheritdoc cref="Formatter.WriteMapKeyValueSeparator(ref BufferWriter)"/>
+	public void WriteMapKeyValueSeparator() => this.Formatter.WriteMapKeyValueSeparator(ref this.Buffer);
 
-	/// <inheritdoc cref="Formatter.WriteEndMap(ref Writer)"/>
-	public void WriteEndMap() => this.Formatter.WriteEndMap(ref this);
+	/// <inheritdoc cref="Formatter.WriteEndMap(ref BufferWriter)"/>
+	public void WriteEndMap() => this.Formatter.WriteEndMap(ref this.Buffer);
 
-	/// <inheritdoc cref="Formatter.WriteNull(ref Writer)"/>
-	public void WriteNull() => this.Formatter.WriteNull(ref this);
+	/// <inheritdoc cref="Formatter.WriteNull(ref BufferWriter)"/>
+	public void WriteNull() => this.Formatter.WriteNull(ref this.Buffer);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, bool)"/>
-	public void Write(bool value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, bool)"/>
+	public void Write(bool value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, char)"/>
-	public void Write(char value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, char)"/>
+	public void Write(char value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, byte)"/>
-	public void Write(byte value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, byte)"/>
+	public void Write(byte value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, sbyte)"/>
-	public void Write(sbyte value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, sbyte)"/>
+	public void Write(sbyte value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, ushort)"/>
-	public void Write(ushort value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, ushort)"/>
+	public void Write(ushort value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, short)"/>
-	public void Write(short value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, short)"/>
+	public void Write(short value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, uint)"/>
-	public void Write(uint value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, uint)"/>
+	public void Write(uint value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, int)"/>
-	public void Write(int value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, int)"/>
+	public void Write(int value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, ulong)"/>
-	public void Write(ulong value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, ulong)"/>
+	public void Write(ulong value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, long)"/>
-	public void Write(long value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, long)"/>
+	public void Write(long value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, float)"/>
-	public void Write(float value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, float)"/>
+	public void Write(float value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, double)"/>
-	public void Write(double value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, double)"/>
+	public void Write(double value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, string)"/>
-	public void Write(string? value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, string)"/>
+	public void Write(string? value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, ReadOnlySpan{char})"/>
-	public void Write(scoped ReadOnlySpan<char> value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, ReadOnlySpan{char})"/>
+	public void Write(scoped ReadOnlySpan<char> value) => this.Formatter.Write(ref this.Buffer, value);
 
 	/// <summary>
 	/// Writes a pre-encoded msgpack string.
@@ -150,11 +150,11 @@ public ref struct Writer
 		}
 	}
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, ReadOnlySpan{byte})"/>
-	public void Write(scoped ReadOnlySpan<byte> value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, ReadOnlySpan{byte})"/>
+	public void Write(scoped ReadOnlySpan<byte> value) => this.Formatter.Write(ref this.Buffer, value);
 
-	/// <inheritdoc cref="Formatter.Write(ref Writer, in ReadOnlySequence{byte})"/>
-	public void Write(in ReadOnlySequence<byte> value) => this.Formatter.Write(ref this, value);
+	/// <inheritdoc cref="Formatter.Write(ref BufferWriter, in ReadOnlySequence{byte})"/>
+	public void Write(in ReadOnlySequence<byte> value) => this.Formatter.Write(ref this.Buffer, value);
 
 	/// <summary>
 	/// Writes a header introducing a binary buffer, if the formatter supports raw binary.
@@ -171,10 +171,10 @@ public ref struct Writer
 	/// <see cref="Write(ReadOnlySpan{byte})"/> or <see cref="Write(in ReadOnlySequence{byte})"/> instead.
 	/// </para>
 	/// </remarks>
-	public bool TryWriteStartBinary(int length) => this.Formatter.TryWriteStartBinary(ref this, length);
+	public bool TryWriteStartBinary(int length) => this.Formatter.TryWriteStartBinary(ref this.Buffer, length);
 
-	/// <inheritdoc cref="Formatter.WriteEncodedString(ref Writer, ReadOnlySpan{byte})"/>
-	public void WriteEncodedString(scoped ReadOnlySpan<byte> value) => this.Formatter.WriteEncodedString(ref this, value);
+	/// <inheritdoc cref="Formatter.WriteEncodedString(ref BufferWriter, ReadOnlySpan{byte})"/>
+	public void WriteEncodedString(scoped ReadOnlySpan<byte> value) => this.Formatter.WriteEncodedString(ref this.Buffer, value);
 
 	/// <summary>
 	/// Flushes the writer and returns the written data as a byte array.

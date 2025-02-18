@@ -31,7 +31,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 	public override void Write(ref Writer writer, in DateTimeOffset value, SerializationContext context)
 	{
 		writer.WriteStartVector(2);
-		((MsgPackFormatter)writer.Formatter).Write(ref writer, new DateTime(value.Ticks, DateTimeKind.Utc));
+		((MsgPackFormatter)writer.Formatter).Write(ref writer.Buffer, new DateTime(value.Ticks, DateTimeKind.Utc));
 		writer.Write((short)value.Offset.TotalMinutes);
 	}
 

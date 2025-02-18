@@ -92,7 +92,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 		writer.Write(true);           // Boolean!
 
 		// 2. extension
-		Formatter.Write(ref writer, new Extension(35, new byte[] { 1, 2, 3 }));
+		Formatter.Write(ref writer.Buffer, new Extension(35, new byte[] { 1, 2, 3 }));
 
 		// 3. binary
 		writer.Write([6, 8]);
@@ -131,7 +131,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, MsgPackFormatter.Default);
-		Formatter.Write(ref writer, originalExtension);
+		Formatter.Write(ref writer.Buffer, originalExtension);
 		writer.Flush();
 
 		FragmentedPipeReader pipeReader = new(seq);

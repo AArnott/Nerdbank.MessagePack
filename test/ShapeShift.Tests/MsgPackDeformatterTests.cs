@@ -136,7 +136,7 @@ public partial class MsgPackDeformatterTests
 	{
 		var sequence = new Sequence<byte>();
 		var writer = new Writer(sequence, MsgPackFormatter.Default);
-		MsgPackFormatter.Default.Write(ref writer, new ExtensionHeader(3, 1));
+		MsgPackFormatter.Default.Write(ref writer.Buffer, new ExtensionHeader(3, 1));
 		writer.Buffer.Write(new byte[1]);
 		writer.Flush();
 
@@ -363,8 +363,8 @@ public partial class MsgPackDeformatterTests
 		AssertIncomplete((ref Writer writer) => writer.WriteEncodedString(Encoding.UTF8.GetBytes("hi")), (ref Reader reader) => reader.ReadBytes());
 		AssertIncomplete((ref Writer writer) => writer.Write('c'), (ref Reader reader) => reader.ReadChar());
 		AssertIncomplete((ref Writer writer) => writer.Write(double.MaxValue), (ref Reader reader) => reader.ReadDouble());
-		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer, new Extension(5, new byte[3])), (ref Reader reader) => Deformatter.ReadExtension(ref reader));
-		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer, new ExtensionHeader(5, 3)), (ref Reader reader) => Deformatter.ReadExtensionHeader(ref reader));
+		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer.Buffer, new Extension(5, new byte[3])), (ref Reader reader) => Deformatter.ReadExtension(ref reader));
+		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer.Buffer, new ExtensionHeader(5, 3)), (ref Reader reader) => Deformatter.ReadExtensionHeader(ref reader));
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt16());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt32());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt64());

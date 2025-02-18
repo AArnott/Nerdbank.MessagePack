@@ -28,7 +28,7 @@ internal struct FormattedSubTypeAlias : IEquatable<FormattedSubTypeAlias>
 		{
 			case SubTypeAlias.AliasType.Integer:
 				Writer writer = new(new BufferWriter(SequencePool<byte>.Shared, new byte[5]), formatter);
-				formatter.Write(ref writer, alias.IntAlias);
+				formatter.Write(ref writer.Buffer, alias.IntAlias);
 				this.formattedAlias = writer.FlushAndGetArray();
 				break;
 			case SubTypeAlias.AliasType.String:
