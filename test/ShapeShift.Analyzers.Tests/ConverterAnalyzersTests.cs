@@ -386,7 +386,7 @@ public class ConverterAnalyzersTests
 			{
 				public override DateTime Read(ref Reader reader, SerializationContext context) => ((MsgPackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
 
-				public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => ((MsgPackFormatter)writer.Formatter).Write(ref writer, value);
+				public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => ((MsgPackFormatter)writer.Formatter).Write(ref writer.Buffer, value);
 
 				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
 			}
