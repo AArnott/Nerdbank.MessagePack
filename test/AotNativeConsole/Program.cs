@@ -4,7 +4,6 @@
 using System.IO.Pipelines;
 using PolyType;
 using ShapeShift;
-using ShapeShift.MessagePack;
 
 Tree tree = new()
 {

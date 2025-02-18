@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NET
+
 using NetArchTest.Rules;
 
 public class ArchitectureRules(ITestOutputHelper logger)
@@ -11,13 +13,13 @@ public class ArchitectureRules(ITestOutputHelper logger)
 		IReadOnlyList<string>? failingTypeNames =
 			Types.InAssembly(typeof(MessagePackSerializer).Assembly)
 				.That()
-				.ResideInNamespace("Nerdbank.PolySerializer")
+				.ResideInNamespace("ShapeShift")
 				.And()
-				.DoNotResideInNamespace("Nerdbank.PolySerializer.MessagePack")
+				.DoNotResideInNamespace("ShapeShift.MessagePack")
 				.And()
-				.DoNotHaveCustomAttribute(typeof(MessagePackSerializer).Assembly.GetType("Nerdbank.PolySerializer.GeneralWithFormatterSpecialCasingAttribute"))
+				.DoNotHaveCustomAttribute(typeof(MessagePackSerializer).Assembly.GetType("ShapeShift.GeneralWithFormatterSpecialCasingAttribute"))
 				.ShouldNot()
-				.HaveDependencyOnAny("Nerdbank.PolySerializer.MessagePack")
+				.HaveDependencyOnAny("ShapeShift.MessagePack")
 				.GetResult()
 				.FailingTypeNames;
 
@@ -32,3 +34,5 @@ public class ArchitectureRules(ITestOutputHelper logger)
 		}
 	}
 }
+
+#endif

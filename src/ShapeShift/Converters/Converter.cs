@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
-using ShapeShift.MessagePack;
 
 namespace ShapeShift.Converters;
 

@@ -113,9 +113,9 @@ const ShapeShift.MessagePack.MessagePackCode.UInt8 = 204 -> byte
 const ShapeShift.MessagePack.ReservedMessagePackExtensionTypeCode.DateTime = -1 -> sbyte
 override sealed ShapeShift.Converters.Converter<T>.ReadObject(ref ShapeShift.Converters.Reader reader, ShapeShift.Converters.SerializationContext context) -> object?
 override sealed ShapeShift.Converters.Converter<T>.WriteObject(ref ShapeShift.Converters.Writer writer, object? value, ShapeShift.Converters.SerializationContext context) -> void
-override sealed ShapeShift.MessagePack.MessagePackSerializer.Equals(ShapeShift.SerializerBase? other) -> bool
 override sealed ShapeShift.MessagePack.MsgPackFormatter.Equals(ShapeShift.Converters.Formatter? other) -> bool
 override sealed ShapeShift.MessagePack.MsgPackStreamingDeformatter.Equals(ShapeShift.Converters.StreamingDeformatter? other) -> bool
+override sealed ShapeShift.MessagePackSerializer.Equals(ShapeShift.SerializerBase? other) -> bool
 override ShapeShift.Converters.Formatter.Equals(object? obj) -> bool
 override ShapeShift.Converters.Formatter.GetHashCode() -> int
 override ShapeShift.Converters.Formatter.ToString() -> string!
@@ -129,15 +129,6 @@ override ShapeShift.MessagePack.ExtensionHeader.GetHashCode() -> int
 override ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(object? obj) -> bool
 override ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.GetHashCode() -> int
 override ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ToString() -> string!
-override ShapeShift.MessagePack.MessagePackSerializer.<Clone>$() -> ShapeShift.SerializerBase!
-override ShapeShift.MessagePack.MessagePackSerializer.Deformatter.get -> ShapeShift.Converters.Deformatter!
-override ShapeShift.MessagePack.MessagePackSerializer.EqualityContract.get -> System.Type!
-override ShapeShift.MessagePack.MessagePackSerializer.Equals(object? obj) -> bool
-override ShapeShift.MessagePack.MessagePackSerializer.Formatter.get -> ShapeShift.Converters.Formatter!
-override ShapeShift.MessagePack.MessagePackSerializer.GetHashCode() -> int
-override ShapeShift.MessagePack.MessagePackSerializer.PrintMembers(System.Text.StringBuilder! builder) -> bool
-override ShapeShift.MessagePack.MessagePackSerializer.RenderAsJson(ref ShapeShift.Converters.Reader reader, System.IO.TextWriter! writer) -> void
-override ShapeShift.MessagePack.MessagePackSerializer.ToString() -> string!
 override ShapeShift.MessagePack.MsgPackFormatter.<Clone>$() -> ShapeShift.Converters.Formatter!
 override ShapeShift.MessagePack.MsgPackFormatter.Encoding.get -> System.Text.Encoding!
 override ShapeShift.MessagePack.MsgPackFormatter.EqualityContract.get -> System.Type!
@@ -211,6 +202,15 @@ override ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryReadStartVector(r
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryReadStringSequence(ref ShapeShift.Converters.Reader reader, out System.Buffers.ReadOnlySequence<byte> value) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out bool contiguous, out System.ReadOnlySpan<byte> value) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MsgPackStreamingDeformatter.TrySkip(ref ShapeShift.Converters.Reader reader, ref ShapeShift.Converters.SerializationContext context) -> ShapeShift.Converters.DecodeResult
+override ShapeShift.MessagePackSerializer.<Clone>$() -> ShapeShift.SerializerBase!
+override ShapeShift.MessagePackSerializer.Deformatter.get -> ShapeShift.Converters.Deformatter!
+override ShapeShift.MessagePackSerializer.EqualityContract.get -> System.Type!
+override ShapeShift.MessagePackSerializer.Equals(object? obj) -> bool
+override ShapeShift.MessagePackSerializer.Formatter.get -> ShapeShift.Converters.Formatter!
+override ShapeShift.MessagePackSerializer.GetHashCode() -> int
+override ShapeShift.MessagePackSerializer.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override ShapeShift.MessagePackSerializer.RenderAsJson(ref ShapeShift.Converters.Reader reader, System.IO.TextWriter! writer) -> void
+override ShapeShift.MessagePackSerializer.ToString() -> string!
 override ShapeShift.PreformattedString.Equals(object? obj) -> bool
 override ShapeShift.PreformattedString.GetHashCode() -> int
 override ShapeShift.SerializerBase.Equals(object? obj) -> bool
@@ -492,13 +492,6 @@ ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReferen
 ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.ObjectReference.init -> void
 ShapeShift.MessagePack.MessagePackCode
 ShapeShift.MessagePack.MessagePackPrimitives
-ShapeShift.MessagePack.MessagePackSerializer
-ShapeShift.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.get -> ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
-ShapeShift.MessagePack.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
-ShapeShift.MessagePack.MessagePackSerializer.MessagePackSerializer() -> void
-ShapeShift.MessagePack.MessagePackSerializer.MessagePackSerializer(ShapeShift.MessagePack.MessagePackSerializer! original) -> void
-ShapeShift.MessagePack.MessagePackSerializer.PreserveReferences.get -> bool
-ShapeShift.MessagePack.MessagePackSerializer.PreserveReferences.init -> void
 ShapeShift.MessagePack.MessagePackType
 ShapeShift.MessagePack.MessagePackType.Array = 7 -> ShapeShift.MessagePack.MessagePackType
 ShapeShift.MessagePack.MessagePackType.Binary = 6 -> ShapeShift.MessagePack.MessagePackType
@@ -548,6 +541,13 @@ ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryRead(ref ShapeShift.Conver
 ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryReadBinHeader(ref ShapeShift.Converters.Reader reader, out uint length) -> ShapeShift.Converters.DecodeResult
 ShapeShift.MessagePack.MsgPackStreamingDeformatter.TryReadStringHeader(ref ShapeShift.Converters.Reader reader, out uint length) -> ShapeShift.Converters.DecodeResult
 ShapeShift.MessagePack.ReservedMessagePackExtensionTypeCode
+ShapeShift.MessagePackSerializer
+ShapeShift.MessagePackSerializer.LibraryExtensionTypeCodes.get -> ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode!
+ShapeShift.MessagePackSerializer.LibraryExtensionTypeCodes.init -> void
+ShapeShift.MessagePackSerializer.MessagePackSerializer() -> void
+ShapeShift.MessagePackSerializer.MessagePackSerializer(ShapeShift.MessagePackSerializer! original) -> void
+ShapeShift.MessagePackSerializer.PreserveReferences.get -> bool
+ShapeShift.MessagePackSerializer.PreserveReferences.init -> void
 ShapeShift.NamingPolicy
 ShapeShift.NamingPolicy.NamingPolicy() -> void
 ShapeShift.PreformattedRawBytes
@@ -718,12 +718,12 @@ static ShapeShift.MessagePack.MessagePackPrimitives.TryWriteUInt16(System.Span<b
 static ShapeShift.MessagePack.MessagePackPrimitives.TryWriteUInt32(System.Span<byte> destination, uint value, out int bytesWritten) -> bool
 static ShapeShift.MessagePack.MessagePackPrimitives.TryWriteUInt64(System.Span<byte> destination, ulong value, out int bytesWritten) -> bool
 static ShapeShift.MessagePack.MessagePackPrimitives.TryWriteUInt8(System.Span<byte> destination, byte value, out int bytesWritten) -> bool
-static ShapeShift.MessagePack.MessagePackSerializer.operator !=(ShapeShift.MessagePack.MessagePackSerializer? left, ShapeShift.MessagePack.MessagePackSerializer? right) -> bool
-static ShapeShift.MessagePack.MessagePackSerializer.operator ==(ShapeShift.MessagePack.MessagePackSerializer? left, ShapeShift.MessagePack.MessagePackSerializer? right) -> bool
 static ShapeShift.MessagePack.MsgPackFormatter.operator !=(ShapeShift.MessagePack.MsgPackFormatter? left, ShapeShift.MessagePack.MsgPackFormatter? right) -> bool
 static ShapeShift.MessagePack.MsgPackFormatter.operator ==(ShapeShift.MessagePack.MsgPackFormatter? left, ShapeShift.MessagePack.MsgPackFormatter? right) -> bool
 static ShapeShift.MessagePack.MsgPackStreamingDeformatter.operator !=(ShapeShift.MessagePack.MsgPackStreamingDeformatter? left, ShapeShift.MessagePack.MsgPackStreamingDeformatter? right) -> bool
 static ShapeShift.MessagePack.MsgPackStreamingDeformatter.operator ==(ShapeShift.MessagePack.MsgPackStreamingDeformatter? left, ShapeShift.MessagePack.MsgPackStreamingDeformatter? right) -> bool
+static ShapeShift.MessagePackSerializer.operator !=(ShapeShift.MessagePackSerializer? left, ShapeShift.MessagePackSerializer? right) -> bool
+static ShapeShift.MessagePackSerializer.operator ==(ShapeShift.MessagePackSerializer? left, ShapeShift.MessagePackSerializer? right) -> bool
 static ShapeShift.NamingPolicy.CamelCase.get -> ShapeShift.NamingPolicy!
 static ShapeShift.NamingPolicy.PascalCase.get -> ShapeShift.NamingPolicy!
 static ShapeShift.PreformattedRawBytes.explicit operator ShapeShift.PreformattedRawBytes(byte[]! msgpack) -> ShapeShift.PreformattedRawBytes
@@ -759,9 +759,9 @@ virtual ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.<Clon
 virtual ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.EqualityContract.get -> System.Type!
 virtual ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Equals(ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode? other) -> bool
 virtual ShapeShift.MessagePack.LibraryReservedMessagePackExtensionTypeCode.PrintMembers(System.Text.StringBuilder! builder) -> bool
-virtual ShapeShift.MessagePack.MessagePackSerializer.Equals(ShapeShift.MessagePack.MessagePackSerializer? other) -> bool
 virtual ShapeShift.MessagePack.MsgPackFormatter.Equals(ShapeShift.MessagePack.MsgPackFormatter? other) -> bool
 virtual ShapeShift.MessagePack.MsgPackStreamingDeformatter.Equals(ShapeShift.MessagePack.MsgPackStreamingDeformatter? other) -> bool
+virtual ShapeShift.MessagePackSerializer.Equals(ShapeShift.MessagePackSerializer? other) -> bool
 virtual ShapeShift.SerializerBase.EqualityContract.get -> System.Type!
 virtual ShapeShift.SerializerBase.Equals(ShapeShift.SerializerBase? other) -> bool
 virtual ShapeShift.SerializerBase.PrintMembers(System.Text.StringBuilder! builder) -> bool

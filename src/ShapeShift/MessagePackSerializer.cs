@@ -3,7 +3,9 @@
 
 using Microsoft;
 
-namespace ShapeShift.MessagePack;
+using ShapeShift.MessagePack;
+
+namespace ShapeShift;
 
 /// <summary>
 /// Serializes .NET objects using the MessagePack format.
@@ -19,7 +21,7 @@ namespace ShapeShift.MessagePack;
 /// because generated ones have already locked-in their dependencies.
 /// </para>
 /// </devremarks>
-public partial record MessagePackSerializer : SerializerBase
+public record MessagePackSerializer : SerializerBase
 {
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MessagePackSerializer"/> class.

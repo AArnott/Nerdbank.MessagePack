@@ -4,6 +4,7 @@
 #if !NET
 
 using System.Text.Json.Nodes;
+using ShapeShift;
 
 internal static partial class MessagePackSerializerPolyfill
 {
