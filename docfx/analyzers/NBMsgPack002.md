@@ -1,6 +1,6 @@
 # NBMsgPack002: Avoid `[Key]` on non-serialized members
 
-@Nerdbank.MessagePack.KeyAttribute should not be applied to members that are not serialized.
+@ShapeShift.KeyAttribute should not be applied to members that are not serialized.
 
 ## Resolution
 

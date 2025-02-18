@@ -3,7 +3,7 @@
 		{
 			"src": [
 				{
-					"src": "../src/Nerdbank.MessagePack",
+					"src": "../src/ShapeShift",
 					"files": [
 						"**/*.csproj"
 					]
@@ -40,8 +40,8 @@
 			"modern"
 		],
 		"globalMetadata": {
-			"_appName": "Nerdbank.MessagePack",
-			"_appTitle": "Nerdbank.MessagePack",
+			"_appName": "ShapeShift",
+			"_appTitle": "ShapeShift",
 			"_enableSearch": true,
 			"pdf": false
 		},

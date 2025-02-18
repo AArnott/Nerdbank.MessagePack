@@ -1,12 +1,12 @@
 # NBMsgPack021: `[MessagePackConverter]` type missing default constructor
 
-@Nerdbank.MessagePack.MessagePackConverterAttribute should specify a type that declares a public default constructor.
+@ShapeShift.MessagePackConverterAttribute should specify a type that declares a public default constructor.
 
 Learn more about [custom converters](../docs/custom-converters.md).
 
 ## Example violations
 
-In the below example, `MyTypeConverter` declares an explicit, *non-public* constructor.
+In the below example, `MyTypeConverter` declares an explicit, _non-public_ constructor.
 
 ```cs
 [MessagePackConverter(typeof(MyTypeConverter))]

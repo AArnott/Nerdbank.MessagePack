@@ -5,12 +5,12 @@
 Consume this library via its NuGet Package.
 Click on the badge to find its latest version and the instructions for consuming it that best apply to your project.
 
-[![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg)](https://nuget.org/packages/Nerdbank.MessagePack)
+[![NuGet package](https://img.shields.io/nuget/v/ShapeShift.svg)](https://nuget.org/packages/ShapeShift)
 
 ### C# language version
 
 When your project targets .NET Framework or .NET Standard 2.x, the C# language version may default to 7.3.
-C# 12 introduced support for generic attributes, which is a fundamental requirement PolyType, upon which Nerdbank.MessagePack is based.
+C# 12 introduced support for generic attributes, which is a fundamental requirement PolyType, upon which ShapeShift is based.
 If you find generic attributes are not allowed in your C# code, change your .csproj file to include this snippet:
 
 ```xml
@@ -55,22 +55,22 @@ Typeless serialization is not supported.
 For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time.
 
 Reference cycles in the object graph are not supported.
-[Reference equality preservation is an option](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) that can be turned on.
+[Reference equality preservation is an option](xref:ShapeShift.MessagePackSerializer.PreserveReferences) that can be turned on.
 
 ## Converting to JSON
 
 It can sometimes be useful to understand what msgpack is actually being serialized.
 Msgpack being a binary format makes looking at the serialized buffer less than helpful for most folks.
 
-You may use the @"Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson*" method to convert most msgpack buffers to JSON for human inspection.
+You may use the @"ShapeShift.MessagePackSerializer.ConvertToJson\*" method to convert most msgpack buffers to JSON for human inspection.
 
 It is important to note that not all msgpack is expressible as JSON.
 In particular the following limitations apply:
 
-* Msgpack maps allow for any type to serve as the key. JSON only supports strings. In such cases, the rendered JSON will emit the msgpack key as-is, and the result will be human-readable but not valid JSON.
-* Msgpack supports arbitrary binary extensions. In JSON this will be rendered as a base64-encoded string with an "msgpack extension {typecode} as base64: " prefix.
-* Msgpack supports binary blobs. In JSON this will be rendered as a base64-encoded string with an "msgpack binary as base64: " prefix.
+- Msgpack maps allow for any type to serve as the key. JSON only supports strings. In such cases, the rendered JSON will emit the msgpack key as-is, and the result will be human-readable but not valid JSON.
+- Msgpack supports arbitrary binary extensions. In JSON this will be rendered as a base64-encoded string with an "msgpack extension {typecode} as base64: " prefix.
+- Msgpack supports binary blobs. In JSON this will be rendered as a base64-encoded string with an "msgpack binary as base64: " prefix.
 
 The exact JSON emitted, especially for the msgpack-only tokens, is subject to change in future versions of this library.
-You should *not* write programs that are expected to parse the JSON produced by this diagnostic method.
+You should _not_ write programs that are expected to parse the JSON produced by this diagnostic method.
 Use a JSON serialization library if you want interop-safe, machine-parseable JSON.

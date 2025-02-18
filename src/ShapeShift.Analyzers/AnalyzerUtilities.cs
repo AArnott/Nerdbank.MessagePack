@@ -156,5 +156,5 @@ public static class AnalyzerUtilities
 		return sb.ToString();
 	}
 
-	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/Nerdbank.MessagePack/analyzers/{diagnosticId}.html";
+	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/ShapeShift/analyzers/{diagnosticId}.html";
 }

@@ -9,7 +9,7 @@ In multi-targeting projects where switching to the preferred API is inadvisable 
 
 ## Example violation
 
-The following type is declared using the non-generic @Nerdbank.MessagePack.KnownSubTypeAttribute.
+The following type is declared using the non-generic @ShapeShift.KnownSubTypeAttribute.
 This is fine for projects that target .NET Standard or .NET Framework, but if the project targets .NET a warning will be emitted.
 
 [!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack051.cs#Defective)]
@@ -23,4 +23,3 @@ Per the message in the warning, switch to the generic attribute:
 Or in a multitargeting project, use the preferred API only where it's available:
 
 [!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack051.cs#MultiTargetingFix)]
-

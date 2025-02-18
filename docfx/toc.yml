@@ -1,9 +1,9 @@
 items:
-- name: Docs
-  href: docs/
-- name: API
-  href: api/
-- name: Analyzers
-  href: analyzers/
-- name: GitHub
-  href: https://github.com/AArnott/Nerdbank.MessagePack
+  - name: Docs
+    href: docs/
+  - name: API
+    href: api/
+  - name: Analyzers
+    href: analyzers/
+  - name: GitHub
+    href: https://github.com/AArnott/ShapeShift

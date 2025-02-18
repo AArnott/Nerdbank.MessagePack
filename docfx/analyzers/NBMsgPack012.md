@@ -1,6 +1,6 @@
 # NBMsgPack012: `[KnownSubType]` type must be unique
 
-@Nerdbank.MessagePack.KnownSubTypeAttribute should specify a type that is unique within the scope of the type it is applied to.
+@ShapeShift.KnownSubTypeAttribute should specify a type that is unique within the scope of the type it is applied to.
 
 Learn more about [subtype unions](../docs/unions.md).
 

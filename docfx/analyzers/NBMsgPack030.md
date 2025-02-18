@@ -1,10 +1,10 @@
 # NBMsgPack030: Converters should not call top-level `MessagePackSerializer` methods
 
-Custom converters (classes that derive from @"Nerdbank.MessagePack.MessagePackConverter`1") should not make calls to @Nerdbank.MessagePack.MessagePackSerializer.
+Custom converters (classes that derive from @"ShapeShift.MessagePackConverter`1") should not make calls to @ShapeShift.MessagePackSerializer.
 Such calls risk resetting the stack guard, unnecessary cache misses, etc.
 
 A custom converter will often find itself in a situation where the type it is serializing is made up of sub-values that themselves can be serialized automatically, without a custom converter.
-In such cases, @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nameWithType is the appropriate tool to delegate conversion of these sub-values.
+In such cases, @ShapeShift.SerializationContext.GetConverter\*?displayProperty=nameWithType is the appropriate tool to delegate conversion of these sub-values.
 
 [Learn more about custom converters](../docs/custom-converters.md).
 
@@ -33,7 +33,7 @@ public partial class SomeOtherType {}
 
 ## Resolution
 
-Replace top-level calls to the serializer to direct calls to a converter, which may come from @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nameWithType.
+Replace top-level calls to the serializer to direct calls to a converter, which may come from @ShapeShift.SerializationContext.GetConverter\*?displayProperty=nameWithType.
 
 ```cs
 public override void Write(ref MessagePackWriter writer, in MyType? value, SerializationContext context)

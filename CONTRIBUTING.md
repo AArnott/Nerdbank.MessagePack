@@ -66,7 +66,7 @@ Trigger the pipeline by adding the `auto-release` tag on a run of your main `azu
 
 ## Tutorial and API documentation
 
-The site at https://aarnott.github.io/Nerdbank.MessagePack builds from this repo's `docfx/` directory.
+The site at https://aarnott.github.io/ShapeShift builds from this repo's `docfx/` directory.
 The site is updated on every push to the `main` branch.
 
 You can make changes and host the site locally to preview them by switching to that directory and running the `dotnet docfx --serve` command.

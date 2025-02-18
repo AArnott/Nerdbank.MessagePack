@@ -3,7 +3,7 @@
 If you are migrating from MessagePack-CSharp, or considering doing so, this document is for you.
 
 You should probably start by reviewing the features of each library to make sure that the transition has the possibility of being successful.
-If you see a feature is missing from Nerdbank.MessagePack that you need, look for an issue for it and give it a 👍🏻 vote, or file a new issue if you don't see one.
+If you see a feature is missing from ShapeShift that you need, look for an issue for it and give it a 👍🏻 vote, or file a new issue if you don't see one.
 
 ## Feature comparison
 
@@ -11,45 +11,45 @@ See how this library compares to other .NET MessagePack libraries.
 
 In many cases, the ✅ or ❌ in the table below are hyperlinks to the relevant documentation or an issue you can vote up to request the feature.
 
-Feature                   | Nerdbank.MessagePack | MessagePack-CSharp  |
---------------------------|:--------------------:|:-------------------:|
-Optimized for high performance | [✅](performance.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#performance) |
-Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
-Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
-Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] |
-Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
-Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) |
-Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) |
-Surrogate types for automatic serialization of unserializable types | [✅](surrogate-types.md) | ❌ |
-Custom converters         | [✅](custom-converters.md) | ✅ |
-Stateful converters       | [✅](custom-converters.md#stateful-converters) | ❌ |
-Deserialization callback  | [✅](xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
-MsgPack extensions        | ✅ | ✅ |
-LZ4 compression           | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/34) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression) |
-Trim-safe                 | ✅ | ❌ |
-NativeAOT ready           | ✅ | ❌[^2] |
-Unity                     | [✅](unity.md)[^3] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#unity-support) |
-Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ |
-Endless streaming deserialization | [✅](streaming-deserialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream)
-Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
-JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
-Secure defaults           | ✅ | ❌ |
-Automatic hash collection deserialization in secure mode | ❌ | ✅ |
-Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.StructuralEqualityComparer) | ❌ |
-Free of mutable statics   | ✅ | ❌ |
-Structural `IEqualityComparer<T>` for arbitrary types | ✅ | ❌ |
+| Feature                                                             |                             ShapeShift                             |                                                          MessagePack-CSharp                                                           |
+| ------------------------------------------------------------------- | :----------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------: |
+| Optimized for high performance                                      |                        [✅](performance.md)                        |                     [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#performance)                     |
+| Contractless data types                                             |                    [✅](getting-started.md)[^1]                    |                [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization)                 |
+| Attributed data types                                               |                 [✅](customizing-serialization.md)                 |                [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization)                 |
+| Polymorphic serialization                                           |                          [✅](unions.md)                           |                      [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4]                      |
+| Typeless serialization                                              |                                 ❌                                 |                      [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless)                       |
+| Skip serializing default values                                     | [✅](xref:ShapeShift.MessagePackSerializer.SerializeDefaultValues) |                               [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678)                               |
+| Dynamically use maps or arrays for most compact format              |          [✅](customizing-serialization.md#array-or-map)           |                              [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953)                               |
+| Surrogate types for automatic serialization of unserializable types |                      [✅](surrogate-types.md)                      |                                                                  ❌                                                                   |
+| Custom converters                                                   |                     [✅](custom-converters.md)                     |                                                                  ✅                                                                   |
+| Stateful converters                                                 |           [✅](custom-converters.md#stateful-converters)           |                                                                  ❌                                                                   |
+| Deserialization callback                                            |      [✅](xref:ShapeShift.IMessagePackSerializationCallbacks)      |               [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback)                |
+| MsgPack extensions                                                  |                                 ✅                                 |                                                                  ✅                                                                   |
+| LZ4 compression                                                     |       [❌](https://github.com/AArnott/ShapeShift/issues/34)        |                   [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression)                   |
+| Trim-safe                                                           |                                 ✅                                 |                                                                  ❌                                                                   |
+| NativeAOT ready                                                     |                                 ✅                                 |                                                                ❌[^2]                                                                 |
+| Unity                                                               |                         [✅](unity.md)[^3]                         |                    [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#unity-support)                    |
+| Async                                                               |    [✅](xref:ShapeShift.MessagePackSerializer.SerializeAsync*)     |                                                                  ❌                                                                   |
+| Endless streaming deserialization                                   |                 [✅](streaming-deserialization.md)                 | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream) |
+| Reference preservation                                              |   [✅](xref:ShapeShift.MessagePackSerializer.PreserveReferences)   |                                                                  ❌                                                                   |
+| JSON schema export                                                  |     [✅](xref:ShapeShift.MessagePackSerializer.GetJsonSchema*)     |                                                                  ❌                                                                   |
+| Secure defaults                                                     |                                 ✅                                 |                                                                  ❌                                                                   |
+| Automatic hash collection deserialization in secure mode            |                                 ❌                                 |                                                                  ✅                                                                   |
+| Automatic collision-resistant hash function for arbitrary types     |          [✅](xref:ShapeShift.StructuralEqualityComparer)          |                                                                  ❌                                                                   |
+| Free of mutable statics                                             |                                 ✅                                 |                                                                  ❌                                                                   |
+| Structural `IEqualityComparer<T>` for arbitrary types               |                                 ✅                                 |                                                                  ❌                                                                   |
 
-Security is a complex subject, and an area where Nerdbank.MessagePack is actively evolving.
+Security is a complex subject, and an area where ShapeShift is actively evolving.
 [Learn more about how to secure your deserializer](security.md).
 
-[^1]: Nerdbank.MessagePack's approach is more likely to be correct by default and more flexible to fixing when it is not.
+[^1]: ShapeShift's approach is more likely to be correct by default and more flexible to fixing when it is not.
 [^2]: Although MessagePack-CSharp does not support .NET 8 flavor NativeAOT, it has long-supported Unity's il2cpp runtime, but it requires careful avoidance of dynamic features.
 [^3]: Particular steps are currently required, and limitations apply. See our [unity doc](unity.md) for more information.
-[^4]: MessagePack-CSharp is limited to derived types that can be attributed on the base type, whereas Nerdbank.MessagePack allows for dynamically identifying derived types at runtime.
+[^4]: MessagePack-CSharp is limited to derived types that can be attributed on the base type, whereas ShapeShift allows for dynamically identifying derived types at runtime.
 
 ## Migration process
 
-To migrate from MessagePack-CSharp to Nerdbank.MessagePack, begin by adding a package reference to Nerdbank.MessagePack as described in the [Getting Started](getting-started.md) guide.
+To migrate from MessagePack-CSharp to ShapeShift, begin by adding a package reference to ShapeShift as described in the [Getting Started](getting-started.md) guide.
 
 With the new package referenced, automated code fixes are immediately provided to aid in the mechanics of migration.
 You should complete migration before removing references to the old `MessagePack` package so the analyzers and code fixes can do their best work.
@@ -59,19 +59,19 @@ When you activate the migration code fix, you will have the option to apply the 
 
 Sometimes after applying one migration code fix, a subsequent analyzer will report new diagnostics, guiding you to the next step in migration.
 
-The following sections demonstrate the changes that are required to migrate from MessagePack-CSharp to Nerdbank.MessagePack.
+The following sections demonstrate the changes that are required to migrate from MessagePack-CSharp to ShapeShift.
 Remember that automated code fixes can do most or all of this for you.
 
 ### `MessagePackObjectAttribute`
 
 MessagePack-CSharp recommends that every user data type be annotated with `[MessagePackObject]` to enable automatic serialization.
-In fact unless you use `[MessagePackObject(true)]`, you must also annotate every field or property with `[Key(0)]`, `[Key(1)]`, etc., and members that should *not* be serialized with `[IgnoreMember]`.
+In fact unless you use `[MessagePackObject(true)]`, you must also annotate every field or property with `[Key(0)]`, `[Key(1)]`, etc., and members that should _not_ be serialized with `[IgnoreMember]`.
 
-With Nerdbank.MessagePack, you can remove the `[MessagePackObject]` attribute from your types, as it is not required.
-Nerdbank.MessagePack supports something of a hybrid between MessagePack-CSharp's `[MessagePackObject]` and "contractless" modes, to achieve something much easier to use and yet flexible when you need to tweak it.
+With ShapeShift, you can remove the `[MessagePackObject]` attribute from your types, as it is not required.
+ShapeShift supports something of a hybrid between MessagePack-CSharp's `[MessagePackObject]` and "contractless" modes, to achieve something much easier to use and yet flexible when you need to tweak it.
 
-Top-level classes and structs that you need to serialize (that is, the ones you pass directly to @Nerdbank.MessagePack.MessagePackSerializer.Serialize* or @"Nerdbank.MessagePack.MessagePackSerializer.Deserialize*") need only that you annotate the type with @PolyType.GenerateShapeAttribute.
-Such annotated types *must* be declared with the `partial` modifier to enable source generation to add the necessary serialization code to the type.
+Top-level classes and structs that you need to serialize (that is, the ones you pass directly to @ShapeShift.MessagePackSerializer.Serialize* or @"ShapeShift.MessagePackSerializer.Deserialize*") need only that you annotate the type with @PolyType.GenerateShapeAttribute.
+Such annotated types _must_ be declared with the `partial` modifier to enable source generation to add the necessary serialization code to the type.
 Learn more about this in our [Getting Started](getting-started.md) guide.
 
 ```diff
@@ -82,11 +82,11 @@ Learn more about this in our [Getting Started](getting-started.md) guide.
  }
 ```
 
-If your type implements `MessagePack.IMessagePackSerializationCallbackReceiver`, you should implement change this to implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks instead.
+If your type implements `MessagePack.IMessagePackSerializationCallbackReceiver`, you should implement change this to implement @ShapeShift.IMessagePackSerializationCallbacks instead.
 
 #### `KeyAttribute`
 
-Nerdbank.MessagePack also supports @Nerdbank.MessagePack.KeyAttribute, which serves the same function as in MessagePack-CSharp: to change the serialized schema from that of a map of property name=value to an array of values.
+ShapeShift also supports @ShapeShift.KeyAttribute, which serves the same function as in MessagePack-CSharp: to change the serialized schema from that of a map of property name=value to an array of values.
 Thus, you may keep the `[Key(0)]`, `[Key(1)]`, etc., attributes on your types if you wish to maintain the schema of the serialized data, provided you change the namespace.
 
 If using `[Key("name")]` attributes as a means to change the serialized property names, this must be replaced with @PolyType.PropertyShapeAttribute with @PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType set to the serialized name.
@@ -114,7 +114,7 @@ For public members that should be ignored, replace this attribute with @PolyType
 ### `UnionAttribute`
 
 MessagePack-CSharp defines a `UnionAttribute` by which you can serialize an object when you know its base type or interface at compile-time, but whose exact type is not known until runtime, provided you can predict the closed set of allowed runtime types in advance.
-Nerdbank.MessagePack supports this same use case via its @Nerdbank.MessagePack.KnownSubTypeAttribute, and migration is straightforward:
+ShapeShift supports this same use case via its @ShapeShift.KnownSubTypeAttribute, and migration is straightforward:
 
 ```diff
 -[Union(0, typeof(MyType1))]
@@ -126,12 +126,12 @@ Nerdbank.MessagePack supports this same use case via its @Nerdbank.MessagePack.K
  }
 ```
 
-Any types referenced by the @Nerdbank.MessagePack.KnownSubTypeAttribute must be annotated with @PolyType.GenerateShapeAttribute as described above.
+Any types referenced by the @ShapeShift.KnownSubTypeAttribute must be annotated with @PolyType.GenerateShapeAttribute as described above.
 
 ### `IMessagePackFormatter<T>`
 
 MessagePack-CSharp allows you to define custom formatters for types that it doesn't know how to serialize by default by implementing the `IMessagePackFormatter<T>` interface.
-In Nerdbank.MessagePack, that use case is addressed by deriving a class from the @Nerdbank.MessagePack.MessagePackConverter`1 class.
+In ShapeShift, that use case is addressed by deriving a class from the @ShapeShift.MessagePackConverter`1 class.
 These two APIs are very similar, but the method signatures are slightly different, as well as the patterns that provide security mitigations.
 
 ```diff
@@ -194,7 +194,7 @@ These two APIs are very similar, but the method signatures are slightly differen
 ### `MessagePackFormatterAttribute`
 
 A custom type may be annotated with the `MessagePackFormatterAttribute` to specify a custom formatter for that type.
-In Nerdbank.MessagePack, this attribute is replaced with the @Nerdbank.MessagePack.MessagePackConverterAttribute in a straightforward replacement.
+In ShapeShift, this attribute is replaced with the @ShapeShift.MessagePackConverterAttribute in a straightforward replacement.
 
 ```diff
 -[MessagePackFormatter(typeof(MyTypeFormatter))]
@@ -209,14 +209,14 @@ In Nerdbank.MessagePack, this attribute is replaced with the @Nerdbank.MessagePa
 
 In MessagePack-CSharp, security mitigations are provided by the `MessagePackSecurity` class, as referenced by the `MessagePackSerializerOptions` class.
 
-In Nerdbank.MessagePack, security mitigations are provided by the @Nerdbank.MessagePack.SerializationContext struct, as referenced by @Nerdbank.MessagePack.MessagePackSerializer.StartingContext?displayProperty=nameWithType.
+In ShapeShift, security mitigations are provided by the @ShapeShift.SerializationContext struct, as referenced by @ShapeShift.MessagePackSerializer.StartingContext?displayProperty=nameWithType.
 
 ### Incompatibilities
 
-Some functionality in MessagePack-CSharp has no equivalent in Nerdbank.MessagePack, as follows:
+Some functionality in MessagePack-CSharp has no equivalent in ShapeShift, as follows:
 
 - Typeless serialization: MessagePack-CSharp supports serializing and deserializing objects without knowing their type at compile time.
-  Nerdbank.MessagePack requires knowing at least something about the type (see [Unions](unions.md)) at compile time for security reasons and NativeAOT support.
+  ShapeShift requires knowing at least something about the type (see [Unions](unions.md)) at compile time for security reasons and NativeAOT support.
   [Custom converters](custom-converters.md) can be written to overcome these limitations where required.
 
 ### Other API changes
@@ -225,11 +225,11 @@ Many APIs are exactly the same or very similar.
 In some cases, APIs offering equivalent or similar functionality have been renamed.
 To help with migration, the following table lists some of the most common APIs that have changed names.
 
-MessagePack-CSharp | Nerdbank.MessagePack
---- | ---
-`ExtensionResult` | @Nerdbank.MessagePack.Extension
-`MessagePackReader.ReadExtensionFormat` | @Nerdbank.MessagePack.MessagePackReader.ReadExtension?displayProperty=nameWithType
-`MessagePackReader.ReadExtensionFormatHeader` | @Nerdbank.MessagePack.MessagePackReader.ReadExtensionHeader?displayProperty=nameWithType
-`MessagePackWriter.WriteExtensionFormat` | @Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.Extension)?displayProperty=nameWithType
-`MessagePackWriter.WriteExtensionFormatHeader` | @Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.ExtensionHeader)?displayProperty=nameWithType
-`IMessagePackSerializationCallbackReceiver` | @Nerdbank.MessagePack.IMessagePackSerializationCallbacks
+| MessagePack-CSharp                             | ShapeShift                                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ExtensionResult`                              | @ShapeShift.Extension                                                                        |
+| `MessagePackReader.ReadExtensionFormat`        | @ShapeShift.MessagePackReader.ReadExtension?displayProperty=nameWithType                     |
+| `MessagePackReader.ReadExtensionFormatHeader`  | @ShapeShift.MessagePackReader.ReadExtensionHeader?displayProperty=nameWithType               |
+| `MessagePackWriter.WriteExtensionFormat`       | @ShapeShift.MessagePackWriter.Write(ShapeShift.Extension)?displayProperty=nameWithType       |
+| `MessagePackWriter.WriteExtensionFormatHeader` | @ShapeShift.MessagePackWriter.Write(ShapeShift.ExtensionHeader)?displayProperty=nameWithType |
+| `IMessagePackSerializationCallbackReceiver`    | @ShapeShift.IMessagePackSerializationCallbacks                                               |

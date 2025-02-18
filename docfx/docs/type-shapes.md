@@ -35,6 +35,6 @@ You do _not_ need a witness class for an external type to reference that type fr
 
 ## Fallback configuration
 
-In the unlikely event that you have a need to serialize a type that does _not_ have a shape source-generated for it, you can use the conventional reflection approach of serialization with Nerdbank.MessagePack if you do not need to run in a trimmed app.
+In the unlikely event that you have a need to serialize a type that does _not_ have a shape source-generated for it, you can use the conventional reflection approach of serialization with ShapeShift if you do not need to run in a trimmed app.
 
 [!code-csharp[](../../samples/TypeShapePatterns.cs#SerializeUnshapedType)]

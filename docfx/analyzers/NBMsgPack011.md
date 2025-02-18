@@ -1,6 +1,6 @@
 # NBMsgPack010: `[KnownSubType]` alias must be unique
 
-@Nerdbank.MessagePack.KnownSubTypeAttribute should specify an alias that is unique within the scope of the type it is applied to.
+@ShapeShift.KnownSubTypeAttribute should specify an alias that is unique within the scope of the type it is applied to.
 
 Learn more about [subtype unions](../docs/unions.md).
 

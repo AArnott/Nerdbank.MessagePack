@@ -83,9 +83,9 @@ public class MigrationCodeFix : CodeFixProvider
 					{
 						context.RegisterCodeFix(
 							CodeAction.Create(
-								title: "Use Nerdbank.MessagePack.KeyAttribute",
+								title: "Use ShapeShift.KeyAttribute",
 								createChangedDocument: cancellationToken => this.ReplaceKeyAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-								equivalenceKey: "Use Nerdbank.MessagePack.KeyAttribute"),
+								equivalenceKey: "Use ShapeShift.KeyAttribute"),
 							diagnostic);
 					}
 
@@ -615,7 +615,7 @@ public class MigrationCodeFix : CodeFixProvider
 				MethodDeclarationSyntax result = (MethodDeclarationSyntax)base.VisitMethodDeclaration(node)!;
 
 				// - public void Serialize(ref MessagePackWriter writer, MyType value, MessagePackSerializerOptions options)
-				// + public override void Write(ref Nerdbank.MessagePack.MessagePackWriter writer, in MyType value, SerializationContext context)
+				// + public override void Write(ref ShapeShift.MessagePackWriter writer, in MyType value, SerializationContext context)
 
 				// Add override modifier.
 				result = result.AddModifiers(Token(SyntaxKind.OverrideKeyword));

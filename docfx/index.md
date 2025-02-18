@@ -4,7 +4,7 @@ _layout: landing
 
 # Overview
 
-Nerdbank.MessagePack is a library that (de)serializes .NET object graphs as msgpack.
+ShapeShift is a library that (de)serializes .NET object graphs as msgpack.
 It is very simple to use, very fast both in throughput and startup time.
 
 [msgpack](https://msgpack.org/) is a compact binary format that is well supported on all platforms.

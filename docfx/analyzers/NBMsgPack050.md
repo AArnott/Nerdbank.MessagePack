@@ -1,13 +1,13 @@
 # NBMsgPack050: Use ref parameters for ref structs
 
-It is critical for certain `ref struct` types defined in Nerdbank.MessagePack to be passed by `ref` when used as a parameter.
+It is critical for certain `ref struct` types defined in ShapeShift to be passed by `ref` when used as a parameter.
 Without this, a copy of the struct is made, and the buffers or position tracking fields that are modified by the callee will not apply back to the caller.
 
 These types fall into this category:
 
-- @Nerdbank.MessagePack.MessagePackReader
-- @Nerdbank.MessagePack.MessagePackStreamingReader
-- @Nerdbank.MessagePack.MessagePackWriter
+- @ShapeShift.MessagePackReader
+- @ShapeShift.MessagePackStreamingReader
+- @ShapeShift.MessagePackWriter
 
 ## Example violation
 

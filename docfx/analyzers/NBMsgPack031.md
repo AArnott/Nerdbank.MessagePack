@@ -1,6 +1,6 @@
 # NBMsgPack031: Converters should read or write exactly one msgpack structure
 
-Custom converters (classes that derive from @"Nerdbank.MessagePack.MessagePackConverter`1") should serialize a given value with exactly one msgpack structure, whether that is a scalar value like an integer, or a vector like an array or a map.
+Custom converters (classes that derive from @"ShapeShift.MessagePackConverter`1") should serialize a given value with exactly one msgpack structure, whether that is a scalar value like an integer, or a vector like an array or a map.
 If there is nothing to write, you may write an empty array header.
 If there is more than one value to write, lead with an array header that exactly predicts the number of values that will follow.
 

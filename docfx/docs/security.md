@@ -12,8 +12,8 @@ With each nested structure (e.g. a map or array) in msgpack, another frame is ad
 This stack space is limited and if exceeded, the process will crash.
 It can take less than 500 bytes of msgpack to crash a deserializing application that does not guard against such stack overflows.
 
-Nerdbank.MessagePack protects against such attacks by artificially limiting the level of nesting that is allowed before a deserializer will throw an exception that can be caught and processed by an application rather than crash it.
-This limit is set by @Nerdbank.MessagePack.SerializationContext.MaxDepth, which by default is set to a conservative default value that should prevent stack overflows.
+ShapeShift protects against such attacks by artificially limiting the level of nesting that is allowed before a deserializer will throw an exception that can be caught and processed by an application rather than crash it.
+This limit is set by @ShapeShift.SerializationContext.MaxDepth, which by default is set to a conservative default value that should prevent stack overflows.
 When the data to be deserialized has a legitimate need for deeper nesting than the default limit allows, this limit may be adjusted, like this:
 
 [!code-csharp[](../../samples/Security.cs#SetMaxDepth)]
@@ -56,7 +56,7 @@ Here is an example of a defense against hash collisions:
 Note how the collection properties do _not_ define a property setter.
 This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.
 
-In this example, we use @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
+In this example, we use @ShapeShift.StructuralEqualityComparer.GetHashCollisionResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
 This implementation uses the SIP hash algorithm, which is known for its high performance and collision resistance.
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
-Please review the documentation for @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* for more information.
+Please review the documentation for @ShapeShift.StructuralEqualityComparer.GetHashCollisionResistant* for more information.

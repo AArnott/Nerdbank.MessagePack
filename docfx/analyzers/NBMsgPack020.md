@@ -1,6 +1,6 @@
 # NBMsgPack020: `[MessagePackConverter]` type must be compatible converter
 
-@Nerdbank.MessagePack.MessagePackConverterAttribute should specify a type that derives from @Nerdbank.MessagePack.MessagePackConverter`1 where the type argument is the type the attribute is applied to.
+@ShapeShift.MessagePackConverterAttribute should specify a type that derives from @ShapeShift.MessagePackConverter`1 where the type argument is the type the attribute is applied to.
 
 Learn more about [custom converters](../docs/custom-converters.md).
 
@@ -21,7 +21,7 @@ public class MyTypeConverter
 
 ## Resolution
 
-Fix the converter type to derive from @Nerdbank.MessagePack.MessagePackConverter`1.
+Fix the converter type to derive from @ShapeShift.MessagePackConverter`1.
 
 ```cs
 [MessagePackConverter(typeof(MyTypeConverter)]

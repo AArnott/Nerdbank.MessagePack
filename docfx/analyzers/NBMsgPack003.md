@@ -1,6 +1,6 @@
 # NBMsgPack003: `[Key]` index must be unique
 
-@Nerdbank.MessagePack.KeyAttribute must have unique indexes provided across all members of a type, including base types.
+@ShapeShift.KeyAttribute must have unique indexes provided across all members of a type, including base types.
 
 This is because for a given object, the indexes determine the array index that will contain the value for a property.
 

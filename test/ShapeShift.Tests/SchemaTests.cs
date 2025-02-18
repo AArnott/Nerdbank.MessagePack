@@ -181,7 +181,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 		string schemaString = schema
 			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-			.Replace("Nerdbank.MessagePack.Tests, Version=0.3.0.0", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
+			.Replace("ShapeShift.Tests, Version=0.3.0.0", "ShapeShift.Tests, Version=x.x.x.x");
 
 #if NETFRAMEWORK
 		// Normalize from .NET Framework specific strings to .NET strings.

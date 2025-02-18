@@ -7,8 +7,8 @@ Types may override these methods to provide by-value equality and hash functions
 Even when types override these methods, they are often not implemented for _deep_ by-value comparison.
 This is particularly true when a type contains collection members, since testing a collection's contents for by-value equality of each element can be difficult.
 
-Nerdbank.MessagePack alleviates these difficulties somewhat by providing structural (i.e. deep, by-value) equality testing and hashing for arbitrary types, using the same @PolyType.GenerateShapeAttribute technology that it uses for serialization.
-It does this via the @"Nerdbank.MessagePack.StructuralEqualityComparer.GetDefault*?displayProperty=nameWithType" method, which returns an instance of @System.Collections.Generic.IEqualityComparer`1 for the specified type that provides deep, by-value checking and hashing.
+ShapeShift alleviates these difficulties somewhat by providing structural (i.e. deep, by-value) equality testing and hashing for arbitrary types, using the same @PolyType.GenerateShapeAttribute technology that it uses for serialization.
+It does this via the @"ShapeShift.StructuralEqualityComparer.GetDefault\*?displayProperty=nameWithType" method, which returns an instance of @System.Collections.Generic.IEqualityComparer`1 for the specified type that provides deep, by-value checking and hashing.
 
 Here is an example of using this for structural equality checking for a user-defined type that does not implement it itself:
 
@@ -22,6 +22,6 @@ Here is an example of using this for structural equality checking for a user-def
 
 ---
 
-Collision resistant hashing functions can be produced by calling @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* instead of @Nerdbank.MessagePack.StructuralEqualityComparer.GetDefault*, as described in [our topic on hash collisions](security.md#hash-collisions).
+Collision resistant hashing functions can be produced by calling @ShapeShift.StructuralEqualityComparer.GetHashCollisionResistant* instead of @ShapeShift.StructuralEqualityComparer.GetDefault*, as described in [our topic on hash collisions](security.md#hash-collisions).
 
-Learn more from @Nerdbank.MessagePack.StructuralEqualityComparer.
+Learn more from @ShapeShift.StructuralEqualityComparer.

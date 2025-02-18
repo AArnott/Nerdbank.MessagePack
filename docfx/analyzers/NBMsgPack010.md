@@ -1,6 +1,6 @@
 # NBMsgPack010: `[KnownSubType]` should specify an assignable type
 
-@Nerdbank.MessagePack.KnownSubTypeAttribute should specify a type that is assignable to the type the attribute is applied to.
+@ShapeShift.KnownSubTypeAttribute should specify a type that is assignable to the type the attribute is applied to.
 
 Learn more about [subtype unions](../docs/unions.md).
 

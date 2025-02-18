@@ -1,13 +1,13 @@
 # Streaming deserialization
 
-While typical @Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync* and @Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync* methods exist, these are methods that complete only when the entire job is done.
-In particular for @Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync*, this means that no subset of the deserialized data is available until it is fully deserialized.
+While typical @ShapeShift.MessagePackSerializer.SerializeAsync* and @ShapeShift.MessagePackSerializer.DeserializeAsync* methods exist, these are methods that complete only when the entire job is done.
+In particular for @ShapeShift.MessagePackSerializer.DeserializeAsync\*, this means that no subset of the deserialized data is available until it is fully deserialized.
 
 There are times however where progressively obtaining the deserialized elements can be useful.
 For example, perhaps the stream contains a very long sequence of elements, and processing them incrementally instead of all at once can save memory or improve performance.
 Or perhaps the stream is intentionally a long-lived generator stream that emits values over long periods of time, and it is important to the receiver that values are produced and available right away, before the stream ends.
 
-The @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods address such use cases.
+The @ShapeShift.MessagePackSerializer.DeserializeEnumerableAsync\* methods address such use cases.
 
 One must first classify the presentation of msgpack streaming values to be deserialized.
 Two forms are supported:
@@ -18,7 +18,7 @@ Two forms are supported:
 ## Sequence with no envelope
 
 A sequence of msgpack structures without an array or any other data is said to have no envelope.
-To asynchronously enumerate each of these structures, we use the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods that take no @Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions`2 parameter, such as @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync``1(System.IO.Pipelines.PipeReader,System.Threading.CancellationToken).
+To asynchronously enumerate each of these structures, we use the @ShapeShift.MessagePackSerializer.DeserializeEnumerableAsync\* methods that take no @ShapeShift.MessagePackSerializer.StreamingEnumerationOptions`2 parameter, such as @ShapeShift.MessagePackSerializer.DeserializeEnumerableAsync``1(System.IO.Pipelines.PipeReader,System.Threading.CancellationToken).
 
 # [.NET](#tab/net)
 
@@ -36,7 +36,7 @@ A sequence of msgpack structures that are found within a larger structure (e.g. 
 To asynchronously enumerate each of these structures requires first parsing through the envelope preamble to navigate to the sequence.
 After enumerating the sequence, the remainder of the envelope is parsed in order to leave the reader positioned at valid position, at the end of the overall msgpack structure.
 
-Navigating through the envelope is done by an expression provided to the @Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions`2 argument passed to any of the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods that accept that as a parameter.
+Navigating through the envelope is done by an expression provided to the @ShapeShift.MessagePackSerializer.StreamingEnumerationOptions`2 argument passed to any of the @ShapeShift.MessagePackSerializer.DeserializeEnumerableAsync\* methods that accept that as a parameter.
 
 # [.NET](#tab/net)
 

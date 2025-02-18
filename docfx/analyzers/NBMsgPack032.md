@@ -1,6 +1,6 @@
 # NBMsgPack032: Converters should override GetJsonSchema
 
-Custom converters (classes that derive from @"Nerdbank.MessagePack.MessagePackConverter`1") should override the @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema* method to document the schema of the msgpack they emit.
+Custom converters (classes that derive from @"ShapeShift.MessagePackConverter`1") should override the @ShapeShift.MessagePackConverter`1.GetJsonSchema\* method to document the schema of the msgpack they emit.
 
 [Learn more about custom converters](../docs/custom-converters.md).
 
@@ -27,7 +27,7 @@ public class MyTypeConverter : MessagePackConverter<MyType>
 
 ## Resolution
 
-Override the @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema* method to document that the object is serialized as an integer.
+Override the @ShapeShift.MessagePackConverter`1.GetJsonSchema\* method to document that the object is serialized as an integer.
 
 ```cs
 public class MyTypeConverter : MessagePackConverter<MyType>
@@ -53,4 +53,4 @@ public class MyTypeConverter : MessagePackConverter<MyType>
 }
 ```
 
-Learn more about [JSON Schema](https://json-schema.org/) and review the docs for the @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema* method for details.
+Learn more about [JSON Schema](https://json-schema.org/) and review the docs for the @ShapeShift.MessagePackConverter`1.GetJsonSchema\* method for details.

@@ -2,7 +2,7 @@
 
 ## Polymorphic serialization
 
-You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the @Nerdbank.MessagePack.KnownSubTypeAttribute`1.
+You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the @ShapeShift.KnownSubTypeAttribute`1.
 
 For instance, suppose you have this type to serialize:
 
@@ -23,7 +23,7 @@ You can get them to serialize and deserialize correctly like this:
 
 This changes the schema of the serialized data to include a tag that indicates the type of the object.
 
-*Without* any @Nerdbank.MessagePack.KnownSubTypeAttribute`1, an `Animal` object would serialize like this (as represented in JSON):
+_Without_ any @ShapeShift.KnownSubTypeAttribute`1, an `Animal` object would serialize like this (as represented in JSON):
 
 ```json
 { "Name": "Bessie" }
@@ -43,8 +43,8 @@ If the serialized object were an instance of `Cow`, the first element would be `
 [1, { "Name": "Bessie" }]
 ```
 
-This special union schema is only used when the statically *declared* type is a class that has `KnownSubTypeAttribute` on it.
-It is *not* used when the derived type is statically known. For example, consider this collection of horses:
+This special union schema is only used when the statically _declared_ type is a class that has `KnownSubTypeAttribute` on it.
+It is _not_ used when the derived type is statically known. For example, consider this collection of horses:
 
 [!code-csharp[](../../samples/Unions.cs#HorsePen)]
 
@@ -69,7 +69,7 @@ Now suppose you have different breeds of horses that each had their own subtype:
 
 ---
 
-At this point your `HorsePen` *would* serialize with the union schema around each horse:
+At this point your `HorsePen` _would_ serialize with the union schema around each horse:
 
 ```json
 { "Horses": [[1, { "Name": "Bessie" }], [2, { "Name", "Lightfoot" }]] }
@@ -79,7 +79,7 @@ But now let's consider your `Farm` class, which has a collection of `Animal` obj
 The `Animal` class only knows about `Horse` as a subtype and designates `2` as the alias for that subtype.
 `Animal` has no designation for `QuarterHorse` or `Thoroughbred`.
 As such, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects, not `QuarterHorse` or `Thoroughbred`.
-To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1 to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
+To fix this, you would need to add @ShapeShift.KnownSubTypeAttribute`1 to the `Animal`class for`QuarterHorse`and`Thoroughbred` that assigns type aliases for each of them.
 
 ### Alias types
 
@@ -138,11 +138,11 @@ It will not do for `Animal` to merely mention `Horse` and for `Horse` to listed 
 
 ### Generic sub-types
 
-Sub-types may be generic types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
+Sub-types may be generic types, but they must be _closed_ generic types (i.e. all the generic type arguments must be specified).
 You may close the generic type several times, assigning a unique alias to each one.
 
 Generic sub-types require a [witness class](type-shapes.md#witness-classes) to provide their type shape.
-This witness type must be specified as a second type argument to @Nerdbank.MessagePack.KnownSubTypeAttribute`2.
+This witness type must be specified as a second type argument to @ShapeShift.KnownSubTypeAttribute`2.
 
 For example:
 
