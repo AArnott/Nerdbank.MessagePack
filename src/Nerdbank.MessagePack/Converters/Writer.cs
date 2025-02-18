@@ -75,13 +75,10 @@ public ref struct Writer
 	public void WriteArrayEnd() => this.Formatter.WriteArrayEnd(ref this);
 
 	/// <inheritdoc cref="Formatter.WriteMapStart(ref Writer, int)"/>
-	public void WriteMapHeader(int length) => this.Formatter.WriteMapStart(ref this, length);
+	public void WriteMapHeader(int count) => this.Formatter.WriteMapStart(ref this, count);
 
 	/// <inheritdoc cref="Formatter.WriteMapKeyValueSeparator(ref Writer)"/>
 	public void WriteMapKeyValueSeparator() => this.Formatter.WriteMapKeyValueSeparator(ref this);
-
-	/// <inheritdoc cref="Formatter.WriteMapValueTrailer(ref Writer)"/>
-	public void WriteMapValueTrailer() => this.Formatter.WriteMapValueTrailer(ref this);
 
 	/// <inheritdoc cref="Formatter.WriteMapEnd(ref Writer)"/>
 	public void WriteMapEnd() => this.Formatter.WriteMapEnd(ref this);

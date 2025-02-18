@@ -8,6 +8,9 @@ namespace Nerdbank.PolySerializer.MessagePack;
 /// </summary>
 public class MsgPackDeformatter : Deformatter
 {
+	/// <summary>
+	/// Gets the default instance of <see cref="MsgPackDeformatter"/>, which wraps a <see cref="MsgPackStreamingDeformatter.Default"/> instance of <see cref="MsgPackStreamingDeformatter"/>.
+	/// </summary>
 	public static readonly MsgPackDeformatter Default = new(MsgPackStreamingDeformatter.Default);
 
 	/// <summary>
@@ -19,14 +22,17 @@ public class MsgPackDeformatter : Deformatter
 	{
 	}
 
+	/// <inheritdoc cref="Deformatter.StreamingDeformatter"/>
 	public new MsgPackStreamingDeformatter StreamingDeformatter => (MsgPackStreamingDeformatter)base.StreamingDeformatter;
 
 	/// <summary>
-	/// Gets the type of the next MessagePack block.
+	/// Gets the next byte in the buffer which, if the reader is properly positioned at the start of a token, can identify the next token type.
 	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.PeekNextTypeCode(in Reader)" path="/param[@name='reader']"/></param>
 	/// <exception cref="EndOfStreamException">Thrown if the end of the sequence provided to the constructor is reached before the expected end of the data.</exception>
+	/// <returns>The next byte in the buffer.</returns>
 	/// <remarks>
-	/// See <see cref="TypeCode"/> for valid codes and ranges.
+	/// See <see cref="MessagePackCode"/> for valid codes and ranges.
 	/// </remarks>
 	public byte PeekNextCode(in Reader reader)
 	{
@@ -38,8 +44,20 @@ public class MsgPackDeformatter : Deformatter
 		};
 	}
 
+	/// <summary>
+	/// Gets the type of the next MessagePack token.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.PeekNextTypeCode(in Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The classification of the next token.</returns>
 	public MessagePackType PeekNextMessagePackType(in Reader reader) => MessagePackCode.ToMessagePackType(this.PeekNextCode(reader));
 
+	/// <summary>
+	/// Reads an <see cref="ExtensionHeader"/> from the stream.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.PeekNextTypeCode(in Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The extension header.</returns>
+	/// <inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not an extension.</exception>
 	public ExtensionHeader ReadExtensionHeader(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out ExtensionHeader value))
@@ -58,6 +76,13 @@ public class MsgPackDeformatter : Deformatter
 		}
 	}
 
+	/// <summary>
+	/// Reads an <see cref="Extension"/> (its header and data) from the stream.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.PeekNextTypeCode(in Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The extension.</returns>
+	/// <inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not an extension.</exception>
 	public Extension ReadExtension(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out Extension value))
@@ -74,6 +99,13 @@ public class MsgPackDeformatter : Deformatter
 		}
 	}
 
+	/// <summary>
+	/// Reads a <see cref="DateTime"/> value from the stream.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="Deformatter.PeekNextTypeCode(in Reader)" path="/param[@name='reader']"/></param>
+	/// <returns>The decoded value.</returns>
+	/// <inheritdoc cref="Deformatter.TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not a <see cref="DateTime"/>.</exception>
 	public DateTime ReadDateTime(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryRead(ref reader, out DateTime value))

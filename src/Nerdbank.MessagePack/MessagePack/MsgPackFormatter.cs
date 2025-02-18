@@ -89,13 +89,13 @@ public record MsgPackFormatter : Formatter
 	}
 
 	/// <inheritdoc />
-	public override void WriteMapKeyValueSeparator(ref Writer writer)
+	public override void WriteMapPairSeparator(ref Writer writer)
 	{
 		// msgpack doesn't have one.
 	}
 
 	/// <inheritdoc />
-	public override void WriteMapValueTrailer(ref Writer writer)
+	public override void WriteMapKeyValueSeparator(ref Writer writer)
 	{
 		// msgpack doesn't have one.
 	}
