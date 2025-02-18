@@ -6,6 +6,8 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace />
+    <!-- We have a dependency without a strong name, but only on .NET where it doesn't matter. -->
+    <NoWarn Condition="'$(TargetFramework)'!='net472'">$(NoWarn);CS8002</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

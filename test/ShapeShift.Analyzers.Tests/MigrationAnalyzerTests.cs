@@ -75,10 +75,11 @@ public class MigrationAnalyzerTests
 
 			using MessagePack;
 			using MessagePack.Formatters;
-			using ShapeShift;
 			using PolyType;
+			using ShapeShift;
+			using ShapeShift.Converters;
 
-			[MessagePackConverter(typeof(MyTypeFormatter))]
+			[Converter(typeof(MyTypeFormatter))]
 			public partial class MyType
 			{
 				public string? Name { get; set; }
@@ -86,16 +87,16 @@ public class MigrationAnalyzerTests
 				[GenerateShape<string>]
 				private partial class MyTypeFormatter : Converter<MyType>
 				{
-					public override MyType? Read(ref Nerdbank.PolySerializer.Reader reader, SerializationContext context)
+					public override MyType? Read(ref Reader reader, SerializationContext context)
 					{
-						if (reader.TryReadNil())
+						if (reader.TryReadNull())
 						{
 							return null;
 						}
 
 						string? name = null;
 						context.DepthStep();
-						int count = reader.ReadArrayHeader();
+						int count = reader.ReadStartVector();
 						for (int i = 0; i < count; i++)
 						{
 							switch (i)
@@ -112,15 +113,15 @@ public class MigrationAnalyzerTests
 						return new MyType { Name = name };
 					}
 
-					public override void Write(ref Nerdbank.PolySerializer.Writer writer, in MyType? value, SerializationContext context)
+					public override void Write(ref Writer writer, in MyType? value, SerializationContext context)
 					{
 						if (value is null)
 						{
-							writer.WriteNil();
+							writer.WriteNull();
 							return;
 						}
 
-						writer.WriteArrayHeader(1);
+						writer.WriteStartVector(1);
 						context.GetConverter<string>(MyTypeFormatter.ShapeProvider).Write(ref writer, value.Name, context);
 					}
 				}
@@ -159,7 +160,7 @@ public class MigrationAnalyzerTests
 			public class MyType
 			{
 				/// <summary>doc comment</summary>
-				[Nerdbank.MessagePack.Key(0)]
+				[ShapeShift.Key(0)]
 				public string Name { get; set; }
 			}
 			""";
@@ -318,14 +319,14 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using ShapeShift;
 
-			class A : IMessagePackSerializationCallbacks
+			class A : ISerializationCallbacks
 			{
-				void IMessagePackSerializationCallbacks.OnAfterDeserialize()
+				void ISerializationCallbacks.OnAfterDeserialize()
 				{
 					// deserialize
 				}
 
-				void IMessagePackSerializationCallbacks.OnBeforeSerialize()
+				void ISerializationCallbacks.OnBeforeSerialize()
 				{
 					// serialize
 				}
@@ -359,7 +360,7 @@ public class MigrationAnalyzerTests
 			using MessagePack;
 			using ShapeShift;
 
-			class A : IMessagePackSerializationCallbacks
+			class A : ISerializationCallbacks
 			{
 				public void OnAfterDeserialize()
 				{

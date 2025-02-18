@@ -3,7 +3,6 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
@@ -156,7 +155,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 									switch (context.Operation)
 									{
 										case IObjectCreationOperation objectCreation:
-											if (objectCreation.Type?.IsOrDerivedFrom(referenceSymbols.MessagePackSerializer) is true)
+											if (objectCreation.Type?.IsOrDerivedFrom(referenceSymbols.SerializerBase) is true)
 											{
 												context.ReportDiagnostic(Diagnostic.Create(CallbackToTopLevelSerializerDescriptor, objectCreation.Syntax.GetLocation()));
 											}
@@ -164,7 +163,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 											break;
 										case IInvocationOperation invocation:
 											if (invocation.TargetMethod.ContainingSymbol is ITypeSymbol typeSymbol &&
-												typeSymbol.IsOrDerivedFrom(referenceSymbols.MessagePackSerializer))
+												typeSymbol.IsOrDerivedFrom(referenceSymbols.SerializerBase))
 											{
 												context.ReportDiagnostic(Diagnostic.Create(CallbackToTopLevelSerializerDescriptor, invocation.Syntax.GetLocation()));
 											}
@@ -238,10 +237,9 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					{
 						return i.TargetMethod.Name switch
 						{
-							"WriteArrayHeader" => (1 + GetVariableImpact(i), true),
-							"WriteMapHeader" => (1 + (GetVariableImpact(i) * 2), true),
+							"WriteStartVector" => (1 + GetVariableImpact(i), true),
+							"WriteStartMap" => (1 + (GetVariableImpact(i) * 2), true),
 							string t when t.StartsWith("Write", StringComparison.Ordinal) => (1, true),
-							"GetSpan" or "Advance" => (null, true), // Advance case, which we'll just assume they're doing correctly.
 							_ => (0, true),
 						};
 					}
@@ -250,6 +248,14 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 						return i.TargetMethod.Name switch
 						{
 							"Write" or "WriteAsync" or "WriteObject" or "WriteObjectAsync" => (1, true),
+							_ => (0, true),
+						};
+					}
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s2 && SymbolEqualityComparer.Default.Equals(s2, referenceSymbols.BufferWriter))
+					{
+						return i.TargetMethod.Name switch
+						{
+							"GetSpan" or "Advance" => (null, true), // Advance case, which we'll just assume they're doing correctly.
 							_ => (0, true),
 						};
 					}
@@ -267,9 +273,9 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					{
 						return i.TargetMethod.Name switch
 						{
-							"ReadArrayHeader" or "ReadMapHeader" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
-							"TryReadArrayHeader" or "TryReadMapHeader" => (null, false), // Advanced case, which we'll just assume they're doing correctly.
-							"TryReadNil" => (1, false),
+							"ReadStartVector" or "ReadStartMap" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
+							"TryReadStartVector" or "TryReadStartMap" => (null, false), // Advanced case, which we'll just assume they're doing correctly.
+							"TryReadNull" => (1, false),
 							"TryReadStringSpan" => (1, false),
 							"Skip" => (1, true),
 							string t when t.StartsWith("Read", StringComparison.Ordinal) => (1, true),

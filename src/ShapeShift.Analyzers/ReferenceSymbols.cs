@@ -6,13 +6,14 @@ using System.Diagnostics.CodeAnalysis;
 namespace ShapeShift.Analyzers;
 
 public record ReferenceSymbols(
-	INamedTypeSymbol MessagePackSerializer,
+	INamedTypeSymbol SerializerBase,
 	INamedTypeSymbol Converter,
 	INamedTypeSymbol ConverterNonGeneric,
 	INamedTypeSymbol ConverterAttribute,
 	INamedTypeSymbol Reader,
 	INamedTypeSymbol StreamingReader,
 	INamedTypeSymbol Writer,
+	INamedTypeSymbol BufferWriter,
 	INamedTypeSymbol KeyAttribute,
 	INamedTypeSymbol KnownSubTypeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
@@ -39,8 +40,8 @@ public record ReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? messagePackSerializer = libraryAssembly.GetTypeByMetadataName("ShapeShift.MessagePackSerializer");
-		if (messagePackSerializer is null)
+		INamedTypeSymbol? serializerBase = libraryAssembly.GetTypeByMetadataName("ShapeShift.SerializerBase");
+		if (serializerBase is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -83,6 +84,13 @@ public record ReferenceSymbols(
 
 		INamedTypeSymbol? writer = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.Writer");
 		if (writer is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? bufferWriter = libraryAssembly.GetTypeByMetadataName("ShapeShift.Converters.BufferWriter");
+		if (bufferWriter is null)
 		{
 			referenceSymbols = null;
 			return false;
@@ -131,13 +139,14 @@ public record ReferenceSymbols(
 		}
 
 		referenceSymbols = new ReferenceSymbols(
-			messagePackSerializer,
+			serializerBase,
 			converter,
 			converterNonGeneric,
 			converterAttribute,
 			reader,
 			streamingReader,
 			writer,
+			bufferWriter,
 			keyAttribute,
 			knownSubTypeAttribute,
 			generateShapeAttribute,

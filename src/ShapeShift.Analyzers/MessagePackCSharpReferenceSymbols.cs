@@ -21,6 +21,13 @@ public record MessagePackCSharpReferenceSymbols(
 	INamedTypeSymbol MessagePackReader,
 	IPropertySymbol ReaderDepth,
 	IMethodSymbol ReaderSkip,
+	IMethodSymbol ReaderReadArrayHeader,
+	IMethodSymbol ReaderReadMapHeader,
+	IMethodSymbol ReaderTryReadNil,
+	INamedTypeSymbol MessagePackWriter,
+	IMethodSymbol WriterWriteArrayHeader,
+	IMethodSymbol WriterWriteMapHeader,
+	IMethodSymbol WriterWriteNil,
 	INamedTypeSymbol IFormatterResolver,
 	IMethodSymbol GetFormatterWithVerify,
 	IMethodSymbol GetFormatter)
@@ -148,6 +155,55 @@ public record MessagePackCSharpReferenceSymbols(
 			return false;
 		}
 
+		IMethodSymbol? readerReadArrayHeader = reader.GetMembers("ReadArrayHeader").OfType<IMethodSymbol>().FirstOrDefault();
+		if (readerReadArrayHeader is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		IMethodSymbol? readerReadMapHeader = reader.GetMembers("ReadMapHeader").OfType<IMethodSymbol>().FirstOrDefault();
+		if (readerReadMapHeader is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		IMethodSymbol? readerTryReadNil = reader.GetMembers("TryReadNil").OfType<IMethodSymbol>().FirstOrDefault();
+		if (readerTryReadNil is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? writer = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.MessagePackWriter");
+		if (writer is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		IMethodSymbol? writerWriteArrayHeader = writer.GetMembers("WriteArrayHeader").OfType<IMethodSymbol>().FirstOrDefault();
+		if (writerWriteArrayHeader is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		IMethodSymbol? writerWriteMapHeader = writer.GetMembers("WriteMapHeader").OfType<IMethodSymbol>().FirstOrDefault();
+		if (writerWriteMapHeader is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		IMethodSymbol? writerWriteNil = writer.GetMembers("WriteNil").OfType<IMethodSymbol>().FirstOrDefault();
+		if (writerWriteNil is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? resolver = oldLibraryAssembly.GetTypeByMetadataName("MessagePack.IFormatterResolver");
 		if (resolver is null)
 		{
@@ -192,6 +248,13 @@ public record MessagePackCSharpReferenceSymbols(
 			reader,
 			readerDepth,
 			readerSkip,
+			readerReadArrayHeader,
+			readerReadMapHeader,
+			readerTryReadNil,
+			writer,
+			writerWriteArrayHeader,
+			writerWriteMapHeader,
+			writerWriteNil,
 			resolver,
 			getFormatterWithVerify,
 			getFormatter);

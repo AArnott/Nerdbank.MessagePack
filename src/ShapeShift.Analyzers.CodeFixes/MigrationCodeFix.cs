@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -19,7 +19,8 @@ namespace ShapeShift.Analyzers.CodeFixes;
 [ExportCodeFixProvider(LanguageNames.CSharp)]
 public class MigrationCodeFix : CodeFixProvider
 {
-	private static readonly QualifiedNameSyntax Namespace = QualifiedName(IdentifierName("Nerdbank"), IdentifierName("MessagePack"));
+	private static readonly NameSyntax Namespace = IdentifierName("ShapeShift");
+	private static readonly NameSyntax ConverterNamespace = QualifiedName(IdentifierName("ShapeShift"), IdentifierName("Converters"));
 	private static readonly IdentifierNameSyntax ContextParameterName = IdentifierName("context");
 	private static readonly AttributeSyntax GenerateShapeAttribute = Attribute(NameInNamespace(IdentifierName("GenerateShape"), IdentifierName("PolyType")));
 	private static readonly AttributeSyntax ConstructorShapeAttribute = Attribute(NameInNamespace(IdentifierName("ConstructorShape"), IdentifierName("PolyType")));
@@ -45,17 +46,17 @@ public class MigrationCodeFix : CodeFixProvider
 				case MigrationAnalyzer.FormatterDiagnosticId:
 					context.RegisterCodeFix(
 						CodeAction.Create(
-							title: "Migrate to MessagePackConverter<T>",
-							createChangedDocument: cancellationToken => this.MigrateToMessagePackConverterAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-							equivalenceKey: "Migrate to MessagePackConverter<T>"),
+							title: "Migrate to Converter<T>",
+							createChangedDocument: cancellationToken => this.MigrateToConverterAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+							equivalenceKey: "Migrate to Converter<T>"),
 						diagnostic);
 					break;
 				case MigrationAnalyzer.FormatterAttributeDiagnosticId:
 					context.RegisterCodeFix(
 						CodeAction.Create(
-							title: "Migrate to MessagePackConverterAttribute",
-							createChangedDocument: cancellationToken => this.MigrateToMessagePackConverterAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
-							equivalenceKey: "Migrate to MessagePackConverterAttribute"),
+							title: "Migrate to ConverterAttribute",
+							createChangedDocument: cancellationToken => this.MigrateToConverterAttributeAsync(context.Document, diagnostic.Location.SourceSpan, cancellationToken),
+							equivalenceKey: "Migrate to ConverterAttribute"),
 						diagnostic);
 					break;
 				case MigrationAnalyzer.MessagePackObjectAttributeUsageDiagnosticId:
@@ -118,9 +119,9 @@ public class MigrationCodeFix : CodeFixProvider
 				case MigrationAnalyzer.CallbackReceiverDiagnosticId:
 					context.RegisterCodeFix(
 						CodeAction.Create(
-							title: "Implement IMessagePackSerializationCallbacks instead",
+							title: "Implement ISerializationCallbacks instead",
 							createChangedDocument: cancellationToken => this.ImplementSerializationCallbacksAsync(context.Document, diagnostic, cancellationToken),
-							equivalenceKey: "Implement IMessagePackSerializationCallbacks"),
+							equivalenceKey: "Implement ISerializationCallbacks"),
 						diagnostic);
 					break;
 				case MigrationAnalyzer.SerializationConstructorDiagnosticId:
@@ -144,7 +145,7 @@ public class MigrationCodeFix : CodeFixProvider
 
 	private static NameSyntax NameInNamespace(SimpleNameSyntax name, NameSyntax @namespace) => QualifiedName(@namespace, name).WithAdditionalAnnotations(Simplifier.AddImportsAnnotation, Simplifier.Annotation);
 
-	private async Task<Document> MigrateToMessagePackConverterAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
+	private async Task<Document> MigrateToConverterAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
 	{
 		Compilation? compilation = await document.Project.GetCompilationAsync(cancellationToken);
 		if (compilation is null)
@@ -183,7 +184,7 @@ public class MigrationCodeFix : CodeFixProvider
 		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
-	private async Task<Document> MigrateToMessagePackConverterAttributeAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
+	private async Task<Document> MigrateToConverterAttributeAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
 	{
 		SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken);
 		if (root?.FindNode(sourceSpan) is not AttributeSyntax attribute)
@@ -192,10 +193,10 @@ public class MigrationCodeFix : CodeFixProvider
 		}
 
 		// - [MessagePackFormatter(typeof(MyTypeFormatter))]
-		// + [MessagePackConverter(typeof(MyTypeFormatter))]
+		// + [Converter(typeof(MyTypeFormatter))]
 		root = root.ReplaceNode(
 			attribute,
-			attribute.WithName(NameInNamespace(IdentifierName("MessagePackConverter"))));
+			attribute.WithName(NameInNamespace(IdentifierName("Converter"), Namespace)));
 
 		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
@@ -366,7 +367,7 @@ public class MigrationCodeFix : CodeFixProvider
 			{
 				root = root.ReplaceNode(
 					currentBaseType,
-					SimpleBaseType(NameInNamespace(IdentifierName("IMessagePackSerializationCallbacks"), Namespace)));
+					SimpleBaseType(NameInNamespace(IdentifierName("ISerializationCallbacks"), Namespace)));
 			}
 
 			foreach (MethodDeclarationSyntax oldMethod in methods)
@@ -375,7 +376,7 @@ public class MigrationCodeFix : CodeFixProvider
 				{
 					root = root.ReplaceNode(
 						currentMethod,
-						currentMethod.WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName("IMessagePackSerializationCallbacks"))));
+						currentMethod.WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName("ISerializationCallbacks"))));
 				}
 			}
 		}
@@ -415,6 +416,16 @@ public class MigrationCodeFix : CodeFixProvider
 	private class FormatterMigrationVisitor(SemanticModel? semanticModel, MessagePackCSharpReferenceSymbols oldLibrarySymbols, CancellationToken cancellationToken) : CSharpSyntaxRewriter
 	{
 		private static readonly SyntaxAnnotation MadePartial = new();
+
+		private readonly FrozenDictionary<IMethodSymbol, string> methodNameReplacements = new Dictionary<IMethodSymbol, string>(SymbolEqualityComparer.Default)
+		{
+			[oldLibrarySymbols.ReaderTryReadNil] = "TryReadNull",
+			[oldLibrarySymbols.WriterWriteNil] = "WriteNull",
+			[oldLibrarySymbols.ReaderReadArrayHeader] = "ReadStartVector",
+			[oldLibrarySymbols.WriterWriteArrayHeader] = "WriteStartVector",
+			[oldLibrarySymbols.ReaderReadMapHeader] = "ReadStartMap",
+			[oldLibrarySymbols.WriterWriteMapHeader] = "WriteStartMap",
+		}.ToFrozenDictionary(SymbolEqualityComparer.Default);
 
 		private readonly Dictionary<string, TypeSyntax> requiredWitnesses = new(StringComparer.Ordinal);
 
@@ -477,7 +488,7 @@ public class MigrationCodeFix : CodeFixProvider
 			{
 				{
 					// - reader.Skip();
-					// - reader.Skip(context);
+					// + reader.Skip(context);
 					if (SymbolEqualityComparer.Default.Equals(methodSymbol, oldLibrarySymbols.ReaderSkip))
 					{
 						return node.AddArgumentListArguments(Argument(ContextParameterName));
@@ -560,6 +571,14 @@ public class MigrationCodeFix : CodeFixProvider
 						}
 					}
 				}
+
+				{
+					// Trivial method name replacements.
+					if (this.methodNameReplacements.TryGetValue(methodSymbol, out string? newName) && node is { Expression: MemberAccessExpressionSyntax { Name: { } methodName } })
+					{
+						return node.ReplaceNode(methodName, IdentifierName(newName));
+					}
+				}
 			}
 
 			return base.VisitInvocationExpression(node);
@@ -609,8 +628,10 @@ public class MigrationCodeFix : CodeFixProvider
 				// Replace last parameter.
 				result = ReplaceOptionsParameterWithContext(result, 2);
 
-				// Qualify the first parameter type name if necessary.
-				result = QualifyParameterTypeNames(result);
+				// Fix the first parameter type name.
+				result = result.ReplaceNode(
+					result.ParameterList.Parameters[0],
+					result.ParameterList.Parameters[0].WithType(NameInNamespace(IdentifierName("Writer"), ConverterNamespace)));
 
 				// Rename the method
 				result = result.WithIdentifier(Identifier("Write"));
@@ -622,7 +643,7 @@ public class MigrationCodeFix : CodeFixProvider
 				MethodDeclarationSyntax result = (MethodDeclarationSyntax)base.VisitMethodDeclaration(node)!;
 
 				// - public MyType Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
-				// + public override MyType Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)
+				// + public override MyType Read(ref ShapeShift.Converters.Reader reader, SerializationContext context)
 
 				// Add override modifier.
 				result = result.AddModifiers(Token(SyntaxKind.OverrideKeyword));
@@ -630,8 +651,10 @@ public class MigrationCodeFix : CodeFixProvider
 				// Replace last parameter.
 				result = ReplaceOptionsParameterWithContext(result, 1);
 
-				// Qualify the first parameter type name if necessary.
-				result = QualifyParameterTypeNames(result);
+				// Fix the first parameter type name.
+				result = result.ReplaceNode(
+					result.ParameterList.Parameters[0],
+					result.ParameterList.Parameters[0].WithType(NameInNamespace(IdentifierName("Reader"), ConverterNamespace)));
 
 				// Rename the method
 				result = result.WithIdentifier(Identifier("Read"));
@@ -644,33 +667,11 @@ public class MigrationCodeFix : CodeFixProvider
 				return node;
 			}
 
-			MethodDeclarationSyntax QualifyParameterTypeNames(MethodDeclarationSyntax method)
-			{
-				if (method.ParameterList.Parameters is not [ParameterSyntax { Type: TypeSyntax paramType }, ..])
-				{
-					return method;
-				}
-
-				SimpleNameSyntax? identifierName =
-					paramType is IdentifierNameSyntax idName ? idName :
-					paramType is QualifiedNameSyntax qname ? qname.Right :
-					null;
-
-				if (identifierName is null)
-				{
-					return method;
-				}
-
-				return method.ReplaceNode(
-					method.ParameterList.Parameters[0],
-					method.ParameterList.Parameters[0].WithType(NameInNamespace(identifierName)));
-			}
-
 			MethodDeclarationSyntax ReplaceOptionsParameterWithContext(MethodDeclarationSyntax method, int paramIndex)
 			{
 				return method.ParameterList.Parameters.Count <= paramIndex ? method : method.ReplaceNode(
 					method.ParameterList.Parameters[paramIndex],
-					Parameter(ContextParameterName.Identifier).WithType(NameInNamespace(IdentifierName("SerializationContext"))));
+					Parameter(ContextParameterName.Identifier).WithType(NameInNamespace(IdentifierName("SerializationContext"), ConverterNamespace)));
 			}
 		}
 
@@ -716,9 +717,9 @@ public class MigrationCodeFix : CodeFixProvider
 						typeArg = nullableType.ElementType;
 					}
 
-					// Insert MessagePackConverter<T> as the first base type.
+					// Insert Converter<T> as the first base type.
 					// It must be first because it's a derived class, whereas the interface we just removed could have appeared anywhere.
-					NameSyntax converterBaseType = NameInNamespace(GenericName("MessagePackConverter").AddTypeArgumentListArguments(typeArg));
+					NameSyntax converterBaseType = NameInNamespace(GenericName("Converter").AddTypeArgumentListArguments(typeArg), ConverterNamespace);
 					node = node.WithTypes(node.Types.Insert(0, SimpleBaseType(converterBaseType)));
 
 					break;
