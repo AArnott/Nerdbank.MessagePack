@@ -4,7 +4,7 @@
 using System.Text.Json.Nodes;
 using Microsoft;
 
-namespace ShapeShift;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// The context provided to <see cref="Converter.GetJsonSchema"/>

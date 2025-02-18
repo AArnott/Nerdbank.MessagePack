@@ -220,10 +220,6 @@ override ShapeShift.SerializerBase.StreamingEnumerationOptions<T, TElement>.Equa
 override ShapeShift.SerializerBase.StreamingEnumerationOptions<T, TElement>.GetHashCode() -> int
 override ShapeShift.SerializerBase.StreamingEnumerationOptions<T, TElement>.ToString() -> string!
 override ShapeShift.SerializerBase.ToString() -> string!
-ShapeShift.BufferWriter
-ShapeShift.BufferWriter.BufferWriter() -> void
-ShapeShift.BufferWriter.Write(in System.Buffers.ReadOnlySequence<byte> rawMessagePackBlock) -> void
-ShapeShift.BufferWriter.Write(scoped System.ReadOnlySpan<byte> source) -> void
 ShapeShift.ConverterAttribute
 ShapeShift.ConverterAttribute.ConverterAttribute(System.Type! converterType) -> void
 ShapeShift.ConverterAttribute.ConverterType.get -> System.Type!
@@ -251,6 +247,10 @@ ShapeShift.Converters.AsyncWriter.IsTimeToFlush(ShapeShift.Converters.Serializat
 ShapeShift.Converters.AsyncWriter.IsTimeToFlush(ShapeShift.Converters.SerializationContext context, ShapeShift.Converters.Writer writer) -> bool
 ShapeShift.Converters.AsyncWriter.ReturnWriter(ref ShapeShift.Converters.Writer writer) -> void
 ShapeShift.Converters.AsyncWriter.WriteNull() -> void
+ShapeShift.Converters.BufferWriter
+ShapeShift.Converters.BufferWriter.BufferWriter() -> void
+ShapeShift.Converters.BufferWriter.Write(in System.Buffers.ReadOnlySequence<byte> rawMessagePackBlock) -> void
+ShapeShift.Converters.BufferWriter.Write(scoped System.ReadOnlySpan<byte> source) -> void
 ShapeShift.Converters.Converter
 ShapeShift.Converters.Converter<T>
 ShapeShift.Converters.Converter<T>.Converter() -> void
@@ -296,6 +296,8 @@ ShapeShift.Converters.Deformatter.TryReadStringSpan(scoped ref ShapeShift.Conver
 ShapeShift.Converters.Formatter
 ShapeShift.Converters.Formatter.Formatter() -> void
 ShapeShift.Converters.Formatter.Formatter(ShapeShift.Converters.Formatter! original) -> void
+ShapeShift.Converters.JsonSchemaContext
+ShapeShift.Converters.JsonSchemaContext.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
 ShapeShift.Converters.Reader
 ShapeShift.Converters.Reader.Deformatter.get -> ShapeShift.Converters.Deformatter!
 ShapeShift.Converters.Reader.End.get -> bool
@@ -398,7 +400,7 @@ ShapeShift.Converters.TokenType.String = 5 -> ShapeShift.Converters.TokenType
 ShapeShift.Converters.TokenType.Unknown = 0 -> ShapeShift.Converters.TokenType
 ShapeShift.Converters.TokenType.Vector = 7 -> ShapeShift.Converters.TokenType
 ShapeShift.Converters.Writer
-ShapeShift.Converters.Writer.Buffer.get -> ShapeShift.BufferWriter
+ShapeShift.Converters.Writer.Buffer.get -> ShapeShift.Converters.BufferWriter
 ShapeShift.Converters.Writer.Flush() -> void
 ShapeShift.Converters.Writer.Formatter.get -> ShapeShift.Converters.Formatter!
 ShapeShift.Converters.Writer.TryWriteStartBinary(int length) -> bool
@@ -428,7 +430,7 @@ ShapeShift.Converters.Writer.WriteEndVector() -> void
 ShapeShift.Converters.Writer.WriteMapKeyValueSeparator() -> void
 ShapeShift.Converters.Writer.WriteNull() -> void
 ShapeShift.Converters.Writer.Writer() -> void
-ShapeShift.Converters.Writer.Writer(ShapeShift.BufferWriter writer, ShapeShift.Converters.Formatter! formatter) -> void
+ShapeShift.Converters.Writer.Writer(ShapeShift.Converters.BufferWriter writer, ShapeShift.Converters.Formatter! formatter) -> void
 ShapeShift.Converters.Writer.Writer(System.Buffers.IBufferWriter<byte>! writer, ShapeShift.Converters.Formatter! formatter) -> void
 ShapeShift.Converters.Writer.WriteStartMap(int count) -> void
 ShapeShift.Converters.Writer.WriteStartVector(int length) -> void
@@ -454,8 +456,6 @@ ShapeShift.JsonExporter.JsonOptions.NewLine.get -> string!
 ShapeShift.JsonExporter.JsonOptions.NewLine.set -> void
 ShapeShift.JsonExporter.JsonOptions.TrailingCommas.get -> bool
 ShapeShift.JsonExporter.JsonOptions.TrailingCommas.set -> void
-ShapeShift.JsonSchemaContext
-ShapeShift.JsonSchemaContext.GetJsonSchema(PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject!
 ShapeShift.KeyAttribute
 ShapeShift.KeyAttribute.Index.get -> int
 ShapeShift.KeyAttribute.KeyAttribute(int index) -> void
@@ -795,7 +795,7 @@ virtual ShapeShift.Converters.AsyncReader.BufferNextStructureAsync(ShapeShift.Co
 virtual ShapeShift.Converters.AsyncReader.BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, ShapeShift.Converters.SerializationContext context) -> System.Threading.Tasks.ValueTask<int>
 virtual ShapeShift.Converters.AsyncReader.GetMoreBytesAsync.Invoke(object? state, System.SequencePosition consumed, System.SequencePosition examined, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult>
 virtual ShapeShift.Converters.AsyncReader.ReadAsync() -> System.Threading.Tasks.ValueTask
-virtual ShapeShift.Converters.Converter.GetJsonSchema(ShapeShift.JsonSchemaContext! context, PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject?
+virtual ShapeShift.Converters.Converter.GetJsonSchema(ShapeShift.Converters.JsonSchemaContext! context, PolyType.Abstractions.ITypeShape! typeShape) -> System.Text.Json.Nodes.JsonObject?
 virtual ShapeShift.Converters.Converter.PreferAsyncSerialization.get -> bool
 virtual ShapeShift.Converters.Converter.VerifyCompatibility(ShapeShift.Converters.Formatter! formatter, ShapeShift.Converters.StreamingDeformatter! deformatter) -> void
 virtual ShapeShift.Converters.Formatter.EqualityContract.get -> System.Type!

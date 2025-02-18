@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft;
 
-namespace ShapeShift;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// A fast access struct that wraps <see cref="IBufferWriter{T}"/>.
