@@ -6,7 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nerdbank.MessagePack.Analyzers\ShapeShift.Analyzers.csproj" />
+    <ProjectReference Include="..\ShapeShift.Analyzers\ShapeShift.Analyzers.csproj" />
   </ItemGroup>
 
 </Project>

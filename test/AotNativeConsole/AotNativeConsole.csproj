@@ -14,16 +14,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack\ShapeShift.csproj" />
+    <ProjectReference Include="..\..\src\ShapeShift\ShapeShift.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <AnalyzerProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
-    <AnalyzerProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj" />
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\ShapeShift.Analyzers.CodeFixes.csproj">
+    <AnalyzerProjectReference Include="..\..\src\ShapeShift.Analyzers.CodeFixes\ShapeShift.Analyzers.CodeFixes.csproj" />
+    <AnalyzerProjectReference Include="..\..\src\ShapeShift.Analyzers\ShapeShift.Analyzers.csproj" />
+    <ProjectReference Include="..\..\src\ShapeShift.Analyzers.CodeFixes\ShapeShift.Analyzers.CodeFixes.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers\ShapeShift.Analyzers.csproj">
+    <ProjectReference Include="..\..\src\ShapeShift.Analyzers\ShapeShift.Analyzers.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>

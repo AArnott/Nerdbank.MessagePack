@@ -57,8 +57,8 @@
     <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
-    <AnalyzerProjectReference Include="..\Nerdbank.MessagePack.Analyzers.CodeFixes\ShapeShift.Analyzers.CodeFixes.csproj" />
-    <AnalyzerProjectReference Include="..\Nerdbank.MessagePack.Analyzers\ShapeShift.Analyzers.csproj" />
+    <AnalyzerProjectReference Include="..\ShapeShift.Analyzers.CodeFixes\ShapeShift.Analyzers.CodeFixes.csproj" />
+    <AnalyzerProjectReference Include="..\ShapeShift.Analyzers\ShapeShift.Analyzers.csproj" />
     <ProjectReference Include="@(AnalyzerProjectReference)">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>AnalyzerAssembly</OutputItemType>

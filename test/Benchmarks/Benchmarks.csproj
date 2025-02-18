@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack\ShapeShift.csproj" />
+    <ProjectReference Include="..\..\src\ShapeShift\ShapeShift.csproj" />
   </ItemGroup>
 
 </Project>
