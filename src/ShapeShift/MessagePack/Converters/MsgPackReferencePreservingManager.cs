@@ -3,13 +3,23 @@
 
 namespace ShapeShift.MessagePack.Converters;
 
-class MsgPackReferencePreservingManager : IReferencePreservingManager
+/// <summary>
+/// Gets a messagepack-specific <see cref="IReferencePreservingManager"/>.
+/// </summary>
+internal class MsgPackReferencePreservingManager : IReferencePreservingManager
 {
+	/// <summary>
+	/// Gets the singleton instance.
+	/// </summary>
 	internal static readonly MsgPackReferencePreservingManager Instance = new();
 
-	private MsgPackReferencePreservingManager() { }
+	private MsgPackReferencePreservingManager()
+	{
+	}
 
+	/// <inheritdoc/>
 	public Converter<T> UnwrapFromReferencePreservingConverter<T>(Converter<T> inner) => inner is ReferencePreservingConverter<T> converter ? converter.Inner : inner;
 
-	public Converter<T> WrapWithReferencePreservingConverter<T>(Converter<T> inner) => inner is ReferencePreservingConverter<T> ? inner : new ReferencePreservingConverter<T>(inner);
+	/// <inheritdoc/>
+	public Converter<T> WrapWithReferencePreservingConverter<T>(Converter<T> inner) => inner is ReferencePreservingConverter<T> || typeof(T).IsValueType ? inner : new ReferencePreservingConverter<T>(inner);
 }

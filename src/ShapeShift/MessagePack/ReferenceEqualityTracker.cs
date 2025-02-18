@@ -18,15 +18,21 @@ internal class ReferenceEqualityTracker : IPoolableObject, IReferenceEqualityTra
 	private readonly List<object?> deserializedObjects = new();
 	private int serializingObjectCounter;
 
-	/// <inheritdoc/>
+	/// <summary>
+	/// Gets or sets the owning serializer for this instance.
+	/// </summary>
 	public MessagePackSerializer? Owner { get; set; }
 
+	/// <inheritdoc/>
 	SerializerBase? IPoolableObject.Owner
 	{
 		get => this.Owner;
 		set => this.Owner = (MessagePackSerializer?)value;
 	}
 
+	/// <summary>
+	/// Gets the reference preserving manager for this instance.
+	/// </summary>
 	public IReferencePreservingManager Manager => MsgPackReferencePreservingManager.Instance;
 
 	/// <inheritdoc/>

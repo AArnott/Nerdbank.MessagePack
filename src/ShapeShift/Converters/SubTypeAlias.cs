@@ -64,8 +64,6 @@ internal struct SubTypeAlias : IEquatable<SubTypeAlias>
 
 	public static implicit operator SubTypeAlias(int alias) => new(alias);
 
-	internal FormattedSubTypeAlias Format(Formatter formatter) => new(this, formatter);
-
 	/// <inheritdoc/>
 	public bool Equals(SubTypeAlias other) => this.stringAlias == other.stringAlias && this.intAlias == other.intAlias;
 
@@ -74,4 +72,11 @@ internal struct SubTypeAlias : IEquatable<SubTypeAlias>
 
 	/// <inheritdoc/>
 	public override int GetHashCode() => this.stringAlias?.GetHashCode() ?? this.intAlias?.GetHashCode() ?? 0;
+
+	/// <summary>
+	/// Pre-encodes and formats the alias for rapid serialization and deserialization.
+	/// </summary>
+	/// <param name="formatter">The formatter that will be used to pre-encode the alias.</param>
+	/// <returns>The pre-formatted alias.</returns>
+	internal FormattedSubTypeAlias Format(Formatter formatter) => new(this, formatter);
 }

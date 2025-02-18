@@ -23,20 +23,25 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 	/// <param name="self">A box containing the not-yet-done converter.</param>
 	internal class DelayedConverter<T>(DelayedValue<Converter<T>> self) : Converter<T>
 	{
+		/// <inheritdoc/>
 		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 			=> self.Result.GetJsonSchema(context, typeShape);
 
+		/// <inheritdoc/>
 		public override T? Read(ref Reader reader, SerializationContext context)
 			=> self.Result.Read(ref reader, context);
 
+		/// <inheritdoc/>
 		[Experimental("NBMsgPackAsync")]
 		public override ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
 			=> self.Result.ReadAsync(reader, context);
 
+		/// <inheritdoc/>
 		[Experimental("NBMsgPackAsync")]
 		public override void Write(ref Writer writer, in T? value, SerializationContext context)
 			=> self.Result.Write(ref writer, value, context);
 
+		/// <inheritdoc/>
 		[Experimental("NBMsgPackAsync")]
 		public override ValueTask WriteAsync(AsyncWriter writer, T? value, SerializationContext context)
 			=> self.Result.WriteAsync(writer, value, context);

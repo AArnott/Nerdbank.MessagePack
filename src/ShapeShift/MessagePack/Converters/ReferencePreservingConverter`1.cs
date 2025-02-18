@@ -16,10 +16,13 @@ namespace ShapeShift.Converters;
 /// <param name="inner">The actual converter to use when a value is serialized or deserialized for the first time in a stream.</param>
 internal class ReferencePreservingConverter<T>(Converter<T> inner) : Converter<T>
 {
-	internal Converter<T> Inner => inner;
-
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
+
+	/// <summary>
+	/// Gets the inner converter.
+	/// </summary>
+	internal Converter<T> Inner => inner;
 
 	/// <inheritdoc/>
 	public override T? Read(ref Reader reader, SerializationContext context)

@@ -13,7 +13,7 @@ internal class ReusableObjectPool<T>(Func<T> factory)
 	/// <summary>
 	/// A pool of objects that can be reused to reduce allocations.
 	/// </summary>
-	private readonly ThreadLocal<Stack<T>> Pool = new(() => new Stack<T>());
+	private readonly ThreadLocal<Stack<T>> pool = new(() => new Stack<T>());
 
 	/// <summary>
 	/// Retrieves an object from the pool, or creates a new one if the pool is empty.
@@ -22,7 +22,7 @@ internal class ReusableObjectPool<T>(Func<T> factory)
 	/// <returns>The object.</returns>
 	internal T Take(SerializerBase? serializer)
 	{
-		if (!this.Pool.Value!.TryPop(out T? result))
+		if (!this.pool.Value!.TryPop(out T? result))
 		{
 			result = factory();
 		}
@@ -39,6 +39,6 @@ internal class ReusableObjectPool<T>(Func<T> factory)
 	{
 		item.Recycle();
 		item.Owner = null;
-		this.Pool.Value!.Push(item);
+		this.pool.Value!.Push(item);
 	}
 }

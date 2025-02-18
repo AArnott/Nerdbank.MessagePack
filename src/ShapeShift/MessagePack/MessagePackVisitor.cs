@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using ShapeShift.MessagePack.Converters;
 using PolyType.Utilities;
+using ShapeShift.MessagePack.Converters;
 
 namespace ShapeShift.MessagePack;
 

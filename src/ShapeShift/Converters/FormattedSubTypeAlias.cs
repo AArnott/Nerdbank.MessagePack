@@ -5,12 +5,20 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ShapeShift.Converters;
 
+/// <summary>
+/// A subtype alias that has been pre-formatted for optimized serialization.
+/// </summary>
 internal struct FormattedSubTypeAlias : IEquatable<FormattedSubTypeAlias>
 {
 	private SubTypeAlias alias;
 	private ReadOnlyMemory<byte> encodedAlias;
 	private ReadOnlyMemory<byte> formattedAlias;
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="FormattedSubTypeAlias"/> struct.
+	/// </summary>
+	/// <param name="alias">The alias.</param>
+	/// <param name="formatter">The formatter to use for pre-formatting.</param>
 	internal FormattedSubTypeAlias(SubTypeAlias alias, Formatter formatter)
 	{
 		this.alias = alias;
@@ -30,6 +38,9 @@ internal struct FormattedSubTypeAlias : IEquatable<FormattedSubTypeAlias>
 		}
 	}
 
+	/// <summary>
+	/// Gets the formatter used to pre-format the alias.
+	/// </summary>
 	public Formatter Formatter { get; }
 
 	/// <inheritdoc cref="SubTypeAlias.Type"/>

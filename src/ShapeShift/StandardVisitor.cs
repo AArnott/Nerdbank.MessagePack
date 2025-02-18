@@ -40,13 +40,15 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 	}
 
-	protected ConverterCache ConverterCache => this.owner;
-
+	/// <summary>
+	/// Gets the formatter used to encode primitive values.
+	/// </summary>
 	internal abstract Formatter Formatter { get; }
 
+	/// <summary>
+	/// Gets the deformatter used to decode primitive values.
+	/// </summary>
 	internal abstract Deformatter Deformatter { get; }
-
-	protected virtual bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter) => PrimitiveConverterLookup.TryGetPrimitiveConverter(out converter);
 
 	/// <summary>
 	/// Gets or sets the visitor that will be used to generate converters for new types that are encountered.
@@ -56,6 +58,11 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// This may be changed to a wrapping visitor implementation to implement features such as reference preservation.
 	/// </remarks>
 	internal ITypeShapeVisitor OutwardVisitor { get; set; }
+
+	/// <summary>
+	/// Gets the converter cache that owns this visitor.
+	/// </summary>
+	protected ConverterCache ConverterCache => this.owner;
 
 	/// <inheritdoc/>
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
@@ -195,9 +202,6 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return unionTypes is null ? converter : this.CreateSubTypeUnionConverter<T>(unionTypes, converter);
 	}
-
-	protected virtual Converter CreateSubTypeUnionConverter<T>(SubTypes unionTypes, Converter<T> baseConverter)
-		=> new SubTypeUnionConverter<T>(unionTypes, baseConverter);
 
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
@@ -418,18 +422,6 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
 
-	protected virtual Converter CreateDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter)
-		where TKey : notnull => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter);
-
-	protected virtual Converter CreateMutableDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePair, Func<TDictionary> defaultConstructor)
-		where TKey : notnull => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addKeyValuePair, defaultConstructor);
-
-	protected virtual Converter CreateDictionaryFromSpanConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanConstructor)
-		where TKey : notnull => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, spanConstructor);
-
-	protected virtual Converter CreateDictionaryFromEnumerableConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableConstructor)
-		where TKey : notnull => new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, enumerableConstructor);
-
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 	{
@@ -447,25 +439,6 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			CollectionConstructionStrategy.Enumerable => this.CreateDictionaryFromEnumerableConverter(getReadable, keyConverter, valueConverter, dictionaryShape.GetEnumerableConstructor()),
 			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
 		};
-	}
-
-	protected virtual Converter CreateArrayConverter<TElement>(Converter<TElement> elementConverter)
-		=> new ArrayConverter<TElement>(elementConverter);
-
-#if NET
-	protected virtual Converter CreateArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter, int rank)
-		=> new ArrayWithNestedDimensionsConverter<TArray, TElement>(elementConverter, rank);
-
-	protected virtual Converter CreateArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter)
-		=> new ArrayWithFlattenedDimensionsConverter<TArray, TElement>(elementConverter);
-#endif
-
-	protected abstract bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter);
-
-	protected virtual bool TryGetHardwareAcceleratedConverter<TArray, TElement>(out Converter<TArray>? converter)
-	{
-		converter = null;
-		return false;
 	}
 
 	/// <inheritdoc/>
@@ -519,18 +492,6 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		};
 	}
 
-	protected virtual Converter CreateEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter)
-		=> new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter);
-
-	protected virtual Converter CreateMutableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Setter<TEnumerable, TElement> addElement, Func<TEnumerable> defaultConstructor)
-		=> new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, addElement, defaultConstructor);
-
-	protected virtual Converter CreateSpanEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, SpanConstructor<TElement, TEnumerable> spanConstructor)
-		=> new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, spanConstructor);
-
-	protected virtual Converter CreateEnumerableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Func<IEnumerable<TElement>, TEnumerable> enumerableConstructor)
-		=> new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableConstructor);
-
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
 		=> this.owner.SerializeEnumValuesByName
@@ -540,6 +501,186 @@ internal abstract class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
 		=> new SurrogateConverter<T, TSurrogate>(surrogateShape, this.GetConverter(surrogateShape.SurrogateType, state));
+
+	/// <summary>
+	/// Creates a converter for a class and a set of derived types that should be serialized with full fidelity.
+	/// </summary>
+	/// <typeparam name="T">The type of the base type.</typeparam>
+	/// <param name="unionTypes">A mapping of aliases and derived types.</param>
+	/// <param name="baseConverter">The converter to use when the runtime type is the base type itself.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateSubTypeUnionConverter<T>(SubTypes unionTypes, Converter<T> baseConverter)
+		=> new SubTypeUnionConverter<T>(unionTypes, baseConverter);
+
+	/// <summary>
+	/// Looks up a built-in converter for a given type, if available.
+	/// </summary>
+	/// <typeparam name="T">The data type.</typeparam>
+	/// <param name="converter">Receives the converter for the data type, if available.</param>
+	/// <returns>A value indicating whether a built-in converter was available.</returns>
+	protected virtual bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter) => PrimitiveConverterLookup.TryGetPrimitiveConverter(out converter);
+
+	/// <summary>
+	/// Creates a converter for a dictionary that can only be serialized.
+	/// </summary>
+	/// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+	/// <typeparam name="TKey">The type of key stored by the dictionary.</typeparam>
+	/// <typeparam name="TValue">The type of value stored by the dictionary.</typeparam>
+	/// <param name="getReadable">A function that retrieves an readable interface from the dictionary type, allowing serialization.</param>
+	/// <param name="keyConverter">The converter to use when serializing keys.</param>
+	/// <param name="valueConverter">The converter to use when serializing values.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter)
+		where TKey : notnull => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter);
+
+	/// <summary>
+	/// Creates a converter for a mutable dictionary.
+	/// </summary>
+	/// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+	/// <typeparam name="TKey">The type of key stored by the dictionary.</typeparam>
+	/// <typeparam name="TValue">The type of value stored by the dictionary.</typeparam>
+	/// <param name="getReadable">A function that retrieves an readable interface from the dictionary type, allowing serialization.</param>
+	/// <param name="keyConverter">The converter to use when serializing keys.</param>
+	/// <param name="valueConverter">The converter to use when serializing values.</param>
+	/// <param name="addKeyValuePair">The function that can add a key=value pair to the dictionary.</param>
+	/// <param name="defaultConstructor">A factory for an empty dictionary, for use when deserializing.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateMutableDictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePair, Func<TDictionary> defaultConstructor)
+		where TKey : notnull => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addKeyValuePair, defaultConstructor);
+
+	/// <summary>
+	/// Creates a converter for a dictionary that can be constructed from a span of pairs.
+	/// </summary>
+	/// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+	/// <typeparam name="TKey">The type of key stored by the dictionary.</typeparam>
+	/// <typeparam name="TValue">The type of value stored by the dictionary.</typeparam>
+	/// <param name="getReadable">A function that retrieves an readable interface from the dictionary type, allowing serialization.</param>
+	/// <param name="keyConverter">The converter to use when serializing keys.</param>
+	/// <param name="valueConverter">The converter to use when serializing values.</param>
+	/// <param name="spanConstructor">A factory for the dictionary that is initially populated with a list of pairs.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateDictionaryFromSpanConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanConstructor)
+		where TKey : notnull => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, spanConstructor);
+
+	/// <summary>
+	/// Creates a converter for a dictionary that can be constructed from an enumerable of pairs.
+	/// </summary>
+	/// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
+	/// <typeparam name="TKey">The type of key stored by the dictionary.</typeparam>
+	/// <typeparam name="TValue">The type of value stored by the dictionary.</typeparam>
+	/// <param name="getReadable">A function that retrieves an readable interface from the dictionary type, allowing serialization.</param>
+	/// <param name="keyConverter">The converter to use when serializing keys.</param>
+	/// <param name="valueConverter">The converter to use when serializing values.</param>
+	/// <param name="enumerableConstructor">A factory for the dictionary that is initially populated from an enumeration of pairs.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateDictionaryFromEnumerableConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, Converter<TKey> keyConverter, Converter<TValue> valueConverter, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableConstructor)
+		where TKey : notnull => new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, enumerableConstructor);
+
+	/// <summary>
+	/// Creates a converter for an array.
+	/// </summary>
+	/// <typeparam name="TElement">The type of element stored in the array.</typeparam>
+	/// <param name="elementConverter">The converter to use for each array element.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateArrayConverter<TElement>(Converter<TElement> elementConverter)
+		=> new ArrayConverter<TElement>(elementConverter);
+
+#if NET
+	/// <summary>
+	/// Creates a converter for an array with nested dimensions (i.e. when <see cref="SerializerBase.MultiDimensionalArrayFormat"/>
+	/// is set to <see cref="MultiDimensionalArrayFormat.Nested"/>.
+	/// </summary>
+	/// <typeparam name="TArray">The type of the array.</typeparam>
+	/// <typeparam name="TElement">The type of array elements.</typeparam>
+	/// <param name="elementConverter">The converter to use for each array element.</param>
+	/// <param name="rank">The array rank.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter, int rank)
+		=> new ArrayWithNestedDimensionsConverter<TArray, TElement>(elementConverter, rank);
+
+	/// <summary>
+	/// Creates a converter for an array with flattened dimensions (i.e. when <see cref="SerializerBase.MultiDimensionalArrayFormat"/>
+	/// is set to <see cref="MultiDimensionalArrayFormat.Flat"/>.
+	/// </summary>
+	/// <typeparam name="TArray">The type of the array.</typeparam>
+	/// <typeparam name="TElement">The type of array elements.</typeparam>
+	/// <param name="elementConverter">The converter to use for each array element.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter<TElement> elementConverter)
+		=> new ArrayWithFlattenedDimensionsConverter<TArray, TElement>(elementConverter);
+#endif
+
+	/// <summary>
+	/// Gets a converter that is optimized for arrays of primitive values, if available.
+	/// </summary>
+	/// <typeparam name="TArray">The type of the array.</typeparam>
+	/// <typeparam name="TElement">The type of array elements.</typeparam>
+	/// <param name="getEnumerable">A function that retrieves a readable object for serializing.</param>
+	/// <param name="constructor">The factory for the array for deserializing.</param>
+	/// <param name="converter">Receives the converter, if available.</param>
+	/// <returns><see langword="true" /> if an optimized converter is available; <see langword="false" /> otherwise.</returns>
+	protected abstract bool TryGetArrayOfPrimitivesConverter<TArray, TElement>(Func<TArray, IEnumerable<TElement>> getEnumerable, SpanConstructor<TElement, TArray> constructor, [NotNullWhen(true)] out Converter<TArray>? converter);
+
+	/// <summary>
+	/// Gets a converter that is hardware-accelerated for arrays of primitive values, if available.
+	/// </summary>
+	/// <typeparam name="TArray">The type of the array.</typeparam>
+	/// <typeparam name="TElement">The type of array elements.</typeparam>
+	/// <param name="converter">Receives the converter, if available.</param>
+	/// <returns><see langword="true" /> if an optimized converter is available; <see langword="false" /> otherwise.</returns>
+	protected virtual bool TryGetHardwareAcceleratedConverter<TArray, TElement>(out Converter<TArray>? converter)
+	{
+		converter = null;
+		return false;
+	}
+
+	/// <summary>
+	/// Creates a converter for an enumerable (serialization only).
+	/// </summary>
+	/// <typeparam name="TEnumerable">The type of enumerable.</typeparam>
+	/// <typeparam name="TElement">The type of enumerated element.</typeparam>
+	/// <param name="getEnumerable">A function that retrieves the enumerable from a runtime object.</param>
+	/// <param name="elementConverter">The converter to use for each element.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter)
+		=> new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter);
+
+	/// <summary>
+	/// Creates a converter for a mutable enumerable.
+	/// </summary>
+	/// <typeparam name="TEnumerable">The type of enumerable.</typeparam>
+	/// <typeparam name="TElement">The type of enumerated element.</typeparam>
+	/// <param name="getEnumerable">A function that retrieves the enumerable from a runtime object.</param>
+	/// <param name="elementConverter">The converter to use for each element.</param>
+	/// <param name="addElement">The function to add an element to the collection during deserialization.</param>
+	/// <param name="defaultConstructor">The factory for constructing the empty collection.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateMutableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Setter<TEnumerable, TElement> addElement, Func<TEnumerable> defaultConstructor)
+		=> new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, addElement, defaultConstructor);
+
+	/// <summary>
+	/// Creates a converter for an enumerable that can be constructed from a span of elements.
+	/// </summary>
+	/// <typeparam name="TEnumerable">The type of enumerable.</typeparam>
+	/// <typeparam name="TElement">The type of enumerated element.</typeparam>
+	/// <param name="getEnumerable">A function that retrieves the enumerable from a runtime object.</param>
+	/// <param name="elementConverter">The converter to use for each element.</param>
+	/// <param name="spanConstructor">The factory that can create the collection from a span of elements.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateSpanEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, SpanConstructor<TElement, TEnumerable> spanConstructor)
+		=> new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, spanConstructor);
+
+	/// <summary>
+	/// Creates a converter for an enumerable that can be constructed from an enumerable of elements.
+	/// </summary>
+	/// <typeparam name="TEnumerable">The type of enumerable.</typeparam>
+	/// <typeparam name="TElement">The type of enumerated element.</typeparam>
+	/// <param name="getEnumerable">A function that retrieves the enumerable from a runtime object.</param>
+	/// <param name="elementConverter">The converter to use for each element.</param>
+	/// <param name="enumerableConstructor">The factory that can create the collection from an enumeration of elements.</param>
+	/// <returns>The converter.</returns>
+	protected virtual Converter CreateEnumerableEnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, Converter<TElement> elementConverter, Func<IEnumerable<TElement>, TEnumerable> enumerableConstructor)
+		=> new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableConstructor);
 
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
