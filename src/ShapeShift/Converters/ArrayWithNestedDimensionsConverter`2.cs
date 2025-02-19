@@ -123,7 +123,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TE
 	private void ReadSubArray(ref Reader reader, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
 		context.DepthStep();
-		int count = reader.ReadStartVector();
+		int count = reader.ReadStartVector() ?? throw new NotImplementedException(); // TODO: support indefinite-length arrays
 
 		int outerDimension = dimensions[0];
 		if (dimensions.Length > 1 && outerDimension > 0)
@@ -155,7 +155,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(Converter<TE
 	{
 		for (int i = 0; i < dimensions.Length; i++)
 		{
-			dimensions[i] = reader.ReadStartVector();
+			dimensions[i] = reader.ReadStartVector() ?? throw new NotImplementedException(); // TODO: support indefinite-length arrays
 		}
 	}
 }

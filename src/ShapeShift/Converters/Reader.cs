@@ -79,9 +79,14 @@ public ref struct Reader
 	public bool End => this.SequenceReader.End;
 
 	/// <summary>
-	/// Gets the unread portion of the current span. This may not contain all remaining bytes in the original <see cref="Sequence"/>.
+	/// Gets the unread portion of the current span. This may not contain all bytes in the original <see cref="UnreadSequence"/>.
 	/// </summary>
 	public ReadOnlySpan<byte> UnreadSpan => this.inner.UnreadSpan;
+
+	/// <summary>
+	/// Gets the unread portion of the sequence.
+	/// </summary>
+	public ReadOnlySequence<byte> UnreadSequence => this.SequenceReader.UnreadSequence;
 
 	/// <summary>
 	/// Gets the underlying <see cref="SequenceReader{T}"/>.
@@ -104,16 +109,19 @@ public ref struct Reader
 	public void ReadNull() => this.Deformatter.ReadNull(ref this);
 
 	/// <inheritdoc cref="Deformatter.ReadStartVector(ref Reader)"/>
-	public int ReadStartVector() => this.Deformatter.ReadStartVector(ref this);
+	public int? ReadStartVector() => this.Deformatter.ReadStartVector(ref this);
 
-	/// <inheritdoc cref="Deformatter.TryReadStartVector(ref Reader, out int)"/>
-	public bool TryReadStartVector(out int count) => this.Deformatter.TryReadStartVector(ref this, out count);
+	/// <inheritdoc cref="Deformatter.TryReadStartVector(ref Reader, out int?)"/>
+	public bool TryReadStartVector(out int? count) => this.Deformatter.TryReadStartVector(ref this, out count);
+
+	/// <inheritdoc cref="Deformatter.TryAdvanceToNextElement(ref Reader)"/>
+	public bool TryAdvanceToNextElement() => this.Deformatter.TryAdvanceToNextElement(ref this);
 
 	/// <inheritdoc cref="Deformatter.ReadStartMap(ref Reader)"/>
-	public int ReadStartMap() => this.Deformatter.ReadStartMap(ref this);
+	public int? ReadStartMap() => this.Deformatter.ReadStartMap(ref this);
 
-	/// <inheritdoc cref="Deformatter.TryReadStartMap(ref Reader, out int)"/>
-	public bool TryReadStartMap(out int count) => this.Deformatter.TryReadStartMap(ref this, out count);
+	/// <inheritdoc cref="Deformatter.TryReadStartMap(ref Reader, out int?)"/>
+	public bool TryReadStartMap(out int? count) => this.Deformatter.TryReadStartMap(ref this, out count);
 
 	/// <inheritdoc cref="Deformatter.ReadBoolean(ref Reader)"/>
 	public bool ReadBoolean() => this.Deformatter.ReadBoolean(ref this);
@@ -175,4 +183,10 @@ public ref struct Reader
 
 	/// <inheritdoc cref="Deformatter.Skip(ref Reader, SerializationContext)"/>
 	public void Skip(SerializationContext context) => this.Deformatter.Skip(ref this, context);
+
+	/// <summary>
+	/// Advances the reader.
+	/// </summary>
+	/// <param name="count">The number of bytes to advance.</param>
+	public void Advance(long count) => this.SequenceReader.Advance(count);
 }

@@ -161,8 +161,8 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (deserializable.Value.Readers is not null)
 		{
-			int count = reader.ReadStartMap();
-			for (int i = 0; i < count; i++)
+			int? count = reader.ReadStartMap();
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 			{
 				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
 				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
@@ -216,7 +216,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (deserializable.Value.Readers is not null)
 		{
-			int mapEntries;
+			int? mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
@@ -225,10 +225,10 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			reader.ReturnReader(ref streamingReader);
-			int remainingEntries = mapEntries;
-			while (remainingEntries > 0)
+			int? remainingEntries = mapEntries;
+			while (remainingEntries > 0 || (remainingEntries is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)))
 			{
-				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
+				int bufferedStructures = await reader.BufferNextStructuresAsync(1, (remainingEntries ?? 1) * 2, context).ConfigureAwait(false);
 				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
@@ -393,13 +393,13 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 
-		int mapEntries;
+		int? mapEntries;
 		while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		for (int i = 0; i < mapEntries; i++)
+		for (int i = 0; i < mapEntries; i++) // TODO: Review mapEntries is null condition
 		{
 			ReadOnlySpan<byte> propertyName;
 			bool contiguous;

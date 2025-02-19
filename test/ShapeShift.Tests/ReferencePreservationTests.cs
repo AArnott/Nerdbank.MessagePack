@@ -291,7 +291,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				return null;
 			}
 
-			int count = reader.ReadStartVector();
+			int? count = reader.ReadStartVector();
 			if (count != 1)
 			{
 				throw new SerializationException("Expected an array of length 1.");
@@ -331,7 +331,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 				return null;
 			}
 
-			int count = reader.ReadStartVector();
+			int? count = reader.ReadStartVector();
 			if (count != 1)
 			{
 				throw new SerializationException("Expected an array of length 1.");

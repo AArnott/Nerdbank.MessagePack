@@ -116,7 +116,7 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryReadStartVector(ref Reader reader, out int count)
+	public override DecodeResult TryReadStartVector(ref Reader reader, out int? count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
 		count = checked((int)uintCount);
@@ -128,12 +128,12 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref count, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref int count, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref int? count, ref int tokenSize)
 		{
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.Advance(ref reader, tokenSize, added: unchecked((uint)count));
+					self.Advance(ref reader, tokenSize, added: unchecked((uint)count!));
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -169,7 +169,7 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	/// <param name="count">Receives the number of key=value pairs in the map if the entire map header can be read.</param>
 	/// <returns><see langword="true"/> if there was sufficient buffer and a map header was found; <see langword="false"/> if the buffer incompletely describes an map header.</returns>
 	/// <exception cref="SerializationException">Thrown if a code other than an map header is encountered.</exception>
-	public override DecodeResult TryReadStartMap(ref Reader reader, out int count)
+	public override DecodeResult TryReadStartMap(ref Reader reader, out int? count)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryReadMapHeader(reader.UnreadSpan, out uint uintCount, out int tokenSize);
 		count = checked((int)uintCount);
@@ -181,12 +181,12 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 
 		return SlowPath(ref reader, this, readResult, ref count, ref tokenSize);
 
-		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref int count, ref int tokenSize)
+		static DecodeResult SlowPath(ref Reader reader, MessagePackStreamingDeformatter self, DecodeResult readResult, ref int? count, ref int tokenSize)
 		{
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.Advance(ref reader, tokenSize, added: unchecked((uint)count) * 2);
+					self.Advance(ref reader, tokenSize, added: unchecked((uint)count!) * 2);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -672,10 +672,10 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 				case byte x when MessagePackCode.IsFixMap(x):
 				case MessagePackCode.Map16:
 				case MessagePackCode.Map32:
-					result = self.TryReadStartMap(ref reader, out int count);
+					result = self.TryReadStartMap(ref reader, out int? count);
 					if (result == DecodeResult.Success)
 					{
-						skipMore = (uint)count * 2;
+						skipMore = (uint)count! * 2;
 					}
 
 					return result;
@@ -685,7 +685,7 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 					result = self.TryReadStartVector(ref reader, out count);
 					if (result == DecodeResult.Success)
 					{
-						skipMore = (uint)count;
+						skipMore = (uint)count!;
 					}
 
 					return result;
@@ -982,5 +982,11 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	{
 		uint expectedRemainingStructures = reader.ExpectedRemainingStructures;
 		reader.ExpectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
+	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement)
+	{
+		throw new NotSupportedException("All messagepack collections have prefixed length and this method should never be called under those conditions.");
 	}
 }

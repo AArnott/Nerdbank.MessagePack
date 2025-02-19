@@ -35,14 +35,19 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter
 		}
 
 		context.DepthStep();
-		int outerCount = reader.ReadStartVector();
-		if (outerCount != 2)
+		int? outerCount = reader.ReadStartVector();
+		if (outerCount is not (null or 2))
 		{
-			throw new SerializationException($"Expected array length of 2 but was {outerCount}.");
+			ThrowWrongNumberOfElements(outerCount.Value);
 		}
 
-		int rank = reader.ReadStartVector();
-		int[] dimensions = dimensionsReusable ??= new int[rank];
+		int? rank = reader.ReadStartVector();
+		if (rank is null)
+		{
+			throw new NotImplementedException();
+		}
+
+		int[] dimensions = dimensionsReusable ??= new int[rank.Value];
 		for (int i = 0; i < rank; i++)
 		{
 			dimensions[i] = reader.ReadInt32();
@@ -50,7 +55,12 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter
 
 		Array array = Array.CreateInstance(typeof(TElement), dimensions);
 		Span<TElement> elements = AsSpan(array);
-		int elementCount = reader.ReadStartVector();
+		int? elementCount = reader.ReadStartVector();
+		if (elementCount is null)
+		{
+			throw new NotImplementedException();
+		}
+
 		if (elementCount != elements.Length)
 		{
 			throw new SerializationException($"Expected {elements.Length} elements but found {elementCount}.");
@@ -122,6 +132,12 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(Converter
 	/// <returns>The span of all elements.</returns>
 	private static Span<TElement> AsSpan(Array array)
 		=> MemoryMarshal.CreateSpan(ref Unsafe.As<byte, TElement>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length);
+
+	[DoesNotReturn]
+	private static void ThrowWrongNumberOfElements(int actual) => throw new SerializationException($"Expected an array of 2 elements, but found {actual}.");
+
+	[DoesNotReturn]
+	private static void ThrowTooManyElements() => throw new SerializationException("Expected an array of 2 elements, but found more.");
 }
 
 #endif

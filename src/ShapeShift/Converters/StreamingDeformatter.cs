@@ -35,6 +35,24 @@ public abstract record StreamingDeformatter
 	public abstract DecodeResult TryPeekNextTypeCode(in Reader reader, out TokenType typeCode);
 
 	/// <summary>
+	/// Advances the reader to the next element in a collection or beyond the termination marker.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="hasAnotherElement">Receives a value indicating whether another element remains in the collection.</param>
+	/// <returns>
+	/// <see cref="DecodeResult.Success"/> if the next token was a separator or termination marker.
+	/// <see cref="DecodeResult.TokenMismatch"/> for any other token.
+	/// Other error codes if the buffer is incomplete.
+	/// </returns>
+	/// <remarks>
+	/// This method must <em>not</em> be called when the collection has a prefixed length.
+	/// When a collection does not have a prefixed length, this method must be called before each element read
+	/// and necessarily after the last item (in order to discover that it is indeed the last element, and to
+	/// advance the reader past the termination marker).
+	/// </remarks>
+	public abstract DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement);
+
+	/// <summary>
 	/// Reads the next token if it is <see cref="TokenType.Null"/>.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
@@ -60,17 +78,17 @@ public abstract record StreamingDeformatter
 	/// Reads an array header from the data stream.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
-	/// <param name="length">The number of elements in the array, if the read was successful.</param>
+	/// <param name="length">The number of elements in the array, if the read was successful and the format prefixed the length.</param>
 	/// <returns>The success or error code.</returns>
-	public abstract DecodeResult TryReadStartVector(ref Reader reader, out int length);
+	public abstract DecodeResult TryReadStartVector(ref Reader reader, out int? length);
 
 	/// <summary>
 	/// Reads a map header from the data stream.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
-	/// <param name="count">The number of elements in the map, if the read was successful.</param>
+	/// <param name="count">The number of elements in the map, if the read was successful and the format prefixed the size.</param>
 	/// <returns>The success or error code.</returns>
-	public abstract DecodeResult TryReadStartMap(ref Reader reader, out int count);
+	public abstract DecodeResult TryReadStartMap(ref Reader reader, out int? count);
 
 	/// <summary>
 	/// Reads a binary sequence (with its envelope) from the data stream.

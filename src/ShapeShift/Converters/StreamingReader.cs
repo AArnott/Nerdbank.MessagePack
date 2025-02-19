@@ -160,14 +160,17 @@ public ref partial struct StreamingReader
 	/// <inheritdoc cref="StreamingDeformatter.TryPeekNextTypeCode(in Reader, out TokenType)"/>
 	public DecodeResult TryPeekNextTypeCode(out TokenType typeCode) => this.StreamingDeformatter.TryPeekNextTypeCode(this.reader, out typeCode);
 
+	/// <inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, out bool)"/>
+	public DecodeResult TryAdvanceToNextElement(out bool hasAnotherElement) => this.StreamingDeformatter.TryAdvanceToNextElement(ref this.reader, out hasAnotherElement);
+
 	/// <inheritdoc cref="StreamingDeformatter.TryReadRaw(ref Reader, long, out ReadOnlySequence{byte})"/>
 	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawBytes) => this.StreamingDeformatter.TryReadRaw(ref this.reader, length, out rawBytes);
 
-	/// <inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int)"/>
-	public DecodeResult TryReadArrayHeader(out int length) => this.StreamingDeformatter.TryReadStartVector(ref this.reader, out length);
+	/// <inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int?)"/>
+	public DecodeResult TryReadArrayHeader(out int? length) => this.StreamingDeformatter.TryReadStartVector(ref this.reader, out length);
 
-	/// <inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int)"/>
-	public DecodeResult TryReadMapHeader(out int count) => this.StreamingDeformatter.TryReadStartMap(ref this.reader, out count);
+	/// <inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int?)"/>
+	public DecodeResult TryReadMapHeader(out int? count) => this.StreamingDeformatter.TryReadStartMap(ref this.reader, out count);
 
 	/// <inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)"/>
 	public DecodeResult TryReadNull() => this.StreamingDeformatter.TryReadNull(ref this.reader);

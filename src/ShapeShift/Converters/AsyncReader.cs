@@ -234,6 +234,21 @@ public class AsyncReader : IDisposable
 	/// </remarks>
 	public virtual async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 
+	/// <inheritdoc cref="Reader.TryAdvanceToNextElement"/>
+	public async ValueTask<bool> TryAdvanceToNextElementAsync()
+	{
+		Verify.Operation(this.readerReturned, "This cannot be done before returning the reader with ReturnReader.");
+		StreamingReader streamingReader = this.CreateStreamingReader();
+		bool hasAnotherElement;
+		while (streamingReader.TryAdvanceToNextElement(out hasAnotherElement).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		this.ReturnReader(ref streamingReader);
+		return hasAnotherElement;
+	}
+
 	/// <summary>
 	/// Counts how many structures are buffered, starting at the reader's current position.
 	/// </summary>

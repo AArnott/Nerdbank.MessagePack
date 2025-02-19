@@ -16,7 +16,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 	public void ReadIncompleteBuffer()
 	{
 		StreamingReader incompleteReader = new(ArrayOf3Bools.Slice(0, 2), Deformatter);
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int? count));
 		Assert.Equal(3, count);
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);
@@ -33,7 +33,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 			null,
 			Deformatter);
 
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int? count));
 		Assert.Equal(3, count);
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);
@@ -58,7 +58,7 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 			null,
 			Deformatter);
 
-		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int count));
+		Assert.Equal(DecodeResult.Success, incompleteReader.TryReadArrayHeader(out int? count));
 		Assert.Equal(3, count);
 		Assert.Equal(DecodeResult.Success, incompleteReader.TryRead(out bool boolean));
 		Assert.False(boolean);

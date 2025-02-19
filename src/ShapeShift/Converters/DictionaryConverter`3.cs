@@ -4,6 +4,7 @@
 #pragma warning disable SA1402 // File may only contain a single type
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 
 namespace ShapeShift.Converters;
@@ -101,13 +102,13 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			return false;
 		}
 
-		int count;
+		int? count;
 		while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		for (int i = 0; i < count; i++)
+		for (int i = 0; i < count; i++) // TODO: review this condition when count is null
 		{
 			reader.ReturnReader(ref streamingReader);
 			TKey? key;
@@ -229,8 +230,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	public void DeserializeInto(ref Reader reader, ref TDictionary collection, SerializationContext context)
 	{
 		context.DepthStep();
-		int count = reader.ReadStartMap();
-		for (int i = 0; i < count; i++)
+		int? count = reader.ReadStartMap();
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 		{
 			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
 			addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
@@ -246,14 +247,14 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		if (this.ElementPrefersAsyncSerialization)
 		{
 			StreamingReader streamingReader = reader.CreateStreamingReader();
-			int count;
+			int? count;
 			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			for (int i = 0; i < count; i++)
+			for (int i = 0; i < count || (count is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)); i++)
 			{
 				addEntry(ref collection, await this.ReadEntryAsync(reader, context).ConfigureAwait(false));
 			}
@@ -262,8 +263,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
-			int count = syncReader.ReadStartMap();
-			for (int i = 0; i < count; i++)
+			int? count = syncReader.ReadStartMap();
+			for (int i = 0; i < count || (count is null && syncReader.TryAdvanceToNextElement()); i++)
 			{
 				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
 				addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
@@ -298,21 +299,39 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadStartMap();
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
-		try
+		int? count = reader.ReadStartMap();
+		if (count.HasValue)
 		{
-			for (int i = 0; i < count; i++)
+			KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count.Value);
+			try
+			{
+				for (int i = 0; i < count; i++)
+				{
+					this.ReadEntry(ref reader, context, out TKey key, out TValue value);
+					entries[i] = new(key, value);
+				}
+
+				return ctor(entries.AsSpan(0, count.Value));
+			}
+			finally
+			{
+				ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Return(entries);
+			}
+		}
+		else
+		{
+			List<KeyValuePair<TKey, TValue>> entries = new();
+			while (reader.TryAdvanceToNextElement())
 			{
 				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-				entries[i] = new(key, value);
+				entries.Add(new(key, value));
 			}
 
-			return ctor(entries.AsSpan(0, count));
-		}
-		finally
-		{
-			ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Return(entries);
+#if NET
+			return ctor(CollectionsMarshal.AsSpan(entries));
+#else
+			return ctor([.. entries]);
+#endif
 		}
 	}
 }
@@ -341,21 +360,35 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadStartMap();
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
-		try
+		int? count = reader.ReadStartMap();
+		if (count.HasValue)
 		{
-			for (int i = 0; i < count; i++)
+			KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count.Value);
+			try
+			{
+				for (int i = 0; i < count; i++)
+				{
+					this.ReadEntry(ref reader, context, out TKey key, out TValue value);
+					entries[i] = new(key, value);
+				}
+
+				return ctor(entries.Take(count.Value));
+			}
+			finally
+			{
+				ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Return(entries);
+			}
+		}
+		else
+		{
+			List<KeyValuePair<TKey, TValue>> entries = new();
+			while (reader.TryAdvanceToNextElement())
 			{
 				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-				entries[i] = new(key, value);
+				entries.Add(new(key, value));
 			}
 
-			return ctor(entries.Take(count));
-		}
-		finally
-		{
-			ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Return(entries);
+			return ctor(entries);
 		}
 	}
 }

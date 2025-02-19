@@ -71,7 +71,7 @@ public partial class MsgPackDeformatterTests
 		Assert.False(reader.TryReadStartVector(out _));
 
 		reader = new Reader(sequence, MessagePackDeformatter.Default);
-		Assert.True(reader.TryReadStartVector(out int actualCount));
+		Assert.True(reader.TryReadStartVector(out int? actualCount));
 		Assert.Equal(expectedCount, actualCount);
 	}
 
@@ -103,7 +103,7 @@ public partial class MsgPackDeformatterTests
 		Assert.False(reader.TryReadStartMap(out _));
 
 		reader = new Reader(sequence, MessagePackDeformatter.Default);
-		Assert.True(reader.TryReadStartMap(out int actualCount));
+		Assert.True(reader.TryReadStartMap(out int? actualCount));
 		Assert.Equal(expectedCount, actualCount);
 	}
 

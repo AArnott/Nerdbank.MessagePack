@@ -21,8 +21,8 @@ namespace CustomConverter
             int property1 = 0;
             string? property2 = null;
 
-            int count = reader.ReadStartMap();
-            for (int i = 0; i < count; i++)
+            int? count = reader.ReadStartMap();
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
             {
                 string? key = reader.ReadString();
                 switch (key)
@@ -76,8 +76,8 @@ namespace CustomConverter
             context.DepthStep();
             int property1 = 0;
             string? property2 = null;
-            int count = reader.ReadStartVector();
-            for (int i = 0; i < count; i++)
+            int? count = reader.ReadStartVector();
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
             {
                 switch (i)
                 {
@@ -125,8 +125,8 @@ namespace SubValues
             SomeOtherType? property1 = null;
             string? property2 = null;
 
-            int count = reader.ReadStartMap();
-            for (int i = 0; i < count; i++)
+            int? count = reader.ReadStartMap();
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
             {
                 string? key = reader.ReadString();
                 switch (key)
@@ -349,12 +349,17 @@ namespace AsyncConverters
             StreamingReader streamingReader = reader.CreateStreamingReader();
 
             #region GetMoreBytesPattern
-            int count;
+            int? count;
             while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
             {
                 streamingReader = new(await streamingReader.FetchMoreBytesAsync());
             }
             #endregion
+
+            if (count is null)
+            {
+                throw new NotImplementedException(); // TODO: implement this.
+            }
 
             for (int i = 0; i < count; i++)
             {
@@ -397,10 +402,10 @@ namespace PerformanceConverters
             string? message1 = null;
             string? message2 = null;
 
-            int count = reader.ReadStartMap();
+            int? count = reader.ReadStartMap();
 
             // It is critical that we read or skip every element of the map, even if we don't recognize the key.
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
             {
                 // Compare the key to those we recognize such that we don't decode or allocate strings unnecessarily.
                 if (Message1.TryRead(ref reader))

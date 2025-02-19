@@ -24,14 +24,27 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 		}
 
 		context.DepthStep();
-		int count = reader.ReadStartVector();
-		var array = new TElement[count];
-		for (int i = 0; i < count; i++)
+		int? count = reader.ReadStartVector();
+		if (count.HasValue)
 		{
-			array[i] = elementConverter.Read(ref reader, context)!;
-		}
+			var array = new TElement[count.Value];
+			for (int i = 0; i < count; i++)
+			{
+				array[i] = elementConverter.Read(ref reader, context)!;
+			}
 
-		return array;
+			return array;
+		}
+		else
+		{
+			List<TElement> elements = new();
+			while (reader.TryAdvanceToNextElement())
+			{
+				elements.Add(elementConverter.Read(ref reader, context)!);
+			}
+
+			return elements.ToArray();
+		}
 	}
 
 	/// <inheritdoc/>
@@ -115,20 +128,33 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 
 		if (elementConverter.PreferAsyncSerialization)
 		{
-			int count;
+			int? count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			var array = new TElement[count];
-			for (int i = 0; i < count; i++)
+			if (count.HasValue)
 			{
-				array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
-			}
+				var array = new TElement[count.Value];
+				for (int i = 0; i < count; i++)
+				{
+					array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
+				}
 
-			return array;
+				return array;
+			}
+			else
+			{
+				List<TElement> elements = new();
+				while (await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false))
+				{
+					elements.Add((await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
+				}
+
+				return elements.ToArray();
+			}
 		}
 		else
 		{
@@ -136,11 +162,25 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
 
-			int count = syncReader.ReadStartVector();
-			var array = new TElement[count];
-			for (int i = 0; i < count; i++)
+			int? count = syncReader.ReadStartVector();
+			TElement[] array;
+			if (count.HasValue)
 			{
-				array[i] = elementConverter.Read(ref syncReader, context)!;
+				array = new TElement[count.Value];
+				for (int i = 0; i < count; i++)
+				{
+					array[i] = elementConverter.Read(ref syncReader, context)!;
+				}
+			}
+			else
+			{
+				List<TElement> elements = new();
+				while (syncReader.TryAdvanceToNextElement())
+				{
+					elements.Add(elementConverter.Read(ref syncReader, context)!);
+				}
+
+				array = elements.ToArray();
 			}
 
 			reader.ReturnReader(ref syncReader);

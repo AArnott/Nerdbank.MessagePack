@@ -95,7 +95,7 @@ internal static partial class ArraysOfPrimitivesConverters
 				return default;
 			}
 
-			int count = reader.ReadStartVector();
+			int count = reader.ReadStartVector()!.Value;
 			if (count == 0)
 			{
 				return spanConstructor is null ? (TEnumerable)(object)Array.Empty<TElement>() : spanConstructor(default);

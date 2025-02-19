@@ -29,7 +29,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack036
             {
                 StreamingReader streamingReader = reader.CreateStreamingReader();
 
-                int count;
+                int? count;
                 while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
                 {
                     streamingReader = new(await streamingReader.FetchMoreBytesAsync());
@@ -81,7 +81,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack036
             {
                 StreamingReader streamingReader = reader.CreateStreamingReader();
 
-                int count;
+                int? count;
                 while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
                 {
                     streamingReader = new(await streamingReader.FetchMoreBytesAsync());

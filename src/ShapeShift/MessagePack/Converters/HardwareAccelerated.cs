@@ -741,7 +741,7 @@ internal static class HardwareAccelerated
 			}
 
 			context.DepthStep();
-			int count = reader.ReadStartVector();
+			int count = reader.ReadStartVector()!.Value;
 			if (count == 0)
 			{
 				return GetEmptyEnumerable<TEnumerable, bool>(this.spanConstructorKind);
@@ -871,7 +871,7 @@ internal static class HardwareAccelerated
 			}
 
 			context.DepthStep();
-			int count = reader.ReadStartVector();
+			int count = reader.ReadStartVector()!.Value;
 			if (count == 0)
 			{
 				return GetEmptyEnumerable<TEnumerable, TElement>(this.spanConstructorKind);

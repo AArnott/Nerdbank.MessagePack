@@ -39,8 +39,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		if (reader.NextTypeCode == TokenType.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
-			int count = reader.ReadStartMap();
-			for (int i = 0; i < count; i++)
+			int? count = reader.ReadStartMap();
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 			{
 				int index = reader.ReadInt32();
 				if (properties.Length > index && parameters[index] is { } deserialize)
@@ -55,8 +55,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 		else
 		{
-			int count = reader.ReadStartVector();
-			for (int i = 0; i < count; i++)
+			int? count = reader.ReadStartVector();
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 			{
 				if (parameters.Length > i && parameters[i] is { } deserialize)
 				{
@@ -107,7 +107,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		if (peekType == TokenType.Map)
 		{
-			int mapEntries;
+			int? mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
@@ -116,10 +116,10 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			reader.ReturnReader(ref streamingReader);
-			int remainingEntries = mapEntries;
-			while (remainingEntries > 0)
+			int? remainingEntries = mapEntries;
+			while (remainingEntries > 0 || (remainingEntries is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)))
 			{
-				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
+				int bufferedStructures = await reader.BufferNextStructuresAsync(1, (remainingEntries ?? 1) * 2, context).ConfigureAwait(false);
 				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
@@ -135,6 +135,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					}
 
 					remainingEntries--;
+				}
+
+				if (remainingEntries is null)
+				{
+					throw new NotImplementedException(); // TODO: review this
 				}
 
 				if (remainingEntries > 0)
@@ -170,7 +175,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 		else
 		{
-			int arrayLength;
+			int? arrayLength;
 			while (streamingReader.TryReadArrayHeader(out arrayLength).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
@@ -178,10 +183,10 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 			reader.ReturnReader(ref streamingReader);
 			int i = 0;
-			while (i < arrayLength)
+			while (i < arrayLength || (arrayLength is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)))
 			{
 				// Do a batch of all the consecutive properties that should be read synchronously.
-				int syncBatchSize = NextSyncReadBatchSize();
+				int syncBatchSize = arrayLength is null ? 0 : NextSyncReadBatchSize();
 				if (syncBatchSize > 0)
 				{
 					await reader.BufferNextStructuresAsync(syncBatchSize, syncBatchSize, context).ConfigureAwait(false);
@@ -199,6 +204,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					}
 
 					reader.ReturnReader(ref syncReader);
+				}
+
+				if (arrayLength is null)
+				{
+					throw new NotImplementedException(); // TODO: review this.
 				}
 
 				// Read any consecutive async parameters.
@@ -228,7 +238,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					}
 
 					// We didn't encounter any more async property readers.
-					return arrayLength - i;
+					return arrayLength!.Value - i;
 				}
 			}
 		}

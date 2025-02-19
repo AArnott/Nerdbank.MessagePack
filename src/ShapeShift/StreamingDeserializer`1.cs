@@ -64,21 +64,27 @@ internal readonly struct StreamingDeserializer<TElement>(SerializerBase serializ
 				yield break;
 			}
 
-			int count;
+			int? count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			int remaining = count;
+			int? remaining = count;
+
+			if (remaining is null)
+			{
+				throw new NotImplementedException(); // TODO: review this.
+			}
+
 			while (remaining > 0)
 			{
 				// Generally, we prefer synchronous deserialization because it's much faster.
 				// Deserialize all the elements we can that are already in the buffer.
 				if (elementConverter.PreferAsyncSerialization)
 				{
-					int bufferedCount = reader.GetBufferedStructuresCount(remaining, context, out bool reachedMaxCount);
+					int bufferedCount = reader.GetBufferedStructuresCount(remaining ?? 1, context, out bool reachedMaxCount);
 					if (bufferedCount > 0)
 					{
 						for (int i = 0; i < bufferedCount; i++)
@@ -116,7 +122,7 @@ internal readonly struct StreamingDeserializer<TElement>(SerializerBase serializ
 					// Each element should be synchronously deserialized.
 					// Buffer at least one structure, and notice how many structures we end up with in the buffer,
 					// deserializing them in bursts.
-					int bufferedCount = await reader.BufferNextStructuresAsync(1, remaining, context).ConfigureAwait(false);
+					int bufferedCount = await reader.BufferNextStructuresAsync(1, remaining ?? 1, context).ConfigureAwait(false);
 					for (int i = 0; i < bufferedCount; i++)
 					{
 						Reader bufferedReader = ((AsyncReader)reader).CreateBufferedReader();
@@ -231,10 +237,15 @@ internal readonly struct StreamingDeserializer<TElement>(SerializerBase serializ
 
 			// Skip the given number of elements.
 			StreamingReader streamingReader = reader.CreateStreamingReader();
-			int count;
+			int? count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (count is null)
+			{
+				throw new NotImplementedException(); // TODO: review this.
 			}
 
 			if (count < skipElements + 1)

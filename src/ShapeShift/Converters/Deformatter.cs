@@ -44,6 +44,27 @@ public partial class Deformatter
 	/// <inheritdoc cref="StreamingDeformatter.Encoding"/>
 	public Encoding Encoding => this.StreamingDeformatter.Encoding;
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, out bool)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <returns><see langword="true" /> if there is another element in the collection; otherwise <see langword="false" />.</returns>
+	/// <inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, out bool)" path="/remarks"/>
+	/// <exception cref="EndOfStreamException">Thrown when there is insufficient buffer to decode the next token.</exception>
+	public bool TryAdvanceToNextElement(ref Reader reader)
+	{
+		switch (this.StreamingDeformatter.TryAdvanceToNextElement(ref reader, out bool hasAnotherElement))
+		{
+			case DecodeResult.Success:
+				return hasAnotherElement;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.InsufficientBuffer:
+			case DecodeResult.EmptyBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
 	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns><see langword="true" /> if the next token was <see cref="TokenType.Null"/>; otherwise <see langword="false" />.</returns>
@@ -79,34 +100,37 @@ public partial class Deformatter
 		}
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int?)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
-	/// <returns>The number of elements in the vector.</returns>
+	/// <returns>The number of elements in the vector, if the format prefixed the length.</returns>
 	/// <exception cref="EndOfStreamException">
 	/// Thrown when there is insufficient buffer to decode the next token or the buffer is obviously insufficient to store all the elements in the vector.
-	/// Use <see cref="TryReadStartVector(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
+	/// Use <see cref="TryReadStartVector(ref Reader, out int?)"/> instead to avoid throwing due to insufficient buffer.
 	/// </exception>
 	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Vector"/>.</exception>
-	public int ReadStartVector(ref Reader reader)
+	public int? ReadStartVector(ref Reader reader)
 	{
-		ThrowInsufficientBufferUnless(this.TryReadStartVector(ref reader, out int count));
+		ThrowInsufficientBufferUnless(this.TryReadStartVector(ref reader, out int? count));
 
-		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
-		// We allow for each primitive to be the minimal 1 byte in size.
-		// Formatters that know each element is larger can optionally add a stronger check.
-		ThrowInsufficientBufferUnless(reader.SequenceReader.Remaining >= count);
+		if (count is not null)
+		{
+			// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
+			// We allow for each primitive to be the minimal 1 byte in size.
+			// Formatters that know each element is larger can optionally add a stronger check.
+			ThrowInsufficientBufferUnless(reader.SequenceReader.Remaining >= count);
+		}
 
 		return count;
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartVector(ref Reader, out int?)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="count">Receives the number of elements in the vector, if the read is successful.</param>
 	/// <returns>
 	/// <see langword="true"/> when the read operation is successful; <see langword="false"/> when the buffer is empty or insufficient.
 	/// </returns>
 	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Vector"/>.</exception>
-	public bool TryReadStartVector(ref Reader reader, out int count)
+	public bool TryReadStartVector(ref Reader reader, out int? count)
 	{
 		switch (this.StreamingDeformatter.TryReadStartVector(ref reader, out count))
 		{
@@ -122,34 +146,37 @@ public partial class Deformatter
 		}
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int?)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
-	/// <returns>The number of elements in the map.</returns>
+	/// <returns>The number of elements in the map, if the format prefixed the size.</returns>
 	/// <exception cref="EndOfStreamException">
 	/// Thrown when there is insufficient buffer to decode the next token or the buffer is obviously insufficient to store all the elements in the map.
-	/// Use <see cref="TryReadStartMap(ref Reader, out int)"/> instead to avoid throwing due to insufficient buffer.
+	/// Use <see cref="TryReadStartMap(ref Reader, out int?)"/> instead to avoid throwing due to insufficient buffer.
 	/// </exception>
 	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Map"/>.</exception>
-	public int ReadStartMap(ref Reader reader)
+	public int? ReadStartMap(ref Reader reader)
 	{
-		ThrowInsufficientBufferUnless(this.TryReadStartMap(ref reader, out int count));
+		ThrowInsufficientBufferUnless(this.TryReadStartMap(ref reader, out int? count));
 
-		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
-		// We allow for each primitive to be the minimal 1 byte in size, and we have a key=value map, so that's 2 bytes.
-		// Formatters that know each element is larger can optionally add a stronger check.
-		ThrowInsufficientBufferUnless(reader.SequenceReader.Remaining >= count * 2);
+		if (count is not null)
+		{
+			// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
+			// We allow for each primitive to be the minimal 1 byte in size, and we have a key=value map, so that's 2 bytes.
+			// Formatters that know each element is larger can optionally add a stronger check.
+			ThrowInsufficientBufferUnless(reader.SequenceReader.Remaining >= count * 2);
+		}
 
 		return count;
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStartMap(ref Reader, out int?)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="count">Receives the number of elements in the map, if the read is successful.</param>
 	/// <returns>
 	/// <see langword="true"/> when the read operation is successful; <see langword="false"/> when the buffer is empty or insufficient.
 	/// </returns>
 	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.Map"/>.</exception>
-	public bool TryReadStartMap(ref Reader reader, out int count)
+	public bool TryReadStartMap(ref Reader reader, out int? count)
 	{
 		switch (this.StreamingDeformatter.TryReadStartMap(ref reader, out count))
 		{

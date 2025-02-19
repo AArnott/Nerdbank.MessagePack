@@ -4,6 +4,7 @@
 #pragma warning disable SA1402 // File may only contain a single type
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 
 namespace ShapeShift.Converters;
@@ -92,10 +93,15 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			return false;
 		}
 
-		int length;
+		int? length;
 		while (streamingReader.TryReadArrayHeader(out length).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (length is null)
+		{
+			throw new NotImplementedException(); // TODO: review this.
 		}
 
 		if (length < skipCount + 1)
@@ -168,8 +174,8 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	public void DeserializeInto(ref Reader reader, ref TEnumerable collection, SerializationContext context)
 	{
 		context.DepthStep();
-		int count = reader.ReadStartVector();
-		for (int i = 0; i < count; i++)
+		int? count = reader.ReadStartVector();
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 		{
 			addElement(ref collection, this.ReadElement(ref reader, context));
 		}
@@ -184,10 +190,15 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		if (this.ElementPrefersAsyncSerialization)
 		{
 			StreamingReader streamingReader = reader.CreateStreamingReader();
-			int count;
+			int? count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (count is null)
+			{
+				throw new NotImplementedException();
 			}
 
 			for (int i = 0; i < count; i++)
@@ -199,8 +210,8 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		{
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
-			int count = syncReader.ReadStartVector();
-			for (int i = 0; i < count; i++)
+			int? count = syncReader.ReadStartVector();
+			for (int i = 0; i < count || (count is null && syncReader.TryAdvanceToNextElement()); i++)
 			{
 				addElement(ref collection, this.ReadElement(ref syncReader, context));
 			}
@@ -231,20 +242,37 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadStartVector();
-		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
-		try
+		int? count = reader.ReadStartVector();
+		if (count.HasValue)
 		{
-			for (int i = 0; i < count; i++)
+			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count.Value);
+			try
 			{
-				elements[i] = this.ReadElement(ref reader, context);
+				for (int i = 0; i < count; i++)
+				{
+					elements[i] = this.ReadElement(ref reader, context);
+				}
+
+				return ctor(elements.AsSpan(0, count.Value));
+			}
+			finally
+			{
+				ArrayPool<TElement>.Shared.Return(elements);
+			}
+		}
+		else
+		{
+			List<TElement> elements = new();
+			while (reader.TryAdvanceToNextElement())
+			{
+				elements.Add(this.ReadElement(ref reader, context));
 			}
 
-			return ctor(elements.AsSpan(0, count));
-		}
-		finally
-		{
-			ArrayPool<TElement>.Shared.Return(elements);
+#if NET
+			return ctor(CollectionsMarshal.AsSpan(elements));
+#else
+			return ctor(elements.ToArray());
+#endif
 		}
 	}
 }
@@ -270,20 +298,33 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 		}
 
 		context.DepthStep();
-		int count = reader.ReadStartVector();
-		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
-		try
+		int? count = reader.ReadStartVector();
+		if (count.HasValue)
 		{
-			for (int i = 0; i < count; i++)
+			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count.Value);
+			try
 			{
-				elements[i] = this.ReadElement(ref reader, context);
+				for (int i = 0; i < count; i++)
+				{
+					elements[i] = this.ReadElement(ref reader, context);
+				}
+
+				return ctor(elements.Take(count.Value));
+			}
+			finally
+			{
+				ArrayPool<TElement>.Shared.Return(elements);
+			}
+		}
+		else
+		{
+			List<TElement> elements = new();
+			while (reader.TryAdvanceToNextElement())
+			{
+				elements.Add(this.ReadElement(ref reader, context));
 			}
 
-			return ctor(elements.Take(count));
-		}
-		finally
-		{
-			ArrayPool<TElement>.Shared.Return(elements);
+			return ctor(elements);
 		}
 	}
 }

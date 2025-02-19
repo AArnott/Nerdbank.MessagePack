@@ -35,8 +35,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		TArgumentState argState = argStateCtor();
 		if (parameters.Readers is not null)
 		{
-			int count = reader.ReadStartMap();
-			for (int i = 0; i < count; i++)
+			int? count = reader.ReadStartMap();
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 			{
 				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
 				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
@@ -87,7 +87,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		if (parameters.Readers is not null)
 		{
-			int mapEntries;
+			int? mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
@@ -96,10 +96,10 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			reader.ReturnReader(ref streamingReader);
-			int remainingEntries = mapEntries;
+			int? remainingEntries = mapEntries;
 			while (remainingEntries > 0)
 			{
-				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
+				int bufferedStructures = await reader.BufferNextStructuresAsync(1, (remainingEntries ?? 1) * 2, context).ConfigureAwait(false);
 				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
@@ -115,6 +115,11 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					}
 
 					remainingEntries--;
+				}
+
+				if (remainingEntries is null)
+				{
+					throw new NotImplementedException(); // TODO: review this.
 				}
 
 				if (remainingEntries > 0)

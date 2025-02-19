@@ -103,12 +103,12 @@ public class JsonExporter
 					break;
 				case Converters.TokenType.Vector:
 					jsonWriter.Write('[');
-					int count = reader.ReadStartVector();
-					if (count > 0)
+					int? count = reader.ReadStartVector();
+					if (count > 0 || (count is null && reader.TryAdvanceToNextElement()))
 					{
 						NewLine(jsonWriter, options, indentationLevel + 1);
 
-						for (int i = 0; i < count; i++)
+						for (int i = 0; i < count || (count is null && i > 0 && reader.TryAdvanceToNextElement()); i++)
 						{
 							if (i > 0)
 							{
@@ -132,10 +132,10 @@ public class JsonExporter
 				case Converters.TokenType.Map:
 					jsonWriter.Write('{');
 					count = reader.ReadStartMap();
-					if (count > 0)
+					if (count > 0 || (count is null && reader.TryAdvanceToNextElement()))
 					{
 						NewLine(jsonWriter, options, indentationLevel + 1);
-						for (int i = 0; i < count; i++)
+						for (int i = 0; i < count || (count is null && i > 0 && reader.TryAdvanceToNextElement()); i++)
 						{
 							if (i > 0)
 							{

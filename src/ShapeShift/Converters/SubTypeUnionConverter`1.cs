@@ -39,16 +39,35 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			return default;
 		}
 
-		int count = reader.ReadStartVector();
-		if (count != 2)
+		int? count = reader.ReadStartVector();
+		if (count is not (2 or null))
 		{
-			throw new SerializationException($"Expected an array of 2 elements, but found {count}.");
+			ThrowWrongNumberOfElements(count.Value);
 		}
+
+		if (count is null && !reader.TryAdvanceToNextElement())
+		{
+			ThrowWrongNumberOfElements(0);
+		}
+
+		TBase? result;
 
 		// The alias for the base type itself is simply nil.
 		if (reader.TryReadNull())
 		{
-			return this.baseConverter.Read(ref reader, context);
+			if (count is null && !reader.TryAdvanceToNextElement())
+			{
+				ThrowWrongNumberOfElements(1);
+			}
+
+			result = this.baseConverter.Read(ref reader, context);
+
+			if (count is null && reader.TryAdvanceToNextElement())
+			{
+				ThrowTooManyElements();
+			}
+
+			return result;
 		}
 
 		Converter? converter;
@@ -69,7 +88,19 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			}
 		}
 
-		return (TBase?)converter.ReadObject(ref reader, context);
+		if (count is null && !reader.TryAdvanceToNextElement())
+		{
+			ThrowWrongNumberOfElements(1);
+		}
+
+		result = (TBase?)converter.ReadObject(ref reader, context);
+
+		if (count is null && reader.TryAdvanceToNextElement())
+		{
+			ThrowTooManyElements();
+		}
+
+		return result;
 	}
 
 	/// <inheritdoc/>
@@ -118,16 +149,18 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			return default;
 		}
 
-		int count;
+		int? count;
 		while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (count != 2)
+		if (count is not (2 or null))
 		{
-			throw new SerializationException($"Expected an array of 2 elements, but found {count}.");
+			ThrowWrongNumberOfElements(count.Value);
 		}
+
+		TBase? result;
 
 		// The alias for the base type itself is simply nil.
 		bool isNull;
@@ -138,8 +171,28 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 
 		if (isNull)
 		{
+			if (count is null)
+			{
+				bool hasAnotherElement;
+				while (streamingReader.TryAdvanceToNextElement(out hasAnotherElement).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+				}
+
+				if (!hasAnotherElement)
+				{
+					ThrowWrongNumberOfElements(1);
+				}
+			}
+
 			reader.ReturnReader(ref streamingReader);
-			TBase? result = await this.baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
+			result = await this.baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
+
+			if (count is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false))
+			{
+				ThrowTooManyElements();
+			}
+
 			return result;
 		}
 
@@ -184,8 +237,29 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			}
 		}
 
+		if (count is null)
+		{
+			bool hasAnotherElement;
+			while (streamingReader.TryAdvanceToNextElement(out hasAnotherElement).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (!hasAnotherElement)
+			{
+				ThrowWrongNumberOfElements(1);
+			}
+		}
+
 		reader.ReturnReader(ref streamingReader);
-		return (TBase?)await converter.ReadObjectAsync(reader, context).ConfigureAwait(false);
+		result = (TBase?)await converter.ReadObjectAsync(reader, context).ConfigureAwait(false);
+
+		if (count is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false))
+		{
+			ThrowTooManyElements();
+		}
+
+		return result;
 	}
 
 	/// <inheritdoc/>
@@ -286,4 +360,10 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			};
 		}
 	}
+
+	[DoesNotReturn]
+	private static void ThrowWrongNumberOfElements(int actual) => throw new SerializationException($"Expected an array of 2 elements, but found {actual}.");
+
+	[DoesNotReturn]
+	private static void ThrowTooManyElements() => throw new SerializationException("Expected an array of 2 elements, but found more.");
 }

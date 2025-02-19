@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Text.Json;
 
 namespace ShapeShift.Json;
 
@@ -25,6 +26,45 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 
 	/// <inheritdoc/>
 	public override Encoding Encoding => JsonFormatter.DefaultUTF8Encoding;
+
+	/// <inheritdoc/>
+	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement)
+	{
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			hasAnotherElement = false;
+			return this.InsufficientBytes(reader);
+		}
+
+		hasAnotherElement = true;
+		return DecodeResult.Success;
+
+		DecodeResult result;
+		switch (utf8Reader.TokenType)
+		{
+			case JsonTokenType.EndObject:
+			case JsonTokenType.EndArray:
+				hasAnotherElement = false;
+				result = DecodeResult.Success;
+				break;
+			//case JsonTokenType.Comma:
+			//	hasAnotherElement = true;
+			//	result = DecodeResult.Success;
+			//	break;
+			default:
+				hasAnotherElement = false;
+				result = DecodeResult.TokenMismatch;
+				break;
+		}
+
+		if (result == DecodeResult.Success)
+		{
+			reader.Advance(utf8Reader.BytesConsumed);
+		}
+
+		return result;
+	}
 
 	/// <inheritdoc/>
 	public override DecodeResult TryPeekIsFloat32(in Reader reader, out bool float32)
@@ -131,7 +171,26 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadNull(ref Reader reader)
 	{
-		throw new NotImplementedException();
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (r.Read())
+		{
+			if (r.TokenType == JsonTokenType.Null)
+			{
+				reader.Advance(r.BytesConsumed);
+				return DecodeResult.Success;
+			}
+			else
+			{
+				return DecodeResult.TokenMismatch;
+			}
+		}
+
+		return this.InsufficientBytes(reader);
 	}
 
 	/// <inheritdoc/>
@@ -147,13 +206,35 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryReadStartMap(ref Reader reader, out int count)
+	public override DecodeResult TryReadStartMap(ref Reader reader, out int? count)
 	{
-		throw new NotImplementedException();
+		// JSON does not prefix the size of the map.
+		count = null;
+
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (r.Read())
+		{
+			if (r.TokenType == JsonTokenType.StartObject)
+			{
+				reader.Advance(r.BytesConsumed);
+				return DecodeResult.Success;
+			}
+			else
+			{
+				return DecodeResult.TokenMismatch;
+			}
+		}
+
+		return this.InsufficientBytes(reader);
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryReadStartVector(ref Reader reader, out int length)
+	public override DecodeResult TryReadStartVector(ref Reader reader, out int? length)
 	{
 		throw new NotImplementedException();
 	}
@@ -167,7 +248,27 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value)
 	{
-		throw new NotImplementedException();
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		// With the UTF8 reader, we never consider strings to be contiguous because the API doesn't give us the raw span.
+		contiguous = false;
+		value = default;
+
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			return this.InsufficientBytes(reader);
+		}
+
+		if (utf8Reader.TokenType != JsonTokenType.String)
+		{
+			return DecodeResult.TokenMismatch;
+		}
+
+		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>

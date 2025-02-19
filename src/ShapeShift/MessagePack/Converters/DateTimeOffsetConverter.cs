@@ -16,7 +16,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 	/// <inheritdoc/>
 	public override DateTimeOffset Read(ref Reader reader, SerializationContext context)
 	{
-		int count = reader.ReadStartVector();
+		int count = reader.ReadStartVector()!.Value;
 		if (count != 2)
 		{
 			throw new SerializationException("Expected array of length 2.");
