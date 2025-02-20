@@ -192,6 +192,22 @@ public partial class Deformatter
 		}
 	}
 
+	public void ReadMapKeyValueSeparator(ref Reader reader)
+	{
+		switch (this.StreamingDeformatter.TryReadMapKeyValueSeparator(ref reader))
+		{
+			case DecodeResult.Success:
+				return;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
 	/// <summary><inheritdoc cref="StreamingDeformatter.TryRead(ref Reader, out bool)"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <returns>The decoded value.</returns>

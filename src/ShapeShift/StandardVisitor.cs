@@ -196,7 +196,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			else
 			{
 				Func<T>? ctor = typeof(T) == typeof(object) ? (Func<T>)(object)new Func<object>(() => new object()) : null;
-				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor, this.owner.SerializeDefaultValues);
+				converter = this.CreateObjectMapConverter(serializableMap, deserializableMap, ctor, this.owner.SerializeDefaultValues);
 			}
 		}
 
@@ -356,7 +356,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							ByteSpanEqualityComparer.Ordinal);
 
 					MapSerializableProperties<TDeclaringType> serializeable = inputs.Serializers with { Properties = propertySerializers.ToArray() };
-					return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
+					return this.CreateObjectMapWithNonDefaultCtorConverter(
 						serializeable,
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
@@ -501,6 +501,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
 		=> new SurrogateConverter<T, TSurrogate>(surrogateShape, this.GetConverter(surrogateShape.SurrogateType, state));
+
+	protected virtual Converter<T> CreateObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? ctor, SerializeDefaultValuesPolicy defaultValuesPolicy)
+		=> new ObjectMapConverter<T>(serializable, deserializable, ctor, defaultValuesPolicy);
+
+	protected virtual Converter<TDeclaringType> CreateObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(MapSerializableProperties<TDeclaringType> serializable, Func<TArgumentState> argStateCtor, Constructor<TArgumentState, TDeclaringType> ctor, MapDeserializableProperties<TArgumentState> parameters, SerializeDefaultValuesPolicy defaultValuesPolicy)
+		=> new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(serializable, argStateCtor, ctor, parameters, defaultValuesPolicy);
 
 	/// <summary>
 	/// Creates a converter for a class and a set of derived types that should be serialized with full fidelity.

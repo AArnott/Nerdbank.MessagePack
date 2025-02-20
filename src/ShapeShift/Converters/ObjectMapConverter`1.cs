@@ -164,8 +164,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			int? count = reader.ReadStartMap();
 			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 			{
-				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
-				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
+				if (this.TryLookupProperty(ref reader, out DeserializableProperty<T> propertyReader))
 				{
 					propertyReader.Read(ref value, ref reader, context);
 				}
@@ -187,6 +186,20 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		return value;
+	}
+
+	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<T> propertyReader)
+	{
+		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
+		if (deserializable?.Readers is not null)
+		{
+			return deserializable.Value.Readers.TryGetValue(propertyName, out propertyReader);
+		}
+		else
+		{
+			propertyReader = default;
+			return false;
+		}
 	}
 
 	/// <inheritdoc/>

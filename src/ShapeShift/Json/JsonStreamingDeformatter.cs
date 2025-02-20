@@ -30,40 +30,52 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (this.Encoding is not UTF8Encoding)
 		{
-			hasAnotherElement = false;
-			return this.InsufficientBytes(reader);
+			throw new NotImplementedException();
 		}
 
-		hasAnotherElement = true;
-		return DecodeResult.Success;
-
-		DecodeResult result;
-		switch (utf8Reader.TokenType)
+		// Advance past all whitespace characters.
+		// If the first non-whitespace character is a comma (that isn't followed by ] or }, if we want to support trailing commas), return true.
+		// If the first non-whitespace character is a closing bracket or brace, return false.
+		// Anything else return true, since it may be the *first* element in the collection.
+		const byte comma = (byte)',';
+		const byte closingBracket = (byte)']';
+		const byte closingBrace = (byte)'}';
+		long advance;
+		for (int i = 0; i < reader.UnreadSpan.Length; i++)
 		{
-			case JsonTokenType.EndObject:
-			case JsonTokenType.EndArray:
-				hasAnotherElement = false;
-				result = DecodeResult.Success;
-				break;
-			//case JsonTokenType.Comma:
-			//	hasAnotherElement = true;
-			//	result = DecodeResult.Success;
-			//	break;
-			default:
-				hasAnotherElement = false;
-				result = DecodeResult.TokenMismatch;
-				break;
+			if (!char.IsWhiteSpace((char)reader.UnreadSpan[i]))
+			{
+				switch (reader.UnreadSpan[i])
+				{
+					case closingBrace:
+					case closingBracket:
+						hasAnotherElement = false;
+						advance = i + 1;
+						break;
+					case comma:
+						hasAnotherElement = true;
+						advance = i + 1;
+						break;
+					default:
+						advance = i; // do NOT consume this character.
+						hasAnotherElement = true;
+						break;
+				}
+
+				reader.Advance(advance);
+				return DecodeResult.Success;
+			}
 		}
 
-		if (result == DecodeResult.Success)
+		if (reader.Remaining > reader.UnreadSpan.Length)
 		{
-			reader.Advance(utf8Reader.BytesConsumed);
+			throw new NotImplementedException();
 		}
 
-		return result;
+		hasAnotherElement = false;
+		return DecodeResult.InsufficientBuffer;
 	}
 
 	/// <inheritdoc/>
@@ -111,7 +123,29 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out int value)
 	{
-		throw new NotImplementedException();
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (r.Read())
+		{
+			if (r.TokenType == JsonTokenType.Number)
+			{
+				value = r.GetInt32();
+				reader.Advance(r.BytesConsumed);
+				return DecodeResult.Success;
+			}
+			else
+			{
+				value = default;
+				return DecodeResult.TokenMismatch;
+			}
+		}
+
+		value = default;
+		return this.InsufficientBytes(reader);
 	}
 
 	/// <inheritdoc/>
@@ -159,13 +193,61 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out string? value)
 	{
-		throw new NotImplementedException();
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (r.Read())
+		{
+			if (r.TokenType == JsonTokenType.String)
+			{
+				value = r.GetString();
+				reader.Advance(r.BytesConsumed);
+				return DecodeResult.Success;
+			}
+			else
+			{
+				value = null;
+				return DecodeResult.TokenMismatch;
+			}
+		}
+
+		value = null;
+		return this.InsufficientBytes(reader);
 	}
 
 	/// <inheritdoc/>
 	public override DecodeResult TryReadBinary(ref Reader reader, out ReadOnlySequence<byte> value)
 	{
 		throw new NotImplementedException();
+	}
+
+	public override DecodeResult TryReadMapKeyValueSeparator(ref Reader reader)
+	{
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		int colonIndex = reader.UnreadSpan.IndexOf((byte)':');
+		if (colonIndex != -1)
+		{
+			reader.Advance(colonIndex + 1);
+			return DecodeResult.Success;
+		}
+
+		if (reader.Remaining > reader.UnreadSpan.Length)
+		{
+			SequencePosition? colonPosition = reader.UnreadSequence.Slice(reader.UnreadSpan.Length).PositionOf((byte)':');
+			if (colonPosition.HasValue)
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		return DecodeResult.TokenMismatch;
 	}
 
 	/// <inheritdoc/>
@@ -242,7 +324,8 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value)
 	{
-		throw new NotImplementedException();
+		// Utf8JsonReader doesn't support reading a string as a byte sequence.
+		throw new NotSupportedException();
 	}
 
 	/// <inheritdoc/>

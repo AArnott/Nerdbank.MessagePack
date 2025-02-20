@@ -38,9 +38,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			int? count = reader.ReadStartMap();
 			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 			{
-				ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
-				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
+				if (this.TryLookupProperty(ref reader, out DeserializableProperty<TArgumentState> deserializeArg))
 				{
+					reader.ReadMapKeyValueSeparator();
 					deserializeArg.Read(ref argState, ref reader, context);
 				}
 				else
@@ -63,6 +63,20 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		}
 
 		return value;
+	}
+
+	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<TArgumentState> deserializableArg)
+	{
+		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
+		if (parameters.Readers is not null)
+		{
+			return parameters.Readers.TryGetValue(propertyName, out deserializableArg);
+		}
+		else
+		{
+			deserializableArg = default;
+			return false;
+		}
 	}
 
 	/// <inheritdoc/>

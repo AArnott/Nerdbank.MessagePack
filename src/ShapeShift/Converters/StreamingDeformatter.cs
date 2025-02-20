@@ -90,6 +90,8 @@ public abstract record StreamingDeformatter
 	/// <returns>The success or error code.</returns>
 	public abstract DecodeResult TryReadStartMap(ref Reader reader, out int? count);
 
+	public abstract DecodeResult TryReadMapKeyValueSeparator(ref Reader reader);
+
 	/// <summary>
 	/// Reads a binary sequence (with its envelope) from the data stream.
 	/// </summary>

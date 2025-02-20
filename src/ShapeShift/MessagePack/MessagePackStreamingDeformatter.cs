@@ -989,4 +989,11 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	{
 		throw new NotSupportedException("All messagepack collections have prefixed length and this method should never be called under those conditions.");
 	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryReadMapKeyValueSeparator(ref Reader reader)
+	{
+		// msgpack has no such separators.
+		return DecodeResult.Success;
+	}
 }
