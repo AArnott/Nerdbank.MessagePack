@@ -188,20 +188,6 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		return value;
 	}
 
-	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<T> propertyReader)
-	{
-		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
-		if (deserializable?.Readers is not null)
-		{
-			return deserializable.Value.Readers.TryGetValue(propertyName, out propertyReader);
-		}
-		else
-		{
-			propertyReader = default;
-			return false;
-		}
-	}
-
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(AsyncReader reader, SerializationContext context)
@@ -412,7 +398,12 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		for (int i = 0; i < mapEntries; i++) // TODO: Review mapEntries is null condition
+		if (mapEntries is null)
+		{
+			throw new NotImplementedException(); // TODO: review this
+		}
+
+		for (int i = 0; i < mapEntries; i++)
 		{
 			ReadOnlySpan<byte> propertyName;
 			bool contiguous;
@@ -450,6 +441,29 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		reader.ReturnReader(ref streamingReader);
 		return false;
+	}
+
+	/// <summary>
+	/// Looks up the property deserializer given the property name at the current reader position.
+	/// </summary>
+	/// <param name="reader">The reader, positioned at the property name.</param>
+	/// <param name="propertyReader">Receives the property deserializer.</param>
+	/// <returns>A value indicating whether a matching property deserializer was found.</returns>
+	/// <remarks>
+	/// Implementations of this method <em>must</em> advance the reader beyond the property name in every case.
+	/// </remarks>
+	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<T> propertyReader)
+	{
+		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
+		if (deserializable?.Readers is not null)
+		{
+			return deserializable.Value.Readers.TryGetValue(propertyName, out propertyReader);
+		}
+		else
+		{
+			propertyReader = default;
+			return false;
+		}
 	}
 
 	/// <summary>

@@ -95,9 +95,10 @@ internal sealed class SpanDictionary<TKey, TValue>
 	/// <summary>Gets the numbers of entries on the dictionary.</summary>
 	public int Count => this.entries.Length;
 
+	/// <summary>
+	/// Gets the entries in this dictionary.
+	/// </summary>
 	public IEnumerable<KeyValuePair<ReadOnlyMemory<TKey>, TValue>> Entries => this.entries.Select(e => new KeyValuePair<ReadOnlyMemory<TKey>, TValue>(e.Key, e.Value));
-
-	public IEnumerable<TValue> Values => this.entries.Select(e => e.Value);
 
 	/// <summary>Attempts to look up an entry by a span key.</summary>
 	/// <param name="key">The key to look up.</param>

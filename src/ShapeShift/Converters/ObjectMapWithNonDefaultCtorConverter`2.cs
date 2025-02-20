@@ -65,20 +65,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		return value;
 	}
 
-	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<TArgumentState> deserializableArg)
-	{
-		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
-		if (parameters.Readers is not null)
-		{
-			return parameters.Readers.TryGetValue(propertyName, out deserializableArg);
-		}
-		else
-		{
-			deserializableArg = default;
-			return false;
-		}
-	}
-
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TDeclaringType?> ReadAsync(AsyncReader reader, SerializationContext context)
@@ -207,6 +193,21 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		}
 
 		return value;
+	}
+
+	/// <inheritdoc cref="ObjectMapConverter{T}.TryLookupProperty(ref Reader, out DeserializableProperty{T})"/>
+	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<TArgumentState> deserializableArg)
+	{
+		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
+		if (parameters.Readers is not null)
+		{
+			return parameters.Readers.TryGetValue(propertyName, out deserializableArg);
+		}
+		else
+		{
+			deserializableArg = default;
+			return false;
+		}
 	}
 
 	/// <inheritdoc/>

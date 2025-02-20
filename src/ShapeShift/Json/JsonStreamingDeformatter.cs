@@ -224,6 +224,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		throw new NotImplementedException();
 	}
 
+	/// <inheritdoc/>
 	public override DecodeResult TryReadMapKeyValueSeparator(ref Reader reader)
 	{
 		if (this.Encoding is not UTF8Encoding)

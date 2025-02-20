@@ -108,7 +108,12 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		for (int i = 0; i < count; i++) // TODO: review this condition when count is null
+		if (count is null)
+		{
+			throw new NotImplementedException(); // TODO: review this.
+		}
+
+		for (int i = 0; i < count; i++)
 		{
 			reader.ReturnReader(ref streamingReader);
 			TKey? key;

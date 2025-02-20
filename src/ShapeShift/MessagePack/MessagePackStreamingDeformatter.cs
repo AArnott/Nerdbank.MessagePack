@@ -900,6 +900,19 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
+	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement)
+	{
+		throw new NotSupportedException("All messagepack collections have prefixed length and this method should never be called under those conditions.");
+	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryReadMapKeyValueSeparator(ref Reader reader)
+	{
+		// msgpack has no such separators.
+		return DecodeResult.Success;
+	}
+
+	/// <inheritdoc/>
 	[DoesNotReturn]
 	protected internal override Exception ThrowInvalidCode(in Reader reader)
 	{
@@ -982,18 +995,5 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	{
 		uint expectedRemainingStructures = reader.ExpectedRemainingStructures;
 		reader.ExpectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
-	}
-
-	/// <inheritdoc/>
-	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement)
-	{
-		throw new NotSupportedException("All messagepack collections have prefixed length and this method should never be called under those conditions.");
-	}
-
-	/// <inheritdoc/>
-	public override DecodeResult TryReadMapKeyValueSeparator(ref Reader reader)
-	{
-		// msgpack has no such separators.
-		return DecodeResult.Success;
 	}
 }

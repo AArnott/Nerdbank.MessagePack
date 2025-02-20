@@ -502,9 +502,29 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
 		=> new SurrogateConverter<T, TSurrogate>(surrogateShape, this.GetConverter(surrogateShape.SurrogateType, state));
 
+	/// <summary>
+	/// Creates a converter for an object map.
+	/// </summary>
+	/// <typeparam name="T">The type of the object.</typeparam>
+	/// <param name="serializable">The serializable properties of the object.</param>
+	/// <param name="deserializable">The deserializable properties of the object.</param>
+	/// <param name="ctor">The constructor function for the object.</param>
+	/// <param name="defaultValuesPolicy">The policy for serializing default values.</param>
+	/// <returns>A converter for the object map.</returns>
 	protected virtual Converter<T> CreateObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? ctor, SerializeDefaultValuesPolicy defaultValuesPolicy)
 		=> new ObjectMapConverter<T>(serializable, deserializable, ctor, defaultValuesPolicy);
 
+	/// <summary>
+	/// Creates a converter for an object map with a non-default constructor.
+	/// </summary>
+	/// <typeparam name="TDeclaringType">The type of the object.</typeparam>
+	/// <typeparam name="TArgumentState">The type of the argument state.</typeparam>
+	/// <param name="serializable">The serializable properties of the object.</param>
+	/// <param name="argStateCtor">The constructor function for the argument state.</param>
+	/// <param name="ctor">The constructor function for the object.</param>
+	/// <param name="parameters">The deserializable properties of the argument state.</param>
+	/// <param name="defaultValuesPolicy">The policy for serializing default values.</param>
+	/// <returns>A converter for the object map with a non-default constructor.</returns>
 	protected virtual Converter<TDeclaringType> CreateObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(MapSerializableProperties<TDeclaringType> serializable, Func<TArgumentState> argStateCtor, Constructor<TArgumentState, TDeclaringType> ctor, MapDeserializableProperties<TArgumentState> parameters, SerializeDefaultValuesPolicy defaultValuesPolicy)
 		=> new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(serializable, argStateCtor, ctor, parameters, defaultValuesPolicy);
 

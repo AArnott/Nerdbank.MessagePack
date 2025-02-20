@@ -90,6 +90,11 @@ public abstract record StreamingDeformatter
 	/// <returns>The success or error code.</returns>
 	public abstract DecodeResult TryReadStartMap(ref Reader reader, out int? count);
 
+	/// <summary>
+	/// Advances the reader past a separator that appears between a key and value in a map.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <returns>The success or error code.</returns>
 	public abstract DecodeResult TryReadMapKeyValueSeparator(ref Reader reader);
 
 	/// <summary>

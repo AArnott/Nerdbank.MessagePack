@@ -123,6 +123,7 @@ public ref struct Reader
 	/// <inheritdoc cref="Deformatter.TryReadStartMap(ref Reader, out int?)"/>
 	public bool TryReadStartMap(out int? count) => this.Deformatter.TryReadStartMap(ref this, out count);
 
+	/// <inheritdoc cref="Deformatter.ReadMapKeyValueSeparator(ref Reader)"/>
 	public void ReadMapKeyValueSeparator() => this.Deformatter.ReadMapKeyValueSeparator(ref this);
 
 	/// <inheritdoc cref="Deformatter.ReadBoolean(ref Reader)"/>

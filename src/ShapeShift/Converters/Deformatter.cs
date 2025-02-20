@@ -192,6 +192,10 @@ public partial class Deformatter
 		}
 	}
 
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadMapKeyValueSeparator(ref Reader)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <exception cref="SerializationException">Thrown when the next token is not a separator for use between keys and values.</exception>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
 	public void ReadMapKeyValueSeparator(ref Reader reader)
 	{
 		switch (this.StreamingDeformatter.TryReadMapKeyValueSeparator(ref reader))
