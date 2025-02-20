@@ -33,7 +33,7 @@ public class MigrationAnalyzerTests
 						options.Security.DepthStep(ref reader);
 						try
 						{
-							int count = reader.ReadArrayHeader();
+							int? count = reader.ReadArrayHeader();
 							for (int i = 0; i < count; i++)
 							{
 								switch (i)
@@ -96,8 +96,8 @@ public class MigrationAnalyzerTests
 
 						string? name = null;
 						context.DepthStep();
-						int count = reader.ReadStartVector();
-						for (int i = 0; i < count; i++)
+						int? count = reader.ReadStartVector();
+						for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 						{
 							switch (i)
 							{

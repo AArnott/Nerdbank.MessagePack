@@ -43,8 +43,8 @@ public class ConverterAnalyzersTests
 						return null;
 					}
 
-					int count = reader.ReadStartVector();
-					for (int i = 0; i < count; i++)
+					int? count = reader.ReadStartVector();
+					for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 					{
 						reader.Skip(context);
 					}
@@ -88,8 +88,8 @@ public class ConverterAnalyzersTests
 				{
 					if (!reader.TryReadNull())
 					{
-						int count = reader.ReadStartMap();
-						for (int i = 0; i < count; i++)
+						int? count = reader.ReadStartMap();
+						for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
 						{
 							reader.Skip(context);
 							reader.Skip(context);
@@ -373,7 +373,7 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
-	public async Task NoIssues_MsgPackFormatterCall()
+	public async Task NoIssues_MessagePackFormatterCall()
 	{
 		string source = /* lang=c#-test */ """
 			using System;
@@ -384,9 +384,9 @@ public class ConverterAnalyzersTests
 			
 			internal class DateTimeConverter : Converter<DateTime>
 			{
-				public override DateTime Read(ref Reader reader, SerializationContext context) => ((MsgPackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
+				public override DateTime Read(ref Reader reader, SerializationContext context) => ((MessagePackDeformatter)reader.Deformatter).ReadDateTime(ref reader);
 
-				public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => ((MsgPackFormatter)writer.Formatter).Write(ref writer.Buffer, value);
+				public override void Write(ref Writer writer, in DateTime value, SerializationContext context) => ((MessagePackFormatter)writer.Formatter).Write(ref writer.Buffer, value);
 
 				public override JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new NotImplementedException();
 			}
