@@ -240,7 +240,8 @@ public class AsyncReader : IDisposable
 		Verify.Operation(this.readerReturned, "This cannot be done before returning the reader with ReturnReader.");
 		StreamingReader streamingReader = this.CreateStreamingReader();
 		bool hasAnotherElement;
-		while (streamingReader.TryAdvanceToNextElement(out hasAnotherElement).NeedsMoreBytes())
+		bool isFirstElement = true;
+		while (streamingReader.TryAdvanceToNextElement(ref isFirstElement, out hasAnotherElement).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}

@@ -36,7 +36,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		if (parameters.Readers is not null)
 		{
 			int? count = reader.ReadStartMap();
-			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
 				if (this.TryLookupProperty(ref reader, out DeserializableProperty<TArgumentState> deserializeArg))
 				{

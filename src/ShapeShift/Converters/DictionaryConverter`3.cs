@@ -236,7 +236,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	{
 		context.DepthStep();
 		int? count = reader.ReadStartMap();
-		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+		bool isFirstElement = true;
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 		{
 			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
 			addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
@@ -269,7 +270,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
 			int? count = syncReader.ReadStartMap();
-			for (int i = 0; i < count || (count is null && syncReader.TryAdvanceToNextElement()); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && syncReader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
 				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
 				addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
@@ -326,7 +328,8 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		else
 		{
 			List<KeyValuePair<TKey, TValue>> entries = new();
-			while (reader.TryAdvanceToNextElement())
+			bool isFirstElement = true;
+			while (reader.TryAdvanceToNextElement(ref isFirstElement))
 			{
 				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
 				entries.Add(new(key, value));
@@ -387,7 +390,8 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 		else
 		{
 			List<KeyValuePair<TKey, TValue>> entries = new();
-			while (reader.TryAdvanceToNextElement())
+			bool isFirstElement = true;
+			while (reader.TryAdvanceToNextElement(ref isFirstElement))
 			{
 				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
 				entries.Add(new(key, value));

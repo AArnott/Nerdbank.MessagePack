@@ -40,7 +40,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int? count = reader.ReadStartMap();
-			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
 				int index = reader.ReadInt32();
 				if (properties.Length > index && parameters[index] is { } deserialize)
@@ -56,7 +57,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		else
 		{
 			int? count = reader.ReadStartVector();
-			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
 				if (parameters.Length > i && parameters[i] is { } deserialize)
 				{

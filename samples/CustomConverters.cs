@@ -22,7 +22,8 @@ namespace CustomConverter
             string? property2 = null;
 
             int? count = reader.ReadStartMap();
-            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+            bool isFirstElement = true;
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
             {
                 string? key = reader.ReadString();
                 switch (key)
@@ -77,7 +78,8 @@ namespace CustomConverter
             int property1 = 0;
             string? property2 = null;
             int? count = reader.ReadStartVector();
-            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+            bool isFirstElement = true;
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
             {
                 switch (i)
                 {
@@ -126,7 +128,8 @@ namespace SubValues
             string? property2 = null;
 
             int? count = reader.ReadStartMap();
-            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+            bool isFirstElement = true;
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
             {
                 string? key = reader.ReadString();
                 switch (key)
@@ -405,7 +408,8 @@ namespace PerformanceConverters
             int? count = reader.ReadStartMap();
 
             // It is critical that we read or skip every element of the map, even if we don't recognize the key.
-            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+            bool isFirstElement = true;
+            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
             {
                 // Compare the key to those we recognize such that we don't decode or allocate strings unnecessarily.
                 if (Message1.TryRead(ref reader))

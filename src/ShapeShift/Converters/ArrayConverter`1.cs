@@ -38,7 +38,8 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 		else
 		{
 			List<TElement> elements = new();
-			while (reader.TryAdvanceToNextElement())
+			bool isFirstElement = true;
+			while (reader.TryAdvanceToNextElement(ref isFirstElement))
 			{
 				elements.Add(elementConverter.Read(ref reader, context)!);
 			}
@@ -175,7 +176,8 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 			else
 			{
 				List<TElement> elements = new();
-				while (syncReader.TryAdvanceToNextElement())
+				bool isFirstElement = true;
+				while (syncReader.TryAdvanceToNextElement(ref isFirstElement))
 				{
 					elements.Add(elementConverter.Read(ref syncReader, context)!);
 				}

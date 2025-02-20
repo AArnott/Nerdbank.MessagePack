@@ -114,8 +114,8 @@ public ref struct Reader
 	/// <inheritdoc cref="Deformatter.TryReadStartVector(ref Reader, out int?)"/>
 	public bool TryReadStartVector(out int? count) => this.Deformatter.TryReadStartVector(ref this, out count);
 
-	/// <inheritdoc cref="Deformatter.TryAdvanceToNextElement(ref Reader)"/>
-	public bool TryAdvanceToNextElement() => this.Deformatter.TryAdvanceToNextElement(ref this);
+	/// <inheritdoc cref="Deformatter.TryAdvanceToNextElement(ref Reader, ref bool)"/>
+	public bool TryAdvanceToNextElement(ref bool isFirstElement) => this.Deformatter.TryAdvanceToNextElement(ref this, ref isFirstElement);
 
 	/// <inheritdoc cref="Deformatter.ReadStartMap(ref Reader)"/>
 	public int? ReadStartMap() => this.Deformatter.ReadStartMap(ref this);

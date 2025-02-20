@@ -39,7 +39,8 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int? count = reader.ReadStartMap();
-			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
 				int index = reader.ReadInt32();
 				if (properties.Length > index && properties.Span[index]?.MsgPackReaders is var (deserialize, _))
@@ -55,7 +56,8 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		else
 		{
 			int? count = reader.ReadStartVector();
-			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
 				if (properties.Length > i && properties.Span[i]?.MsgPackReaders is var (deserialize, _))
 				{

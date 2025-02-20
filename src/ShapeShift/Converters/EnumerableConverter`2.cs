@@ -175,7 +175,8 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	{
 		context.DepthStep();
 		int? count = reader.ReadStartVector();
-		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+		bool isFirstElement = true;
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 		{
 			addElement(ref collection, this.ReadElement(ref reader, context));
 		}
@@ -211,7 +212,8 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			Reader syncReader = reader.CreateBufferedReader();
 			int? count = syncReader.ReadStartVector();
-			for (int i = 0; i < count || (count is null && syncReader.TryAdvanceToNextElement()); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && syncReader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
 				addElement(ref collection, this.ReadElement(ref syncReader, context));
 			}
@@ -263,7 +265,8 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 		else
 		{
 			List<TElement> elements = new();
-			while (reader.TryAdvanceToNextElement())
+			bool isFirstElement = true;
+			while (reader.TryAdvanceToNextElement(ref isFirstElement))
 			{
 				elements.Add(this.ReadElement(ref reader, context));
 			}
@@ -319,7 +322,8 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 		else
 		{
 			List<TElement> elements = new();
-			while (reader.TryAdvanceToNextElement())
+			bool isFirstElement = true;
+			while (reader.TryAdvanceToNextElement(ref isFirstElement))
 			{
 				elements.Add(this.ReadElement(ref reader, context));
 			}

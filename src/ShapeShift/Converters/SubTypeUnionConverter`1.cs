@@ -45,7 +45,8 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			ThrowWrongNumberOfElements(count.Value);
 		}
 
-		if (count is null && !reader.TryAdvanceToNextElement())
+		bool isFirstElement = true;
+		if (count is null && !reader.TryAdvanceToNextElement(ref isFirstElement))
 		{
 			ThrowWrongNumberOfElements(0);
 		}
@@ -55,14 +56,14 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		// The alias for the base type itself is simply nil.
 		if (reader.TryReadNull())
 		{
-			if (count is null && !reader.TryAdvanceToNextElement())
+			if (count is null && !reader.TryAdvanceToNextElement(ref isFirstElement))
 			{
 				ThrowWrongNumberOfElements(1);
 			}
 
 			result = this.baseConverter.Read(ref reader, context);
 
-			if (count is null && reader.TryAdvanceToNextElement())
+			if (count is null && reader.TryAdvanceToNextElement(ref isFirstElement))
 			{
 				ThrowTooManyElements();
 			}
@@ -88,14 +89,14 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			}
 		}
 
-		if (count is null && !reader.TryAdvanceToNextElement())
+		if (count is null && !reader.TryAdvanceToNextElement(ref isFirstElement))
 		{
 			ThrowWrongNumberOfElements(1);
 		}
 
 		result = (TBase?)converter.ReadObject(ref reader, context);
 
-		if (count is null && reader.TryAdvanceToNextElement())
+		if (count is null && reader.TryAdvanceToNextElement(ref isFirstElement))
 		{
 			ThrowTooManyElements();
 		}
@@ -174,7 +175,8 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			if (count is null)
 			{
 				bool hasAnotherElement;
-				while (streamingReader.TryAdvanceToNextElement(out hasAnotherElement).NeedsMoreBytes())
+				bool isFirstElement = true;
+				while (streamingReader.TryAdvanceToNextElement(ref isFirstElement, out hasAnotherElement).NeedsMoreBytes())
 				{
 					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 				}
@@ -240,7 +242,8 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		if (count is null)
 		{
 			bool hasAnotherElement;
-			while (streamingReader.TryAdvanceToNextElement(out hasAnotherElement).NeedsMoreBytes())
+			bool isFirstElement = true;
+			while (streamingReader.TryAdvanceToNextElement(ref isFirstElement, out hasAnotherElement).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}

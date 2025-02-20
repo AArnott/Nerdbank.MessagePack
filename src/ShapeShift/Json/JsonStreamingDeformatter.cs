@@ -28,7 +28,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	public override Encoding Encoding => JsonFormatter.DefaultUTF8Encoding;
 
 	/// <inheritdoc/>
-	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement)
+	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, ref bool isFirstElement, out bool hasAnotherElement)
 	{
 		if (this.Encoding is not UTF8Encoding)
 		{
@@ -36,37 +36,50 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		}
 
 		// Advance past all whitespace characters.
-		// If the first non-whitespace character is a comma (that isn't followed by ] or }, if we want to support trailing commas), return true.
+		// If the first non-whitespace character is a comma (that isn't followed by ] or }, if we want to support trailing commas),
+		//     if !isFirstElement, return true.
+		//     else throw for an unexpected token.
 		// If the first non-whitespace character is a closing bracket or brace, return false.
-		// Anything else return true, since it may be the *first* element in the collection.
 		const byte comma = (byte)',';
 		const byte closingBracket = (byte)']';
 		const byte closingBrace = (byte)'}';
 		long advance;
 		for (int i = 0; i < reader.UnreadSpan.Length; i++)
 		{
-			if (!char.IsWhiteSpace((char)reader.UnreadSpan[i]))
+			if (char.IsWhiteSpace((char)reader.UnreadSpan[i]))
 			{
-				switch (reader.UnreadSpan[i])
-				{
-					case closingBrace:
-					case closingBracket:
-						hasAnotherElement = false;
-						advance = i + 1;
-						break;
-					case comma:
-						hasAnotherElement = true;
-						advance = i + 1;
-						break;
-					default:
-						advance = i; // do NOT consume this character.
-						hasAnotherElement = true;
-						break;
-				}
-
-				reader.Advance(advance);
-				return DecodeResult.Success;
+				continue;
 			}
+
+			switch (reader.UnreadSpan[i])
+			{
+				case closingBrace:
+				case closingBracket:
+					hasAnotherElement = false;
+					advance = i + 1;
+					break;
+				case comma:
+					if (!isFirstElement)
+					{
+						hasAnotherElement = true;
+						advance = i + 1;
+					}
+					else
+					{
+						hasAnotherElement = false;
+						return DecodeResult.TokenMismatch;
+					}
+
+					break;
+				default:
+					isFirstElement = false;
+					advance = i; // do NOT consume this character.
+					hasAnotherElement = true;
+					break;
+			}
+
+			reader.Advance(advance);
+			return DecodeResult.Success;
 		}
 
 		if (reader.Remaining > reader.UnreadSpan.Length)

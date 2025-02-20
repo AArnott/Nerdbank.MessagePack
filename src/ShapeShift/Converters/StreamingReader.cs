@@ -160,8 +160,8 @@ public ref partial struct StreamingReader
 	/// <inheritdoc cref="StreamingDeformatter.TryPeekNextTypeCode(in Reader, out TokenType)"/>
 	public DecodeResult TryPeekNextTypeCode(out TokenType typeCode) => this.StreamingDeformatter.TryPeekNextTypeCode(this.reader, out typeCode);
 
-	/// <inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, out bool)"/>
-	public DecodeResult TryAdvanceToNextElement(out bool hasAnotherElement) => this.StreamingDeformatter.TryAdvanceToNextElement(ref this.reader, out hasAnotherElement);
+	/// <inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, ref bool, out bool)"/>
+	public DecodeResult TryAdvanceToNextElement(ref bool isFirstElement, out bool hasAnotherElement) => this.StreamingDeformatter.TryAdvanceToNextElement(ref this.reader, ref isFirstElement, out hasAnotherElement);
 
 	/// <inheritdoc cref="StreamingDeformatter.TryReadRaw(ref Reader, long, out ReadOnlySequence{byte})"/>
 	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawBytes) => this.StreamingDeformatter.TryReadRaw(ref this.reader, length, out rawBytes);

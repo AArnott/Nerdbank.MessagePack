@@ -44,14 +44,15 @@ public partial class Deformatter
 	/// <inheritdoc cref="StreamingDeformatter.Encoding"/>
 	public Encoding Encoding => this.StreamingDeformatter.Encoding;
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, out bool)" path="/summary"/></summary>
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, ref bool, out bool)" path="/summary"/></summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="isFirstElement"><inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, ref bool, out bool)" path="/param[@name='isFirstElement']" /></param>
 	/// <returns><see langword="true" /> if there is another element in the collection; otherwise <see langword="false" />.</returns>
-	/// <inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, out bool)" path="/remarks"/>
+	/// <inheritdoc cref="StreamingDeformatter.TryAdvanceToNextElement(ref Reader, ref bool, out bool)" path="/remarks"/>
 	/// <exception cref="EndOfStreamException">Thrown when there is insufficient buffer to decode the next token.</exception>
-	public bool TryAdvanceToNextElement(ref Reader reader)
+	public bool TryAdvanceToNextElement(ref Reader reader, ref bool isFirstElement)
 	{
-		switch (this.StreamingDeformatter.TryAdvanceToNextElement(ref reader, out bool hasAnotherElement))
+		switch (this.StreamingDeformatter.TryAdvanceToNextElement(ref reader, ref isFirstElement, out bool hasAnotherElement))
 		{
 			case DecodeResult.Success:
 				return hasAnotherElement;

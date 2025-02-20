@@ -38,6 +38,7 @@ public abstract record StreamingDeformatter
 	/// Advances the reader to the next element in a collection or beyond the termination marker.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="isFirstElement">A value indicating whether this is the <em>first</em> element to be retrieved in a collection. This <em>must</em> be a local variable and initialized to <see langword="true" /> by the caller before entering the loop. It will be changed to <see langword="false" /> within this method as appropriate.</param>
 	/// <param name="hasAnotherElement">Receives a value indicating whether another element remains in the collection.</param>
 	/// <returns>
 	/// <see cref="DecodeResult.Success"/> if the next token was a separator or termination marker.
@@ -50,7 +51,7 @@ public abstract record StreamingDeformatter
 	/// and necessarily after the last item (in order to discover that it is indeed the last element, and to
 	/// advance the reader past the termination marker).
 	/// </remarks>
-	public abstract DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement);
+	public abstract DecodeResult TryAdvanceToNextElement(ref Reader reader, ref bool isFirstElement, out bool hasAnotherElement);
 
 	/// <summary>
 	/// Reads the next token if it is <see cref="TokenType.Null"/>.

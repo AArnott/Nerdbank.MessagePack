@@ -900,7 +900,7 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, out bool hasAnotherElement)
+	public override DecodeResult TryAdvanceToNextElement(ref Reader reader, ref bool isFirstElement, out bool hasAnotherElement)
 	{
 		throw new NotSupportedException("All messagepack collections have prefixed length and this method should never be called under those conditions.");
 	}
