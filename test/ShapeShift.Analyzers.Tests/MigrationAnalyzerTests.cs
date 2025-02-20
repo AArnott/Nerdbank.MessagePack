@@ -7,7 +7,7 @@ using VerifyCS = CodeFixVerifier<ShapeShift.Analyzers.MigrationAnalyzer, ShapeSh
 public class MigrationAnalyzerTests
 {
 	[Fact]
-	public async Task Formatter()
+	public async Task Formatter_Array()
 	{
 		string source = /* lang=c#-test */ """
 			#nullable enable
@@ -102,6 +102,133 @@ public class MigrationAnalyzerTests
 							switch (i)
 							{
 								case 0:
+									name = context.GetConverter<string>(MyTypeFormatter.ShapeProvider).Read(ref reader, context);
+									break;
+								default:
+									reader.Skip(context);
+									break;
+							}
+						}
+
+						return new MyType { Name = name };
+					}
+
+					public override void Write(ref Writer writer, in MyType? value, SerializationContext context)
+					{
+						if (value is null)
+						{
+							writer.WriteNull();
+							return;
+						}
+
+						writer.WriteStartVector(1);
+						context.GetConverter<string>(MyTypeFormatter.ShapeProvider).Write(ref writer, value.Name, context);
+					}
+				}
+			}
+			""";
+
+		await this.VerifyCodeFixAsync(source, fixedSource, 2);
+	}
+
+	[Fact]
+	public async Task Formatter_Map()
+	{
+		string source = /* lang=c#-test */ """
+			#nullable enable
+
+			using MessagePack;
+			using MessagePack.Formatters;
+
+			[MessagePackFormatter(typeof(MyTypeFormatter))]
+			public class MyType
+			{
+				public string? Name { get; set; }
+
+				private class {|NBMsgPack100:MyTypeFormatter|} : IMessagePackFormatter<MyType?>
+				{
+					public MyType? Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
+					{
+						if (reader.TryReadNil())
+						{
+							return null;
+						}
+
+						string? name = null;
+						options.Security.DepthStep(ref reader);
+						try
+						{
+							int? count = reader.ReadMapHeader();
+							for (int i = 0; i < count; i++)
+							{
+								string? key = reader.ReadString();
+								switch (key)
+								{
+									case "Name":
+										name = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
+										break;
+									default:
+										reader.Skip();
+										break;
+								}
+							}
+
+							return new MyType { Name = name };
+						}
+						finally
+						{
+							reader.Depth--;
+						}
+					}
+
+					public void Serialize(ref MessagePackWriter writer, MyType? value, MessagePackSerializerOptions options)
+					{
+						if (value is null)
+						{
+							writer.WriteNil();
+							return;
+						}
+
+						writer.WriteArrayHeader(1);
+						options.Resolver.GetFormatterWithVerify<string?>().Serialize(ref writer, value.Name, options);
+					}
+				}
+			}
+			""";
+
+		string fixedSource = /* lang=c#-test */ """
+			#nullable enable
+
+			using MessagePack;
+			using MessagePack.Formatters;
+			using PolyType;
+			using ShapeShift;
+			using ShapeShift.Converters;
+
+			[Converter(typeof(MyTypeFormatter))]
+			public partial class MyType
+			{
+				public string? Name { get; set; }
+
+				[GenerateShape<string>]
+				private partial class MyTypeFormatter : Converter<MyType>
+				{
+					public override MyType? Read(ref Reader reader, SerializationContext context)
+					{
+						if (reader.TryReadNull())
+						{
+							return null;
+						}
+
+						string? name = null;
+						context.DepthStep();
+						int? count = reader.ReadStartMap();
+						for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+						{
+							string? key = reader.ReadString();
+							switch (key)
+							{
+								case "Name":
 									name = context.GetConverter<string>(MyTypeFormatter.ShapeProvider).Read(ref reader, context);
 									break;
 								default:

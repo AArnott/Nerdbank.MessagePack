@@ -153,8 +153,9 @@ These two APIs are very similar, but the method signatures are slightly differen
 -        try
 -        {
 -            int count = reader.ReadArrayHeader();
-+            int count = reader.ReadStartVector();
-             for (int i = 0; i < count; i++)
++            int? count = reader.ReadStartVector();
+-            for (int i = 0; i < count; i++)
++            for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
              {
                  switch (i)
                  {
