@@ -18,6 +18,7 @@ namespace ShapeShift.Converters;
 var convertersByType = new List<ConverterInfo>
 {
 	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerTextConverter"),
+	new ConverterInfo("Guid", "GuidTextConverter"),
 };
 #>
 /// <summary>

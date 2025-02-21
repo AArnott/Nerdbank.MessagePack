@@ -183,7 +183,6 @@ public abstract class Converter
 	/// </remarks>
 	protected static JsonObject CreateBase64EncodedBinarySchema(string? description = null)
 	{
-		// TODO: review this and move to Formatter.
 		JsonObject schema = new()
 		{
 			["type"] = "string",

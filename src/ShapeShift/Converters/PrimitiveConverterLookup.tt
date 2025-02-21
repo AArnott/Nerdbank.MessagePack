@@ -31,7 +31,6 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("double", "DoubleConverter"),
 	new ConverterInfo("decimal", "DecimalConverter"),
 	new ConverterInfo("TimeSpan", "TimeSpanConverter"),
-	new ConverterInfo("Guid", "GuidConverter"),
 	new ConverterInfo("System.Text.Rune", "RuneConverter", "NET"),
 	new ConverterInfo("Int128", "Int128Converter", "NET"),
 	new ConverterInfo("UInt128", "UInt128Converter", "NET"),

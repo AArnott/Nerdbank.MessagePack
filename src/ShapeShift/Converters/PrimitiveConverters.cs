@@ -7,6 +7,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -817,7 +818,7 @@ internal class ReadOnlyMemoryOfByteConverter : Converter<ReadOnlyMemory<byte>>
 /// <summary>
 /// Serializes a <see cref="Guid"/> value.
 /// </summary>
-internal class GuidConverter : Converter<Guid>
+internal class GuidBinaryConverter : Converter<Guid>
 {
 	private const int GuidLength = 16;
 
@@ -859,6 +860,66 @@ internal class GuidConverter : Converter<Guid>
 			Span<byte> span = stackalloc byte[GuidLength];
 			Assumes.True(value.TryWriteBytes(span));
 			writer.Write(span);
+		}
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> CreateBase64EncodedBinarySchema("The binary representation of the GUID.");
+}
+
+/// <summary>
+/// Serializes a <see cref="Guid"/> value.
+/// </summary>
+internal class GuidTextConverter : Converter<Guid>
+{
+	/// <inheritdoc/>
+	public override Guid Read(ref Reader reader, SerializationContext context)
+	{
+		reader.GetMaxStringLength(out int maxChars, out _);
+		if (maxChars > MaxStackStringCharLength)
+		{
+			throw new SerializationException("String exceeds reasonable guid length");
+		}
+
+		Span<char> guidValue = stackalloc char[maxChars];
+		int charCount = reader.ReadString(guidValue);
+#if NET
+		return Guid.Parse(guidValue[..charCount]);
+#else
+		return Guid.Parse(guidValue[..charCount].ToString());
+#endif
+	}
+
+	/// <inheritdoc/>
+	public override void Write(ref Writer writer, in Guid value, SerializationContext context)
+	{
+		const string format = "D";
+		switch (writer.Formatter.Encoding)
+		{
+#if NET
+			case UTF8Encoding:
+				Span<byte> utf8Bytes = stackalloc byte[100];
+				if (!value.TryFormat(utf8Bytes, out int bytesWritten, format))
+				{
+					throw new SerializationException();
+				}
+
+				writer.WriteEncodedString(utf8Bytes[..bytesWritten]);
+				break;
+			case UnicodeEncoding:
+				Span<char> utf16Chars = stackalloc char[100];
+				if (!value.TryFormat(utf16Chars, out int charsWritten, format))
+				{
+					throw new SerializationException();
+				}
+
+				writer.WriteEncodedString(MemoryMarshal.Cast<char, byte>(utf16Chars[..charsWritten]));
+				break;
+#endif
+			default:
+				writer.Write(value.ToString(format, CultureInfo.InvariantCulture));
+				break;
 		}
 	}
 

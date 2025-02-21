@@ -24,6 +24,7 @@ namespace ShapeShift.Converters;
 internal static class JsonPrimitiveConverterLookup
 {
 	private static Converter? _BigIntegerTextConverter;
+	private static Converter? _GuidTextConverter;
 
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
@@ -36,6 +37,12 @@ internal static class JsonPrimitiveConverterLookup
 		if (typeof(T) == typeof(System.Numerics.BigInteger))
 		{
 			converter = (Converter<T>)(_BigIntegerTextConverter ??= new BigIntegerTextConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(Guid))
+		{
+			converter = (Converter<T>)(_GuidTextConverter ??= new GuidTextConverter());
 			return true;
 		}
 

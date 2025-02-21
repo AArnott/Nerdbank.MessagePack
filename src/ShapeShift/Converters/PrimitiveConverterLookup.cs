@@ -37,7 +37,6 @@ internal static class PrimitiveConverterLookup
 	private static Converter? _DoubleConverter;
 	private static Converter? _DecimalConverter;
 	private static Converter? _TimeSpanConverter;
-	private static Converter? _GuidConverter;
 	private static Converter? _SystemDrawingColorConverter;
 	private static Converter? _MemoryOfByteConverter;
 	private static Converter? _ReadOnlyMemoryOfByteConverter;
@@ -143,12 +142,6 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(TimeSpan))
 		{
 			converter = (Converter<T>)(_TimeSpanConverter ??= new TimeSpanConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(Guid))
-		{
-			converter = (Converter<T>)(_GuidConverter ??= new GuidConverter());
 			return true;
 		}
 

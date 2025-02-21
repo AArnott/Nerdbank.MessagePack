@@ -27,6 +27,7 @@ internal static class MsgPackPrimitiveConverterLookup
 	private static Converter? _DateTimeOffsetConverter;
 	private static Converter? _StringConverter;
 	private static Converter? _BigIntegerBinaryConverter;
+	private static Converter? _GuidBinaryConverter;
 
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
@@ -57,6 +58,12 @@ internal static class MsgPackPrimitiveConverterLookup
 		if (typeof(T) == typeof(System.Numerics.BigInteger))
 		{
 			converter = (Converter<T>)(_BigIntegerBinaryConverter ??= new BigIntegerBinaryConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(Guid))
+		{
+			converter = (Converter<T>)(_GuidBinaryConverter ??= new GuidBinaryConverter());
 			return true;
 		}
 
