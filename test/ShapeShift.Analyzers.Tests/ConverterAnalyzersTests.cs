@@ -44,7 +44,8 @@ public class ConverterAnalyzersTests
 					}
 
 					int? count = reader.ReadStartVector();
-					for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+					bool isFirstElement = true;
+					for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 					{
 						reader.Skip(context);
 					}
@@ -89,7 +90,8 @@ public class ConverterAnalyzersTests
 					if (!reader.TryReadNull())
 					{
 						int? count = reader.ReadStartMap();
-						for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement()); i++)
+						bool isFirstElement = true;
+						for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 						{
 							reader.Skip(context);
 							reader.Skip(context);

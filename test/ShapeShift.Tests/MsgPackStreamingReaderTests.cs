@@ -200,31 +200,6 @@ public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
 	}
 
 	[Fact]
-	public async Task TryReadStringSequence()
-	{
-		string originalData = "hello";
-
-		Sequence<byte> seq = new();
-		Writer writer = new(seq, MessagePackFormatter.Default);
-		writer.Write(originalData);
-		writer.Flush();
-
-		FragmentedPipeReader pipeReader = new(seq);
-		StreamingReader reader = new(
-			seq.AsReadOnlySequence.Slice(0, 2),
-			(_, pos, examined, ct) => new(new ReadResult(seq.AsReadOnlySequence.Slice(pos), false, true)),
-			null,
-			Deformatter);
-		ReadOnlySequence<byte> deserializedString;
-		while (reader.TryReadStringSequence(out deserializedString).NeedsMoreBytes())
-		{
-			reader = new(await reader.FetchMoreBytesAsync());
-		}
-
-		Assert.Equal(originalData, Encoding.UTF8.GetString(deserializedString.ToArray()));
-	}
-
-	[Fact]
 	public async Task TryReadStringSpan()
 	{
 		string originalData = "hello";

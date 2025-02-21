@@ -82,10 +82,33 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		}
 		else
 		{
-			ReadOnlySpan<byte> alias = reader.Deformatter.ReadStringSpan(ref reader);
-			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+			if (reader.TryReadStringSpan(out ReadOnlySpan<byte> alias))
 			{
-				throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(alias)}\".");
+				if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+				{
+					throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(alias)}\".");
+				}
+			}
+			else
+			{
+				reader.GetMaxStringLength(out _, out int maxBytes);
+				byte[]? array = null;
+				try
+				{
+					Span<byte> scratchBuffer = maxBytes > MaxStackStringCharLength ? array = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+					int byteCount = reader.ReadString(scratchBuffer);
+					if (!this.subTypes.DeserializersByStringAlias.TryGetValue(scratchBuffer[..byteCount], out converter))
+					{
+						throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(scratchBuffer[..byteCount])}\".");
+					}
+				}
+				finally
+				{
+					if (array is not null)
+					{
+						ArrayPool<byte>.Shared.Return(array);
+					}
+				}
 			}
 		}
 
@@ -227,15 +250,47 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			if (!contiguous)
+			if (contiguous)
 			{
-				Assumes.True(streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> utf8Sequence) == DecodeResult.Success);
-				alias = utf8Sequence.ToArray();
+				if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+				{
+					throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(alias)}\".");
+				}
 			}
-
-			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+			else
 			{
-				throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(alias)}\".");
+				byte[]? array = null;
+				try
+				{
+					int maxBytes;
+					while (streamingReader.TryGetMaxStringLength(out _, out maxBytes).NeedsMoreBytes())
+					{
+						streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+					}
+
+					StreamingReader peekReader = streamingReader;
+					if (peekReader.TryReadStringSpan(out _, out _).NeedsMoreBytes())
+					{
+						reader.ReturnReader(ref streamingReader);
+						await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
+						streamingReader = reader.CreateStreamingReader();
+					}
+
+					Span<byte> scratchBuffer = maxBytes > MaxStackStringCharLength ? array = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+					int bytesWritten;
+					Assumes.False(streamingReader.TryReadString(scratchBuffer, out bytesWritten).NeedsMoreBytes());
+					if (!this.subTypes.DeserializersByStringAlias.TryGetValue(scratchBuffer[..bytesWritten], out converter))
+					{
+						throw new SerializationException($"Unknown alias \"{reader.Deformatter.StreamingDeformatter.Encoding.GetString(scratchBuffer[..bytesWritten])}\".");
+					}
+				}
+				finally
+				{
+					if (array is not null)
+					{
+						ArrayPool<byte>.Shared.Return(array);
+					}
+				}
 			}
 		}
 

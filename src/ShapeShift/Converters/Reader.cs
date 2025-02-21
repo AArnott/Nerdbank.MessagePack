@@ -138,15 +138,17 @@ public ref struct Reader
 	/// <inheritdoc cref="Deformatter.ReadBytes(ref Reader)"/>
 	public ReadOnlySequence<byte>? ReadBytes() => this.Deformatter.ReadBytes(ref this);
 
-	/// <inheritdoc cref="Deformatter.ReadStringSequence(ref Reader)"/>
-	public ReadOnlySequence<byte>? ReadStringSequence() => this.Deformatter.ReadStringSequence(ref this);
+	/// <inheritdoc cref="Deformatter.GetMaxStringLength(in Reader, out int, out int)"/>
+	public readonly void GetMaxStringLength(out int chars, out int bytes) => this.Deformatter.GetMaxStringLength(this, out chars, out bytes);
+
+	/// <inheritdoc cref="Deformatter.ReadString(ref Reader, Span{char})"/>
+	public int ReadString(scoped Span<char> destination) => this.Deformatter.ReadString(ref this, destination);
+
+	/// <inheritdoc cref="Deformatter.ReadString(ref Reader, Span{byte})"/>
+	public int ReadString(scoped Span<byte> destination) => this.Deformatter.ReadString(ref this, destination);
 
 	/// <inheritdoc cref="Deformatter.TryReadStringSpan(ref Reader, out ReadOnlySpan{byte})"/>
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.Deformatter.TryReadStringSpan(ref this, out value);
-
-	/// <inheritdoc cref="Deformatter.ReadStringSpan(ref Reader)"/>
-	[UnscopedRef]
-	public ReadOnlySpan<byte> ReadStringSpan() => this.Deformatter.ReadStringSpan(ref this);
 
 	/// <inheritdoc cref="Deformatter.ReadSByte(ref Reader)"/>
 	public sbyte ReadSByte() => this.Deformatter.ReadSByte(ref this);

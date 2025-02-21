@@ -153,7 +153,7 @@ internal record SubTypes
 	internal required FrozenDictionary<int, Converter> DeserializersByIntAlias { get; init; }
 
 	/// <summary>
-	/// Gets the converter to use to deserialize a subtype, keyed by its UTF-8 encoded string alias.
+	/// Gets the converter to use to deserialize a subtype, keyed by its string alias, encoded per the format.
 	/// </summary>
 	internal required SpanDictionary<byte, Converter> DeserializersByStringAlias { get; init; }
 

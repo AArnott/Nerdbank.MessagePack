@@ -36,34 +36,11 @@ internal class StringConverter : Converter<string>
 	public override async ValueTask<string?> ReadAsync(AsyncReader reader, SerializationContext context)
 	{
 		StreamingReader streamingReader = reader.CreateStreamingReader();
-		bool wasNil;
-		if (streamingReader.TryReadNull(out wasNil).NeedsMoreBytes())
+
+		string? result;
+		while (streamingReader.TryRead(out result).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-		}
-
-		if (wasNil)
-		{
-			reader.ReturnReader(ref streamingReader);
-			return null;
-		}
-
-		string result;
-		bool contiguous;
-		ReadOnlySpan<byte> bytesSpan;
-		while (streamingReader.TryReadStringSpan(out contiguous, out bytesSpan).NeedsMoreBytes())
-		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-		}
-
-		if (contiguous)
-		{
-			result = reader.Deformatter.Encoding.GetString(bytesSpan);
-		}
-		else
-		{
-			Assumes.True(streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> bytesSequence) == DecodeResult.Success);
-			result = reader.Deformatter.Encoding.GetString(bytesSequence);
 		}
 
 		reader.ReturnReader(ref streamingReader);
@@ -88,9 +65,6 @@ internal class StringConverter : Converter<string>
 /// </summary>
 internal class InterningStringConverter : Converter<string>
 {
-	// The actual stack space taken will be up to 2X this value, because we're converting UTF-8 to UTF-16.
-	private const int MaxStackStringCharLength = 4096;
-
 	/// <inheritdoc/>
 	public override string? Read(ref Reader reader, SerializationContext context)
 	{
@@ -99,40 +73,13 @@ internal class InterningStringConverter : Converter<string>
 			return null;
 		}
 
-		ReadOnlySequence<byte> bytesSequence = default;
-		bool spanMode;
-		int byteLength;
-		if (reader.TryReadStringSpan(out ReadOnlySpan<byte> byteSpan))
-		{
-			if (byteSpan.IsEmpty)
-			{
-				return string.Empty;
-			}
-
-			spanMode = true;
-			byteLength = byteSpan.Length;
-		}
-		else
-		{
-			bytesSequence = reader.ReadStringSequence()!.Value;
-			spanMode = false;
-			byteLength = checked((int)bytesSequence.Length);
-		}
-
-		char[]? charArray = byteLength > MaxStackStringCharLength ? ArrayPool<char>.Shared.Rent(byteLength) : null;
+		reader.GetMaxStringLength(out int maxCharLength, out _);
+		char[]? charArray = maxCharLength > MaxStackStringCharLength ? ArrayPool<char>.Shared.Rent(maxCharLength) : null;
 		try
 		{
-			Span<char> stackSpan = charArray ?? stackalloc char[byteLength];
-			if (spanMode)
-			{
-				int characterCount = reader.Deformatter.Encoding.GetChars(byteSpan, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
-			}
-			else
-			{
-				int characterCount = reader.Deformatter.Encoding.GetChars(bytesSequence, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
-			}
+			Span<char> stackSpan = charArray ?? stackalloc char[maxCharLength];
+			int characterCount = reader.ReadString(stackSpan);
+			return Strings.WeakIntern(stackSpan[..characterCount]);
 		}
 		finally
 		{
@@ -277,51 +224,40 @@ internal class DecimalConverter : Converter<decimal>
 	/// <inheritdoc/>
 	public override decimal Read(ref Reader reader, SerializationContext context)
 	{
-		if (!(reader.ReadStringSequence() is ReadOnlySequence<byte> sequence))
+		reader.GetMaxStringLength(out int maxChars, out int maxBytes);
+		switch (reader.Deformatter.Encoding)
 		{
-			throw new SerializationException("Unexpected null encountered.");
-		}
-
-		if (sequence.IsSingleSegment)
-		{
-			ReadOnlySpan<byte> span = sequence.First.Span;
-			if (System.Buffers.Text.Utf8Parser.TryParse(span, out decimal result, out var bytesConsumed))
-			{
-				if (span.Length != bytesConsumed)
-				{
-					throw new SerializationException("Unexpected length of string.");
-				}
-
-				return result;
-			}
-		}
-		else
-		{
-			// sequence.Length is not free
-			var seqLen = (int)sequence.Length;
-			if (seqLen < 128)
-			{
-				Span<byte> span = stackalloc byte[seqLen];
-				sequence.CopyTo(span);
-				if (System.Buffers.Text.Utf8Parser.TryParse(span, out decimal result, out var bytesConsumed))
-				{
-					if (seqLen != bytesConsumed)
-					{
-						throw new SerializationException("Unexpected length of string.");
-					}
-
-					return result;
-				}
-			}
-			else
-			{
-				var rentArray = ArrayPool<byte>.Shared.Rent(seqLen);
+#if NET
+			case UnicodeEncoding:
+				char[]? charArray = null;
 				try
 				{
-					sequence.CopyTo(rentArray);
-					if (System.Buffers.Text.Utf8Parser.TryParse(rentArray.AsSpan(0, seqLen), out decimal result, out var bytesConsumed))
+					Span<char> chars = maxBytes > MaxStackStringCharLength ? charArray = ArrayPool<char>.Shared.Rent(maxBytes) : stackalloc char[maxBytes];
+					int byteCount = reader.ReadString(chars);
+					if (decimal.TryParse(chars[..byteCount], CultureInfo.InvariantCulture, out decimal result))
 					{
-						if (seqLen != bytesConsumed)
+						return result;
+					}
+				}
+				finally
+				{
+					if (charArray is not null)
+					{
+						ArrayPool<char>.Shared.Return(charArray);
+					}
+				}
+
+				break;
+#endif
+			default:
+				byte[]? byteArray = null;
+				try
+				{
+					Span<byte> utf8Bytes = maxBytes > MaxStackStringCharLength ? byteArray = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+					int byteCount = reader.ReadString(utf8Bytes);
+					if (System.Buffers.Text.Utf8Parser.TryParse(utf8Bytes[..byteCount], out decimal result, out var bytesConsumed))
+					{
+						if (byteCount != bytesConsumed)
 						{
 							throw new SerializationException("Unexpected length of string.");
 						}
@@ -331,9 +267,13 @@ internal class DecimalConverter : Converter<decimal>
 				}
 				finally
 				{
-					ArrayPool<byte>.Shared.Return(rentArray);
+					if (byteArray is not null)
+					{
+						ArrayPool<byte>.Shared.Return(byteArray);
+					}
 				}
-			}
+
+				break;
 		}
 
 		throw new SerializationException("Can't parse to decimal, input string was not in a correct format.");
@@ -342,11 +282,10 @@ internal class DecimalConverter : Converter<decimal>
 	/// <inheritdoc/>
 	public override void Write(ref Writer writer, in decimal value, SerializationContext context)
 	{
-		const int MaxLength = 100; // arbitrary but large enough for most decimal values.
 		switch (writer.Formatter.Encoding)
 		{
 			case UTF8Encoding:
-				Span<byte> utf8Bytes = stackalloc byte[MaxLength];
+				Span<byte> utf8Bytes = stackalloc byte[MaxStackStringCharLength];
 				if (System.Buffers.Text.Utf8Formatter.TryFormat(value, utf8Bytes, out int written))
 				{
 					writer.WriteEncodedString(utf8Bytes[..written]);
@@ -356,7 +295,7 @@ internal class DecimalConverter : Converter<decimal>
 				break;
 #if NET
 			default:
-				Span<char> utf16Bytes = stackalloc char[MaxLength];
+				Span<char> utf16Bytes = stackalloc char[MaxStackStringCharLength];
 				if (value.TryFormat(utf16Bytes, out written, provider: CultureInfo.InvariantCulture))
 				{
 					writer.Write(utf16Bytes[..written]);
@@ -389,44 +328,49 @@ internal class Int128Converter : Converter<Int128>
 	/// <inheritdoc/>
 	public override Int128 Read(ref Reader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<Int128>();
-		if (sequence.IsSingleSegment)
+		reader.GetMaxStringLength(out int maxChars, out int maxBytes);
+		switch (reader.Deformatter.Encoding)
 		{
-			ReadOnlySpan<byte> span = sequence.First.Span;
-			if (Int128.TryParse(span, CultureInfo.InvariantCulture, out Int128 result))
-			{
-				return result;
-			}
-		}
-		else
-		{
-			// sequence.Length is not free
-			var seqLen = (int)sequence.Length;
-			if (seqLen < 128)
-			{
-				Span<byte> span = stackalloc byte[seqLen];
-				sequence.CopyTo(span);
-				if (Int128.TryParse(span, CultureInfo.InvariantCulture, out Int128 result))
-				{
-					return result;
-				}
-			}
-			else
-			{
-				var rentArray = ArrayPool<byte>.Shared.Rent(seqLen);
+			case UnicodeEncoding:
+				char[]? charArray = null;
 				try
 				{
-					sequence.CopyTo(rentArray);
-					if (Int128.TryParse(rentArray.AsSpan(0, seqLen), CultureInfo.InvariantCulture, out Int128 result))
+					Span<char> chars = maxBytes > MaxStackStringCharLength ? charArray = ArrayPool<char>.Shared.Rent(maxBytes) : stackalloc char[maxBytes];
+					int byteCount = reader.ReadString(chars);
+					if (Int128.TryParse(chars[..byteCount], CultureInfo.InvariantCulture, out Int128 result))
 					{
 						return result;
 					}
 				}
 				finally
 				{
-					ArrayPool<byte>.Shared.Return(rentArray);
+					if (charArray is not null)
+					{
+						ArrayPool<char>.Shared.Return(charArray);
+					}
 				}
-			}
+
+				break;
+			default:
+				byte[]? byteArray = null;
+				try
+				{
+					Span<byte> utf8Bytes = maxBytes > MaxStackStringCharLength ? byteArray = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+					int byteCount = reader.ReadString(utf8Bytes);
+					if (Int128.TryParse(utf8Bytes[..byteCount], CultureInfo.InvariantCulture, out Int128 result))
+					{
+						return result;
+					}
+				}
+				finally
+				{
+					if (byteArray is not null)
+					{
+						ArrayPool<byte>.Shared.Return(byteArray);
+					}
+				}
+
+				break;
 		}
 
 		throw new SerializationException("Can't parse to Int128, input string was not in a correct format.");
@@ -478,47 +422,52 @@ internal class UInt128Converter : Converter<UInt128>
 	/// <inheritdoc/>
 	public override UInt128 Read(ref Reader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<UInt128>();
-		if (sequence.IsSingleSegment)
+		reader.GetMaxStringLength(out int maxChars, out int maxBytes);
+		switch (reader.Deformatter.Encoding)
 		{
-			ReadOnlySpan<byte> span = sequence.First.Span;
-			if (UInt128.TryParse(span, CultureInfo.InvariantCulture, out UInt128 result))
-			{
-				return result;
-			}
-		}
-		else
-		{
-			// sequence.Length is not free
-			var seqLen = (int)sequence.Length;
-			if (seqLen < 128)
-			{
-				Span<byte> span = stackalloc byte[seqLen];
-				sequence.CopyTo(span);
-				if (UInt128.TryParse(span, CultureInfo.InvariantCulture, out UInt128 result))
-				{
-					return result;
-				}
-			}
-			else
-			{
-				var rentArray = ArrayPool<byte>.Shared.Rent(seqLen);
+			case UnicodeEncoding:
+				char[]? charArray = null;
 				try
 				{
-					sequence.CopyTo(rentArray);
-					if (UInt128.TryParse(rentArray.AsSpan(0, seqLen), CultureInfo.InvariantCulture, out UInt128 result))
+					Span<char> chars = maxBytes > MaxStackStringCharLength ? charArray = ArrayPool<char>.Shared.Rent(maxBytes) : stackalloc char[maxBytes];
+					int byteCount = reader.ReadString(chars);
+					if (UInt128.TryParse(chars[..byteCount], CultureInfo.InvariantCulture, out UInt128 result))
 					{
 						return result;
 					}
 				}
 				finally
 				{
-					ArrayPool<byte>.Shared.Return(rentArray);
+					if (charArray is not null)
+					{
+						ArrayPool<char>.Shared.Return(charArray);
+					}
 				}
-			}
+
+				break;
+			default:
+				byte[]? byteArray = null;
+				try
+				{
+					Span<byte> utf8Bytes = maxBytes > MaxStackStringCharLength ? byteArray = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+					int byteCount = reader.ReadString(utf8Bytes);
+					if (UInt128.TryParse(utf8Bytes[..byteCount], CultureInfo.InvariantCulture, out UInt128 result))
+					{
+						return result;
+					}
+				}
+				finally
+				{
+					if (byteArray is not null)
+					{
+						ArrayPool<byte>.Shared.Return(byteArray);
+					}
+				}
+
+				break;
 		}
 
-		throw new SerializationException("Can't parse to Int123, input string was not in a correct format.");
+		throw new SerializationException("Can't parse to UInt128, input string was not in a correct format.");
 	}
 
 	/// <inheritdoc/>

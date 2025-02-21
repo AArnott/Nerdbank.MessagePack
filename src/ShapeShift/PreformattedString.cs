@@ -7,8 +7,8 @@ using Microsoft;
 namespace ShapeShift;
 
 /// <summary>
-/// A .NET string together with its msgpack encoding parts, to optimize serialization of well-known, often seen strings
-/// such as property names used in a msgpack map object.
+/// A .NET string together with its pre-formatted bytes, to optimize serialization of well-known, often seen strings
+/// such as property names used in a serialized map object.
 /// </summary>
 /// <remarks>
 /// This class is <em>not</em> a substitute for string interning.
@@ -20,9 +20,14 @@ namespace ShapeShift;
 public class PreformattedString : IEquatable<PreformattedString>
 {
 	/// <summary>
+	/// The maximum length of a string that may be allocated on the stack.
+	/// </summary>
+	internal const int ReasonablyLengthStackString = 1024;
+
+	/// <summary>
 	/// Initializes a new instance of the <see cref="PreformattedString"/> class.
 	/// </summary>
-	/// <param name="value">The string to pre-encode for msgpack serialization.</param>
+	/// <param name="value">The string to pre-format for serialization.</param>
 	/// <param name="formatter">The formatter to use to encode the string.</param>
 	public PreformattedString(string value, Formatter formatter)
 	{
@@ -31,9 +36,9 @@ public class PreformattedString : IEquatable<PreformattedString>
 
 		this.Formatter = formatter;
 		this.Value = value;
-		formatter.GetEncodedStringBytes(value, out ReadOnlyMemory<byte> utf8, out ReadOnlyMemory<byte> msgpack);
-		this.Encoded = utf8;
-		this.Formatted = msgpack;
+		formatter.GetEncodedStringBytes(value, out ReadOnlyMemory<byte> encoded, out ReadOnlyMemory<byte> formatted);
+		this.Encoded = encoded;
+		this.Formatted = formatted;
 	}
 
 	/// <summary>
@@ -52,11 +57,8 @@ public class PreformattedString : IEquatable<PreformattedString>
 	public ReadOnlyMemory<byte> Encoded { get; }
 
 	/// <summary>
-	/// Gets the formatted bytes of the string, including any formatter-specific bytes.
+	/// Gets the formatted bytes of the string, including any formatter-specific bytes (like length headers, quotation marks, etc.).
 	/// </summary>
-	/// <value>
-	/// The msgpack encoded bytes are the UTF-8 encoded bytes of the string, prefixed with the msgpack encoding of the string length.
-	/// </value>
 	/// <remarks>
 	/// The value of this property is suitable for providing to the <see cref="BufferWriter.Write(ReadOnlySpan{byte})"/> method
 	/// on <see cref="Writer.Buffer"/>.
@@ -64,80 +66,72 @@ public class PreformattedString : IEquatable<PreformattedString>
 	public ReadOnlyMemory<byte> Formatted { get; }
 
 	/// <summary>
-	/// Checks whether a given UTF-8 encoded string matches the string in <see cref="Value"/>.
+	/// Checks whether a given encoded string matches the string in <see cref="Value"/>.
 	/// </summary>
-	/// <param name="utf8String">The UTF-8 encoded string to test against.</param>
+	/// <param name="encodedString">
+	/// The string to test against.
+	/// The string must be encoded with <see cref="Formatter.Encoding"/> as given on <see cref="Formatter"/>.
+	/// </param>
 	/// <returns><see langword="true" /> if the strings match; otherwise <see langword="false" />.</returns>
 	/// <remarks>
 	/// This method is allocation free.
 	/// </remarks>
-	public bool IsMatch(ReadOnlySpan<byte> utf8String)
-	{
-		if (this.Encoded.Length != utf8String.Length)
-		{
-			return false;
-		}
-
-		return this.Encoded.Span.SequenceEqual(utf8String);
-	}
+	public bool IsMatch(ReadOnlySpan<byte> encodedString) => this.Encoded.Span.SequenceEqual(encodedString);
 
 	/// <inheritdoc cref="IsMatch(ReadOnlySpan{byte})"/>
-	public bool IsMatch(ReadOnlySequence<byte> utf8String)
-	{
-		if (utf8String.IsSingleSegment)
-		{
-			return this.IsMatch(utf8String.First.Span);
-		}
-
-		// Avoid calling ReadOnlySequence<byte>.Length because that can be expensive,
-		// and it involves enumerating each segment anyway, which we're already going to do.
-		ReadOnlySpan<byte> remainingUtf8 = this.Encoded.Span;
-		foreach (ReadOnlyMemory<byte> segment in utf8String)
-		{
-			if (remainingUtf8.Length < segment.Length)
-			{
-				return false;
-			}
-
-			if (!segment.Span.SequenceEqual(remainingUtf8[..segment.Length]))
-			{
-				return false;
-			}
-
-			remainingUtf8 = remainingUtf8[segment.Length..];
-		}
-
-		return remainingUtf8.IsEmpty;
-	}
+	public bool IsMatch(ReadOnlySequence<byte> encodedString) => encodedString.SequenceEqual(this.Encoded.Span);
 
 	/// <summary>
 	/// Checks the string at the current reader position for equality with this string.
 	/// </summary>
-	/// <param name="reader">The reader. The reader's position will be advanced if and only if the next msgpack token is a matching string.</param>
+	/// <param name="reader">The reader.</param>
 	/// <returns><see langword="true" /> if the string matched; <see langword="false" /> otherwise.</returns>
 	/// <remarks>
+	/// <para>The reader's position will be advanced if and only if the next token is a matching string.</para>
 	/// <para>No exception is thrown if the reader is positioned at a non-string token.</para>
 	/// <para>This method never allocates memory nor encodes/decodes strings.</para>
 	/// </remarks>
 	/// <exception cref="EndOfStreamException">Thrown if the reader has no more tokens, or the buffer contains an incomplete string token.</exception>
 	public bool TryRead(ref Reader reader)
 	{
-		// TODO: assert that the formatter of the string matches the (de)formatter in the Reader.
+		Requires.Argument(reader.Deformatter.Encoding == this.Formatter.Encoding, nameof(reader), "Reader's encoding must match this formatter's encoding.");
+
 		switch (reader.NextTypeCode)
 		{
-			case Converters.TokenType.Null:
+			case TokenType.Null:
 				return false;
-			case Converters.TokenType.String:
+			case TokenType.String:
 				Reader peekReader = reader;
-				bool success = peekReader.TryReadStringSpan(out ReadOnlySpan<byte> span)
-					? this.IsMatch(span)
-					: this.IsMatch(peekReader.ReadStringSequence()!.Value);
-				if (success)
+				bool match;
+				if (peekReader.TryReadStringSpan(out ReadOnlySpan<byte> str))
+				{
+					match = this.IsMatch(str);
+				}
+				else
+				{
+					byte[]? array = null;
+					try
+					{
+						peekReader.GetMaxStringLength(out _, out int maxBytes);
+						Span<byte> scratchBuffer = maxBytes > Converter.MaxStackStringCharLength ? array = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+						int byteCount = peekReader.ReadString(scratchBuffer);
+						match = this.IsMatch(scratchBuffer[..byteCount]);
+					}
+					finally
+					{
+						if (array is not null)
+						{
+							ArrayPool<byte>.Shared.Return(array);
+						}
+					}
+				}
+
+				if (match)
 				{
 					reader = peekReader;
 				}
 
-				return success;
+				return match;
 			default:
 				return false;
 		}

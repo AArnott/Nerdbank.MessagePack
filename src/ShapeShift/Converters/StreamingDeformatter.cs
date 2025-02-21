@@ -211,39 +211,65 @@ public abstract record StreamingDeformatter
 	public abstract DecodeResult TryRead(ref Reader reader, out string? value);
 
 	/// <summary>
-	/// Reads a string from the data stream (with appropriate envelope) without decoding it.
-	/// </summary>
-	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
-	/// <param name="value"><inheritdoc cref="TryRead(ref Reader, out bool)" path="/param[@name='value']" /></param>
-	/// <returns><inheritdoc cref="TryRead(ref Reader, out bool)" path="/returns" /></returns>
-	/// <remarks>
-	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TokenType.Null"/> or any other non-<see cref="TokenType.String"/> token.
-	/// </remarks>
-	public abstract DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value);
-
-	/// <summary>
 	/// Reads a string from the data stream (with appropriate envelope) without decoding it,
-	/// if the string is contiguous in memory.
+	/// if the string is contiguous in memory and requires no unescaping.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
-	/// <param name="contiguous">
-	/// Receives a value indicating whether the string was present and contiguous in memory.
-	/// When the result is <see cref="DecodeResult.Success"/> and this parameter is <see langword="false"/>,
-	/// use <see cref="TryReadStringSequence(ref Reader, out ReadOnlySequence{byte})"/> instead to get the non-contiguous string.
-	/// </param>
 	/// <param name="value">
-	/// The encoded bytes of the string <em>if</em> it is contiguous in memory.
-	/// This condition is indicated by <paramref name="contiguous"/> being <see langword="true"/>.
+	/// The encoded bytes of the string <em>if</em> it is suitable for direct consumption.
+	/// This condition is indicated by <paramref name="success"/> being <see langword="true"/>.
+	/// </param>
+	/// <param name="success">
+	/// Receives a value indicating whether <paramref name="value"/> received the span to the <see langword="string" />.
+	/// When the result is <see cref="DecodeResult.Success"/> and this parameter is <see langword="false"/>,
+	/// use any of <see cref="TryReadString(ref Reader, Span{byte}, out int)"/>,
+	/// <see cref="TryReadString(ref Reader, Span{char}, out int)"/>
+	/// or <see cref="TryRead(ref Reader, out string?)"/> instead.
 	/// </param>
 	/// <returns>
 	/// <see cref="DecodeResult.Success"/> if the next token is a string and fully included in the buffer,
-	/// whether or not it is contiguous in memory and <paramref name="value"/> was successfully initalized.
+	/// whether or not it is contiguous in memory and <paramref name="value"/> was successfully initialized.
 	/// Other error codes also apply.
 	/// </returns>
 	/// <remarks>
 	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TokenType.Null"/> or any other non-<see cref="TokenType.String"/> token.
 	/// </remarks>
-	public abstract DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value);
+	public abstract DecodeResult TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> value, out bool success);
+
+	/// <summary>
+	/// Retrieves an upper-bound for the length of the string at the current reader position, without reading it.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="chars">Receives the maximum number of characters that may be in the next string.</param>
+	/// <param name="bytes">Receives the maximum number of bytes that may be in the next string.</param>
+	/// <returns>The result of the decoding operation.</returns>
+	public abstract DecodeResult TryGetMaxStringLength(in Reader reader, out int chars, out int bytes);
+
+	/// <summary>
+	/// Reads the string at the current reader position and copies it into the given buffer.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="destination">
+	/// The buffer to copy the format-native encoded bytes to.
+	/// This should be at least the size prescribed by the <see cref="TryGetMaxStringLength(in Reader, out int, out int)"/> method.
+	/// </param>
+	/// <param name="bytesWritten">Receives the number of bytes written.</param>
+	/// <returns>The decode result.</returns>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="destination"/> is not large enough to store the bytes in the string.</exception>
+	public abstract DecodeResult TryReadString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten);
+
+	/// <summary>
+	/// Reads the string at the current reader position and copies it into the given buffer.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="destination">
+	/// The buffer to copy the decoded characters to.
+	/// This should be at least the size prescribed by the <see cref="TryGetMaxStringLength(in Reader, out int, out int)"/> method.
+	/// </param>
+	/// <param name="charsWritten">Receives the number of characters written.</param>
+	/// <returns>The decode result.</returns>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="destination"/> is not large enough to store the characters in the string.</exception>
+	public abstract DecodeResult TryReadString(ref Reader reader, scoped Span<char> destination, out int charsWritten);
 
 	/// <summary>
 	/// Advances the reader past the next structure.

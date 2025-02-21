@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
+using Microsoft;
 
 namespace ShapeShift.Converters;
 
@@ -165,7 +166,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			bool isFirstElement = true;
 			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
-				if (this.TryLookupProperty(ref reader, out DeserializableProperty<T> propertyReader))
+				if (this.TryLookupProperty(ref reader, context, out DeserializableProperty<T> propertyReader))
 				{
 					propertyReader.Read(ref value, ref reader, context);
 				}
@@ -233,8 +234,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
-					ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
-					if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
+					if (this.TryLookupProperty(ref syncReader, context, out DeserializableProperty<T> propertyReader))
 					{
 						propertyReader.Read(ref value, ref syncReader, context);
 					}
@@ -253,8 +253,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					if (bufferedStructures % 2 == 1)
 					{
 						// The property name has already been buffered.
-						ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
-						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
+						if (this.TryLookupProperty(ref syncReader, context, out DeserializableProperty<T> propertyReader))
 						{
 							if (propertyReader.PreferAsyncSerialization)
 							{
@@ -413,18 +412,25 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			if (!contiguous)
+			bool match;
+			if (contiguous)
 			{
-				ReadOnlySequence<byte> propertyNameSequence;
-				while (streamingReader.TryReadStringSequence(out propertyNameSequence).NeedsMoreBytes())
+				match = this.TryMatchPropertyName(propertyName, propertyShape.Name);
+			}
+			else
+			{
+				StreamingReader peekReader = streamingReader;
+				if (peekReader.TryReadStringSpan(out _, out _).NeedsMoreBytes())
 				{
-					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+					reader.ReturnReader(ref streamingReader);
+					await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
+					streamingReader = reader.CreateStreamingReader();
 				}
 
-				propertyName = propertyNameSequence.ToArray();
+				match = Helper(ref streamingReader);
 			}
 
-			if (this.TryMatchPropertyName(propertyName, propertyShape.Name))
+			if (match)
 			{
 				// Return before reading the value.
 				reader.ReturnReader(ref streamingReader);
@@ -442,26 +448,60 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		reader.ReturnReader(ref streamingReader);
 		return false;
+
+		bool Helper(ref StreamingReader streamingReader)
+		{
+			Assumes.False(streamingReader.TryGetMaxStringLength(out _, out int maxBytes).NeedsMoreBytes());
+			byte[]? array = null;
+			try
+			{
+				Span<byte> buffer = maxBytes > MaxStackStringCharLength ? array = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+				Assumes.False(streamingReader.TryReadString(buffer, out int bytesWritten).NeedsMoreBytes());
+				return this.TryMatchPropertyName(buffer[..bytesWritten], propertyShape.Name);
+			}
+			finally
+			{
+				if (array is not null)
+				{
+					ArrayPool<byte>.Shared.Return(array);
+				}
+			}
+		}
 	}
 
 	/// <summary>
 	/// Looks up the property deserializer given the property name at the current reader position.
 	/// </summary>
 	/// <param name="reader">The reader, positioned at the property name.</param>
+	/// <param name="context">The serialization context.</param>
 	/// <param name="propertyReader">Receives the property deserializer.</param>
 	/// <returns>A value indicating whether a matching property deserializer was found.</returns>
 	/// <remarks>
 	/// Implementations of this method <em>must</em> advance the reader beyond the property name in every case.
 	/// </remarks>
-	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<T> propertyReader)
+	protected virtual bool TryLookupProperty(ref Reader reader, SerializationContext context, out DeserializableProperty<T> propertyReader)
 	{
-		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
 		if (deserializable?.Readers is not null)
 		{
-			return deserializable.Value.Readers.TryGetValue(propertyName, out propertyReader);
+			byte[]? array = null;
+			reader.GetMaxStringLength(out _, out int maxBytes);
+			try
+			{
+				Span<byte> span = maxBytes > MaxStackStringCharLength ? array = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+				int bytesCount = reader.ReadString(span);
+				return deserializable.Value.Readers.TryGetValue(span[..bytesCount], out propertyReader);
+			}
+			finally
+			{
+				if (array is not null)
+				{
+					ArrayPool<byte>.Shared.Return(array);
+				}
+			}
 		}
 		else
 		{
+			reader.Skip(context);
 			propertyReader = default;
 			return false;
 		}

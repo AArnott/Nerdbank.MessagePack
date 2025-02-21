@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-// This is a copy of the Sequence<T> class from the Nerdbank.Streams library.
+using System;
 using Microsoft;
 
 namespace ShapeShift.Utilities;
@@ -99,6 +99,38 @@ internal static partial class ReadOnlySequenceExtensions
 
 			return true;
 		}
+	}
+
+	/// <summary>
+	/// Compares a <see cref="ReadOnlySequence{T}"/> with a <see cref="ReadOnlySpan{T}"/> for structural equality.
+	/// </summary>
+	/// <typeparam name="T">The type of element.</typeparam>
+	/// <param name="sequence">The sequence.</param>
+	/// <param name="span">The span.</param>
+	/// <returns>A boolean value indicating equality.</returns>
+	internal static bool SequenceEqual<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> span)
+#if !NET
+		where T : IEquatable<T>
+#endif
+	{
+		// Avoid calling ReadOnlySequence<byte>.Length because that can be expensive,
+		// and it involves enumerating each segment anyway, which we're already going to do.
+		foreach (ReadOnlyMemory<T> segment in sequence)
+		{
+			if (span.Length < segment.Length)
+			{
+				return false;
+			}
+
+			if (!segment.Span.SequenceEqual(span[..segment.Length]))
+			{
+				return false;
+			}
+
+			span = span[segment.Length..];
+		}
+
+		return span.IsEmpty;
 	}
 
 	[GenerateShape<ReadOnlySequence<byte>>]

@@ -60,6 +60,11 @@ namespace ShapeShift
 	{
 		internal static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> value)
 		{
+			if (value.IsEmpty)
+			{
+				return 0;
+			}
+
 			fixed (char* pValue = value)
 			{
 				return encoding.GetByteCount(pValue, value.Length);
@@ -68,6 +73,11 @@ namespace ShapeShift
 
 		internal static unsafe int GetChars(this Encoding encoding, ReadOnlySpan<byte> source, Span<char> destination)
 		{
+			if (source.IsEmpty)
+			{
+				return 0;
+			}
+
 			fixed (byte* pSource = source)
 			{
 				fixed (char* pDestination = destination)
@@ -89,6 +99,11 @@ namespace ShapeShift
 			bool completed = true;
 			foreach (ReadOnlyMemory<byte> sourceSegment in source)
 			{
+				if (sourceSegment.IsEmpty)
+				{
+					continue;
+				}
+
 				fixed (byte* pSource = sourceSegment.Span)
 				{
 					fixed (char* pDestination = destination)
@@ -114,6 +129,11 @@ namespace ShapeShift
 
 		internal static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> source, Span<byte> destination)
 		{
+			if (source.IsEmpty)
+			{
+				return 0;
+			}
+
 			fixed (char* pSource = source)
 			{
 				fixed (byte* pDestination = destination)

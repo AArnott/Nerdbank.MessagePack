@@ -70,7 +70,7 @@ public ref partial struct StreamingReader
 	public ref Reader Reader => ref this.reader;
 
 	/// <inheritdoc cref="Reader.Position"/>
-	public SequencePosition Position => this.reader.Position;
+	public readonly SequencePosition Position => this.reader.Position;
 
 	/// <summary>
 	/// Gets a token that may cancel deserialization.
@@ -80,7 +80,7 @@ public ref partial struct StreamingReader
 	/// <summary>
 	/// Gets the <see cref="SequenceReader{T}"/> behind the underlying <see cref="Reader"/>.
 	/// </summary>
-	internal SequenceReader<byte> SequenceReader => this.reader.SequenceReader;
+	internal readonly SequenceReader<byte> SequenceReader => this.reader.SequenceReader;
 
 	/// <summary>
 	/// Gets or sets the number of structures that have been announced but not yet read.
@@ -90,11 +90,11 @@ public ref partial struct StreamingReader
 	/// </remarks>
 	internal uint ExpectedRemainingStructures
 	{
-		get => this.reader.ExpectedRemainingStructures;
+		readonly get => this.reader.ExpectedRemainingStructures;
 		set => this.reader.ExpectedRemainingStructures = value;
 	}
 
-	private StreamingDeformatter StreamingDeformatter => this.reader.Deformatter.StreamingDeformatter;
+	private readonly StreamingDeformatter StreamingDeformatter => this.reader.Deformatter.StreamingDeformatter;
 
 	/// <summary>
 	/// Adds more bytes to the buffer being decoded, if they are available.
@@ -208,15 +208,21 @@ public ref partial struct StreamingReader
 	/// <inheritdoc cref="StreamingDeformatter.TryRead(ref Reader, out string?)"/>
 	public DecodeResult TryRead(out string? value) => this.StreamingDeformatter.TryRead(ref this.reader, out value);
 
+	/// <inheritdoc cref="StreamingDeformatter.TryGetMaxStringLength(in Reader, out int, out int)"/>
+	public readonly DecodeResult TryGetMaxStringLength(out int chars, out int bytes) => this.StreamingDeformatter.TryGetMaxStringLength(this.reader, out chars, out bytes);
+
+	/// <inheritdoc cref="StreamingDeformatter.TryReadString(ref Reader, Span{char}, out int)"/>
+	public DecodeResult TryReadString(scoped Span<char> destination, out int charsWritten) => this.StreamingDeformatter.TryReadString(ref this.reader, destination, out charsWritten);
+
+	/// <inheritdoc cref="StreamingDeformatter.TryReadString(ref Reader, Span{byte}, out int)"/>
+	public DecodeResult TryReadString(scoped Span<byte> destination, out int bytesWritten) => this.StreamingDeformatter.TryReadString(ref this.reader, destination, out bytesWritten);
+
 	/// <inheritdoc cref="StreamingDeformatter.TryReadBinary(ref Reader, out ReadOnlySequence{byte})"/>
 	public DecodeResult TryReadBinary(out ReadOnlySequence<byte> value) => this.StreamingDeformatter.TryReadBinary(ref this.reader, out value);
 
 	/// <inheritdoc cref="StreamingDeformatter.TrySkip(ref Reader, ref SerializationContext)"/>
 	public DecodeResult TrySkip(ref SerializationContext context) => this.StreamingDeformatter.TrySkip(ref this.reader, ref context);
 
-	/// <inheritdoc cref="StreamingDeformatter.TryReadStringSequence(ref Reader, out ReadOnlySequence{byte})"/>
-	public DecodeResult TryReadStringSequence(out ReadOnlySequence<byte> value) => this.StreamingDeformatter.TryReadStringSequence(ref this.reader, out value);
-
-	/// <inheritdoc cref="StreamingDeformatter.TryReadStringSpan(ref Reader, out bool, out ReadOnlySpan{byte})"/>
-	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value) => this.StreamingDeformatter.TryReadStringSpan(ref this.reader, out contiguous, out value);
+	/// <inheritdoc cref="StreamingDeformatter.TryReadStringSpan(ref Reader, out ReadOnlySpan{byte}, out bool)"/>
+	public DecodeResult TryReadStringSpan(out bool contiguous, out ReadOnlySpan<byte> value) => this.StreamingDeformatter.TryReadStringSpan(ref this.reader, out value, out contiguous);
 }

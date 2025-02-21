@@ -38,7 +38,8 @@ abstract ShapeShift.Converters.StreamingDeformatter.<Clone>$() -> ShapeShift.Con
 abstract ShapeShift.Converters.StreamingDeformatter.Encoding.get -> System.Text.Encoding!
 abstract ShapeShift.Converters.StreamingDeformatter.FormatName.get -> string!
 abstract ShapeShift.Converters.StreamingDeformatter.ThrowInvalidCode(in ShapeShift.Converters.Reader reader) -> System.Exception!
-abstract ShapeShift.Converters.StreamingDeformatter.TryAdvanceToNextElement(ref ShapeShift.Converters.Reader reader, out bool hasAnotherElement) -> ShapeShift.Converters.DecodeResult
+abstract ShapeShift.Converters.StreamingDeformatter.TryAdvanceToNextElement(ref ShapeShift.Converters.Reader reader, ref bool isFirstElement, out bool hasAnotherElement) -> ShapeShift.Converters.DecodeResult
+abstract ShapeShift.Converters.StreamingDeformatter.TryGetMaxStringLength(in ShapeShift.Converters.Reader reader, out int chars, out int bytes) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.Converters.StreamingDeformatter.TryPeekIsFloat32(in ShapeShift.Converters.Reader reader, out bool float32) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.Converters.StreamingDeformatter.TryPeekIsSignedInteger(in ShapeShift.Converters.Reader reader, out bool signed) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.Converters.StreamingDeformatter.TryPeekNextTypeCode(in ShapeShift.Converters.Reader reader, out ShapeShift.Converters.TokenType typeCode) -> ShapeShift.Converters.DecodeResult
@@ -62,8 +63,9 @@ abstract ShapeShift.Converters.StreamingDeformatter.TryReadNull(ref ShapeShift.C
 abstract ShapeShift.Converters.StreamingDeformatter.TryReadRaw(ref ShapeShift.Converters.Reader reader, long length, out System.Buffers.ReadOnlySequence<byte> rawBytes) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.Converters.StreamingDeformatter.TryReadStartMap(ref ShapeShift.Converters.Reader reader, out int? count) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.Converters.StreamingDeformatter.TryReadStartVector(ref ShapeShift.Converters.Reader reader, out int? length) -> ShapeShift.Converters.DecodeResult
-abstract ShapeShift.Converters.StreamingDeformatter.TryReadStringSequence(ref ShapeShift.Converters.Reader reader, out System.Buffers.ReadOnlySequence<byte> value) -> ShapeShift.Converters.DecodeResult
-abstract ShapeShift.Converters.StreamingDeformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out bool contiguous, out System.ReadOnlySpan<byte> value) -> ShapeShift.Converters.DecodeResult
+abstract ShapeShift.Converters.StreamingDeformatter.TryReadString(ref ShapeShift.Converters.Reader reader, scoped System.Span<byte> destination, out int bytesWritten) -> ShapeShift.Converters.DecodeResult
+abstract ShapeShift.Converters.StreamingDeformatter.TryReadString(ref ShapeShift.Converters.Reader reader, scoped System.Span<char> destination, out int charsWritten) -> ShapeShift.Converters.DecodeResult
+abstract ShapeShift.Converters.StreamingDeformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out System.ReadOnlySpan<byte> value, out bool success) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.Converters.StreamingDeformatter.TrySkip(ref ShapeShift.Converters.Reader reader, ref ShapeShift.Converters.SerializationContext context) -> ShapeShift.Converters.DecodeResult
 abstract ShapeShift.NamingPolicy.ConvertName(string! name) -> string!
 abstract ShapeShift.SerializerBase.<Clone>$() -> ShapeShift.SerializerBase!
@@ -183,7 +185,8 @@ override ShapeShift.MessagePack.MessagePackStreamingDeformatter.GetHashCode() ->
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.PrintMembers(System.Text.StringBuilder! builder) -> bool
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.ThrowInvalidCode(in ShapeShift.Converters.Reader reader) -> System.Exception!
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.ToString() -> string!
-override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryAdvanceToNextElement(ref ShapeShift.Converters.Reader reader, out bool hasAnotherElement) -> ShapeShift.Converters.DecodeResult
+override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryAdvanceToNextElement(ref ShapeShift.Converters.Reader reader, ref bool isFirstElement, out bool hasAnotherElement) -> ShapeShift.Converters.DecodeResult
+override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryGetMaxStringLength(in ShapeShift.Converters.Reader reader, out int chars, out int bytes) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryPeekIsFloat32(in ShapeShift.Converters.Reader reader, out bool float32) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryPeekIsSignedInteger(in ShapeShift.Converters.Reader reader, out bool signed) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryPeekNextTypeCode(in ShapeShift.Converters.Reader reader, out ShapeShift.Converters.TokenType typeCode) -> ShapeShift.Converters.DecodeResult
@@ -207,8 +210,9 @@ override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadNull(ref 
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadRaw(ref ShapeShift.Converters.Reader reader, long length, out System.Buffers.ReadOnlySequence<byte> rawMsgPack) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadStartMap(ref ShapeShift.Converters.Reader reader, out int? count) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadStartVector(ref ShapeShift.Converters.Reader reader, out int? count) -> ShapeShift.Converters.DecodeResult
-override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadStringSequence(ref ShapeShift.Converters.Reader reader, out System.Buffers.ReadOnlySequence<byte> value) -> ShapeShift.Converters.DecodeResult
-override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out bool contiguous, out System.ReadOnlySpan<byte> value) -> ShapeShift.Converters.DecodeResult
+override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadString(ref ShapeShift.Converters.Reader reader, scoped System.Span<byte> destination, out int bytesWritten) -> ShapeShift.Converters.DecodeResult
+override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadString(ref ShapeShift.Converters.Reader reader, scoped System.Span<char> destination, out int charsWritten) -> ShapeShift.Converters.DecodeResult
+override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out System.ReadOnlySpan<byte> value, out bool success) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePack.MessagePackStreamingDeformatter.TrySkip(ref ShapeShift.Converters.Reader reader, ref ShapeShift.Converters.SerializationContext context) -> ShapeShift.Converters.DecodeResult
 override ShapeShift.MessagePackSerializer.<Clone>$() -> ShapeShift.MessagePackSerializer!
 override ShapeShift.MessagePackSerializer.EqualityContract.get -> System.Type!
@@ -272,6 +276,7 @@ ShapeShift.Converters.DecodeResultExtensions
 ShapeShift.Converters.Deformatter
 ShapeShift.Converters.Deformatter.Deformatter(ShapeShift.Converters.StreamingDeformatter! streamingDeformatter) -> void
 ShapeShift.Converters.Deformatter.Encoding.get -> System.Text.Encoding!
+ShapeShift.Converters.Deformatter.GetMaxStringLength(in ShapeShift.Converters.Reader reader, out int chars, out int bytes) -> void
 ShapeShift.Converters.Deformatter.PeekIsFloat32(in ShapeShift.Converters.Reader reader) -> bool
 ShapeShift.Converters.Deformatter.PeekIsSignedInteger(in ShapeShift.Converters.Reader reader) -> bool
 ShapeShift.Converters.Deformatter.PeekNextTypeCode(in ShapeShift.Converters.Reader reader) -> ShapeShift.Converters.TokenType
@@ -292,18 +297,18 @@ ShapeShift.Converters.Deformatter.ReadSingle(ref ShapeShift.Converters.Reader re
 ShapeShift.Converters.Deformatter.ReadStartMap(ref ShapeShift.Converters.Reader reader) -> int?
 ShapeShift.Converters.Deformatter.ReadStartVector(ref ShapeShift.Converters.Reader reader) -> int?
 ShapeShift.Converters.Deformatter.ReadString(ref ShapeShift.Converters.Reader reader) -> string?
-ShapeShift.Converters.Deformatter.ReadStringSequence(ref ShapeShift.Converters.Reader reader) -> System.Buffers.ReadOnlySequence<byte>?
-ShapeShift.Converters.Deformatter.ReadStringSpan(ref ShapeShift.Converters.Reader reader) -> System.ReadOnlySpan<byte>
+ShapeShift.Converters.Deformatter.ReadString(ref ShapeShift.Converters.Reader reader, scoped System.Span<byte> destination) -> int
+ShapeShift.Converters.Deformatter.ReadString(ref ShapeShift.Converters.Reader reader, scoped System.Span<char> destination) -> int
 ShapeShift.Converters.Deformatter.ReadUInt16(ref ShapeShift.Converters.Reader reader) -> ushort
 ShapeShift.Converters.Deformatter.ReadUInt32(ref ShapeShift.Converters.Reader reader) -> uint
 ShapeShift.Converters.Deformatter.ReadUInt64(ref ShapeShift.Converters.Reader reader) -> ulong
 ShapeShift.Converters.Deformatter.Skip(ref ShapeShift.Converters.Reader reader, ShapeShift.Converters.SerializationContext context) -> void
 ShapeShift.Converters.Deformatter.StreamingDeformatter.get -> ShapeShift.Converters.StreamingDeformatter!
-ShapeShift.Converters.Deformatter.TryAdvanceToNextElement(ref ShapeShift.Converters.Reader reader) -> bool
+ShapeShift.Converters.Deformatter.TryAdvanceToNextElement(ref ShapeShift.Converters.Reader reader, ref bool isFirstElement) -> bool
 ShapeShift.Converters.Deformatter.TryReadNull(ref ShapeShift.Converters.Reader reader) -> bool
 ShapeShift.Converters.Deformatter.TryReadStartMap(ref ShapeShift.Converters.Reader reader, out int? count) -> bool
 ShapeShift.Converters.Deformatter.TryReadStartVector(ref ShapeShift.Converters.Reader reader, out int? count) -> bool
-ShapeShift.Converters.Deformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out System.ReadOnlySpan<byte> span) -> bool
+ShapeShift.Converters.Deformatter.TryReadStringSpan(scoped ref ShapeShift.Converters.Reader reader, out System.ReadOnlySpan<byte> value) -> bool
 ShapeShift.Converters.Formatter
 ShapeShift.Converters.Formatter.Formatter() -> void
 ShapeShift.Converters.Formatter.Formatter(ShapeShift.Converters.Formatter! original) -> void
@@ -315,6 +320,7 @@ ShapeShift.Converters.Reader
 ShapeShift.Converters.Reader.Advance(long count) -> void
 ShapeShift.Converters.Reader.Deformatter.get -> ShapeShift.Converters.Deformatter!
 ShapeShift.Converters.Reader.End.get -> bool
+ShapeShift.Converters.Reader.GetMaxStringLength(out int chars, out int bytes) -> void
 ShapeShift.Converters.Reader.IsNull.get -> bool
 ShapeShift.Converters.Reader.NextTypeCode.get -> ShapeShift.Converters.TokenType
 ShapeShift.Converters.Reader.Position.get -> System.SequencePosition
@@ -338,15 +344,15 @@ ShapeShift.Converters.Reader.ReadSingle() -> float
 ShapeShift.Converters.Reader.ReadStartMap() -> int?
 ShapeShift.Converters.Reader.ReadStartVector() -> int?
 ShapeShift.Converters.Reader.ReadString() -> string?
-ShapeShift.Converters.Reader.ReadStringSequence() -> System.Buffers.ReadOnlySequence<byte>?
-ShapeShift.Converters.Reader.ReadStringSpan() -> System.ReadOnlySpan<byte>
+ShapeShift.Converters.Reader.ReadString(scoped System.Span<byte> destination) -> int
+ShapeShift.Converters.Reader.ReadString(scoped System.Span<char> destination) -> int
 ShapeShift.Converters.Reader.ReadUInt16() -> ushort
 ShapeShift.Converters.Reader.ReadUInt32() -> uint
 ShapeShift.Converters.Reader.ReadUInt64() -> ulong
 ShapeShift.Converters.Reader.Remaining.get -> long
 ShapeShift.Converters.Reader.Sequence.get -> System.Buffers.ReadOnlySequence<byte>
 ShapeShift.Converters.Reader.Skip(ShapeShift.Converters.SerializationContext context) -> void
-ShapeShift.Converters.Reader.TryAdvanceToNextElement() -> bool
+ShapeShift.Converters.Reader.TryAdvanceToNextElement(ref bool isFirstElement) -> bool
 ShapeShift.Converters.Reader.TryReadNull() -> bool
 ShapeShift.Converters.Reader.TryReadStartMap(out int? count) -> bool
 ShapeShift.Converters.Reader.TryReadStartVector(out int? count) -> bool
@@ -386,7 +392,8 @@ ShapeShift.Converters.StreamingReader.StreamingReader() -> void
 ShapeShift.Converters.StreamingReader.StreamingReader(scoped in ShapeShift.Converters.AsyncReader.BufferRefresh refresh) -> void
 ShapeShift.Converters.StreamingReader.StreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence, ShapeShift.Converters.AsyncReader.GetMoreBytesAsync? additionalBytesSource, object? getMoreBytesState, ShapeShift.Converters.Deformatter! deformatter) -> void
 ShapeShift.Converters.StreamingReader.StreamingReader(scoped in System.Buffers.ReadOnlySequence<byte> sequence, ShapeShift.Converters.Deformatter! deformatter) -> void
-ShapeShift.Converters.StreamingReader.TryAdvanceToNextElement(out bool hasAnotherElement) -> ShapeShift.Converters.DecodeResult
+ShapeShift.Converters.StreamingReader.TryAdvanceToNextElement(ref bool isFirstElement, out bool hasAnotherElement) -> ShapeShift.Converters.DecodeResult
+ShapeShift.Converters.StreamingReader.TryGetMaxStringLength(out int chars, out int bytes) -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.StreamingReader.TryPeekNextTypeCode(out ShapeShift.Converters.TokenType typeCode) -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.StreamingReader.TryRead(out bool value) -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.StreamingReader.TryRead(out byte value) -> ShapeShift.Converters.DecodeResult
@@ -404,7 +411,8 @@ ShapeShift.Converters.StreamingReader.TryReadMapHeader(out int? count) -> ShapeS
 ShapeShift.Converters.StreamingReader.TryReadNull() -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.StreamingReader.TryReadNull(out bool isNull) -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.StreamingReader.TryReadRaw(long length, out System.Buffers.ReadOnlySequence<byte> rawBytes) -> ShapeShift.Converters.DecodeResult
-ShapeShift.Converters.StreamingReader.TryReadStringSequence(out System.Buffers.ReadOnlySequence<byte> value) -> ShapeShift.Converters.DecodeResult
+ShapeShift.Converters.StreamingReader.TryReadString(scoped System.Span<byte> destination, out int bytesWritten) -> ShapeShift.Converters.DecodeResult
+ShapeShift.Converters.StreamingReader.TryReadString(scoped System.Span<char> destination, out int charsWritten) -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.StreamingReader.TryReadStringSpan(out bool contiguous, out System.ReadOnlySpan<byte> value) -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.StreamingReader.TrySkip(ref ShapeShift.Converters.SerializationContext context) -> ShapeShift.Converters.DecodeResult
 ShapeShift.Converters.TokenType
@@ -601,8 +609,8 @@ ShapeShift.PreformattedString.Encoded.get -> System.ReadOnlyMemory<byte>
 ShapeShift.PreformattedString.Equals(ShapeShift.PreformattedString? other) -> bool
 ShapeShift.PreformattedString.Formatted.get -> System.ReadOnlyMemory<byte>
 ShapeShift.PreformattedString.Formatter.get -> ShapeShift.Converters.Formatter!
-ShapeShift.PreformattedString.IsMatch(System.Buffers.ReadOnlySequence<byte> utf8String) -> bool
-ShapeShift.PreformattedString.IsMatch(System.ReadOnlySpan<byte> utf8String) -> bool
+ShapeShift.PreformattedString.IsMatch(System.Buffers.ReadOnlySequence<byte> encodedString) -> bool
+ShapeShift.PreformattedString.IsMatch(System.ReadOnlySpan<byte> encodedString) -> bool
 ShapeShift.PreformattedString.PreformattedString(string! value, ShapeShift.Converters.Formatter! formatter) -> void
 ShapeShift.PreformattedString.TryRead(ref ShapeShift.Converters.Reader reader) -> bool
 ShapeShift.PreformattedString.Value.get -> string!

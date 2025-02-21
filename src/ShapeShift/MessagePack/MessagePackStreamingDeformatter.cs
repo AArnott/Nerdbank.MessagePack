@@ -462,39 +462,31 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value)
+	public override DecodeResult TryGetMaxStringLength(in Reader reader, out int chars, out int bytes)
 	{
-		Reader originalPosition = reader;
-		DecodeResult result = this.TryReadStringHeader(ref reader, out uint length);
+		Reader peekReader = reader;
+		DecodeResult result = this.TryReadStringHeader(ref peekReader, out uint length);
 		if (result != DecodeResult.Success)
 		{
-			value = default;
+			chars = 0;
+			bytes = 0;
 			return result;
 		}
 
-		if (reader.SequenceReader.Remaining < length)
-		{
-			// Rewind the header so we can try it again.
-			reader = originalPosition;
-
-			value = default;
-			return this.InsufficientBytes(reader);
-		}
-
-		value = reader.SequenceReader.Sequence.Slice(reader.SequenceReader.Position, length);
-		this.Advance(ref reader, length);
+		bytes = checked((int)length);
+		chars = this.Encoding.GetMaxCharCount(bytes);
 		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value)
+	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> value, out bool success)
 	{
 		Reader oldReader = reader;
 		DecodeResult result = this.TryReadStringHeader(ref reader, out uint length);
 		if (result != DecodeResult.Success)
 		{
 			value = default;
-			contiguous = false;
+			success = false;
 			return result;
 		}
 
@@ -502,7 +494,7 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 		{
 			reader = oldReader;
 			value = default;
-			contiguous = false;
+			success = false;
 			return this.InsufficientBytes(reader);
 		}
 
@@ -510,16 +502,81 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 		{
 			value = reader.SequenceReader.CurrentSpan.Slice(reader.SequenceReader.CurrentSpanIndex, checked((int)length));
 			this.Advance(ref reader, length);
-			contiguous = true;
+			success = true;
 			return DecodeResult.Success;
 		}
 		else
 		{
 			reader = oldReader;
 			value = default;
-			contiguous = false;
+			success = false;
 			return DecodeResult.Success;
 		}
+	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryReadString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten)
+	{
+		Reader oldReader = reader;
+		DecodeResult result = this.TryReadStringHeader(ref reader, out uint length);
+		if (result != DecodeResult.Success)
+		{
+			bytesWritten = 0;
+			return result;
+		}
+
+		if (reader.SequenceReader.Remaining < length)
+		{
+			reader = oldReader;
+			bytesWritten = 0;
+			return this.InsufficientBytes(reader);
+		}
+
+		bytesWritten = (int)length;
+		if (reader.SequenceReader.CurrentSpanIndex + length <= reader.SequenceReader.CurrentSpan.Length)
+		{
+			reader.SequenceReader.CurrentSpan.Slice(reader.SequenceReader.CurrentSpanIndex, checked((int)length)).CopyTo(destination);
+		}
+		else
+		{
+			reader.Sequence.Slice(reader.Position, length).CopyTo(destination);
+		}
+
+		this.Advance(ref reader, length);
+		return DecodeResult.Success;
+	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryReadString(ref Reader reader, scoped Span<char> destination, out int charsWritten)
+	{
+		Reader oldReader = reader;
+		DecodeResult result = this.TryReadStringHeader(ref reader, out uint length);
+		if (result != DecodeResult.Success)
+		{
+			charsWritten = 0;
+			return result;
+		}
+
+		if (reader.SequenceReader.Remaining < length)
+		{
+			reader = oldReader;
+			charsWritten = 0;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (reader.SequenceReader.CurrentSpanIndex + length <= reader.SequenceReader.CurrentSpan.Length)
+		{
+			charsWritten = this.Encoding.GetChars(
+				reader.SequenceReader.CurrentSpan.Slice(reader.SequenceReader.CurrentSpanIndex, checked((int)length)),
+				destination);
+		}
+		else
+		{
+			charsWritten = this.Encoding.GetChars(reader.Sequence.Slice(reader.Position, length), destination);
+		}
+
+		this.Advance(ref reader, length);
+		return DecodeResult.Success;
 	}
 
 	/// <summary>

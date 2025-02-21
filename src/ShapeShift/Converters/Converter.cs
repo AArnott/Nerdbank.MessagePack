@@ -12,6 +12,14 @@ namespace ShapeShift.Converters;
 /// </summary>
 public abstract class Converter
 {
+	/// <summary>
+	/// A reasonable maximum length for a string that can be stored on the stack.
+	/// </summary>
+	/// <remarks>
+	/// The actual stack space taken may be up to 2X this value, due to UTF-16 encoding.
+	/// </remarks>
+	internal const int MaxStackStringCharLength = 4096;
+
 	/// <summary>Initializes a new instance of the <see cref="Converter"/> class.</summary>
 	/// <param name="type">The specific type that this converter can convert.</param>
 	internal Converter(Type type)

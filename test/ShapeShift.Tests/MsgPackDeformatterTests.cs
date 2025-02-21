@@ -166,11 +166,11 @@ public partial class MsgPackDeformatterTests
 		Assert.False(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
 		Assert.Equal(0, span.Length);
 
-		// After failing to read the span, a caller should still be able to read it as a sequence.
-		ReadOnlySequence<byte>? actualSequence = reader.ReadStringSequence();
-		Assert.True(actualSequence.HasValue);
-		Assert.False(actualSequence.Value.IsSingleSegment);
-		Assert.Equal([1, 2, 3], actualSequence.Value.ToArray());
+		// After failing to read the span, a caller should still be able to read it to a new buffer.
+		reader.GetMaxStringLength(out _, out int maxBytes);
+		Span<byte> buffer = stackalloc byte[maxBytes];
+		int bytesRead = reader.ReadString(buffer);
+		Assert.Equal<byte>([1, 2, 3], buffer[..bytesRead]);
 	}
 
 	[Fact]
@@ -228,23 +228,6 @@ public partial class MsgPackDeformatterTests
 	}
 
 	[Fact]
-	public void ReadStringSpan_Fragmented()
-	{
-		var contiguousSequence = new Sequence<byte>();
-		var writer = new Writer(contiguousSequence, Formatter);
-		byte[] expected = [0x1, 0x2, 0x3];
-		writer.WriteEncodedString(expected);
-		writer.Flush();
-		ReadOnlySequence<byte> fragmentedSequence = BuildSequence(
-		   contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
-		   contiguousSequence.AsReadOnlySequence.First.Slice(2));
-
-		var reader = new Reader(fragmentedSequence, MessagePackDeformatter.Default);
-		ReadOnlySpan<byte> span = reader.ReadStringSpan();
-		Assert.Equal([1, 2, 3], span.ToArray());
-	}
-
-	[Fact]
 	public void ReadStringSpan_Contiguous()
 	{
 		var sequence = new Sequence<byte>();
@@ -254,7 +237,7 @@ public partial class MsgPackDeformatterTests
 		writer.Flush();
 
 		var reader = new Reader(sequence, MessagePackDeformatter.Default);
-		ReadOnlySpan<byte> span = reader.ReadStringSpan();
+		Assert.True(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
 		Assert.Equal(expected, span.ToArray());
 		Assert.True(reader.End);
 	}
@@ -270,7 +253,7 @@ public partial class MsgPackDeformatterTests
 		Assert.Throws<SerializationException>(() =>
 		{
 			var reader = new Reader(sequence, MessagePackDeformatter.Default);
-			reader.ReadStringSpan();
+			reader.TryReadStringSpan(out _);
 		});
 	}
 
@@ -285,7 +268,7 @@ public partial class MsgPackDeformatterTests
 		Assert.Throws<SerializationException>(() =>
 		{
 			var reader = new Reader(sequence, MessagePackDeformatter.Default);
-			reader.ReadStringSpan();
+			reader.TryReadStringSpan(out _);
 		});
 	}
 
@@ -363,8 +346,8 @@ public partial class MsgPackDeformatterTests
 		AssertIncomplete((ref Writer writer) => writer.WriteEncodedString(Encoding.UTF8.GetBytes("hi")), (ref Reader reader) => reader.ReadBytes());
 		AssertIncomplete((ref Writer writer) => writer.Write('c'), (ref Reader reader) => reader.ReadChar());
 		AssertIncomplete((ref Writer writer) => writer.Write(double.MaxValue), (ref Reader reader) => reader.ReadDouble());
-		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer.Buffer, new Extension(5, new byte[3])), (ref Reader reader) => Deformatter.ReadExtension(ref reader));
-		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer.Buffer, new ExtensionHeader(5, 3)), (ref Reader reader) => Deformatter.ReadExtensionHeader(ref reader));
+		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer.Buffer, new Extension(5, new byte[3])), Deformatter.ReadExtension);
+		AssertIncomplete((ref Writer writer) => Formatter.Write(ref writer.Buffer, new ExtensionHeader(5, 3)), Deformatter.ReadExtensionHeader);
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt16());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt32());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadInt64());
@@ -377,7 +360,8 @@ public partial class MsgPackDeformatterTests
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadSByte());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadSingle());
 		AssertIncomplete((ref Writer writer) => writer.Write("hi"), (ref Reader reader) => reader.ReadString());
-		AssertIncomplete((ref Writer writer) => writer.WriteEncodedString(Encoding.UTF8.GetBytes("hi")), (ref Reader reader) => reader.ReadStringSequence());
+		AssertIncomplete((ref Writer writer) => writer.WriteEncodedString(Encoding.UTF8.GetBytes("hi")), (ref Reader reader) => reader.ReadString(new byte[10]));
+		AssertIncomplete((ref Writer writer) => writer.WriteEncodedString(Encoding.UTF8.GetBytes("hi")), (ref Reader reader) => reader.ReadString(new char[10]));
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadUInt16());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadUInt32());
 		AssertIncomplete((ref Writer writer) => writer.Write(0xff), (ref Reader reader) => reader.ReadUInt64());

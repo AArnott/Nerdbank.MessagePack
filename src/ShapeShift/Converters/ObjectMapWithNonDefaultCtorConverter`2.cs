@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
 
 namespace ShapeShift.Converters;
 
@@ -39,7 +40,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			bool isFirstElement = true;
 			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
-				if (this.TryLookupProperty(ref reader, out DeserializableProperty<TArgumentState> deserializeArg))
+				if (this.TryLookupProperty(ref reader, context, out DeserializableProperty<TArgumentState> deserializeArg))
 				{
 					reader.ReadMapKeyValueSeparator();
 					deserializeArg.Read(ref argState, ref reader, context);
@@ -105,8 +106,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 				int bufferedEntries = bufferedStructures / 2;
 				for (int i = 0; i < bufferedEntries; i++)
 				{
-					ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
-					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
+					if (this.TryLookupProperty(ref syncReader, context, out DeserializableProperty<TArgumentState> propertyReader))
 					{
 						propertyReader.Read(ref argState, ref syncReader, context);
 					}
@@ -130,8 +130,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					if (bufferedStructures % 2 == 1)
 					{
 						// The property name has already been buffered.
-						ReadOnlySpan<byte> propertyName = syncReader.ReadStringSpan();
-						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
+						if (this.TryLookupProperty(ref syncReader, context, out DeserializableProperty<TArgumentState> propertyReader))
 						{
 							if (propertyReader.PreferAsyncSerialization)
 							{
@@ -196,16 +195,30 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		return value;
 	}
 
-	/// <inheritdoc cref="ObjectMapConverter{T}.TryLookupProperty(ref Reader, out DeserializableProperty{T})"/>
-	protected virtual bool TryLookupProperty(ref Reader reader, out DeserializableProperty<TArgumentState> deserializableArg)
+	/// <inheritdoc cref="ObjectMapConverter{T}.TryLookupProperty(ref Reader, SerializationContext, out DeserializableProperty{T})"/>
+	protected virtual bool TryLookupProperty(ref Reader reader, SerializationContext context, out DeserializableProperty<TArgumentState> deserializableArg)
 	{
-		ReadOnlySpan<byte> propertyName = reader.ReadStringSpan();
 		if (parameters.Readers is not null)
 		{
-			return parameters.Readers.TryGetValue(propertyName, out deserializableArg);
+			byte[]? array = null;
+			reader.GetMaxStringLength(out _, out int maxBytes);
+			try
+			{
+				Span<byte> span = maxBytes > MaxStackStringCharLength ? array = ArrayPool<byte>.Shared.Rent(maxBytes) : stackalloc byte[maxBytes];
+				int bytesCount = reader.ReadString(span);
+				return parameters.Readers.TryGetValue(span[..bytesCount], out deserializableArg);
+			}
+			finally
+			{
+				if (array is not null)
+				{
+					ArrayPool<byte>.Shared.Return(array);
+				}
+			}
 		}
 		else
 		{
+			reader.Skip(context);
 			deserializableArg = default;
 			return false;
 		}

@@ -342,79 +342,90 @@ public partial class Deformatter
 		}
 	}
 
-	/// <summary><inheritdoc cref="StreamingDeformatter.TryReadStringSequence(ref Reader, out ReadOnlySequence{byte})"/></summary>
-	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
-	/// <returns>The decoded value.</returns>
-	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/> or <see cref="TokenType.Null"/>.</exception>
-	public ReadOnlySequence<byte>? ReadStringSequence(ref Reader reader)
-	{
-		switch (this.StreamingDeformatter.TryReadStringSequence(ref reader, out ReadOnlySequence<byte> value))
-		{
-			case DecodeResult.Success:
-				return value;
-			case DecodeResult.TokenMismatch:
-				if (this.TryReadNull(ref reader))
-				{
-					return null;
-				}
-
-				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
-			case DecodeResult.EmptyBuffer:
-			case DecodeResult.InsufficientBuffer:
-				throw ThrowNotEnoughBytesException();
-			default:
-				throw ThrowUnreachable();
-		}
-	}
-
 	/// <summary>Reads a string from the data stream (with appropriate envelope) without decoding it.</summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
-	/// <returns>The decoded value.</returns>
-	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
-	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/>.</exception>
+	/// <param name="value">Receives the encoded bytes of the string <em>if</em> they were contiguous in memory and did not require unescaping.</param>
+	/// <returns><see langword="true" /> if the string was contiguous in memory and required no escaping; <see langword="false" /> otherwise.</returns>
 	/// <remarks>
-	/// <para>
-	/// This method will often be alloc-free if the string is contiguous in the buffer.
-	/// If the string is <em>not</em> contiguous, then the result will be a copy of the string.
-	/// Use <see cref="TryReadStringSpan(ref Reader, out ReadOnlySpan{byte})"/> to avoid allocating a copy of the string.
-	/// </para>
-	/// <para>
-	/// <see cref="DecodeResult.TokenMismatch"/> is returned for <see cref="TokenType.Null"/> or any other non-<see cref="TokenType.String"/> token.
-	/// </para>
-	/// </remarks>
-	public ReadOnlySpan<byte> ReadStringSpan(ref Reader reader)
-	{
-		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out ReadOnlySpan<byte> span))
-		{
-			case DecodeResult.Success:
-				return contiguous ? span : this.ReadStringSequence(ref reader)!.Value.ToArray();
-			case DecodeResult.TokenMismatch:
-				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
-			case DecodeResult.EmptyBuffer:
-			case DecodeResult.InsufficientBuffer:
-				throw ThrowNotEnoughBytesException();
-			default:
-				throw ThrowUnreachable();
-		}
-	}
-
-	/// <summary>Reads a string from the data stream (with appropriate envelope) without decoding it.</summary>
-	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
-	/// <param name="span">Receives the encoded bytes of the string <em>if</em> they were contiguous in memory.</param>
-	/// <returns><see langword="true" /> if the string was contiguous in memory; <see langword="false" /> if the string was not contiguous.</returns>
-	/// <remarks>
-	/// When <see langword="false"/>, the caller should use <see cref="ReadStringSequence(ref Reader)"/> to read the string
-	/// without allocations or <see cref="ReadStringSpan(ref Reader)"/> with allocations.
+	/// A value indicating whether <paramref name="value"/> received the span to the <see langword="string" />.
+	/// When the result is <see cref="DecodeResult.Success"/> and this parameter is <see langword="false"/>,
+	/// use any of <see cref="ReadString(ref Reader, Span{byte})"/>,
+	/// <see cref="ReadString(ref Reader, Span{char})"/>
+	/// or <see cref="ReadString(ref Reader)"/> instead.
 	/// </remarks>
 	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
 	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/>.</exception>
-	public bool TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> span)
+	public bool TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> value)
 	{
-		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out bool contiguous, out span))
+		switch (this.StreamingDeformatter.TryReadStringSpan(ref reader, out value, out bool contiguous))
 		{
 			case DecodeResult.Success:
 				return contiguous;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	/// <summary>Reads a string from the data stream (with appropriate envelope) without decoding it.</summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="destination"><inheritdoc cref="StreamingDeformatter.TryReadString(ref Reader, Span{byte}, out int)" path="/param[@name='destination']"/></param>
+	/// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/>.</exception>
+	public int ReadString(ref Reader reader, scoped Span<byte> destination)
+	{
+		switch (this.StreamingDeformatter.TryReadString(ref reader, destination, out int bytesWritten))
+		{
+			case DecodeResult.Success:
+				return bytesWritten;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	/// <summary>Reads a string from the data stream (with appropriate envelope).</summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="destination"><inheritdoc cref="StreamingDeformatter.TryReadString(ref Reader, Span{char}, out int)" path="/param[@name='destination']"/></param>
+	/// <returns>The number of characters written to <paramref name="destination"/>.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <inheritdoc cref="StreamingDeformatter.TryReadString(ref Reader, Span{char}, out int)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/>.</exception>
+	public int ReadString(ref Reader reader, scoped Span<char> destination)
+	{
+		switch (this.StreamingDeformatter.TryReadString(ref reader, destination, out int charsWritten))
+		{
+			case DecodeResult.Success:
+				return charsWritten;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	/// <summary><inheritdoc cref="StreamingDeformatter.TryGetMaxStringLength(in Reader, out int, out int)" path="/summary"/></summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryGetMaxStringLength(in Reader, out int, out int)" path="/param[@name='reader']"/></param>
+	/// <param name="chars"><inheritdoc cref="StreamingDeformatter.TryGetMaxStringLength(in Reader, out int, out int)" path="/param[@name='chars']"/></param>
+	/// <param name="bytes"><inheritdoc cref="StreamingDeformatter.TryGetMaxStringLength(in Reader, out int, out int)" path="/param[@name='bytes']"/></param>
+	public void GetMaxStringLength(in Reader reader, out int chars, out int bytes)
+	{
+		switch (this.StreamingDeformatter.TryGetMaxStringLength(in reader, out chars, out bytes))
+		{
+			case DecodeResult.Success:
+				return;
 			case DecodeResult.TokenMismatch:
 				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
 			case DecodeResult.EmptyBuffer:

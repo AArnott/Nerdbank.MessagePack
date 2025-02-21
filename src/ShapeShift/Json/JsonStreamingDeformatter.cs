@@ -336,33 +336,116 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
-	public override DecodeResult TryReadStringSequence(ref Reader reader, out ReadOnlySequence<byte> value)
-	{
-		// Utf8JsonReader doesn't support reading a string as a byte sequence.
-		throw new NotSupportedException();
-	}
-
-	/// <inheritdoc/>
-	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out bool contiguous, out ReadOnlySpan<byte> value)
+	public override DecodeResult TryGetMaxStringLength(in Reader reader, out int chars, out int bytes)
 	{
 		if (this.Encoding is not UTF8Encoding)
 		{
 			throw new NotImplementedException();
 		}
 
-		// With the UTF8 reader, we never consider strings to be contiguous because the API doesn't give us the raw span.
-		contiguous = false;
-		value = default;
-
 		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
 		if (!utf8Reader.Read())
 		{
+			chars = 0;
+			bytes = 0;
 			return this.InsufficientBytes(reader);
 		}
 
 		if (utf8Reader.TokenType != JsonTokenType.String)
 		{
+			chars = 0;
+			bytes = 0;
 			return DecodeResult.TokenMismatch;
+		}
+
+		bytes = utf8Reader.HasValueSequence ? checked((int)utf8Reader.ValueSequence.Length) : utf8Reader.ValueSpan.Length;
+		chars = this.Encoding.GetMaxCharCount(bytes);
+
+		return DecodeResult.Success;
+	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryReadString(ref Reader reader, scoped Span<char> destination, out int charsWritten)
+	{
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			charsWritten = 0;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (utf8Reader.TokenType != JsonTokenType.String)
+		{
+			charsWritten = 0;
+			return DecodeResult.TokenMismatch;
+		}
+
+		charsWritten = utf8Reader.CopyString(destination);
+		return DecodeResult.Success;
+	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryReadString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten)
+	{
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			bytesWritten = 0;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (utf8Reader.TokenType != JsonTokenType.String)
+		{
+			bytesWritten = 0;
+			return DecodeResult.TokenMismatch;
+		}
+
+		bytesWritten = utf8Reader.CopyString(destination);
+		return DecodeResult.Success;
+	}
+
+	/// <inheritdoc/>
+	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> value, out bool success)
+	{
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			success = false;
+			value = default;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (utf8Reader.TokenType != JsonTokenType.String)
+		{
+			success = false;
+			value = default;
+			return DecodeResult.TokenMismatch;
+		}
+
+		if (utf8Reader.HasValueSequence || utf8Reader.ValueIsEscaped)
+		{
+			value = default;
+			success = false;
+		}
+		else
+		{
+			value = reader.UnreadSpan;
+			success = true;
 		}
 
 		return DecodeResult.Success;
