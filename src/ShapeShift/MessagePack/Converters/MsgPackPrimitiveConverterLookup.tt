@@ -20,6 +20,7 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("DateTime", "DateTimeConverter"),
 	new ConverterInfo("DateTimeOffset", "DateTimeOffsetConverter"),
 	new ConverterInfo("string", "StringConverter", IsRefType: true),
+	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerBinaryConverter"),
 };
 #>
 /// <summary>

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using PolyType.Utilities;
 
 namespace ShapeShift.Json;
@@ -13,4 +14,7 @@ namespace ShapeShift.Json;
 internal class JsonVisitor(ConverterCache owner, TypeGenerationContext context)
 	: StandardVisitor(owner, context)
 {
+	/// <inheritdoc/>
+	protected override bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
+		=> JsonPrimitiveConverterLookup.TryGetPrimitiveConverter(out converter) || base.TryGetPrimitiveConverter(out converter);
 }

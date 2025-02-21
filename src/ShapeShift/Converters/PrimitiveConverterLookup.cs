@@ -32,7 +32,6 @@ internal static class PrimitiveConverterLookup
 	private static Converter? _UInt32Converter;
 	private static Converter? _Int64Converter;
 	private static Converter? _UInt64Converter;
-	private static Converter? _BigIntegerConverter;
 	private static Converter? _BooleanConverter;
 	private static Converter? _SingleConverter;
 	private static Converter? _DoubleConverter;
@@ -114,12 +113,6 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(ulong))
 		{
 			converter = (Converter<T>)(_UInt64Converter ??= new UInt64Converter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(System.Numerics.BigInteger))
-		{
-			converter = (Converter<T>)(_BigIntegerConverter ??= new BigIntegerConverter());
 			return true;
 		}
 

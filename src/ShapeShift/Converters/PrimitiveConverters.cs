@@ -513,7 +513,7 @@ internal class UInt128Converter : Converter<UInt128>
 /// <summary>
 /// Serializes a <see cref="BigInteger"/> value.
 /// </summary>
-internal class BigIntegerConverter : Converter<BigInteger>
+internal class BigIntegerBinaryConverter : Converter<BigInteger>
 {
 	/// <inheritdoc/>
 	public override BigInteger Read(ref Reader reader, SerializationContext context)
@@ -571,6 +571,59 @@ internal class BigIntegerConverter : Converter<BigInteger>
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		=> CreateBase64EncodedBinarySchema("The binary representation of a BigInteger.");
+}
+
+/// <summary>
+/// Serializes a <see cref="BigInteger"/> value.
+/// </summary>
+internal class BigIntegerTextConverter : Converter<BigInteger>
+{
+	/// <inheritdoc/>
+	public override BigInteger Read(ref Reader reader, SerializationContext context)
+	{
+#if NET
+		reader.GetMaxStringLength(out int maxChars, out int maxBytes);
+		char[]? charArray = null;
+		try
+		{
+			Span<char> chars = maxBytes > MaxStackStringCharLength ? charArray = ArrayPool<char>.Shared.Rent(maxBytes) : stackalloc char[maxBytes];
+			int byteCount = reader.ReadString(chars);
+			return BigInteger.Parse(chars[..byteCount], NumberStyles.Integer, CultureInfo.InvariantCulture);
+		}
+		finally
+		{
+			if (charArray is not null)
+			{
+				ArrayPool<char>.Shared.Return(charArray);
+			}
+		}
+#else
+		return BigInteger.Parse(reader.ReadString() ?? throw SerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>(), CultureInfo.InvariantCulture);
+#endif
+	}
+
+	/// <inheritdoc/>
+	public override void Write(ref Writer writer, in BigInteger value, SerializationContext context)
+	{
+#if NET
+		Span<char> chars = stackalloc char[MaxStackStringCharLength];
+		if (value.TryFormat(chars, out int charsWritten, provider: CultureInfo.InvariantCulture))
+		{
+			writer.Write(chars[..charsWritten]);
+			return;
+		}
+#endif
+
+		writer.Write(value.ToString(CultureInfo.InvariantCulture));
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["pattern"] = @"^-?\d+$",
+		};
 }
 
 #if NET

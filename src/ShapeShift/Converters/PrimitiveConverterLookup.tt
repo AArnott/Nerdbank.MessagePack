@@ -26,7 +26,6 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("uint", "UInt32Converter"),
 	new ConverterInfo("long", "Int64Converter"),
 	new ConverterInfo("ulong", "UInt64Converter"),
-	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerConverter"),
 	new ConverterInfo("bool", "BooleanConverter"),
 	new ConverterInfo("float", "SingleConverter"),
 	new ConverterInfo("double", "DoubleConverter"),

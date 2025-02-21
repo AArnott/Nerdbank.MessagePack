@@ -9,7 +9,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace ShapeShift.MessagePack.Converters;
+namespace ShapeShift.Converters;
 
 /// <summary>
 /// Provides access to built-in converters for primitive types.
@@ -21,12 +21,9 @@ namespace ShapeShift.MessagePack.Converters;
 /// JIT/AOT compiler the opportunity to only reference types that match the type argument
 /// (at least for the value types).
 /// </remarks>
-internal static class MsgPackPrimitiveConverterLookup
+internal static class JsonPrimitiveConverterLookup
 {
-	private static Converter? _DateTimeConverter;
-	private static Converter? _DateTimeOffsetConverter;
-	private static Converter? _StringConverter;
-	private static Converter? _BigIntegerBinaryConverter;
+	private static Converter? _BigIntegerTextConverter;
 
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
@@ -36,27 +33,9 @@ internal static class MsgPackPrimitiveConverterLookup
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
 	internal static bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
 	{
-		if (typeof(T) == typeof(DateTime))
-		{
-			converter = (Converter<T>)(_DateTimeConverter ??= new DateTimeConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(DateTimeOffset))
-		{
-			converter = (Converter<T>)(_DateTimeOffsetConverter ??= new DateTimeOffsetConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(string))
-		{
-			converter = (Converter<T>)(_StringConverter ??= new StringConverter());
-			return true;
-		}
-
 		if (typeof(T) == typeof(System.Numerics.BigInteger))
 		{
-			converter = (Converter<T>)(_BigIntegerBinaryConverter ??= new BigIntegerBinaryConverter());
+			converter = (Converter<T>)(_BigIntegerTextConverter ??= new BigIntegerTextConverter());
 			return true;
 		}
 

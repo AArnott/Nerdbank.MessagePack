@@ -25,6 +25,10 @@
       <LastGenOutput>Deformatter.Integers.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
+    <None Update="Json\JsonPrimitiveConverterLookup.tt">
+      <LastGenOutput>JsonPrimitiveConverterLookup.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
     <None Update="MessagePack\Converters\ArraysOfPrimitivesConverters.Generated.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ArraysOfPrimitivesConverters.Generated.cs</LastGenOutput>
@@ -69,6 +73,11 @@
   <ItemGroup>
     <Compile Update="Converters\Deformatter.Integers.cs">
       <DependentUpon>Deformatter.Integers.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Json\JsonPrimitiveConverterLookup.cs">
+      <DependentUpon>JsonPrimitiveConverterLookup.tt</DependentUpon>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
     </Compile>

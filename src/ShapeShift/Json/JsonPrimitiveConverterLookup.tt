@@ -1,3 +1,6 @@
+<#@ assembly name="System.Core" #>
+<#@ Import Namespace="System.Collections.Generic" #>
+<#@ Import Namespace="System.Linq" #>
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
@@ -9,8 +12,14 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace ShapeShift.MessagePack.Converters;
+namespace ShapeShift.Converters;
 
+<#
+var convertersByType = new List<ConverterInfo>
+{
+	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerTextConverter"),
+};
+#>
 /// <summary>
 /// Provides access to built-in converters for primitive types.
 /// </summary>
@@ -21,12 +30,19 @@ namespace ShapeShift.MessagePack.Converters;
 /// JIT/AOT compiler the opportunity to only reference types that match the type argument
 /// (at least for the value types).
 /// </remarks>
-internal static class MsgPackPrimitiveConverterLookup
+internal static class JsonPrimitiveConverterLookup
 {
-	private static Converter? _DateTimeConverter;
-	private static Converter? _DateTimeOffsetConverter;
-	private static Converter? _StringConverter;
-	private static Converter? _BigIntegerBinaryConverter;
+<# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
+	 if (converterGroup.Key is not null) { #>
+#if <#=converterGroup.Key#>
+<#   } 
+	 foreach (var converter in converterGroup) { #>
+	private static Converter? <#=converter.FieldName#>;
+<#	 }
+	 if (converterGroup.Key is not null) { #>
+#endif
+<#   }
+} #>
 
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
@@ -36,31 +52,29 @@ internal static class MsgPackPrimitiveConverterLookup
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
 	internal static bool TryGetPrimitiveConverter<T>([NotNullWhen(true)] out Converter<T>? converter)
 	{
-		if (typeof(T) == typeof(DateTime))
+<# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
+	 if (converterGroup.Key is not null) { #>
+#if <#=converterGroup.Key#>
+<#   } 
+	 foreach (var converter in converterGroup) { #>
+		if (typeof(T) == typeof(<#=converter.TypeName#>))
 		{
-			converter = (Converter<T>)(_DateTimeConverter ??= new DateTimeConverter());
+			converter = (Converter<T>)(<#=converter.FieldName#> ??= new <#=converter.ConverterName#>());
 			return true;
 		}
 
-		if (typeof(T) == typeof(DateTimeOffset))
-		{
-			converter = (Converter<T>)(_DateTimeOffsetConverter ??= new DateTimeOffsetConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(string))
-		{
-			converter = (Converter<T>)(_StringConverter ??= new StringConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(System.Numerics.BigInteger))
-		{
-			converter = (Converter<T>)(_BigIntegerBinaryConverter ??= new BigIntegerBinaryConverter());
-			return true;
-		}
-
+<#   }
+	 if (converterGroup.Key is not null) { #>
+#endif
+<#   }
+} #>
 		converter = null;
 		return false;
 	}
 }
+<#+
+record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false)
+{
+	internal string FieldName => $"_{ConverterName}";
+}
+#>
