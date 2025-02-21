@@ -12,11 +12,6 @@ namespace ShapeShift;
 
 public partial record SerializerBase
 {
-	/// <inheritdoc cref="Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
-	[ExcludeFromCodeCoverage]
-	public byte[] Serialize<T>(in T? value, CancellationToken cancellationToken = default)
-		where T : IShapeable<T> => this.Serialize(value, T.GetShape(), cancellationToken);
-
 	/// <inheritdoc cref="Serialize{T}(IBufferWriter{byte}, in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public void Serialize<T>(IBufferWriter<byte> writer, in T? value, CancellationToken cancellationToken = default)
@@ -97,11 +92,6 @@ public partial record SerializerBase
 	public ValueTask SerializeAsync<T>(Stream stream, in T? value, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where T : IShapeable<T> => this.SerializeAsync(stream, value, T.GetShape(), cancellationToken);
-
-	/// <inheritdoc cref="Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
-	[ExcludeFromCodeCoverage]
-	public byte[] Serialize<T, TProvider>(in T? value, CancellationToken cancellationToken = default)
-		where TProvider : IShapeable<T> => this.Serialize(value, TProvider.GetShape(), cancellationToken);
 
 	/// <inheritdoc cref="Serialize{T}(IBufferWriter{byte}, in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]

@@ -156,6 +156,27 @@ namespace ShapeShift
 			}
 		}
 
+		internal static unsafe string GetString(this Encoding encoding, in ReadOnlySequence<byte> bytes)
+		{
+			if (bytes.IsSingleSegment)
+			{
+				return encoding.GetString(bytes.First.Span);
+			}
+			else
+			{
+				byte[] buffer = ArrayPool<byte>.Shared.Rent(checked((int)bytes.Length));
+				try
+				{
+					bytes.CopyTo(buffer);
+					return encoding.GetString(buffer);
+				}
+				finally
+				{
+					ArrayPool<byte>.Shared.Return(buffer);
+				}
+			}
+		}
+
 		/// <summary>
 		/// Reads from the stream into a memory buffer.
 		/// </summary>

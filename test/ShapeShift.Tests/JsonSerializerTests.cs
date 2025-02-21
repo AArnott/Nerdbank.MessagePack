@@ -12,6 +12,24 @@ public partial class JsonSerializerTests : JsonSerializerTestBase
 		Assert.Equal("{\"Name\":\"Andrew\",\"Age\":42}", this.Serializer.Encoding.GetString(utf8Bytes.ToArray()));
 	}
 
+	[Fact]
+	public void DeserializeJsonWithWhitespace()
+	{
+		Person expected = new() { Name = "Andrew", Age = 42 };
+		Person? actual = this.Serializer.Deserialize<Person>(
+			"""
+			{
+				"Name": "Andrew",
+				"Age": 42
+			}
+			""",
+#if !NET
+			Witness.ShapeProvider,
+#endif
+			TestContext.Current.CancellationToken);
+		Assert.Equal(expected, actual);
+	}
+
 	[GenerateShape]
 	internal partial record Person
 	{
@@ -19,4 +37,7 @@ public partial class JsonSerializerTests : JsonSerializerTestBase
 
 		public int Age { get; set; }
 	}
+
+	[GenerateShape<Person>]
+	private partial class Witness;
 }

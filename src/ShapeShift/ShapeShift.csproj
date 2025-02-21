@@ -45,9 +45,9 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackPrimitives.Readers.Integers.cs</LastGenOutput>
     </None>
-    <None Update="MessagePackSerializer.AutomatedFriendlyOverloads.tt">
+    <None Update="SerializerBase.AutomatedFriendlyOverloads.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MessagePackSerializer.AutomatedFriendlyOverloads.cs</LastGenOutput>
+      <LastGenOutput>SerializerBase.AutomatedFriendlyOverloads.cs</LastGenOutput>
     </None>
     <None Update="MessagePack\MessagePackStreamingDeformatter.Integers.tt">
       <LastGenOutput>MessagePackStreamingDeformatter.Integers.cs</LastGenOutput>
@@ -97,10 +97,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackPrimitives.Readers.Integers.tt</DependentUpon>
     </Compile>
-    <Compile Update="MessagePackSerializer.AutomatedFriendlyOverloads.cs">
+    <Compile Update="SerializerBase.AutomatedFriendlyOverloads.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>MessagePackSerializer.AutomatedFriendlyOverloads.tt</DependentUpon>
+      <DependentUpon>SerializerBase.AutomatedFriendlyOverloads.tt</DependentUpon>
     </Compile>
     <Compile Update="MessagePack\MessagePackStreamingDeformatter.Integers.cs">
       <DesignTime>True</DesignTime>

@@ -39,7 +39,6 @@ public partial record SerializerBase
         {
             (string returnType, string firstParameterType, string firstParameterName) = transport switch
             {
-                SerializeTransport.ByteArray => ("byte[]", "", ""),
                 SerializeTransport.IBufferWriter => ("void", "IBufferWriter<byte>", "writer"),
                 SerializeTransport.Stream => ("void", "Stream", "stream"),
                 _ => throw new NotSupportedException(),
@@ -136,7 +135,6 @@ public partial record SerializerBase
   enum SerializeTransport
   {
       // MessagePackWriter, // this is hand-authored with intentionally limited overloads
-      ByteArray,
       IBufferWriter,
       Stream,
   }
