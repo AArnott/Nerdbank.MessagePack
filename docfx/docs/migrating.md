@@ -233,9 +233,9 @@ To help with migration, the following table lists some of the most common APIs t
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `ExtensionResult`                              | @ShapeShift.MessagePack.Extension                                                            |
 | `MessagePackReader.TryReadNil`                 | @ShapeShift.Converters.Reader.TryReadNull?displayProperty=nameWithType        |
-| `MessagePackReader.ReadExtensionFormat`        | @ShapeShift.MessagePack.MsgPackDeformatter.ReadExtension(ShapeShift.Converters.Reader@)?displayProperty=nameWithType        |
-| `MessagePackReader.ReadExtensionFormatHeader`  | @ShapeShift.MessagePack.MsgPackDeformatter.ReadExtensionHeader(ShapeShift.Converters.Reader@)?displayProperty=nameWithType  |
+| `MessagePackReader.ReadExtensionFormat`        | @ShapeShift.MessagePack.MessagePackDeformatter.ReadExtension(ShapeShift.Converters.Reader@)?displayProperty=nameWithType        |
+| `MessagePackReader.ReadExtensionFormatHeader`  | @ShapeShift.MessagePack.MessagePackDeformatter.ReadExtensionHeader(ShapeShift.Converters.Reader@)?displayProperty=nameWithType  |
 | `MessagePackWriter.WriteNil`                   | @ShapeShift.Converters.Writer.WriteNull?displayProperty=nameWithType       |
-| `MessagePackWriter.WriteExtensionFormat`       | @ShapeShift.MessagePack.MsgPackFormatter.Write(ShapeShift.Converters.Writer@,ShapeShift.MessagePack.Extension)?displayProperty=nameWithType       |
-| `MessagePackWriter.WriteExtensionFormatHeader` | @ShapeShift.MessagePack.MsgPackFormatter.Write(ShapeShift.Converters.Writer@,ShapeShift.MessagePack.ExtensionHeader)?displayProperty=nameWithType |
+| `MessagePackWriter.WriteExtensionFormat`       | @ShapeShift.MessagePack.MessagePackFormatter.Write(ShapeShift.Converters.BufferWriter@,ShapeShift.MessagePack.Extension)?displayProperty=nameWithType       |
+| `MessagePackWriter.WriteExtensionFormatHeader` | @ShapeShift.MessagePack.MessagePackFormatter.Write(ShapeShift.Converters.BufferWriter@,ShapeShift.MessagePack.ExtensionHeader)?displayProperty=nameWithType |
 | `IMessagePackSerializationCallbackReceiver`    | @ShapeShift.ISerializationCallbacks                                                          |

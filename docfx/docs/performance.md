@@ -13,7 +13,7 @@ The synchronous (de)serialization APIs are the fastest.
 
 Memory allocations are minimal during serialization and deserialization.
 We strive for serialization to be allocation free.
-Obviously the @"ShapeShift.SerializerBase.Serialize``1(``0@,System.Threading.CancellationToken)" method must allocate the `byte[]` that is returned to the caller, but such allocations can be avoided by using any of the other @ShapeShift.SerializerBase.Serialize* overloads which allows serializing to pooled buffers.
+Obviously the @"ShapeShift.MessagePackSerializer.Serialize``1(``0@,System.Threading.CancellationToken)?displayProperty=nameWithType" or @"ShapeShift.JsonSerializer.Serialize``1(``0@,System.Threading.CancellationToken)?displayProperty=nameWithType" methods must allocate the `byte[]` or `string` (respectively) that is returned to the caller, but such allocations can be avoided by using any of the other @ShapeShift.SerializerBase.Serialize* overloads which allows serializing to pooled buffers.
 
 ## Asynchronous
 

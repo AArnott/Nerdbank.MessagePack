@@ -73,10 +73,12 @@ public record JsonSerializer : SerializerBase
 		return this.Encoding.GetString(sequenceRental.Value.AsReadOnlySequence);
 	}
 
-	/// <inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)"/>
+	/// <summary><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/summary"/></summary>
+	/// <typeparam name="T"><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/typeparam"/></typeparam>
 	/// <param name="json">The JSON to be deserialized.</param>
 	/// <param name="typeShape"><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/param[@name='typeShape']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
+	/// <returns><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
 	public T? Deserialize<T>([StringSyntax("json")] string json, ITypeShape<T> typeShape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(json);
@@ -92,10 +94,12 @@ public record JsonSerializer : SerializerBase
 		}
 	}
 
-	/// <inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)"/>
+	/// <summary><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/summary"/></summary>
+	/// <typeparam name="T"><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/typeparam"/></typeparam>
 	/// <param name="json">The JSON to be deserialized.</param>
 	/// <param name="provider"><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
+	/// <returns><inheritdoc cref="SerializerBase.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
 	public T? Deserialize<T>([StringSyntax("json")] string json, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(json);
