@@ -359,13 +359,23 @@ namespace AsyncConverters
             }
             #endregion
 
-            if (count is null)
+            bool isFirstElement = true;
+            for (int i = 0; i < count || count is null; i++)
             {
-                throw new NotImplementedException(); // TODO: implement this.
-            }
+                if (count is null)
+                {
+                    bool hasAnotherElement;
+                    while (streamingReader.TryAdvanceToNextElement(ref isFirstElement, out hasAnotherElement).NeedsMoreBytes())
+                    {
+                        streamingReader = new(await streamingReader.FetchMoreBytesAsync());
+                    }
 
-            for (int i = 0; i < count; i++)
-            {
+                    if (!hasAnotherElement)
+                    {
+                        break;
+                    }
+                }
+
                 while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
                 {
                     streamingReader = new(await streamingReader.FetchMoreBytesAsync());

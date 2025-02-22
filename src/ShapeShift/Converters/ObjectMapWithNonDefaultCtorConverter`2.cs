@@ -120,7 +120,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 				if (remainingEntries is null)
 				{
-					throw new NotImplementedException(); // TODO: review this.
+					throw new NotImplementedException(); // TODO: review this for indefinite arrays.
 				}
 
 				if (remainingEntries > 0)

@@ -400,7 +400,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (mapEntries is null)
 		{
-			throw new NotImplementedException(); // TODO: review this
+			throw new NotImplementedException(); // TODO: review this for indefinite arrays.
 		}
 
 		for (int i = 0; i < mapEntries; i++)

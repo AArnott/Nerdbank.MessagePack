@@ -230,14 +230,16 @@ public abstract record Formatter
 	public abstract int GetEncodedLength(ulong value);
 
 	/// <summary>
-	/// Writes a span of bytes as a <see cref="TokenType.String"/> token that has already been encoded with <see cref="Encoding"/>.
+	/// Writes a span of bytes as a <see cref="TokenType.String"/> token that has already been encoded with
+	/// <see cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte})"/>.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='value']"/></param>
 	public abstract void WriteEncodedString(ref BufferWriter writer, scoped ReadOnlySpan<byte> value);
 
 	/// <summary>
-	/// Writes a sequence of bytes as a <see cref="TokenType.String"/> token that has already been encoded with <see cref="Encoding"/>.
+	/// Writes a sequence of bytes as a <see cref="TokenType.String"/> token that has already been encoded with
+	/// <see cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte})"/>.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='writer']"/></param>
 	/// <param name="value"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='value']"/></param>

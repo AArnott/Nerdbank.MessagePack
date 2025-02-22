@@ -101,7 +101,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 
 		if (length is null)
 		{
-			throw new NotImplementedException(); // TODO: review this.
+			throw new NotImplementedException(); // TODO: review this for indefinite arrays.
 		}
 
 		if (length < skipCount + 1)
