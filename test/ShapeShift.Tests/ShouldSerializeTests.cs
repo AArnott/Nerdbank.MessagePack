@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
+using ShapeShift.MessagePack;
 
 [Trait("ShouldSerialize", "true")]
 public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)

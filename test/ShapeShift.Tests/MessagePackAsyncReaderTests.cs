@@ -3,6 +3,8 @@
 
 #pragma warning disable NBMsgPackAsync
 
+using ShapeShift.MessagePack;
+
 public class MessagePackAsyncReaderTests
 {
 	[Fact]

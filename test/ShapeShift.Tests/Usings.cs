@@ -9,5 +9,4 @@ global using PolyType;
 global using PolyType.Abstractions;
 global using ShapeShift;
 global using ShapeShift.Converters;
-global using ShapeShift.MessagePack;
 global using Xunit;

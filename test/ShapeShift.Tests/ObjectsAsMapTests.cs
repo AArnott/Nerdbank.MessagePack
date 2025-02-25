@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
+using ShapeShift.MessagePack;
 
 public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {

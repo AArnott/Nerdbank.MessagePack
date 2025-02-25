@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using ShapeShift.MessagePack;
+
 public partial class PreformattedStringTests
 {
 	private static readonly MessagePackSerializer Serializer = new();

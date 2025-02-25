@@ -7,6 +7,7 @@
 #pragma warning disable SA1121 // Use built-in type alias
 
 using System.Numerics;
+using ShapeShift.MessagePack;
 
 public partial class MsgPackDeformatterTests
 {

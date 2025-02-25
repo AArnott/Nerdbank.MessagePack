@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Text;
+using ShapeShift.MessagePack;
 
 public class MessagePackWriterTests
 {

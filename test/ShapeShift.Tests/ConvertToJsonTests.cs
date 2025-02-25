@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using ShapeShift.MessagePack;
 
 public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {

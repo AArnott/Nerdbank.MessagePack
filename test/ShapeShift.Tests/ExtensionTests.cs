@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using ShapeShift.MessagePack;
+
 public class ExtensionTests
 {
 	private Extension ext1a = new(1, new byte[] { 1, 2, 3 });

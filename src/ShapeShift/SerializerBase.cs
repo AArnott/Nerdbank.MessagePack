@@ -109,6 +109,16 @@ public abstract partial record SerializerBase
 	public SerializationContext StartingContext { get; init; } = new();
 
 	/// <summary>
+	/// Gets the formatter associated with this particular serializer.
+	/// </summary>
+	public Formatter Formatter => this.ConverterCache.Formatter;
+
+	/// <summary>
+	/// Gets the deformatter associated with this particular serializer.
+	/// </summary>
+	public Deformatter Deformatter => this.ConverterCache.Deformatter;
+
+	/// <summary>
 	/// Gets the converter cache for this serializer.
 	/// </summary>
 	internal ConverterCache ConverterCache { get; init; }
@@ -117,16 +127,6 @@ public abstract partial record SerializerBase
 	/// Gets a pool of reference equality trackers, if the format supports reference preserving.
 	/// </summary>
 	internal virtual ReusableObjectPool<IReferenceEqualityTracker>? ReferenceTrackingPool { get; }
-
-	/// <summary>
-	/// Gets the formatter associated with this particular serializer.
-	/// </summary>
-	protected internal Formatter Formatter => this.ConverterCache.Formatter;
-
-	/// <summary>
-	/// Gets the deformatter associated with this particular serializer.
-	/// </summary>
-	protected internal Deformatter Deformatter => this.ConverterCache.Deformatter;
 
 	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(Converter{T})"/>
 	public void RegisterConverter<T>(Converter<T> converter) => this.ConverterCache.RegisterConverter(converter);
