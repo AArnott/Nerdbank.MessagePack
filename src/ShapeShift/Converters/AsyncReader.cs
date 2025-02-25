@@ -235,12 +235,11 @@ public class AsyncReader : IDisposable
 	public virtual async ValueTask BufferNextStructureAsync(SerializationContext context) => await this.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
 
 	/// <inheritdoc cref="Reader.TryAdvanceToNextElement"/>
-	public async ValueTask<bool> TryAdvanceToNextElementAsync()
+	public async ValueTask<bool> TryAdvanceToNextElementAsync(bool isFirstElement)
 	{
 		Verify.Operation(this.readerReturned, "This cannot be done before returning the reader with ReturnReader.");
 		StreamingReader streamingReader = this.CreateStreamingReader();
 		bool hasAnotherElement;
-		bool isFirstElement = true;
 		while (streamingReader.TryAdvanceToNextElement(ref isFirstElement, out hasAnotherElement).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));

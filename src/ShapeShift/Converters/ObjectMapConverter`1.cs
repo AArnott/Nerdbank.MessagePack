@@ -227,8 +227,10 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			reader.ReturnReader(ref streamingReader);
 			int? remainingEntries = mapEntries;
-			while (remainingEntries > 0 || (remainingEntries is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)))
+			bool isFirstElement = true;
+			while (remainingEntries > 0 || (remainingEntries is null && await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false)))
 			{
+				isFirstElement = false;
 				int bufferedStructures = await reader.BufferNextStructuresAsync(1, (remainingEntries ?? 1) * 2, context).ConfigureAwait(false);
 				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;

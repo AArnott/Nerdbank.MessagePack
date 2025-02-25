@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
+using Microsoft;
 
 namespace ShapeShift.Json;
 
@@ -461,6 +462,8 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	[DoesNotReturn]
 	protected internal override Exception ThrowInvalidCode(in Reader reader)
 	{
-		throw new NotImplementedException();
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		Verify.Operation(utf8Reader.Read(), "Expected to be able to peek the next code.");
+		throw new SerializationException(string.Format("Unexpected code {0} encountered.", utf8Reader.TokenType));
 	}
 }

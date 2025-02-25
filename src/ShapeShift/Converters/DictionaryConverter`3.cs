@@ -260,8 +260,10 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			for (int i = 0; i < count || (count is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)); i++)
+			bool isFirstElement = true;
+			for (int i = 0; i < count || (count is null && await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false)); i++)
 			{
+				isFirstElement = false;
 				addEntry(ref collection, await this.ReadEntryAsync(reader, context).ConfigureAwait(false));
 			}
 		}

@@ -193,12 +193,12 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
+		bool isFirstElement = true;
 		if (isNull)
 		{
 			if (count is null)
 			{
 				bool hasAnotherElement;
-				bool isFirstElement = true;
 				while (streamingReader.TryAdvanceToNextElement(ref isFirstElement, out hasAnotherElement).NeedsMoreBytes())
 				{
 					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
@@ -212,8 +212,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 
 			reader.ReturnReader(ref streamingReader);
 			result = await this.baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
-
-			if (count is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false))
+			if (count is null && await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false))
 			{
 				ThrowTooManyElements();
 			}
@@ -297,7 +296,6 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		if (count is null)
 		{
 			bool hasAnotherElement;
-			bool isFirstElement = true;
 			while (streamingReader.TryAdvanceToNextElement(ref isFirstElement, out hasAnotherElement).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
@@ -312,7 +310,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		reader.ReturnReader(ref streamingReader);
 		result = (TBase?)await converter.ReadObjectAsync(reader, context).ConfigureAwait(false);
 
-		if (count is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false))
+		if (count is null && await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false))
 		{
 			ThrowTooManyElements();
 		}

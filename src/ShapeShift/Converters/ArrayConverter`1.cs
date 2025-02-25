@@ -149,8 +149,10 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 			else
 			{
 				List<TElement> elements = new();
-				while (await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false))
+				bool isFirstElement = true;
+				while (await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false))
 				{
+					isFirstElement = false;
 					elements.Add((await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
 				}
 

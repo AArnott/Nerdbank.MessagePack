@@ -384,8 +384,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
 			reader.ReturnReader(ref streamingReader);
 			int? remainingEntries = mapEntries;
-			while (remainingEntries > 0 || (remainingEntries is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)))
+			bool isFirstElement = true;
+			while (remainingEntries > 0 || (remainingEntries is null && await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false)))
 			{
+				isFirstElement = false;
 				int bufferedStructures = await reader.BufferNextStructuresAsync(1, (remainingEntries ?? 1) * 2, context).ConfigureAwait(false);
 				Reader syncReader = reader.CreateBufferedReader();
 				int bufferedEntries = bufferedStructures / 2;
@@ -451,8 +453,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 			reader.ReturnReader(ref streamingReader);
 			int i = 0;
-			while (i < arrayLength || (arrayLength is null && await reader.TryAdvanceToNextElementAsync().ConfigureAwait(false)))
+			bool isFirstElement = true;
+			while (i < arrayLength || (arrayLength is null && await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false)))
 			{
+				isFirstElement = false;
+
 				// Do a batch of all the consecutive properties that should be read synchronously.
 				int syncBatchSize = arrayLength is null ? 0 : NextSyncReadBatchSize();
 				if (syncBatchSize > 0)
@@ -474,14 +479,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					reader.ReturnReader(ref syncReader);
 				}
 
-				if (arrayLength is null)
-				{
-					throw new NotImplementedException(); // TODO: REVIEW this
-				}
-
 				// Read any consecutive async properties.
-				for (; i < arrayLength && properties.Length > i; i++)
+				for (; (i < arrayLength || (arrayLength is null && await reader.TryAdvanceToNextElementAsync(isFirstElement).ConfigureAwait(false))) && properties.Length > i; i++)
 				{
+					isFirstElement = false;
 					if (properties.Span[i] is not PropertyAccessors<T> { PreferAsyncSerialization: true, MsgPackReaders: (_, { } deserializeAsync) })
 					{
 						break;
@@ -492,7 +493,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 				int NextSyncReadBatchSize()
 				{
-					// We want to count the number of array elements need to be read up to the next async property.
+					// We want to count the number of array elements that need to be read up to the next async property.
 					for (int j = i; j < arrayLength; j++)
 					{
 						if (properties.Length > j)
