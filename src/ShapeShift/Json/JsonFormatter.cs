@@ -3,7 +3,6 @@
 
 using System.Buffers.Text;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft;
 
@@ -24,22 +23,10 @@ internal record JsonFormatter : Formatter
 	/// </summary>
 	internal static readonly JsonFormatter Default = new();
 
-	private readonly object syncObject = new();
-
-	private ReadOnlyMemory<byte> encodedQuoteCharacter;
-	private ReadOnlyMemory<byte> encodedOpenCurlyCharacter;
-	private ReadOnlyMemory<byte> encodedCloseCurlyCharacter;
-	private ReadOnlyMemory<byte> encodedOpenBracketCharacter;
-	private ReadOnlyMemory<byte> encodedCloseBracketCharacter;
-	private ReadOnlyMemory<byte> encodedColonCharacter;
-	private ReadOnlyMemory<byte> encodedCommaCharacter;
-	private ReadOnlyMemory<byte> nullLiteral;
-	private ReadOnlyMemory<byte> trueLiteral;
-	private ReadOnlyMemory<byte> falseLiteral;
+	private const byte EncodedQuoteCharacter = (byte)'"';
 
 	private JsonFormatter()
 	{
-		this.PrepareEncodings();
 	}
 
 	/// <inheritdoc/>
@@ -83,24 +70,20 @@ internal record JsonFormatter : Formatter
 	public override void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes)
 	{
 		// TODO: apply any necessary escaping to the string value.
-		ReadOnlySpan<byte> encodedQuoteCharacter = this.encodedQuoteCharacter.Span;
-		Memory<byte> bytes = new byte[this.Encoding.GetByteCount(value) + (encodedQuoteCharacter.Length * 2)];
+		Memory<byte> bytes = new byte[this.Encoding.GetByteCount(value) + 2];
 
-		Memory<byte> encoded = bytes[encodedQuoteCharacter.Length..^encodedQuoteCharacter.Length];
+		Memory<byte> encoded = bytes[1..^1];
 		this.Encoding.GetBytes(value, encoded.Span);
 		encodedBytes = encoded;
 
-		encodedQuoteCharacter.CopyTo(bytes.Span);
-		encodedQuoteCharacter.CopyTo(bytes.Span[^encodedQuoteCharacter.Length..]);
+		bytes.Span[0] = EncodedQuoteCharacter;
+		bytes.Span[^1] = EncodedQuoteCharacter;
 
 		formattedBytes = bytes;
 	}
 
 	/// <inheritdoc/>
-	public override void Write(ref BufferWriter writer, bool value)
-	{
-		WriteLiteral(ref writer, value ? this.trueLiteral.Span : this.falseLiteral.Span);
-	}
+	public override void Write(ref BufferWriter writer, bool value) => writer.Write(value ? "true"u8 : "false"u8);
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, char value)
@@ -226,9 +209,9 @@ internal record JsonFormatter : Formatter
 	{
 		int spanLength = 2 + Base64.GetMaxEncodedToUtf8Length(value.Length);
 		Span<byte> bytes = writer.GetSpan(spanLength);
-		this.encodedQuoteCharacter.Span.CopyTo(bytes);
+		bytes[0] = EncodedQuoteCharacter;
 		Assumes.True(Base64.EncodeToUtf8(value, bytes[1..], out _, out int bytesWritten) == OperationStatus.Done);
-		this.encodedQuoteCharacter.Span.CopyTo(bytes[(1 + bytesWritten)..]);
+		bytes[1 + bytesWritten] = EncodedQuoteCharacter;
 		writer.Advance(bytesWritten + 2);
 	}
 
@@ -243,8 +226,8 @@ internal record JsonFormatter : Formatter
 
 		int spanLength = 2 + ((checked((int)value.Length) + 2) / 3 * 4);
 		Span<byte> bytes = writer.GetSpan(spanLength);
-		this.encodedQuoteCharacter.Span.CopyTo(bytes);
-		int totalBytesWritten = this.encodedQuoteCharacter.Length;
+		int totalBytesWritten = 0;
+		bytes[totalBytesWritten++] = EncodedQuoteCharacter;
 
 		int bytesWritten;
 		foreach (ReadOnlyMemory<byte> segment in value)
@@ -256,8 +239,7 @@ internal record JsonFormatter : Formatter
 		Assumes.True(Base64.EncodeToUtf8(default, bytes[totalBytesWritten..], out _, out bytesWritten, isFinalBlock: true) == OperationStatus.Done);
 		totalBytesWritten += bytesWritten;
 
-		this.encodedQuoteCharacter.Span.CopyTo(bytes[totalBytesWritten..]);
-		totalBytesWritten += this.encodedQuoteCharacter.Length;
+		bytes[totalBytesWritten++] = EncodedQuoteCharacter;
 		writer.Advance(totalBytesWritten);
 	}
 
@@ -274,73 +256,28 @@ internal record JsonFormatter : Formatter
 	}
 
 	/// <inheritdoc/>
-	public override void WriteEndMap(ref BufferWriter writer)
-	{
-		Span<byte> span = writer.GetSpan(this.encodedCloseCurlyCharacter.Length);
-		this.encodedCloseCurlyCharacter.Span.CopyTo(span);
-		writer.Advance(this.encodedCloseCurlyCharacter.Length);
-	}
+	public override void WriteEndMap(ref BufferWriter writer) => writer.Write([(byte)'}']);
 
 	/// <inheritdoc/>
-	public override void WriteEndVector(ref BufferWriter writer)
-	{
-		Span<byte> span = writer.GetSpan(this.encodedCloseBracketCharacter.Length);
-		this.encodedCloseBracketCharacter.Span.CopyTo(span);
-		writer.Advance(this.encodedCloseBracketCharacter.Length);
-	}
+	public override void WriteEndVector(ref BufferWriter writer) => writer.Write([(byte)']']);
 
 	/// <inheritdoc/>
-	public override void WriteMapKeyValueSeparator(ref BufferWriter writer)
-	{
-		Span<byte> span = writer.GetSpan(this.encodedColonCharacter.Length);
-		this.encodedColonCharacter.Span.CopyTo(span);
-		writer.Advance(this.encodedColonCharacter.Length);
-	}
+	public override void WriteMapKeyValueSeparator(ref BufferWriter writer) => writer.Write([(byte)':']);
 
 	/// <inheritdoc/>
-	public override void WriteMapPairSeparator(ref BufferWriter writer)
-	{
-		Span<byte> span = writer.GetSpan(this.encodedCommaCharacter.Length);
-		this.encodedCommaCharacter.Span.CopyTo(span);
-		writer.Advance(this.encodedCommaCharacter.Length);
-	}
+	public override void WriteMapPairSeparator(ref BufferWriter writer) => writer.Write([(byte)',']);
 
 	/// <inheritdoc/>
-	public override void WriteNull(ref BufferWriter writer)
-	{
-		WriteLiteral(ref writer, this.nullLiteral.Span);
-	}
+	public override void WriteNull(ref BufferWriter writer) => writer.Write("null"u8);
 
 	/// <inheritdoc/>
-	public override void WriteStartMap(ref BufferWriter writer, int count)
-	{
-		Span<byte> span = writer.GetSpan(this.encodedOpenCurlyCharacter.Length);
-		this.encodedOpenCurlyCharacter.Span.CopyTo(span);
-		writer.Advance(this.encodedOpenCurlyCharacter.Length);
-	}
+	public override void WriteStartMap(ref BufferWriter writer, int count) => writer.Write([(byte)'{']);
 
 	/// <inheritdoc/>
-	public override void WriteStartVector(ref BufferWriter writer, int length)
-	{
-		Span<byte> span = writer.GetSpan(this.encodedOpenBracketCharacter.Length);
-		this.encodedOpenBracketCharacter.Span.CopyTo(span);
-		writer.Advance(this.encodedOpenBracketCharacter.Length);
-	}
+	public override void WriteStartVector(ref BufferWriter writer, int length) => writer.Write([(byte)'[']);
 
 	/// <inheritdoc/>
-	public override void WriteVectorElementSeparator(ref BufferWriter writer)
-	{
-		Span<byte> span = writer.GetSpan(this.encodedCommaCharacter.Length);
-		this.encodedCommaCharacter.Span.CopyTo(span);
-		writer.Advance(this.encodedCommaCharacter.Length);
-	}
-
-	private static void WriteLiteral(ref BufferWriter writer, ReadOnlySpan<byte> literal)
-	{
-		Span<byte> span = writer.GetSpan(literal.Length);
-		literal.CopyTo(span);
-		writer.Advance(literal.Length);
-	}
+	public override void WriteVectorElementSeparator(ref BufferWriter writer) => writer.Write([(byte)',']);
 
 	private static bool IsFinite(float value)
 	{
@@ -358,27 +295,5 @@ internal record JsonFormatter : Formatter
 #else
 		return !(double.IsNaN(value) || double.IsInfinity(value));
 #endif
-	}
-
-	private void PrepareEncodings()
-	{
-		lock (this.syncObject)
-		{
-			if (!this.encodedQuoteCharacter.IsEmpty)
-			{
-				return;
-			}
-
-			this.encodedQuoteCharacter = this.Encoding.GetBytes("\"");
-			this.encodedOpenCurlyCharacter = this.Encoding.GetBytes("{");
-			this.encodedCloseCurlyCharacter = this.Encoding.GetBytes("}");
-			this.encodedOpenBracketCharacter = this.Encoding.GetBytes("[");
-			this.encodedCloseBracketCharacter = this.Encoding.GetBytes("]");
-			this.encodedColonCharacter = this.Encoding.GetBytes(":");
-			this.encodedCommaCharacter = this.Encoding.GetBytes(",");
-			this.nullLiteral = this.Encoding.GetBytes("null");
-			this.trueLiteral = this.Encoding.GetBytes("true");
-			this.falseLiteral = this.Encoding.GetBytes("false");
-		}
 	}
 }
