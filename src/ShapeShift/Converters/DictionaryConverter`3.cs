@@ -50,14 +50,27 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 		context.DepthStep();
 		IReadOnlyDictionary<TKey, TValue> dictionary = getReadable(value);
 		writer.WriteStartMap(dictionary.Count);
+		bool isFirstElement = true;
 		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
 		{
+			if (isFirstElement)
+			{
+				isFirstElement = false;
+			}
+			else
+			{
+				writer.WriteMapPairSeparator();
+			}
+
 			TKey? entryKey = pair.Key;
 			TValue? entryValue = pair.Value;
 
 			keyConverter.Write(ref writer, entryKey, context);
+			writer.WriteMapKeyValueSeparator();
 			valueConverter.Write(ref writer, entryValue, context);
 		}
+
+		writer.WriteEndMap();
 	}
 
 	/// <inheritdoc/>
@@ -156,6 +169,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	protected void ReadEntry(ref Reader reader, SerializationContext context, out TKey key, out TValue value)
 	{
 		key = keyConverter.Read(ref reader, context)!;
+		reader.ReadMapKeyValueSeparator();
 		value = valueConverter.Read(ref reader, context)!;
 	}
 

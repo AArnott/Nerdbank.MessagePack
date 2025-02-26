@@ -146,6 +146,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			writer.WriteStartVector(properties.Length);
 			for (int i = 0; i < properties.Length; i++)
 			{
+				if (i > 0)
+				{
+					writer.WriteVectorElementSeparator();
+				}
+
 				if (properties[i]?.MsgPackWriters is var (serialize, _))
 				{
 					serialize(value, ref writer, context);
@@ -155,6 +160,8 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					writer.WriteNull();
 				}
 			}
+
+			writer.WriteEndVector();
 		}
 	}
 

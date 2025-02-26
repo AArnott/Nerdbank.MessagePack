@@ -28,8 +28,13 @@ internal record JsonFormatter : Formatter
 	private ReadOnlyMemory<byte> encodedQuoteCharacter;
 	private ReadOnlyMemory<byte> encodedOpenCurlyCharacter;
 	private ReadOnlyMemory<byte> encodedCloseCurlyCharacter;
+	private ReadOnlyMemory<byte> encodedOpenBracketCharacter;
+	private ReadOnlyMemory<byte> encodedCloseBracketCharacter;
 	private ReadOnlyMemory<byte> encodedColonCharacter;
 	private ReadOnlyMemory<byte> encodedCommaCharacter;
+	private ReadOnlyMemory<byte> nullLiteral;
+	private ReadOnlyMemory<byte> trueLiteral;
+	private ReadOnlyMemory<byte> falseLiteral;
 
 	private JsonFormatter()
 	{
@@ -48,13 +53,29 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override int GetEncodedLength(long value)
 	{
-		throw new NotImplementedException();
+		if (value >= 0)
+		{
+			return this.GetEncodedLength(unchecked((ulong)value));
+		}
+		else
+		{
+			// Convert the negative value to a positive value, and add 1 for the minus sign.
+			return 1 + this.GetEncodedLength(unchecked((ulong)-value));
+		}
 	}
 
 	/// <inheritdoc/>
 	public override int GetEncodedLength(ulong value)
 	{
-		throw new NotImplementedException();
+		int length = 1;
+		const int Base = 10;
+		while (value >= Base)
+		{
+			value /= Base;
+			length++;
+		}
+
+		return length;
 	}
 
 	/// <inheritdoc/>
@@ -77,7 +98,7 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, bool value)
 	{
-		throw new NotImplementedException();
+		WriteLiteral(ref writer, value ? this.trueLiteral.Span : this.falseLiteral.Span);
 	}
 
 	/// <inheritdoc/>
@@ -156,13 +177,43 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, float value)
 	{
-		throw new NotImplementedException();
+		if (!IsFinite(value))
+		{
+			throw new NotSupportedException($"The value {value} is not supported.");
+		}
+
+#if NET
+		const int LongestValueInCharacters = 15;
+		Span<byte> byteSpan = writer.GetSpan(LongestValueInCharacters);
+		Assumes.True(value.TryFormat(byteSpan, out int bytesWritten, provider: CultureInfo.InvariantCulture));
+		writer.Advance(bytesWritten);
+#else
+		string valueAsString = value.ToString(CultureInfo.InvariantCulture);
+		Span<byte> byteSpan = writer.GetSpan(this.Encoding.GetMaxByteCount(valueAsString.Length));
+		int byteCount = this.Encoding.GetBytes(valueAsString.AsSpan(), byteSpan);
+		writer.Write(byteSpan[..byteCount]);
+#endif
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, double value)
 	{
-		throw new NotImplementedException();
+		if (!IsFinite(value))
+		{
+			throw new NotSupportedException($"The value {value} is not supported.");
+		}
+
+#if NET
+		const int LongestValueInCharacters = 24;
+		Span<byte> byteSpan = writer.GetSpan(LongestValueInCharacters);
+		Assumes.True(value.TryFormat(byteSpan, out int bytesWritten, provider: CultureInfo.InvariantCulture));
+		writer.Advance(bytesWritten);
+#else
+		string valueAsString = value.ToString(CultureInfo.InvariantCulture);
+		Span<byte> byteSpan = writer.GetSpan(this.Encoding.GetMaxByteCount(valueAsString.Length));
+		int byteCount = this.Encoding.GetBytes(valueAsString.AsSpan(), byteSpan);
+		writer.Write(byteSpan[..byteCount]);
+#endif
 	}
 
 	/// <inheritdoc/>
@@ -207,7 +258,9 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void WriteEndVector(ref BufferWriter writer)
 	{
-		throw new NotImplementedException();
+		Span<byte> span = writer.GetSpan(this.encodedCloseBracketCharacter.Length);
+		this.encodedCloseBracketCharacter.Span.CopyTo(span);
+		writer.Advance(this.encodedCloseBracketCharacter.Length);
 	}
 
 	/// <inheritdoc/>
@@ -229,7 +282,7 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void WriteNull(ref BufferWriter writer)
 	{
-		throw new NotImplementedException();
+		WriteLiteral(ref writer, this.nullLiteral.Span);
 	}
 
 	/// <inheritdoc/>
@@ -243,13 +296,42 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void WriteStartVector(ref BufferWriter writer, int length)
 	{
-		throw new NotImplementedException();
+		Span<byte> span = writer.GetSpan(this.encodedOpenBracketCharacter.Length);
+		this.encodedOpenBracketCharacter.Span.CopyTo(span);
+		writer.Advance(this.encodedOpenBracketCharacter.Length);
 	}
 
 	/// <inheritdoc/>
 	public override void WriteVectorElementSeparator(ref BufferWriter writer)
 	{
-		throw new NotImplementedException();
+		Span<byte> span = writer.GetSpan(this.encodedCommaCharacter.Length);
+		this.encodedCommaCharacter.Span.CopyTo(span);
+		writer.Advance(this.encodedCommaCharacter.Length);
+	}
+
+	private static void WriteLiteral(ref BufferWriter writer, ReadOnlySpan<byte> literal)
+	{
+		Span<byte> span = writer.GetSpan(literal.Length);
+		literal.CopyTo(span);
+		writer.Advance(literal.Length);
+	}
+
+	private static bool IsFinite(float value)
+	{
+#if NET
+		return float.IsFinite(value);
+#else
+		return !(float.IsNaN(value) || float.IsInfinity(value));
+#endif
+	}
+
+	private static bool IsFinite(double value)
+	{
+#if NET
+		return double.IsFinite(value);
+#else
+		return !(double.IsNaN(value) || double.IsInfinity(value));
+#endif
 	}
 
 	private void PrepareEncodings()
@@ -264,8 +346,13 @@ internal record JsonFormatter : Formatter
 			this.encodedQuoteCharacter = this.Encoding.GetBytes("\"");
 			this.encodedOpenCurlyCharacter = this.Encoding.GetBytes("{");
 			this.encodedCloseCurlyCharacter = this.Encoding.GetBytes("}");
+			this.encodedOpenBracketCharacter = this.Encoding.GetBytes("[");
+			this.encodedCloseBracketCharacter = this.Encoding.GetBytes("]");
 			this.encodedColonCharacter = this.Encoding.GetBytes(":");
 			this.encodedCommaCharacter = this.Encoding.GetBytes(",");
+			this.nullLiteral = this.Encoding.GetBytes("null");
+			this.trueLiteral = this.Encoding.GetBytes("true");
+			this.falseLiteral = this.Encoding.GetBytes("false");
 		}
 	}
 }

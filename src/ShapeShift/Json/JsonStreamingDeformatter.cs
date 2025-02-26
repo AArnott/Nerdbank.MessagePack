@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
@@ -107,13 +108,51 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryPeekNextTypeCode(in Reader reader, out TokenType typeCode)
 	{
-		throw new NotImplementedException();
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			typeCode = default;
+			return this.InsufficientBytes(reader);
+		}
+
+		typeCode = utf8Reader.TokenType switch
+		{
+			JsonTokenType.StartObject => TokenType.Map,
+			JsonTokenType.StartArray => TokenType.Vector,
+			JsonTokenType.PropertyName or JsonTokenType.String => TokenType.String,
+			JsonTokenType.Number => utf8Reader.TryGetInt64(out _) || utf8Reader.TryGetUInt64(out _) ? TokenType.Integer : TokenType.Float,
+			JsonTokenType.True or JsonTokenType.False => TokenType.Boolean,
+			JsonTokenType.Null => TokenType.Null,
+			_ => TokenType.Unknown,
+		};
+		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out bool value)
 	{
-		throw new NotImplementedException();
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			value = false;
+			return this.InsufficientBytes(reader);
+		}
+
+		switch (utf8Reader.TokenType)
+		{
+			case JsonTokenType.True:
+				value = true;
+				break;
+			case JsonTokenType.False:
+				value = false;
+				break;
+			default:
+				value = false;
+				return DecodeResult.TokenMismatch;
+		}
+
+		reader.Advance(utf8Reader.BytesConsumed);
+		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>
@@ -195,13 +234,39 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out float value)
 	{
-		throw new NotImplementedException();
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (!r.Read())
+		{
+			value = default;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (!r.TryGetSingle(out value))
+		{
+			return DecodeResult.TokenMismatch;
+		}
+
+		reader.Advance(r.BytesConsumed);
+		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out double value)
 	{
-		throw new NotImplementedException();
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (!r.Read())
+		{
+			value = default;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (!r.TryGetDouble(out value))
+		{
+			return DecodeResult.TokenMismatch;
+		}
+
+		reader.Advance(r.BytesConsumed);
+		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>
@@ -333,7 +398,29 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadStartVector(ref Reader reader, out int? length)
 	{
-		throw new NotImplementedException();
+		// JSON does not prefix the size of the vector.
+		length = null;
+
+		if (this.Encoding is not UTF8Encoding)
+		{
+			throw new NotImplementedException();
+		}
+
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (r.Read())
+		{
+			if (r.TokenType == JsonTokenType.StartArray)
+			{
+				reader.Advance(r.BytesConsumed);
+				return DecodeResult.Success;
+			}
+			else
+			{
+				return DecodeResult.TokenMismatch;
+			}
+		}
+
+		return this.InsufficientBytes(reader);
 	}
 
 	/// <inheritdoc/>
@@ -387,6 +474,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		}
 
 		charsWritten = utf8Reader.CopyString(destination);
+		reader.Advance(utf8Reader.BytesConsumed);
 		return DecodeResult.Success;
 	}
 
@@ -412,6 +500,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		}
 
 		bytesWritten = utf8Reader.CopyString(destination);
+		reader.Advance(utf8Reader.BytesConsumed);
 		return DecodeResult.Success;
 	}
 
@@ -446,6 +535,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		else
 		{
 			value = reader.UnreadSpan;
+			reader.Advance(utf8Reader.BytesConsumed);
 			success = true;
 		}
 
@@ -455,7 +545,41 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TrySkip(ref Reader reader, ref SerializationContext context)
 	{
-		throw new NotImplementedException();
+		uint originalCount = Math.Max(1, context.MidSkipRemainingCount);
+		uint count = originalCount;
+		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
+		if (!utf8Reader.Read())
+		{
+			return this.InsufficientBytes(reader);
+		}
+
+		// Skip as many structures as we have already predicted we must skip to complete this or a previously suspended skip operation.
+		for (uint i = 0; i < count; i++)
+		{
+			switch (TrySkipOne(ref utf8Reader, this, out uint skipMore))
+			{
+				case DecodeResult.Success:
+					count += skipMore;
+					break;
+				case DecodeResult.InsufficientBuffer:
+					context.MidSkipRemainingCount = count - i;
+					this.DecrementRemainingStructures(ref reader, (int)originalCount - (int)context.MidSkipRemainingCount);
+					return DecodeResult.InsufficientBuffer;
+				case DecodeResult other:
+					return other;
+			}
+		}
+
+		this.DecrementRemainingStructures(ref reader, (int)originalCount);
+		context.MidSkipRemainingCount = 0;
+		reader.Advance(utf8Reader.BytesConsumed);
+		return DecodeResult.Success;
+
+		static DecodeResult TrySkipOne(ref Utf8JsonReader reader, JsonStreamingDeformatter self, out uint skipMore)
+		{
+			skipMore = 0;
+			return reader.TrySkip() ? DecodeResult.Success : DecodeResult.InsufficientBuffer;
+		}
 	}
 
 	/// <inheritdoc/>
@@ -465,5 +589,11 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
 		Verify.Operation(utf8Reader.Read(), "Expected to be able to peek the next code.");
 		throw new SerializationException(string.Format("Unexpected code {0} encountered.", utf8Reader.TokenType));
+	}
+
+	private void DecrementRemainingStructures(ref Reader reader, int count)
+	{
+		uint expectedRemainingStructures = reader.ExpectedRemainingStructures;
+		reader.ExpectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
 	}
 }

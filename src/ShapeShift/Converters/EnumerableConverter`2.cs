@@ -47,8 +47,18 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		if (enumerable.TryGetNonEnumeratedCount(out int count))
 		{
 			writer.WriteStartVector(count);
+			bool isFirstElement = true;
 			foreach (TElement element in enumerable)
 			{
+				if (isFirstElement)
+				{
+					isFirstElement = false;
+				}
+				else
+				{
+					writer.WriteVectorElementSeparator();
+				}
+
 				elementConverter.Write(ref writer, element, context);
 			}
 		}
@@ -58,9 +68,16 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			writer.WriteStartVector(array.Length);
 			for (int i = 0; i < array.Length; i++)
 			{
+				if (i > 0)
+				{
+					writer.WriteVectorElementSeparator();
+				}
+
 				elementConverter.Write(ref writer, array[i], context);
 			}
 		}
+
+		writer.WriteEndVector();
 	}
 
 	/// <inheritdoc/>

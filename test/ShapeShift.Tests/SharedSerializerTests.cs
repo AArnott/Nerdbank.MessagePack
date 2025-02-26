@@ -139,7 +139,7 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		Reader reader = new(seq, this.Serializer.Deformatter);
 
 		// The Sum field should not be serialized.
-		Assert.Equal(2, reader.ReadStartMap());
+		Assert.False(ObjectMapHasKey(reader, nameof(obj.Sum)));
 	}
 
 	[Fact]
@@ -150,7 +150,7 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		Reader reader = new(msgpack, this.Serializer.Deformatter);
 
 		// The Sum field should not be serialized.
-		Assert.Equal(2, reader.ReadStartVector());
+		Assert.Equal(2, CountVectorElements(reader));
 	}
 
 	[Fact]
@@ -159,16 +159,22 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		Assert.NotNull(this.Roundtrip<object, Witness>(new object()));
 	}
 
-	[Fact]
-	public async Task ReadOnlyCollectionProperties()
+	[Theory, PairwiseData]
+	public async Task ReadOnlyCollectionProperties(bool isAsync)
 	{
 		var testData = new ClassWithReadOnlyCollectionProperties
 		{
 			Dictionary = { { "a", "b" }, { "c", "d" } },
 			List = { "c" },
 		};
-		this.AssertRoundtrip(testData);
-		await this.AssertRoundtripAsync(testData);
+		if (isAsync)
+		{
+			await this.AssertRoundtripAsync(testData);
+		}
+		else
+		{
+			this.AssertRoundtrip(testData);
+		}
 	}
 
 	/// <summary>
@@ -321,6 +327,44 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 	protected override void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
 	{
 		this.Logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(formattedBytes));
+	}
+
+	private static bool ObjectMapHasKey(Reader reader, string key)
+	{
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
+		{
+			if (reader.ReadString() == key)
+			{
+				return true;
+			}
+
+			reader.ReadMapKeyValueSeparator();
+
+			reader.Skip(default);
+		}
+
+		return false;
+	}
+
+	private static int CountVectorElements(Reader reader)
+	{
+		int? count = reader.ReadStartVector();
+		if (count is int known)
+		{
+			return known;
+		}
+
+		int result = 0;
+		bool isFirstElement = true;
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
+		{
+			result++;
+			reader.Skip(default);
+		}
+
+		return result;
 	}
 
 	/// <summary>

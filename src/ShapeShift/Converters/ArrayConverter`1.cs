@@ -61,8 +61,15 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 		writer.WriteStartVector(value.Length);
 		for (int i = 0; i < value.Length; i++)
 		{
+			if (i > 0)
+			{
+				writer.WriteVectorElementSeparator();
+			}
+
 			elementConverter.Write(ref writer, value[i], context);
 		}
+
+		writer.WriteEndVector();
 	}
 
 	/// <inheritdoc/>

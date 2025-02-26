@@ -166,7 +166,10 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			bool isFirstElement = true;
 			for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 			{
-				if (this.TryLookupProperty(ref reader, context, out DeserializableProperty<T> propertyReader))
+				bool found = this.TryLookupProperty(ref reader, context, out DeserializableProperty<T> propertyReader);
+				reader.ReadMapKeyValueSeparator();
+
+				if (found)
 				{
 					propertyReader.Read(ref value, ref reader, context);
 				}
