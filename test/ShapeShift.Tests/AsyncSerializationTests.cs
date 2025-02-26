@@ -4,7 +4,7 @@
 using ShapeShift.MessagePack;
 
 [Trait("AsyncSerialization", "true")]
-public partial class AsyncSerializationTests : MessagePackSerializerTestBase
+public abstract partial class AsyncSerializationTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Fact]
 	public async Task RoundtripPoco() => await this.AssertRoundtripAsync(new Poco(1, 2));
@@ -41,20 +41,20 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	{
 		SpecialRecordConverter converter = new();
 		this.Serializer.RegisterConverter(converter);
-		var msgpack = new ReadOnlySequence<byte>(
-			this.Serializer.Serialize(new SpecialRecord { Property = 446 }, TestContext.Current.CancellationToken));
+		Sequence<byte> seq = new();
+		this.Serializer.Serialize(seq, new SpecialRecord { Property = 446 }, TestContext.Current.CancellationToken);
 
 		// Verify that with a sufficiently low async buffer, the async paths are taken.
-		this.Serializer = new() { MaxAsyncBuffer = 1 };
+		this.Serializer = this.Serializer with { MaxAsyncBuffer = 1 };
 		this.Serializer.RegisterConverter(converter);
-		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), TestContext.Current.CancellationToken);
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(seq), TestContext.Current.CancellationToken);
 		Assert.Equal(1, converter.AsyncDeserializationCounter);
 
 		// Verify that with a sufficiently high async buffer, the sync paths are taken.
 		converter.AsyncDeserializationCounter = 0;
-		this.Serializer = new() { MaxAsyncBuffer = 15 };
+		this.Serializer = this.Serializer with { MaxAsyncBuffer = 15 };
 		this.Serializer.RegisterConverter(converter);
-		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), TestContext.Current.CancellationToken);
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(seq), TestContext.Current.CancellationToken);
 		Assert.Equal(0, converter.AsyncDeserializationCounter);
 	}
 
@@ -62,8 +62,10 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	public async Task DecodeLargeString()
 	{
 		string expected = new string('a', 100 * 1024);
-		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
-		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0), msgpack.GetPosition(1), msgpack.GetPosition(512), msgpack.GetPosition(6000), msgpack.GetPosition(32 * 1024));
+		Sequence<byte> seq = new();
+		this.Serializer.Serialize<string, Witness>(seq, expected, TestContext.Current.CancellationToken);
+		ReadOnlySequence<byte> bytes = seq;
+		FragmentedPipeReader pipeReader = new(bytes, bytes.GetPosition(0), bytes.GetPosition(1), bytes.GetPosition(512), bytes.GetPosition(6000), bytes.GetPosition(32 * 1024));
 		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
 		Assert.Equal(expected, actual);
 	}
@@ -72,8 +74,10 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	public async Task DecodeEmptyString()
 	{
 		string expected = string.Empty;
-		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
-		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0));
+		Sequence<byte> seq = new();
+		this.Serializer.Serialize<string, Witness>(seq, expected, TestContext.Current.CancellationToken);
+		ReadOnlySequence<byte> bytes = seq;
+		FragmentedPipeReader pipeReader = new(bytes, bytes.GetPosition(0));
 		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
 		Assert.Equal(expected, actual);
 	}
@@ -146,6 +150,10 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	{
 		internal int Property { get; set; }
 	}
+
+	public class Json() : AsyncSerializationTests(CreateJsonSerializer());
+
+	public class MsgPack() : AsyncSerializationTests(CreateMsgPackSerializer());
 
 	internal class SpecialRecordConverter : Converter<SpecialRecord>
 	{

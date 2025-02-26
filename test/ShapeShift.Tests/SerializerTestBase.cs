@@ -48,6 +48,16 @@ public abstract class SerializerTestBase(SerializerBase serializer)
 		return new(new ReadResult(slice, isCanceled: false, isCompleted: slice.End.Equals(wholeBuffer.End)));
 	}
 
+	protected static JsonSerializer CreateJsonSerializer() => new();
+
+	protected static MessagePackSerializer CreateMsgPackSerializer() => new MessagePackSerializer
+	{
+		// Most async tests primarily mean to exercise the async code paths,
+		// so disable the buffer that would lead it down the synchronous paths since we have
+		// small test data sizes.
+		MaxAsyncBuffer = 0,
+	};
+
 	protected static void CapturePipe(PipeReader reader, PipeWriter forwardTo, Sequence<byte> logger)
 	{
 		_ = Task.Run(async delegate
