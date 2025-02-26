@@ -3,7 +3,7 @@
 
 using ShapeShift.MessagePack;
 
-public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 {
 	[Theory, PairwiseData]
 	public async Task BaseType(bool async)

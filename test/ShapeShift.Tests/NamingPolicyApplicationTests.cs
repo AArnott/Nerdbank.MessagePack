@@ -5,8 +5,7 @@ using ShapeShift.MessagePack;
 
 public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBase
 {
-	public NamingPolicyApplicationTests(ITestOutputHelper logger)
-		: base(logger)
+	public NamingPolicyApplicationTests()
 	{
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 	}

@@ -4,7 +4,7 @@
 using System.Drawing;
 using System.Numerics;
 
-public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void SystemDrawingColor() => this.AssertRoundtrip<Color, Witness>(Color.FromArgb(1, 2, 3, 4));

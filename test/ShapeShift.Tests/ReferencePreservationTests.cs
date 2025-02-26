@@ -6,8 +6,7 @@ using ShapeShift.MessagePack;
 [Trait("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
-	public ReferencePreservationTests(ITestOutputHelper logger)
-		: base(logger)
+	public ReferencePreservationTests()
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = true };
 	}

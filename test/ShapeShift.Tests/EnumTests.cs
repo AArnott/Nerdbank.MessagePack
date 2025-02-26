@@ -3,7 +3,7 @@
 
 using ShapeShift.MessagePack;
 
-public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public abstract partial class EnumTests : MessagePackSerializerTestBase
 {
 	public enum Simple
 	{
@@ -111,8 +111,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 
 	public class EnumAsStringTests : EnumTests
 	{
-		public EnumAsStringTests(ITestOutputHelper logger)
-			: base(logger)
+		public EnumAsStringTests()
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
 			this.ExpectedType = TokenType.String;
@@ -141,8 +140,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 
 	public class EnumAsOrdinalTests : EnumTests
 	{
-		public EnumAsOrdinalTests(ITestOutputHelper logger)
-			: base(logger)
+		public EnumAsOrdinalTests()
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = false };
 			this.ExpectedType = TokenType.Integer;

@@ -4,7 +4,7 @@
 using PolyType.Tests;
 using Xunit.Sdk;
 
-public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public class SharedTestCases : MessagePackSerializerTestBase
 {
 	[Theory]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]

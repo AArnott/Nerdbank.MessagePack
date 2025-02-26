@@ -336,7 +336,9 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		this.Logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(formattedBytes));
 	}
 
+#pragma warning disable NBMsgPack050 // pass Reader by ref
 	private static bool ObjectMapHasKey(Reader reader, string key)
+#pragma warning restore NBMsgPack050 // pass Reader by ref
 	{
 		int? count = reader.ReadStartMap();
 		bool isFirstElement = true;
@@ -355,7 +357,9 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		return false;
 	}
 
+#pragma warning disable NBMsgPack050 // pass Reader by ref
 	private static int CountVectorElements(Reader reader)
+#pragma warning restore NBMsgPack050 // pass Reader by ref
 	{
 		int? count = reader.ReadStartVector();
 		if (count is int known)

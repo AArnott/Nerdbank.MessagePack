@@ -4,7 +4,7 @@
 using System.ComponentModel;
 using ShapeShift.MessagePack;
 
-public partial class ObjectsAsMapTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void PropertyWithAlteredName()

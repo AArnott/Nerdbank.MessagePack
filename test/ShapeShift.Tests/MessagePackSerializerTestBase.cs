@@ -3,7 +3,7 @@
 
 public abstract class MessagePackSerializerTestBase : SerializerTestBase<MessagePackSerializer>
 {
-	public MessagePackSerializerTestBase(ITestOutputHelper logger)
+	public MessagePackSerializerTestBase()
 		: base(new MessagePackSerializer
 		{
 			// Most async tests primarily mean to exercise the async code paths,

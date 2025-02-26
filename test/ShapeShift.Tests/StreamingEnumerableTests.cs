@@ -4,7 +4,7 @@
 using ShapeShift.MessagePack;
 
 [Trait("AsyncSerialization", "true")]
-public partial class StreamingEnumerableTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 {
 	/// <summary>
 	/// Streams multiple elements with no array envelope.

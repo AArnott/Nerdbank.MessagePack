@@ -3,7 +3,7 @@
 
 using ShapeShift.MessagePack;
 
-public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 {
 	[Theory, PairwiseData]
 	public async Task Person_Roundtrip(bool async)

@@ -4,7 +4,7 @@
 using ShapeShift.MessagePack;
 
 [Trait("AsyncSerialization", "true")]
-public partial class AsyncSerializationTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public async Task RoundtripPoco() => await this.AssertRoundtripAsync(new Poco(1, 2));

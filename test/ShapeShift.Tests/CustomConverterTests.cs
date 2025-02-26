@@ -3,7 +3,7 @@
 
 using ShapeShift.MessagePack;
 
-public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class CustomConverterTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void ConverterThatDelegates()

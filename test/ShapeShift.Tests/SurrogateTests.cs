@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 [Trait("Surrogates", "true")]
-public partial class SurrogateTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class SurrogateTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void NonNullReference()

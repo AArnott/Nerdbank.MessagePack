@@ -5,7 +5,7 @@ using System.ComponentModel;
 using ShapeShift.MessagePack;
 
 [Trait("ShouldSerialize", "true")]
-public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 {
 	public static IEnumerable<SerializeDefaultValuesPolicy> AllPolicies
 	{
