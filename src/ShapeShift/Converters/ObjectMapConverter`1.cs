@@ -111,9 +111,16 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			syncWriter.WriteStartMap(propertiesToSerialize.Length);
 			for (int i = 0; i < propertiesToSerialize.Length; i++)
 			{
+				if (i > 0)
+				{
+					syncWriter.WriteMapPairSeparator();
+				}
+
 				SerializableProperty<T> property = propertiesToSerialize.Span[i];
 
 				syncWriter.Buffer.Write(property.RawPropertyNameString.Span);
+				syncWriter.WriteMapKeyValueSeparator();
+
 				if (property.PreferAsyncSerialization)
 				{
 					writer.ReturnWriter(ref syncWriter);
@@ -133,6 +140,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				}
 			}
 
+			syncWriter.WriteEndMap();
 			writer.ReturnWriter(ref syncWriter);
 		}
 		finally
