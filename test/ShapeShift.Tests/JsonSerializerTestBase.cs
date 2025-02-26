@@ -7,9 +7,4 @@ public abstract class JsonSerializerTestBase : SerializerTestBase<JsonSerializer
 		: base(new JsonSerializer())
 	{
 	}
-
-	protected override void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
-	{
-		this.Logger.WriteLine(this.Serializer.Encoding.GetString(formattedBytes.ToArray()));
-	}
 }

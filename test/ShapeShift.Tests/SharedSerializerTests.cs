@@ -331,11 +331,6 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 
 	protected void LogFormattedBytes(byte[] bytes) => this.LogFormattedBytes(new ReadOnlySequence<byte>(bytes));
 
-	protected override void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
-	{
-		this.Logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(formattedBytes));
-	}
-
 #pragma warning disable NBMsgPack050 // pass Reader by ref
 	private static bool ObjectMapHasKey(Reader reader, string key)
 #pragma warning restore NBMsgPack050 // pass Reader by ref

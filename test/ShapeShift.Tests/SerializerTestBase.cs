@@ -83,7 +83,17 @@ public abstract class SerializerTestBase(SerializerBase serializer)
 		});
 	}
 
-	protected abstract void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes);
+	protected virtual void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
+	{
+		if (this.Serializer is JsonSerializer)
+		{
+			this.Logger.WriteLine(this.Serializer.Deformatter.Encoding.GetString(formattedBytes.ToArray()));
+		}
+		else
+		{
+			this.Logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(formattedBytes));
+		}
+	}
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
 #if NET

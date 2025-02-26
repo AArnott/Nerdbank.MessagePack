@@ -28,11 +28,6 @@ public partial class JsonSerializerTests() : SharedSerializerTests<JsonSerialize
 		Assert.Equal(expected, actual);
 	}
 
-	protected override void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
-	{
-		this.Logger.WriteLine(this.Serializer.Encoding.GetString(formattedBytes.ToArray()));
-	}
-
 	[GenerateShape]
 	internal partial record Person
 	{
