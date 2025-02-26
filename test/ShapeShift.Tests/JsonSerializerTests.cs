@@ -3,6 +3,8 @@
 
 public partial class JsonSerializerTests() : SharedSerializerTests<JsonSerializer>(new JsonSerializer())
 {
+	protected override bool IsTextFormat => true;
+
 	[Fact]
 	public void BasicTest()
 	{

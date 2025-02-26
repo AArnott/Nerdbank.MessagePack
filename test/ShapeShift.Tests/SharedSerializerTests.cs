@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Newtonsoft.Json.Linq;
 using Xunit.Sdk;
 using static SharedTestTypes;
 
@@ -126,7 +127,7 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		Reader reader = new(msgpack, this.Serializer.Deformatter);
 
 		// The Sum field should not be serialized.
-		Assert.Equal(2, reader.ReadStartMap());
+		Assert.False(ObjectMapHasKey(reader, nameof(obj.Sum)));
 	}
 
 	[Fact]
@@ -193,9 +194,13 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 			Writer writer = new(sequence, this.Serializer.Formatter);
 			writer.WriteStartMap(2);
 			writer.Write("List");
+			writer.WriteMapKeyValueSeparator();
 			writer.WriteNull();
+			writer.WriteMapPairSeparator();
 			writer.Write("Dictionary");
+			writer.WriteMapKeyValueSeparator();
 			writer.WriteNull();
+			writer.WriteEndMap();
 			writer.Flush();
 			return sequence;
 		}
@@ -206,7 +211,7 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<byte[], Witness>([1, 2, 3]);
 		Reader reader = new(msgpack, this.Serializer.Deformatter);
-		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
+		Assert.Equal(this.IsTextFormat ? TokenType.String : TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -217,7 +222,7 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		Memory<byte> deserialized = this.Roundtrip<Memory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		Reader reader = new(this.lastRoundtrippedFormattedBytes, this.Serializer.Deformatter);
-		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
+		Assert.Equal(this.IsTextFormat ? TokenType.String : TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -228,7 +233,7 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		ReadOnlyMemory<byte> deserialized = this.Roundtrip<ReadOnlyMemory<byte>, Witness>(original);
 		Assert.Equal(original.ToArray(), deserialized.ToArray());
 		Reader reader = new(this.lastRoundtrippedFormattedBytes, this.Serializer.Deformatter);
-		Assert.Equal(TokenType.Binary, reader.NextTypeCode);
+		Assert.Equal(this.IsTextFormat ? TokenType.String : TokenType.Binary, reader.NextTypeCode);
 		Assert.NotNull(reader.ReadBytes());
 	}
 
@@ -308,7 +313,9 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, this.Serializer.Formatter);
 		writer.WriteStartMap(0);
+		writer.WriteEndMap();
 		writer.Flush();
+		this.LogFormattedBytes(seq);
 
 		TypeWithConstructorParameterMatchingSerializedPropertyName? deserialized =
 			this.Serializer.Deserialize<TypeWithConstructorParameterMatchingSerializedPropertyName>(seq, TestContext.Current.CancellationToken);
@@ -376,9 +383,13 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(3);
 		writer.Write(1);
+		writer.WriteVectorElementSeparator();
 		writer.Write(2);
+		writer.WriteVectorElementSeparator();
 		writer.Write(3);
+		writer.WriteEndVector();
 		writer.Flush();
+		this.LogFormattedBytes(sequence);
 		return sequence;
 	}
 }

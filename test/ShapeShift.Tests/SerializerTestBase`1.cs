@@ -15,6 +15,8 @@ public abstract class SerializerTestBase<TSerializer>(TSerializer defaultSeriali
 
 	protected TSerializer Serializer { get; set; } = defaultSerializer;
 
+	protected abstract bool IsTextFormat { get; }
+
 	protected ITestOutputHelper Logger => TestContext.Current.TestOutputHelper ?? throw new InvalidOperationException("Test execution is over.");
 
 #if !NET

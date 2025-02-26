@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Buffers.Text;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -110,68 +111,65 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, byte value)
 	{
-		throw new NotImplementedException();
+		Span<byte> bytes = writer.GetSpan(3); // 3 is the max length of a byte in decimal
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, sbyte value)
 	{
-		throw new NotImplementedException();
+		Span<byte> bytes = writer.GetSpan(4);
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, ushort value)
 	{
-		throw new NotImplementedException();
+		Span<byte> bytes = writer.GetSpan(5); // 5 is the max length of a ushort in decimal
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, short value)
 	{
-		throw new NotImplementedException();
+		Span<byte> bytes = writer.GetSpan(6); // 6 is the max length of a short in decimal
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, uint value)
 	{
-		throw new NotImplementedException();
+		Span<byte> bytes = writer.GetSpan(10); // 10 is the max length of a uint in decimal
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, int value)
 	{
-		switch (this.Encoding)
-		{
-#if NET
-			case UTF8Encoding:
-				const int characterLength = 11; // max(int.MinValue.ToString().Length, int.MaxValue.ToString().Length)
-				Span<byte> byteSpan = writer.GetSpan(characterLength);
-				Assumes.True(value.TryFormat(byteSpan, out int bytesWritten, provider: CultureInfo.InvariantCulture));
-				writer.Advance(bytesWritten);
-				break;
-			case UnicodeEncoding:
-				byteSpan = writer.GetSpan(characterLength * 2);
-				Span<char> charSpan = MemoryMarshal.Cast<byte, char>(byteSpan);
-				Assumes.True(value.TryFormat(charSpan, out int charsWritten, provider: CultureInfo.InvariantCulture));
-				writer.Advance(charsWritten * 2);
-				break;
-#endif
-			default:
-				writer.Write(this.Encoding.GetBytes(value.ToString(CultureInfo.InvariantCulture)));
-				break;
-		}
+		Span<byte> bytes = writer.GetSpan(11); // 11 is the max length of an int in decimal
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, ulong value)
 	{
-		throw new NotImplementedException();
+		Span<byte> bytes = writer.GetSpan(20); // 20 is the max length of a ulong in decimal
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, long value)
 	{
-		throw new NotImplementedException();
+		Span<byte> bytes = writer.GetSpan(20); // 20 is the max length of a long in decimal
+		Assumes.True(Utf8Formatter.TryFormat(value, bytes, out int bytesWritten));
+		writer.Advance(bytesWritten);
 	}
 
 	/// <inheritdoc/>
@@ -226,13 +224,41 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, scoped ReadOnlySpan<byte> value)
 	{
-		throw new NotImplementedException();
+		int spanLength = 2 + Base64.GetMaxEncodedToUtf8Length(value.Length);
+		Span<byte> bytes = writer.GetSpan(spanLength);
+		this.encodedQuoteCharacter.Span.CopyTo(bytes);
+		Assumes.True(Base64.EncodeToUtf8(value, bytes[1..], out _, out int bytesWritten) == OperationStatus.Done);
+		this.encodedQuoteCharacter.Span.CopyTo(bytes[(1 + bytesWritten)..]);
+		writer.Advance(bytesWritten + 2);
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref BufferWriter writer, in ReadOnlySequence<byte> value)
 	{
-		throw new NotImplementedException();
+		if (value.IsSingleSegment)
+		{
+			this.Write(ref writer, value.First.Span);
+			return;
+		}
+
+		int spanLength = 2 + ((checked((int)value.Length) + 2) / 3 * 4);
+		Span<byte> bytes = writer.GetSpan(spanLength);
+		this.encodedQuoteCharacter.Span.CopyTo(bytes);
+		int totalBytesWritten = this.encodedQuoteCharacter.Length;
+
+		int bytesWritten;
+		foreach (ReadOnlyMemory<byte> segment in value)
+		{
+			Assumes.True(Base64.EncodeToUtf8(segment.Span, bytes[totalBytesWritten..], out _, out bytesWritten, isFinalBlock: false) == OperationStatus.Done);
+			totalBytesWritten += bytesWritten;
+		}
+
+		Assumes.True(Base64.EncodeToUtf8(default, bytes[totalBytesWritten..], out _, out bytesWritten, isFinalBlock: true) == OperationStatus.Done);
+		totalBytesWritten += bytesWritten;
+
+		this.encodedQuoteCharacter.Span.CopyTo(bytes[totalBytesWritten..]);
+		totalBytesWritten += this.encodedQuoteCharacter.Length;
+		writer.Advance(totalBytesWritten);
 	}
 
 	/// <inheritdoc/>

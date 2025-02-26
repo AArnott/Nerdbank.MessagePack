@@ -11,4 +11,5 @@ public partial class MessagePackSerializerTests() : SharedSerializerTests<Messag
 	MaxAsyncBuffer = 0,
 })
 {
+	protected override bool IsTextFormat => false;
 }

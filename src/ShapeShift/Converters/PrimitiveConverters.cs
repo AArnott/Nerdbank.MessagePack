@@ -759,7 +759,7 @@ internal partial class ByteArrayConverter : Converter<byte[]?>
 			case TokenType.Null:
 				reader.ReadNull();
 				return null;
-			case TokenType.Binary:
+			case TokenType.Binary or TokenType.String:
 				return reader.ReadBytes()?.ToArray();
 			default:
 				return Fallback.Read(ref reader, context);
