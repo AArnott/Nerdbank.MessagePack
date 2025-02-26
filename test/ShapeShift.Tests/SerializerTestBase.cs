@@ -16,7 +16,7 @@ public abstract class SerializerTestBase(SerializerBase serializer)
 
 	protected ITestOutputHelper Logger => TestContext.Current.TestOutputHelper ?? throw new InvalidOperationException("Test execution is over.");
 
-	protected abstract bool IsTextFormat { get; }
+	protected bool IsTextFormat => this.Serializer is JsonSerializer;
 
 #if !NET
 	internal static ITypeShapeProvider GetShapeProvider<TProvider>()

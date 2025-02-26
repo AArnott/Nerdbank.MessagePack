@@ -14,8 +14,6 @@ public abstract class MessagePackSerializerTestBase : SerializerTestBase<Message
 	{
 	}
 
-	protected override bool IsTextFormat => false;
-
 	protected override void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
 	{
 		this.Logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(formattedBytes));

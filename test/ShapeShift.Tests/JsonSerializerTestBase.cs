@@ -8,8 +8,6 @@ public abstract class JsonSerializerTestBase : SerializerTestBase<JsonSerializer
 	{
 	}
 
-	protected override bool IsTextFormat => true;
-
 	protected override void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
 	{
 		this.Logger.WriteLine(this.Serializer.Encoding.GetString(formattedBytes.ToArray()));
