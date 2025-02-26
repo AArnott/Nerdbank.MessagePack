@@ -87,13 +87,29 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 		{
 			Writer syncWriter = writer.CreateWriter();
 			syncWriter.WriteStartVector(value.Length);
-			writer.ReturnWriter(ref syncWriter);
 
-			for (int i = 0; i < value.Length; i++)
+			if (value.Length > 0)
 			{
-				await elementConverter.WriteAsync(writer, value[i], context).ConfigureAwait(false);
-				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				writer.ReturnWriter(ref syncWriter);
+
+				for (int i = 0; i < value.Length; i++)
+				{
+					if (i > 0)
+					{
+						syncWriter = writer.CreateWriter();
+						syncWriter.WriteVectorElementSeparator();
+						writer.ReturnWriter(ref syncWriter);
+					}
+
+					await elementConverter.WriteAsync(writer, value[i], context).ConfigureAwait(false);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				}
+
+				syncWriter = writer.CreateWriter();
 			}
+
+			syncWriter.WriteEndVector();
+			writer.ReturnWriter(ref syncWriter);
 		}
 		else
 		{

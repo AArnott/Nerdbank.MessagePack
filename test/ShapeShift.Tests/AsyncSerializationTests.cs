@@ -87,21 +87,26 @@ public abstract partial class AsyncSerializationTests(SerializerBase serializer)
 	{
 		this.Serializer = this.Serializer with { MaxAsyncBuffer = forceAsync ? 0 : 1024 };
 		using Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
+		writer.WriteStartVector(1);
 		writer.Write(42);
+		writer.WriteEndVector();
 		writer.Flush();
-		sequence.Write("a"u8);
+		this.LogFormattedBytes(sequence);
+		writer.Write("a");
+		writer.Flush();
+		this.LogFormattedBytes(sequence);
 
 		PipeReader reader = PipeReader.Create(sequence);
 
-		// Deserialize a value. It should advance the reader exactly across the msgpack structure.
-		int number = await this.Serializer.DeserializeAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
-		Assert.Equal(42, number);
+		// Deserialize a value. It should advance the reader exactly across the structure.
+		int[]? number = await this.Serializer.DeserializeAsync<int[]>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(1, number?.Length);
+		Assert.Equal(42, number?[0]);
 
 		// Verify that the reader is now positioned at the next byte.
-		ReadResult readResult = await reader.ReadAsync(TestContext.Current.CancellationToken);
-		Assert.True(readResult.IsCompleted);
-		Assert.Equal("a"u8, readResult.Buffer.ToArray());
+		string? value = await this.Serializer.DeserializeAsync<string>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal("a", value);
 	}
 
 	[GenerateShape<string>]

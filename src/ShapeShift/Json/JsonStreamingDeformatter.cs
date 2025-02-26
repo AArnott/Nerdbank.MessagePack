@@ -439,7 +439,20 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadNull(ref Reader reader, out bool isNull)
 	{
-		throw new NotImplementedException();
+		Utf8JsonReader r = new(reader.UnreadSequence);
+		if (!r.Read())
+		{
+			isNull = false;
+			return this.InsufficientBytes(reader);
+		}
+
+		isNull = r.TokenType == JsonTokenType.Null;
+		if (isNull)
+		{
+			reader.Advance(r.BytesConsumed);
+		}
+
+		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>
