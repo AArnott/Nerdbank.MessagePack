@@ -104,10 +104,16 @@ internal class ArrayConverter<TElement>(Converter<TElement> elementConverter) : 
 				syncWriter.WriteStartVector(value.Length);
 				for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
 				{
+					if (progress > 0)
+					{
+						syncWriter.WriteVectorElementSeparator();
+					}
+
 					elementConverter.Write(ref syncWriter, value[progress], context);
 					context.CancellationToken.ThrowIfCancellationRequested();
 				}
 
+				syncWriter.WriteEndVector();
 				writer.ReturnWriter(ref syncWriter);
 				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 			}

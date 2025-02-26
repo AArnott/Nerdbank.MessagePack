@@ -345,6 +345,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					return properties.Length - i;
 				}
 			}
+
+			syncWriter = writer.CreateWriter();
+			syncWriter.WriteEndVector();
+			writer.ReturnWriter(ref syncWriter);
 		}
 	}
 
