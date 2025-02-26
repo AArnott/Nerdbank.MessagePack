@@ -1,23 +1,21 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Newtonsoft.Json.Linq;
 using Xunit.Sdk;
 using static SharedTestTypes;
 
-public abstract partial class SharedSerializerTests<TSerializer>(TSerializer serializer) : SerializerTestBase<TSerializer>(serializer)
-	where TSerializer : SerializerBase
+public abstract partial class GeneralSerializerTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	/// <summary>
-	/// Verifies that properties are independent on each instance of <typeparamref name="TSerializer"/>
+	/// Verifies that properties are independent on each instance of <see cref="SerializerBase"/>
 	/// of properties on other instances.
 	/// </summary>
 	[Fact]
 	public void PropertiesAreIndependent()
 	{
 		this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
-		TSerializer s1 = this.Serializer with { InternStrings = true };
-		TSerializer s2 = this.Serializer with { InternStrings = false };
+		SerializerBase s1 = this.Serializer with { InternStrings = true };
+		SerializerBase s2 = this.Serializer with { InternStrings = false };
 
 		s1 = s1 with { SerializeEnumValuesByName = false };
 		Assert.True(s2.SerializeEnumValuesByName);
@@ -391,4 +389,8 @@ public abstract partial class SharedSerializerTests<TSerializer>(TSerializer ser
 		this.LogFormattedBytes(sequence);
 		return sequence;
 	}
+
+	public partial class MsgPack() : GeneralSerializerTests(CreateMsgPackSerializer());
+
+	public partial class Json() : GeneralSerializerTests(CreateJsonSerializer());
 }

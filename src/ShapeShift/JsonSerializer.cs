@@ -31,7 +31,7 @@ public record JsonSerializer : SerializerBase
 	/// <summary>
 	/// Gets the encoding used to format JSON.
 	/// </summary>
-	public Encoding Encoding => this.ConverterCache.Formatter.Encoding;
+	private Encoding Encoding => this.ConverterCache.Formatter.Encoding;
 
 #if NET
 	/// <inheritdoc cref="Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
