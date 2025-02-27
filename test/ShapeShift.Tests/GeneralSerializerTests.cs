@@ -28,6 +28,9 @@ public abstract partial class GeneralSerializerTests(SerializerBase serializer) 
 	public void SimplePoco() => this.AssertRoundtrip(new Fruit { Seeds = 18 });
 
 	[Fact]
+	public void MultiByteString() => this.AssertRoundtrip<string, Witness>(TestConstants.MultibyteCharString);
+
+	[Fact]
 	public void NoProperties() => this.AssertRoundtrip(new EmptyClass());
 
 	[Fact]
