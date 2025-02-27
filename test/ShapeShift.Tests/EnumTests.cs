@@ -3,7 +3,7 @@
 
 using ShapeShift.MessagePack;
 
-public abstract partial class EnumTests : MessagePackSerializerTestBase
+public abstract partial class EnumTests(SerializerBase serializer, TokenType expectedType) : SerializerTestBase(serializer)
 {
 	public enum Simple
 	{
@@ -34,7 +34,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		Two = 2,
 	}
 
-	public TokenType ExpectedType { get; set; }
+	public TokenType ExpectedType { get; set; } = expectedType;
 
 	[Fact]
 	public void SimpleEnum()
@@ -109,14 +109,8 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		Assert.Equal(expectedType, reader.NextTypeCode);
 	}
 
-	public class EnumAsStringTests : EnumTests
+	public abstract class Strings(SerializerBase serializer) : EnumTests(serializer with { SerializeEnumValuesByName = true }, TokenType.String)
 	{
-		public EnumAsStringTests()
-		{
-			this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
-			this.ExpectedType = TokenType.String;
-		}
-
 		[Fact]
 		public void CaseInsensitiveByDefault()
 		{
@@ -138,14 +132,15 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		}
 	}
 
-	public class EnumAsOrdinalTests : EnumTests
-	{
-		public EnumAsOrdinalTests()
-		{
-			this.Serializer = this.Serializer with { SerializeEnumValuesByName = false };
-			this.ExpectedType = TokenType.Integer;
-		}
-	}
+	public abstract class Ordinals(SerializerBase serializer) : EnumTests(serializer with { SerializeEnumValuesByName = false }, TokenType.Integer);
+
+	public class MsgPackStrings() : Strings(CreateMsgPackSerializer());
+
+	public class JsonStrings() : Strings(CreateJsonSerializer());
+
+	public class MsgPackOrdinals() : Ordinals(CreateMsgPackSerializer());
+
+	public class JsonOrdinals() : Ordinals(CreateJsonSerializer());
 
 	[GenerateShape<Simple>]
 	[GenerateShape<CaseInsensitiveCollisions>]
