@@ -3,6 +3,8 @@
 
 using ShapeShift.MessagePack;
 
+namespace MessagePack;
+
 public class ExtensionTests
 {
 	private Extension ext1a = new(1, new byte[] { 1, 2, 3 });
