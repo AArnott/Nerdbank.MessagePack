@@ -93,6 +93,71 @@ public abstract class SerializerTestBase(SerializerBase serializer)
 		});
 	}
 
+#pragma warning disable NBMsgPack050 // pass Reader by ref
+	protected static bool ObjectMapHasKey(Reader reader, string key)
+#pragma warning restore NBMsgPack050 // pass Reader by ref
+	{
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
+		{
+			if (reader.ReadString() == key)
+			{
+				return true;
+			}
+
+			reader.ReadMapKeyValueSeparator();
+
+			reader.Skip(default);
+		}
+
+		return false;
+	}
+
+#pragma warning disable NBMsgPack050 // pass Reader by ref
+	protected static int CountVectorElements(Reader reader)
+#pragma warning restore NBMsgPack050 // pass Reader by ref
+	{
+		int? count = reader.ReadStartVector();
+		if (count is int known)
+		{
+			return known;
+		}
+
+		int result = 0;
+		bool isFirstElement = true;
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
+		{
+			result++;
+			reader.Skip(default);
+		}
+
+		return result;
+	}
+
+#pragma warning disable NBMsgPack050 // pass Reader by ref
+	protected static int CountMapElements(Reader reader)
+#pragma warning restore NBMsgPack050 // pass Reader by ref
+	{
+		int? count = reader.ReadStartMap();
+		if (count is int known)
+		{
+			return known;
+		}
+
+		int result = 0;
+		bool isFirstElement = true;
+		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
+		{
+			result++;
+			reader.Skip(default);
+			reader.ReadMapKeyValueSeparator();
+			reader.Skip(default);
+		}
+
+		return result;
+	}
+
 	protected virtual void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
 	{
 		if (this.Serializer is JsonSerializer)

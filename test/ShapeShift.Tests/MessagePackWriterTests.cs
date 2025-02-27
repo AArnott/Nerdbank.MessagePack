@@ -114,12 +114,12 @@ public class MessagePackWriterTests
 	}
 
 	[Fact]
-	public void Write_MessagePackString()
+	public void Write_PreformattedString()
 	{
-		PreformattedString msgpackString = new("abc", Formatter);
+		PreformattedString preformattedString = new("abc", Formatter);
 		Sequence<byte> seq = new();
 		Writer writer = new(seq, Formatter);
-		writer.Write(msgpackString);
+		writer.Write(preformattedString);
 		writer.Flush();
 
 		Reader reader = new(seq, Deformatter);

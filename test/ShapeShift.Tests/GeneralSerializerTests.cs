@@ -327,50 +327,6 @@ public abstract partial class GeneralSerializerTests(SerializerBase serializer) 
 		this.AssertRoundtrip(new ClassWithIndexer { Member = 3 });
 	}
 
-	protected void LogFormattedBytes(byte[] bytes) => this.LogFormattedBytes(new ReadOnlySequence<byte>(bytes));
-
-#pragma warning disable NBMsgPack050 // pass Reader by ref
-	private static bool ObjectMapHasKey(Reader reader, string key)
-#pragma warning restore NBMsgPack050 // pass Reader by ref
-	{
-		int? count = reader.ReadStartMap();
-		bool isFirstElement = true;
-		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
-		{
-			if (reader.ReadString() == key)
-			{
-				return true;
-			}
-
-			reader.ReadMapKeyValueSeparator();
-
-			reader.Skip(default);
-		}
-
-		return false;
-	}
-
-#pragma warning disable NBMsgPack050 // pass Reader by ref
-	private static int CountVectorElements(Reader reader)
-#pragma warning restore NBMsgPack050 // pass Reader by ref
-	{
-		int? count = reader.ReadStartVector();
-		if (count is int known)
-		{
-			return known;
-		}
-
-		int result = 0;
-		bool isFirstElement = true;
-		for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
-		{
-			result++;
-			reader.Skip(default);
-		}
-
-		return result;
-	}
-
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>

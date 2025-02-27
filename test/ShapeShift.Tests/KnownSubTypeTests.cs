@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ShapeShift.MessagePack;
-
-public partial class KnownSubTypeTests : MessagePackSerializerTestBase
+public abstract partial class KnownSubTypeTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Theory, PairwiseData]
 	public async Task BaseType(bool async)
@@ -12,10 +10,23 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
 
 		// Assert that it's serialized in its special syntax that allows for derived types.
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartVector());
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountVectorElements(reader));
+		int? count = reader.ReadStartVector();
+		bool isFirstElement = true;
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		reader.ReadNull();
-		Assert.Equal(1, reader.ReadStartMap());
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
+		Assert.Equal(1, CountMapElements(reader));
+		count = reader.ReadStartMap();
 		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
 	}
 
@@ -25,12 +36,34 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 });
 
 		// Assert that this has no special header because it has no Union attribute of its own.
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartMap());
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountMapElements(reader));
+		bool isFirstElement = true;
+		int? count = reader.ReadStartMap();
+
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		Assert.Equal(nameof(DerivedA.DerivedAProperty), reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		Assert.Equal(6, reader.ReadInt32());
+
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		Assert.Equal(5, reader.ReadInt32());
+
+		if (count is null)
+		{
+			Assert.False(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		Assert.True(reader.End);
 	}
 
@@ -60,8 +93,9 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 		// This is a lossy operation. Only the collection elements are serialized,
 		// and the class cannot be deserialized because the constructor doesn't take a collection.
 		EnumerableDerived value = new(3) { BaseClassProperty = 5 };
-		byte[] msgpack = this.Serializer.Serialize<BaseClass>(value, TestContext.Current.CancellationToken);
-		this.Logger.WriteLine(new JsonExporter(this.Serializer).ConvertToJson(msgpack));
+		Sequence<byte> seq = new();
+		this.Serializer.Serialize<BaseClass>(seq, value, TestContext.Current.CancellationToken);
+		this.LogFormattedBytes(seq);
 	}
 
 	[Fact]
@@ -84,7 +118,7 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 	public void UnrecognizedAlias()
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(2);
 		writer.Write(100);
 		writer.WriteStartMap(0);
@@ -98,7 +132,7 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 	public void UnrecognizedArraySize()
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(3);
 		writer.Write(100);
 		writer.WriteNull();
@@ -121,14 +155,27 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 	{
 		MixedAliasBase value = new MixedAliasDerivedA();
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartVector());
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountVectorElements(reader));
+		int? count = reader.ReadStartVector();
+		bool isFirstElement = true;
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		Assert.Equal("A", reader.ReadString());
+
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
 
 		value = new MixedAliasDerived1();
 		msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
-		reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartVector());
+		reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountVectorElements(reader));
+		count = reader.ReadStartVector();
 		Assert.Equal(1, reader.ReadInt32());
 	}
 
@@ -136,16 +183,18 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 	public void ImpliedAlias()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<ImpliedAliasBase>(new ImpliedAliasDerived());
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartVector());
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountVectorElements(reader));
+		reader.ReadStartVector();
 		Assert.Equal(typeof(ImpliedAliasDerived).FullName, reader.ReadString());
 	}
 
 	[Fact]
 	public void RecursiveSubTypes()
 	{
+		Sequence<byte> seq = new();
 		SerializationException ex = Assert.Throws<SerializationException>(
-			() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived(), TestContext.Current.CancellationToken));
+			() => this.Serializer.Serialize<RecursiveBase>(seq, new RecursiveDerivedDerived(), TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 
 #if false
@@ -186,15 +235,34 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 
 		// Verify that the base type has just one header.
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<BaseClass>(new BaseClass { BaseClassProperty = 5 });
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartVector());
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountVectorElements(reader));
+		int? count = reader.ReadStartVector();
+		bool isFirstElement = true;
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		reader.ReadNull();
-		Assert.Equal(1, reader.ReadStartMap());
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
+		Assert.Equal(1, CountMapElements(reader));
+		count = reader.ReadStartMap();
+		isFirstElement = true;
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
 
 		// Verify that the header type value is the runtime-specified 1 instead of the static 3.
 		msgpack = this.AssertRoundtrip<BaseClass>(new DerivedB(13));
-		reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartVector());
+		reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountVectorElements(reader));
+		reader.ReadStartVector();
 		Assert.Equal(1, reader.ReadInt32());
 
 		// Verify that statically set subtypes are not recognized if no runtime equivalents are registered.
@@ -211,10 +279,24 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
 		this.Serializer.RegisterKnownSubTypes(mapping);
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
-		Assert.Equal(2, reader.ReadStartVector());
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
+		Assert.Equal(2, CountVectorElements(reader));
+
+		int? count = reader.ReadStartVector();
+		bool isFirstElement = true;
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		reader.ReadNull();
-		Assert.Equal(0, reader.ReadStartMap());
+
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
+		Assert.Equal(0, CountMapElements(reader));
 	}
 
 	[GenerateShape<DerivedGeneric<int>>]
@@ -324,4 +406,8 @@ public partial class KnownSubTypeTests : MessagePackSerializerTestBase
 
 	[GenerateShape]
 	public partial record RecursiveDerivedDerived : RecursiveDerived;
+
+	public partial class Json() : KnownSubTypeTests(CreateJsonSerializer());
+
+	public partial class MsgPack() : KnownSubTypeTests(CreateMsgPackSerializer());
 }

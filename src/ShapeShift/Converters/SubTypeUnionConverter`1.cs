@@ -143,17 +143,21 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		{
 			// The runtime type of the value matches the base exactly. Use nil as the alias.
 			writer.WriteNull();
+			writer.WriteVectorElementSeparator();
 			this.baseConverter.Write(ref writer, value, context);
 		}
 		else if (this.subTypes.Serializers.TryGetValue(valueType, out (FormattedSubTypeAlias Alias, Converter Converter, ITypeShape Shape) result))
 		{
 			writer.Buffer.Write(result.Alias.FormattedAlias.Span);
+			writer.WriteVectorElementSeparator();
 			result.Converter.WriteObject(ref writer, value, context);
 		}
 		else
 		{
 			throw new SerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
 		}
+
+		writer.WriteEndVector();
 	}
 
 	/// <inheritdoc/>
@@ -336,6 +340,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		{
 			// The runtime type of the value matches the base exactly. Use nil as the alias.
 			syncWriter.WriteNull();
+			syncWriter.WriteVectorElementSeparator();
 			if (this.baseConverter.PreferAsyncSerialization)
 			{
 				writer.ReturnWriter(ref syncWriter);
@@ -350,6 +355,7 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		else if (this.subTypes.Serializers.TryGetValue(valueType, out (FormattedSubTypeAlias Alias, Converter Converter, ITypeShape Shape) result))
 		{
 			syncWriter.Buffer.Write(result.Alias.FormattedAlias.Span);
+			syncWriter.WriteVectorElementSeparator();
 			if (result.Converter.PreferAsyncSerialization)
 			{
 				writer.ReturnWriter(ref syncWriter);
@@ -365,6 +371,10 @@ internal class SubTypeUnionConverter<TBase> : Converter<TBase>
 		{
 			throw new SerializationException($"value is of type {valueType.FullName} which is not one of those listed via {KnownSubTypeAttribute.TypeName} on the declared base type {typeof(TBase).FullName}.");
 		}
+
+		syncWriter = writer.CreateWriter();
+		syncWriter.WriteEndVector();
+		writer.ReturnWriter(ref syncWriter);
 
 		await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 	}
