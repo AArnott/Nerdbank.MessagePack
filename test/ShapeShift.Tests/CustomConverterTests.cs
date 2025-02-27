@@ -1,9 +1,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ShapeShift.MessagePack;
-
-public partial class CustomConverterTests : MessagePackSerializerTestBase
+public abstract partial class CustomConverterTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Fact]
 	public void ConverterThatDelegates()
@@ -58,7 +56,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new TypeWithStatefulConverter(5));
 
 		// Assert that the multiplier state had the intended impact.
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(5 * 3, reader.ReadInt32());
 
 		// Assert that state dictionary changes made by the converter do not impact the caller.
@@ -68,6 +66,10 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	[Converter(typeof(StatefulConverter))]
 	internal partial record struct TypeWithStatefulConverter(int Value);
+
+	public class Json() : CustomConverterTests(CreateJsonSerializer());
+
+	public class MsgPack() : CustomConverterTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial record Tree(int FruitCount);
