@@ -1,15 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ShapeShift.MessagePack;
-
-public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBase
+public abstract partial class NamingPolicyApplicationTests(SerializerBase serializer) : SerializerTestBase(serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase })
 {
-	public NamingPolicyApplicationTests()
-	{
-		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
-	}
-
 	[Fact]
 	public void Roundtrip_NonDefaultCtor() => this.AssertRoundtrip(new NonDefaultCtor("hi", "bye"));
 
@@ -51,12 +44,14 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 		Sequence<byte> sequence = new();
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 		this.Serializer.Serialize(sequence, value);
+		this.LogFormattedBytes(sequence);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
+		Reader reader = new(sequence, this.Serializer.Deformatter);
 		reader.ReadStartMap();
 
 		// Assert that the naming policy is applied.
 		Assert.Equal("someProperty", reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		reader.Skip(new SerializationContext());
 	}
 
@@ -69,15 +64,24 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = NamingPolicy.CamelCase };
 		this.Serializer.Serialize(sequence, value);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
+		Reader reader = new(sequence, this.Serializer.Deformatter);
 		reader.ReadStartMap();
 
+		bool isFirstElement = true;
+		Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+
 		reader.Skip(new SerializationContext());
+		reader.ReadMapKeyValueSeparator();
 		reader.Skip(new SerializationContext());
 
 		// Property name that is explicitly set via PropertyShapeAttribute.Name should never be changed.
+		Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal("ExpressName", reader.ReadString());
 	}
+
+	public class Json() : NamingPolicyApplicationTests(CreateJsonSerializer());
+
+	public class MsgPack() : NamingPolicyApplicationTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial record NonDefaultCtor(
