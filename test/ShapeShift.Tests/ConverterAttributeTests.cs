@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class MessagePackConverterAttributeTests : MessagePackSerializerTestBase
+public partial class ConverterAttributeTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void CustomTypeWithConverter()
