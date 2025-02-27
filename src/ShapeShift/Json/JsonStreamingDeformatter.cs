@@ -576,7 +576,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		}
 		else
 		{
-			value = reader.UnreadSpan;
+			value = utf8Reader.ValueSpan;
 			reader.Advance(utf8Reader.BytesConsumed);
 			success = true;
 		}
@@ -635,7 +635,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		throw new SerializationException(string.Format("Unexpected code {0} encountered.", utf8Reader.TokenType));
 	}
 
-	private static bool TryReadUpcomingToken(in Reader reader, out Utf8JsonReader jsonReader)
+	private static bool TryReadUpcomingToken(scoped in Reader reader, out Utf8JsonReader jsonReader)
 	{
 		jsonReader = new(reader.UnreadSequence);
 		try

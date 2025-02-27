@@ -83,12 +83,13 @@ public abstract partial class EnumTests(SerializerBase serializer, TokenType exp
 		this.AssertEnum<EnumWithNonUniqueNames, Witness>(EnumWithNonUniqueNames.One);
 	}
 
-	private static ReadOnlySequence<byte> SerializeEnumName(string name)
+	private ReadOnlySequence<byte> SerializeEnumName(string name)
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MessagePackFormatter.Default);
+		Writer writer = new(seq, this.Serializer.Formatter);
 		writer.Write(name);
 		writer.Flush();
+		this.LogFormattedBytes(seq);
 		return seq;
 	}
 
@@ -105,7 +106,7 @@ public abstract partial class EnumTests(SerializerBase serializer, TokenType exp
 
 	private void AssertType(ReadOnlySequence<byte> msgpack, TokenType expectedType)
 	{
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(expectedType, reader.NextTypeCode);
 	}
 
@@ -114,21 +115,21 @@ public abstract partial class EnumTests(SerializerBase serializer, TokenType exp
 		[Fact]
 		public void CaseInsensitiveByDefault()
 		{
-			Assert.Equal(Simple.One, this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("ONE"), TestContext.Current.CancellationToken));
+			Assert.Equal(Simple.One, this.Serializer.Deserialize<Simple, Witness>(this.SerializeEnumName("ONE"), TestContext.Current.CancellationToken));
 		}
 
 		[Fact]
 		public void UnrecognizedName()
 		{
-			SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), TestContext.Current.CancellationToken));
+			SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(this.SerializeEnumName("FOO"), TestContext.Current.CancellationToken));
 			this.Logger.WriteLine(ex.Message);
 		}
 
 		[Fact]
 		public void NonUniqueNamesInEnum_ParseEitherName()
 		{
-			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), TestContext.Current.CancellationToken));
-			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), TestContext.Current.CancellationToken));
+			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(this.SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), TestContext.Current.CancellationToken));
+			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(this.SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), TestContext.Current.CancellationToken));
 		}
 	}
 
