@@ -103,8 +103,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryPeekNextTypeCode(in Reader reader, out TokenType typeCode)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
 		{
 			typeCode = default;
 			return this.InsufficientBytes(reader);
@@ -126,8 +125,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out bool value)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
 		{
 			value = false;
 			return this.InsufficientBytes(reader);
@@ -159,8 +157,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out sbyte value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -179,8 +176,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out short value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -199,8 +195,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out int value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -219,8 +214,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out long value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -239,8 +233,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out byte value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -259,8 +252,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out ushort value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -279,8 +271,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out uint value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -299,8 +290,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out ulong value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -319,8 +309,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out float value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -338,8 +327,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out double value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -357,8 +345,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryRead(ref Reader reader, out string? value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = null;
 			return this.InsufficientBytes(reader);
@@ -378,8 +365,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadBinary(ref Reader reader, out ReadOnlySequence<byte> value)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			value = default;
 			return this.InsufficientBytes(reader);
@@ -421,8 +407,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadNull(ref Reader reader)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			return this.InsufficientBytes(reader);
 		}
@@ -439,8 +424,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadNull(ref Reader reader, out bool isNull)
 	{
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (!r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
 			isNull = false;
 			return this.InsufficientBytes(reader);
@@ -467,21 +451,20 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		// JSON does not prefix the size of the map.
 		count = null;
 
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
-			if (r.TokenType == JsonTokenType.StartObject)
-			{
-				reader.Advance(r.BytesConsumed);
-				return DecodeResult.Success;
-			}
-			else
-			{
-				return DecodeResult.TokenMismatch;
-			}
+			return this.InsufficientBytes(reader);
 		}
 
-		return this.InsufficientBytes(reader);
+		if (r.TokenType == JsonTokenType.StartObject)
+		{
+			reader.Advance(r.BytesConsumed);
+			return DecodeResult.Success;
+		}
+		else
+		{
+			return DecodeResult.TokenMismatch;
+		}
 	}
 
 	/// <inheritdoc/>
@@ -490,28 +473,26 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 		// JSON does not prefix the size of the vector.
 		length = null;
 
-		Utf8JsonReader r = new(reader.UnreadSequence);
-		if (r.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader r))
 		{
-			if (r.TokenType == JsonTokenType.StartArray)
-			{
-				reader.Advance(r.BytesConsumed);
-				return DecodeResult.Success;
-			}
-			else
-			{
-				return DecodeResult.TokenMismatch;
-			}
+			return this.InsufficientBytes(reader);
 		}
 
-		return this.InsufficientBytes(reader);
+		if (r.TokenType == JsonTokenType.StartArray)
+		{
+			reader.Advance(r.BytesConsumed);
+			return DecodeResult.Success;
+		}
+		else
+		{
+			return DecodeResult.TokenMismatch;
+		}
 	}
 
 	/// <inheritdoc/>
 	public override DecodeResult TryGetMaxStringLength(in Reader reader, out int chars, out int bytes)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
 		{
 			chars = 0;
 			bytes = 0;
@@ -534,8 +515,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadString(ref Reader reader, scoped Span<char> destination, out int charsWritten)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
 		{
 			charsWritten = 0;
 			return this.InsufficientBytes(reader);
@@ -555,8 +535,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
 		{
 			bytesWritten = 0;
 			return this.InsufficientBytes(reader);
@@ -576,8 +555,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> value, out bool success)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
 		{
 			success = false;
 			value = default;
@@ -611,8 +589,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	{
 		uint originalCount = Math.Max(1, context.MidSkipRemainingCount);
 		uint count = originalCount;
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		if (!utf8Reader.Read())
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
 		{
 			return this.InsufficientBytes(reader);
 		}
@@ -650,9 +627,29 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	[DoesNotReturn]
 	protected internal override Exception ThrowInvalidCode(in Reader reader)
 	{
-		Utf8JsonReader utf8Reader = new(reader.UnreadSequence);
-		Verify.Operation(utf8Reader.Read(), "Expected to be able to peek the next code.");
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
+		{
+			throw new InvalidOperationException("Expected to be able to peek the next code.");
+		}
+
 		throw new SerializationException(string.Format("Unexpected code {0} encountered.", utf8Reader.TokenType));
+	}
+
+	private static bool TryReadUpcomingToken(in Reader reader, out Utf8JsonReader jsonReader)
+	{
+		jsonReader = new(reader.UnreadSequence);
+		try
+		{
+			return jsonReader.Read();
+		}
+		catch (JsonException ex)
+		{
+			throw new SerializationException(ex.Message, ex);
+		}
+		catch (InvalidOperationException ex)
+		{
+			throw new SerializationException(ex.Message, ex);
+		}
 	}
 
 	private void DecrementRemainingStructures(ref Reader reader, int count)
