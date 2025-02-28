@@ -1,13 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class StringInterningTests : MessagePackSerializerTestBase
+public abstract partial class StringInterningTests(SerializerBase serializer) : SerializerTestBase(serializer with { InternStrings = true })
 {
-	public StringInterningTests()
-	{
-		this.Serializer = this.Serializer with { InternStrings = true };
-	}
-
 	[Fact]
 	public void InternStringsDefault() => Assert.False(new MessagePackSerializer().InternStrings);
 
@@ -53,6 +48,10 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		string? deserialized = this.Serializer.Deserialize<string, Witness>(seq, TestContext.Current.CancellationToken);
 		Assert.Equal("abc", deserialized);
 	}
+
+	public class Json() : StringInterningTests(CreateJsonSerializer());
+
+	public class MsgPack() : StringInterningTests(CreateMsgPackSerializer());
 
 	[GenerateShape<string>]
 	[GenerateShape<string[]>]

@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 [Trait("Surrogates", "true")]
-public partial class SurrogateTests : MessagePackSerializerTestBase
+public abstract partial class SurrogateTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Fact]
 	public void NonNullReference()
@@ -34,15 +34,26 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Null(deserialized);
 	}
 
-	[Fact]
-	[Trait("ReferencePreservation", "true")]
-	public void ReferencePreservation()
+	public class Json() : SurrogateTests(CreateJsonSerializer());
+
+	public class MsgPack() : SurrogateTests(CreateMsgPackSerializer())
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = true };
-		OriginalType original = new(1, 2);
-		OriginalType[]? deserializedArray = this.Roundtrip<OriginalType[], Witness>([original, original]);
-		Assert.NotNull(deserializedArray);
-		Assert.Same(deserializedArray[0], deserializedArray[1]);
+		private new MessagePackSerializer Serializer
+		{
+			get => (MessagePackSerializer)base.Serializer;
+			set => base.Serializer = value;
+		}
+
+		[Fact]
+		[Trait("ReferencePreservation", "true")]
+		public void ReferencePreservation()
+		{
+			this.Serializer = this.Serializer with { PreserveReferences = true };
+			OriginalType original = new(1, 2);
+			OriginalType[]? deserializedArray = this.Roundtrip<OriginalType[], Witness>([original, original]);
+			Assert.NotNull(deserializedArray);
+			Assert.Same(deserializedArray[0], deserializedArray[1]);
+		}
 	}
 
 	[GenerateShape]

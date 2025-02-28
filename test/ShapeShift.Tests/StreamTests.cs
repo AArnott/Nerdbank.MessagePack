@@ -1,7 +1,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class StreamTests : MessagePackSerializerTestBase
+public abstract partial class StreamTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Theory, PairwiseData]
 	public async Task SerializeWithStreamAsync(bool memoryStream)
@@ -38,6 +38,10 @@ public partial class StreamTests : MessagePackSerializerTestBase
 		stream.Position = 0;
 		Person? deserialized = this.Serializer.Deserialize<Person>(stream, TestContext.Current.CancellationToken);
 	}
+
+	public class Json() : StreamTests(CreateJsonSerializer());
+
+	public class MsgPack() : StreamTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial record Person(string FirstName, string LastName);
