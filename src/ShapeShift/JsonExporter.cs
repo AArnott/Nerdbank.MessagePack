@@ -109,7 +109,7 @@ public class JsonExporter
 					{
 						NewLine(jsonWriter, options, indentationLevel + 1);
 
-						for (int i = 0; i < count || (count is null && i > 0 && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
+						for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 						{
 							if (i > 0)
 							{
@@ -137,7 +137,7 @@ public class JsonExporter
 					if (count > 0 || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)))
 					{
 						NewLine(jsonWriter, options, indentationLevel + 1);
-						for (int i = 0; i < count || (count is null && i > 0 && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
+						for (int i = 0; i < count || (count is null && reader.TryAdvanceToNextElement(ref isFirstElement)); i++)
 						{
 							if (i > 0)
 							{
@@ -155,6 +155,7 @@ public class JsonExporter
 								jsonWriter.Write(": ");
 							}
 
+							reader.ReadMapKeyValueSeparator();
 							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
 						}
 

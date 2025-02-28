@@ -158,6 +158,8 @@ public abstract class SerializerTestBase(SerializerBase serializer)
 		return result;
 	}
 
+	protected void LogFormattedBytes(ReadOnlyMemory<byte> formattedBytes) => this.LogFormattedBytes(new ReadOnlySequence<byte>(formattedBytes));
+
 	protected virtual void LogFormattedBytes(ReadOnlySequence<byte> formattedBytes)
 	{
 		if (this.Serializer is JsonSerializer)

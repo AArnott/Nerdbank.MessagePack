@@ -104,7 +104,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	{
 		SimpleStreamingContainerKeyed[] array = [new(), new()];
 		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>(array, TestContext.Current.CancellationToken);
-		this.LogFormattedBytes(new(msgpack));
+		this.LogFormattedBytes(msgpack);
 
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
@@ -124,7 +124,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer with { PreserveReferences = true };
 		SimpleStreamingContainerKeyed original = new();
 		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>([original, original], TestContext.Current.CancellationToken);
-		this.LogFormattedBytes(new(msgpack));
+		this.LogFormattedBytes(msgpack);
 
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);

@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
 [Trait("JsonSchema", "true")]
-public partial class SchemaTests : MessagePackSerializerTestBase
+public abstract partial class SchemaTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	private const bool RecordMode =
 #if RECORD
@@ -159,23 +159,6 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 
 	[Fact]
 	public void SubTypeSchema() => this.AssertSchema([new BaseType { Message = "hi" }, new SubType { Message = "hi", Value = 5 }]);
-
-	/// <summary>
-	/// Verify that registering converters while <see cref="MessagePackSerializer.PreserveReferences"/>
-	/// is <see langword="true"/> does not mess up the schema generation after it is turned off.
-	/// </summary>
-	[Fact]
-	public void ReferencePreservationGraphReset()
-	{
-		this.Serializer = this.Serializer with { PreserveReferences = true };
-		this.Serializer.RegisterConverter(new DocumentingCustomConverter());
-		this.Serializer.RegisterConverter(new NonDocumentingCustomConverter());
-		this.Serializer = this.Serializer with { PreserveReferences = false };
-		JsonObject schema = this.Serializer.GetJsonSchema<CustomType>();
-		string schemaString = schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-		this.Logger.WriteLine(schemaString);
-		Assert.DoesNotContain("ReferencePreservingConverter", schemaString);
-	}
 
 	private static string SchemaToString(JsonObject schema)
 	{
@@ -336,6 +319,34 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		return parsedSchema;
 	}
 
+	public class Json() : SchemaTests(CreateJsonSerializer());
+
+	public class MsgPack() : SchemaTests(CreateMsgPackSerializer())
+	{
+		private new MessagePackSerializer Serializer
+		{
+			get => (MessagePackSerializer)base.Serializer;
+			set => base.Serializer = value;
+		}
+
+		/// <summary>
+		/// Verify that registering converters while <see cref="MessagePackSerializer.PreserveReferences"/>
+		/// is <see langword="true"/> does not mess up the schema generation after it is turned off.
+		/// </summary>
+		[Fact]
+		public void ReferencePreservationGraphReset()
+		{
+			this.Serializer = this.Serializer with { PreserveReferences = true };
+			this.Serializer.RegisterConverter(new DocumentingCustomConverter());
+			this.Serializer.RegisterConverter(new NonDocumentingCustomConverter());
+			this.Serializer = this.Serializer with { PreserveReferences = false };
+			JsonObject schema = this.Serializer.GetJsonSchema<CustomType>();
+			string schemaString = schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+			this.Logger.WriteLine(schemaString);
+			Assert.DoesNotContain("ReferencePreservingConverter", schemaString);
+		}
+	}
+
 	[GenerateShape]
 	internal partial class BasicObject
 	{
@@ -452,6 +463,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			}
 
 			writer.WriteStartMap(0);
+			writer.WriteEndMap();
 		}
 	}
 
@@ -493,6 +505,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			}
 
 			writer.WriteStartMap(0);
+			writer.WriteEndMap();
 		}
 	}
 }

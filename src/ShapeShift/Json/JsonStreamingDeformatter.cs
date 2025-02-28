@@ -97,7 +97,16 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	/// <inheritdoc/>
 	public override DecodeResult TryPeekIsSignedInteger(in Reader reader, out bool signed)
 	{
-		throw new NotImplementedException();
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
+		{
+			signed = false;
+			return this.InsufficientBytes(reader);
+		}
+
+		// The number is a signed integer if it CAN be parsed as a signed integer (which rules out floats)
+		// and it CANNOT be parsed as an unsigned integer (which rules out non-negative integers).
+		signed = utf8Reader.TokenType == JsonTokenType.Number && utf8Reader.TryGetInt64(out _) && !utf8Reader.TryGetUInt64(out _);
+		return DecodeResult.Success;
 	}
 
 	/// <inheritdoc/>

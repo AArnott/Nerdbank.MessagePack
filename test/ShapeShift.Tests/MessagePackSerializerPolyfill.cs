@@ -16,6 +16,17 @@ internal static partial class MessagePackSerializerPolyfill
 		return seq.AsReadOnlySequence.ToArray();
 	}
 
+	// emulates what MessagePackSerializer can do with returning byte[], for convenience in testing.
+	internal static byte[] Serialize<T>(this SerializerBase serializer, in T? value, CancellationToken cancellationToken = default)
+#if NET
+		where T : IShapeable<T>
+#endif
+	{
+		Sequence<byte> seq = new();
+		serializer.Serialize<T>(seq, value, cancellationToken);
+		return seq.AsReadOnlySequence.ToArray();
+	}
+
 #if !NET
 	internal static byte[] Serialize<T>(this MessagePackSerializer serializer, in T? value, CancellationToken cancellationToken = default)
 		=> serializer.Serialize(value, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
