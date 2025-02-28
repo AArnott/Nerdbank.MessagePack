@@ -2,10 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
-using ShapeShift.MessagePack;
 
 [Trait("ShouldSerialize", "true")]
-public partial class ShouldSerializeTests : MessagePackSerializerTestBase
+public abstract partial class ShouldSerializeTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	public static IEnumerable<SerializeDefaultValuesPolicy> AllPolicies
 	{
@@ -26,8 +25,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Person person = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(0, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(0, CountMapElements(reader));
 	}
 
 	[Fact]
@@ -36,8 +35,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Person person = new();
 		ReadOnlySequence<byte> sequence = await this.AssertRoundtripAsync(person);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(0, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(0, CountMapElements(reader));
 	}
 
 	[Fact]
@@ -47,9 +46,12 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		PersonWithPrimaryConstructor person = new(null, 0, null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
+		Assert.True(count is 1 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal(nameof(PersonWithPrimaryConstructor.FavoriteColor), reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		Assert.True(reader.TryReadNull());
 	}
 
@@ -60,8 +62,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		PersonWithPrimaryConstructor person = new(null, 0, "Blue");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(0, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(0, CountMapElements(reader));
 	}
 
 	[Fact]
@@ -71,8 +73,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Person person = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(Person.PropertyCount, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(Person.PropertyCount, CountMapElements(reader));
 	}
 
 	[Fact]
@@ -81,9 +83,9 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Person person = new() { Name = "Andrew" };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
-		Assert.Equal(nameof(Person.Name), reader.ReadString());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(1, CountMapElements(reader));
+		Assert.True(ObjectMapHasKey(reader, nameof(Person.Name)));
 	}
 
 	[Fact]
@@ -92,9 +94,17 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Person person = new() { Age = 42 };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
+		Assert.True(count is 1 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal(nameof(Person.Age), reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
+		reader.Skip(default);
+		if (count is null)
+		{
+			Assert.False(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
 	}
 
 	[Fact]
@@ -102,9 +112,9 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	{
 		Person person = new() { FavoriteColor = "Red" };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
-		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(1, CountMapElements(reader));
+		Assert.True(ObjectMapHasKey(reader, nameof(Person.FavoriteColor)));
 	}
 
 	[Fact]
@@ -113,9 +123,9 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, "Red");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
-		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(1, CountMapElements(reader));
+		Assert.True(ObjectMapHasKey(reader, nameof(Person.FavoriteColor)));
 	}
 
 	[Fact]
@@ -123,10 +133,17 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	{
 		Person person = new() { FavoriteColor = null };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
+		Assert.True(count is 1 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		Assert.True(reader.TryReadNull());
+		if (count is null)
+		{
+			Assert.False(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
 	}
 
 	[Fact]
@@ -135,10 +152,17 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
 		PersonWithPrimaryConstructor person = new(null, 0, FavoriteColor: null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
+		Assert.True(count is 1 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		Assert.True(reader.TryReadNull());
+		if (count is null)
+		{
+			Assert.False(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
 	}
 
 	[Fact]
@@ -147,8 +171,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		CtorWithRenamedProperty obj = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(0, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(0, CountMapElements(reader));
 	}
 
 	[Fact]
@@ -157,8 +181,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		CtorWithRenamedProperty obj = new("Gal");
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(1, CountMapElements(reader));
 	}
 
 	[Fact]
@@ -167,8 +191,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		CtorWithRenamedProperty obj = new(null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(1, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(1, CountMapElements(reader));
 	}
 
 	[Theory]
@@ -189,30 +213,40 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 			+ (hasAge ? 1 : 0)
 			+ (hasFavoriteColor ? 1 : 0);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
-		Assert.Equal(expectedCount, reader.ReadStartMap());
+		Reader reader = new(sequence, this.Serializer.Deformatter);
+		Assert.Equal(expectedCount, CountMapElements(reader));
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
 
 		if (hasName)
 		{
+			Assert.True(count is not null || reader.TryAdvanceToNextElement(ref isFirstElement));
 			Assert.Equal(nameof(PersonWithRequiredAndOptionalProperties.Name), reader.ReadString());
+			reader.ReadMapKeyValueSeparator();
 			reader.Skip(default);
 		}
 
 		if (hasStamina)
 		{
+			Assert.True(count is not null || reader.TryAdvanceToNextElement(ref isFirstElement));
 			Assert.Equal(nameof(PersonWithRequiredAndOptionalProperties.Stamina), reader.ReadString());
+			reader.ReadMapKeyValueSeparator();
 			reader.Skip(default);
 		}
 
 		if (hasFavoriteColor)
 		{
+			Assert.True(count is not null || reader.TryAdvanceToNextElement(ref isFirstElement));
 			Assert.Equal(nameof(PersonWithRequiredAndOptionalProperties.FavoriteColor), reader.ReadString());
+			reader.ReadMapKeyValueSeparator();
 			reader.Skip(default);
 		}
 
 		if (hasAge)
 		{
+			Assert.True(count is not null || reader.TryAdvanceToNextElement(ref isFirstElement));
 			Assert.Equal(nameof(PersonWithRequiredAndOptionalProperties.Age), reader.ReadString());
+			reader.ReadMapKeyValueSeparator();
 			reader.Skip(default);
 		}
 	}
@@ -226,20 +260,32 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		PersonWithRequiredAndOptionalParameters obj = new(null);
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 
-		Reader reader = new(sequence, MessagePackDeformatter.Default);
+		Reader reader = new(sequence, this.Serializer.Deformatter);
 
 		if (policy.HasFlag(SerializeDefaultValuesPolicy.Required))
 		{
 			// One parameter of two have a default value supplied. The other is inherently required.
 			// So although we provided no non-default values for this object, one property should be serialized.
-			Assert.Equal(1, reader.ReadStartMap());
+			int? count = reader.ReadStartMap();
+			bool isFirstElement = true;
+			Assert.True(count is 1 || reader.TryAdvanceToNextElement(ref isFirstElement));
 			Assert.Equal(nameof(PersonWithRequiredAndOptionalParameters.Name), reader.ReadString());
+			reader.ReadMapKeyValueSeparator();
+			reader.Skip(default);
+			if (count is null)
+			{
+				Assert.False(reader.TryAdvanceToNextElement(ref isFirstElement));
+			}
 		}
 		else
 		{
-			Assert.Equal(0, reader.ReadStartMap());
+			Assert.Equal(0, CountMapElements(reader));
 		}
 	}
+
+	public class Json() : ShouldSerializeTests(CreateJsonSerializer());
+
+	public class MsgPack() : ShouldSerializeTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial record Person

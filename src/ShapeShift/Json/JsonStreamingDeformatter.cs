@@ -360,13 +360,19 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 			return this.InsufficientBytes(reader);
 		}
 
-		if (r.TokenType != JsonTokenType.String)
+		switch (r.TokenType)
 		{
-			value = null;
-			return DecodeResult.TokenMismatch;
+			case JsonTokenType.String:
+				value = r.GetString();
+				break;
+			case JsonTokenType.Null:
+				value = null;
+				break;
+			default:
+				value = null;
+				return DecodeResult.TokenMismatch;
 		}
 
-		value = r.GetString();
 		reader.Advance(r.BytesConsumed);
 		return DecodeResult.Success;
 	}
