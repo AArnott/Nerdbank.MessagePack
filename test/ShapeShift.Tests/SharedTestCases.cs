@@ -4,7 +4,7 @@
 using PolyType.Tests;
 using Xunit.Sdk;
 
-public class SharedTestCases : MessagePackSerializerTestBase
+public abstract class SharedTestCases(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Theory]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
@@ -75,4 +75,8 @@ public class SharedTestCases : MessagePackSerializerTestBase
 
 		return true;
 	}
+
+	public class Json() : SharedTestCases(CreateJsonSerializer());
+
+	public class MsgPack() : SharedTestCases(CreateMsgPackSerializer());
 }

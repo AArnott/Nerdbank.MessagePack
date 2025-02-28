@@ -6,6 +6,14 @@ using System.Text.Json.Nodes;
 internal static partial class MessagePackSerializerPolyfill
 {
 	// emulates what MessagePackSerializer can do with returning byte[], for convenience in testing.
+	internal static byte[] Serialize<T>(this SerializerBase serializer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+	{
+		Sequence<byte> seq = new();
+		serializer.Serialize(seq, value, shape, cancellationToken);
+		return seq.AsReadOnlySequence.ToArray();
+	}
+
+	// emulates what MessagePackSerializer can do with returning byte[], for convenience in testing.
 	internal static byte[] Serialize<T, TProvider>(this SerializerBase serializer, in T? value, CancellationToken cancellationToken = default)
 #if NET
 		where TProvider : IShapeable<T>
