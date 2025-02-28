@@ -1,12 +1,22 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if !NET
-
 using System.Text.Json.Nodes;
 
 internal static partial class MessagePackSerializerPolyfill
 {
+	// emulates what MessagePackSerializer can do with returning byte[], for convenience in testing.
+	internal static byte[] Serialize<T, TProvider>(this SerializerBase serializer, in T? value, CancellationToken cancellationToken = default)
+#if NET
+		where TProvider : IShapeable<T>
+#endif
+	{
+		Sequence<byte> seq = new();
+		serializer.Serialize<T, TProvider>(seq, value, cancellationToken);
+		return seq.AsReadOnlySequence.ToArray();
+	}
+
+#if !NET
 	internal static byte[] Serialize<T>(this MessagePackSerializer serializer, in T? value, CancellationToken cancellationToken = default)
 		=> serializer.Serialize(value, MessagePackSerializerTestBase.GetShapeProvider<Witness>(), cancellationToken);
 
@@ -57,6 +67,5 @@ internal static partial class MessagePackSerializerPolyfill
 
 	[GenerateShape<int>]
 	internal partial class Witness;
-}
-
 #endif
+}

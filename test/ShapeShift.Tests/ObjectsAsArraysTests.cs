@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ShapeShift.MessagePack;
-
-public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
+public abstract partial class ObjectsAsArraysTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Theory, PairwiseData]
 	public async Task Person_Roundtrip(bool async)
@@ -36,7 +34,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
 		this.LogFormattedBytes(buffer);
 
-		Reader reader = new(buffer, MessagePackDeformatter.Default);
+		Reader reader = new(buffer, this.Serializer.Deformatter);
 		Assert.Equal(3, reader.ReadStartVector());
 		Assert.Equal("Andrew", reader.ReadString());
 		Assert.True(reader.TryReadNull());
@@ -57,7 +55,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		// Verify that this is what the converter chose.
 		Person person = new() { FirstName = "Andrew", LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(1, reader.ReadStartVector());
 	}
 
@@ -71,7 +69,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		// Verify that this is what the converter chose.
 		Person person = new() { FirstName = null, LastName = "Arnott" };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(1, reader.ReadStartMap());
 	}
 
@@ -85,7 +83,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		// Verify that this is what the converter chose.
 		Person person = new Person { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(0, reader.ReadStartVector());
 	}
 
@@ -93,7 +91,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	public async Task Person_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(4);
 		writer.Write("A");
 		writer.WriteNull();
@@ -111,7 +109,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	public async Task Person_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartMap(3);
 
 		writer.Write(0);
@@ -137,7 +135,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		// Verify that this is what the converter chose.
 		PersonWithDefaultConstructor person = new() { FirstName = "Andrew", LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(1, reader.ReadStartVector());
 	}
 
@@ -148,7 +146,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		// Verify that this is what the converter chose.
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = "Arnott" };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(1, reader.ReadStartMap());
 	}
 
@@ -164,7 +162,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadStartVector());
 	}
 
@@ -172,7 +170,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	public async Task PersonWithDefaultConstructor_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(4);
 		writer.Write("A");
 		writer.WriteNull();
@@ -190,7 +188,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	public async Task PersonWithDefaultConstructor_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartMap(3);
 
 		writer.Write(0);
@@ -221,7 +219,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		};
 
 		ReadOnlySequence<byte> msgpack = await this.AssertRoundtripAsync(family);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(5, reader.ReadStartVector());
 	}
 
@@ -241,7 +239,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		};
 
 		ReadOnlySequence<byte> msgpack = await this.AssertRoundtripAsync(family);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(1, reader.ReadStartMap());
 	}
 
@@ -257,7 +255,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		};
 
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartMap(2);
 
 		writer.Write(3);
@@ -303,7 +301,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		};
 
 		Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartMap(2);
 
 		writer.Write(3);
@@ -342,7 +340,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	{
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(1, reader.ReadStartVector());
 	}
 
@@ -352,7 +350,8 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		ClassWithPropertyGettersWithCtorParamAndMissingKey obj = new("hi") { Value = true };
 
 		// We expect this to throw because a qualified property is not attributed with KeyAttribute.
-		SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Serialize(obj, TestContext.Current.CancellationToken));
+		Sequence<byte> seq = new();
+		SerializationException ex = Assert.Throws<SerializationException>(() => this.Serializer.Serialize(seq, obj, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 	}
 
@@ -369,6 +368,10 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 #else
 		=> GetShape<T, Witness>();
 #endif
+
+	public class Json() : ObjectsAsArraysTests(CreateJsonSerializer());
+
+	public class MsgPack() : ObjectsAsArraysTests(CreateMsgPackSerializer());
 
 	[GenerateShape<int>]
 	private partial class Witness;

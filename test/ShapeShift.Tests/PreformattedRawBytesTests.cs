@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class PreformattedRawBytesTests : MessagePackSerializerTestBase
+public abstract partial class PreformattedRawBytesTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Fact]
 	public void DefaultCtor()
@@ -23,7 +23,9 @@ public partial class PreformattedRawBytesTests : MessagePackSerializerTestBase
 	public void DeferredSerialization()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = (PreformattedRawBytes)this.Serializer.Serialize(userData, TestContext.Current.CancellationToken) };
+		Sequence<byte> formattedBytes = new();
+		this.Serializer.Serialize(formattedBytes, userData, TestContext.Current.CancellationToken);
+		Envelope envelope = new() { Deferred = (PreformattedRawBytes)formattedBytes.AsReadOnlySequence };
 
 		Envelope? deserializedEnvelope = this.Roundtrip(envelope);
 
@@ -38,7 +40,9 @@ public partial class PreformattedRawBytesTests : MessagePackSerializerTestBase
 	public async Task DeferredSerializationAsync()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = (PreformattedRawBytes)this.Serializer.Serialize(userData, TestContext.Current.CancellationToken) };
+		Sequence<byte> formattedBytes = new();
+		this.Serializer.Serialize(formattedBytes, userData, TestContext.Current.CancellationToken);
+		Envelope envelope = new() { Deferred = (PreformattedRawBytes)formattedBytes.AsReadOnlySequence };
 
 		Envelope? deserializedEnvelope = await this.RoundtripAsync(envelope);
 
@@ -103,6 +107,10 @@ public partial class PreformattedRawBytesTests : MessagePackSerializerTestBase
 		PreformattedRawBytes reowned = owned.ToOwned();
 		Assert.Equal(owned.RawBytes, reowned.RawBytes);
 	}
+
+	public class Json() : PreformattedRawBytesTests(CreateJsonSerializer());
+
+	public class MsgPack() : PreformattedRawBytesTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial record Envelope

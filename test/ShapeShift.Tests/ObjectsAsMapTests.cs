@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
-using ShapeShift.MessagePack;
 
-public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
+public abstract partial class ObjectsAsMapTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	[Fact]
 	public void PropertyWithAlteredName()
@@ -14,7 +13,7 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
 		this.LogFormattedBytes(buffer);
 
-		Reader reader = new(buffer, MessagePackDeformatter.Default);
+		Reader reader = new(buffer, this.Serializer.Deformatter);
 		Assert.Equal(2, reader.ReadStartMap());
 		Assert.Equal("first_name", reader.ReadString());
 		Assert.Equal("Andrew", reader.ReadString());
@@ -32,7 +31,7 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 	{
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
-		Reader reader = new(msgpack, MessagePackDeformatter.Default);
+		Reader reader = new(msgpack, this.Serializer.Deformatter);
 		Assert.Equal(1, reader.ReadStartMap());
 	}
 
@@ -40,7 +39,7 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 	public async Task FetchRequiredBetweenPropertyAndItsSyncValue()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MessagePackFormatter.Default);
+		Writer writer = new(seq, this.Serializer.Formatter);
 		writer.WriteStartMap(2);
 		writer.Write("Name");
 		writer.Write("Andrew");
@@ -59,7 +58,7 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 	public async Task FetchRequiredBetweenPropertyAndItsSyncValue_DefaultCtor()
 	{
 		Sequence<byte> seq = new();
-		Writer writer = new(seq, MessagePackFormatter.Default);
+		Writer writer = new(seq, this.Serializer.Formatter);
 		writer.WriteStartMap(2);
 		writer.Write("Name");
 		writer.Write("Andrew");
@@ -73,6 +72,10 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		PersonWithAgeDefaultCtor? person = await this.Serializer.DeserializeAsync<PersonWithAgeDefaultCtor>(reader, TestContext.Current.CancellationToken);
 		Assert.Equal(1, person?.Age);
 	}
+
+	public class Json() : ObjectsAsMapTests(CreateJsonSerializer());
+
+	public class MsgPack() : ObjectsAsMapTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial record Person
