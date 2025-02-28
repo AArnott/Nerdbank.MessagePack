@@ -26,6 +26,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("map-init", "Serialize")]
+	public void SerializeMapInit_Serde() => Serde.MsgPack.MsgPackSerializer.Serialize(Data.PocoMapInit.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("map-init", "Deserialize")]
 	public void DeserializeMapInit()
 	{
@@ -38,6 +42,10 @@ public partial class SimplePoco
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoMapInit>(Data.PocoMapInit.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("map-init", "Deserialize")]
+	public void DeserializeMapInit_Serde() => Serde.MsgPack.MsgPackSerializer.Deserialize<PocoMapInit>(Data.PocoMapInit.SingleMsgpackArray);
 
 	[Benchmark]
 	[BenchmarkCategory("map", "Serialize")]
@@ -56,6 +64,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("map", "Serialize")]
+	public void SerializeMap_Serde() => Serde.MsgPack.MsgPackSerializer.Serialize(Data.PocoMap.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("map", "Deserialize")]
 	public void DeserializeMap()
 	{
@@ -68,6 +80,10 @@ public partial class SimplePoco
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoMap>(Data.PocoMap.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("map", "Deserialize")]
+	public void DeserializeMap_Serde() => Serde.MsgPack.MsgPackSerializer.Deserialize<PocoMap>(Data.PocoMap.SingleMsgpackArray);
 
 	[Benchmark]
 	[BenchmarkCategory("array", "Serialize")]
@@ -86,6 +102,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("array", "Serialize")]
+	public void SerializeAsArray_Serde() => Serde.MsgPack.MsgPackSerializer.Serialize(Data.PocoAsArray.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("array", "Deserialize")]
 	public void DeserializeAsArray()
 	{
@@ -98,6 +118,10 @@ public partial class SimplePoco
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoAsArray>(Data.PocoAsArray.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("array", "Deserialize")]
+	public void DeserializeAsArray_Serde() => Serde.MsgPack.MsgPackSerializer.Deserialize<PocoAsArray>(Data.PocoAsArray.SingleMsgpackArray);
 
 	[Benchmark]
 	[BenchmarkCategory("array-init", "Serialize")]
@@ -116,6 +140,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("array-init", "Serialize")]
+	public void SerializeAsArrayInit_Serde() => Serde.MsgPack.MsgPackSerializer.Serialize(Data.PocoAsArrayInit.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("array-init", "Deserialize")]
 	public void DeserializeAsArrayInit()
 	{
@@ -128,4 +156,8 @@ public partial class SimplePoco
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoAsArrayInit>(Data.PocoAsArrayInit.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("array-init", "Deserialize")]
+	public void DeserializeAsArrayInit_Serde() => Serde.MsgPack.MsgPackSerializer.Deserialize<PocoAsArrayInit>(Data.PocoAsArrayInit.SingleMsgpackArray);
 }

@@ -25,6 +25,7 @@
     <PackageVersion Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)" />
+    <PackageVersion Include="Serde" Version="0.8.0-preview1" />
     <PackageVersion Include="System.IO.Pipelines" Version="9.0.2" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
   </ItemGroup>

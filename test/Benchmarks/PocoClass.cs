@@ -3,7 +3,9 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
-[GenerateShape, MsgPackCSharp.MessagePackObject(keyAsPropertyName: true)]
+using Serde;
+
+[GenerateShape, MsgPackCSharp.MessagePackObject(keyAsPropertyName: true), GenerateSerde]
 public partial class PocoMap
 {
 	public int SomeInt { get; set; }
@@ -11,7 +13,7 @@ public partial class PocoMap
 	public string? SomeString { get; set; }
 }
 
-[GenerateShape, MsgPackCSharp.MessagePackObject(keyAsPropertyName: true)]
+[GenerateShape, MsgPackCSharp.MessagePackObject(keyAsPropertyName: true), GenerateSerde]
 public partial class PocoMapInit
 {
 	public int SomeInt { get; init; }
@@ -19,7 +21,7 @@ public partial class PocoMapInit
 	public string? SomeString { get; init; }
 }
 
-[GenerateShape, MsgPackCSharp.MessagePackObject]
+[GenerateShape, MsgPackCSharp.MessagePackObject, GenerateSerde]
 public partial class PocoAsArray
 {
 	[Key(0), MsgPackCSharp.Key(0)]
@@ -29,7 +31,7 @@ public partial class PocoAsArray
 	public string? SomeString { get; set; }
 }
 
-[GenerateShape, MsgPackCSharp.MessagePackObject]
+[GenerateShape, MsgPackCSharp.MessagePackObject, GenerateSerde]
 public partial class PocoAsArrayInit
 {
 	[Key(0), MsgPackCSharp.Key(0)]
