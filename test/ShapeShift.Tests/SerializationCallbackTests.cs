@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class SerializationCallbackTests : MessagePackSerializerTestBase
+public abstract partial class SerializationCallbackTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
-	private static readonly byte[] ObjectAsArrayMsgPack = new MessagePackSerializer().Serialize(new BusyClassArray { Name = "Alice" });
-	private static readonly byte[] ObjectAsMapMsgPack = new MessagePackSerializer().Serialize(new BusyClassMap { Name = "Alice" });
+	private readonly byte[] objectAsArrayFormatted = serializer.Serialize(new BusyClassArray { Name = "Alice" });
+	private readonly byte[] objectAsMapFormatted = serializer.Serialize(new BusyClassMap { Name = "Alice" });
 	private readonly BusyClassArray objectAsArray = new() { Name = "Alice" };
 	private readonly BusyClassMap objectAsMap = new() { Name = "Alice" };
 
@@ -44,8 +44,8 @@ public partial class SerializationCallbackTests : MessagePackSerializerTestBase
 	public async Task Deserialize_ObjectAsArray(bool async)
 	{
 		BusyClassArray? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassArray>(PipeReader.Create(new(ObjectAsArrayMsgPack)), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<BusyClassArray>(ObjectAsArrayMsgPack, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<BusyClassArray>(PipeReader.Create(new(this.objectAsArrayFormatted)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassArray>(this.objectAsArrayFormatted, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
@@ -56,8 +56,8 @@ public partial class SerializationCallbackTests : MessagePackSerializerTestBase
 	public async Task Deserialize_ObjectAsMap(bool async)
 	{
 		BusyClassMap? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassMap>(PipeReader.Create(new(ObjectAsMapMsgPack)), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<BusyClassMap>(ObjectAsMapMsgPack, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<BusyClassMap>(PipeReader.Create(new(this.objectAsMapFormatted)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassMap>(this.objectAsMapFormatted, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
@@ -68,8 +68,8 @@ public partial class SerializationCallbackTests : MessagePackSerializerTestBase
 	public async Task Deserialize_ObjectAsArray_Init(bool async)
 	{
 		BusyClassArray? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassArrayInit>(PipeReader.Create(new(ObjectAsArrayMsgPack)), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<BusyClassArrayInit>(ObjectAsArrayMsgPack, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<BusyClassArrayInit>(PipeReader.Create(new(this.objectAsArrayFormatted)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassArrayInit>(this.objectAsArrayFormatted, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
@@ -80,13 +80,17 @@ public partial class SerializationCallbackTests : MessagePackSerializerTestBase
 	public async Task Deserialize_ObjectAsMap_Init(bool async)
 	{
 		BusyClassMap? obj = async
-			? await this.Serializer.DeserializeAsync<BusyClassMapInit>(PipeReader.Create(new(ObjectAsMapMsgPack)), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<BusyClassMapInit>(ObjectAsMapMsgPack, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<BusyClassMapInit>(PipeReader.Create(new(this.objectAsMapFormatted)), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<BusyClassMapInit>(this.objectAsMapFormatted, TestContext.Current.CancellationToken);
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
 		Assert.Equal(1, obj.OnAfterDeserializeCounter);
 	}
+
+	public class Json() : SerializationCallbackTests(CreateJsonSerializer());
+
+	public class MsgPack() : SerializationCallbackTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial class BusyClassMap : ISerializationCallbacks, IEquatable<BusyClassMap>

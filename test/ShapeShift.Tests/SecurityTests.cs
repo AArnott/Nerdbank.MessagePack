@@ -1,9 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ShapeShift.MessagePack;
-
-public partial class SecurityTests : MessagePackSerializerTestBase
+public abstract partial class SecurityTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	/// <summary>
 	/// Verifies that the serializer will guard against stack overflow attacks for map-formatted objects.
@@ -40,7 +38,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 	public void StackGuard_ObjectMap_Deserialize()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
-		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth + 1);
+		ReadOnlySequence<byte> buffer = this.FormatDeepMap(this.Serializer.StartingContext.MaxDepth + 1);
 
 		// Try deserializing that structure. This should throw for security reasons.
 		Assert.Throws<SerializationException>(() => this.Serializer.Deserialize<Nested>(buffer, TestContext.Current.CancellationToken));
@@ -53,7 +51,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 	public void StackGuard_ObjectMap_Deserialize_WithinLimit()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
-		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth);
+		ReadOnlySequence<byte> buffer = this.FormatDeepMap(this.Serializer.StartingContext.MaxDepth);
 
 		// Try deserializing that structure. This should throw for security reasons.
 		this.Serializer.Deserialize<Nested>(buffer, TestContext.Current.CancellationToken);
@@ -90,20 +88,31 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		return outer;
 	}
 
-	private ReadOnlySequence<byte> FormatDeepMsgPackMap(int depth)
+	private ReadOnlySequence<byte> FormatDeepMap(int depth)
 	{
 		Sequence<byte> buffer = new();
-		Writer writer = new(buffer, MessagePackFormatter.Default);
+		Writer writer = new(buffer, this.Serializer.Formatter);
 		for (int i = 0; i < depth; i++)
 		{
 			writer.WriteStartMap(1);
 			writer.Write(nameof(Nested.Another));
+			writer.WriteMapKeyValueSeparator();
 		}
 
 		writer.WriteNull();
+
+		for (int i = 0; i < depth; i++)
+		{
+			writer.WriteEndMap();
+		}
+
 		writer.Flush();
 		return buffer;
 	}
+
+	public class Json() : SecurityTests(CreateJsonSerializer());
+
+	public class MsgPack() : SecurityTests(CreateMsgPackSerializer());
 
 	[GenerateShape]
 	public partial class Nested
