@@ -6,7 +6,7 @@
 using System.Text;
 using ShapeShift.MessagePack;
 
-public class MsgPackStreamingReaderTests(ITestOutputHelper logger)
+public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 {
 	private static readonly MessagePackFormatter Formatter = MessagePackFormatter.Default;
 	private static readonly MessagePackDeformatter Deformatter = MessagePackDeformatter.Default;

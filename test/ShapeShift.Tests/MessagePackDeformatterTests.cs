@@ -4,7 +4,7 @@
 using System.Text;
 using ShapeShift.MessagePack;
 
-public partial class MsgPackDeformatterTests
+public partial class MessagePackDeformatterTests
 {
 	private const sbyte ByteNegativeValue = -3;
 	private const byte BytePositiveValue = 3;
@@ -14,7 +14,7 @@ public partial class MsgPackDeformatterTests
 
 	private readonly ITestOutputHelper logger;
 
-	public MsgPackDeformatterTests(ITestOutputHelper logger)
+	public MessagePackDeformatterTests(ITestOutputHelper logger)
 	{
 		this.logger = logger;
 	}

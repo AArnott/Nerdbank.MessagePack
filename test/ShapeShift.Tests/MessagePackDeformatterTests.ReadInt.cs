@@ -9,7 +9,7 @@
 using System.Numerics;
 using ShapeShift.MessagePack;
 
-public partial class MsgPackDeformatterTests
+public partial class MessagePackDeformatterTests
 {
 	private const sbyte MinNegativeFixInt = unchecked((sbyte)MessagePackCode.MinNegativeFixInt);
 	private const sbyte MaxNegativeFixInt = unchecked((sbyte)MessagePackCode.MaxNegativeFixInt);

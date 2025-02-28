@@ -13,7 +13,7 @@
 using System.Numerics;
 using ShapeShift.MessagePack;
 
-public partial class MsgPackDeformatterTests
+public partial class MessagePackDeformatterTests
 {
 <#
 var unsignedTypes = new Type[]

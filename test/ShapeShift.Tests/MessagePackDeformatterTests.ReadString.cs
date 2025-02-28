@@ -3,7 +3,7 @@
 
 using ShapeShift.MessagePack;
 
-public partial class MsgPackDeformatterTests
+public partial class MessagePackDeformatterTests
 {
 	[Fact]
 	public void ReadString_HandlesSingleSegment()
