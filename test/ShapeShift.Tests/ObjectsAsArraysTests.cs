@@ -35,10 +35,15 @@ public abstract partial class ObjectsAsArraysTests(SerializerBase serializer) : 
 		this.LogFormattedBytes(buffer);
 
 		Reader reader = new(buffer, this.Serializer.Deformatter);
-		Assert.Equal(3, reader.ReadStartVector());
+		int? count = reader.ReadStartVector();
+		bool isFirstElement = true;
+		Assert.True(count is 3 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal("Andrew", reader.ReadString());
+		Assert.True(count is 3 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.True(reader.TryReadNull());
+		Assert.True(count is 3 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal("Arnott", reader.ReadString());
+		Assert.True(count is 3 || !reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.True(reader.End);
 
 		Person? deserialized = this.Serializer.Deserialize<Person>(buffer, TestContext.Current.CancellationToken);
@@ -56,7 +61,7 @@ public abstract partial class ObjectsAsArraysTests(SerializerBase serializer) : 
 		Person person = new() { FirstName = "Andrew", LastName = null };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, this.Serializer.Deformatter);
-		Assert.Equal(1, reader.ReadStartVector());
+		Assert.Equal(1, CountVectorElements(reader));
 	}
 
 	[Trait("ShouldSerialize", "true")]
@@ -70,7 +75,7 @@ public abstract partial class ObjectsAsArraysTests(SerializerBase serializer) : 
 		Person person = new() { FirstName = null, LastName = "Arnott" };
 		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(person) : this.AssertRoundtrip(person);
 		Reader reader = new(msgpack, this.Serializer.Deformatter);
-		Assert.Equal(1, reader.ReadStartMap());
+		Assert.Equal(1, CountMapElements(reader));
 	}
 
 	[Trait("ShouldSerialize", "true")]
@@ -94,9 +99,13 @@ public abstract partial class ObjectsAsArraysTests(SerializerBase serializer) : 
 		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(4);
 		writer.Write("A");
+		writer.WriteVectorElementSeparator();
 		writer.WriteNull();
+		writer.WriteVectorElementSeparator();
 		writer.Write("B");
+		writer.WriteVectorElementSeparator();
 		writer.Write("C"); // This should be ignored.
+		writer.WriteEndVector();
 		writer.Flush();
 
 		Person? person = async
@@ -173,9 +182,13 @@ public abstract partial class ObjectsAsArraysTests(SerializerBase serializer) : 
 		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(4);
 		writer.Write("A");
+		writer.WriteVectorElementSeparator();
 		writer.WriteNull();
+		writer.WriteVectorElementSeparator();
 		writer.Write("B");
+		writer.WriteVectorElementSeparator();
 		writer.Write("C"); // This should be ignored.
+		writer.WriteEndVector();
 		writer.Flush();
 
 		PersonWithDefaultConstructor? person = async
@@ -341,7 +354,7 @@ public abstract partial class ObjectsAsArraysTests(SerializerBase serializer) : 
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
 		Reader reader = new(msgpack, this.Serializer.Deformatter);
-		Assert.Equal(1, reader.ReadStartVector());
+		Assert.Equal(1, CountVectorElements(reader));
 	}
 
 	[Fact]

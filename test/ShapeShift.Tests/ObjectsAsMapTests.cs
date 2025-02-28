@@ -14,11 +14,17 @@ public abstract partial class ObjectsAsMapTests(SerializerBase serializer) : Ser
 		this.LogFormattedBytes(buffer);
 
 		Reader reader = new(buffer, this.Serializer.Deformatter);
-		Assert.Equal(2, reader.ReadStartMap());
+		int? count = reader.ReadStartMap();
+		bool isFirstElement = true;
+		Assert.True(count is 2 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal("first_name", reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		Assert.Equal("Andrew", reader.ReadString());
+		Assert.True(count is 2 || reader.TryAdvanceToNextElement(ref isFirstElement));
 		Assert.Equal("last_name", reader.ReadString());
+		reader.ReadMapKeyValueSeparator();
 		Assert.Equal("Arnott", reader.ReadString());
+		Assert.True(count is 2 || !reader.TryAdvanceToNextElement(ref isFirstElement));
 
 		Assert.Equal(person, this.Serializer.Deserialize<Person>(buffer, TestContext.Current.CancellationToken));
 	}
@@ -32,7 +38,7 @@ public abstract partial class ObjectsAsMapTests(SerializerBase serializer) : Ser
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(obj);
 		Reader reader = new(msgpack, this.Serializer.Deformatter);
-		Assert.Equal(1, reader.ReadStartMap());
+		Assert.Equal(1, CountMapElements(reader));
 	}
 
 	[Fact]
@@ -42,11 +48,15 @@ public abstract partial class ObjectsAsMapTests(SerializerBase serializer) : Ser
 		Writer writer = new(seq, this.Serializer.Formatter);
 		writer.WriteStartMap(2);
 		writer.Write("Name");
+		writer.WriteMapKeyValueSeparator();
 		writer.Write("Andrew");
+		writer.WriteMapPairSeparator();
 		writer.Write("Age");
 		writer.Flush();
 		SequencePosition breakPosition = seq.AsReadOnlySequence.End;
+		writer.WriteMapKeyValueSeparator();
 		writer.Write(1);
+		writer.WriteEndMap();
 		writer.Flush();
 
 		FragmentedPipeReader reader = new(seq.AsReadOnlySequence, breakPosition);
@@ -61,11 +71,15 @@ public abstract partial class ObjectsAsMapTests(SerializerBase serializer) : Ser
 		Writer writer = new(seq, this.Serializer.Formatter);
 		writer.WriteStartMap(2);
 		writer.Write("Name");
+		writer.WriteMapKeyValueSeparator();
 		writer.Write("Andrew");
+		writer.WriteMapPairSeparator();
 		writer.Write("Age");
 		writer.Flush();
 		SequencePosition breakPosition = seq.AsReadOnlySequence.End;
+		writer.WriteMapKeyValueSeparator();
 		writer.Write(1);
+		writer.WriteEndMap();
 		writer.Flush();
 
 		FragmentedPipeReader reader = new(seq.AsReadOnlySequence, breakPosition);

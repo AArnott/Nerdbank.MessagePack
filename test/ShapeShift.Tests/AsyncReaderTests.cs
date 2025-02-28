@@ -12,9 +12,13 @@ public abstract class AsyncReaderTests(SerializerBase serializer) : SerializerTe
 		Writer writer = new(seq, this.Serializer.Formatter);
 		writer.WriteStartVector(3);
 		writer.Write(1);
+		writer.WriteVectorElementSeparator();
 		writer.Write(2);
+		writer.WriteVectorElementSeparator();
 		writer.Write(3);
+		writer.WriteEndVector();
 		writer.Flush();
+		this.LogFormattedBytes(seq);
 
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
 		FragmentedPipeReader pipeReader = new(ros, ros.GetPosition(1));
