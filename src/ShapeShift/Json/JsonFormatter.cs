@@ -2,8 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Buffers.Text;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Microsoft;
 
 namespace ShapeShift.Json;
@@ -23,7 +26,7 @@ internal record JsonFormatter : Formatter
 	/// </summary>
 	internal static readonly JsonFormatter Default = new();
 
-	private const byte EncodedQuoteCharacter = (byte)'"';
+	private static readonly JavaScriptEncoder? JavaScriptEncoder = null;
 
 	private JsonFormatter()
 	{
@@ -69,17 +72,45 @@ internal record JsonFormatter : Formatter
 	/// <inheritdoc/>
 	public override void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes)
 	{
-		// TODO: apply any necessary escaping to the string value.
-		Memory<byte> bytes = new byte[this.Encoding.GetByteCount(value) + 2];
+		int firstEscapeIndexVal = JsonWriterHelper.NeedsEscaping(value, JavaScriptEncoder);
 
-		Memory<byte> encoded = bytes[1..^1];
-		this.Encoding.GetBytes(value, encoded.Span);
-		encodedBytes = encoded;
+		if (firstEscapeIndexVal != -1)
+		{
+			char[]? valueArray = null;
 
-		bytes.Span[0] = EncodedQuoteCharacter;
-		bytes.Span[^1] = EncodedQuoteCharacter;
+			int length = JsonWriterHelper.GetMaxEscapedLength(value.Length, firstEscapeIndexVal);
 
-		formattedBytes = bytes;
+			Span<char> escapedValue = length <= Converter.MaxStackStringCharLength ?
+				stackalloc char[Converter.MaxStackStringCharLength] :
+				(valueArray = ArrayPool<char>.Shared.Rent(length));
+
+			JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndexVal, JavaScriptEncoder, out int written);
+
+			GetEncodedStringBytesNoEscaping(this.Encoding, escapedValue[..written], out encodedBytes, out formattedBytes);
+
+			if (valueArray is not null)
+			{
+				ArrayPool<char>.Shared.Return(valueArray);
+			}
+		}
+		else
+		{
+			GetEncodedStringBytesNoEscaping(this.Encoding, value, out encodedBytes, out formattedBytes);
+		}
+
+		static void GetEncodedStringBytesNoEscaping(Encoding encoding, ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes)
+		{
+			Memory<byte> bytes = new byte[encoding.GetByteCount(value) + 2];
+
+			Memory<byte> encoded = bytes[1..^1];
+			encoding.GetBytes(value, encoded.Span);
+			encodedBytes = encoded;
+
+			bytes.Span[0] = JsonConstants.Quote;
+			bytes.Span[^1] = JsonConstants.Quote;
+
+			formattedBytes = bytes;
+		}
 	}
 
 	/// <inheritdoc/>
@@ -209,9 +240,9 @@ internal record JsonFormatter : Formatter
 	{
 		int spanLength = 2 + Base64.GetMaxEncodedToUtf8Length(value.Length);
 		Span<byte> bytes = writer.GetSpan(spanLength);
-		bytes[0] = EncodedQuoteCharacter;
+		bytes[0] = JsonConstants.Quote;
 		Assumes.True(Base64.EncodeToUtf8(value, bytes[1..], out _, out int bytesWritten) == OperationStatus.Done);
-		bytes[1 + bytesWritten] = EncodedQuoteCharacter;
+		bytes[1 + bytesWritten] = JsonConstants.Quote;
 		writer.Advance(bytesWritten + 2);
 	}
 
@@ -227,7 +258,7 @@ internal record JsonFormatter : Formatter
 		int spanLength = 2 + ((checked((int)value.Length) + 2) / 3 * 4);
 		Span<byte> bytes = writer.GetSpan(spanLength);
 		int totalBytesWritten = 0;
-		bytes[totalBytesWritten++] = EncodedQuoteCharacter;
+		bytes[totalBytesWritten++] = JsonConstants.Quote;
 
 		int bytesWritten;
 		foreach (ReadOnlyMemory<byte> segment in value)
@@ -239,20 +270,24 @@ internal record JsonFormatter : Formatter
 		Assumes.True(Base64.EncodeToUtf8(default, bytes[totalBytesWritten..], out _, out bytesWritten, isFinalBlock: true) == OperationStatus.Done);
 		totalBytesWritten += bytesWritten;
 
-		bytes[totalBytesWritten++] = EncodedQuoteCharacter;
+		bytes[totalBytesWritten++] = JsonConstants.Quote;
 		writer.Advance(totalBytesWritten);
 	}
 
 	/// <inheritdoc/>
 	public override void WriteEncodedString(ref BufferWriter writer, scoped ReadOnlySpan<byte> value)
 	{
-		throw new NotImplementedException();
+		writer.Write([(byte)'"']);
+		writer.Write(value);
+		writer.Write([(byte)'"']);
 	}
 
 	/// <inheritdoc/>
 	public override void WriteEncodedString(ref BufferWriter writer, in ReadOnlySequence<byte> value)
 	{
-		throw new NotImplementedException();
+		writer.Write([(byte)'"']);
+		writer.Write(value);
+		writer.Write([(byte)'"']);
 	}
 
 	/// <inheritdoc/>

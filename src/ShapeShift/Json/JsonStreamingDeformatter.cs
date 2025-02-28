@@ -652,7 +652,7 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 
 	private static bool TryReadUpcomingToken(scoped in Reader reader, out Utf8JsonReader jsonReader)
 	{
-		jsonReader = new(reader.UnreadSequence);
+		jsonReader = new(reader.UnreadSequence, isFinalBlock: true, default);
 		try
 		{
 			return jsonReader.Read();

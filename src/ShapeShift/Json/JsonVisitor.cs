@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using PolyType.Utilities;
+using ShapeShift.Json.Converters;
 
 namespace ShapeShift.Json;
 

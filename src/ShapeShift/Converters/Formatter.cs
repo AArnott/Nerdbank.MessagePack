@@ -234,7 +234,7 @@ public abstract record Formatter
 	/// <see cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte})"/>.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='writer']"/></param>
-	/// <param name="value"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='value']"/></param>
+	/// <param name="value">The encoded string (e.g. the UTF-8 bytes themselves) without any format-specific header or footer.</param>
 	public abstract void WriteEncodedString(ref BufferWriter writer, scoped ReadOnlySpan<byte> value);
 
 	/// <summary>
@@ -242,7 +242,7 @@ public abstract record Formatter
 	/// <see cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte})"/>.
 	/// </summary>
 	/// <param name="writer"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='writer']"/></param>
-	/// <param name="value"><inheritdoc cref="Write(ref BufferWriter, bool)" path="/param[@name='value']"/></param>
+	/// <param name="value">The encoded string (e.g. the UTF-8 bytes themselves) without any format-specific header or footer.</param>
 	public abstract void WriteEncodedString(ref BufferWriter writer, in ReadOnlySequence<byte> value);
 
 	/// <summary>

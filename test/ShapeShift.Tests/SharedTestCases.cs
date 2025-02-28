@@ -18,11 +18,12 @@ public abstract class SharedTestCases(SerializerBase serializer) : SerializerTes
 		try
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;
-			byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			byte[] formattedBytes = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			this.LogFormattedBytes(formattedBytes);
 
 			if (IsDeserializable(testCase))
 			{
-				T? deserializedValue = this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken);
+				T? deserializedValue = this.Serializer.Deserialize(formattedBytes, shape, TestContext.Current.CancellationToken);
 
 				if (testCase.IsEquatable)
 				{
@@ -35,14 +36,14 @@ public abstract class SharedTestCases(SerializerBase serializer) : SerializerTes
 						deserializedValue = this.Roundtrip(deserializedValue, shape);
 					}
 
-					byte[] msgpack2 = this.Serializer.Serialize(deserializedValue, shape, TestContext.Current.CancellationToken);
+					byte[] formattedBytes2 = this.Serializer.Serialize(deserializedValue, shape, TestContext.Current.CancellationToken);
 
-					Assert.Equal(msgpack, msgpack2);
+					Assert.Equal(formattedBytes, formattedBytes2);
 				}
 			}
 			else
 			{
-				Assert.Throws<NotSupportedException>(() => this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken));
+				Assert.Throws<NotSupportedException>(() => this.Serializer.Deserialize(formattedBytes, shape, TestContext.Current.CancellationToken));
 			}
 		}
 		catch (PlatformNotSupportedException ex)

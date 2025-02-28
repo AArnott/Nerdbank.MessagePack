@@ -9,7 +9,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace ShapeShift.Converters;
+namespace ShapeShift.Json.Converters;
 
 /// <summary>
 /// Provides access to built-in converters for primitive types.
@@ -25,6 +25,8 @@ internal static class JsonPrimitiveConverterLookup
 {
 	private static Converter? _BigIntegerTextConverter;
 	private static Converter? _GuidTextConverter;
+	private static Converter? _DateTimeConverter;
+	private static Converter? _DateTimeOffsetConverter;
 
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
@@ -43,6 +45,18 @@ internal static class JsonPrimitiveConverterLookup
 		if (typeof(T) == typeof(Guid))
 		{
 			converter = (Converter<T>)(_GuidTextConverter ??= new GuidTextConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(DateTime))
+		{
+			converter = (Converter<T>)(_DateTimeConverter ??= new DateTimeConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(DateTimeOffset))
+		{
+			converter = (Converter<T>)(_DateTimeOffsetConverter ??= new DateTimeOffsetConverter());
 			return true;
 		}
 

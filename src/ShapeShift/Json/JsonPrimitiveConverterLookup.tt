@@ -12,13 +12,15 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace ShapeShift.Converters;
+namespace ShapeShift.Json.Converters;
 
 <#
 var convertersByType = new List<ConverterInfo>
 {
 	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerTextConverter"),
 	new ConverterInfo("Guid", "GuidTextConverter"),
+	new ConverterInfo("DateTime", "DateTimeConverter"),
+	new ConverterInfo("DateTimeOffset", "DateTimeOffsetConverter"),
 };
 #>
 /// <summary>
