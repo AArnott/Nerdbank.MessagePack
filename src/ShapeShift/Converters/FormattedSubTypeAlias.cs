@@ -32,7 +32,13 @@ internal struct FormattedSubTypeAlias : IEquatable<FormattedSubTypeAlias>
 				this.formattedAlias = writer.FlushAndGetArray();
 				break;
 			case SubTypeAlias.AliasType.String:
-				formatter.GetEncodedStringBytes(alias.StringAlias, out this.encodedAlias, out this.formattedAlias);
+				formatter.GetEncodedStringBytes(alias.StringAlias, out this.encodedAlias, out this.formattedAlias, out bool escapingApplied);
+				if (escapingApplied)
+				{
+					// Because escaping can be optional, we always match on unescaped strings.
+					this.encodedAlias = formatter.Encoding.GetBytes(alias.StringAlias);
+				}
+
 				break;
 			default: throw new NotSupportedException();
 		}

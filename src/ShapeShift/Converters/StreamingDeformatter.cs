@@ -247,6 +247,7 @@ public abstract record StreamingDeformatter
 
 	/// <summary>
 	/// Reads the string at the current reader position and copies it into the given buffer.
+	/// Any escaping will be removed.
 	/// </summary>
 	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
 	/// <param name="destination">
@@ -257,6 +258,20 @@ public abstract record StreamingDeformatter
 	/// <returns>The decode result.</returns>
 	/// <exception cref="ArgumentException">Thrown if <paramref name="destination"/> is not large enough to store the bytes in the string.</exception>
 	public abstract DecodeResult TryReadString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten);
+
+	/// <summary>
+	/// Reads the string at the current reader position and copies it into the given buffer
+	/// without removing any escaping.
+	/// </summary>
+	/// <param name="reader"><inheritdoc cref="TryReadNull(ref Reader)" path="/param[@name='reader']" /></param>
+	/// <param name="destination">
+	/// The buffer to copy the format-native encoded bytes to.
+	/// This should be at least the size prescribed by the <see cref="TryGetMaxStringLength(in Reader, out int, out int)"/> method.
+	/// </param>
+	/// <param name="bytesWritten">Receives the number of bytes written.</param>
+	/// <returns>The decode result.</returns>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="destination"/> is not large enough to store the bytes in the string.</exception>
+	public abstract DecodeResult TryReadEncodedString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten);
 
 	/// <summary>
 	/// Reads the string at the current reader position and copies it into the given buffer.

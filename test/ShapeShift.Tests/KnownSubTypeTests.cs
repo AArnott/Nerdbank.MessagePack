@@ -354,6 +354,22 @@ public abstract partial class KnownSubTypeTests(SerializerBase serializer) : Ser
 
 	[GenerateShape]
 #if NET
+	[KnownSubType<HasOddStringAliasesDerived1>("A\nB")] // (escaping necessary in JSON)
+	[KnownSubType<HasOddStringAliasesDerived2>("A+B")] // A+B (escaping unnecessary but optional in JSON, STJ defaults to escaping it)
+#else
+	[KnownSubType(typeof(HasOddStringAliasesDerived1), "A\nB")]
+	[KnownSubType(typeof(HasOddStringAliasesDerived2), "A+B")]
+#endif
+	public partial record HasOddStringAliases;
+
+	[GenerateShape]
+	public partial record HasOddStringAliasesDerived1 : HasOddStringAliases;
+
+	[GenerateShape]
+	public partial record HasOddStringAliasesDerived2 : HasOddStringAliases;
+
+	[GenerateShape]
+#if NET
 	[KnownSubType<MixedAliasDerivedA>("A")]
 	[KnownSubType<MixedAliasDerived1>(1)]
 #else
@@ -407,7 +423,37 @@ public abstract partial class KnownSubTypeTests(SerializerBase serializer) : Ser
 	[GenerateShape]
 	public partial record RecursiveDerivedDerived : RecursiveDerived;
 
-	public partial class Json() : KnownSubTypeTests(CreateJsonSerializer());
+	public partial class Json() : KnownSubTypeTests(CreateJsonSerializer())
+	{
+		private new JsonSerializer Serializer
+		{
+			get => (JsonSerializer)base.Serializer;
+			set => base.Serializer = value;
+		}
+
+		[Fact]
+		public void EscapedAliases_RoundTrip()
+		{
+			this.AssertRoundtrip<HasOddStringAliases>(new HasOddStringAliasesDerived1());
+			this.AssertRoundtrip<HasOddStringAliases>(new HasOddStringAliasesDerived2());
+		}
+
+		[Theory]
+		[InlineData(@"A+\u0042", typeof(HasOddStringAliasesDerived2))]
+		[InlineData(@"A\u002BB", typeof(HasOddStringAliasesDerived2))]
+		[InlineData(@"A+B", typeof(HasOddStringAliasesDerived2))]
+		public void CanDeserializeAliasesWithExtraEscaping(string escapedAlias, Type expectedType)
+		{
+			string json = $$"""
+				["{{escapedAlias}}",{}]
+				""";
+			this.Logger.WriteLine(json);
+			Assert.IsType(expectedType, this.Serializer.Deserialize<HasOddStringAliases>(
+				json,
+				Witness.ShapeProvider,
+				TestContext.Current.CancellationToken));
+		}
+	}
 
 	public partial class MsgPack() : KnownSubTypeTests(CreateMsgPackSerializer());
 }

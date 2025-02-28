@@ -483,8 +483,11 @@ public record MessagePackFormatter : Formatter
 	}
 
 	/// <inheritdoc/>
-	public override void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded)
-		=> StringEncoding.GetEncodedStringBytes(value, out utf8Bytes, out msgpackEncoded);
+	public override void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded, out bool escapingApplied)
+	{
+		StringEncoding.GetEncodedStringBytes(value, out utf8Bytes, out msgpackEncoded);
+		escapingApplied = false;
+	}
 
 	/// <summary>
 	/// Writes the header that precedes a raw binary sequence with a length encoded as the smallest fitting from:

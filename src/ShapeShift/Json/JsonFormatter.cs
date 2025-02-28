@@ -70,7 +70,7 @@ internal record JsonFormatter : Formatter
 	}
 
 	/// <inheritdoc/>
-	public override void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes)
+	public override void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes, out bool escapingApplied)
 	{
 		int firstEscapeIndexVal = JsonWriterHelper.NeedsEscaping(value, JavaScriptEncoder);
 
@@ -86,6 +86,7 @@ internal record JsonFormatter : Formatter
 
 			JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndexVal, JavaScriptEncoder, out int written);
 
+			escapingApplied = true;
 			GetEncodedStringBytesNoEscaping(this.Encoding, escapedValue[..written], out encodedBytes, out formattedBytes);
 
 			if (valueArray is not null)
@@ -95,6 +96,7 @@ internal record JsonFormatter : Formatter
 		}
 		else
 		{
+			escapingApplied = false;
 			GetEncodedStringBytesNoEscaping(this.Encoding, value, out encodedBytes, out formattedBytes);
 		}
 

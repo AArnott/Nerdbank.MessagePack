@@ -568,6 +568,36 @@ internal record JsonStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
+	public override DecodeResult TryReadEncodedString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten)
+	{
+		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))
+		{
+			bytesWritten = 0;
+			return this.InsufficientBytes(reader);
+		}
+
+		if (utf8Reader.TokenType != JsonTokenType.String)
+		{
+			bytesWritten = 0;
+			return DecodeResult.TokenMismatch;
+		}
+
+		if (utf8Reader.HasValueSequence)
+		{
+			utf8Reader.ValueSequence.CopyTo(destination);
+			bytesWritten = checked((int)utf8Reader.ValueSequence.Length);
+		}
+		else
+		{
+			utf8Reader.ValueSpan.CopyTo(destination);
+			bytesWritten = utf8Reader.ValueSpan.Length;
+		}
+
+		reader.Advance(utf8Reader.BytesConsumed);
+		return DecodeResult.Success;
+	}
+
+	/// <inheritdoc/>
 	public override DecodeResult TryReadStringSpan(scoped ref Reader reader, out ReadOnlySpan<byte> value, out bool success)
 	{
 		if (!TryReadUpcomingToken(reader, out Utf8JsonReader utf8Reader))

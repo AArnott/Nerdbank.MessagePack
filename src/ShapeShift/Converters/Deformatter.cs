@@ -371,7 +371,7 @@ public partial class Deformatter
 		}
 	}
 
-	/// <summary>Reads a string from the data stream (with appropriate envelope) without decoding it.</summary>
+	/// <summary>Reads a string from the data stream (with appropriate envelope) without decoding it. Any escaping will be removed.</summary>
 	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
 	/// <param name="destination"><inheritdoc cref="StreamingDeformatter.TryReadString(ref Reader, Span{byte}, out int)" path="/param[@name='destination']"/></param>
 	/// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
@@ -380,6 +380,28 @@ public partial class Deformatter
 	public int ReadString(ref Reader reader, scoped Span<byte> destination)
 	{
 		switch (this.StreamingDeformatter.TryReadString(ref reader, destination, out int bytesWritten))
+		{
+			case DecodeResult.Success:
+				return bytesWritten;
+			case DecodeResult.TokenMismatch:
+				throw this.StreamingDeformatter.ThrowInvalidCode(reader);
+			case DecodeResult.EmptyBuffer:
+			case DecodeResult.InsufficientBuffer:
+				throw ThrowNotEnoughBytesException();
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	/// <summary>Reads a string from the data stream (with appropriate envelope) without unescaping it.</summary>
+	/// <param name="reader"><inheritdoc cref="StreamingDeformatter.TryReadNull(ref Reader)" path="/param[@name='reader']"/></param>
+	/// <param name="destination"><inheritdoc cref="StreamingDeformatter.TryReadString(ref Reader, Span{byte}, out int)" path="/param[@name='destination']"/></param>
+	/// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
+	/// <inheritdoc cref="TryReadNull(ref Reader)" path="/exception" />
+	/// <exception cref="SerializationException">Thrown when the next token is not <see cref="TokenType.String"/>.</exception>
+	public int ReadEncodedString(ref Reader reader, scoped Span<byte> destination)
+	{
+		switch (this.StreamingDeformatter.TryReadEncodedString(ref reader, destination, out int bytesWritten))
 		{
 			case DecodeResult.Success:
 				return bytesWritten;

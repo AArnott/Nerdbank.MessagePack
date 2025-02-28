@@ -147,6 +147,9 @@ public ref struct Reader
 	/// <inheritdoc cref="Deformatter.ReadString(ref Reader, Span{byte})"/>
 	public int ReadString(scoped Span<byte> destination) => this.Deformatter.ReadString(ref this, destination);
 
+	/// <inheritdoc cref="Deformatter.ReadEncodedString(ref Reader, Span{byte})"/>
+	public int ReadEncodedString(scoped Span<byte> destination) => this.Deformatter.ReadEncodedString(ref this, destination);
+
 	/// <inheritdoc cref="Deformatter.TryReadStringSpan(ref Reader, out ReadOnlySpan{byte})"/>
 	public bool TryReadStringSpan(out ReadOnlySpan<byte> value) => this.Deformatter.TryReadStringSpan(ref this, out value);
 

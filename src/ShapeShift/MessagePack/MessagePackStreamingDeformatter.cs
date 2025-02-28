@@ -547,6 +547,10 @@ public partial record MessagePackStreamingDeformatter : StreamingDeformatter
 	}
 
 	/// <inheritdoc/>
+	public override DecodeResult TryReadEncodedString(ref Reader reader, scoped Span<byte> destination, out int bytesWritten)
+		=> this.TryReadString(ref reader, destination, out bytesWritten);
+
+	/// <inheritdoc/>
 	public override DecodeResult TryReadString(ref Reader reader, scoped Span<char> destination, out int charsWritten)
 	{
 		Reader oldReader = reader;

@@ -28,20 +28,36 @@ public abstract record Formatter
 	/// </summary>
 	public abstract bool VectorsMustHaveLengthPrefix { get; }
 
+	/// <inheritdoc cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte}, out bool)"/>
+	public void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes)
+		=> this.GetEncodedStringBytes(value, out encodedBytes, out formattedBytes, out _);
+
 	/// <summary>
 	/// Encodes and formats a given string.
 	/// </summary>
 	/// <param name="value">The string to be formatted.</param>
-	/// <param name="encodedBytes">Receives the encoded characters (e.g. UTF-8) without any header or footer.</param>
+	/// <param name="encodedBytes">Receives the encoded characters (e.g. UTF-8, possibly with escaping applied) without any header or footer.</param>
 	/// <param name="formattedBytes">Receives the formatted bytes, which is a superset of <paramref name="encodedBytes"/> that adds a header and/or footer as required by the formatter.</param>
+	/// <param name="escapingApplied">
+	/// Receives a value indicating whether the <paramref name="value"/> required escaping.
+	/// When this is <see langword="true" />, <paramref name="encodedBytes"/> is not simply the result of calling <see cref="Encoding.GetBytes(string)"/> on the <see cref="Encoding"/>
+	/// and will not match the result of <see cref="Deformatter.ReadString(ref Reader, Span{byte})"/>, which unescapes the string.
+	/// It <em>may</em> match <see cref="Deformatter.ReadEncodedString(ref Reader, Span{byte})"/> however, since that retains any applied escaping.
+	/// But some formats may <em>allow</em> escaping without requiring it, meaning that there may be multiple escaped representations of the same string.
+	/// Therefore for string equality checks, using the unescaped string forms is strongly recommended.
+	/// </param>
 	/// <remarks>
 	/// This is useful as an optimization so that common strings need not be repeatedly encoded/decoded.
 	/// </remarks>
-	public abstract void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes);
+	public abstract void GetEncodedStringBytes(ReadOnlySpan<char> value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes, out bool escapingApplied);
 
-	/// <inheritdoc cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte})"/>
+	/// <inheritdoc cref="GetEncodedStringBytes(string, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte}, out bool)"/>
 	public void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes)
-		=> this.GetEncodedStringBytes(value.AsSpan(), out encodedBytes, out formattedBytes);
+		=> this.GetEncodedStringBytes(value.AsSpan(), out encodedBytes, out formattedBytes, out _);
+
+	/// <inheritdoc cref="GetEncodedStringBytes(ReadOnlySpan{char}, out ReadOnlyMemory{byte}, out ReadOnlyMemory{byte}, out bool)"/>
+	public void GetEncodedStringBytes(string value, out ReadOnlyMemory<byte> encodedBytes, out ReadOnlyMemory<byte> formattedBytes, out bool escapingApplied)
+		=> this.GetEncodedStringBytes(value.AsSpan(), out encodedBytes, out formattedBytes, out escapingApplied);
 
 	/// <summary>
 	/// Introduces a collection with a prefixed size.
