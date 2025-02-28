@@ -65,17 +65,24 @@ public abstract partial class NamingPolicyApplicationTests(SerializerBase serial
 		this.Serializer.Serialize(sequence, value);
 
 		Reader reader = new(sequence, this.Serializer.Deformatter);
-		reader.ReadStartMap();
+		int? count = reader.ReadStartMap();
 
 		bool isFirstElement = true;
-		Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
 
 		reader.Skip(new SerializationContext());
 		reader.ReadMapKeyValueSeparator();
 		reader.Skip(new SerializationContext());
 
 		// Property name that is explicitly set via PropertyShapeAttribute.Name should never be changed.
-		Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		if (count is null)
+		{
+			Assert.True(reader.TryAdvanceToNextElement(ref isFirstElement));
+		}
+
 		Assert.Equal("ExpressName", reader.ReadString());
 	}
 

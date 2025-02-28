@@ -4,7 +4,7 @@
 using System.Numerics;
 using System.Reflection;
 
-public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
+public abstract partial class ArraysOfPrimitivesTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 #if NET
 	private static readonly Random Random = Random.Shared;
@@ -137,6 +137,10 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 #else
 	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, 100, 10_000];
 #endif
+
+	public class Json() : ArraysOfPrimitivesTests(CreateJsonSerializer());
+
+	public class MsgPack() : ArraysOfPrimitivesTests(CreateMsgPackSerializer());
 
 	[GenerateShape<bool[]>]
 	[GenerateShape<Memory<bool>>]

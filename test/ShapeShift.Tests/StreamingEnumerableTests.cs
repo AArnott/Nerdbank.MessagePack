@@ -1,10 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ShapeShift.MessagePack;
-
 [Trait("AsyncSerialization", "true")]
-public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
+public abstract partial class StreamingEnumerableTests(SerializerBase serializer) : SerializerTestBase(serializer)
 {
 	/// <summary>
 	/// Streams multiple elements with no array envelope.
@@ -13,7 +11,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	public async Task DeserializeEnumerableAsync_TopLevel_PipeReader()
 	{
 		using Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		for (int i = 1; i <= 10; i++)
 		{
 			writer.Write(i);
@@ -52,7 +50,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	public async Task DeserializeEnumerableAsync_TopLevel_Stream()
 	{
 		using Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		for (int i = 1; i <= 10; i++)
 		{
 			writer.Write(i);
@@ -78,7 +76,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	public async Task DeserializeEnumerableAsync_Array()
 	{
 		using Sequence<byte> sequence = new();
-		Writer writer = new(sequence, MessagePackFormatter.Default);
+		Writer writer = new(sequence, this.Serializer.Formatter);
 		writer.WriteStartVector(10);
 		for (int i = 1; i <= 10; i++)
 		{
@@ -115,31 +113,6 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		}
 
 		Assert.Equal(2, actual.Count);
-	}
-
-	[Trait("ReferencePreservation", "true")]
-	[Fact]
-	public async Task DeserializeEnumerableAsync_ReferencesPreserved()
-	{
-		this.Serializer = this.Serializer with { PreserveReferences = true };
-		SimpleStreamingContainerKeyed original = new();
-		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>([original, original], TestContext.Current.CancellationToken);
-		this.LogFormattedBytes(msgpack);
-
-		PipeReader reader = PipeReader.Create(new(msgpack));
-		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
-		List<SimpleStreamingContainerKeyed?> actual = new();
-		NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async delegate
-		{
-			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
-			{
-				actual.Add(item);
-			}
-
-			Assert.Equal(2, actual.Count);
-			Assert.Same(actual[0], actual[1]);
-		});
-		this.Logger.WriteLine(ex.Message);
 	}
 
 	[Theory, PairwiseData]
@@ -430,6 +403,42 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	}
 
 	public record struct CustomKey(int Key);
+
+	public class Json() : StreamingEnumerableTests(CreateJsonSerializer());
+
+	public class MsgPack() : StreamingEnumerableTests(CreateMsgPackSerializer())
+	{
+		private new MessagePackSerializer Serializer
+		{
+			get => (MessagePackSerializer)base.Serializer;
+			set => base.Serializer = value;
+		}
+
+		[Trait("ReferencePreservation", "true")]
+		[Fact]
+		public async Task DeserializeEnumerableAsync_ReferencesPreserved()
+		{
+			this.Serializer = this.Serializer with { PreserveReferences = true };
+			SimpleStreamingContainerKeyed original = new();
+			byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>([original, original], TestContext.Current.CancellationToken);
+			this.LogFormattedBytes(msgpack);
+
+			PipeReader reader = PipeReader.Create(new(msgpack));
+			MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
+			List<SimpleStreamingContainerKeyed?> actual = new();
+			NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async delegate
+			{
+				await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+				{
+					actual.Add(item);
+				}
+
+				Assert.Equal(2, actual.Count);
+				Assert.Same(actual[0], actual[1]);
+			});
+			this.Logger.WriteLine(ex.Message);
+		}
+	}
 
 	[GenerateShape<string>]
 	[GenerateShape<int>]
