@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using STJ = System.Text.Json;
+
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
@@ -26,6 +28,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("map-init", "Serialize")]
+	public void SerializeMapInit_STJ() => this.SerializeJson(Data.PocoMapInit.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("map-init", "Deserialize")]
 	public void DeserializeMapInit()
 	{
@@ -38,6 +44,10 @@ public partial class SimplePoco
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoMapInit>(Data.PocoMapInit.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("map-init", "Deserialize")]
+	public void DeserializeMapInit_STJ() => this.DeserializeJson<PocoMapInit>(Data.PocoMapInit.SingleJson);
 
 	[Benchmark]
 	[BenchmarkCategory("map", "Serialize")]
@@ -56,6 +66,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("map", "Serialize")]
+	public void SerializeMap_STJ() => this.SerializeJson(Data.PocoMap.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("map", "Deserialize")]
 	public void DeserializeMap()
 	{
@@ -68,6 +82,10 @@ public partial class SimplePoco
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoMap>(Data.PocoMap.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("map", "Deserialize")]
+	public void DeserializeMap_STJ() => this.DeserializeJson<PocoMap>(Data.PocoMap.SingleJson);
 
 	[Benchmark]
 	[BenchmarkCategory("array", "Serialize")]
@@ -86,6 +104,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("array", "Serialize")]
+	public void SerializeAsArray_STJ() => this.SerializeJson(Data.PocoAsArray.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("array", "Deserialize")]
 	public void DeserializeAsArray()
 	{
@@ -98,6 +120,10 @@ public partial class SimplePoco
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoAsArray>(Data.PocoAsArray.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("array", "Deserialize")]
+	public void DeserializeAsArray_STJ() => this.DeserializeJson<PocoAsArray>(Data.PocoAsArray.SingleJson);
 
 	[Benchmark]
 	[BenchmarkCategory("array-init", "Serialize")]
@@ -116,6 +142,10 @@ public partial class SimplePoco
 	}
 
 	[Benchmark]
+	[BenchmarkCategory("array-init", "Serialize")]
+	public void SerializeAsArrayInit_STJ() => this.SerializeJson(Data.PocoAsArrayInit.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("array-init", "Deserialize")]
 	public void DeserializeAsArrayInit()
 	{
@@ -127,5 +157,23 @@ public partial class SimplePoco
 	public void DeserializeAsArrayInit_MsgPackCSharp()
 	{
 		MsgPackCSharp.MessagePackSerializer.Deserialize<PocoAsArrayInit>(Data.PocoAsArrayInit.SingleMsgpack, MsgPackCSharp.MessagePackSerializerOptions.Standard);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("array-init", "Deserialize")]
+	public void DeserializeAsArrayInit_STJ() => this.DeserializeJson<PocoAsArrayInit>(Data.PocoAsArrayInit.SingleJson);
+
+	private void SerializeJson<T>(T value)
+	{
+		STJ.Utf8JsonWriter writer = new(this.buffer);
+		STJ.JsonSerializer.Serialize(writer, Data.PocoMap.Single);
+		writer.Flush();
+		this.buffer.Reset();
+	}
+
+	private T? DeserializeJson<T>(ReadOnlySequence<byte> json)
+	{
+		STJ.Utf8JsonReader r = new(json);
+		return STJ.JsonSerializer.Deserialize<T>(ref r);
 	}
 }
