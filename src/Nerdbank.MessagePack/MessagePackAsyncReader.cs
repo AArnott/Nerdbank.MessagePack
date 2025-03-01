@@ -250,10 +250,14 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	/// <summary>
 	/// Gets a value indicating whether we've reached the end of the stream.
 	/// </summary>
+	/// <param name="forceRead"><see langword="true" /> to guarantee that we call <see cref="ReadAsync"/> unless we already hit the EOF marker, even if we know we're not at the end of the stream.</param>
 	/// <returns>A boolean value.</returns>
-	internal async ValueTask<bool> GetIsEndOfStreamAsync()
+	/// <remarks>
+	/// This method <em>may</em> call <see cref="ReadAsync"/>.
+	/// </remarks>
+	internal async ValueTask<bool> GetIsEndOfStreamAsync(bool forceRead)
 	{
-		if (this.refresh is null or { Buffer.IsEmpty: true, EndOfStream: false })
+		if (this.refresh is null or { Buffer.IsEmpty: true, EndOfStream: false } || (forceRead && this.refresh is not { EndOfStream: true }))
 		{
 			await this.ReadAsync().ConfigureAwait(false);
 		}
