@@ -70,6 +70,79 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 	}
 
 	/// <summary>
+	/// Verifies that there is no hang due to double reads.
+	/// </summary>
+	/// <remarks>Regression test for <see href="https://github.com/AArnott/Nerdbank.MessagePack/issues/282">this user-filed bug</see>.</remarks>
+	[Fact]
+	public async Task DeserializeEnumerableAsync_TopLevel_ReadItAll()
+	{
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.Write(1);
+		writer.Flush();
+		SequencePosition breakPosition = sequence.AsReadOnlySequence.End;
+		writer.Write(2);
+		writer.Flush();
+
+		FragmentedPipeReader reader = new(sequence, breakPosition);
+		List<int> realizedList = [];
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider.Resolve<int>(), TestContext.Current.CancellationToken))
+		{
+			this.Logger.WriteLine($"Received {value}");
+			realizedList.Add(value);
+			Assert.Equal(realizedList.Count, value);
+			if (realizedList.Count == 2)
+			{
+				// We're not expecting any more.
+				break;
+			}
+		}
+
+		Assert.Equal([1, 2], realizedList);
+	}
+
+	/// <summary>
+	/// Verifies that there is no hang due to double reads.
+	/// </summary>
+	/// <remarks>Regression test for <see href="https://github.com/AArnott/Nerdbank.MessagePack/issues/282">this user-filed bug</see>.</remarks>
+	[Fact]
+	public async Task DeserializeEnumerableAsync_TopLevel_Fragmented()
+	{
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.Write(1);
+		writer.Flush();
+		SequencePosition breakPosition1 = sequence.AsReadOnlySequence.End;
+		writer.Write(2);
+		writer.Flush();
+
+		// Add more that should never be read so that the PipeReader will not report that the end of the stream was reached.
+		SequencePosition breakPosition2 = sequence.AsReadOnlySequence.End;
+		writer.Write(3);
+		writer.Flush();
+
+		FragmentedPipeReader reader = new(sequence, breakPosition1, breakPosition2);
+		List<int> realizedList = [];
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider.Resolve<int>(), TestContext.Current.CancellationToken))
+		{
+			this.Logger.WriteLine($"Received {value}");
+			realizedList.Add(value);
+			Assert.Equal(realizedList.Count, value);
+			if (realizedList.Count == 2)
+			{
+				// We're not expecting any more.
+				break;
+			}
+		}
+
+		Assert.Equal([1, 2], realizedList);
+
+		// Verify that the enumerator never tried to get more data than we asked for,
+		// because if it did and the data wasn't on the stream (yet), it would have hung waiting for it.
+		Assert.Equal(2, reader.ChunksRead);
+	}
+
+	/// <summary>
 	/// Streams elements of a top-level msgpack array.
 	/// </summary>
 	[Fact]

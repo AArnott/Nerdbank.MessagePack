@@ -40,6 +40,8 @@ internal class FragmentedPipeReader : PipeReader
 #endif
 	}
 
+	internal int ChunksRead { get; private set; }
+
 	public override void AdvanceTo(SequencePosition consumed) => this.AdvanceTo(consumed, consumed);
 
 	public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
@@ -69,6 +71,7 @@ internal class FragmentedPipeReader : PipeReader
 			if (this.lastReadReturnedPosition.HasValue && this.examined.Equals(this.lastReadReturnedPosition.Value))
 			{
 				// The caller has examined everything we gave them. Give them more.
+				this.ChunksRead++;
 #if NETFRAMEWORK
 				long examinedIndex = this.buffer.Slice(0, this.examined).Length;
 				int lastChunkGivenIndex = Array.IndexOf(this.chunkIndexes!, examinedIndex);
@@ -83,6 +86,11 @@ internal class FragmentedPipeReader : PipeReader
 				// The caller hasn't finished processing the last chunk we gave them.
 				// Give them the same chunk again.
 				chunkEnd = this.lastReadReturnedPosition ?? this.chunkPositions[0];
+				if (this.lastReadReturnedPosition is null)
+				{
+					// This is the first read.
+					this.ChunksRead++;
+				}
 			}
 		}
 
