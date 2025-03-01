@@ -134,7 +134,7 @@ Suppose you had the following type hierarchy:
 Animal <- Horse <- Quarterback
 
 The `Animal` class _must_ have the whole set of transitive derived types listed as known sub-types directly on itself.
-It will not do for `Animal` to merely mention `Horse` and for `Horse` to listed `Quarterback` as a sub-type, as this is not currently supported.
+It will not do for `Animal` to merely mention `Horse` and for `Horse` to list `Quarterback` as a sub-type, as this is not currently supported.
 
 ### Generic sub-types
 

@@ -40,15 +40,3 @@ Unfortunately, unity does not arrange for the execution of these source generato
 
 The [UnityRoslynUpdater README](https://github.com/DaZombieKiller/UnityRoslynUpdater?tab=readme-ov-file#c-11) warns against using generic attributes or your game will crash.
 This warning does not apply for uses of the @PolyType.GenerateShapeAttribute`1 attribute because the attribute is never included in your compiled assembly.
-
-### `PolyType` name collision
-
-Installing the Nerdbank.MessagePack nuget package brings down dependencies, including a PolyType package.
-Because unity itself declares an unrelated `enum PolyType` type, source code that unity injects into your project may fail to compile with an error like the following:
-
-> Library\PackageCache\com.unity.2d.animation@494a3b4e73a9\Editor\SkinningModule\OutlineGenerator\OutlineGenerator.cs(66,36): error CS0234: The type or namespace name 'ptSubject' does not exist in the namespace 'PolyType' (are you missing an assembly reference?)
-
-This is tracked in [unity bug IN-94432](https://unity3d.atlassian.net/servicedesk/customer/portal/2/IN-94432).
-
-The only workaround known so far is to replace the occurrences of `PolyType` in the file referenced in the error with the fully-qualified `UnityEditor.U2D.Animation.ClipperLib.PolyType` string.
-This is a hack though, since it requires changing a file in the unity package cache for your project.
