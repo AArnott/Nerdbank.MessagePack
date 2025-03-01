@@ -420,16 +420,8 @@ public abstract partial record SerializerBase
 #pragma warning disable NBMsgPackAsync
 		AsyncReader asyncReader = new(reader, this.Deformatter) { CancellationToken = cancellationToken };
 		bool readMore = false;
-		while (!await asyncReader.GetIsEndOfStreamAsync().ConfigureAwait(false))
+		while (!await asyncReader.GetIsEndOfStreamAsync(readMore).ConfigureAwait(false))
 		{
-			if (readMore)
-			{
-				// We've proven that items *can* fit in the buffer, and that we've read all we can.
-				// Try once to read more bytes to see if we can keep synchronously deserializing.
-				await asyncReader.ReadAsync().ConfigureAwait(false);
-				readMore = false;
-			}
-
 			// Use sync deserialization if we can because it's faster.
 			int bufferedCount = asyncReader.GetBufferedStructuresCount(100, context.Value, out bool reachedMaxCount);
 			if (bufferedCount > 0)
@@ -453,6 +445,12 @@ public abstract partial record SerializerBase
 			{
 				// We don't have a complete structure buffered, so use async streaming deserialization.
 				yield return await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+
+				// We don't know what's in the buffer.
+				// There may be a whole element left in there.
+				// Reading more at this point could cause us to hang for more bytes
+				// instead of yielding the element we already have in the buffer.
+				readMore = false;
 			}
 		}
 
