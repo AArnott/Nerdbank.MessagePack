@@ -213,7 +213,8 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
-		JsonArray oneOfArray = [CreateOneOfElement(null, baseConverter.GetJsonSchema(context, typeShape) ?? CreateUndocumentedSchema(baseConverter.GetType()))];
+		var unionTypeShape = (IUnionTypeShape)typeShape;
+		JsonArray oneOfArray = [CreateOneOfElement(null, baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(baseConverter.GetType()))];
 
 		foreach ((SubTypeAlias alias, _, ITypeShape shape) in subTypes.Serializers)
 		{
