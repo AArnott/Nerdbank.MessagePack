@@ -35,7 +35,7 @@ internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVi
 
 	/// <inheritdoc/>
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
-		=> ((IMessagePackConverterInternal)inner.VisitUnionCase(unionCaseShape, state)!).WrapWithReferencePreservation();
+		=> inner.VisitUnionCase(unionCaseShape, state);
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)

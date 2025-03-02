@@ -180,7 +180,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
 	{
-		var baseTypeConverter = (MessagePackConverter<TUnion>)unionShape.BaseType.Accept(this.OutwardVisitor)!;
+		MessagePackConverter<TUnion> baseTypeConverter = (MessagePackConverter<TUnion>)unionShape.BaseType.Accept(this)!;
 
 		if (baseTypeConverter is UnionConverter<TUnion>)
 		{
@@ -229,7 +229,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseConverter = (MessagePackConverter<TUnionCase>)unionCaseShape.Type.Accept(this.OutwardVisitor)!;
+		var caseConverter = (MessagePackConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
 		return new UnionCaseConverter<TUnionCase, TUnion>(caseConverter);
 	}
 
