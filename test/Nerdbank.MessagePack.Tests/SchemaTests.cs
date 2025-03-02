@@ -409,11 +409,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<SubType>(1)]
-#else
-	[KnownSubType(typeof(SubType), 1)]
-#endif
+	[DerivedTypeShape(typeof(SubType), Tag = 1)]
 	internal partial class BaseType
 	{
 		public string? Message { get; set; }

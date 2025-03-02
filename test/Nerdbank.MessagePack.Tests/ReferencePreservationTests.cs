@@ -259,11 +259,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	}
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<DerivedRecordA>(1)]
-#else
-	[KnownSubType(typeof(DerivedRecordA), 1)]
-#endif
+	[DerivedTypeShape(typeof(DerivedRecordA), Tag = 1)]
 	public partial record BaseRecord;
 
 	[GenerateShape]

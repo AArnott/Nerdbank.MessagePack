@@ -64,8 +64,8 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 		=> EqualityComparer<TEnum>.Default;
 
 	/// <inheritdoc/>
-	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
-		=> new StructuralNullableEqualityComparer<T>(this.GetEqualityComparer(nullableShape.ElementType));
+	public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
+		=> new StructuralOptionalEqualityComparer<TOptional, TElement>(this.GetEqualityComparer(optionalShape.ElementType), optionalShape.GetDeconstructor());
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)

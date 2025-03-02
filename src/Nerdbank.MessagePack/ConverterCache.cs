@@ -250,7 +250,7 @@ internal record class ConverterCache
 	/// <remarks>
 	/// <para>
 	/// This method provides a runtime dynamic alternative to the otherwise simpler but static
-	/// <see cref="KnownSubTypeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
+	/// <see cref="DerivedTypeShapeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
 	/// </para>
 	/// <para>
 	/// This is also the only way to force the serialized schema to <em>support</em> sub-types in the future when
@@ -258,7 +258,7 @@ internal record class ConverterCache
 	/// </para>
 	/// <para>
 	/// A mapping provided for a given <typeparamref name="TBase"/> will completely replace any mapping from
-	/// <see cref="KnownSubTypeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
+	/// <see cref="DerivedTypeShapeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
 	/// </para>
 	/// </remarks>
 	internal void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping)

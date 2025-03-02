@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Theory, PairwiseData]
 	public async Task BaseType(bool async)
@@ -110,8 +110,8 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void UnknownDerivedType()
 	{
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new UnknownDerived()));
-		this.Logger.WriteLine(ex.Message);
+		BaseClass? result = this.Roundtrip<BaseClass>(new UnknownDerived());
+		Assert.IsType<BaseClass>(result);
 	}
 
 	[Theory, PairwiseData]
@@ -136,17 +136,12 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<ImpliedAliasBase>(new ImpliedAliasDerived());
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal(2, reader.ReadArrayHeader());
-		Assert.Equal(typeof(ImpliedAliasDerived).FullName, reader.ReadString());
+		Assert.Equal(typeof(ImpliedAliasDerived).Name, reader.ReadString());
 	}
 
 	[Fact]
 	public void RecursiveSubTypes()
 	{
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived(), TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.Message);
-
-#if false
 		// If it were to work, this is how we expect it to work:
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<RecursiveBase>(new RecursiveDerivedDerived());
 		MessagePackReader reader = new(msgpack);
@@ -154,7 +149,6 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal(1, reader.ReadInt32());
 		Assert.Equal(2, reader.ReadArrayHeader());
 		Assert.Equal(13, reader.ReadInt32());
-#endif
 	}
 
 	[Fact]
@@ -196,8 +190,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal(1, reader.ReadInt32());
 
 		// Verify that statically set subtypes are not recognized if no runtime equivalents are registered.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new DerivedA()));
-		this.Logger.WriteLine(ex.Message);
+		Assert.IsType<BaseClass>(this.Roundtrip<BaseClass>(new DerivedA()));
 	}
 
 	/// <summary>
@@ -219,19 +212,11 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	internal partial class Witness;
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<DerivedA>(1)]
-	[KnownSubType<DerivedAA>(2)]
-	[KnownSubType<DerivedB>(3)]
-	[KnownSubType<EnumerableDerived>(4)]
-	[KnownSubType<DerivedGeneric<int>, Witness>(5)]
-#else
-	[KnownSubType(typeof(DerivedA), 1)]
-	[KnownSubType(typeof(DerivedAA), 2)]
-	[KnownSubType(typeof(DerivedB), 3)]
-	[KnownSubType(typeof(EnumerableDerived), 4)]
-	[KnownSubType(typeof(DerivedGeneric<int>), 5)]
-#endif
+	[DerivedTypeShape(typeof(DerivedA), Tag = 1)]
+	[DerivedTypeShape(typeof(DerivedAA), Tag = 2)]
+	[DerivedTypeShape(typeof(DerivedB), Tag = 3)]
+	[DerivedTypeShape(typeof(EnumerableDerived), Tag = 4)]
+	[DerivedTypeShape(typeof(DerivedGeneric<int>), Tag = 5)]
 	public partial record BaseClass
 	{
 		public int BaseClassProperty { get; set; }
@@ -243,57 +228,41 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		public int DerivedAProperty { get; set; }
 	}
 
-	[GenerateShape]
-	public partial record DerivedAA : DerivedA
+	public record DerivedAA : DerivedA
 	{
 	}
 
-	[GenerateShape]
-	public partial record DerivedB(int DerivedBProperty) : BaseClass
+	public record DerivedB(int DerivedBProperty) : BaseClass
 	{
 	}
 
-	[GenerateShape]
-	public partial record EnumerableDerived(int Count) : BaseClass, IEnumerable<int>
+	public record EnumerableDerived(int Count) : BaseClass, IEnumerable<int>
 	{
 		public IEnumerator<int> GetEnumerator() => Enumerable.Range(0, this.Count).GetEnumerator();
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
 	}
 
-	public partial record DerivedGeneric<T>(T Value) : BaseClass
+	public record DerivedGeneric<T>(T Value) : BaseClass
 	{
 	}
 
-	[GenerateShape]
-	public partial record UnknownDerived : BaseClass;
+	public record UnknownDerived : BaseClass;
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<MixedAliasDerivedA>("A")]
-	[KnownSubType<MixedAliasDerived1>(1)]
-#else
-	[KnownSubType(typeof(MixedAliasDerivedA), "A")]
-	[KnownSubType(typeof(MixedAliasDerived1), 1)]
-#endif
+	[DerivedTypeShape(typeof(MixedAliasDerivedA), Name = "A")]
+	[DerivedTypeShape(typeof(MixedAliasDerived1), Tag = 1)]
 	public partial record MixedAliasBase;
 
-	[GenerateShape]
-	public partial record MixedAliasDerivedA : MixedAliasBase;
+	public record MixedAliasDerivedA : MixedAliasBase;
+
+	public record MixedAliasDerived1 : MixedAliasBase;
 
 	[GenerateShape]
-	public partial record MixedAliasDerived1 : MixedAliasBase;
-
-	[GenerateShape]
-#if NET
-	[KnownSubType<ImpliedAliasDerived>]
-#else
-	[KnownSubType(typeof(ImpliedAliasDerived))]
-#endif
+	[DerivedTypeShape(typeof(ImpliedAliasDerived))]
 	public partial record ImpliedAliasBase;
 
-	[GenerateShape]
-	public partial record ImpliedAliasDerived : ImpliedAliasBase;
+	public record ImpliedAliasDerived : ImpliedAliasBase;
 
 	[GenerateShape]
 	public partial record DynamicallyRegisteredBase;
@@ -305,21 +274,11 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	public partial record DynamicallyRegisteredDerivedB : DynamicallyRegisteredBase;
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<RecursiveDerived>(1)]
-#else
-	[KnownSubType(typeof(RecursiveDerived), 1)]
-#endif
+	[DerivedTypeShape(typeof(RecursiveDerived), Tag = 1)]
 	public partial record RecursiveBase;
 
-	[GenerateShape]
-#if NET
-	[KnownSubType<RecursiveDerivedDerived>(13)]
-#else
-	[KnownSubType(typeof(RecursiveDerivedDerived), 13)]
-#endif
+	[DerivedTypeShape(typeof(RecursiveDerivedDerived), Tag = 13)]
 	public partial record RecursiveDerived : RecursiveBase;
 
-	[GenerateShape]
-	public partial record RecursiveDerivedDerived : RecursiveDerived;
+	public record RecursiveDerivedDerived : RecursiveDerived;
 }

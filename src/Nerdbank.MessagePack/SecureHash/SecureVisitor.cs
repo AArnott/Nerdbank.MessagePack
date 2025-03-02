@@ -113,8 +113,8 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		=> new HashCollisionResistantPrimitives.CollisionResistantEnumHasher<TEnum, TUnderlying>(this.GetEqualityComparer(enumShape.UnderlyingType));
 
 	/// <inheritdoc/>
-	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
-		=> new SecureNullableEqualityComparer<T>(this.GetEqualityComparer(nullableShape.ElementType));
+	public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
+		=> new SecureOptionalEqualityComparer<TOptional, TElement>(this.GetEqualityComparer(optionalShape.ElementType), optionalShape.GetDeconstructor());
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)

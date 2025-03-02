@@ -896,36 +896,42 @@ internal class GuidConverter : MessagePackConverter<Guid>
 /// <summary>
 /// Serializes a nullable value type.
 /// </summary>
-/// <typeparam name="T">The value type.</typeparam>
+/// <typeparam name="TOptional">The optional wrapper around <typeparamref name="TElement"/>.</typeparam>
+/// <typeparam name="TElement">The value type.</typeparam>
 /// <param name="elementConverter">The converter to use when the value is not null.</param>
-internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : MessagePackConverter<T?>
-	where T : struct
+/// <param name="deconstructor">A function to unwrap an optional value.</param>
+/// <param name="createNone">A function to create a deserialized "missing" value.</param>
+/// <param name="createSome">A function to wrap a deserialized value.</param>
+internal class OptionalConverter<TOptional, TElement>(
+	MessagePackConverter<TElement> elementConverter,
+	OptionDeconstructor<TOptional, TElement> deconstructor,
+	Func<TOptional> createNone,
+	Func<TElement, TOptional> createSome) : MessagePackConverter<TOptional>
 {
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in TOptional? value, SerializationContext context)
 	{
-		if (value.HasValue)
-		{
-			elementConverter.Write(ref writer, value.Value, context);
-		}
-		else
+		if (!deconstructor(value, out TElement? element))
 		{
 			writer.WriteNil();
+			return;
 		}
+
+		elementConverter.Write(ref writer, element, context);
 	}
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TOptional Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return null;
+			return createNone();
 		}
 
-		return elementConverter.Read(ref reader, context);
+		return createSome(elementConverter.Read(ref reader, context)!);
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> ApplyJsonSchemaNullability(context.GetJsonSchema(((INullableTypeShape<T>)typeShape).ElementType));
+		=> ApplyJsonSchemaNullability(context.GetJsonSchema(((IOptionalTypeShape)typeShape).ElementType));
 }

@@ -6,7 +6,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.DotNetApiUsageAn
 public class DotNetApiUsageAnalyzerTests
 {
 	[Fact]
-	public async Task KnownSubTypeAttribute()
+	public async Task SerializeOverload()
 	{
 #if NET
 		string source = /* lang=c#-test */ """
@@ -14,22 +14,40 @@ public class DotNetApiUsageAnalyzerTests
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
-			[{|NBMsgPack051:KnownSubTypeAttribute(typeof(MyDerived))|}]
 			class MyType { }
 
-			partial class MyDerived : MyType, IShapeable<MyDerived>
+			[GenerateShape<MyType>]
+			partial class Witness;
+
+			class Foo
 			{
-				public static ITypeShape<MyDerived> GetShape() => throw new System.NotImplementedException();
+				private readonly MessagePackSerializer serializer = new();
+
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					this.serializer.Serialize(writer, value, Witness.ShapeProvider); // NBMsgPack051: Use an overload that takes a constrained type instead.
+				}
 			}
 			""";
 #else
 		string source = /* lang=c#-test */ """
 			using Nerdbank.MessagePack;
 
-			[KnownSubTypeAttribute(typeof(MyDerived))]
-			class MyType { }
+			[GenerateShape]
+			partial class MyType { }
 
-			class MyDerived : MyType { }
+			[GenerateShape<MyType>]
+			partial class Witness;
+
+			class Foo
+			{
+				private readonly MessagePackSerializer serializer = new();
+
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					this.serializer.Serialize(writer, value, Witness.ShapeProvider);
+				}
+			}
 			""";
 #endif
 		await VerifyCS.VerifyAnalyzerAsync(source);

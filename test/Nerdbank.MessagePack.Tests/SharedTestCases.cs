@@ -19,6 +19,7 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;
 			byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			this.LogMsgPack(new(msgpack));
 
 			if (IsDeserializable(testCase))
 			{
@@ -63,9 +64,23 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 			return false;
 		}
 
-		if (testCase.IsAbstract && !typeof(System.Collections.IEnumerable).IsAssignableFrom(typeof(T)))
+		if (testCase.IsAbstract && !testCase.IsUnion && !typeof(System.Collections.IEnumerable).IsAssignableFrom(typeof(T)))
 		{
 			return false;
+		}
+
+		if (testCase.DefaultShape is IUnionTypeShape<T> unionShape)
+		{
+			T value = testCase.Value;
+			int idx = unionShape.GetGetUnionCaseIndex()(ref value);
+			if (idx == -1 && unionShape.BaseType.Type.IsAbstract)
+			{
+				return false;
+			}
+			else if (idx >= 0 && unionShape.UnionCases[idx].Type.Type.IsAbstract)
+			{
+				return false;
+			}
 		}
 
 		if (testCase.CustomKind == TypeShapeKind.None)

@@ -2,7 +2,7 @@
 
 ## Polymorphic serialization
 
-You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the @Nerdbank.MessagePack.KnownSubTypeAttribute`1.
+You can serialize instances of certain types derived from the declared type and deserialize them back to their original runtime types using the @PolyType.DerivedTypeShapeAttribute.
 
 For instance, suppose you have this type to serialize:
 
@@ -11,25 +11,17 @@ For instance, suppose you have this type to serialize:
 But there are many kinds of animals.
 You can get them to serialize and deserialize correctly like this:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/Unions.cs#FarmAnimalsNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/Unions.cs#FarmAnimalsNETFX)]
-
----
+[!code-csharp[](../../samples/Unions.cs#FarmAnimals)]
 
 This changes the schema of the serialized data to include a tag that indicates the type of the object.
 
-*Without* any @Nerdbank.MessagePack.KnownSubTypeAttribute`1, an `Animal` object would serialize like this (as represented in JSON):
+*Without* any @PolyType.DerivedTypeShapeAttribute, any `Animal` (or derived) object would serialize like this (as represented in JSON):
 
 ```json
 { "Name": "Bessie" }
 ```
 
-But with the `KnownSubTypeAttribute`, it serializes like this:
+But with the @PolyType.DerivedTypeShapeAttribute, an `Animal` object serializes like this:
 
 ```json
 [null, { "Name": "Bessie" }]
@@ -43,7 +35,7 @@ If the serialized object were an instance of `Cow`, the first element would be `
 [1, { "Name": "Bessie" }]
 ```
 
-This special union schema is only used when the statically *declared* type is a class that has `KnownSubTypeAttribute` on it.
+This special union schema is only used when the statically *declared* type is a class that has @PolyType.DerivedTypeShapeAttribute on it.
 It is *not* used when the derived type is statically known. For example, consider this collection of horses:
 
 [!code-csharp[](../../samples/Unions.cs#HorsePen)]
@@ -59,15 +51,7 @@ This is because the `Horse` type is statically known as the generic type argumen
 
 Now suppose you have different breeds of horses that each had their own subtype:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/Unions.cs#HorseBreedsNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/Unions.cs#HorseBreedsNETFX)]
-
----
+[!code-csharp[](../../samples/Unions.cs#HorseBreeds)]
 
 At this point your `HorsePen` *would* serialize with the union schema around each horse:
 
@@ -79,7 +63,7 @@ But now let's consider your `Farm` class, which has a collection of `Animal` obj
 The `Animal` class only knows about `Horse` as a subtype and designates `2` as the alias for that subtype.
 `Animal` has no designation for `QuarterHorse` or `Thoroughbred`.
 As such, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects, not `QuarterHorse` or `Thoroughbred`.
-To fix this, you would need to add @Nerdbank.MessagePack.KnownSubTypeAttribute`1 to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
+To fix this, you would need to add @PolyType.DerivedTypeShapeAttribute to the `Animal` class for `QuarterHorse` and `Thoroughbred` that assigns type aliases for each of them.
 
 ### Alias types
 
@@ -90,39 +74,15 @@ Aliases may also be inferred from the @System.Type.FullName?displayProperty=name
 
 The following example shows using strings:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/Unions.cs#StringAliasTypesNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/Unions.cs#StringAliasTypesNETFX)]
-
----
+[!code-csharp[](../../samples/Unions.cs#StringAliasTypes)]
 
 Mixing alias types for a given base type is allowed, as shown here:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/Unions.cs#MixedAliasTypesNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/Unions.cs#MixedAliasTypesNETFX)]
-
----
+[!code-csharp[](../../samples/Unions.cs#MixedAliasTypes)]
 
 Following is an example of string alias inferrence:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/Unions.cs#InferredAliasTypesNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/Unions.cs#InferredAliasTypesNETFX)]
-
----
+[!code-csharp[](../../samples/Unions.cs#InferredAliasTypes)]
 
 Note that while inferrence is the simplest syntax, it results in the serialized schema including the full name of the type, which can make the serialized form more fragile in the face of refactoring changes.
 It can also result in a poorer experience if the data is exchanged with non-.NET programs.
@@ -133,8 +93,33 @@ Suppose you had the following type hierarchy:
 
 Animal <- Horse <- Quarterback
 
-The `Animal` class _must_ have the whole set of transitive derived types listed as known sub-types directly on itself.
-It will not do for `Animal` to merely mention `Horse` and for `Horse` to listed `Quarterback` as a sub-type, as this is not currently supported.
+The `Animal` class _may_ have the whole set of transitive derived types listed as known sub-types directly on itself.
+Or `Animal` may merely mention `Horse` and `Horse` may then define its own sub-types including `Quarterback`.
+
+The serialized form varies for these two cases however.
+When a base type defines known derived types transitively, you end up with only one wrapping array.
+
+TODO: sample here
+
+This will produce the following (JSON-equivalent) msgpack:
+
+```json
+[10, { "Name": "Lightning" }]
+```
+
+If the base type has no derived type definition that matches a runtime type exactly, but _does_ have a derived type definition for an in-between type,
+
+TODO: sample here
+
+This will produce the following (JSON-equivalent) msgpack, with nested arrays to represent the multi-step derived type:
+
+```json
+[1, [2, { "Name": "Lightning" }]]
+```
+
+TODO: what about undefined derived types of defined derived types? What happens to them?
+We should document and test this for both the runtime mapped case and the attributed case.
+Document that unknown derived types are simply serialized as if they were the base type.
 
 ### Generic sub-types
 
@@ -146,15 +131,7 @@ This witness type must be specified as a second type argument to @Nerdbank.Messa
 
 For example:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypesNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypesNETFX)]
-
----
+[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypes)]
 
 ### Runtime subtype registration
 
