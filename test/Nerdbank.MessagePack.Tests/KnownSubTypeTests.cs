@@ -115,6 +115,22 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	}
 
 	[Theory, PairwiseData]
+	public void UnknownDerivedType_PrefersClosestMatch(bool runtimeMapping)
+	{
+		if (runtimeMapping)
+		{
+			KnownSubTypeMapping<BaseClass> mapping = new();
+			mapping.Add<DerivedA>(1, Witness.ShapeProvider);
+			mapping.Add<DerivedAA>(2, Witness.ShapeProvider);
+			mapping.Add<DerivedB>(3, Witness.ShapeProvider);
+			this.Serializer.RegisterKnownSubTypes(mapping);
+		}
+
+		Assert.IsType<DerivedA>(this.Roundtrip<BaseClass>(new DerivedAUnknown()));
+		Assert.IsType<DerivedAA>(this.Roundtrip<BaseClass>(new DerivedAAUnknown()));
+	}
+
+	[Theory, PairwiseData]
 	public async Task MixedAliasTypes(bool async)
 	{
 		MixedAliasBase value = new MixedAliasDerivedA();
@@ -231,6 +247,10 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	public record DerivedAA : DerivedA
 	{
 	}
+
+	public record DerivedAUnknown : DerivedA;
+
+	public record DerivedAAUnknown : DerivedAA;
 
 	public record DerivedB(int DerivedBProperty) : BaseClass
 	{

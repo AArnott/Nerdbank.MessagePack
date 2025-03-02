@@ -602,12 +602,32 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			Verify.Operation(serializerData.TryAdd(shape.Type, (alias, converter, shape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {alias}.");
 		}
 
+		// Our runtime type checks must be done in an order that will select the most derived matching type.
+		(SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)[] sortedTypes = serializerData.Values.ToArray();
+		Array.Sort(sortedTypes, (a, b) => DerivedTypeComparer.Default.Compare(a.Shape.Type, b.Shape.Type));
+
 		return new SubTypes<TBaseType>
 		{
 			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
 			DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
 			Serializers = serializerData.Select(t => t.Value).ToFrozenSet(),
-			TryGetSerializer = (ref TBaseType v) => v is not null && serializerData.TryGetValue(v.GetType(), out (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape) value) ? (value.Alias, value.Converter) : null,
+			TryGetSerializer = (ref TBaseType v) =>
+			{
+				if (v is null)
+				{
+					return null;
+				}
+
+				foreach ((SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape) pair in sortedTypes)
+				{
+					if (pair.Shape.Type.IsAssignableFrom(v.GetType()))
+					{
+						return (pair.Alias, pair.Converter);
+					}
+				}
+
+				return null;
+			},
 		};
 	}
 
@@ -624,5 +644,29 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
+	}
+
+	/// <summary>
+	/// A comparer that sorts types by their inheritance hierarchy, with the most derived types first.
+	/// </summary>
+	private class DerivedTypeComparer : IComparer<Type>
+	{
+		internal static readonly DerivedTypeComparer Default = new();
+
+		private DerivedTypeComparer()
+		{
+		}
+
+		public int Compare(Type? x, Type? y)
+		{
+			// This proprietary implementation does not expect null values.
+			Requires.NotNull(x!);
+			Requires.NotNull(y!);
+
+			return
+				x.IsAssignableFrom(y) ? 1 :
+				y.IsAssignableFrom(x) ? -1 :
+				0;
+		}
 	}
 }
