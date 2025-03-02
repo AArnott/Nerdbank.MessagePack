@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.FSharp.Reflection;
 using PolyType.Tests;
 using Xunit.Sdk;
 
@@ -52,7 +53,7 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 		}
 	}
 
-	private static bool IsDeserializable<T>(TestCase<T> testCase)
+	private static bool IsDeserializable(PolyType.Tests.ITestCase testCase)
 	{
 		if (testCase.Value is null)
 		{
@@ -64,23 +65,14 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 			return false;
 		}
 
-		if (testCase.IsAbstract && !testCase.IsUnion && !typeof(System.Collections.IEnumerable).IsAssignableFrom(typeof(T)))
+		if (testCase.IsAbstract && !testCase.IsUnion && !typeof(System.Collections.IEnumerable).IsAssignableFrom(testCase.Type))
 		{
 			return false;
 		}
 
-		if (testCase.DefaultShape is IUnionTypeShape<T> unionShape)
+		if (testCase.IsUnion)
 		{
-			T value = testCase.Value;
-			int idx = unionShape.GetGetUnionCaseIndex()(ref value);
-			if (idx == -1 && unionShape.BaseType.Type.IsAbstract)
-			{
-				return false;
-			}
-			else if (idx >= 0 && unionShape.UnionCases[idx].Type.Type.IsAbstract)
-			{
-				return false;
-			}
+			return !testCase.IsAbstract || FSharpType.IsUnion(testCase.Type, null);
 		}
 
 		if (testCase.CustomKind == TypeShapeKind.None)
