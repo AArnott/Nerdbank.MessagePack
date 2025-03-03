@@ -34,7 +34,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact(Skip = "This doesn't pass yet, and in fact crashes the test runner.")]
+	[Fact]
 	public void BaseTypeExplicitIdentifier_RuntimeMapping()
 	{
 		DerivedTypeMapping<BaseClass> mapping = new();

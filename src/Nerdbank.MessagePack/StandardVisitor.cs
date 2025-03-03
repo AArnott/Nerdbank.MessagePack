@@ -76,8 +76,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return customConverter;
 		}
 
-		SubTypes<T>? unionTypes = this.DiscoverUnionTypes(objectShape);
-
 		IConstructorShape? ctorShape = objectShape.Constructor;
 
 		Dictionary<string, IConstructorParameterShape>? ctorParametersByName = null;
@@ -174,7 +172,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		return unionTypes is null ? converter : new UnionConverter<T>(converter, unionTypes);
+		return this.DiscoverUnionTypes(objectShape, converter) is { } unionTypes ? new UnionConverter<T>(converter, unionTypes) : converter;
 	}
 
 	/// <inheritdoc/>
@@ -192,7 +190,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Runtime mapping overrides attributes.
-		if (!(unionShape.BaseType is IObjectTypeShape<TUnion> baseObjectShape && this.DiscoverUnionTypes(baseObjectShape) is { } subTypes))
+		if (!(unionShape.BaseType is IObjectTypeShape<TUnion> baseObjectShape && this.DiscoverUnionTypes(baseObjectShape, baseTypeConverter) is { } subTypes))
 		{
 			Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 			Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
@@ -565,9 +563,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
 	/// </summary>
 	/// <param name="objectShape">The shape of the data type that may define derived types that are also allowed for serialization.</param>
+	/// <param name="baseTypeConverter">The converter to use when serializing the base type itself.</param>
 	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="DerivedTypeShapeAttribute"/> that violates rules.</exception>
-	private SubTypes<TBaseType>? DiscoverUnionTypes<TBaseType>(IObjectTypeShape<TBaseType> objectShape)
+	private SubTypes<TBaseType>? DiscoverUnionTypes<TBaseType>(IObjectTypeShape<TBaseType> objectShape, MessagePackConverter<TBaseType> baseTypeConverter)
 	{
 		IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? mapping;
 		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping))
@@ -586,7 +585,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			MessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
+			MessagePackConverter converter = shape.Type == objectShape.Type ? baseTypeConverter : this.GetConverter(shape).UnwrapReferencePreservation();
 			switch (alias.Type)
 			{
 				case DerivedTypeIdentifier.AliasType.Integer:
