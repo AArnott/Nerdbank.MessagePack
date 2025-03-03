@@ -22,7 +22,7 @@ namespace Nerdbank.MessagePack;
 internal record class ConverterCache
 {
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
-	private readonly ConcurrentDictionary<Type, IKnownDerivedTypeMapping> userProvidedKnownSubTypes = new();
+	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
 
 	private MultiProviderTypeCache? cachedConverters;
 
@@ -245,7 +245,7 @@ internal record class ConverterCache
 	/// <summary>
 	/// Registers a known sub-type mapping for a base type.
 	/// </summary>
-	/// <typeparam name="TBase"><inheritdoc cref="KnownDerivedTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
+	/// <typeparam name="TBase"><inheritdoc cref="DerivedTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
 	/// <param name="mapping">The mapping.</param>
 	/// <remarks>
 	/// <para>
@@ -261,7 +261,7 @@ internal record class ConverterCache
 	/// <see cref="DerivedTypeShapeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
 	/// </para>
 	/// </remarks>
-	internal void RegisterKnownSubTypes<TBase>(KnownDerivedTypeMapping<TBase> mapping)
+	internal void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping)
 	{
 		Requires.NotNull(mapping);
 		this.OnChangingConfiguration();
@@ -337,7 +337,7 @@ internal record class ConverterCache
 	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
 	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes)
 	{
-		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownDerivedTypeMapping? mapping))
+		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IDerivedTypeMapping? mapping))
 		{
 			subTypes = mapping.CreateDerivedTypesMapping();
 			return true;

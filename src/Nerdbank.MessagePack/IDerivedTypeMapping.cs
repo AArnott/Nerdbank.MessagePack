@@ -6,10 +6,10 @@ using System.Collections.Frozen;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A non-generic accessor for <see cref="KnownDerivedTypeMapping{TBase}"/>
+/// A non-generic accessor for <see cref="DerivedTypeMapping{TBase}"/>
 /// so that multiple such mappings can be stored in a collection and retrieved later.
 /// </summary>
-internal interface IKnownDerivedTypeMapping
+internal interface IDerivedTypeMapping
 {
 	/// <summary>
 	/// Constructs a read-only dictionary of sub-types, keyed by their aliases.

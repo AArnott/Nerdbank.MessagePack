@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class KnownDerivedTypeMappingTests(ITestOutputHelper logger)
+public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 {
 	[Fact]
 	public void NonUniqueAliasesRejected_Integers()
 	{
-		KnownDerivedTypeMapping<MyBase> mapping = new();
+		DerivedTypeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1));
@@ -20,7 +20,7 @@ public partial class KnownDerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniqueAliasesRejected_Strings()
 	{
-		KnownDerivedTypeMapping<MyBase> mapping = new();
+		DerivedTypeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A"));
@@ -34,7 +34,7 @@ public partial class KnownDerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniqueTypesRejected_Integers()
 	{
-		KnownDerivedTypeMapping<MyBase> mapping = new();
+		DerivedTypeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
@@ -48,7 +48,7 @@ public partial class KnownDerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniqueTypesRejected_Strings()
 	{
-		KnownDerivedTypeMapping<MyBase> mapping = new();
+		DerivedTypeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
@@ -62,7 +62,7 @@ public partial class KnownDerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniquePairsRejected_Integers()
 	{
-		KnownDerivedTypeMapping<MyBase> mapping = new();
+		DerivedTypeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1));
@@ -76,7 +76,7 @@ public partial class KnownDerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniquePairsRejected_Strings()
 	{
-		KnownDerivedTypeMapping<MyBase> mapping = new();
+		DerivedTypeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A"));
