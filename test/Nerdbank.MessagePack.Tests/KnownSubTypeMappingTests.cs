@@ -4,7 +4,7 @@
 public partial class KnownSubTypeMappingTests(ITestOutputHelper logger)
 {
 	[Fact]
-	public void NonUniqueAliasesRejected()
+	public void NonUniqueAliasesRejected_Integers()
 	{
 		KnownSubTypeMapping<MyBase> mapping = new();
 #if NET
@@ -18,7 +18,21 @@ public partial class KnownSubTypeMappingTests(ITestOutputHelper logger)
 	}
 
 	[Fact]
-	public void NonUniqueTypesRejected()
+	public void NonUniqueAliasesRejected_Strings()
+	{
+		KnownSubTypeMapping<MyBase> mapping = new();
+#if NET
+		mapping.Add<MyDerivedA>("A");
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A"));
+#else
+		mapping.Add<MyDerivedA>("A", Witness.ShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A", Witness.ShapeProvider));
+#endif
+		logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
+	public void NonUniqueTypesRejected_Integers()
 	{
 		KnownSubTypeMapping<MyBase> mapping = new();
 #if NET
@@ -32,7 +46,21 @@ public partial class KnownSubTypeMappingTests(ITestOutputHelper logger)
 	}
 
 	[Fact]
-	public void NonUniquePairsRejected()
+	public void NonUniqueTypesRejected_Strings()
+	{
+		KnownSubTypeMapping<MyBase> mapping = new();
+#if NET
+		mapping.Add<MyDerivedA>("A");
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
+#else
+		mapping.Add<MyDerivedA>("A", Witness.ShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.ShapeProvider));
+#endif
+		logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
+	public void NonUniquePairsRejected_Integers()
 	{
 		KnownSubTypeMapping<MyBase> mapping = new();
 #if NET
@@ -41,6 +69,20 @@ public partial class KnownSubTypeMappingTests(ITestOutputHelper logger)
 #else
 		mapping.Add<MyDerivedA>(1, Witness.ShapeProvider);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1, Witness.ShapeProvider));
+#endif
+		logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
+	public void NonUniquePairsRejected_Strings()
+	{
+		KnownSubTypeMapping<MyBase> mapping = new();
+#if NET
+		mapping.Add<MyDerivedA>("A");
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A"));
+#else
+		mapping.Add<MyDerivedA>("A", Witness.ShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A", Witness.ShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
 	}

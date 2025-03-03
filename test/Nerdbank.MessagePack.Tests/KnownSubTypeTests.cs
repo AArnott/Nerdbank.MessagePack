@@ -168,7 +168,7 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	}
 
 	[Fact]
-	public void RuntimeRegistration()
+	public void RuntimeRegistration_Integers()
 	{
 		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
 #if NET
@@ -177,6 +177,24 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 #else
 		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.ShapeProvider);
 		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.ShapeProvider);
+#endif
+		this.Serializer.RegisterKnownSubTypes(mapping);
+
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredBase());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedB());
+	}
+
+	[Fact]
+	public void RuntimeRegistration_Strings()
+	{
+		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>("A");
+		mapping.Add<DynamicallyRegisteredDerivedB>("B");
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.ShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>("B", Witness.ShapeProvider);
 #endif
 		this.Serializer.RegisterKnownSubTypes(mapping);
 

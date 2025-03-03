@@ -89,6 +89,8 @@ Nerdbank.MessagePack.KnownSubTypeAttribute.SubType.get -> System.Type!
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.Abstractions.ITypeShape<TDerived>! typeShape) -> void
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(int alias, PolyType.ITypeShapeProvider! provider) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(string! alias, PolyType.Abstractions.ITypeShape<TDerived>! typeShape) -> void
+Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.Add<TDerived>(string! alias, PolyType.ITypeShapeProvider! provider) -> void
 Nerdbank.MessagePack.KnownSubTypeMapping<TBase>.KnownSubTypeMapping() -> void
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode
 Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.LibraryReservedMessagePackExtensionTypeCode() -> void

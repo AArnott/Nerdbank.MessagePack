@@ -170,7 +170,7 @@ Mixing identifier types for a given base type is allowed, as shown here:
 
 Note that while inferrence is the simplest syntax, it results in the serialized schema including the name of the type, which can break the schema if the type is renamed.
 
-### Generic derived types
+## Generic derived types
 
 @PolyType.DerivedTypeShapeAttribute may reference generic derived types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
 You may close the generic type several times, but each one needs a unique type identifier so the inferred type name will not work.
@@ -178,7 +178,7 @@ You will have to explicitly specify them.
 
 [!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypes)]
 
-### Runtime derived type registration
+## Runtime derived type registration
 
 Static registration via attributes is not always possible.
 For instance, you may want to serialize types from a third-party library that you cannot modify.
