@@ -3,6 +3,7 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 #pragma warning disable RS0027 // optional parameter on a method with overloads
+#pragma warning disable NBMsgPack051 // We deliberately forward the safe calls to the more general methods.
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
