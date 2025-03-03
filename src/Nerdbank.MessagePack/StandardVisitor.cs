@@ -192,7 +192,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Runtime mapping overrides attributes.
-		if (!(unionShape.BaseType is IObjectTypeShape<TUnion> baseObjectShape && this.DiscoverUnionTypes<TUnion>(baseObjectShape) is { } subTypes))
+		if (!(unionShape.BaseType is IObjectTypeShape<TUnion> baseObjectShape && this.DiscoverUnionTypes(baseObjectShape) is { } subTypes))
 		{
 			Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 			Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
