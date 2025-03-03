@@ -3,33 +3,33 @@
 
 namespace Sample1
 {
-    class FarmWrapper
+    class LossyFarm
     {
-        public class Animal;
-
-        #region Farm
+        #region LossyFarm
         public class Farm
         {
-            public List<Animal>? Animals { get; set; }
+            public List<Animal> Animals { get; set; } = [];
         }
+
+        public record Animal(string Name);
+        public record Cow(string Name, int Weight) : Animal(Name);
+        public record Horse(string Name, int Speed) : Animal(Name);
+        public record Dog(string Name, string Color) : Animal(Name);
         #endregion
     }
 
-    class FarmAnimals
+    class RoundtrippingFarmAnimal
     {
-        #region FarmAnimals
-        [DerivedTypeShape(typeof(Cow), Tag = 1)]
-        [DerivedTypeShape(typeof(Horse), Tag = 2)]
-        [DerivedTypeShape(typeof(Dog), Tag = 3)]
-        public class Animal
-        {
-            public string? Name { get; set; }
-        }
-
-        public class Cow : Animal { }
-        public class Horse : Animal { }
-        public class Dog : Animal { }
+        #region RoundtrippingFarmAnimal
+        [DerivedTypeShape(typeof(Cow))]
+        [DerivedTypeShape(typeof(Horse))]
+        [DerivedTypeShape(typeof(Dog))]
+        public record Animal(string Name);
         #endregion
+
+        public record Cow(string Name, int Weight) : Animal(Name);
+        public record Horse(string Name, int Speed) : Animal(Name);
+        public record Dog(string Name, string Color) : Animal(Name);
     }
 
     class HorsePenWrapper
@@ -46,88 +46,87 @@ namespace Sample1
 
     class HorseBreeds
     {
-        public class Animal;
+        public record Animal;
 
         #region HorseBreeds
-        [DerivedTypeShape(typeof(QuarterHorse), Tag = 1)]
-        [DerivedTypeShape(typeof(Thoroughbred), Tag = 2)]
-        public partial class Horse : Animal { }
+        [DerivedTypeShape(typeof(QuarterHorse))]
+        [DerivedTypeShape(typeof(Thoroughbred))]
+        public record Horse : Animal;
 
-        public class QuarterHorse : Horse { }
-        public class Thoroughbred : Horse { }
+        public record QuarterHorse : Horse;
+        public record Thoroughbred : Horse;
         #endregion
+    }
+
+    class FlattenedAnimal
+    {
+        #region FlattenedAnimal
+        [DerivedTypeShape(typeof(Cow))]
+        [DerivedTypeShape(typeof(Dog))]
+        [DerivedTypeShape(typeof(Horse))]
+        [DerivedTypeShape(typeof(QuarterHorse))]
+        [DerivedTypeShape(typeof(Thoroughbred))]
+        public record Animal(string Name);
+        #endregion
+
+        public record Cow(string Name, int Weight) : Animal(Name);
+        public record Dog(string Name, string Color) : Animal(Name);
+        public record Horse(string Name) : Animal(Name);
+        public record QuarterHorse(string Name) : Horse(Name);
+        public record Thoroughbred(string Name) : Horse(Name);
     }
 }
 
 namespace GenericSubTypes
 {
     #region ClosedGenericSubTypes
-    [DerivedTypeShape(typeof(Horse), Tag = 1)]
-    [DerivedTypeShape(typeof(Cow<SolidHoof>), Tag = 2)]
-    [DerivedTypeShape(typeof(Cow<ClovenHoof>), Tag = 3)]
-    class Animal
-    {
-        public string? Name { get; set; }
-    }
+    [GenerateShape]
+    [DerivedTypeShape(typeof(Horse))]
+    [DerivedTypeShape(typeof(Cow<SolidHoof>), Name = "SolidHoofedCow")]
+    [DerivedTypeShape(typeof(Cow<ClovenHoof>), Name = "ClovenHoofedCow")]
+    partial record Animal(string Name);
 
-    class Horse : Animal { }
+    record Horse(string Name) : Animal(Name);
 
-    class Cow<THoof> : Animal { }
-
-    class SolidHoof { }
-
-    class ClovenHoof { }
+    record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
+    record SolidHoof;
+    record ClovenHoof;
     #endregion
 }
 
 namespace StringAliasTypes
 {
     #region StringAliasTypes
-    [GenerateShape]
-    [DerivedTypeShape(typeof(Horse), Name = "Horse")]
-    [DerivedTypeShape(typeof(Cow), Name = "Cow")]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
+    [DerivedTypeShape(typeof(Horse), Name = "H")]
+    [DerivedTypeShape(typeof(Cow), Name = "C")]
+    record Animal(string Name);
 
-    class Horse : Animal { }
+    record Horse(string Name) : Animal(Name);
+    record Cow(string Name) : Animal(Name);
+    #endregion
+}
 
-    class Cow : Animal { }
+namespace IntAliasTypes
+{
+    #region IntAliasTypes
+    [DerivedTypeShape(typeof(Horse), Tag = 1)]
+    [DerivedTypeShape(typeof(Cow), Tag = 2)]
+    record Animal(string Name);
+
+    record Horse(string Name) : Animal(Name);
+    record Cow(string Name) : Animal(Name);
     #endregion
 }
 
 namespace MixedAliasTypes
 {
     #region MixedAliasTypes
-    [GenerateShape]
-    [DerivedTypeShape(typeof(Horse), Tag = 1)]
+    [DerivedTypeShape(typeof(Horse), Tag = 3)]
     [DerivedTypeShape(typeof(Cow), Name = "Cow")]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
+    record Animal(string Name);
 
-    class Horse : Animal { }
-
-    class Cow : Animal { }
-    #endregion
-}
-
-namespace InferredAliasTypes
-{
-    #region InferredAliasTypes
-    [GenerateShape]
-    [DerivedTypeShape(typeof(Horse))]
-    [DerivedTypeShape(typeof(Cow))]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
-
-    class Horse : Animal { }
-
-    class Cow : Animal { }
+    record Horse(string Name) : Animal(Name);
+    record Cow(string Name) : Animal(Name);
     #endregion
 }
 
@@ -135,16 +134,13 @@ namespace RuntimeSubTypes
 {
 #if NET
     #region RuntimeSubTypesNET
-    class Animal
-    {
-        public string? Name { get; set; }
-    }
+    record Animal(string Name);
 
     [GenerateShape]
-    partial class Horse : Animal { }
+    partial record Horse(string Name) : Animal(Name);
 
     [GenerateShape]
-    partial class Cow : Animal { }
+    partial record Cow(string Name) : Animal(Name);
 
     class SerializationConfigurator
     {
@@ -160,16 +156,13 @@ namespace RuntimeSubTypes
     #endregion
 #else
     #region RuntimeSubTypesNETFX
-    class Animal
-    {
-        public string? Name { get; set; }
-    }
+    record Animal(string Name);
 
     [GenerateShape]
-    partial class Horse : Animal { }
+    partial record Horse(string Name) : Animal(Name);
 
     [GenerateShape]
-    partial class Cow : Animal { }
+    partial record Cow(string Name) : Animal(Name);
 
     [GenerateShape<Horse>]
     [GenerateShape<Cow>]
