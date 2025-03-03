@@ -65,7 +65,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Otherwise, build a converter using the visitor.
-		return typeShape.Accept(this.OutwardVisitor);
+		return typeShape.Accept(this.OutwardVisitor, state);
 	}
 
 	/// <inheritdoc/>
