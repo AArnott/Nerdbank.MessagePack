@@ -196,12 +196,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 			Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
-			List<(SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
+			List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
 			KeyValuePair<int, MessagePackConverter<TUnion>>[] unionCases = unionShape.UnionCases
 				.Select(unionCase =>
 				{
 					// TODO: Use the Name if Tag isn't set explicitly for better schema stability.
-					SubTypeAlias alias = new(unionCase.Tag);
+					DerivedTypeIdentifier alias = new(unionCase.Tag);
 
 					var caseConverter = (MessagePackConverter<TUnion>)unionCase.Accept(this, null)!;
 					deserializerByIntAlias.Add(unionCase.Tag, caseConverter);
@@ -569,7 +569,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="DerivedTypeShapeAttribute"/> that violates rules.</exception>
 	private SubTypes<TBaseType>? DiscoverUnionTypes<TBaseType>(IObjectTypeShape<TBaseType> objectShape)
 	{
-		IReadOnlyDictionary<SubTypeAlias, ITypeShape>? mapping;
+		IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? mapping;
 		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping))
 		{
 			return null;
@@ -577,10 +577,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
 		Dictionary<ReadOnlyMemory<byte>, MessagePackConverter> deserializeByUtf8Data = new();
-		Dictionary<Type, (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
-		foreach (KeyValuePair<SubTypeAlias, ITypeShape> pair in mapping)
+		Dictionary<Type, (DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
+		foreach (KeyValuePair<DerivedTypeIdentifier, ITypeShape> pair in mapping)
 		{
-			SubTypeAlias alias = pair.Key;
+			DerivedTypeIdentifier alias = pair.Key;
 			ITypeShape shape = pair.Value;
 
 			// We don't want a reference-preserving converter here because that layer has already run
@@ -589,10 +589,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			MessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
 			switch (alias.Type)
 			{
-				case SubTypeAlias.AliasType.Integer:
+				case DerivedTypeIdentifier.AliasType.Integer:
 					deserializeByIntData.Add(alias.IntAlias, converter);
 					break;
-				case SubTypeAlias.AliasType.String:
+				case DerivedTypeIdentifier.AliasType.String:
 					deserializeByUtf8Data.Add(alias.Utf8Alias, converter);
 					break;
 				default:
@@ -603,7 +603,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Our runtime type checks must be done in an order that will select the most derived matching type.
-		(SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)[] sortedTypes = serializerData.Values.ToArray();
+		(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)[] sortedTypes = serializerData.Values.ToArray();
 		Array.Sort(sortedTypes, (a, b) => DerivedTypeComparer.Default.Compare(a.Shape.Type, b.Shape.Type));
 
 		return new SubTypes<TBaseType>
@@ -618,7 +618,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					return null;
 				}
 
-				foreach ((SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape) pair in sortedTypes)
+				foreach ((DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape) pair in sortedTypes)
 				{
 					if (pair.Shape.Type.IsAssignableFrom(v.GetType()))
 					{

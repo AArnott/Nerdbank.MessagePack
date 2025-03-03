@@ -10,9 +10,9 @@ namespace Nerdbank.MessagePack;
 /// Describes a mapping between a base type and its known sub-types, along with the aliases that identify them.
 /// </summary>
 /// <typeparam name="TBase">The base type or interface that all sub-types derive from or implement.</typeparam>
-public class KnownSubTypeMapping<TBase> : IKnownSubTypeMapping
+public class KnownDerivedTypeMapping<TBase> : IKnownDerivedTypeMapping
 {
-	private readonly Dictionary<SubTypeAlias, ITypeShape> map = new();
+	private readonly Dictionary<DerivedTypeIdentifier, ITypeShape> map = new();
 	private readonly HashSet<Type> addedTypes = new();
 
 	/// <summary>
@@ -112,5 +112,5 @@ public class KnownSubTypeMapping<TBase> : IKnownSubTypeMapping
 #endif
 
 	/// <inheritdoc />
-	FrozenDictionary<SubTypeAlias, ITypeShape> IKnownSubTypeMapping.CreateSubTypesMapping() => this.map.ToFrozenDictionary();
+	FrozenDictionary<DerivedTypeIdentifier, ITypeShape> IKnownDerivedTypeMapping.CreateDerivedTypesMapping() => this.map.ToFrozenDictionary();
 }

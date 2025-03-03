@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class KnownDerivedTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Theory, PairwiseData]
 	public async Task BaseType(bool async)
@@ -119,7 +119,7 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	{
 		if (runtimeMapping)
 		{
-			KnownSubTypeMapping<BaseClass> mapping = new();
+			KnownDerivedTypeMapping<BaseClass> mapping = new();
 			mapping.Add<DerivedA>(1, Witness.ShapeProvider);
 			mapping.Add<DerivedAA>(2, Witness.ShapeProvider);
 			mapping.Add<DerivedB>(3, Witness.ShapeProvider);
@@ -170,7 +170,7 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	[Fact]
 	public void RuntimeRegistration_Integers()
 	{
-		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		KnownDerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
 #if NET
 		mapping.Add<DynamicallyRegisteredDerivedA>(1);
 		mapping.Add<DynamicallyRegisteredDerivedB>(2);
@@ -188,7 +188,7 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	[Fact]
 	public void RuntimeRegistration_Strings()
 	{
-		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		KnownDerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
 #if NET
 		mapping.Add<DynamicallyRegisteredDerivedA>("A");
 		mapping.Add<DynamicallyRegisteredDerivedB>("B");
@@ -206,7 +206,7 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	[Fact]
 	public void RuntimeRegistration_OverridesStatic()
 	{
-		KnownSubTypeMapping<BaseClass> mapping = new();
+		KnownDerivedTypeMapping<BaseClass> mapping = new();
 		mapping.Add<DerivedB>(1, Witness.ShapeProvider);
 		this.Serializer.RegisterKnownSubTypes(mapping);
 
@@ -233,7 +233,7 @@ public partial class DerivedTypeShapeTests(ITestOutputHelper logger) : MessagePa
 	[Fact]
 	public void RuntimeRegistration_EmptyMapping()
 	{
-		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		KnownDerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
 		this.Serializer.RegisterKnownSubTypes(mapping);
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
 		MessagePackReader reader = new(msgpack);

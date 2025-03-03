@@ -149,10 +149,10 @@ internal record SubTypes<TUnion>
 	/// <summary>
 	/// Gets the set of converters and aliases.
 	/// </summary>
-	internal required FrozenSet<(SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
+	internal required FrozenSet<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
 
 	/// <summary>
 	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
 	/// </summary>
-	internal required Getter<TUnion, (SubTypeAlias Alias, MessagePackConverter Converter)?> TryGetSerializer { get; init; }
+	internal required Getter<TUnion, (DerivedTypeIdentifier Alias, MessagePackConverter Converter)?> TryGetSerializer { get; init; }
 }

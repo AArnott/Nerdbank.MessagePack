@@ -22,7 +22,7 @@ namespace Nerdbank.MessagePack;
 internal record class ConverterCache
 {
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
-	private readonly ConcurrentDictionary<Type, IKnownSubTypeMapping> userProvidedKnownSubTypes = new();
+	private readonly ConcurrentDictionary<Type, IKnownDerivedTypeMapping> userProvidedKnownSubTypes = new();
 
 	private MultiProviderTypeCache? cachedConverters;
 
@@ -245,7 +245,7 @@ internal record class ConverterCache
 	/// <summary>
 	/// Registers a known sub-type mapping for a base type.
 	/// </summary>
-	/// <typeparam name="TBase"><inheritdoc cref="KnownSubTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
+	/// <typeparam name="TBase"><inheritdoc cref="KnownDerivedTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
 	/// <param name="mapping">The mapping.</param>
 	/// <remarks>
 	/// <para>
@@ -261,7 +261,7 @@ internal record class ConverterCache
 	/// <see cref="DerivedTypeShapeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
 	/// </para>
 	/// </remarks>
-	internal void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping)
+	internal void RegisterKnownSubTypes<TBase>(KnownDerivedTypeMapping<TBase> mapping)
 	{
 		Requires.NotNull(mapping);
 		this.OnChangingConfiguration();
@@ -335,11 +335,11 @@ internal record class ConverterCache
 	/// <param name="baseType">The base type.</param>
 	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
 	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<SubTypeAlias, ITypeShape>? subTypes)
+	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes)
 	{
-		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownSubTypeMapping? mapping))
+		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownDerivedTypeMapping? mapping))
 		{
-			subTypes = mapping.CreateSubTypesMapping();
+			subTypes = mapping.CreateDerivedTypesMapping();
 			return true;
 		}
 

@@ -216,7 +216,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		var unionTypeShape = (IUnionTypeShape)typeShape;
 		JsonArray oneOfArray = [CreateOneOfElement(null, baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(baseConverter.GetType()))];
 
-		foreach ((SubTypeAlias alias, _, ITypeShape shape) in subTypes.Serializers)
+		foreach ((DerivedTypeIdentifier alias, _, ITypeShape shape) in subTypes.Serializers)
 		{
 			oneOfArray.Add((JsonNode)CreateOneOfElement(alias, context.GetJsonSchema(shape)));
 		}
@@ -226,15 +226,15 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 			["oneOf"] = oneOfArray,
 		};
 
-		JsonObject CreateOneOfElement(SubTypeAlias? alias, JsonObject schema)
+		JsonObject CreateOneOfElement(DerivedTypeIdentifier? alias, JsonObject schema)
 		{
 			JsonObject aliasSchema = new()
 			{
 				["type"] = alias switch
 				{
 					null => "null",
-					{ Type: SubTypeAlias.AliasType.Integer } => "integer",
-					{ Type: SubTypeAlias.AliasType.String } => "string",
+					{ Type: DerivedTypeIdentifier.AliasType.Integer } => "integer",
+					{ Type: DerivedTypeIdentifier.AliasType.String } => "string",
 					_ => throw new NotImplementedException(),
 				},
 			};
@@ -242,8 +242,8 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 			{
 				JsonNode enumValue = alias.Value.Type switch
 				{
-					SubTypeAlias.AliasType.String => (JsonNode)alias.Value.StringAlias,
-					SubTypeAlias.AliasType.Integer => (JsonNode)alias.Value.IntAlias,
+					DerivedTypeIdentifier.AliasType.String => (JsonNode)alias.Value.StringAlias,
+					DerivedTypeIdentifier.AliasType.Integer => (JsonNode)alias.Value.IntAlias,
 					_ => throw new NotImplementedException(),
 				};
 				aliasSchema["enum"] = new JsonArray(enumValue);
