@@ -6,10 +6,10 @@ using System.Collections.Frozen;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A non-generic accessor for <see cref="KnownSubTypeMapping{TBase}"/>
+/// A non-generic accessor for <see cref="DerivedTypeMapping{TBase}"/>
 /// so that multiple such mappings can be stored in a collection and retrieved later.
 /// </summary>
-internal interface IKnownSubTypeMapping
+internal interface IDerivedTypeMapping
 {
 	/// <summary>
 	/// Constructs a read-only dictionary of sub-types, keyed by their aliases.
@@ -19,5 +19,5 @@ internal interface IKnownSubTypeMapping
 	/// It is not strictly required that the implementation guarantee that each type is unique,
 	/// because the requirement for uniqueness is enforced later when the known sub-type converter is initialized.
 	/// </remarks>
-	FrozenDictionary<SubTypeAlias, ITypeShape> CreateSubTypesMapping();
+	FrozenDictionary<DerivedTypeIdentifier, ITypeShape> CreateDerivedTypesMapping();
 }

@@ -3,282 +3,166 @@
 
 namespace Sample1
 {
-    #region Farm
-    public class Farm
+    class LossyFarm
     {
-        public List<Animal>? Animals { get; set; }
-    }
-    #endregion
+        #region LossyFarm
+        public class Farm
+        {
+            public List<Animal> Animals { get; set; } = [];
+        }
 
-#if NET
-    #region FarmAnimalsNET
-    [KnownSubType<Cow>(1)]
-    [KnownSubType<Horse>(2)]
-    [KnownSubType<Dog>(3)]
-    public class Animal
-    {
-        public string? Name { get; set; }
+        public record Animal(string Name);
+        public record Cow(string Name, int Weight) : Animal(Name);
+        public record Horse(string Name, int Speed) : Animal(Name);
+        public record Dog(string Name, string Color) : Animal(Name);
+        #endregion
     }
 
-    [GenerateShape]
-    public partial class Cow : Animal { }
-    [GenerateShape]
-    public partial class Horse : Animal { }
-    [GenerateShape]
-    public partial class Dog : Animal { }
-    #endregion
-#else
-    #region FarmAnimalsNETFX
-    [KnownSubType(typeof(Cow), 1)]
-    [KnownSubType(typeof(Horse), 2)]
-    [KnownSubType(typeof(Dog), 3)]
-    public class Animal
+    class RoundtrippingFarmAnimal
     {
-        public string? Name { get; set; }
+        #region RoundtrippingFarmAnimal
+        [DerivedTypeShape(typeof(Cow))]
+        [DerivedTypeShape(typeof(Horse))]
+        [DerivedTypeShape(typeof(Dog))]
+        public record Animal(string Name);
+        #endregion
+
+        public record Cow(string Name, int Weight) : Animal(Name);
+        public record Horse(string Name, int Speed) : Animal(Name);
+        public record Dog(string Name, string Color) : Animal(Name);
     }
 
-    [GenerateShape]
-    public partial class Cow : Animal { }
-    [GenerateShape]
-    public partial class Horse : Animal { }
-    [GenerateShape]
-    public partial class Dog : Animal { }
-    #endregion
-#endif
-
-    #region HorsePen
-    public class HorsePen
+    class HorsePenWrapper
     {
-        public List<Horse>? Horses { get; set; }
+        public class Horse;
+
+        #region HorsePen
+        public class HorsePen
+        {
+            public List<Horse>? Horses { get; set; }
+        }
+        #endregion
     }
-    #endregion
 
-#if NET
-    #region HorseBreedsNET
-    [KnownSubType<QuarterHorse>(1)]
-    [KnownSubType<Thoroughbred>(2)]
-    public partial class Horse : Animal { }
+    class HorseBreeds
+    {
+        public record Animal;
 
-    [GenerateShape]
-    public partial class QuarterHorse : Horse { }
-    [GenerateShape]
-    public partial class Thoroughbred : Horse { }
-    #endregion
-#else
-    #region HorseBreedsNETFX
-    [KnownSubType(typeof(QuarterHorse), 1)]
-    [KnownSubType(typeof(Thoroughbred), 2)]
-    public partial class Horse : Animal { }
+        #region HorseBreeds
+        [DerivedTypeShape(typeof(QuarterHorse))]
+        [DerivedTypeShape(typeof(Thoroughbred))]
+        public record Horse : Animal;
 
-    [GenerateShape]
-    public partial class QuarterHorse : Horse { }
-    [GenerateShape]
-    public partial class Thoroughbred : Horse { }
-    #endregion
-#endif
+        public record QuarterHorse : Horse;
+        public record Thoroughbred : Horse;
+        #endregion
+    }
+
+    class FlattenedAnimal
+    {
+        #region FlattenedAnimal
+        [DerivedTypeShape(typeof(Cow))]
+        [DerivedTypeShape(typeof(Dog))]
+        [DerivedTypeShape(typeof(Horse))]
+        [DerivedTypeShape(typeof(QuarterHorse))]
+        [DerivedTypeShape(typeof(Thoroughbred))]
+        public record Animal(string Name);
+        #endregion
+
+        public record Cow(string Name, int Weight) : Animal(Name);
+        public record Dog(string Name, string Color) : Animal(Name);
+        public record Horse(string Name) : Animal(Name);
+        public record QuarterHorse(string Name) : Horse(Name);
+        public record Thoroughbred(string Name) : Horse(Name);
+    }
 }
 
 namespace GenericSubTypes
 {
-#if NET
-    #region ClosedGenericSubTypesNET
-    [KnownSubType<Horse>(1)]
-    [KnownSubType<Cow<SolidHoof>, Witness>(2)]
-    [KnownSubType<Cow<ClovenHoof>, Witness>(3)]
-    class Animal
-    {
-        public string? Name { get; set; }
-    }
-
+    #region ClosedGenericSubTypes
     [GenerateShape]
-    partial class Horse : Animal { }
+    [DerivedTypeShape(typeof(Horse))]
+    [DerivedTypeShape(typeof(Cow<SolidHoof>), Name = "SolidHoofedCow")]
+    [DerivedTypeShape(typeof(Cow<ClovenHoof>), Name = "ClovenHoofedCow")]
+    partial record Animal(string Name);
 
-    partial class Cow<THoof> : Animal { }
+    record Horse(string Name) : Animal(Name);
 
-    [GenerateShape<Cow<SolidHoof>>]
-    [GenerateShape<Cow<ClovenHoof>>]
-    partial class Witness;
-
-    class SolidHoof { }
-
-    class ClovenHoof { }
+    record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
+    record SolidHoof;
+    record ClovenHoof;
     #endregion
-#else
-    #region ClosedGenericSubTypesNETFX
-    [KnownSubType(typeof(Horse), 1)]
-    [KnownSubType(typeof(Cow<SolidHoof>), 2)]
-    [KnownSubType(typeof(Cow<ClovenHoof>), 3)]
-    class Animal
-    {
-        public string? Name { get; set; }
-    }
-
-    [GenerateShape]
-    partial class Horse : Animal { }
-
-    partial class Cow<THoof> : Animal { }
-
-    [GenerateShape<Cow<SolidHoof>>]
-    [GenerateShape<Cow<ClovenHoof>>]
-    partial class Witness;
-
-    class SolidHoof { }
-
-    class ClovenHoof { }
-    #endregion
-#endif
 }
 
 namespace StringAliasTypes
 {
-#if NET
-    #region StringAliasTypesNET
-    [GenerateShape]
-    [KnownSubType<Horse>("Horse")]
-    [KnownSubType<Cow>("Cow")]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
+    #region StringAliasTypes
+    [DerivedTypeShape(typeof(Horse), Name = "H")]
+    [DerivedTypeShape(typeof(Cow), Name = "C")]
+    record Animal(string Name);
 
-    [GenerateShape]
-    partial class Horse : Animal { }
-
-    [GenerateShape]
-    partial class Cow : Animal { }
+    record Horse(string Name) : Animal(Name);
+    record Cow(string Name) : Animal(Name);
     #endregion
-#else
-    #region StringAliasTypesNETFX
-    [GenerateShape]
-    [KnownSubType(typeof(Horse), "Horse")]
-    [KnownSubType(typeof(Cow), "Cow")]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
+}
 
-    [GenerateShape]
-    partial class Horse : Animal { }
+namespace IntAliasTypes
+{
+    #region IntAliasTypes
+    [DerivedTypeShape(typeof(Horse), Tag = 1)]
+    [DerivedTypeShape(typeof(Cow), Tag = 2)]
+    record Animal(string Name);
 
-    [GenerateShape]
-    partial class Cow : Animal { }
+    record Horse(string Name) : Animal(Name);
+    record Cow(string Name) : Animal(Name);
     #endregion
-#endif
 }
 
 namespace MixedAliasTypes
 {
-#if NET
-    #region MixedAliasTypesNET
-    [GenerateShape]
-    [KnownSubType<Horse>(1)]
-    [KnownSubType<Cow>("Cow")]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
+    #region MixedAliasTypes
+    [DerivedTypeShape(typeof(Horse), Tag = 3)]
+    [DerivedTypeShape(typeof(Cow), Name = "Cow")]
+    record Animal(string Name);
 
-    [GenerateShape]
-    partial class Horse : Animal { }
-
-    [GenerateShape]
-    partial class Cow : Animal { }
+    record Horse(string Name) : Animal(Name);
+    record Cow(string Name) : Animal(Name);
     #endregion
-#else
-    #region MixedAliasTypesNETFX
-    [GenerateShape]
-    [KnownSubType(typeof(Horse), 1)]
-    [KnownSubType(typeof(Cow), "Cow")]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
-
-    [GenerateShape]
-    partial class Horse : Animal { }
-
-    [GenerateShape]
-    partial class Cow : Animal { }
-    #endregion
-#endif
-}
-
-namespace InferredAliasTypes
-{
-#if NET
-    #region InferredAliasTypesNET
-    [GenerateShape]
-    [KnownSubType<Horse>]
-    [KnownSubType<Cow>]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
-
-    [GenerateShape]
-    partial class Horse : Animal { }
-
-    [GenerateShape]
-    partial class Cow : Animal { }
-    #endregion
-#else
-    #region InferredAliasTypesNETFX
-    [GenerateShape]
-    [KnownSubType(typeof(Horse))]
-    [KnownSubType(typeof(Cow))]
-    partial class Animal
-    {
-        public string? Name { get; set; }
-    }
-
-    [GenerateShape]
-    partial class Horse : Animal { }
-
-    [GenerateShape]
-    partial class Cow : Animal { }
-    #endregion
-#endif
 }
 
 namespace RuntimeSubTypes
 {
 #if NET
     #region RuntimeSubTypesNET
-    class Animal
-    {
-        public string? Name { get; set; }
-    }
+    record Animal(string Name);
 
     [GenerateShape]
-    partial class Horse : Animal { }
+    partial record Horse(string Name) : Animal(Name);
 
     [GenerateShape]
-    partial class Cow : Animal { }
+    partial record Cow(string Name) : Animal(Name);
 
     class SerializationConfigurator
     {
         internal void ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
-            KnownSubTypeMapping<Animal> mapping = new();
+            DerivedTypeMapping<Animal> mapping = new();
             mapping.Add<Horse>(1);
             mapping.Add<Cow>(2);
 
-            serializer.RegisterKnownSubTypes(mapping);
+            serializer.RegisterDerivedTypes(mapping);
         }
     }
     #endregion
 #else
     #region RuntimeSubTypesNETFX
-    class Animal
-    {
-        public string? Name { get; set; }
-    }
+    record Animal(string Name);
 
     [GenerateShape]
-    partial class Horse : Animal { }
+    partial record Horse(string Name) : Animal(Name);
 
     [GenerateShape]
-    partial class Cow : Animal { }
+    partial record Cow(string Name) : Animal(Name);
 
     [GenerateShape<Horse>]
     [GenerateShape<Cow>]
@@ -288,11 +172,11 @@ namespace RuntimeSubTypes
     {
         internal void ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
-            KnownSubTypeMapping<Animal> mapping = new();
+            DerivedTypeMapping<Animal> mapping = new();
             mapping.Add<Horse>(1, Witness.ShapeProvider);
             mapping.Add<Cow>(2, Witness.ShapeProvider);
 
-            serializer.RegisterKnownSubTypes(mapping);
+            serializer.RegisterDerivedTypes(mapping);
         }
     }
     #endregion

@@ -6,30 +6,52 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.DotNetApiUsageAn
 public class DotNetApiUsageAnalyzerTests
 {
 	[Fact]
-	public async Task KnownSubTypeAttribute()
+	public async Task SerializeOverload_Unconstrained()
 	{
 #if NET
 		string source = /* lang=c#-test */ """
+			using System.Buffers;
 			using PolyType;
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
-			[{|NBMsgPack051:KnownSubTypeAttribute(typeof(MyDerived))|}]
 			class MyType { }
 
-			partial class MyDerived : MyType, IShapeable<MyDerived>
+			[GenerateShape<MyType>]
+			partial class Witness;
+
+			class Foo
 			{
-				public static ITypeShape<MyDerived> GetShape() => throw new System.NotImplementedException();
+				private readonly MessagePackSerializer serializer = new();
+
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					{|NBMsgPack051:this.serializer.Serialize(writer, value, Witness.ShapeProvider)|};
+				}
 			}
 			""";
 #else
 		string source = /* lang=c#-test */ """
+			using System.Buffers;
+			using PolyType;
+			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
-			[KnownSubTypeAttribute(typeof(MyDerived))]
-			class MyType { }
+			[GenerateShape]
+			partial class MyType { }
 
-			class MyDerived : MyType { }
+			[GenerateShape<MyType>]
+			partial class Witness;
+
+			class Foo
+			{
+				private readonly MessagePackSerializer serializer = new();
+
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					this.serializer.Serialize(writer, value, Witness.ShapeProvider);
+				}
+			}
 			""";
 #endif
 		await VerifyCS.VerifyAnalyzerAsync(source);
@@ -37,19 +59,25 @@ public class DotNetApiUsageAnalyzerTests
 
 #if NET
 	[Fact]
-	public async Task KnownSubTypeGenericAttribute()
+	public async Task SerializeOverload_Constrained()
 	{
 		string source = /* lang=c#-test */ """
+			using System.Buffers;
 			using PolyType;
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
-			[KnownSubTypeAttribute<MyDerived>]
-			class MyType { }
-
-			partial class MyDerived : MyType, IShapeable<MyDerived>
+			[GenerateShape]
+			partial class MyType { }
+			
+			class Foo
 			{
-				public static ITypeShape<MyDerived> GetShape() => throw new System.NotImplementedException();
+				private readonly MessagePackSerializer serializer = new();
+			
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					this.serializer.Serialize(writer, value);
+				}
 			}
 			""";
 		await VerifyCS.VerifyAnalyzerAsync(source);

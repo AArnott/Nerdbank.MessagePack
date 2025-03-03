@@ -66,7 +66,8 @@ public class DotNetApiUsageAnalyzer : DiagnosticAnalyzer
 						context.ReportDiagnostic(Diagnostic.Create(UseDotNetApiDescriptor, location, message));
 					}
 				},
-				OperationKind.Invocation | OperationKind.Attribute);
+				OperationKind.Invocation,
+				OperationKind.Attribute);
 
 			context.RegisterSymbolAction(
 				context =>

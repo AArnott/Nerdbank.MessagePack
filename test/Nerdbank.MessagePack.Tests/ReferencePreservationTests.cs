@@ -223,9 +223,9 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void KnownSubTypes_DynamicRegistration()
 	{
-		KnownSubTypeMapping<BaseRecord> mapping = new();
+		DerivedTypeMapping<BaseRecord> mapping = new();
 		mapping.Add<DerivedRecordB>(1, Witness.ShapeProvider);
-		this.Serializer.RegisterKnownSubTypes(mapping);
+		this.Serializer.RegisterDerivedTypes(mapping);
 
 		BaseRecord baseInstance = new BaseRecord();
 		BaseRecord derivedInstance = new DerivedRecordB();
@@ -259,11 +259,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	}
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<DerivedRecordA>(1)]
-#else
-	[KnownSubType(typeof(DerivedRecordA), 1)]
-#endif
+	[DerivedTypeShape(typeof(DerivedRecordA), Tag = 1)]
 	public partial record BaseRecord;
 
 	[GenerateShape]

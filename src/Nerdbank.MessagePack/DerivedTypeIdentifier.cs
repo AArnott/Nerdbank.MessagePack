@@ -9,15 +9,15 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Acts as a type union between a <see cref="string"/> and an <see cref="int"/>, which are the allowed types for sub-type aliases.
 /// </summary>
-internal struct SubTypeAlias : IEquatable<SubTypeAlias>
+internal struct DerivedTypeIdentifier : IEquatable<DerivedTypeIdentifier>
 {
 	private string? stringAlias;
 	private ReadOnlyMemory<byte> utfAlias;
 	private ReadOnlyMemory<byte> msgpackAlias;
 	private int? intAlias;
 
-	/// <inheritdoc cref="SubTypeAlias(string)"/>
-	internal SubTypeAlias(int alias)
+	/// <inheritdoc cref="DerivedTypeIdentifier(string)"/>
+	internal DerivedTypeIdentifier(int alias)
 	{
 		this.intAlias = alias;
 		byte[] msgpack = new byte[5]; // maximum possible value can be encoded in this buffer.
@@ -26,10 +26,10 @@ internal struct SubTypeAlias : IEquatable<SubTypeAlias>
 	}
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="SubTypeAlias"/> struct.
+	/// Initializes a new instance of the <see cref="DerivedTypeIdentifier"/> struct.
 	/// </summary>
 	/// <param name="alias">The alias.</param>
-	internal SubTypeAlias(string alias)
+	internal DerivedTypeIdentifier(string alias)
 	{
 		this.stringAlias = alias;
 		StringEncoding.GetEncodedStringBytes(alias, out this.utfAlias, out this.msgpackAlias);
@@ -84,15 +84,15 @@ internal struct SubTypeAlias : IEquatable<SubTypeAlias>
 	/// <exception cref="InvalidOperationException">Thrown if <see cref="Type"/> is not <see cref="AliasType.String"/>.</exception>
 	public ReadOnlyMemory<byte> Utf8Alias => this.stringAlias is not null ? this.utfAlias : throw new InvalidOperationException();
 
-	public static implicit operator SubTypeAlias(string alias) => new(alias);
+	public static implicit operator DerivedTypeIdentifier(string alias) => new(alias);
 
-	public static implicit operator SubTypeAlias(int alias) => new(alias);
-
-	/// <inheritdoc/>
-	public bool Equals(SubTypeAlias other) => this.stringAlias == other.stringAlias && this.intAlias == other.intAlias;
+	public static implicit operator DerivedTypeIdentifier(int alias) => new(alias);
 
 	/// <inheritdoc/>
-	public override bool Equals([NotNullWhen(true)] object? obj) => obj is SubTypeAlias other && this.Equals(other);
+	public bool Equals(DerivedTypeIdentifier other) => this.stringAlias == other.stringAlias && this.intAlias == other.intAlias;
+
+	/// <inheritdoc/>
+	public override bool Equals([NotNullWhen(true)] object? obj) => obj is DerivedTypeIdentifier other && this.Equals(other);
 
 	/// <inheritdoc/>
 	public override int GetHashCode() => this.stringAlias?.GetHashCode() ?? this.intAlias?.GetHashCode() ?? 0;

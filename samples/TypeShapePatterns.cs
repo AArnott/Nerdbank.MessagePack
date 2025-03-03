@@ -58,6 +58,8 @@ partial class WitnessGenerated
 #endif
 }
 
+#pragma warning disable NBMsgPack051 // We're deliberately using the less preferred pattern.
+
 class ReflectionShapeProvider
 {
     #region SerializeUnshapedType
@@ -75,3 +77,5 @@ class ReflectionShapeProvider
     record Person(string FirstName, string LastName);
     #endregion
 }
+
+#pragma warning restore NBMsgPack051 // We're deliberately using the less preferred pattern.
