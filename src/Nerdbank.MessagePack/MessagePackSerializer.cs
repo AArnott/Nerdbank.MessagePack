@@ -135,8 +135,8 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(MessagePackConverter{T})"/>
 	public void RegisterConverter<T>(MessagePackConverter<T> converter) => this.converterCache.RegisterConverter(converter);
 
-	/// <inheritdoc cref="ConverterCache.RegisterKnownSubTypes{TBase}(KnownSubTypeMapping{TBase})"/>
-	public void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping) => this.converterCache.RegisterKnownSubTypes(mapping);
+	/// <inheritdoc cref="ConverterCache.RegisterDerivedTypes{TBase}(DerivedTypeMapping{TBase})"/>
+	public void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping) => this.converterCache.RegisterDerivedTypes(mapping);
 
 	/// <summary>
 	/// Serializes an untyped value.

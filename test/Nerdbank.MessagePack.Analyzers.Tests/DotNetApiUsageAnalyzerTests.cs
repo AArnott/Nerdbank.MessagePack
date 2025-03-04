@@ -6,57 +6,6 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.DotNetApiUsageAn
 public class DotNetApiUsageAnalyzerTests
 {
 	[Fact]
-	public async Task KnownSubTypeAttribute()
-	{
-#if NET
-		string source = /* lang=c#-test */ """
-			using PolyType;
-			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
-
-			[{|NBMsgPack051:KnownSubTypeAttribute(typeof(MyDerived))|}]
-			class MyType { }
-
-			partial class MyDerived : MyType, IShapeable<MyDerived>
-			{
-				public static ITypeShape<MyDerived> GetShape() => throw new System.NotImplementedException();
-			}
-			""";
-#else
-		string source = /* lang=c#-test */ """
-			using Nerdbank.MessagePack;
-
-			[KnownSubTypeAttribute(typeof(MyDerived))]
-			class MyType { }
-
-			class MyDerived : MyType { }
-			""";
-#endif
-		await VerifyCS.VerifyAnalyzerAsync(source);
-	}
-
-#if NET
-	[Fact]
-	public async Task KnownSubTypeGenericAttribute()
-	{
-		string source = /* lang=c#-test */ """
-			using PolyType;
-			using PolyType.Abstractions;
-			using Nerdbank.MessagePack;
-
-			[KnownSubTypeAttribute<MyDerived>]
-			class MyType { }
-
-			partial class MyDerived : MyType, IShapeable<MyDerived>
-			{
-				public static ITypeShape<MyDerived> GetShape() => throw new System.NotImplementedException();
-			}
-			""";
-		await VerifyCS.VerifyAnalyzerAsync(source);
-	}
-#endif
-
-	[Fact]
 	public async Task SerializeOverload_Unconstrained()
 	{
 #if NET

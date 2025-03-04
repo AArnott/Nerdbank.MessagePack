@@ -96,6 +96,25 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	}
 
 	/// <inheritdoc/>
+	public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+	{
+		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+		SecureEqualityComparer<TUnion> baseComparer = (SecureEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this)!;
+		SecureEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
+			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this)!)];
+		return new SecureUnionEqualityComparer<TUnion>(
+			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? comparers[idx] : baseComparer);
+	}
+
+	/// <inheritdoc/>
+	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+	{
+		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
+		var caseComparer = (SecureEqualityComparer<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
+		return new SecureUnionCaseEqualityComparer<TUnionCase, TUnion>(caseComparer);
+	}
+
+	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
 		=> new SecurePropertyEqualityComparer<TDeclaringType, TPropertyType>(propertyShape.GetGetter(), this.GetEqualityComparer(propertyShape.PropertyType));
 
@@ -113,8 +132,8 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		=> new HashCollisionResistantPrimitives.CollisionResistantEnumHasher<TEnum, TUnderlying>(this.GetEqualityComparer(enumShape.UnderlyingType));
 
 	/// <inheritdoc/>
-	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
-		=> new SecureNullableEqualityComparer<T>(this.GetEqualityComparer(nullableShape.ElementType));
+	public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
+		=> new SecureOptionalEqualityComparer<TOptional, TElement>(this.GetEqualityComparer(optionalShape.ElementType), optionalShape.GetDeconstructor());
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)

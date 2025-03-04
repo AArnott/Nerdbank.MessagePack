@@ -14,7 +14,7 @@ public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackStreamingReader,
 	INamedTypeSymbol MessagePackWriter,
 	INamedTypeSymbol KeyAttribute,
-	INamedTypeSymbol KnownSubTypeAttribute,
+	INamedTypeSymbol DerivedTypeShapeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute,
 	INamedTypeSymbol ConstructorShapeAttribute)
@@ -95,13 +95,6 @@ public record ReferenceSymbols(
 			return false;
 		}
 
-		INamedTypeSymbol? knownSubTypeAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.KnownSubTypeAttribute");
-		if (knownSubTypeAttribute is null)
-		{
-			referenceSymbols = null;
-			return false;
-		}
-
 		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "PolyType.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference polytypeReference ||
 			compilation.GetAssemblyOrModuleSymbol(polytypeReference) is not IAssemblySymbol polytypeAssembly)
 		{
@@ -130,6 +123,13 @@ public record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? derivedTypeShapeAttribute = polytypeAssembly.GetTypeByMetadataName("PolyType.DerivedTypeShapeAttribute");
+		if (derivedTypeShapeAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		referenceSymbols = new ReferenceSymbols(
 			messagePackSerializer,
 			messagePackConverter,
@@ -139,7 +139,7 @@ public record ReferenceSymbols(
 			messagePackStreamingReader,
 			messagePackWriter,
 			keyAttribute,
-			knownSubTypeAttribute,
+			derivedTypeShapeAttribute,
 			generateShapeAttribute,
 			propertyShapeAttribute,
 			constructorShapeAttribute);
