@@ -8,7 +8,6 @@ using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -52,6 +51,13 @@ public partial record MessagePackSerializer
 	{
 		get => this.converterCache.PropertyNamingPolicy;
 		init => this.converterCache = this.converterCache with { PropertyNamingPolicy = value };
+	}
+
+	/// <inheritdoc cref="ConverterCache.PerfOverSchemaStability"/>
+	public bool PerfOverSchemaStability
+	{
+		get => this.converterCache.PerfOverSchemaStability;
+		init => this.converterCache = this.converterCache with { PerfOverSchemaStability = value };
 	}
 
 	/// <inheritdoc cref="ConverterCache.SerializeEnumValuesByName"/>
