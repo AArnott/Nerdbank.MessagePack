@@ -55,4 +55,83 @@ public class DotNetApiUsageAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 #endif
+
+	[Fact]
+	public async Task SerializeOverload_Unconstrained()
+	{
+#if NET
+		string source = /* lang=c#-test */ """
+			using System.Buffers;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			class MyType { }
+
+			[GenerateShape<MyType>]
+			partial class Witness;
+
+			class Foo
+			{
+				private readonly MessagePackSerializer serializer = new();
+
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					{|NBMsgPack051:this.serializer.Serialize(writer, value, Witness.ShapeProvider)|};
+				}
+			}
+			""";
+#else
+		string source = /* lang=c#-test */ """
+			using System.Buffers;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			[GenerateShape]
+			partial class MyType { }
+
+			[GenerateShape<MyType>]
+			partial class Witness;
+
+			class Foo
+			{
+				private readonly MessagePackSerializer serializer = new();
+
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					this.serializer.Serialize(writer, value, Witness.ShapeProvider);
+				}
+			}
+			""";
+#endif
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+#if NET
+	[Fact]
+	public async Task SerializeOverload_Constrained()
+	{
+		string source = /* lang=c#-test */ """
+			using System.Buffers;
+			using PolyType;
+			using PolyType.Abstractions;
+			using Nerdbank.MessagePack;
+
+			[GenerateShape]
+			partial class MyType { }
+			
+			class Foo
+			{
+				private readonly MessagePackSerializer serializer = new();
+			
+				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				{
+					this.serializer.Serialize(writer, value);
+				}
+			}
+			""";
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+#endif
 }

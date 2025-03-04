@@ -3,20 +3,29 @@
 
 #pragma warning disable NBMsgPackAsync
 
-#if NET
+using System.Buffers;
 
 namespace Samples.AnalyzerDocs.NBMsgPack051
 {
+#if NET
+
     namespace Defective
     {
 #pragma warning disable NBMsgPack051
         #region Defective
-        [KnownSubType(typeof(MyDerived))] // NBMsgPack051: Use the generic version of this attribute instead.
         class MyType { }
 
-        [GenerateShape]
-        partial class MyDerived : MyType
+        [GenerateShape<MyType>]
+        partial class Witness;
+
+        class Foo
         {
+            private readonly MessagePackSerializer serializer = new();
+
+            internal void Serialize(IBufferWriter<byte> writer, MyType value)
+            {
+                this.serializer.Serialize(writer, value, Witness.ShapeProvider); // NBMsgPack051: Use an overload that takes a constrained type instead.
+            }
         }
         #endregion
 #pragma warning restore NBMsgPack051
@@ -25,34 +34,44 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
     namespace SwitchFix
     {
         #region SwitchFix
-        [KnownSubType<MyDerived>]
-        class MyType { }
-
         [GenerateShape]
-        partial class MyDerived : MyType
+        partial class MyType { }
+
+        class Foo
         {
+            private readonly MessagePackSerializer serializer = new();
+
+            internal void Serialize(IBufferWriter<byte> writer, MyType value)
+            {
+                this.serializer.Serialize(writer, value);
+            }
         }
         #endregion
     }
+#endif
 
     namespace MultiTargetingFix
     {
         #region MultiTargetingFix
-        #if NET
-        [KnownSubType<MyDerived>]
-        #else
-        [KnownSubType(typeof(MyDerived))]
-        #endif
-        class MyType { }
-
-        #if NET
         [GenerateShape]
-        #endif
-        partial class MyDerived : MyType
+        partial class MyType { }
+
+        [GenerateShape<MyType>]
+        partial class Witness;
+
+        class Foo
         {
+            private readonly MessagePackSerializer serializer = new();
+
+            internal void Serialize(IBufferWriter<byte> writer, MyType value)
+            {
+#if NET
+                this.serializer.Serialize(writer, value);
+#else
+                this.serializer.Serialize(writer, value, Witness.ShapeProvider);
+#endif
+            }
         }
         #endregion
     }
 }
-
-#endif
