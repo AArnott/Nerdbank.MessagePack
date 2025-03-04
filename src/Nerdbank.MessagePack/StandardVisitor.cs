@@ -99,8 +99,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		List<SerializableProperty<T>>? serializable = null;
 		List<DeserializableProperty<T>>? deserializable = null;
 		List<(string Name, PropertyAccessors<T> Accessors)?>? propertyAccessors = null;
+		int propertyIndex = -1;
 		foreach (IPropertyShape property in objectShape.Properties)
 		{
+			propertyIndex++;
 			string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 
 			IConstructorParameterShape? matchingConstructorParameter = null;
@@ -108,15 +110,17 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			if (property.Accept(this, matchingConstructorParameter) is PropertyAccessors<T> accessors)
 			{
-				if (property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault() is KeyAttribute keyAttribute)
+				KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
+				if (keyAttribute is not null || this.owner.PerfOverSchemaStability)
 				{
 					propertyAccessors ??= new();
-					while (propertyAccessors.Count <= keyAttribute.Index)
+					int index = keyAttribute?.Index ?? propertyIndex;
+					while (propertyAccessors.Count <= index)
 					{
 						propertyAccessors.Add(null);
 					}
 
-					propertyAccessors[keyAttribute.Index] = (propertyName, accessors);
+					propertyAccessors[index] = (propertyName, accessors);
 				}
 				else
 				{
@@ -200,20 +204,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				{
 					// Use the Name if Tag isn't set explicitly for better schema stability.
 					// We use an approximate and fast approach, and fallback to a search if we're not sure.
-					bool isTagSpecified = unionCase.Index != unionCase.Tag;
-					if (!isTagSpecified)
+					bool useTag = this.owner.PerfOverSchemaStability || unionCase.Index != unionCase.Tag;
+					if (!useTag)
 					{
 						foreach (DerivedTypeShapeAttribute att in unionShape.AttributeProvider?.GetCustomAttributes(typeof(DerivedTypeShapeAttribute), false) ?? [])
 						{
 							if (att.Type == unionCase.Type.Type)
 							{
-								isTagSpecified = att.Tag != -1;
+								useTag = att.Tag != -1;
 								break;
 							}
 						}
 					}
 
-					DerivedTypeIdentifier alias = isTagSpecified ? new(unionCase.Tag) : new(unionCase.Name);
+					DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
 					var caseConverter = (MessagePackConverter<TUnion>)unionCase.Accept(this, null)!;
 					deserializerByIntAlias.Add(unionCase.Tag, caseConverter);
 					serializers.Add((alias, caseConverter, unionCase.Type));

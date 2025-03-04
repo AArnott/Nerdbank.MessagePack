@@ -36,6 +36,7 @@ internal record class ConverterCache
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
+	private bool perfOverStability;
 
 #if NET
 
@@ -181,6 +182,48 @@ internal record class ConverterCache
 	{
 		get => this.propertyNamingPolicy;
 		init => this.ChangeSetting(ref this.propertyNamingPolicy, value);
+	}
+
+	/// <summary>
+	/// Gets a value indicating whether to boost performance
+	/// using methods that may compromise the stability of the serialized schema.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <remarks>
+	/// <para>
+	/// This setting is intended for use in performance-sensitive scenarios where the serialized data
+	/// will not be stored or shared with other systems, but rather is used in a single system live data
+	/// such that the schema need not be stable between versions of the application.
+	/// </para>
+	/// <para>
+	/// Examples of behavioral changes that may occur when this setting is <see langword="true" />:
+	/// <list type="bullet">
+	/// <item>All objects are serialized with an array of their values instead of maps that include their property names.</item>
+	/// <item>Polymorphic type identifiers are always integers.</item>
+	/// </list>
+	/// </para>
+	/// <para>
+	/// In particular, the schema is liable to change when this property is <see langword="true"/> and:
+	/// <list type="bullet">
+	/// <item>Serialized members are added, removed or reordered within their declaring type.</item>
+	/// <item>A <see cref="DerivedTypeShapeAttribute"/> is removed, or inserted before the last such attribute on a given type.</item>
+	/// </list>
+	/// </para>
+	/// <para>
+	/// Changing this property (either direction) is itself liable to alter the schema of the serialized data.
+	/// </para>
+	/// <para>
+	/// Performance and schema stability can both be achieved at once by:
+	/// <list type="bullet">
+	/// <item>Using the <see cref="KeyAttribute"/> on all serialized properties.</item>
+	/// <item>Specifying <see cref="DerivedTypeShapeAttribute.Tag"/> explicitly for all polymorphic types.</item>
+	/// </list>
+	/// </para>
+	/// </remarks>
+	internal bool PerfOverSchemaStability
+	{
+		get => this.perfOverStability;
+		init => this.ChangeSetting(ref this.perfOverStability, value);
 	}
 
 	/// <summary>
