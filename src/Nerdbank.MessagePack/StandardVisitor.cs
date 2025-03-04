@@ -202,21 +202,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			KeyValuePair<int, MessagePackConverter<TUnion>>[] unionCases = unionShape.UnionCases
 				.Select(unionCase =>
 				{
-					// Use the Name if Tag isn't set explicitly for better schema stability.
-					// We use an approximate and fast approach, and fallback to a search if we're not sure.
-					bool useTag = this.owner.PerfOverSchemaStability || unionCase.Index != unionCase.Tag;
-					if (!useTag)
-					{
-						foreach (DerivedTypeShapeAttribute att in unionShape.AttributeProvider?.GetCustomAttributes(typeof(DerivedTypeShapeAttribute), false) ?? [])
-						{
-							if (att.Type == unionCase.Type.Type)
-							{
-								useTag = att.Tag != -1;
-								break;
-							}
-						}
-					}
-
+					bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
 					DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
 					var caseConverter = (MessagePackConverter<TUnion>)unionCase.Accept(this, null)!;
 					deserializerByIntAlias.Add(unionCase.Tag, caseConverter);
