@@ -25,7 +25,7 @@ namespace Nerdbank.MessagePack;
 /// <para>
 /// The following snippet demonstrates a common pattern for properly reading with this type.
 /// </para>
-/// <code source="../../samples/CustomConverters.cs" region="GetMoreBytesPattern" lang="C#" />
+/// <code source="../../samples/cs/CustomConverters.cs" region="GetMoreBytesPattern" lang="C#" />
 /// </example>
 [Experimental("NBMsgPackAsync")]
 public ref partial struct MessagePackStreamingReader

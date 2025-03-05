@@ -16,7 +16,7 @@ Nerdbank.MessagePack protects against such attacks by artificially limiting the 
 This limit is set by @Nerdbank.MessagePack.SerializationContext.MaxDepth, which by default is set to a conservative default value that should prevent stack overflows.
 When the data to be deserialized has a legitimate need for deeper nesting than the default limit allows, this limit may be adjusted, like this:
 
-[!code-csharp[](../../samples/Security.cs#SetMaxDepth)]
+[!code-csharp[](../../samples/cs/Security.cs#SetMaxDepth)]
 
 ## Hash collisions
 
@@ -45,11 +45,11 @@ Here is an example of a defense against hash collisions:
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/Security.cs#SecureEqualityComparersNET)]
+[!code-csharp[](../../samples/cs/Security.cs#SecureEqualityComparersNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/Security.cs#SecureEqualityComparersNETFX)]
+[!code-csharp[](../../samples/cs/Security.cs#SecureEqualityComparersNETFX)]
 
 ---
 

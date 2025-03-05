@@ -155,7 +155,7 @@ public partial record MessagePackSerializer
 	/// <para>
 	/// The following snippet demonstrates a way to use this method.
 	/// </para>
-	/// <code source="../../samples/SimpleSerialization.cs" region="NonGenericSerializeDeserialize" lang="C#" />
+	/// <code source="../../samples/cs/SimpleSerialization.cs" region="NonGenericSerializeDeserialize" lang="C#" />
 	/// </example>
 	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
 	{

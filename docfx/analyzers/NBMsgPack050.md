@@ -13,10 +13,10 @@ These types fall into this category:
 
 The following method is declared with one of the above types as a parameter type, but without using the `ref` modifier:
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack050.cs#Defective)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack050.cs#Defective)]
 
 ## Resolution
 
 Add the `ref` modifier to the parameter (and all callers of the method):
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack050.cs#Fix)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack050.cs#Fix)]

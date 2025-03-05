@@ -10,7 +10,7 @@ Suppose you have the following type, which has fields that are not directly seri
 This could be because the fields are of a type that cannot be directly serialized.
 In this sample they are private fields which are not serialized by default (though they could be with an attribute, but we're ignoring that for purposes of this sample).
 
-[!code-csharp[](../../samples/SurrogateTypes.cs#OnlyOriginalType)]
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#OnlyOriginalType)]
 
 To serialize this type, we'll use a surrogate that _does_ expose these fields for serialization.
 
@@ -21,7 +21,7 @@ They can be quite simple, containing only the properties necessary to enable aut
 This `record struct` is the simplest syntax for expressing public properties for serialization.
 We've chosen properties that correspond to the fields in the previous sample that require serialization for the surrogate type defined here.
 
-[!code-csharp[](../../samples/SurrogateTypes.cs#SurrogateType)]
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#SurrogateType)]
 
 The surrogate must have at least `internal` visibility.
 
@@ -35,7 +35,7 @@ The marshaler implements @PolyType.IMarshaller`2.
 
 When this marshaler is _nested_ within the original type, C# gives it access to the containing type's private fields, which is useful for this sample.
 
-[!code-csharp[](../../samples/SurrogateTypes.cs#Marshaler)]
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#Marshaler)]
 
 The marshaler must have at least `internal` visibility.
 
@@ -45,4 +45,4 @@ This marshaler must be referenced via @PolyType.TypeShapeAttribute.Marshaller?di
 
 Taken together with the added @PolyType.TypeShapeAttribute that refers to the marshaler, we have the following complete sample:
 
-[!code-csharp[](../../samples/SurrogateTypes.cs#CompleteSample)]
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#CompleteSample)]

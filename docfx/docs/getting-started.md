@@ -26,17 +26,17 @@ C# automatically produces errors if you try to use certain newer language featur
 
 Given a type annotated with [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) like this:
 
-[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecord)]
+[!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecord)]
 
 You can serialize and deserialize it like this:
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecordRoundtripNET)]
+[!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecordRoundtripNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/GettingStarted.cs#SimpleRecordRoundtripNETFX)]
+[!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecordRoundtripNETFX)]
 
 ---
 

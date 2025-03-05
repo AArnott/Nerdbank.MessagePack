@@ -10,14 +10,14 @@ When resolving this violation, consider the various branching, loops, etc. as th
 In the following example, the @Nerdbank.MessagePack.MessagePackConverter`1.ReadAsync* method creates a @Nerdbank.MessagePack.MessagePackStreamingReader then switches to a @Nerdbank.MessagePack.MessagePackReader.
 Neither reader is returned, which is a bug.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack035.cs#Defective)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack035.cs#Defective)]
 
 ## Resolution
 
 The streaming reader must be returned prior to switching to the buffered reader.
 Both readers must be returned prior to the method exiting or awaited expressions.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack035.cs#Fix)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack035.cs#Fix)]
 
 There is one exception to the rule of returning readers before they an `await` expression:
 when that `await` expression is specifically for fetching more bytes to that same reader.

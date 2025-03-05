@@ -22,11 +22,11 @@ To asynchronously enumerate each of these structures, we use the @Nerdbank.Messa
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/StreamingDeserialization.cs#TopLevelStreamingEnumerationNET)]
+[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#TopLevelStreamingEnumerationNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/StreamingDeserialization.cs#TopLevelStreamingEnumerationNETFX)]
+[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#TopLevelStreamingEnumerationNETFX)]
 
 ---
 
@@ -40,11 +40,11 @@ Navigating through the envelope is done by an expression provided to the @Nerdba
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/StreamingDeserialization.cs#StreamingEnumerationWithEnvelopeNET)]
+[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#StreamingEnumerationWithEnvelopeNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/StreamingDeserialization.cs#StreamingEnumerationWithEnvelopeNETFX)]
+[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#StreamingEnumerationWithEnvelopeNETFX)]
 
 ---
 

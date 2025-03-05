@@ -14,11 +14,11 @@ Here is an example of using this for structural equality checking for a user-def
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/StructuralEquality.cs#StructuralEqualityNET)]
+[!code-csharp[](../../samples/cs/StructuralEquality.cs#StructuralEqualityNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/StructuralEquality.cs#StructuralEqualityNETFX)]
+[!code-csharp[](../../samples/cs/StructuralEquality.cs#StructuralEqualityNETFX)]
 
 ---
 

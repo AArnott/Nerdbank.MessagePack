@@ -21,3 +21,4 @@ items:
   href: migrating.md
 - name: Type shapes
   href: type-shapes.md
+- href: fsharp.md

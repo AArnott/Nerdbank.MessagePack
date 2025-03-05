@@ -4,7 +4,7 @@ Serialization of polymorphic types requires special consideration.
 
 For instance, suppose you want to serialize a `Farm`:
 
-[!code-csharp[](../../samples/Unions.cs#LossyFarm)]
+[!code-csharp[](../../samples/cs/Unions.cs#LossyFarm)]
 
 Notice that your animals on the farm are kept in a collection typed with the base type `Animal`.
 At runtime, we expect most or all animals to be of a derived type rather than the `Animal` base type.
@@ -28,7 +28,7 @@ If `Animal` were an `abstract` class, this would not be deserializable at all.
 You can preserve polymorphic type metadata across serialization using the @PolyType.DerivedTypeShapeAttribute, which you apply to the type that is used as the declared base type.
 Since `Animal` is used as the collection element type, we apply the attributes on the declaraiton of that type:
 
-[!code-csharp[](../../samples/Unions.cs#RoundtrippingFarmAnimal)]
+[!code-csharp[](../../samples/cs/Unions.cs#RoundtrippingFarmAnimal)]
 
 This changes the schema of the serialized data to include a tag that indicates the type of the object.
 It also engages a converter for the specific derived type so that its unique properties are serialized.
@@ -61,7 +61,7 @@ Only when `Animal` is the declared property type will a `Horse` object set to th
 
 For example, consider this collection of horses:
 
-[!code-csharp[](../../samples/Unions.cs#HorsePen)]
+[!code-csharp[](../../samples/cs/Unions.cs#HorsePen)]
 
 This would serialize like this:
 
@@ -79,7 +79,7 @@ This is because the `Horse` type is statically known as the generic type argumen
 
 Now suppose you have different breeds of horses that each had their own derived type:
 
-[!code-csharp[](../../samples/Unions.cs#HorseBreeds)]
+[!code-csharp[](../../samples/cs/Unions.cs#HorseBreeds)]
 
 At this point your `HorsePen` *would* serialize with the union schema around each horse:
 
@@ -114,7 +114,7 @@ But if the `Horse` class has attributes for each of its derived types, we end up
 
 You can avoid the multi-level nesting by defining all transitive derived types on the original union type `Animal`:
 
-[!code-csharp[](../../samples/Unions.cs#FlattenedAnimal)]
+[!code-csharp[](../../samples/cs/Unions.cs#FlattenedAnimal)]
 
 This would now serialize more simply as:
 
@@ -158,15 +158,15 @@ String type identifiers are case sensitive.
 
 The following example shows explicitly choosing the string identifiers:
 
-[!code-csharp[](../../samples/Unions.cs#StringAliasTypes)]
+[!code-csharp[](../../samples/cs/Unions.cs#StringAliasTypes)]
 
 Or we can use the more performant integer identifiers:
 
-[!code-csharp[](../../samples/Unions.cs#IntAliasTypes)]
+[!code-csharp[](../../samples/cs/Unions.cs#IntAliasTypes)]
 
 Mixing identifier types for a given base type is allowed, as shown here:
 
-[!code-csharp[](../../samples/Unions.cs#MixedAliasTypes)]
+[!code-csharp[](../../samples/cs/Unions.cs#MixedAliasTypes)]
 
 Note that while inferrence is the simplest syntax, it results in the serialized schema including the name of the type, which can break the schema if the type is renamed.
 
@@ -176,7 +176,7 @@ Note that while inferrence is the simplest syntax, it results in the serialized 
 You may close the generic type several times, but each one needs a unique type identifier so the inferred type name will not work.
 You will have to explicitly specify them.
 
-[!code-csharp[](../../samples/Unions.cs#ClosedGenericSubTypes)]
+[!code-csharp[](../../samples/cs/Unions.cs#ClosedGenericSubTypes)]
 
 ## Runtime derived type registration
 
@@ -192,10 +192,10 @@ Consider the following example where a type hierarchy is registered without usin
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/Unions.cs#RuntimeSubTypesNET)]
+[!code-csharp[](../../samples/cs/Unions.cs#RuntimeSubTypesNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/Unions.cs#RuntimeSubTypesNETFX)]
+[!code-csharp[](../../samples/cs/Unions.cs#RuntimeSubTypesNETFX)]
 
 ---
