@@ -6,9 +6,9 @@ type Animal =
     | Horse of name: string * speed: int
     | Dog of name: string * color: string
 
-type Farm  = { Animals: Animal list }
+type Farm = { Animals: Animal list }
 
-let farm = { 
+let farm = {
     Animals = [
         Cow("Bessie", 1500)
         Horse("Spirit", 45)
@@ -17,7 +17,7 @@ let farm = {
 }
 
 let serializer = MessagePackSerializer()
-let msgpack = 
+let msgpack =
     let refableValue = farm // need to pass by reference
     serializer.Serialize(&refableValue, ReflectionTypeShapeProvider.Default)
 
