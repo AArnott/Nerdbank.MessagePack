@@ -4,6 +4,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -18,11 +19,91 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 internal class StringConverter : MessagePackConverter<string>
 {
+#if NET
+	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => false; // async is slower, and incremental decoding isn't worth it.
+#endif
+
 	/// <inheritdoc/>
 	public override string? Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadString();
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context) => writer.Write(value);
+
+#if NET
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<string?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		const uint MinChunkSize = 2048;
+
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool wasNil;
+		if (streamingReader.TryReadNil(out wasNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (wasNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return null;
+		}
+
+		uint length;
+		while (streamingReader.TryReadStringHeader(out length).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		string result;
+		if (streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> utf8BytesSequence).NeedsMoreBytes())
+		{
+			uint remainingBytesToDecode = length;
+			using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
+			Sequence<char> charSequence = sequenceRental.Value;
+			Decoder decoder = StringEncoding.UTF8.GetDecoder();
+			while (remainingBytesToDecode > 0)
+			{
+				// We'll always require at least a reasonable number of bytes to decode at once,
+				// to keep overhead to a minimum.
+				uint desiredBytesThisRound = Math.Min(remainingBytesToDecode, MinChunkSize);
+				if (streamingReader.SequenceReader.Remaining < desiredBytesThisRound)
+				{
+					// We don't have enough bytes to decode this round. Fetch more.
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync(desiredBytesThisRound).ConfigureAwait(false));
+				}
+
+				int thisLoopLength = unchecked((int)Math.Min(int.MaxValue, Math.Min(checked((uint)streamingReader.SequenceReader.Remaining), remainingBytesToDecode)));
+				Assumes.True(streamingReader.TryReadRaw(thisLoopLength, out utf8BytesSequence) == MessagePackPrimitives.DecodeResult.Success);
+				bool flush = utf8BytesSequence.Length == remainingBytesToDecode;
+				decoder.Convert(utf8BytesSequence, charSequence, flush, out _, out _);
+				remainingBytesToDecode -= checked((uint)utf8BytesSequence.Length);
+			}
+
+			result = string.Create(
+				checked((int)charSequence.Length),
+				charSequence,
+				static (span, seq) => seq.AsReadOnlySequence.CopyTo(span));
+		}
+		else
+		{
+			// We happened to get all bytes at once. Decode now.
+			result = StringEncoding.UTF8.GetString(utf8BytesSequence);
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		return result;
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, string? value, SerializationContext context)
+	{
+		// We *could* do incremental string encoding, flushing periodically based on the user's preferred flush threshold.
+		return base.WriteAsync(writer, value, context);
+	}
+#endif
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new() { ["type"] = "string" };
@@ -815,36 +896,42 @@ internal class GuidConverter : MessagePackConverter<Guid>
 /// <summary>
 /// Serializes a nullable value type.
 /// </summary>
-/// <typeparam name="T">The value type.</typeparam>
+/// <typeparam name="TOptional">The optional wrapper around <typeparamref name="TElement"/>.</typeparam>
+/// <typeparam name="TElement">The value type.</typeparam>
 /// <param name="elementConverter">The converter to use when the value is not null.</param>
-internal class NullableConverter<T>(MessagePackConverter<T> elementConverter) : MessagePackConverter<T?>
-	where T : struct
+/// <param name="deconstructor">A function to unwrap an optional value.</param>
+/// <param name="createNone">A function to create a deserialized "missing" value.</param>
+/// <param name="createSome">A function to wrap a deserialized value.</param>
+internal class OptionalConverter<TOptional, TElement>(
+	MessagePackConverter<TElement> elementConverter,
+	OptionDeconstructor<TOptional, TElement> deconstructor,
+	Func<TOptional> createNone,
+	Func<TElement, TOptional> createSome) : MessagePackConverter<TOptional>
 {
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in TOptional? value, SerializationContext context)
 	{
-		if (value.HasValue)
-		{
-			elementConverter.Write(ref writer, value.Value, context);
-		}
-		else
+		if (!deconstructor(value, out TElement? element))
 		{
 			writer.WriteNil();
+			return;
 		}
+
+		elementConverter.Write(ref writer, element, context);
 	}
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+	public override TOptional Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
-			return null;
+			return createNone();
 		}
 
-		return elementConverter.Read(ref reader, context);
+		return createSome(elementConverter.Read(ref reader, context)!);
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> ApplyJsonSchemaNullability(context.GetJsonSchema(((INullableTypeShape<T>)typeShape).ElementType));
+		=> ApplyJsonSchemaNullability(context.GetJsonSchema(((IOptionalTypeShape)typeShape).ElementType));
 }

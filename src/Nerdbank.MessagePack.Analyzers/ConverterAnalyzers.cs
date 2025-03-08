@@ -191,7 +191,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							context.RegisterSymbolEndAction(context =>
 							{
 								INamedTypeSymbol symbol = (INamedTypeSymbol)context.Symbol;
-								if (!symbol.GetAllMembers().Any(m => m is IMethodSymbol { Name: "GetJsonSchema", OverriddenMethod: not null }))
+								if (!symbol.GetAllMembers().Any(m => m is IMethodSymbol { Name: "GetJsonSchema", OverriddenMethod: not null } && IsOverriddenInConcreteConverter(m)))
 								{
 									if (symbol.Locations.FirstOrDefault(l => l.IsInSource) is { } location)
 									{
@@ -202,13 +202,16 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 								if (isAsyncConverter)
 								{
 									// This converter specifically implements async functionality.
-									IPropertySymbol? prefersAsyncSerialization = symbol.GetAllMembers().OfType<IPropertySymbol>().FirstOrDefault(p => p is { Name: "PreferAsyncSerialization", OverriddenProperty: not null });
+									IPropertySymbol? prefersAsyncSerialization = symbol.GetAllMembers().OfType<IPropertySymbol>().FirstOrDefault(p => p is { Name: "PreferAsyncSerialization", OverriddenProperty: not null } && IsOverriddenInConcreteConverter(p));
 									if (prefersAsyncSerialization is null)
 									{
 										context.ReportDiagnostic(Diagnostic.Create(AsyncConverterShouldOverridePreferAsyncSerializationDescriptor, symbol.Locations.FirstOrDefault(l => l.IsInSource)));
 									}
 								}
 							});
+
+							bool IsOverriddenInConcreteConverter(ISymbol member)
+								=> !(member.ContainingType.IsGenericType && SymbolEqualityComparer.Default.Equals(member.ContainingType.ConstructUnboundGenericType(), referenceSymbols.MessagePackConverterUnbound));
 						}
 					}
 				},
@@ -242,11 +245,11 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							_ => (0, true),
 						};
 					}
-					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.IMessagePackConverter) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterNonGeneric) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
 					{
 						return i.TargetMethod.Name switch
 						{
-							"Write" or "WriteAsync" => (1, true),
+							"Write" or "WriteAsync" or "WriteObject" or "WriteObjectAsync" => (1, true),
 							_ => (0, true),
 						};
 					}
@@ -273,11 +276,11 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 							_ => (0, true),
 						};
 					}
-					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.IMessagePackConverter) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
+					else if (i.TargetMethod.ContainingSymbol is ITypeSymbol s && (s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterNonGeneric) || s.IsOrDerivedFrom(referenceSymbols.MessagePackConverterUnbound)))
 					{
 						return i.TargetMethod.Name switch
 						{
-							"Read" or "ReadAsync" => (1, true),
+							"Read" or "ReadAsync" or "ReadObject" or "ReadObjectAsync" => (1, true),
 							_ => (0, true),
 						};
 					}

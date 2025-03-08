@@ -6,9 +6,9 @@
 public partial class ArraysOfPrimitives
 {
 	private const int Length = 10_000;
-	private static readonly MessagePackSerializer AcceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = false };
-	private static readonly MessagePackSerializer UnacceleratedSerializer = new() { SerializeDefaultValues = true, DisableHardwareAcceleration = true };
-	private static readonly MessagePackSerializer TestSerializer = new() { SerializeDefaultValues = true };
+	private static readonly MessagePackSerializer AcceleratedSerializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always, DisableHardwareAcceleration = false };
+	private static readonly MessagePackSerializer UnacceleratedSerializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always, DisableHardwareAcceleration = true };
+	private static readonly MessagePackSerializer TestSerializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
 	private static readonly bool[] BoolValues = GetRandomBools(Length);
 	private static readonly byte[] BoolValuesMsgPack = TestSerializer.Serialize<bool[], Witness>(BoolValues);
 	private static readonly float[] SingleValues = GetRandomFloats(Length);

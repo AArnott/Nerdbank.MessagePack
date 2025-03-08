@@ -117,7 +117,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		public HashCollisionResistance()
 		{
 			// Theoretically these instances would be created with hash-collision resistant equality comparers.
-			// In this particular case, it turns out that the string equality comparer *is* hash resistant.
+			// In this particular case, it turns out that the string equality comparer *is* hash collision resistant.
 			this.Dictionary = new(EqualityComparer<string>.Default);
 			this.HashSet = new(EqualityComparer<string>.Default);
 		}
@@ -127,7 +127,7 @@ public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerial
 		public HashSet<string> HashSet { get; }
 
 		public bool Equals(HashCollisionResistance? other) =>
-			ByValueEquality.Equal(this.Dictionary, other?.Dictionary) &&
-			ByValueEquality.Equal(this.HashSet, other?.HashSet);
+			StructuralEquality.Equal(this.Dictionary, other?.Dictionary) &&
+			StructuralEquality.Equal(this.HashSet, other?.HashSet);
 	}
 }

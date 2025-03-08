@@ -78,7 +78,7 @@ public struct RawMessagePack : IEquatable<RawMessagePack>
 	public static implicit operator ReadOnlySequence<byte>(RawMessagePack msgpack) => msgpack.MsgPack;
 
 	/// <inheritdoc/>
-	public readonly bool Equals(RawMessagePack other) => SequenceEqual(this.MsgPack, other.MsgPack);
+	public readonly bool Equals(RawMessagePack other) => this.MsgPack.SequenceEqual(other.MsgPack);
 
 	/// <summary>
 	/// Produces a self-sustaining copy of this struct that will outlive whatever the original source buffer was from which this was created.
@@ -109,71 +109,5 @@ public struct RawMessagePack : IEquatable<RawMessagePack>
 		this.IsOwned = true;
 
 		return this;
-	}
-
-	private static bool SequenceEqual<T>(in ReadOnlySequence<T> a, in ReadOnlySequence<T> b)
-#if !NET
-		where T : IEquatable<T>
-#endif
-	{
-		if (a.Length != b.Length)
-		{
-			return false;
-		}
-
-		if (a.IsSingleSegment && b.IsSingleSegment)
-		{
-#if NET
-			return a.FirstSpan.SequenceEqual(b.FirstSpan);
-#else
-			return a.First.Span.SequenceEqual(b.First.Span);
-#endif
-		}
-
-		ReadOnlySequence<T>.Enumerator aEnumerator = a.GetEnumerator();
-		ReadOnlySequence<T>.Enumerator bEnumerator = b.GetEnumerator();
-
-		ReadOnlySpan<T> aCurrent = default;
-		ReadOnlySpan<T> bCurrent = default;
-		while (true)
-		{
-			bool aNext = TryGetNonEmptySpan(ref aEnumerator, ref aCurrent);
-			bool bNext = TryGetNonEmptySpan(ref bEnumerator, ref bCurrent);
-			if (!aNext && !bNext)
-			{
-				// We've reached the end of both sequences at the same time.
-				return true;
-			}
-			else if (aNext != bNext)
-			{
-				// One ran out of bytes before the other.
-				// We don't anticipate this, because we already checked the lengths.
-				throw Assumes.NotReachable();
-			}
-
-			int commonLength = Math.Min(aCurrent.Length, bCurrent.Length);
-			if (!aCurrent[..commonLength].SequenceEqual(bCurrent[..commonLength]))
-			{
-				return false;
-			}
-
-			aCurrent = aCurrent.Slice(commonLength);
-			bCurrent = bCurrent.Slice(commonLength);
-		}
-
-		static bool TryGetNonEmptySpan(ref ReadOnlySequence<T>.Enumerator enumerator, ref ReadOnlySpan<T> span)
-		{
-			while (span.Length == 0)
-			{
-				if (!enumerator.MoveNext())
-				{
-					return false;
-				}
-
-				span = enumerator.Current.Span;
-			}
-
-			return true;
-		}
 	}
 }

@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net472</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRootPath)src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+    <ProjectReference Include="$(RepoRootPath)src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoRootPath)src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

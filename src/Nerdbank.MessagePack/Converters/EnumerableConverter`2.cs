@@ -72,6 +72,50 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		};
 	}
 
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
+	{
+		int skipCount = (int)index!;
+
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (isNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+
+		int length;
+		while (streamingReader.TryReadArrayHeader(out length).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (length < skipCount + 1)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return false;
+		}
+
+		for (int i = 0; i < skipCount; i++)
+		{
+			while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		return true;
+	}
+
 	/// <summary>
 	/// Reads one element from the reader.
 	/// </summary>

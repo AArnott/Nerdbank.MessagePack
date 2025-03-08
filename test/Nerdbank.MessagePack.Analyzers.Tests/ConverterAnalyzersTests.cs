@@ -141,9 +141,9 @@ public class ConverterAnalyzersTests
 			}
 
 			#if NET
-			public class SomeOtherType : IShapeable<SomeOtherType>
+			[GenerateShape]
+			public partial class SomeOtherType
 			{
-				public static ITypeShape<SomeOtherType> GetShape() => throw new System.NotImplementedException();
 			}
 			#else
 			public class SomeOtherType
@@ -208,9 +208,9 @@ public class ConverterAnalyzersTests
 			}
 
 			#if NET
-			public class SomeOtherType : IShapeable<SomeOtherType>
+			[GenerateShape]
+			public partial class SomeOtherType
 			{
-				public static ITypeShape<SomeOtherType> GetShape() => throw new System.NotImplementedException();
 			}
 			#else
 			public class SomeOtherType
@@ -230,7 +230,7 @@ public class ConverterAnalyzersTests
 					{
 						return new MyType
 						{
-							SomeField = (SomeOtherType)context.GetConverter(typeof(SomeOtherType), null).Read(ref reader, context),
+							SomeField = (SomeOtherType)context.GetConverter(typeof(SomeOtherType), null).ReadObject(ref reader, context),
 						};
 					}
 				}
@@ -243,7 +243,7 @@ public class ConverterAnalyzersTests
 						return;
 					}
 
-					context.GetConverter(typeof(SomeOtherType), null).Write(ref writer, value.SomeField, context);
+					context.GetConverter(typeof(SomeOtherType), null).WriteObject(ref writer, value.SomeField, context);
 				}
 
 				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
@@ -499,9 +499,9 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			#if NET
-			public partial class MyType : IShapeable<MyType>
+			[GenerateShape]
+			public partial class MyType
 			{
-				public static ITypeShape<MyType> GetShape() => throw new System.NotImplementedException();
 			}
 			#else
 			public partial class MyType

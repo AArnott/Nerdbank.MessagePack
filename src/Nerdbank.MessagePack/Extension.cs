@@ -15,7 +15,7 @@ public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data)
 	/// </summary>
 	/// <param name="typeCode"><inheritdoc cref="Extension(sbyte, ReadOnlySequence{byte})" path="/param[@name='TypeCode']"/></param>
 	/// <param name="data"><inheritdoc cref="Extension(sbyte, ReadOnlySequence{byte})" path="/param[@name='Data']"/></param>
-	public Extension(sbyte typeCode, Memory<byte> data)
+	public Extension(sbyte typeCode, ReadOnlyMemory<byte> data)
 		: this(typeCode, new ReadOnlySequence<byte>(data))
 	{
 	}
@@ -23,5 +23,11 @@ public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data)
 	/// <summary>
 	/// Gets the header for the extension that should precede the <see cref="Data"/> in the msgpack encoded format.
 	/// </summary>
-	public ExtensionHeader Header => new(this.TypeCode, checked((uint)this.Data.Length));
+	public readonly ExtensionHeader Header => new(this.TypeCode, checked((uint)this.Data.Length));
+
+	/// <inheritdoc/>
+	public readonly bool Equals(Extension other) => this.TypeCode == other.TypeCode && this.Data.SequenceEqual(other.Data);
+
+	/// <inheritdoc/>
+	public override readonly int GetHashCode() => HashCode.Combine(this.TypeCode, this.Data.Length);
 }

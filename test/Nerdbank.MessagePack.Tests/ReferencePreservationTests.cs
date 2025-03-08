@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+[Trait("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
 	public ReferencePreservationTests(ITestOutputHelper logger)
@@ -25,6 +26,18 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		// Verify that reference equality is also satisfied within the deserialized tree.
 		Assert.Same(deserializedRoot.Value1, deserializedRoot.Value2);
 		Assert.NotSame(deserializedRoot.Value3, deserializedRoot.Value1);
+	}
+
+	[Trait("AsyncSerialization", "true")]
+	[Fact]
+	public async Task AsyncSerialization()
+	{
+		CustomType o = new();
+		CustomType?[] array = [o, o, null];
+		CustomType?[]? deserializedArray = await this.RoundtripAsync<CustomType?[], Witness>(array);
+		Assert.NotNull(deserializedArray);
+		Assert.Same(deserializedArray[0], deserializedArray[1]);
+		Assert.Null(deserializedArray[2]);
 	}
 
 	[Fact]
@@ -109,6 +122,15 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 		// Verify that reference equality is also satisfied within the deserialized tree.
 		Assert.Same(deserializedRoot.City, deserializedRoot.State);
+	}
+
+	[Fact]
+	public void DictionaryReferencePreservation()
+	{
+		Dictionary<string, int> dict = new() { ["a"] = 1, ["b"] = 2 };
+		Dictionary<string, int>[]? deserializedArray = this.Roundtrip<Dictionary<string, int>[], Witness>([dict, dict]);
+		Assert.NotNull(deserializedArray);
+		Assert.Same(deserializedArray[0], deserializedArray[1]);
 	}
 
 	[Theory, PairwiseData]
@@ -201,9 +223,9 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void KnownSubTypes_DynamicRegistration()
 	{
-		KnownSubTypeMapping<BaseRecord> mapping = new();
+		DerivedTypeMapping<BaseRecord> mapping = new();
 		mapping.Add<DerivedRecordB>(1, Witness.ShapeProvider);
-		this.Serializer.RegisterKnownSubTypes(mapping);
+		this.Serializer.RegisterDerivedTypes(mapping);
 
 		BaseRecord baseInstance = new BaseRecord();
 		BaseRecord derivedInstance = new DerivedRecordB();
@@ -237,11 +259,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	}
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<DerivedRecordA>(1)]
-#else
-	[KnownSubType(typeof(DerivedRecordA), 1)]
-#endif
+	[DerivedTypeShape(typeof(DerivedRecordA), Tag = 1)]
 	public partial record BaseRecord;
 
 	[GenerateShape]
@@ -336,5 +354,6 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[GenerateShape<CustomType[]>]
 	[GenerateShape<string[]>]
 	[GenerateShape<BaseRecord[]>]
+	[GenerateShape<Dictionary<string, int>[]>]
 	private partial class Witness;
 }

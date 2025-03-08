@@ -29,7 +29,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -40,7 +40,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -77,7 +77,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -88,7 +88,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -125,7 +125,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -136,7 +136,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -173,7 +173,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -184,7 +184,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -221,7 +221,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -232,7 +232,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -269,7 +269,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -280,7 +280,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -317,7 +317,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -328,7 +328,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;
@@ -365,7 +365,7 @@ public ref partial struct MessagePackStreamingReader
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
 		if (readResult == DecodeResult.Success)
 		{
-			this.reader.Advance(tokenSize);
+			this.Advance(tokenSize);
 			return DecodeResult.Success;
 		}
 
@@ -376,7 +376,7 @@ public ref partial struct MessagePackStreamingReader
 			switch (readResult)
 			{
 				case DecodeResult.Success:
-					self.reader.Advance(tokenSize);
+					self.Advance(tokenSize);
 					return DecodeResult.Success;
 				case DecodeResult.TokenMismatch:
 					return DecodeResult.TokenMismatch;

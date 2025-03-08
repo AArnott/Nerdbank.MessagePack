@@ -1,7 +1,10 @@
 # Custom converters
 
-While using the [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
+While using the @PolyType.GenerateShapeAttribute is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
 In such cases, you can define and register your own custom converter for the incompatible type.
+
+Before writing your own converter for a custom type, consider writing a [surrogate type](surrogate-types.md) instead.
+Surrogate types are simpler and utilize efficient, tested converters that are automatically generated.
 
 ## Define your own converter
 
@@ -9,7 +12,7 @@ Consider class `Foo` that cannot be serialized automatically.
 
 Declare a class that derives from @"Nerdbank.MessagePack.MessagePackConverter`1":
 
-[!code-csharp[](../../samples/CustomConverters.cs#YourOwnConverter)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#YourOwnConverter)]
 
 > [!CAUTION]
 > It is imperative that each `Write` and `Read` method write and read *exactly one* msgpack structure.
@@ -59,11 +62,11 @@ The @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nam
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/CustomConverters.cs#DelegateSubValuesNET)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#DelegateSubValuesNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/CustomConverters.cs#DelegateSubValuesNETFX)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#DelegateSubValuesNETFX)]
 
 ---
 
@@ -73,11 +76,11 @@ For convenience, you may want to apply it directly to your custom converter:
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/CustomConverters.cs#WitnessOnFormatterNET)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#WitnessOnFormatterNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/CustomConverters.cs#WitnessOnFormatterNETFX)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#WitnessOnFormatterNETFX)]
 
 ---
 
@@ -88,11 +91,11 @@ So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatterNET)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#ArrayWitnessOnFormatterNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/CustomConverters.cs#ArrayWitnessOnFormatterNETFX)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#ArrayWitnessOnFormatterNETFX)]
 
 ---
 
@@ -110,7 +113,7 @@ When reading arrays, you must read *all* the values in the array, even if you do
 The sample above demonstrates reading all map entries and values, including explicitly skipping entries and values that the converter does not recognize.
 If you're serializing only property values as an array, it is equally important to deserialize every array element, even if fewer elements are expected than are actually there. For example:
 
-[!code-csharp[](../../samples/CustomConverters.cs#ReadWholeArray)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#ReadWholeArray)]
 
 Note the structure uses a switch statement, which allows for 'holes' in the array to develop over time as properties are removed.
 It also implicitly skips values in any unknown array index, such that reading *all* array elements is guaranteed.
@@ -132,7 +135,7 @@ Your custom converters *may* follow similar patterns if tuning performance for y
 
 The following sample demonstrates using the @Nerdbank.MessagePack.MessagePackString class to avoid allocations and repeated encoding operations for strings used for property names:
 
-[!code-csharp[](../../samples/CustomConverters.cs#MessagePackStringUser)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#MessagePackStringUser)]
 
 ### Stateful converters
 
@@ -153,11 +156,11 @@ This can be achieved as follows:
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/CustomConverters.cs#StatefulNET)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#StatefulNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/CustomConverters.cs#StatefulNETFX)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#StatefulNETFX)]
 
 ---
 
@@ -171,7 +174,7 @@ Make your strings sufficiently unique to avoid collisions, or use a `static read
 
 Modify state on an existing @Nerdbank.MessagePack.MessagePackSerializer by capturing the context as a local variable, mutating state there, then creating a new serializer with the modified state, as follows:
 
-[!code-csharp[](../../samples/CustomConverters.cs#ModifyStateOnSerializer)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#ModifyStateOnSerializer)]
 
 ### Async converters
 
@@ -194,7 +197,7 @@ Note that if your custom type is used as the top-level data type to be serialize
 
 To get your converter to be automatically used wherever the data type that it formats needs to be serialized, apply a @Nerdbank.MessagePack.MessagePackConverterAttribute to your custom data type that points to your custom converter.
 
-[!code-csharp[](../../samples/CustomConverters.cs#CustomConverterByAttribute)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByAttribute)]
 
 When the converter is generic, it must have exactly the same number of generic type parameters as the data type it supports.
 The generic converter will be constructed using the same list of generic type arguments that the data type to be serialized uses.
@@ -203,6 +206,6 @@ The generic converter will be constructed using the same list of generic type ar
 
 For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter*.
 
-[!code-csharp[](../../samples/CustomConverters.cs#CustomConverterByRegister)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByRegister)]
 
 Runtime registration of open generic converters (i.e. converters that themselves are generic types) can either be as live objects (which necessarily locks the converters down to just one closed generic type) or you can register the converter's open generic type itself, in which case the converter will be activated on-demand when an object graph that carries an instance of the generic data type needs to be serialized.

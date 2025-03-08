@@ -16,7 +16,7 @@ Nerdbank.MessagePack protects against such attacks by artificially limiting the 
 This limit is set by @Nerdbank.MessagePack.SerializationContext.MaxDepth, which by default is set to a conservative default value that should prevent stack overflows.
 When the data to be deserialized has a legitimate need for deeper nesting than the default limit allows, this limit may be adjusted, like this:
 
-[!code-csharp[](../../samples/Security.cs#SetMaxDepth)]
+[!code-csharp[](../../samples/cs/Security.cs#SetMaxDepth)]
 
 ## Hash collisions
 
@@ -28,9 +28,9 @@ To defend against this threat while deserializing untrusted data, it is importan
 Doing so dramatically increases the cost to the attacker to carry out this attack and should severely limit the impact they can have on your service.
 
 > [!IMPORTANT]
-> The collections types included with .NET do *not* use collision resistant hash functions by default except for @System.String specifically when it is used as a key.
+> The collections types included with .NET do _not_ use collision resistant hash functions by default except for @System.String specifically when it is used as a key.
 > .NET does not supply collision resistant hash functions to use for any other type.
-> The @System.HashCode type in particular does *not* offer collision resistance.
+> The @System.HashCode type in particular does _not_ offer collision resistance.
 > They must come from your own code or a library with cryptographic hash functions.
 
 This library does not (yet) have the capability to create collections during deserialization that have collision resistant hash functions, due to [a limitation in PolyType](https://github.com/eiriktsarpalis/PolyType/issues/33), which it depends on.
@@ -45,18 +45,18 @@ Here is an example of a defense against hash collisions:
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/Security.cs#SecureEqualityComparersNET)]
+[!code-csharp[](../../samples/cs/Security.cs#SecureEqualityComparersNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/Security.cs#SecureEqualityComparersNETFX)]
+[!code-csharp[](../../samples/cs/Security.cs#SecureEqualityComparersNETFX)]
 
 ---
 
-Note how the collection properties do *not* define a property setter.
+Note how the collection properties do _not_ define a property setter.
 This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.
 
-In this example, we use @Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
+In this example, we use @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
 This implementation uses the SIP hash algorithm, which is known for its high performance and collision resistance.
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
-Please review the documentation for @Nerdbank.MessagePack.ByValueEqualityComparer.GetHashResistant* for more information.
+Please review the documentation for @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* for more information.

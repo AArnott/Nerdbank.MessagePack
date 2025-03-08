@@ -6,10 +6,10 @@ Custom converters that override the @Nerdbank.MessagePack.MessagePackConverter`1
 
 The following converter overrides the async methods but doesn't override @Nerdbank.MessagePack.MessagePackConverter`1.PreferAsyncSerialization in order to indicate that its async methods are preferred:
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack037.cs#Defective)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack037.cs#Defective)]
 
 ## Resolution
 
 Simply add an override that returns `true`:
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack037.cs#Fix)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack037.cs#Fix)]

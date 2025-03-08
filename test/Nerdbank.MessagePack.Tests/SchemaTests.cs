@@ -23,6 +23,7 @@ using Microsoft;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
+[Trait("JsonSchema", "true")]
 public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	private const bool RecordMode =
@@ -90,7 +91,46 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[Fact]
+	public void BasicObject_Key_Required()
+	{
+		JSchema schema = this.AssertSchema<ArrayOfValuesWithRequired>();
+
+		// Force additional properties to be denied to verify that the indexes are explicitly allowed by the schema.
+		DisallowAdditionalProperties(schema);
+
+		JToken.Parse("""
+			{
+				"0": "str1",
+			}
+			""").Validate(schema);
+		JToken.Parse("""
+			["str1"]
+			""").Validate(schema);
+
+		this.LogValidationError(Invalidate(
+			JToken.Parse("""
+			{
+				"1": false,
+			}
+			"""),
+			schema));
+
+		this.LogValidationError(Invalidate(
+			JToken.Parse("""
+				[]
+				"""),
+			schema));
+	}
+
+	[Fact]
 	public void Recursive() => this.AssertSchema([new RecursiveType { Child = new RecursiveType() }]);
+
+	[Fact]
+	[Trait("Surrogates", "true")]
+	public void Surrogates()
+	{
+		this.AssertSchema<SurrogateTests.OriginalType>();
+	}
 
 	[Fact]
 	public void Complex() => this.AssertSchema([
@@ -141,7 +181,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 		string schemaString = schema
 			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-			.Replace("Nerdbank.MessagePack.Tests, Version=0.3.0.0", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
+			.Replace($"Nerdbank.MessagePack.Tests, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
 
 #if NETFRAMEWORK
 		// Normalize from .NET Framework specific strings to .NET strings.
@@ -180,6 +220,23 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		foreach (JSchema sub in schema.OneOf.Concat(schema.AllOf).Concat(schema.AnyOf).Concat(schema.Items).Concat(schema.Properties.Values))
 		{
 			DisallowAdditionalProperties(sub);
+		}
+	}
+
+	private static List<ValidationError> Invalidate(JToken jToken, JSchema schema)
+	{
+		List<ValidationError> errors = new();
+		jToken.Validate(schema, (sender, args) => errors.Add(args.ValidationError));
+		Assert.NotEmpty(errors);
+		return errors;
+	}
+
+	private void LogValidationError(IEnumerable<ValidationError> errors, int indent = 0)
+	{
+		foreach (ValidationError error in errors)
+		{
+			this.Logger.WriteLine(new string(' ', indent) + error.Message);
+			this.LogValidationError(error.ChildErrors, indent + 2);
 		}
 	}
 
@@ -335,17 +392,24 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[GenerateShape]
+	internal partial class ArrayOfValuesWithRequired
+	{
+		[Key(0)]
+		[Description("The first and required property.")]
+		public required string? Property0 { get; set; }
+
+		[Key(1)]
+		public bool Property1 { get; set; }
+	}
+
+	[GenerateShape]
 	internal partial class HasDateTime
 	{
 		public DateTime Timestamp { get; set; }
 	}
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<SubType>(1)]
-#else
-	[KnownSubType(typeof(SubType), 1)]
-#endif
+	[DerivedTypeShape(typeof(SubType), Tag = 1)]
 	internal partial class BaseType
 	{
 		public string? Message { get; set; }

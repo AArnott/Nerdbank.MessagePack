@@ -1,0 +1,49 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SchemaTests\u002BArrayOfValuesWithRequired"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "definitions": {
+    "SchemaTests\u002BArrayOfValuesWithRequired": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "properties": {
+        "0": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Property0: The first and required property."
+        },
+        "1": {
+          "type": "boolean",
+          "description": "Property1"
+        }
+      },
+      "items": [
+        {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Property0: The first and required property."
+        },
+        {
+          "type": "boolean",
+          "description": "Property1"
+        }
+      ],
+      "required": [
+        "0"
+      ],
+      "minItems": 1
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}

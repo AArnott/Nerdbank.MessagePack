@@ -231,6 +231,12 @@
   <data name="NBMsgPack050_Title" xml:space="preserve">
     <value>Use ref parameters for ref structs</value>
   </data>
+  <data name="NBMsgPack051_MessageFormat" xml:space="preserve">
+    <value>{0} Consider suppressing this warning for multi-targeting projects.</value>
+  </data>
+  <data name="NBMsgPack051_Title" xml:space="preserve">
+    <value>Prefer modern .NET APIs</value>
+  </data>
   <data name="NBMsgPack100_MessageFormat" xml:space="preserve">
     <value>This is a formatter for the MessagePack-CSharp library. You may want to migrate this to a converter for the newer Nerdbank.MessagePack library.</value>
   </data>

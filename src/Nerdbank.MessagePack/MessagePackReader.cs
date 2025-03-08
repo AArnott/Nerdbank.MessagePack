@@ -93,6 +93,13 @@ public ref partial struct MessagePackReader
 		}
 	}
 
+	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
+	internal uint ExpectedRemainingStructures
+	{
+		get => this.streamingReader.ExpectedRemainingStructures;
+		set => this.streamingReader.ExpectedRemainingStructures = value;
+	}
+
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MessagePackReader"/> struct,
 	/// with the same settings as this one, but with its own buffer to read from.
@@ -161,7 +168,7 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// Reads a sequence of bytes without any decoding.
 	/// </summary>
-	/// <param name="length">The number of bytes to read.</param>
+	/// <param name="length"><inheritdoc cref="MessagePackStreamingReader.TryReadRaw(long, out ReadOnlySequence{byte})" path="/param[@name='length']"/></param>
 	/// <returns>
 	/// The raw MessagePack sequence, taken as a slice from the <see cref="Sequence"/>.
 	/// The caller should copy any data that must out-live its underlying buffers.
@@ -619,6 +626,10 @@ public ref partial struct MessagePackReader
 	/// <see cref="MessagePackCode.Ext32"/>.
 	/// </summary>
 	/// <returns>The extension header.</returns>
+	/// <remarks>
+	/// This call should always be followed by a successful call to <see cref="ReadRaw(long)"/>,
+	/// with the length of bytes specified by <see cref="ExtensionHeader.Length"/> (even if zero), so that the overall structure can be recorded as read.
+	/// </remarks>
 	/// <exception cref="EndOfStreamException">
 	/// Thrown if the header cannot be read in the bytes left in the <see cref="Sequence"/>
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the bytes the header claims to be there.
@@ -649,6 +660,10 @@ public ref partial struct MessagePackReader
 	/// <param name="extensionHeader">Receives the extension header if the remaining bytes in the <see cref="Sequence"/> fully describe the header.</param>
 	/// <returns>A value indicating whether an extension header is fully represented at the reader's position.</returns>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an extension format header is encountered.</exception>
+	/// <remarks>
+	/// This call should always be followed by a successful call to <see cref="ReadRaw(long)"/>,
+	/// with the length of bytes specified by <see cref="ExtensionHeader.Length"/> (even if zero), so that the overall structure can be recorded as read.
+	/// </remarks>
 	public bool TryReadExtensionHeader(out ExtensionHeader extensionHeader)
 	{
 		switch (this.streamingReader.TryRead(out extensionHeader))

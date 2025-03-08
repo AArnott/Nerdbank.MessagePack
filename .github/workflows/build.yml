@@ -54,7 +54,7 @@ jobs:
       run: tools/dotnet-test-cloud.ps1 -Configuration ${{ env.BUILDCONFIGURATION }} -Agent ${{ runner.os }}
       shell: pwsh
     - name: 💅🏻 Verify formatted code
-      run: dotnet format --verify-no-changes --no-restore
+      run: dotnet format --verify-no-changes --no-restore --exclude ./samples/AnalyzerDocs/NBMsgPack051.cs
       shell: pwsh
       if: runner.os == 'Linux'
     - name: 📚 Verify docfx build
@@ -82,3 +82,13 @@ jobs:
       timeout-minutes: 3
       continue-on-error: true
       if: env.codecov_token != ''
+
+  docs:
+    name: 📃 Docs
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: 🔗 Markup Link Checker (mlc)
+      uses: becheran/mlc@v0.21.0
+      with:
+        args: --do-not-warn-for-redirect-to https://learn.microsoft.com*,https://dotnet.microsoft.com/*,https://dev.azure.com/*,https://app.codecov.io/*,https://www.gitsponsors.com/* -p docfx

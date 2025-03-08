@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+[Trait("AsyncSerialization", "true")]
 public partial class AsyncSerializationTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Fact]
@@ -55,6 +56,52 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 		Assert.Equal(0, converter.AsyncDeserializationCounter);
 	}
 
+	[Fact]
+	public async Task DecodeLargeString()
+	{
+		string expected = new string('a', 100 * 1024);
+		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
+		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0), msgpack.GetPosition(1), msgpack.GetPosition(512), msgpack.GetPosition(6000), msgpack.GetPosition(32 * 1024));
+		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(expected, actual);
+	}
+
+	[Fact]
+	public async Task DecodeEmptyString()
+	{
+		string expected = string.Empty;
+		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
+		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0));
+		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(expected, actual);
+	}
+
+	[Theory, PairwiseData]
+	public async Task DeserializeAsyncAdvancesPipeReader(bool forceAsync)
+	{
+		this.Serializer = this.Serializer with { MaxAsyncBuffer = forceAsync ? 0 : 1024 };
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.Write(42);
+		writer.Flush();
+		sequence.Write("a"u8);
+
+		PipeReader reader = PipeReader.Create(sequence);
+
+		// Deserialize a value. It should advance the reader exactly across the msgpack structure.
+		int number = await this.Serializer.DeserializeAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(42, number);
+
+		// Verify that the reader is now positioned at the next byte.
+		ReadResult readResult = await reader.ReadAsync(TestContext.Current.CancellationToken);
+		Assert.True(readResult.IsCompleted);
+		Assert.Equal("a"u8, readResult.Buffer.ToArray());
+	}
+
+	[GenerateShape<string>]
+	[GenerateShape<int>]
+	private partial class Witness;
+
 	[GenerateShape]
 	public partial record Poco(int X, int Y);
 
@@ -71,7 +118,7 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	{
 		public Poco[]? Pocos => pocos;
 
-		public bool Equals(ArrayOfPocos? other) => other is not null && ByValueEquality.Equal(this.Pocos, other.Pocos);
+		public bool Equals(ArrayOfPocos? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
 	}
 
 	[GenerateShape]
@@ -79,7 +126,7 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	{
 		public int[]? Values => values;
 
-		public bool Equals(ArrayOfPrimitives? other) => other is not null && ByValueEquality.Equal(this.Values, other.Values);
+		public bool Equals(ArrayOfPrimitives? other) => other is not null && StructuralEquality.Equal(this.Values, other.Values);
 	}
 
 	[GenerateShape]

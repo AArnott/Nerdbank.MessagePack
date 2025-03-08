@@ -19,11 +19,26 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// </summary>
 	/// <param name="attributeProvider">The attribute provider for the target.</param>
 	/// <param name="schema">The schema for the target.</param>
-	protected static void ApplyDescription(ICustomAttributeProvider? attributeProvider, JsonObject schema)
+	/// <param name="namePrefix">An optional prefix to include in the description, or to use by itself when no <see cref="DescriptionAttribute"/> is present.</param>
+	protected static void ApplyDescription(ICustomAttributeProvider? attributeProvider, JsonObject schema, string? namePrefix = null)
 	{
-		if (attributeProvider?.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute description)
+		string? description;
+		if (attributeProvider?.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute descriptionAttribute)
 		{
-			schema["description"] = description.Description;
+			description = descriptionAttribute.Description;
+			if (namePrefix is not null)
+			{
+				description = $"{namePrefix}: {description}";
+			}
+		}
+		else
+		{
+			description = namePrefix;
+		}
+
+		if (description is not null)
+		{
+			schema["description"] = description;
 		}
 	}
 

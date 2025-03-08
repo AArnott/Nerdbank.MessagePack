@@ -43,9 +43,9 @@ internal ref struct BufferWriter
 	/// </summary>
 	private int buffered;
 
-	private SequencePool? sequencePool;
+	private SequencePool<byte>? sequencePool;
 
-	private SequencePool.Rental rental;
+	private SequencePool<byte>.Rental rental;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="BufferWriter"/> struct.
@@ -82,7 +82,7 @@ internal ref struct BufferWriter
 	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required..</param>
 	/// <param name="array">An array to start with so we can avoid accessing the <paramref name="sequencePool"/> if possible.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal BufferWriter(SequencePool sequencePool, byte[] array)
+	internal BufferWriter(SequencePool<byte> sequencePool, byte[] array)
 	{
 		this.sequencePool = sequencePool ?? throw new ArgumentNullException(nameof(sequencePool));
 
@@ -103,7 +103,7 @@ internal ref struct BufferWriter
 	/// <summary>
 	/// Gets the rental.
 	/// </summary>
-	internal SequencePool.Rental SequenceRental => this.rental;
+	internal SequencePool<byte>.Rental SequenceRental => this.rental;
 
 	/// <summary>
 	/// Gets the <see cref="BufferMemoryWriter"/> underlying this writer.

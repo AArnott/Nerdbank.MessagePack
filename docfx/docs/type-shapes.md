@@ -6,7 +6,7 @@ This library leverages PolyType as a source generator that provides fast startup
 
 PolyType is trim-safe and NativeAOT ready, particularly when used in its recommended configuration, where you apply @PolyType.GenerateShapeAttribute on the root type of your data model.
 
-[!code-csharp[](../../samples/TypeShapePatterns.cs#NaturallyAttributed)]
+[!code-csharp[](../../samples/cs/TypeShapePatterns.cs#NaturallyAttributed)]
 
 ## Witness classes
 
@@ -18,11 +18,11 @@ In your own project, you can define this witness type and use it to serialize an
 
 # [.NET](#tab/net)
 
-[!code-csharp[](../../samples/TypeShapePatterns.cs#WitnessNET)]
+[!code-csharp[](../../samples/cs/TypeShapePatterns.cs#WitnessNET)]
 
 # [.NET Standard](#tab/netfx)
 
-[!code-csharp[](../../samples/TypeShapePatterns.cs#WitnessNETFX)]
+[!code-csharp[](../../samples/cs/TypeShapePatterns.cs#WitnessNETFX)]
 
 ---
 
@@ -37,4 +37,4 @@ You do _not_ need a witness class for an external type to reference that type fr
 
 In the unlikely event that you have a need to serialize a type that does _not_ have a shape source-generated for it, you can use the conventional reflection approach of serialization with Nerdbank.MessagePack if you do not need to run in a trimmed app.
 
-[!code-csharp[](../../samples/TypeShapePatterns.cs#SerializeUnshapedType)]
+[!code-csharp[](../../samples/cs/TypeShapePatterns.cs#SerializeUnshapedType)]

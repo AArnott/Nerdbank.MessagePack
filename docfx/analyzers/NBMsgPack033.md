@@ -9,10 +9,10 @@ When resolving this violation, consider the various branching, loops, etc. as th
 
 In the following @Nerdbank.MessagePack.MessagePackConverter`1.WriteAsync* method, a synchronous writer is created with @Nerdbank.MessagePack.MessagePackAsyncWriter.CreateWriter* but not returned at two points where it is necessary.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack033.cs#Defective)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack033.cs#Defective)]
 
 ## Resolution
 
 Add calls to @Nerdbank.MessagePack.MessagePackAsyncWriter.ReturnWriter* before any exit from the method or any `await` expression.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack033.cs#Fix)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack033.cs#Fix)]

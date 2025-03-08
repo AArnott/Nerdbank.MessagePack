@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.FSharp.Reflection;
 using PolyType.Tests;
 using Xunit.Sdk;
 
@@ -19,6 +20,7 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;
 			byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			this.LogMsgPack(new(msgpack));
 
 			if (IsDeserializable(testCase))
 			{
@@ -51,7 +53,7 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 		}
 	}
 
-	private static bool IsDeserializable<T>(TestCase<T> testCase)
+	private static bool IsDeserializable(PolyType.Tests.ITestCase testCase)
 	{
 		if (testCase.Value is null)
 		{
@@ -63,9 +65,14 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 			return false;
 		}
 
-		if (testCase.IsAbstract && !typeof(System.Collections.IEnumerable).IsAssignableFrom(typeof(T)))
+		if (testCase.IsAbstract && !testCase.IsUnion && !typeof(System.Collections.IEnumerable).IsAssignableFrom(testCase.Type))
 		{
 			return false;
+		}
+
+		if (testCase.IsUnion)
+		{
+			return !testCase.IsAbstract || FSharpType.IsUnion(testCase.Type, null);
 		}
 
 		if (testCase.CustomKind == TypeShapeKind.None)

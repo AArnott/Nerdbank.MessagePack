@@ -4,6 +4,7 @@
 #pragma warning disable NBMsgPack031 // NotExactlyOneStructure -- we're doing advanced stuff.
 #pragma warning disable NBMsgPack032 // Reference preservation isn't supported when producing a schema at this point.
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -16,7 +17,7 @@ namespace Nerdbank.MessagePack;
 internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : MessagePackConverter<T>
 {
 	/// <inheritdoc/>
-	public override bool PreferAsyncSerialization => false; // inner.PreferAsyncSerialization;
+	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
 	public override T? Read(ref MessagePackReader reader, SerializationContext context)
@@ -31,6 +32,27 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 	}
 
 	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		if (isNil)
+		{
+			return default;
+		}
+
+		Assumes.NotNull(context.ReferenceEqualityTracker);
+		return await context.ReferenceEqualityTracker.ReadObjectAsync(reader, inner, context).ConfigureAwait(false);
+	}
+
+	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
 	{
 		if (value is null)
@@ -41,6 +63,20 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 
 		Assumes.NotNull(context.ReferenceEqualityTracker);
 		context.ReferenceEqualityTracker.WriteObject(ref writer, value, inner, context);
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
+	{
+		if (value is null)
+		{
+			writer.WriteNil();
+			return default;
+		}
+
+		Assumes.NotNull(context.ReferenceEqualityTracker);
+		return context.ReferenceEqualityTracker.WriteObjectAsync(writer, value, inner, context);
 	}
 
 	/// <inheritdoc/>

@@ -1,0 +1,35 @@
+﻿{
+  "oneOf": [
+    {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/SurrogateTests\u002BOriginalType\u002BMarshaledType"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "definitions": {
+    "SurrogateTests\u002BOriginalType\u002BMarshaledType": {
+      "type": "object",
+      "properties": {
+        "A": {
+          "type": "integer"
+        },
+        "B": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "A",
+        "B"
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/draft-04/schema"
+}

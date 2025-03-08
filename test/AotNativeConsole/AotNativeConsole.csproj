@@ -24,11 +24,5 @@
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <EditorConfigFiles Remove="D:\source\Nerdbank.MessagePack\test\AotNativeConsole\.editorconfig" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="D:\source\Nerdbank.MessagePack\test\AotNativeConsole\.editorconfig" />
-  </ItemGroup>
 
 </Project>

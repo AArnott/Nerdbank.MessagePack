@@ -13,11 +13,11 @@ namespace Nerdbank.MessagePack;
 /// <example>
 /// <para>The default values on this struct may be changed and the modified struct applied to <see cref="MessagePackSerializer.StartingContext"/>
 /// in order to serialize with the updated settings.</para>
-/// <code source="../../samples/ApplyingSerializationContext.cs" region="ApplyingStartingContext" lang="C#" />
+/// <code source="../../samples/cs/ApplyingSerializationContext.cs" region="ApplyingStartingContext" lang="C#" />
 /// </example>
 /// <example>
 /// <para>To modify the starting context on an existing serializer, you can use the with keyword to create a new serializer with the updated context.</para>
-/// <code source="../../samples/ApplyingSerializationContext.cs" region="ModifyingStartingContext" lang="C#" />
+/// <code source="../../samples/cs/ApplyingSerializationContext.cs" region="ModifyingStartingContext" lang="C#" />
 /// </example>
 [DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
 public record struct SerializationContext
@@ -76,7 +76,7 @@ public record struct SerializationContext
 	/// Gets or sets the number of elements that must still be skipped to complete a skip operation.
 	/// </summary>
 	/// <value>0 when no skip operation was suspended and is still incomplete.</value>
-	internal int MidSkipRemainingCount { get; set; }
+	internal uint MidSkipRemainingCount { get; set; }
 
 	/// <summary>
 	/// Gets or sets special state to be exposed to converters during serialization.
@@ -94,7 +94,7 @@ public record struct SerializationContext
 	/// <example>
 	/// To add, modify or remove a key in this state as applied to a <see cref="MessagePackSerializer.StartingContext"/>,
 	/// capture and change the <see cref="SerializationContext"/> as a local variable, then reassign it to the serializer.
-	/// <code source="../../samples/ApplyingSerializationContext.cs" region="ModifyingStartingContextState" lang="C#" />
+	/// <code source="../../samples/cs/ApplyingSerializationContext.cs" region="ModifyingStartingContextState" lang="C#" />
 	/// </example>
 	public object? this[object key]
 	{
@@ -178,11 +178,11 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public IMessagePackConverter GetConverter(ITypeShape shape)
+	public MessagePackConverter GetConverter(ITypeShape shape)
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		IMessagePackConverterInternal result = this.Cache.GetOrAddConverter(shape);
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		MessagePackConverter result = this.Cache.GetOrAddConverter(shape);
+		return this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation();
 	}
 
 	/// <summary>
@@ -195,11 +195,11 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public IMessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider)
+	public MessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider)
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		IMessagePackConverterInternal result = this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException());
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		return this.ReferenceEqualityTracker is null ? (MessagePackConverter)result : result.WrapWithReferencePreservation();
 	}
 
 	/// <summary>

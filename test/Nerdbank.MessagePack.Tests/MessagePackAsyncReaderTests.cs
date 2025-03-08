@@ -20,7 +20,7 @@ public class MessagePackAsyncReaderTests
 		FragmentedPipeReader pipeReader = new(ros, ros.GetPosition(1));
 
 		SerializationContext context = new();
-		MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = default };
+		using MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = default };
 		await reader.BufferNextStructureAsync(context);
 	}
 }

@@ -5,15 +5,20 @@ items:
   href: getting-started.md
 - name: Unions
   href: unions.md
+- href: streaming-deserialization.md
 - name: Customizing serialization
   href: customizing-serialization.md
+- href: surrogate-types.md
 - name: Custom converters
   href: custom-converters.md
 - name: Performance
   href: performance.md
 - name: Security
   href: security.md
+- href: structural-equality.md
+- href: unity.md
 - name: Migrating
   href: migrating.md
 - name: Type shapes
   href: type-shapes.md
+- href: fsharp.md

@@ -22,7 +22,7 @@ namespace Nerdbank.MessagePack;
 internal record class ConverterCache
 {
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
-	private readonly ConcurrentDictionary<Type, IKnownSubTypeMapping> userProvidedKnownSubTypes = new();
+	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
 
 	private MultiProviderTypeCache? cachedConverters;
 
@@ -32,10 +32,11 @@ internal record class ConverterCache
 
 	private bool preserveReferences;
 	private bool serializeEnumValuesByName;
-	private bool serializeDefaultValues;
+	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
+	private bool perfOverStability;
 
 #if NET
 
@@ -110,27 +111,28 @@ internal record class ConverterCache
 	}
 
 	/// <summary>
-	/// Gets a value indicating whether to serialize properties that are set to their default values.
+	/// Gets the policy concerning which properties to serialize though they are set to their default values.
 	/// </summary>
-	/// <value>The default value is <see langword="false" />.</value>
+	/// <value>The default value is <see cref="SerializeDefaultValuesPolicy.Required"/>, meaning that only required properties or properties with non-default values will be serialized.</value>
 	/// <remarks>
 	/// <para>
 	/// By default, the serializer omits properties and fields that are set to their default values when serializing objects.
 	/// This property can be used to override that behavior and serialize all properties and fields, regardless of their value.
 	/// </para>
 	/// <para>
-	/// This property currently only impacts objects serialized as maps (i.e. types that are <em>not</em> using <see cref="KeyAttribute"/> on their members),
-	/// but this could be expanded to truncate value arrays as well.
+	/// Objects that are serialized as arrays (i.e. types that use <see cref="KeyAttribute"/> on their members),
+	/// have a limited ability to omit default values because the order of the elements in the array is significant.
+	/// See the <see cref="KeyAttribute" /> documentation for details.
 	/// </para>
 	/// <para>
 	/// Default values are assumed to be <c>default(TPropertyType)</c> except where overridden, as follows:
 	/// <list type="bullet">
 	///   <item><description>Primary constructor default parameter values. e.g. <c>record Person(int Age = 18)</c></description></item>
-	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] internal int Age { get; set; }</c></description></item>
+	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] internal int Age { get; set; } = 18;</c></description></item>
 	/// </list>
 	/// </para>
 	/// </remarks>
-	internal bool SerializeDefaultValues
+	internal SerializeDefaultValuesPolicy SerializeDefaultValues
 	{
 		get => this.serializeDefaultValues;
 		init => this.ChangeSetting(ref this.serializeDefaultValues, value);
@@ -182,6 +184,48 @@ internal record class ConverterCache
 	{
 		get => this.propertyNamingPolicy;
 		init => this.ChangeSetting(ref this.propertyNamingPolicy, value);
+	}
+
+	/// <summary>
+	/// Gets a value indicating whether to boost performance
+	/// using methods that may compromise the stability of the serialized schema.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <remarks>
+	/// <para>
+	/// This setting is intended for use in performance-sensitive scenarios where the serialized data
+	/// will not be stored or shared with other systems, but rather is used in a single system live data
+	/// such that the schema need not be stable between versions of the application.
+	/// </para>
+	/// <para>
+	/// Examples of behavioral changes that may occur when this setting is <see langword="true" />:
+	/// <list type="bullet">
+	/// <item>All objects are serialized with an array of their values instead of maps that include their property names.</item>
+	/// <item>Polymorphic type identifiers are always integers.</item>
+	/// </list>
+	/// </para>
+	/// <para>
+	/// In particular, the schema is liable to change when this property is <see langword="true"/> and:
+	/// <list type="bullet">
+	/// <item>Serialized members are added, removed or reordered within their declaring type.</item>
+	/// <item>A <see cref="DerivedTypeShapeAttribute"/> is removed, or inserted before the last such attribute on a given type.</item>
+	/// </list>
+	/// </para>
+	/// <para>
+	/// Changing this property (either direction) is itself liable to alter the schema of the serialized data.
+	/// </para>
+	/// <para>
+	/// Performance and schema stability can both be achieved at once by:
+	/// <list type="bullet">
+	/// <item>Using the <see cref="KeyAttribute"/> on all serialized properties.</item>
+	/// <item>Specifying <see cref="DerivedTypeShapeAttribute.Tag"/> explicitly for all polymorphic types.</item>
+	/// </list>
+	/// </para>
+	/// </remarks>
+	internal bool PerfOverSchemaStability
+	{
+		get => this.perfOverStability;
+		init => this.ChangeSetting(ref this.perfOverStability, value);
 	}
 
 	/// <summary>
@@ -250,12 +294,12 @@ internal record class ConverterCache
 	/// <summary>
 	/// Registers a known sub-type mapping for a base type.
 	/// </summary>
-	/// <typeparam name="TBase"><inheritdoc cref="KnownSubTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
+	/// <typeparam name="TBase"><inheritdoc cref="DerivedTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
 	/// <param name="mapping">The mapping.</param>
 	/// <remarks>
 	/// <para>
 	/// This method provides a runtime dynamic alternative to the otherwise simpler but static
-	/// <see cref="KnownSubTypeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
+	/// <see cref="DerivedTypeShapeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
 	/// </para>
 	/// <para>
 	/// This is also the only way to force the serialized schema to <em>support</em> sub-types in the future when
@@ -263,10 +307,10 @@ internal record class ConverterCache
 	/// </para>
 	/// <para>
 	/// A mapping provided for a given <typeparamref name="TBase"/> will completely replace any mapping from
-	/// <see cref="KnownSubTypeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
+	/// <see cref="DerivedTypeShapeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
 	/// </para>
 	/// </remarks>
-	internal void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping)
+	internal void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping)
 	{
 		Requires.NotNull(mapping);
 		this.OnChangingConfiguration();
@@ -291,8 +335,8 @@ internal record class ConverterCache
 	/// </summary>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IMessagePackConverterInternal GetOrAddConverter(ITypeShape shape)
-		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAdd(shape)!;
+	internal MessagePackConverter GetOrAddConverter(ITypeShape shape)
+		=> (MessagePackConverter)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -340,11 +384,11 @@ internal record class ConverterCache
 	/// <param name="baseType">The base type.</param>
 	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
 	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<SubTypeAlias, ITypeShape>? subTypes)
+	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes)
 	{
-		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownSubTypeMapping? mapping))
+		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IDerivedTypeMapping? mapping))
 		{
-			subTypes = mapping.CreateSubTypesMapping();
+			subTypes = mapping.CreateDerivedTypesMapping();
 			return true;
 		}
 

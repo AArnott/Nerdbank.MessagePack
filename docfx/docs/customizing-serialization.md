@@ -17,19 +17,19 @@ Non-public fields and properties may be included by applying @PolyType.PropertyS
 
 Public fields and properties may similarly be *excluded* from serialiation by applying @PolyType.PropertyShapeAttribute to the member and settings its @PolyType.PropertyShapeAttribute.Ignore property to `true`.
 
-[!code-csharp[](../../samples/CustomizingSerialization.cs#IncludingExcludingMembers)]
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#IncludingExcludingMembers)]
 
 ## Changing property name
 
 The serialized name for a property may be changed from its declared C# name by applying @PolyType.PropertyShapeAttribute and settings its @PolyType.PropertyShapeAttribute.Name property.
 
-[!code-csharp[](../../samples/CustomizingSerialization.cs#ChangingPropertyNames)]
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#ChangingPropertyNames)]
 
 Alternatively you can apply a consistent transformation policy for *all* property names by setting the @Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy?displayProperty=nameWithType property.
 
 For example, you can apply a camelCase transformation with @Nerdbank.MessagePack.MessagePackNamingPolicy.CamelCase like this:
 
-[!code-csharp[](../../samples/CustomizingSerialization.cs#ApplyNamePolicy)]
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#ApplyNamePolicy)]
 
 At which point all serialization/deserialization done with that instance will use camelCase for property names.
 
@@ -46,7 +46,7 @@ When the type contains serializable, readonly fields or properties with only a g
 
 Consider this immutable type:
 
-[!code-csharp[](../../samples/CustomizingSerialization.cs#DeserializingConstructors)]
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#DeserializingConstructors)]
 
 The intent is of course for `Name` to be serialized.
 Deserialization cannot be done into the `Name` property because there is no setter defined.
@@ -57,7 +57,7 @@ This is how the deserializer matches up.
 
 Let's consider a variant where the serialized name does not match the property name:
 
-[!code-csharp[](../../samples/CustomizingSerialization.cs#DeserializingConstructorsPropertyRenamed)]
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#DeserializingConstructorsPropertyRenamed)]
 
 This will serialize the property with the name `person_name`.
 Note that the constructor parameter name is _still_ a case-variant of the `Name` property rather than being based on the renamed `person_name` string.
@@ -81,7 +81,7 @@ For example when javascript deserializes msgpack, the javascript object they get
 For even better serialization performance and more compact msgpack, you can opt your type into serializing with indexes instead of property names.
 To do this, apply @Nerdbank.MessagePack.KeyAttribute to each property and field that needs to be serialized on your type.
 
-[!code-csharp[](../../samples/CustomizingSerialization.cs#SerializeWithKey)]
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#SerializeWithKey)]
 
 These attributes give the serializer a durable and more compact identifier for properties than their names.
 Using JSON for a readable representation, we can see that the msgpack changes when using these `Key` attributes from this:
@@ -127,26 +127,25 @@ When all values on an object are set to non-default values and there are no gaps
 When some properties of the object would ideally be skipped because the values are their defaults and/or there are gaps in assigned indexes, a map may be more compact.
 A map has its own overhead because indexes are not implicit.
 
-When @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is `true`, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
-But when this property is left to its default value of `false`, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
-
+When @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always?displayProperty=nameWithType, the array format is always chosen, even if gaps from unassigned indexes may exist in the array.
+But when this property is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never, even if the array format is chosen, it may be a shorter array because of properties at the end of the array that are set to their default values.
 
 In the case above, the array format would have been chosen because there are two non-default values and no gaps.
 Let's now consider another case:
 
-[!code-csharp[](../../samples/CustomizingSerialization.cs#SerializeWithKeyAndGaps)]
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#SerializeWithKeyAndGaps)]
 
 Note the large gap between assigned indexes 0 and 5 in this class.
 This could be justified by the removal of properties with indexes 1-4 and a desire to retain compatibility with previous versions of the serialized schema.
 
-Serializing this object with @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType set to `true`, we'd get a 6-element array.
+Serializing this object with @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always, we'd get a 6-element array.
 If both properties were set, the serialized form might look like this:
 
 ```json
 ["value1",null,null,null,null,"value2"]
 ```
 
-For the rest of this section, let's assume @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues?displayProperty=nameWithType is at its default `false` value.
+For the rest of this section, let's assume @Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues is set to @Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Never.
 This immediately changes the binary representation of the serialized object above to just this:
 
 ```json
