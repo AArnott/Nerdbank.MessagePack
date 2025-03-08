@@ -166,7 +166,7 @@ public partial class SimplePoco
 	private void SerializeJson<T>(T value)
 	{
 		STJ.Utf8JsonWriter writer = new(this.buffer);
-		STJ.JsonSerializer.Serialize(writer, Data.PocoMap.Single);
+		STJ.JsonSerializer.Serialize(writer, value);
 		writer.Flush();
 		this.buffer.Reset();
 	}
