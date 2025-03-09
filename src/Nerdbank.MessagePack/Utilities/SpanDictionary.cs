@@ -47,6 +47,7 @@ internal sealed class SpanDictionary<TKey, TValue>
 	private readonly Entry[] entries;
 	private readonly ulong fastModMultiplier;
 	private readonly ISpanEqualityComparer<TKey> comparer;
+	private readonly (EntryType Type, Entry Entry)[]? entryByLength;
 
 	/// <summary>Initializes a new instance of the <see cref="SpanDictionary{TKey, TValue}"/> class.</summary>
 	/// <param name="input">The sequence of keys and values to include in the dictionary.</param>
@@ -66,6 +67,10 @@ internal sealed class SpanDictionary<TKey, TValue>
 		}
 
 		int idx = 0;
+		ulong lengthsObserved = 0;
+		int uniqueLengths = 0;
+		int count = 0;
+		int maxAllowableLength = 0;
 		foreach (KeyValuePair<ReadOnlyMemory<TKey>, TValue> kvp in source)
 		{
 			ReadOnlyMemory<TKey> key = kvp.Key;
@@ -89,7 +94,52 @@ internal sealed class SpanDictionary<TKey, TValue>
 			entry.Key = key;
 			entry.Value = kvp.Value;
 			bucket = ++idx;
+
+			count++;
+			int len = kvp.Key.Length;
+			if (len < 64)
+			{
+				maxAllowableLength = Math.Max(maxAllowableLength, len);
+				if ((lengthsObserved & (1UL << len)) != 0)
+				{
+					// We've already seen a key with the same length.
+					// TODO: camel vs Pascal casing screws us up here.
+					uniqueLengths--;
+				}
+				else
+				{
+					lengthsObserved |= 1UL << len;
+					uniqueLengths++;
+				}
+			}
 		}
+
+		// If there's a lot of unique lengths, we can optimize the lookup by length.
+		if (count > 0 && uniqueLengths * 100 / count > 66)
+		{
+			this.entryByLength = new (EntryType, Entry)[maxAllowableLength + 1];
+			foreach (Entry entry in this.entries)
+			{
+				ref (EntryType Type, Entry Entry) slot = ref this.entryByLength[entry.Key.Length];
+				if (slot.Type == EntryType.None)
+				{
+					slot.Type = EntryType.Single;
+					slot.Entry = entry;
+				}
+				else if (slot.Type == EntryType.Single)
+				{
+					slot.Type = EntryType.Multi;
+					slot.Entry = default;
+				}
+			}
+		}
+	}
+
+	private enum EntryType
+	{
+		None,
+		Single,
+		Multi,
 	}
 
 	/// <summary>Gets the numbers of entries on the dictionary.</summary>
@@ -101,6 +151,29 @@ internal sealed class SpanDictionary<TKey, TValue>
 	/// <returns><see langword="true" /> if the <paramref name="key"/> matched an entry in the dictionary; otherwise <see langword="false" />.</returns>
 	public bool TryGetValue(ReadOnlySpan<TKey> key, [MaybeNullWhen(false)] out TValue value)
 	{
+		if (this.entryByLength is not null)
+		{
+			ref (EntryType Type, Entry Entry) slot = ref this.entryByLength[key.Length];
+			switch (slot.Type)
+			{
+				case EntryType.None:
+					value = default;
+					return false;
+				case EntryType.Single:
+					if (!this.comparer.Equals(key, slot.Entry.Key.Span))
+					{
+						value = default;
+						return false;
+					}
+
+					value = slot.Entry.Value;
+					return true;
+				case EntryType.Multi:
+					// Fallback to hashing.
+					break;
+			}
+		}
+
 		Entry[] entries = this.entries;
 		uint hashCode = this.GetHashCode(key);
 		int bucket = this.GetBucket(hashCode);
