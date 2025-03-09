@@ -58,7 +58,7 @@ nunit-*.xml
 dlldata.c
 
 # Benchmark Results
-BenchmarkDotNet.Artifacts/
+BenchmarkDotNet.Artifacts*/
 
 # StyleCop
 StyleCopReport.xml

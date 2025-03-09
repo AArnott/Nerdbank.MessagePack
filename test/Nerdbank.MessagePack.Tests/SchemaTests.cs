@@ -181,7 +181,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	{
 		string schemaString = schema
 			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-			.Replace("Nerdbank.MessagePack.Tests, Version=0.3.0.0", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
+			.Replace($"Nerdbank.MessagePack.Tests, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
 
 #if NETFRAMEWORK
 		// Normalize from .NET Framework specific strings to .NET strings.
@@ -409,11 +409,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<SubType>(1)]
-#else
-	[KnownSubType(typeof(SubType), 1)]
-#endif
+	[DerivedTypeShape(typeof(SubType), Tag = 1)]
 	internal partial class BaseType
 	{
 		public string? Message { get; set; }

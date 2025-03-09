@@ -3,11 +3,11 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
+using System.ComponentModel;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -28,6 +28,10 @@ namespace Nerdbank.MessagePack;
 /// </devremarks>
 public partial record MessagePackSerializer
 {
+#if NET
+	private const string PreferTypeConstrainedOverloads = "Use an overload that does not take an ITypeShape<T> or ITypeShapeProvider, instead constraining T : IShapeable<T>.";
+#endif
+
 	private ConverterCache converterCache = new();
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
@@ -47,6 +51,13 @@ public partial record MessagePackSerializer
 	{
 		get => this.converterCache.PropertyNamingPolicy;
 		init => this.converterCache = this.converterCache with { PropertyNamingPolicy = value };
+	}
+
+	/// <inheritdoc cref="ConverterCache.PerfOverSchemaStability"/>
+	public bool PerfOverSchemaStability
+	{
+		get => this.converterCache.PerfOverSchemaStability;
+		init => this.converterCache = this.converterCache with { PerfOverSchemaStability = value };
 	}
 
 	/// <inheritdoc cref="ConverterCache.SerializeEnumValuesByName"/>
@@ -130,8 +141,8 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(MessagePackConverter{T})"/>
 	public void RegisterConverter<T>(MessagePackConverter<T> converter) => this.converterCache.RegisterConverter(converter);
 
-	/// <inheritdoc cref="ConverterCache.RegisterKnownSubTypes{TBase}(KnownSubTypeMapping{TBase})"/>
-	public void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping) => this.converterCache.RegisterKnownSubTypes(mapping);
+	/// <inheritdoc cref="ConverterCache.RegisterDerivedTypes{TBase}(DerivedTypeMapping{TBase})"/>
+	public void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping) => this.converterCache.RegisterDerivedTypes(mapping);
 
 	/// <summary>
 	/// Serializes an untyped value.
@@ -144,7 +155,7 @@ public partial record MessagePackSerializer
 	/// <para>
 	/// The following snippet demonstrates a way to use this method.
 	/// </para>
-	/// <code source="../../samples/SimpleSerialization.cs" region="NonGenericSerializeDeserialize" lang="C#" />
+	/// <code source="../../samples/cs/SimpleSerialization.cs" region="NonGenericSerializeDeserialize" lang="C#" />
 	/// </example>
 	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
 	{
@@ -162,6 +173,10 @@ public partial record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
@@ -177,6 +192,10 @@ public partial record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
@@ -209,6 +228,10 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
@@ -230,6 +253,10 @@ public partial record MessagePackSerializer
 	/// </param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
@@ -247,6 +274,10 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(writer);
@@ -270,6 +301,10 @@ public partial record MessagePackSerializer
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(writer);
@@ -291,6 +326,10 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter(shape), cancellationToken);
 
@@ -302,16 +341,21 @@ public partial record MessagePackSerializer
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
-	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte})"/>
-	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack) => ConvertToJson(new ReadOnlySequence<byte>(msgpack));
+	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte}, JsonOptions?)"/>
+	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack, JsonOptions? options = null) => ConvertToJson(new ReadOnlySequence<byte>(msgpack), options);
 
 	/// <summary>
 	/// Converts a msgpack sequence into equivalent JSON.
 	/// </summary>
 	/// <param name="msgpack">The msgpack sequence.</param>
+	/// <param name="options"><inheritdoc cref="ConvertToJson(ref MessagePackReader, TextWriter, JsonOptions?)" path="/param[@name='options']"/></param>
 	/// <returns>The JSON.</returns>
 	/// <remarks>
 	/// <para>
@@ -319,13 +363,13 @@ public partial record MessagePackSerializer
 	/// As such, this method is intended for debugging purposes rather than for production use.
 	/// </para>
 	/// </remarks>
-	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack)
+	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack, JsonOptions? options = null)
 	{
 		StringWriter jsonWriter = new();
 		MessagePackReader reader = new(msgpack);
 		while (!reader.End)
 		{
-			ConvertToJson(ref reader, jsonWriter);
+			ConvertToJson(ref reader, jsonWriter, options);
 		}
 
 		return jsonWriter.ToString();
@@ -336,13 +380,14 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <param name="reader">A reader of the msgpack stream.</param>
 	/// <param name="jsonWriter">The writer that will receive JSON text.</param>
-	public static void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter)
+	/// <param name="options">Options to customize how the JSON is written.</param>
+	public static void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions? options = null)
 	{
 		Requires.NotNull(jsonWriter);
 
-		WriteOneElement(ref reader, jsonWriter);
+		WriteOneElement(ref reader, jsonWriter, options ?? new(), 0);
 
-		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter)
+		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, int indentationLevel)
 		{
 			switch (reader.NextMessagePackType)
 			{
@@ -383,14 +428,27 @@ public partial record MessagePackSerializer
 				case MessagePackType.Array:
 					jsonWriter.Write('[');
 					int count = reader.ReadArrayHeader();
-					for (int i = 0; i < count; i++)
+					if (count > 0)
 					{
-						if (i > 0)
+						NewLine(jsonWriter, options, indentationLevel + 1);
+
+						for (int i = 0; i < count; i++)
+						{
+							if (i > 0)
+							{
+								jsonWriter.Write(',');
+								NewLine(jsonWriter, options, indentationLevel + 1);
+							}
+
+							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+						}
+
+						if (options.TrailingCommas && options.Indentation is not null && count > 0)
 						{
 							jsonWriter.Write(',');
 						}
 
-						WriteOneElement(ref reader, jsonWriter);
+						NewLine(jsonWriter, options, indentationLevel);
 					}
 
 					jsonWriter.Write(']');
@@ -398,16 +456,36 @@ public partial record MessagePackSerializer
 				case MessagePackType.Map:
 					jsonWriter.Write('{');
 					count = reader.ReadMapHeader();
-					for (int i = 0; i < count; i++)
+					if (count > 0)
 					{
-						if (i > 0)
+						NewLine(jsonWriter, options, indentationLevel + 1);
+						for (int i = 0; i < count; i++)
+						{
+							if (i > 0)
+							{
+								jsonWriter.Write(',');
+								NewLine(jsonWriter, options, indentationLevel + 1);
+							}
+
+							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							if (options.Indentation is null)
+							{
+								jsonWriter.Write(':');
+							}
+							else
+							{
+								jsonWriter.Write(": ");
+							}
+
+							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+						}
+
+						if (options.TrailingCommas && options.Indentation is not null && count > 0)
 						{
 							jsonWriter.Write(',');
 						}
 
-						WriteOneElement(ref reader, jsonWriter);
-						jsonWriter.Write(':');
-						WriteOneElement(ref reader, jsonWriter);
+						NewLine(jsonWriter, options, indentationLevel);
 					}
 
 					jsonWriter.Write('}');
@@ -425,6 +503,18 @@ public partial record MessagePackSerializer
 					break;
 				case MessagePackType.Unknown:
 					throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented.");
+			}
+
+			static void NewLine(TextWriter writer, JsonOptions options, int indentationLevel)
+			{
+				if (options.Indentation is not null)
+				{
+					writer.Write(options.NewLine);
+					for (int i = 0; i < indentationLevel; i++)
+					{
+						writer.Write(options.Indentation);
+					}
+				}
 			}
 		}
 
@@ -473,22 +563,38 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter(shape), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
+#if NET
+	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter<TElement>(provider), cancellationToken);
 
@@ -544,16 +650,8 @@ public partial record MessagePackSerializer
 #pragma warning disable NBMsgPackAsync
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		bool readMore = false;
-		while (!await asyncReader.GetIsEndOfStreamAsync().ConfigureAwait(false))
+		while (!await asyncReader.GetIsEndOfStreamAsync(readMore).ConfigureAwait(false))
 		{
-			if (readMore)
-			{
-				// We've proven that items *can* fit in the buffer, and that we've read all we can.
-				// Try once to read more bytes to see if we can keep synchronously deserializing.
-				await asyncReader.ReadAsync().ConfigureAwait(false);
-				readMore = false;
-			}
-
 			// Use sync deserialization if we can because it's faster.
 			int bufferedCount = asyncReader.GetBufferedStructuresCount(100, context.Value, out bool reachedMaxCount);
 			if (bufferedCount > 0)
@@ -578,6 +676,12 @@ public partial record MessagePackSerializer
 			{
 				// We don't have a complete structure buffered, so use async streaming deserialization.
 				yield return await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+
+				// We don't know what's in the buffer.
+				// There may be a whole element left in there.
+				// Reading more at this point could cause us to hang for more bytes
+				// instead of yielding the element we already have in the buffer.
+				readMore = false;
 			}
 		}
 
@@ -704,6 +808,47 @@ public partial record MessagePackSerializer
 		/// Disposes of any resources held by the serialization context.
 		/// </summary>
 		public void Dispose() => context.End();
+	}
+
+	/// <summary>
+	/// A description of how JSON should be formatted when calling one of the <see cref="ConvertToJson(ref MessagePackReader, TextWriter, JsonOptions?)"/> overloads.
+	/// </summary>
+	public record struct JsonOptions
+	{
+		/// <summary>
+		/// Initializes a new instance of the <see cref="JsonOptions"/> struct.
+		/// </summary>
+		public JsonOptions()
+		{
+		}
+
+		/// <summary>
+		/// Gets or sets the string used to indent the JSON (implies newlines are also used).
+		/// </summary>
+		/// <remarks>
+		/// A <see langword="null" /> value indicates that no indentation should be used.
+		/// </remarks>
+		public string? Indentation { get; set; }
+
+		/// <summary>
+		/// Gets or sets the sequence of characters used to represent a newline.
+		/// </summary>
+		/// <value>The default is <see cref="Environment.NewLine"/>.</value>
+		public string NewLine { get; set; } = Environment.NewLine;
+
+		/// <summary>
+		/// Gets or sets a value indicating whether the JSON may use trailing commas (e.g. after the last property or element in an array).
+		/// </summary>
+		/// <remarks>
+		/// <para>
+		/// Trailing commas are not allowed in JSON by default, but some parsers may accept them.
+		/// JSON5 allows trailing commas.
+		/// </para>
+		/// <para>
+		/// Trailing commas may only be emitted when <see cref="Indentation"/> is set to a non-<see langword="null" /> value.
+		/// </para>
+		/// </remarks>
+		public bool TrailingCommas { get; set; }
 	}
 
 	/// <summary>

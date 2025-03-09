@@ -6,13 +6,13 @@ Custom converters (classes that derive from @"Nerdbank.MessagePack.MessagePackCo
 
 In the example below, notice how @Nerdbank.MessagePack.MessagePackAsyncWriter.ReturnWriter* is called and then the returned writer is used again on the next statement.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack034.cs#Defective)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack034.cs#Defective)]
 
 ## Resolution
 
 Rearrange the code so that all statements that use the writer occur before returning it.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack034.cs#Fix)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack034.cs#Fix)]
 
 Note that the return must occur before and awaited expression.
 If the sync writer must be used *after* the await expression as well, you may create a new sync writer after the await statement.

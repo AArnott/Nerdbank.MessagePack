@@ -62,7 +62,7 @@ namespace Nerdbank.MessagePack;
 /// </para>
 /// </remarks>
 /// <example>
-/// <code source="../../samples/StructuralEquality.cs" region="StructuralEqualityNET" lang="C#" />
+/// <code source="../../samples/cs/StructuralEquality.cs" region="StructuralEqualityNET" lang="C#" />
 /// </example>
 public static class StructuralEqualityComparer
 {

@@ -65,7 +65,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Otherwise, build a converter using the visitor.
-		return typeShape.Accept(this.OutwardVisitor);
+		return typeShape.Accept(this.OutwardVisitor, state);
 	}
 
 	/// <inheritdoc/>
@@ -75,8 +75,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			return customConverter;
 		}
-
-		SubTypes? unionTypes = this.DiscoverUnionTypes(objectShape);
 
 		IConstructorShape? ctorShape = objectShape.Constructor;
 
@@ -101,8 +99,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		List<SerializableProperty<T>>? serializable = null;
 		List<DeserializableProperty<T>>? deserializable = null;
 		List<(string Name, PropertyAccessors<T> Accessors)?>? propertyAccessors = null;
+		int propertyIndex = -1;
 		foreach (IPropertyShape property in objectShape.Properties)
 		{
+			propertyIndex++;
 			string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 
 			IConstructorParameterShape? matchingConstructorParameter = null;
@@ -110,15 +110,17 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			if (property.Accept(this, matchingConstructorParameter) is PropertyAccessors<T> accessors)
 			{
-				if (property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault() is KeyAttribute keyAttribute)
+				KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
+				if (keyAttribute is not null || this.owner.PerfOverSchemaStability)
 				{
 					propertyAccessors ??= new();
-					while (propertyAccessors.Count <= keyAttribute.Index)
+					int index = keyAttribute?.Index ?? propertyIndex;
+					while (propertyAccessors.Count <= index)
 					{
 						propertyAccessors.Add(null);
 					}
 
-					propertyAccessors[keyAttribute.Index] = (propertyName, accessors);
+					propertyAccessors[index] = (propertyName, accessors);
 				}
 				else
 				{
@@ -174,7 +176,62 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		return unionTypes is null ? converter : new SubTypeUnionConverter<T>(unionTypes, converter);
+		return this.DiscoverUnionTypes(objectShape, converter) is { } unionTypes ? new UnionConverter<T>(converter, unionTypes) : converter;
+	}
+
+	/// <inheritdoc/>
+	public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+	{
+		MessagePackConverter<TUnion> baseTypeConverter = (MessagePackConverter<TUnion>)unionShape.BaseType.Accept(this)!;
+
+		if (baseTypeConverter is UnionConverter<TUnion>)
+		{
+			// A runtime mapping *and* attributes are defined for the same base type.
+			// The runtime mapping has already been applied and that trumps attributes.
+			// Just return the union converter we created for the runtime mapping to avoid
+			// double-nesting.
+			return baseTypeConverter;
+		}
+
+		// Runtime mapping overrides attributes.
+		if (!(unionShape.BaseType is IObjectTypeShape<TUnion> baseObjectShape && this.DiscoverUnionTypes(baseObjectShape, baseTypeConverter) is { } subTypes))
+		{
+			Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+			Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
+			List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
+			KeyValuePair<int, MessagePackConverter<TUnion>>[] unionCases = unionShape.UnionCases
+				.Select(unionCase =>
+				{
+					bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
+					DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
+					var caseConverter = (MessagePackConverter<TUnion>)unionCase.Accept(this, null)!;
+					deserializerByIntAlias.Add(unionCase.Tag, caseConverter);
+					serializers.Add((alias, caseConverter, unionCase.Type));
+
+					return new KeyValuePair<int, MessagePackConverter<TUnion>>(unionCase.Tag, caseConverter);
+				})
+				.ToArray();
+			subTypes = new()
+			{
+				DeserializersByIntAlias = deserializerByIntAlias.ToFrozenDictionary(),
+				DeserializersByStringAlias = serializers.Where(v => v.Alias.Type == DerivedTypeIdentifier.AliasType.String).ToSpanDictionary(
+					p => p.Alias.Utf8Alias,
+					p => p.Converter,
+					ByteSpanEqualityComparer.Ordinal),
+				Serializers = serializers.ToFrozenSet(),
+				TryGetSerializer = (ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (serializers[idx].Alias, serializers[idx].Converter) : null,
+			};
+		}
+
+		return new UnionConverter<TUnion>(baseTypeConverter, subTypes);
+	}
+
+	/// <inheritdoc/>
+	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+	{
+		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
+		var caseConverter = (MessagePackConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
+		return new UnionCaseConverter<TUnionCase, TUnion>(caseConverter);
 	}
 
 	/// <inheritdoc/>
@@ -314,21 +371,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
 
 					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = inputs.ParametersByName.Values
-						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
+						.Select<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
 						{
+							ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Name)?.AttributeProvider;
 							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
-
-							// Apply camelCase and PascalCase transformations and accept a serialized form that matches either one.
-							// If the parameter name is camelCased (as would typically happen in an ordinary constructor),
-							// we want it to match msgpack property names serialized in PascalCase (since the C# property will default to serializing that way).
-							// If the parameter name is PascalCased (as would typically happen in a record primary constructor),
-							// we want it to match camelCase property names in case the user has camelCase name policy applied.
-							// Ultimately we would probably do well to just match without case sensitivity, but we don't support that yet.
-							string camelCase = MessagePackNamingPolicy.CamelCase.ConvertName(p.Name);
-							string pascalCase = MessagePackNamingPolicy.PascalCase.ConvertName(p.Name);
-							return camelCase != pascalCase
-								? [(camelCase, prop), (pascalCase, prop)]
-								: [(camelCase, prop)];
+							string name = this.owner.GetSerializedPropertyName(p.Name, propertyAttributeProvider);
+							return (name, prop);
 						}).ToSpanDictionary(
 							p => Encoding.UTF8.GetBytes(p.Name),
 							p => p.Deserialize,
@@ -404,7 +452,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	}
 
 	/// <inheritdoc/>
-	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) => new NullableConverter<T>(this.GetConverter(nullableShape.ElementType));
+	public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
+		=> new OptionalConverter<TOptional, TElement>(this.GetConverter(optionalShape.ElementType), optionalShape.GetDeconstructor(), optionalShape.GetNoneConstructor(), optionalShape.GetSomeConstructor());
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
@@ -518,48 +567,35 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
 	/// </summary>
 	/// <param name="objectShape">The shape of the data type that may define derived types that are also allowed for serialization.</param>
+	/// <param name="baseTypeConverter">The converter to use when serializing the base type itself.</param>
 	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
-	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="KnownSubTypeAttribute"/> that violates rules.</exception>
-	private SubTypes? DiscoverUnionTypes(IObjectTypeShape objectShape)
+	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="DerivedTypeShapeAttribute"/> that violates rules.</exception>
+	private SubTypes<TBaseType>? DiscoverUnionTypes<TBaseType>(IObjectTypeShape<TBaseType> objectShape, MessagePackConverter<TBaseType> baseTypeConverter)
 	{
-		IReadOnlyDictionary<SubTypeAlias, ITypeShape>? mapping;
+		IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? mapping;
 		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping))
 		{
-			KnownSubTypeAttribute[]? unionAttributes = objectShape.AttributeProvider?.GetCustomAttributes(typeof(KnownSubTypeAttribute), false).Cast<KnownSubTypeAttribute>().ToArray();
-			if (unionAttributes is null or { Length: 0 })
-			{
-				return null;
-			}
-
-			Dictionary<SubTypeAlias, ITypeShape> mutableMapping = new();
-			foreach (KnownSubTypeAttribute unionAttribute in unionAttributes)
-			{
-				ITypeShape subtypeShape = unionAttribute.Shape ?? objectShape.Provider.GetShapeOrThrow(unionAttribute.SubType);
-				Verify.Operation(objectShape.Type.IsAssignableFrom(subtypeShape.Type), $"The type {objectShape.Type.FullName} has a {KnownSubTypeAttribute.TypeName} that references non-derived {subtypeShape.Type.FullName}.");
-				Verify.Operation(mutableMapping.TryAdd(unionAttribute.Alias, subtypeShape), $"The type {objectShape.Type.FullName} has more than one {KnownSubTypeAttribute.TypeName} with a duplicate alias: {unionAttribute.Alias}.");
-			}
-
-			mapping = mutableMapping;
+			return null;
 		}
 
 		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
 		Dictionary<ReadOnlyMemory<byte>, MessagePackConverter> deserializeByUtf8Data = new();
-		Dictionary<Type, (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
-		foreach (KeyValuePair<SubTypeAlias, ITypeShape> pair in mapping)
+		Dictionary<Type, (DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
+		foreach (KeyValuePair<DerivedTypeIdentifier, ITypeShape> pair in mapping)
 		{
-			SubTypeAlias alias = pair.Key;
+			DerivedTypeIdentifier alias = pair.Key;
 			ITypeShape shape = pair.Value;
 
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			MessagePackConverter converter = this.GetConverter(shape).UnwrapReferencePreservation();
+			MessagePackConverter converter = shape.Type == objectShape.Type ? baseTypeConverter : this.GetConverter(shape).UnwrapReferencePreservation();
 			switch (alias.Type)
 			{
-				case SubTypeAlias.AliasType.Integer:
+				case DerivedTypeIdentifier.AliasType.Integer:
 					deserializeByIntData.Add(alias.IntAlias, converter);
 					break;
-				case SubTypeAlias.AliasType.String:
+				case DerivedTypeIdentifier.AliasType.String:
 					deserializeByUtf8Data.Add(alias.Utf8Alias, converter);
 					break;
 				default:
@@ -569,11 +605,32 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			Verify.Operation(serializerData.TryAdd(shape.Type, (alias, converter, shape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {alias}.");
 		}
 
-		return new SubTypes
+		// Our runtime type checks must be done in an order that will select the most derived matching type.
+		(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)[] sortedTypes = serializerData.Values.ToArray();
+		Array.Sort(sortedTypes, (a, b) => DerivedTypeComparer.Default.Compare(a.Shape.Type, b.Shape.Type));
+
+		return new SubTypes<TBaseType>
 		{
 			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
 			DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
-			Serializers = serializerData.ToFrozenDictionary(),
+			Serializers = serializerData.Select(t => t.Value).ToFrozenSet(),
+			TryGetSerializer = (ref TBaseType v) =>
+			{
+				if (v is null)
+				{
+					return null;
+				}
+
+				foreach ((DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape) pair in sortedTypes)
+				{
+					if (pair.Shape.Type.IsAssignableFrom(v.GetType()))
+					{
+						return (pair.Alias, pair.Converter);
+					}
+				}
+
+				return null;
+			},
 		};
 	}
 
@@ -590,5 +647,29 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
+	}
+
+	/// <summary>
+	/// A comparer that sorts types by their inheritance hierarchy, with the most derived types first.
+	/// </summary>
+	private class DerivedTypeComparer : IComparer<Type>
+	{
+		internal static readonly DerivedTypeComparer Default = new();
+
+		private DerivedTypeComparer()
+		{
+		}
+
+		public int Compare(Type? x, Type? y)
+		{
+			// This proprietary implementation does not expect null values.
+			Requires.NotNull(x!);
+			Requires.NotNull(y!);
+
+			return
+				x.IsAssignableFrom(y) ? 1 :
+				y.IsAssignableFrom(x) ? -1 :
+				0;
+		}
 	}
 }

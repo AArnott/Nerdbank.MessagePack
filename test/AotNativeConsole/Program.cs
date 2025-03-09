@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO.Pipelines;
 using Nerdbank.MessagePack;
 using PolyType;
 
@@ -10,8 +11,21 @@ Tree tree = new()
 };
 
 MessagePackSerializer serializer = new();
-Tree deserializedTree = serializer.Deserialize<Tree>(serializer.Serialize(tree))!;
-Console.WriteLine($"Fruit count: {deserializedTree.Fruits.Count}");
+
+byte[] bytes = serializer.Serialize(tree);
+
+Console.WriteLine(MessagePackSerializer.ConvertToJson(bytes));
+
+// synchronous deserialization
+Tree deserializedTree = serializer.Deserialize<Tree>(bytes)!;
+Console.WriteLine($"Tree with {deserializedTree.Fruits.Count} fruit.");
+
+// "async" enumerating deserialization using an expression tree.
+MessagePackSerializer.StreamingEnumerationOptions<Tree, Fruit> options = new(t => t.Fruits);
+await foreach (Fruit? fruit in serializer.DeserializeEnumerableAsync(PipeReader.Create(new(bytes)), options))
+{
+	Console.WriteLine($"  Fruit with {fruit?.Seeds} seeds");
+}
 
 [GenerateShape]
 partial class Tree
@@ -19,4 +33,4 @@ partial class Tree
 	public List<Fruit> Fruits { get; set; } = [];
 }
 
-partial class Fruit(int Seeds);
+partial record Fruit(int Seeds);

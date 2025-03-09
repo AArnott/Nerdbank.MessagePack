@@ -143,9 +143,9 @@ public class ConverterAnalyzersTests
 			}
 
 			#if NET
-			public class SomeOtherType : IShapeable<SomeOtherType>
+			[GenerateShape]
+			public partial class SomeOtherType
 			{
-				public static ITypeShape<SomeOtherType> GetShape() => throw new System.NotImplementedException();
 			}
 			#else
 			public class SomeOtherType
@@ -210,9 +210,9 @@ public class ConverterAnalyzersTests
 			}
 
 			#if NET
-			public class SomeOtherType : IShapeable<SomeOtherType>
+			[GenerateShape]
+			public partial class SomeOtherType
 			{
-				public static ITypeShape<SomeOtherType> GetShape() => throw new System.NotImplementedException();
 			}
 			#else
 			public class SomeOtherType
@@ -500,9 +500,9 @@ public class ConverterAnalyzersTests
 			using Nerdbank.MessagePack;
 
 			#if NET
-			public partial class MyType : IShapeable<MyType>
+			[GenerateShape]
+			public partial class MyType
 			{
-				public static ITypeShape<MyType> GetShape() => throw new System.NotImplementedException();
 			}
 			#else
 			public partial class MyType

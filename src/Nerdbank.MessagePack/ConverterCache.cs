@@ -22,7 +22,13 @@ namespace Nerdbank.MessagePack;
 internal record class ConverterCache
 {
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
-	private readonly ConcurrentDictionary<Type, IKnownSubTypeMapping> userProvidedKnownSubTypes = new();
+	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
+
+	/// <summary>
+	/// An optimization that avoids the dictionary lookup to start serialization
+	/// when the caller repeatedly serializes the same type.
+	/// </summary>
+	private object? lastConverter;
 
 	private MultiProviderTypeCache? cachedConverters;
 
@@ -36,6 +42,7 @@ internal record class ConverterCache
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
+	private bool perfOverStability;
 
 #if NET
 
@@ -184,6 +191,48 @@ internal record class ConverterCache
 	}
 
 	/// <summary>
+	/// Gets a value indicating whether to boost performance
+	/// using methods that may compromise the stability of the serialized schema.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <remarks>
+	/// <para>
+	/// This setting is intended for use in performance-sensitive scenarios where the serialized data
+	/// will not be stored or shared with other systems, but rather is used in a single system live data
+	/// such that the schema need not be stable between versions of the application.
+	/// </para>
+	/// <para>
+	/// Examples of behavioral changes that may occur when this setting is <see langword="true" />:
+	/// <list type="bullet">
+	/// <item>All objects are serialized with an array of their values instead of maps that include their property names.</item>
+	/// <item>Polymorphic type identifiers are always integers.</item>
+	/// </list>
+	/// </para>
+	/// <para>
+	/// In particular, the schema is liable to change when this property is <see langword="true"/> and:
+	/// <list type="bullet">
+	/// <item>Serialized members are added, removed or reordered within their declaring type.</item>
+	/// <item>A <see cref="DerivedTypeShapeAttribute"/> is removed, or inserted before the last such attribute on a given type.</item>
+	/// </list>
+	/// </para>
+	/// <para>
+	/// Changing this property (either direction) is itself liable to alter the schema of the serialized data.
+	/// </para>
+	/// <para>
+	/// Performance and schema stability can both be achieved at once by:
+	/// <list type="bullet">
+	/// <item>Using the <see cref="KeyAttribute"/> on all serialized properties.</item>
+	/// <item>Specifying <see cref="DerivedTypeShapeAttribute.Tag"/> explicitly for all polymorphic types.</item>
+	/// </list>
+	/// </para>
+	/// </remarks>
+	internal bool PerfOverSchemaStability
+	{
+		get => this.perfOverStability;
+		init => this.ChangeSetting(ref this.perfOverStability, value);
+	}
+
+	/// <summary>
 	/// Gets a value indicating whether hardware accelerated converters should be avoided.
 	/// </summary>
 	internal bool DisableHardwareAcceleration
@@ -245,12 +294,12 @@ internal record class ConverterCache
 	/// <summary>
 	/// Registers a known sub-type mapping for a base type.
 	/// </summary>
-	/// <typeparam name="TBase"><inheritdoc cref="KnownSubTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
+	/// <typeparam name="TBase"><inheritdoc cref="DerivedTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
 	/// <param name="mapping">The mapping.</param>
 	/// <remarks>
 	/// <para>
 	/// This method provides a runtime dynamic alternative to the otherwise simpler but static
-	/// <see cref="KnownSubTypeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
+	/// <see cref="DerivedTypeShapeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
 	/// </para>
 	/// <para>
 	/// This is also the only way to force the serialized schema to <em>support</em> sub-types in the future when
@@ -258,10 +307,10 @@ internal record class ConverterCache
 	/// </para>
 	/// <para>
 	/// A mapping provided for a given <typeparamref name="TBase"/> will completely replace any mapping from
-	/// <see cref="KnownSubTypeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
+	/// <see cref="DerivedTypeShapeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
 	/// </para>
 	/// </remarks>
-	internal void RegisterKnownSubTypes<TBase>(KnownSubTypeMapping<TBase> mapping)
+	internal void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping)
 	{
 		Requires.NotNull(mapping);
 		this.OnChangingConfiguration();
@@ -277,7 +326,7 @@ internal record class ConverterCache
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
 	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
-		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAdd(shape)!;
+		=> (MessagePackConverter<T>)(this.lastConverter is MessagePackConverter<T> lastConverter ? lastConverter : (this.lastConverter = this.CachedConverters.GetOrAdd(shape)!));
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -335,11 +384,11 @@ internal record class ConverterCache
 	/// <param name="baseType">The base type.</param>
 	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
 	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<SubTypeAlias, ITypeShape>? subTypes)
+	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes)
 	{
-		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IKnownSubTypeMapping? mapping))
+		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IDerivedTypeMapping? mapping))
 		{
-			subTypes = mapping.CreateSubTypesMapping();
+			subTypes = mapping.CreateDerivedTypesMapping();
 			return true;
 		}
 
@@ -380,6 +429,7 @@ internal record class ConverterCache
 		// Even if this cache had a Clear method, we do *not* use it since the cache may still be in use by other
 		// instances of this record.
 		this.cachedConverters = null;
+		this.lastConverter = null;
 	}
 
 	private void ReconfigureUserProvidedConverters()

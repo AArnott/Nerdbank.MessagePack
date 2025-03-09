@@ -6,6 +6,7 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Text;
+using PolyType.SourceGenerator;
 
 internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 	where TAnalyzer : DiagnosticAnalyzer, new()
@@ -22,7 +23,11 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 
 	public static Task VerifyAnalyzerAsync([StringSyntax("c#-test")] string source, params DiagnosticResult[] expected)
 	{
-		var test = new Test { TestCode = source };
+		var test = new Test
+		{
+			TestCode = source,
+			TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+		};
 		test.ExpectedDiagnostics.AddRange(expected);
 		return test.RunAsync();
 	}
@@ -103,6 +108,16 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 					.SetItem("CS1702", ReportDiagnostic.Suppress) // binding redirects
 					.SetItem("CS0169", ReportDiagnostic.Suppress) // unused field
 					.SetItem("CS0414", ReportDiagnostic.Suppress)); // field assigned but never used
+		}
+
+		protected override IEnumerable<Type> GetSourceGenerators()
+		{
+			foreach (Type sg in base.GetSourceGenerators())
+			{
+				yield return sg;
+			}
+
+			yield return typeof(PolyTypeGenerator);
 		}
 
 		private static string ReadManifestResource(Assembly assembly, string resourceName)

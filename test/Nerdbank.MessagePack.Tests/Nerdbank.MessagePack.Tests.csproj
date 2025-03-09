@@ -6,6 +6,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace />
+    <NoWarn>$(NoWarn);NBMsgPack051</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

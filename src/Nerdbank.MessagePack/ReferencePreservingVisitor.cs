@@ -14,8 +14,8 @@ internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVi
 		=> inner.VisitEnum(enumShape, state);
 
 	/// <inheritdoc/>
-	public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
-		=> inner.VisitNullable(nullableShape, state);
+	public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
+		=> inner.VisitOptional(optionalShape, state);
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
@@ -28,6 +28,14 @@ internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVi
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 		=> ((IMessagePackConverterInternal)inner.VisitObject(objectShape, state)!).WrapWithReferencePreservation();
+
+	/// <inheritdoc/>
+	public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+		=> ((IMessagePackConverterInternal)inner.VisitUnion(unionShape, state)!).WrapWithReferencePreservation();
+
+	/// <inheritdoc/>
+	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+		=> inner.VisitUnionCase(unionCaseShape, state);
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)

@@ -19,12 +19,16 @@
 			"groupName": "Dockerfile and global.json updates"
 		},
 		{
+			"matchPackageNames": ["*"],
+			"allowedVersions": "!/-g[a-f0-9]+$/"
+		},
+		{
 			"matchPackageNames": ["System.Collections.Immutable", "System.Text.Json"],
 			"allowedVersions": "<9.0",
 			"groupName": "Included in .NET runtime"
 		},
 		{
-			"matchJsonata": [ "groupName='RoslynVersionForAnalyzers' or sharedVariableName='RoslynVersionForAnalyzers'" ],
+			"matchJsonata": [ "sharedVariableName='RoslynVersionForAnalyzers'" ],
 			"enabled": false
 		},
 		{

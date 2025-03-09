@@ -6,10 +6,10 @@ Custom converters (classes that derive from @"Nerdbank.MessagePack.MessagePackCo
 
 In the following example, the @Nerdbank.MessagePack.MessagePackStreamingReader is returned before the method is done using it.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack036.cs#Defective)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack036.cs#Defective)]
 
 ## Resolution
 
 The fix is simply to move the @Nerdbank.MessagePack.MessagePackAsyncReader.ReturnReader* call to a point after the method is done using the reader.
 
-[!code-csharp[](../../samples/AnalyzerDocs/NBMsgPack036.cs#Fix)]
+[!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack036.cs#Fix)]

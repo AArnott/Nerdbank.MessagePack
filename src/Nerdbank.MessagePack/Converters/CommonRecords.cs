@@ -133,7 +133,8 @@ internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name,
 /// Describes the derived types of some class that are allowed to appear as the runtime type in an object graph
 /// for serialization, or may be referenced by an alias in the serialized data for deserialization.
 /// </summary>
-internal record SubTypes
+/// <typeparam name="TUnion">The common base type.</typeparam>
+internal record SubTypes<TUnion>
 {
 	/// <summary>
 	/// Gets the converters to use to deserialize a subtype, keyed by its integer alias.
@@ -146,7 +147,12 @@ internal record SubTypes
 	internal required SpanDictionary<byte, MessagePackConverter> DeserializersByStringAlias { get; init; }
 
 	/// <summary>
+	/// Gets the set of converters and aliases.
+	/// </summary>
+	internal required FrozenSet<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
+
+	/// <summary>
 	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
 	/// </summary>
-	internal required FrozenDictionary<Type, (SubTypeAlias Alias, MessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
+	internal required Getter<TUnion, (DerivedTypeIdentifier Alias, MessagePackConverter Converter)?> TryGetSerializer { get; init; }
 }

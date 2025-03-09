@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Theory, PairwiseData]
 	public async Task BaseType(bool async)
@@ -15,6 +15,39 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		reader.ReadNil();
 		Assert.Equal(1, reader.ReadMapHeader());
 		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
+	}
+
+	[Fact]
+	public void BaseTypeExplicitIdentifier()
+	{
+		BaseTypeExplicitBase? result = this.Roundtrip(new BaseTypeExplicitBase());
+
+		// Assert that an array wrapper was created.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+
+		// We don't care which of the identifiers from the attribute were picked,
+		// but we want to make sure it isn't the null default used w/o attributes.
+		Assert.False(reader.TryReadNil());
+		reader.Skip(default);
+
+		Assert.Equal(0, reader.ReadMapHeader());
+	}
+
+	[Fact]
+	public void BaseTypeExplicitIdentifier_RuntimeMapping()
+	{
+		DerivedTypeMapping<BaseClass> mapping = new();
+		mapping.Add<BaseClass>(3, Witness.ShapeProvider);
+		this.Serializer.RegisterDerivedTypes(mapping);
+
+		BaseClass? result = this.Roundtrip(new BaseClass());
+
+		// Assert that an array wrapper was created.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(3, reader.ReadInt32());
+		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
 	[Fact]
@@ -110,8 +143,24 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void UnknownDerivedType()
 	{
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new UnknownDerived()));
-		this.Logger.WriteLine(ex.Message);
+		BaseClass? result = this.Roundtrip<BaseClass>(new UnknownDerived());
+		Assert.IsType<BaseClass>(result);
+	}
+
+	[Theory, PairwiseData]
+	public void UnknownDerivedType_PrefersClosestMatch(bool runtimeMapping)
+	{
+		if (runtimeMapping)
+		{
+			DerivedTypeMapping<BaseClass> mapping = new();
+			mapping.Add<DerivedA>(1, Witness.ShapeProvider);
+			mapping.Add<DerivedAA>(2, Witness.ShapeProvider);
+			mapping.Add<DerivedB>(3, Witness.ShapeProvider);
+			this.Serializer.RegisterDerivedTypes(mapping);
+		}
+
+		Assert.IsType<DerivedA>(this.Roundtrip<BaseClass>(new DerivedAUnknown()));
+		Assert.IsType<DerivedAA>(this.Roundtrip<BaseClass>(new DerivedAAUnknown()));
 	}
 
 	[Theory, PairwiseData]
@@ -127,7 +176,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
 		reader = new(msgpack);
 		Assert.Equal(2, reader.ReadArrayHeader());
-		Assert.Equal(1, reader.ReadInt32());
+		Assert.Equal(10, reader.ReadInt32());
 	}
 
 	[Fact]
@@ -136,17 +185,12 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<ImpliedAliasBase>(new ImpliedAliasDerived());
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal(2, reader.ReadArrayHeader());
-		Assert.Equal(typeof(ImpliedAliasDerived).FullName, reader.ReadString());
+		Assert.Equal(typeof(ImpliedAliasDerived).Name, reader.ReadString());
 	}
 
 	[Fact]
 	public void RecursiveSubTypes()
 	{
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Serialize<RecursiveBase>(new RecursiveDerivedDerived(), TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.Message);
-
-#if false
 		// If it were to work, this is how we expect it to work:
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<RecursiveBase>(new RecursiveDerivedDerived());
 		MessagePackReader reader = new(msgpack);
@@ -154,13 +198,12 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal(1, reader.ReadInt32());
 		Assert.Equal(2, reader.ReadArrayHeader());
 		Assert.Equal(13, reader.ReadInt32());
-#endif
 	}
 
 	[Fact]
-	public void RuntimeRegistration()
+	public void RuntimeRegistration_Integers()
 	{
-		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		DerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
 #if NET
 		mapping.Add<DynamicallyRegisteredDerivedA>(1);
 		mapping.Add<DynamicallyRegisteredDerivedB>(2);
@@ -168,7 +211,25 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.ShapeProvider);
 		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.ShapeProvider);
 #endif
-		this.Serializer.RegisterKnownSubTypes(mapping);
+		this.Serializer.RegisterDerivedTypes(mapping);
+
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredBase());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedB());
+	}
+
+	[Fact]
+	public void RuntimeRegistration_Strings()
+	{
+		DerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>("A");
+		mapping.Add<DynamicallyRegisteredDerivedB>("B");
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.ShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>("B", Witness.ShapeProvider);
+#endif
+		this.Serializer.RegisterDerivedTypes(mapping);
 
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredBase());
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
@@ -178,9 +239,9 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void RuntimeRegistration_OverridesStatic()
 	{
-		KnownSubTypeMapping<BaseClass> mapping = new();
+		DerivedTypeMapping<BaseClass> mapping = new();
 		mapping.Add<DerivedB>(1, Witness.ShapeProvider);
-		this.Serializer.RegisterKnownSubTypes(mapping);
+		this.Serializer.RegisterDerivedTypes(mapping);
 
 		// Verify that the base type has just one header.
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<BaseClass>(new BaseClass { BaseClassProperty = 5 });
@@ -196,8 +257,7 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.Equal(1, reader.ReadInt32());
 
 		// Verify that statically set subtypes are not recognized if no runtime equivalents are registered.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip<BaseClass>(new DerivedA()));
-		this.Logger.WriteLine(ex.Message);
+		Assert.IsType<BaseClass>(this.Roundtrip<BaseClass>(new DerivedA()));
 	}
 
 	/// <summary>
@@ -206,8 +266,8 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	[Fact]
 	public void RuntimeRegistration_EmptyMapping()
 	{
-		KnownSubTypeMapping<DynamicallyRegisteredBase> mapping = new();
-		this.Serializer.RegisterKnownSubTypes(mapping);
+		DerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		this.Serializer.RegisterDerivedTypes(mapping);
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal(2, reader.ReadArrayHeader());
@@ -219,19 +279,15 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	internal partial class Witness;
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<DerivedA>(1)]
-	[KnownSubType<DerivedAA>(2)]
-	[KnownSubType<DerivedB>(3)]
-	[KnownSubType<EnumerableDerived>(4)]
-	[KnownSubType<DerivedGeneric<int>, Witness>(5)]
-#else
-	[KnownSubType(typeof(DerivedA), 1)]
-	[KnownSubType(typeof(DerivedAA), 2)]
-	[KnownSubType(typeof(DerivedB), 3)]
-	[KnownSubType(typeof(EnumerableDerived), 4)]
-	[KnownSubType(typeof(DerivedGeneric<int>), 5)]
-#endif
+	[DerivedTypeShape(typeof(BaseTypeExplicitBase), Name = "Me", Tag = 3)]
+	internal partial class BaseTypeExplicitBase;
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(DerivedA), Tag = 1)]
+	[DerivedTypeShape(typeof(DerivedAA), Tag = 2)]
+	[DerivedTypeShape(typeof(DerivedB), Tag = 3)]
+	[DerivedTypeShape(typeof(EnumerableDerived), Tag = 4)]
+	[DerivedTypeShape(typeof(DerivedGeneric<int>), Tag = 5)]
 	public partial record BaseClass
 	{
 		public int BaseClassProperty { get; set; }
@@ -243,57 +299,45 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 		public int DerivedAProperty { get; set; }
 	}
 
-	[GenerateShape]
-	public partial record DerivedAA : DerivedA
+	public record DerivedAA : DerivedA
 	{
 	}
 
-	[GenerateShape]
-	public partial record DerivedB(int DerivedBProperty) : BaseClass
+	public record DerivedAUnknown : DerivedA;
+
+	public record DerivedAAUnknown : DerivedAA;
+
+	public record DerivedB(int DerivedBProperty) : BaseClass
 	{
 	}
 
-	[GenerateShape]
-	public partial record EnumerableDerived(int Count) : BaseClass, IEnumerable<int>
+	public record EnumerableDerived(int Count) : BaseClass, IEnumerable<int>
 	{
 		public IEnumerator<int> GetEnumerator() => Enumerable.Range(0, this.Count).GetEnumerator();
 
 		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => this.GetEnumerator();
 	}
 
-	public partial record DerivedGeneric<T>(T Value) : BaseClass
+	public record DerivedGeneric<T>(T Value) : BaseClass
 	{
 	}
 
-	[GenerateShape]
-	public partial record UnknownDerived : BaseClass;
+	public record UnknownDerived : BaseClass;
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<MixedAliasDerivedA>("A")]
-	[KnownSubType<MixedAliasDerived1>(1)]
-#else
-	[KnownSubType(typeof(MixedAliasDerivedA), "A")]
-	[KnownSubType(typeof(MixedAliasDerived1), 1)]
-#endif
+	[DerivedTypeShape(typeof(MixedAliasDerivedA), Name = "A")]
+	[DerivedTypeShape(typeof(MixedAliasDerived1), Tag = 10)]
 	public partial record MixedAliasBase;
 
-	[GenerateShape]
-	public partial record MixedAliasDerivedA : MixedAliasBase;
+	public record MixedAliasDerivedA : MixedAliasBase;
+
+	public record MixedAliasDerived1 : MixedAliasBase;
 
 	[GenerateShape]
-	public partial record MixedAliasDerived1 : MixedAliasBase;
-
-	[GenerateShape]
-#if NET
-	[KnownSubType<ImpliedAliasDerived>]
-#else
-	[KnownSubType(typeof(ImpliedAliasDerived))]
-#endif
+	[DerivedTypeShape(typeof(ImpliedAliasDerived))]
 	public partial record ImpliedAliasBase;
 
-	[GenerateShape]
-	public partial record ImpliedAliasDerived : ImpliedAliasBase;
+	public record ImpliedAliasDerived : ImpliedAliasBase;
 
 	[GenerateShape]
 	public partial record DynamicallyRegisteredBase;
@@ -305,21 +349,11 @@ public partial class KnownSubTypeTests(ITestOutputHelper logger) : MessagePackSe
 	public partial record DynamicallyRegisteredDerivedB : DynamicallyRegisteredBase;
 
 	[GenerateShape]
-#if NET
-	[KnownSubType<RecursiveDerived>(1)]
-#else
-	[KnownSubType(typeof(RecursiveDerived), 1)]
-#endif
+	[DerivedTypeShape(typeof(RecursiveDerived), Tag = 1)]
 	public partial record RecursiveBase;
 
-	[GenerateShape]
-#if NET
-	[KnownSubType<RecursiveDerivedDerived>(13)]
-#else
-	[KnownSubType(typeof(RecursiveDerivedDerived), 13)]
-#endif
+	[DerivedTypeShape(typeof(RecursiveDerivedDerived), Tag = 13)]
 	public partial record RecursiveDerived : RecursiveBase;
 
-	[GenerateShape]
-	public partial record RecursiveDerivedDerived : RecursiveDerived;
+	public record RecursiveDerivedDerived : RecursiveDerived;
 }
