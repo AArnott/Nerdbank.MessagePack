@@ -366,21 +366,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
 
 					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = inputs.ParametersByName.Values
-						.SelectMany<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
+						.Select<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
 						{
+							ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Name)?.AttributeProvider;
 							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
-
-							// Apply camelCase and PascalCase transformations and accept a serialized form that matches either one.
-							// If the parameter name is camelCased (as would typically happen in an ordinary constructor),
-							// we want it to match msgpack property names serialized in PascalCase (since the C# property will default to serializing that way).
-							// If the parameter name is PascalCased (as would typically happen in a record primary constructor),
-							// we want it to match camelCase property names in case the user has camelCase name policy applied.
-							// Ultimately we would probably do well to just match without case sensitivity, but we don't support that yet.
-							string camelCase = MessagePackNamingPolicy.CamelCase.ConvertName(p.Name);
-							string pascalCase = MessagePackNamingPolicy.PascalCase.ConvertName(p.Name);
-							return camelCase != pascalCase
-								? [(camelCase, prop), (pascalCase, prop)]
-								: [(camelCase, prop)];
+							string name = this.owner.GetSerializedPropertyName(p.Name, propertyAttributeProvider);
+							return (name, prop);
 						}).ToSpanDictionary(
 							p => Encoding.UTF8.GetBytes(p.Name),
 							p => p.Deserialize,

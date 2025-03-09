@@ -3,7 +3,6 @@
 
 global using System.Buffers;
 global using BenchmarkDotNet.Attributes;
-global using BenchmarkDotNet.Jobs;
 global using Nerdbank.MessagePack;
 global using Nerdbank.Streams;
 global using PolyType;

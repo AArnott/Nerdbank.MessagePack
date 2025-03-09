@@ -24,6 +24,12 @@ internal record class ConverterCache
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
 	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
 
+	/// <summary>
+	/// An optimization that avoids the dictionary lookup to start serialization
+	/// when the caller repeatedly serializes the same type.
+	/// </summary>
+	private object? lastConverter;
+
 	private MultiProviderTypeCache? cachedConverters;
 
 #if NET
@@ -320,7 +326,7 @@ internal record class ConverterCache
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
 	internal MessagePackConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape)
-		=> (MessagePackConverter<T>)this.CachedConverters.GetOrAdd(shape)!;
+		=> (MessagePackConverter<T>)(this.lastConverter is MessagePackConverter<T> lastConverter ? lastConverter : (this.lastConverter = this.CachedConverters.GetOrAdd(shape)!));
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -423,6 +429,7 @@ internal record class ConverterCache
 		// Even if this cache had a Clear method, we do *not* use it since the cache may still be in use by other
 		// instances of this record.
 		this.cachedConverters = null;
+		this.lastConverter = null;
 	}
 
 	private void ReconfigureUserProvidedConverters()
