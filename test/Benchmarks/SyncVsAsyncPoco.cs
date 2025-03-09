@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO.Pipelines;
+using Benchmarks;
+using STJ = System.Text.Json;
 
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
@@ -11,6 +13,7 @@ public class SyncVsAsyncPoco
 	private readonly MessagePackSerializer serializer = new();
 	private readonly Sequence syncBuffer = new();
 	private readonly PipeWriter nullPipeWriter = PipeWriter.Create(Stream.Null);
+	private readonly MemoryStream jsonMemoryStream = new();
 
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("map-init", "Serialize")]
@@ -27,6 +30,10 @@ public class SyncVsAsyncPoco
 		await this.serializer.SerializeAsync(this.nullPipeWriter, Data.PocoMapInit.Single, default);
 	}
 
+	[Benchmark]
+	[BenchmarkCategory("map-init", "Serialize")]
+	public Task JsonSerializeAsyncMapInit() => this.SerializeJsonAsync(Data.PocoMapInit.Single, STJSourceGenerationContext.Default.PocoMapInit);
+
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("map-init", "Deserialize")]
 	public void DeserializeMapInit()
@@ -40,6 +47,10 @@ public class SyncVsAsyncPoco
 	{
 		PocoMapInit? result = await this.serializer.DeserializeAsync<PocoMapInit>(PipeReader.Create(Data.PocoMapInit.SingleMsgpack), default);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("map-init", "Deserialize")]
+	public async ValueTask JsonDeserializeAsyncMapInit() => await this.DeserializeJsonAsync(Data.PocoMapInit.SingleJsonStream, STJSourceGenerationContext.Default.PocoMapInit);
 
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("map", "Serialize")]
@@ -56,6 +67,10 @@ public class SyncVsAsyncPoco
 		await this.serializer.SerializeAsync(this.nullPipeWriter, Data.PocoMap.Single, default);
 	}
 
+	[Benchmark]
+	[BenchmarkCategory("map", "Serialize")]
+	public Task JsonSerializeAsyncMap() => this.SerializeJsonAsync(Data.PocoMap.Single, STJSourceGenerationContext.Default.PocoMap);
+
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("map", "Deserialize")]
 	public void DeserializeMap()
@@ -69,6 +84,10 @@ public class SyncVsAsyncPoco
 	{
 		PocoMap? result = await this.serializer.DeserializeAsync<PocoMap>(PipeReader.Create(Data.PocoMap.SingleMsgpack), default);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("map", "Deserialize")]
+	public async ValueTask JsonDeserializeAsyncMap() => await this.DeserializeJsonAsync(Data.PocoMap.SingleJsonStream, STJSourceGenerationContext.Default.PocoMap);
 
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("array-init", "Serialize")]
@@ -84,6 +103,10 @@ public class SyncVsAsyncPoco
 	{
 		await this.serializer.SerializeAsync(this.nullPipeWriter, Data.PocoAsArrayInit.Single, default);
 	}
+
+	[Benchmark]
+	[BenchmarkCategory("array-init", "Serialize")]
+	public Task JsonSerializeAsyncAsArrayInit() => this.SerializeJsonAsync(Data.PocoAsArrayInit.Single, STJSourceGenerationContext.Default.PocoAsArrayInit);
 
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("array-init", "Deserialize")]
@@ -126,5 +149,13 @@ public class SyncVsAsyncPoco
 	public async ValueTask DeserializeAsyncAsArray()
 	{
 		PocoAsArray? result = await this.serializer.DeserializeAsync<PocoAsArray>(PipeReader.Create(Data.PocoAsArray.SingleMsgpack), default);
+	}
+
+	private Task SerializeJsonAsync<T>(T value, STJ.Serialization.Metadata.JsonTypeInfo<T> typeInfo) => STJ.JsonSerializer.SerializeAsync(Stream.Null, value, typeInfo);
+
+	private ValueTask<T?> DeserializeJsonAsync<T>(Stream json, STJ.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
+	{
+		json.Position = 0;
+		return STJ.JsonSerializer.DeserializeAsync(json, typeInfo);
 	}
 }
