@@ -11,28 +11,8 @@ using STJ = System.Text.Json;
 public class SyncVsAsyncPoco
 {
 	private readonly MessagePackSerializer serializer = new();
-	private readonly Sequence syncBuffer = new();
+	private readonly ArrayBufferWriter<byte> syncBuffer = new();
 	private readonly PipeWriter nullPipeWriter = PipeWriter.Create(Stream.Null);
-	private readonly MemoryStream jsonMemoryStream = new();
-
-	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("map-init", "Serialize")]
-	public void SerializeMapInit()
-	{
-		this.serializer.Serialize(this.syncBuffer, Data.PocoMapInit.Single);
-		this.syncBuffer.Reset();
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("map-init", "Serialize")]
-	public async Task SerializeAsyncMapInit()
-	{
-		await this.serializer.SerializeAsync(this.nullPipeWriter, Data.PocoMapInit.Single, default);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("map-init", "Serialize")]
-	public Task JsonSerializeAsyncMapInit() => this.SerializeJsonAsync(Data.PocoMapInit.Single, STJSourceGenerationContext.Default.PocoMapInit);
 
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("map-init", "Deserialize")]
@@ -57,7 +37,7 @@ public class SyncVsAsyncPoco
 	public void SerializeMap()
 	{
 		this.serializer.Serialize(this.syncBuffer, Data.PocoMap.Single);
-		this.syncBuffer.Reset();
+		this.syncBuffer.Clear();
 	}
 
 	[Benchmark]
@@ -90,25 +70,6 @@ public class SyncVsAsyncPoco
 	public async ValueTask JsonDeserializeAsyncMap() => await this.DeserializeJsonAsync(Data.PocoMap.SingleJsonStream, STJSourceGenerationContext.Default.PocoMap);
 
 	[Benchmark(Baseline = true)]
-	[BenchmarkCategory("array-init", "Serialize")]
-	public void SerializeAsArrayInit()
-	{
-		this.serializer.Serialize(this.syncBuffer, Data.PocoAsArrayInit.Single);
-		this.syncBuffer.Reset();
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("array-init", "Serialize")]
-	public async Task SerializeAsyncAsArrayInit()
-	{
-		await this.serializer.SerializeAsync(this.nullPipeWriter, Data.PocoAsArrayInit.Single, default);
-	}
-
-	[Benchmark]
-	[BenchmarkCategory("array-init", "Serialize")]
-	public Task JsonSerializeAsyncAsArrayInit() => this.SerializeJsonAsync(Data.PocoAsArrayInit.Single, STJSourceGenerationContext.Default.PocoAsArrayInit);
-
-	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("array-init", "Deserialize")]
 	public void DeserializeAsArrayInit()
 	{
@@ -127,7 +88,7 @@ public class SyncVsAsyncPoco
 	public void SerializeAsArray()
 	{
 		this.serializer.Serialize(this.syncBuffer, Data.PocoAsArray.Single);
-		this.syncBuffer.Reset();
+		this.syncBuffer.Clear();
 	}
 
 	[Benchmark]
