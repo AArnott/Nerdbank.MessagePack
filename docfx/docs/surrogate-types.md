@@ -46,3 +46,24 @@ This marshaler must be referenced via @PolyType.TypeShapeAttribute.Marshaller?di
 Taken together with the added @PolyType.TypeShapeAttribute that refers to the marshaler, we have the following complete sample:
 
 [!code-csharp[](../../samples/cs/SurrogateTypes.cs#CompleteSample)]
+
+### Open generic data type
+
+Open generic data types can define surrogates for themselves as well.
+Just take care to use the generic type definition syntax (no type arguments specified) when referencing the surrogate type.
+
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#OpenGeneric)]
+
+While the @PolyType.GenerateShapeAttribute cannot be applied to an open generic data type,
+this data type can be closed and used from another data structure.
+It can also be used as the top-level structure by closing the generic on a Witness class.
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#ClosedGenericViaWitnessNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#ClosedGenericViaWitnessNETFX)]
+
+---
