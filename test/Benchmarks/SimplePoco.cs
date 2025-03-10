@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Benchmarks;
+using JsonNet = Newtonsoft.Json;
 using STJ = System.Text.Json;
 
 [MemoryDiagnoser]
@@ -28,7 +29,11 @@ public partial class SimplePoco
 
 	[Benchmark]
 	[BenchmarkCategory("map-init", "Deserialize")]
-	public void DeserializeMapInit_STJ() => this.DeserializeJson(Data.PocoMapInit.SingleJson, STJSourceGenerationContext.Default.PocoMapInit);
+	public void DeserializeMapInit_STJ() => this.DeserializeJson(Data.PocoMapInit.SingleUtf8Json, STJSourceGenerationContext.Default.PocoMapInit);
+
+	[Benchmark]
+	[BenchmarkCategory("map-init", "Deserialize")]
+	public void DeserializeMapInit_Newtonsoft() => this.DeserializeNewtonsoft<PocoMapInit>(Data.PocoMap.SingleJson);
 
 	[Benchmark]
 	[BenchmarkCategory("map", "Serialize")]
@@ -51,6 +56,10 @@ public partial class SimplePoco
 	public void SerializeMap_STJ() => this.SerializeJson(Data.PocoMap.Single, STJSourceGenerationContext.Default.PocoMap);
 
 	[Benchmark]
+	[BenchmarkCategory("map", "Serialize")]
+	public void SerializeMap_Newtonsoft() => this.SerializeNewtonsoft(Data.PocoMap.Single);
+
+	[Benchmark]
 	[BenchmarkCategory("map", "Deserialize")]
 	public void DeserializeMap()
 	{
@@ -66,7 +75,11 @@ public partial class SimplePoco
 
 	[Benchmark]
 	[BenchmarkCategory("map", "Deserialize")]
-	public void DeserializeMap_STJ() => this.DeserializeJson(Data.PocoMap.SingleJson, STJSourceGenerationContext.Default.PocoMap);
+	public void DeserializeMap_STJ() => this.DeserializeJson(Data.PocoMap.SingleUtf8Json, STJSourceGenerationContext.Default.PocoMap);
+
+	[Benchmark]
+	[BenchmarkCategory("map", "Deserialize")]
+	public void DeserializeMap_Newtonsoft() => this.DeserializeNewtonsoft<PocoMap>(Data.PocoMap.SingleJson);
 
 	[Benchmark]
 	[BenchmarkCategory("array", "Serialize")]
@@ -100,7 +113,7 @@ public partial class SimplePoco
 
 	[Benchmark]
 	[BenchmarkCategory("array", "Deserialize")]
-	public void DeserializeAsArray_STJ() => this.DeserializeJson(Data.PocoAsArray.SingleJson, STJSourceGenerationContext.Default.PocoAsArray);
+	public void DeserializeAsArray_STJ() => this.DeserializeJson(Data.PocoAsArray.SingleUtf8Json, STJSourceGenerationContext.Default.PocoAsArray);
 
 	[Benchmark]
 	[BenchmarkCategory("array-init", "Deserialize")]
@@ -118,7 +131,11 @@ public partial class SimplePoco
 
 	[Benchmark]
 	[BenchmarkCategory("array-init", "Deserialize")]
-	public void DeserializeAsArrayInit_STJ() => this.DeserializeJson(Data.PocoAsArrayInit.SingleJson, STJSourceGenerationContext.Default.PocoAsArrayInit);
+	public void DeserializeAsArrayInit_STJ() => this.DeserializeJson(Data.PocoAsArrayInit.SingleUtf8Json, STJSourceGenerationContext.Default.PocoAsArrayInit);
+
+	private void SerializeNewtonsoft<T>(T value) => JsonNet.JsonConvert.SerializeObject(value, JsonNet.Formatting.None);
+
+	private void DeserializeNewtonsoft<T>(string json) => JsonNet.JsonConvert.DeserializeObject<T>(json);
 
 	private void SerializeJson<T>(T value, STJ.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
 	{

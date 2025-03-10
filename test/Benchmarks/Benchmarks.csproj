@@ -12,6 +12,7 @@
     <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Condition="'$(OS)'=='Windows_NT'" />
     <PackageReference Include="MessagePack" />
     <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
   <ItemGroup>
