@@ -45,9 +45,6 @@ namespace Nerdbank.MessagePack
 		internal static object GetOrAddOrThrow(this MultiProviderTypeCache cache, Type type, ITypeShapeProvider provider)
 			=> cache.GetOrAdd(type, provider) ?? throw ThrowMissingTypeShape(type, provider);
 
-		internal static ITypeShape GetShapeOrThrow(this ITypeShapeProvider provider, Type type)
-			=> provider.GetShape(type) ?? throw ThrowMissingTypeShape(type, provider);
-
 		private static Exception ThrowMissingTypeShape(Type type, ITypeShapeProvider provider)
 			=> new ArgumentException($"The {provider.GetType().FullName} provider had no type shape for {type.FullName}.", nameof(provider));
 	}
