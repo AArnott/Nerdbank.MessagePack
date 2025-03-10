@@ -9,7 +9,7 @@ using Microsoft;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// An interface for all message pack converters.
+/// An base class for all MessagePack converters.
 /// </summary>
 /// <typeparam name="T">The data type that can be converted by this object.</typeparam>
 /// <remarks>
