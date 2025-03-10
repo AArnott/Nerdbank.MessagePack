@@ -55,7 +55,7 @@ namespace FocusOnAddedTypes
     }
 }
 
-namespace CompleteSample
+partial class CompleteSample
 {
     #region CompleteSample
     [GenerateShape]
@@ -85,4 +85,43 @@ namespace CompleteSample
         }
     }
     #endregion
+
+    #region OpenGeneric
+    [TypeShape(Marshaller = typeof(OpenGenericDataType<>.Marshaller))]
+    internal class OpenGenericDataType<T>
+    {
+        public T? Value { get; set; }
+
+        internal record struct MarshaledType(T? Value);
+
+        internal class Marshaller : IMarshaller<OpenGenericDataType<T>, MarshaledType?>
+        {
+            public OpenGenericDataType<T>? FromSurrogate(MarshaledType? surrogate)
+                => surrogate.HasValue ? new() { Value = surrogate.Value.Value } : null;
+
+            public MarshaledType? ToSurrogate(OpenGenericDataType<T>? value)
+                => value is null ? null : new(value.Value);
+        }
+    }
+    #endregion
+
+#if NET
+    #region ClosedGenericViaWitnessNET
+    [GenerateShape<OpenGenericDataType<int>>]
+    internal partial class Witness;
+
+    void SerializeByWitness(OpenGenericDataType<int> value) => Serializer.Serialize<OpenGenericDataType<int>, Witness>(value);
+
+    private static readonly MessagePackSerializer Serializer = new();
+    #endregion
+#else
+    #region ClosedGenericViaWitnessNETFX
+    [GenerateShape<OpenGenericDataType<int>>]
+    internal partial class Witness;
+
+    void SerializeByWitness(OpenGenericDataType<int> value) => Serializer.Serialize(value, Witness.ShapeProvider);
+
+    private static readonly MessagePackSerializer Serializer = new();
+    #endregion
+#endif
 }

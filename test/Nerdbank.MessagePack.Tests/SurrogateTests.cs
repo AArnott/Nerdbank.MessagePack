@@ -45,6 +45,14 @@ public partial class SurrogateTests(ITestOutputHelper logger) : MessagePackSeria
 		Assert.Same(deserializedArray[0], deserializedArray[1]);
 	}
 
+	[Fact]
+	public void GenericMarshaller()
+	{
+		OpenGenericDataType<int>? deserialized = this.Roundtrip<OpenGenericDataType<int>, Witness>(new OpenGenericDataType<int> { Value = 42 });
+		Assert.NotNull(deserialized);
+		Assert.Equal(42, deserialized.Value);
+	}
+
 	[GenerateShape]
 	[TypeShape(Marshaller = typeof(Marshaller))]
 	internal partial class OriginalType
@@ -72,6 +80,24 @@ public partial class SurrogateTests(ITestOutputHelper logger) : MessagePackSeria
 		}
 	}
 
+	[TypeShape(Marshaller = typeof(OpenGenericDataType<>.Marshaller))]
+	internal class OpenGenericDataType<T>
+	{
+		public T? Value { get; set; }
+
+		internal record struct MarshaledType(T? Value);
+
+		internal class Marshaller : IMarshaller<OpenGenericDataType<T>, MarshaledType?>
+		{
+			public OpenGenericDataType<T>? FromSurrogate(MarshaledType? surrogate)
+				=> surrogate.HasValue ? new() { Value = surrogate.Value.Value } : null;
+
+			public MarshaledType? ToSurrogate(OpenGenericDataType<T>? value)
+				=> value is null ? null : new(value.Value);
+		}
+	}
+
 	[GenerateShape<OriginalType[]>]
+	[GenerateShape<OpenGenericDataType<int>>]
 	private partial class Witness;
 }
