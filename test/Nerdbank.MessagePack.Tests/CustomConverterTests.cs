@@ -1,6 +1,9 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+[assembly: TypeShapeExtension(typeof(CustomConverterTests.GenericData<>), AssociatedTypes = [typeof(CustomConverterTests.GenericDataConverter2<>)])]
+[assembly: TypeShapeExtension(typeof(CustomConverterTests.GenericData<>), AssociatedTypes = [typeof(CustomConverterTests.GenericDataConverterNonGeneric)])]
+
 public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Fact]
@@ -63,12 +66,88 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		Assert.Null(this.Serializer.StartingContext["SHOULDVANISH"]);
 	}
 
-	[GenerateShape]
-	[MessagePackConverter(typeof(StatefulConverter))]
-	internal partial record struct TypeWithStatefulConverter(int Value);
+	[Fact]
+	public void GenericDataAndGenericConverterByOpenGenericAttribute()
+	{
+		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
+		Assert.Equal("Hello, World!11", deserialized?.Value);
+	}
+
+	[Fact]
+	public void GenericDataAndGenericConverterByClosedGenericRuntimeRegistration()
+	{
+		this.Serializer.RegisterConverter(new GenericDataConverter2<string>());
+		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
+		Assert.Equal("Hello, World!22", deserialized?.Value);
+	}
+
+	[Fact]
+	public void GenericDataAndGenericConverterByOpenGenericRuntimeRegistration()
+	{
+		this.Serializer.RegisterConverter(typeof(GenericDataConverter2<>));
+		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
+		Assert.Equal("Hello, World!22", deserialized?.Value);
+	}
+
+	[Fact]
+	public void GenericDataAndNonGenericConverterByRuntimeRegistration()
+	{
+		this.Serializer.RegisterConverter(typeof(GenericDataConverterNonGeneric));
+		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
+		Assert.Equal("Hello, World!44", deserialized?.Value);
+
+		// Verify that other type arguments than that supported by the runtime registered converter invokes the attribute-registered converter.
+		GenericData<int>? deserialized2 = this.Roundtrip<GenericData<int>, Witness>(new GenericData<int> { Value = "Hello, World!" });
+		Assert.Equal("Hello, World!11", deserialized2?.Value);
+	}
+
+	[Fact]
+	public void NonGenericRuntimeRegistrationOfConverterByType()
+	{
+		this.Serializer.RegisterConverter(typeof(TreeConverterPlus2));
+		Tree? deserialized = this.Roundtrip(new Tree(3));
+		Assert.Equal(5, deserialized?.FruitCount);
+	}
+
+	[Fact]
+	public void GenericDataAndGenericConverterByOpenGenericRuntimeRegistration_NotAssociated()
+	{
+		this.Serializer.RegisterConverter(typeof(GenericDataConverter3<>));
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" }, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.Message);
+	}
 
 	[GenerateShape]
+	[MessagePackConverter(typeof(StatefulConverter))]
+	public partial record struct TypeWithStatefulConverter(int Value);
+
+	[GenerateShape]
+	[TypeShape(AssociatedTypes = [typeof(TreeConverterPlus2)])]
 	public partial record Tree(int FruitCount);
+
+	public class TreeConverterPlus2 : MessagePackConverter<Tree>
+	{
+		public override Tree? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			return new Tree(reader.ReadInt32() + 1);
+		}
+
+		public override void Write(ref MessagePackWriter writer, in Tree? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.Write(value.FruitCount + 1);
+		}
+	}
 
 	[GenerateShape, MessagePackConverter(typeof(CustomTypeConverter))]
 	public partial record CustomType
@@ -78,7 +157,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		public override string ToString() => this.InternalProperty ?? "(null)";
 
 		[GenerateShape<string>]
-		private partial class CustomTypeConverter : MessagePackConverter<CustomType>
+		public partial class CustomTypeConverter : MessagePackConverter<CustomType>
 		{
 			public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
 			{
@@ -90,6 +169,148 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 			{
 				context.GetConverter<string>(ShapeProvider).Write(ref writer, value?.InternalProperty, context);
 			}
+		}
+	}
+
+	[MessagePackConverter(typeof(GenericDataConverter<>))]
+	public partial record GenericData<T>
+	{
+		internal string? Value { get; set; }
+	}
+
+	public partial class GenericDataConverter<T> : MessagePackConverter<GenericData<T>>
+	{
+		public override GenericData<T>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int count = reader.ReadArrayHeader();
+			if (count != 1)
+			{
+				throw new MessagePackSerializationException("Expected array of length 1.");
+			}
+
+			return new GenericData<T>
+			{
+				Value = reader.ReadString() + "1",
+			};
+		}
+
+		public override void Write(ref MessagePackWriter writer, in GenericData<T>? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(1);
+			writer.Write(value.Value + "1");
+		}
+	}
+
+	public partial class GenericDataConverter2<T> : MessagePackConverter<GenericData<T>>
+	{
+		public override GenericData<T>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int count = reader.ReadArrayHeader();
+			if (count != 1)
+			{
+				throw new MessagePackSerializationException("Expected array of length 1.");
+			}
+
+			return new GenericData<T>
+			{
+				Value = reader.ReadString() + "2",
+			};
+		}
+
+		public override void Write(ref MessagePackWriter writer, in GenericData<T>? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(1);
+			writer.Write(value.Value + "2");
+		}
+	}
+
+	public partial class GenericDataConverter3<T> : MessagePackConverter<GenericData<T>>
+	{
+		public override GenericData<T>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int count = reader.ReadArrayHeader();
+			if (count != 1)
+			{
+				throw new MessagePackSerializationException("Expected array of length 1.");
+			}
+
+			return new GenericData<T>
+			{
+				Value = reader.ReadString() + "3",
+			};
+		}
+
+		public override void Write(ref MessagePackWriter writer, in GenericData<T>? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(1);
+			writer.Write(value.Value + "3");
+		}
+	}
+
+	public partial class GenericDataConverterNonGeneric : MessagePackConverter<GenericData<string>>
+	{
+		public override GenericData<string>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int count = reader.ReadArrayHeader();
+			if (count != 1)
+			{
+				throw new MessagePackSerializationException("Expected array of length 1.");
+			}
+
+			return new GenericData<string>
+			{
+				Value = reader.ReadString() + "4",
+			};
+		}
+
+		public override void Write(ref MessagePackWriter writer, in GenericData<string>? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(1);
+			writer.Write(value.Value + "4");
 		}
 	}
 
@@ -162,7 +383,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		}
 	}
 
-	private class StatefulConverter : MessagePackConverter<TypeWithStatefulConverter>
+	public class StatefulConverter : MessagePackConverter<TypeWithStatefulConverter>
 	{
 		public override TypeWithStatefulConverter Read(ref MessagePackReader reader, SerializationContext context)
 		{
@@ -180,4 +401,8 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 			context["SHOULDVANISH"] = new object();
 		}
 	}
+
+	[GenerateShape<GenericData<string>>]
+	[GenerateShape<GenericData<int>>]
+	private partial class Witness;
 }

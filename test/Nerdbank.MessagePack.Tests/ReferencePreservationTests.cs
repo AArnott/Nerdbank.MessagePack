@@ -318,7 +318,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 	[GenerateShape<string>]
 	[GenerateShape<CustomType2[]>]
-	internal partial class CustomType2Converter : MessagePackConverter<CustomType2>
+	public partial class CustomType2Converter : MessagePackConverter<CustomType2>
 	{
 		public override CustomType2? Read(ref MessagePackReader reader, SerializationContext context)
 		{

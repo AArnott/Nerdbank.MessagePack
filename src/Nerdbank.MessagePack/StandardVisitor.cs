@@ -48,7 +48,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
 	{
 		// Check if the type has a custom converter.
-		if (this.owner.TryGetUserDefinedConverter<T>(out MessagePackConverter<T>? userDefinedConverter))
+		if (this.owner.TryGetUserDefinedConverter(typeShape, out MessagePackConverter<T>? userDefinedConverter))
 		{
 			return userDefinedConverter;
 		}
@@ -631,7 +631,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return null;
 		}
 
-		if (customConverterAttribute.ConverterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
+		Type converterType = customConverterAttribute.ConverterType;
+		if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> converterFactory)
+		{
+			MessagePackConverter<T> converter = (MessagePackConverter<T>)converterFactory();
+			if (this.owner.PreserveReferences)
+			{
+				converter = converter.WrapWithReferencePreservation();
+			}
+
+			return converter;
+		}
+
+		if (converterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
 		{
 			throw new MessagePackSerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
 		}

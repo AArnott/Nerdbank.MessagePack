@@ -21,7 +21,16 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 internal record class ConverterCache
 {
-	private readonly ConcurrentDictionary<Type, object> userProvidedConverters = new();
+	/// <summary>
+	/// A mapping of data types to their custom converters that were registered at runtime.
+	/// </summary>
+	private readonly ConcurrentDictionary<Type, object> userProvidedConverterObjects = new();
+
+	/// <summary>
+	/// A mapping of data types to their custom converter types that were registered at runtime.
+	/// </summary>
+	private readonly ConcurrentDictionary<Type, Type> userProvidedConverterTypes = new();
+
 	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
 
 	/// <summary>
@@ -286,9 +295,47 @@ internal record class ConverterCache
 	{
 		Requires.NotNull(converter);
 		this.OnChangingConfiguration();
-		this.userProvidedConverters[typeof(T)] = this.PreserveReferences
+		this.userProvidedConverterObjects[typeof(T)] = this.PreserveReferences
 			? ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation()
 			: converter;
+	}
+
+	/// <summary>
+	/// Registers a converter for use with this serializer.
+	/// </summary>
+	/// <param name="converterType">
+	/// The type of the converter.
+	/// This class must declare a public default constructor and derive from <see cref="MessagePackConverter{T}"/>.
+	/// </param>
+	/// <remarks>
+	/// The assembly that declares the converter class should also declare a
+	/// <see cref="TypeShapeExtensionAttribute"/> that describes the link from the data type converted to the converter itself.
+	/// This is particularly important when the converter being registered is an open generic type that must be closed
+	/// using type arguments on the data type to be converted.
+	/// </remarks>
+	internal void RegisterConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType)
+	{
+		Requires.NotNull(converterType);
+		Requires.Argument(converterType.IsClass && !converterType.IsAbstract, nameof(converterType), "Type must be a concrete class.");
+
+		// Discover what the data type being converted is.
+		Type? baseType = converterType.BaseType;
+		while (baseType is not null && !(baseType.IsGenericType && typeof(MessagePackConverter<>).IsAssignableFrom(baseType.GetGenericTypeDefinition())))
+		{
+			baseType = baseType.BaseType;
+		}
+
+		Requires.Argument(baseType is not null, nameof(converterType), $"Type does not derive from MessagePackConverter<T>.");
+		Type dataType = baseType.GetGenericArguments()[0];
+
+		// If the data type has no generic type arguments, turn it into a proper generic type definition so we can find it later.
+		if (dataType.GenericTypeArguments is [{ IsGenericParameter: true }, ..])
+		{
+			dataType = dataType.GetGenericTypeDefinition();
+		}
+
+		this.OnChangingConfiguration();
+		this.userProvidedConverterTypes[dataType] = converterType;
 	}
 
 	/// <summary>
@@ -364,14 +411,29 @@ internal record class ConverterCache
 	/// Gets a user-defined converter for the specified type if one is available.
 	/// </summary>
 	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
+	/// <param name="typeShape">The shape of the data type that requires a converter.</param>
 	/// <param name="converter">Receives the converter, if the user provided one (e.g. via <see cref="RegisterConverter{T}(MessagePackConverter{T})"/>.</param>
 	/// <returns>A value indicating whether a customer converter exists.</returns>
-	internal bool TryGetUserDefinedConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	internal bool TryGetUserDefinedConverter<T>(ITypeShape<T> typeShape, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
-		if (this.userProvidedConverters.TryGetValue(typeof(T), out object? value))
+		if (this.userProvidedConverterObjects.TryGetValue(typeof(T), out object? value))
 		{
 			converter = (MessagePackConverter<T>)value;
 			return true;
+		}
+
+		if (this.userProvidedConverterTypes.TryGetValue(typeof(T), out Type? converterType) ||
+			(typeof(T).IsGenericType && this.userProvidedConverterTypes.TryGetValue(typeof(T).GetGenericTypeDefinition(), out converterType)))
+		{
+			if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> factory)
+			{
+				converter = (MessagePackConverter<T>)factory();
+				return true;
+			}
+			else
+			{
+				throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {typeShape.Type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
+			}
 		}
 
 		converter = default;
@@ -434,10 +496,10 @@ internal record class ConverterCache
 
 	private void ReconfigureUserProvidedConverters()
 	{
-		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverters)
+		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverterObjects)
 		{
 			IMessagePackConverterInternal converter = (IMessagePackConverterInternal)pair.Value;
-			this.userProvidedConverters[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
+			this.userProvidedConverterObjects[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
 		}
 	}
 

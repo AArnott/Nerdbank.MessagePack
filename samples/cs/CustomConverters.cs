@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable SA1202 // 'public' members should come before 'internal' members
+
 using System.Diagnostics.CodeAnalysis;
 
 namespace CustomConverter
@@ -479,7 +481,7 @@ namespace Stateful
         }
     }
 
-    class StatefulConverter : MessagePackConverter<SpecialType>
+    public class StatefulConverter : MessagePackConverter<SpecialType>
     {
         public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
         {
@@ -497,7 +499,7 @@ namespace Stateful
 
     [GenerateShape]
     [MessagePackConverter(typeof(StatefulConverter))]
-    partial record struct SpecialType(int Value);
+    public partial record struct SpecialType(int Value);
     #endregion
 #else
     #region StatefulNETFX
@@ -521,7 +523,7 @@ namespace Stateful
         }
     }
 
-    class StatefulConverter : MessagePackConverter<SpecialType>
+    public class StatefulConverter : MessagePackConverter<SpecialType>
     {
         public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
         {
@@ -538,7 +540,7 @@ namespace Stateful
     }
 
     [MessagePackConverter(typeof(StatefulConverter))]
-    partial record struct SpecialType(int Value);
+    public partial record struct SpecialType(int Value);
 
     [GenerateShape<SpecialType>]
     partial class Witness;
