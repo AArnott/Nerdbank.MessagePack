@@ -42,7 +42,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <remarks>
 	/// This may be changed to a wrapping visitor implementation to implement features such as reference preservation.
 	/// </remarks>
-	internal ITypeShapeVisitor OutwardVisitor { get; set; }
+	internal TypeShapeVisitor OutwardVisitor { get; set; }
 
 	/// <inheritdoc/>
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
