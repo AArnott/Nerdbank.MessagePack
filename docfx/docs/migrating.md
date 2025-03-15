@@ -33,6 +33,7 @@ Unity                     | [✅](unity.md)[^3] | [✅](https://github.com/Messa
 Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ |
 Endless streaming deserialization | [✅](streaming-deserialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream)
 Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
+Cyclical references       | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
 JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
 Secure defaults           | ✅ | ❌ |
 Automatic hash collection deserialization in secure mode | ❌ | ✅ |

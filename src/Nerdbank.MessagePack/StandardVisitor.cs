@@ -55,7 +55,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		if (this.owner.InternStrings && typeof(T) == typeof(string))
 		{
-			return this.owner.PreserveReferences ? ReferencePreservingInterningStringConverter : InterningStringConverter;
+			return this.owner.PreserveReferences != ReferencePreservationMode.Off ? ReferencePreservingInterningStringConverter : InterningStringConverter;
 		}
 
 		// Check if the type has a built-in converter.

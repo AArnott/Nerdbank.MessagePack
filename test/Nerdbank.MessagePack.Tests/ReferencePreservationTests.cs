@@ -1,13 +1,15 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+
 [Trait("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
 	public ReferencePreservationTests(ITestOutputHelper logger)
 		: base(logger)
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = true };
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 	}
 
 	[Fact]
@@ -67,9 +69,9 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void CustomConverterByRegistrationSkippedByReferencePreservation_Reconfigured()
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = false };
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.Off };
 		this.Serializer.RegisterConverter(new CustomTypeConverter());
-		this.Serializer = this.Serializer with { PreserveReferences = true };
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 
 		CustomType value = new() { Message = "test" };
 		CustomType[] array = [value, value];
@@ -239,6 +241,309 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized[0], deserialized[1]);
 		Assert.Same(deserialized[2], deserialized[3]);
 	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_Rejected_DuringSerialization(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
+		SinglyLinkedListNode first = new();
+		first.Next = first;
+
+		if (async)
+		{
+			await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.SerializeAsync(Stream.Null, first, TestContext.Current.CancellationToken));
+		}
+		else
+		{
+			Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(first, TestContext.Current.CancellationToken));
+		}
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_Rejected_DuringDeserialization(bool async)
+	{
+		// First, compose a msgpack buffer that contains cycles.
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		SinglyLinkedListNode first = new();
+		first.Next = first;
+		byte[] msgpack = this.Serializer.Serialize(first, TestContext.Current.CancellationToken);
+
+		// Now reconfigure the serializer to reject cycles and attempt to deserialize.
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
+
+		if (async)
+		{
+			await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.DeserializeAsync<SinglyLinkedListNode>(PipeReader.Create(new(msgpack)), TestContext.Current.CancellationToken));
+		}
+		else
+		{
+			Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<SinglyLinkedListNode>(msgpack, TestContext.Current.CancellationToken));
+		}
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_ReferenceSelf(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		SinglyLinkedListNode first = new();
+		first.Next = first;
+		SinglyLinkedListNode? deserializedRoot = async ? await this.RoundtripAsync(first) : this.Roundtrip(first);
+		Assert.NotNull(deserializedRoot);
+		Assert.Same(deserializedRoot, deserializedRoot.Next);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_Minimal(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		SinglyLinkedListNode first = new();
+		SinglyLinkedListNode second = new();
+		first.Next = second;
+		second.Next = first;
+		SinglyLinkedListNode? deserializedRoot = async ? await this.RoundtripAsync(first) : this.Roundtrip(first);
+		Assert.NotNull(deserializedRoot);
+		Assert.NotSame(deserializedRoot, deserializedRoot.Next);
+		Assert.Same(deserializedRoot, deserializedRoot.Next?.Next);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_Minimal_WithKeys(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		SinglyLinkedListNodeWithKeyAttribute first = new();
+		SinglyLinkedListNodeWithKeyAttribute second = new();
+		first.Next = second;
+		second.Next = first;
+		SinglyLinkedListNodeWithKeyAttribute? deserializedRoot = async ? await this.RoundtripAsync(first) : this.Roundtrip(first);
+		Assert.NotNull(deserializedRoot);
+		Assert.NotSame(deserializedRoot, deserializedRoot.Next);
+		Assert.Same(deserializedRoot, deserializedRoot.Next?.Next);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_Multistep(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		SinglyLinkedListNode first = new();
+		SinglyLinkedListNode second = new();
+		SinglyLinkedListNode third = new();
+		first.Next = second;
+		second.Next = third;
+		third.Next = first;
+		SinglyLinkedListNode? deserializedRoot = async ? await this.RoundtripAsync(first) : this.Roundtrip(first);
+		Assert.NotNull(deserializedRoot);
+		Assert.NotSame(deserializedRoot, deserializedRoot.Next);
+		Assert.Same(deserializedRoot, deserializedRoot.Next?.Next?.Next);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_OrderRequirementSatisfied(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		CyclicMustBeFirst first = new();
+		CyclicMustBeSecond second = new() { First = first };
+		first.Second = second;
+
+		// Arrange to serialize "first"... first.
+		CyclicMustBeFirst? deserializedRoot = async ? await this.RoundtripAsync(first) : this.Roundtrip(first);
+
+		Assert.NotNull(deserializedRoot);
+		Assert.Same(deserializedRoot, deserializedRoot.Second?.First);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_OrderRequirementNotSatisfied(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		CyclicMustBeFirst first = new();
+		CyclicMustBeSecond second = new() { First = first };
+		first.Second = second;
+
+		// Arrange to serialize "second"... first.
+		// This means that upon deserialization, we must either:
+		// 1. Fail, because Second demands a First be given during construction, OR
+		// 2. Succeed, by bending the language semantics slightly, by temporarily assigning null to Second.First, a non-nullable and required property.
+		// FWIW STJ succeeds, by noticing the ordering requirement *during serialization* and serializes a different root from the one given.
+		// At the moment, we're going with the Fail option.
+		if (async)
+		{
+			await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.RoundtripAsync(second));
+		}
+		else
+		{
+			Assert.Throws<MessagePackSerializationException>(() => this.Roundtrip(second));
+		}
+
+		////CyclicMustBeSecond? deserializedRoot = this.Roundtrip(second);
+
+		////Assert.NotNull(deserializedRoot);
+		////Assert.Same(deserializedRoot, deserializedRoot.First.Second);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_DoublyLinkedList(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		DoublyLinkedListNode? a = new();
+		DoublyLinkedListNode? b = new();
+		DoublyLinkedListNode? c = new();
+
+		a.Next = b;
+		b.Next = c;
+
+		b.Previous = a;
+		c.Previous = b;
+
+		a = async ? await this.RoundtripAsync(a) : this.Roundtrip(a);
+		b = a?.Next;
+		c = b?.Next;
+
+		Assert.NotNull(a);
+		Assert.NotNull(b);
+		Assert.NotNull(c);
+
+		Assert.Null(a.Previous);
+		Assert.Same(b, a.Next);
+
+		Assert.Same(c, b.Next);
+		Assert.Same(a, b.Previous);
+
+		Assert.Null(c.Next);
+		Assert.Same(b, c.Previous);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_InvolvingStruct(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+		ObjectWithStructField obj = new();
+		obj.Struct = new StructWithObjectField { Object = obj };
+
+		ObjectWithStructField? deserialized = async ? await this.RoundtripAsync(obj) : this.Roundtrip(obj);
+
+		Assert.NotNull(deserialized);
+		Assert.Same(deserialized, deserialized.Struct.Object);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_ManyTypes(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+
+		MultiLinkTypeObject obj = new();
+		obj.List = [obj];
+		obj.ImmutableList = obj.List.ToImmutableList();
+		obj.Array = [obj];
+		obj.Enumerable = [obj];
+		obj.Dictionary = new() { ["key"] = obj };
+		obj.ImmutableDictionary = obj.Dictionary.ToImmutableDictionary();
+		obj.Optional = (obj, true);
+
+		MultiLinkTypeObject? deserialized = async ? await this.RoundtripAsync(obj) : this.Roundtrip(obj);
+		Assert.NotNull(deserialized);
+
+		Assert.Same(deserialized, deserialized.List?[0]);
+		Assert.Same(deserialized, deserialized.ImmutableList?[0]);
+		Assert.Same(deserialized, deserialized.Array?[0]);
+		Assert.Same(deserialized, deserialized.Enumerable?.First());
+		Assert.Same(deserialized, deserialized.Dictionary?["key"]);
+		Assert.Same(deserialized, deserialized.ImmutableDictionary?["key"]);
+		Assert.Same(deserialized, deserialized.Optional?.Item1);
+	}
+
+	[Theory, PairwiseData]
+	public async Task CyclicReference_Union(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
+
+		CyclicUnionBase obj = new CyclicUnionDerived();
+		obj.Next = obj;
+
+		CyclicUnionBase? deserialized = async ? await this.RoundtripAsync(obj) : this.Roundtrip(obj);
+		Assert.NotNull(deserialized);
+
+		Assert.Same(deserialized, deserialized.Next);
+	}
+
+	public struct StructWithObjectField
+	{
+		public ObjectWithStructField? Object { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class ObjectWithStructField
+	{
+		public ObjectWithStructField()
+		{
+		}
+
+		public StructWithObjectField Struct { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class SinglyLinkedListNode
+	{
+		public SinglyLinkedListNode? Next { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class DoublyLinkedListNode
+	{
+		public DoublyLinkedListNode? Previous { get; set; }
+
+		public DoublyLinkedListNode? Next { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class CyclicMustBeFirst
+	{
+		// This property is nullable and not required.
+		// The declaring class is therefore a good candidate to be activated first.
+		public CyclicMustBeSecond? Second { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class CyclicMustBeSecond
+	{
+		// This property is required and non-nullable.
+		// The declaring class therefore requires that the other class be constructed first
+		// if we are to fully honor language semantics.
+		public required CyclicMustBeFirst First { get; init; }
+	}
+
+	[GenerateShape]
+	public partial class SinglyLinkedListNodeWithKeyAttribute
+	{
+		[Key(0)]
+		public SinglyLinkedListNodeWithKeyAttribute? Next { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class MultiLinkTypeObject
+	{
+		public List<MultiLinkTypeObject>? List { get; set; }
+
+		public ImmutableList<MultiLinkTypeObject>? ImmutableList { get; set; }
+
+		public MultiLinkTypeObject[]? Array { get; set; }
+
+		public IEnumerable<MultiLinkTypeObject>? Enumerable { get; set; }
+
+		public Dictionary<string, MultiLinkTypeObject>? Dictionary { get; set; }
+
+		public ImmutableDictionary<string, MultiLinkTypeObject>? ImmutableDictionary { get; set; }
+
+		public (MultiLinkTypeObject, bool)? Optional { get; set; }
+	}
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(CyclicUnionDerived))]
+	public partial class CyclicUnionBase
+	{
+		public CyclicUnionBase? Next { get; set; }
+	}
+
+	public class CyclicUnionDerived : CyclicUnionBase;
 
 	[GenerateShape]
 	public partial record RecordWithStrings

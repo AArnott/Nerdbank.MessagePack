@@ -100,7 +100,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		{
 			this.AssertRoundtrip(new HasMultiDimensionalArray());
 		}
-		catch (PlatformNotSupportedException ex)
+		catch (MessagePackSerializationException ex) when (ex.InnerException is PlatformNotSupportedException)
 		{
 			throw SkipException.ForSkip($"Skipped: {ex.Message}");
 		}

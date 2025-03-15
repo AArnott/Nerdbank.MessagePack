@@ -75,7 +75,7 @@ public partial record MessagePackSerializer
 	}
 
 	/// <inheritdoc cref="ConverterCache.PreserveReferences"/>
-	public bool PreserveReferences
+	public ReferencePreservationMode PreserveReferences
 	{
 		get => this.converterCache.PreserveReferences;
 		init => this.converterCache = this.converterCache with { PreserveReferences = value };
@@ -161,8 +161,15 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.converterCache.GetOrAddConverter(shape).WriteObject(ref writer, value, context.Value);
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+			this.converterCache.GetOrAddConverter(shape).WriteObject(ref writer, value, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -180,8 +187,16 @@ public partial record MessagePackSerializer
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		this.converterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+			this.converterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -198,8 +213,15 @@ public partial record MessagePackSerializer
 #endif
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		this.converterCache.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+			this.converterCache.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -216,8 +238,15 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter(shape).ReadObject(ref reader, context.Value);
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+			return this.converterCache.GetOrAddConverter(shape).ReadObject(ref reader, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -236,7 +265,14 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(shape);
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
+		try
+		{
+			return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -257,8 +293,15 @@ public partial record MessagePackSerializer
 #endif
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		return this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+			return this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -278,14 +321,20 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(writer);
 		Requires.NotNull(shape);
-		cancellationToken.ThrowIfCancellationRequested();
 
+		try
+		{
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncWriter asyncWriter = new(writer);
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-		await this.converterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
-		asyncWriter.Flush();
+			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+			MessagePackAsyncWriter asyncWriter = new(writer);
+			await this.converterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -304,14 +353,20 @@ public partial record MessagePackSerializer
 	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(writer);
-		cancellationToken.ThrowIfCancellationRequested();
 
+		try
+		{
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncWriter asyncWriter = new(writer);
-		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-		await this.converterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
-		asyncWriter.Flush();
+			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+			MessagePackAsyncWriter asyncWriter = new(writer);
+			await this.converterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
 	}
 
 	/// <summary>
@@ -636,11 +691,11 @@ public partial record MessagePackSerializer
 	/// for streaming a sequence of values that is nested within a larger msgpack structure.
 	/// </para>
 	/// </remarks>
+	/// <inheritdoc cref="ThrowIfPreservingReferencesDuringEnumeration" path="/exception"/>
 	private async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter<T> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
-		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
@@ -708,11 +763,11 @@ public partial record MessagePackSerializer
 	/// for streaming a sequence of values that are each top-level structures in the stream (with no envelope).
 	/// </para>
 	/// </remarks>
+	/// <inheritdoc cref="ThrowIfPreservingReferencesDuringEnumeration" path="/exception"/>
 	private async IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, MessagePackConverter<TElement> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
-		cancellationToken.ThrowIfCancellationRequested();
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
 #pragma warning disable NBMsgPackAsync
@@ -733,9 +788,10 @@ public partial record MessagePackSerializer
 		}
 	}
 
+	/// <exception cref="NotSupportedException">Thrown if <see cref="PreserveReferences"/> is not <see cref="ReferencePreservationMode.Off"/>.</exception>
 	private void ThrowIfPreservingReferencesDuringEnumeration()
 	{
-		if (this.PreserveReferences)
+		if (this.PreserveReferences != ReferencePreservationMode.Off)
 		{
 			// This was failing in less expected ways, so we just disable the scenario.
 			// It may not make so much sense anyway, given async enumeration clients may not want to retain references to all the objects
@@ -756,36 +812,56 @@ public partial record MessagePackSerializer
 	/// <returns>The deserialized value.</returns>
 	private async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter<T> converter, CancellationToken cancellationToken)
 	{
-		cancellationToken.ThrowIfCancellationRequested();
-		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-
-		// Buffer up to some threshold before starting deserialization.
-		// Only engage with the async code path (which is slower) if we reach our threshold
-		// and more bytes are still to come.
-		if (this.MaxAsyncBuffer > 0)
+		try
 		{
-			ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
-			if (readResult.IsCompleted)
+			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+
+			// Buffer up to some threshold before starting deserialization.
+			// Only engage with the async code path (which is slower) if we reach our threshold
+			// and more bytes are still to come.
+			if (this.MaxAsyncBuffer > 0)
 			{
-				MessagePackReader msgpackReader = new(readResult.Buffer);
-				T? result = converter.Read(ref msgpackReader, context.Value);
-				reader.AdvanceTo(msgpackReader.Position);
-				return result;
+				ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
+				if (readResult.IsCompleted)
+				{
+					MessagePackReader msgpackReader = new(readResult.Buffer);
+					T? result = converter.Read(ref msgpackReader, context.Value);
+					reader.AdvanceTo(msgpackReader.Position);
+					return result;
+				}
+				else
+				{
+					reader.AdvanceTo(readResult.Buffer.Start);
+				}
 			}
-			else
-			{
-				reader.AdvanceTo(readResult.Buffer.Start);
-			}
-		}
 
 #pragma warning disable NBMsgPackAsync
-		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
-		await asyncReader.ReadAsync().ConfigureAwait(false);
-		T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
-		asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
-		return result2;
+			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+			await asyncReader.ReadAsync().ConfigureAwait(false);
+			T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
+			return result2;
 #pragma warning restore NBMsgPackAsync
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
 	}
+
+	/// <summary>
+	/// Determines whether an exception thrown during (de)serializattion should be wrapped.
+	/// </summary>
+	/// <param name="ex">The thrown exception.</param>
+	/// <param name="cancellationToken">The cancellation token.</param>
+	/// <returns><see langword="true" /> if the exception should be wrapped; <see langword="false" /> otherwise.</returns>
+	/// <remarks>
+	/// We wrap all exceptions <em>except</em> <see cref="OperationCanceledException"/> if the cancellation token is cancelled.
+	/// In other words, the only time we allow any exception to escape is when the operation was cancelled, because
+	/// users expect to catch <see cref="OperationCanceledException"/> when they cancel an operation.
+	/// </remarks>
+	private static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
+		=> ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
 
 	/// <summary>
 	/// A wrapper around <see cref="SerializationContext"/> that makes disposal easier.

@@ -44,11 +44,13 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 			}
 			else
 			{
-				Assert.Throws<NotSupportedException>(() => this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken));
+				MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken));
+				Assert.IsType<NotSupportedException>(ex.InnerException);
 			}
 		}
-		catch (PlatformNotSupportedException ex)
+		catch (MessagePackSerializationException ex)
 		{
+			Assert.IsType<PlatformNotSupportedException>(ex.InnerException);
 			throw SkipException.ForSkip(ex.Message);
 		}
 	}
