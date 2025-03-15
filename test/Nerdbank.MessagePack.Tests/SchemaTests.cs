@@ -167,10 +167,10 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[Fact]
 	public void ReferencePreservationGraphReset()
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = true };
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 		this.Serializer.RegisterConverter(new DocumentingCustomConverter());
 		this.Serializer.RegisterConverter(new NonDocumentingCustomConverter());
-		this.Serializer = this.Serializer with { PreserveReferences = false };
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.Off };
 		JsonObject schema = this.Serializer.GetJsonSchema<CustomType>();
 		string schemaString = schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
 		this.Logger.WriteLine(schemaString);

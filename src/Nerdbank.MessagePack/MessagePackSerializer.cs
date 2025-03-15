@@ -75,7 +75,7 @@ public partial record MessagePackSerializer
 	}
 
 	/// <inheritdoc cref="ConverterCache.PreserveReferences"/>
-	public bool PreserveReferences
+	public ReferencePreservationMode PreserveReferences
 	{
 		get => this.converterCache.PreserveReferences;
 		init => this.converterCache = this.converterCache with { PreserveReferences = value };
@@ -788,9 +788,10 @@ public partial record MessagePackSerializer
 		}
 	}
 
+	/// <exception cref="NotSupportedException">Thrown if <see cref="PreserveReferences"/> is not <see cref="ReferencePreservationMode.Off"/>.</exception>
 	private void ThrowIfPreservingReferencesDuringEnumeration()
 	{
-		if (this.PreserveReferences)
+		if (this.PreserveReferences != ReferencePreservationMode.Off)
 		{
 			// This was failing in less expected ways, so we just disable the scenario.
 			// It may not make so much sense anyway, given async enumeration clients may not want to retain references to all the objects

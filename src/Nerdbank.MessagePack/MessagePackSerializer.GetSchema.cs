@@ -48,7 +48,7 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(typeShape);
 
-		if (this.PreserveReferences)
+		if (this.PreserveReferences != ReferencePreservationMode.Off)
 		{
 			// This could be enhanced to support schema generation when PreserveReferences is enabled by changing every reference typed property
 			// to describe that it may be either a msgpack extension or the object itself.

@@ -13,12 +13,17 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 internal class ReferenceEqualityTracker : IPoolableObject
 {
-	private readonly Dictionary<object, int> serializedObjects = new(ReferenceEqualityComparer.Instance);
+	private readonly Dictionary<object, (int, bool)> serializedObjects = new(ReferenceEqualityComparer.Instance);
 	private readonly List<object?> deserializedObjects = new();
 	private int serializingObjectCounter;
 
 	/// <inheritdoc/>
 	public MessagePackSerializer? Owner { get; set; }
+
+	/// <summary>
+	/// Gets the active preservation mode.
+	/// </summary>
+	private ReferencePreservationMode Mode => this.Owner?.PreserveReferences ?? throw new InvalidOperationException("No owner set.");
 
 	/// <inheritdoc/>
 	void IPoolableObject.Recycle()
@@ -46,7 +51,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 			value = (T)(object)Strings.WeakIntern((string)(object)value);
 		}
 
-		if (this.serializedObjects.TryGetValue(value, out int referenceId))
+		if (this.TryGetSerializedObject(value, out int referenceId))
 		{
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
@@ -55,8 +60,10 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		}
 		else
 		{
-			this.serializedObjects.Add(value, this.serializingObjectCounter++);
+			int assignedIndex = this.serializingObjectCounter++;
+			this.serializedObjects.Add(value, (assignedIndex, false));
 			inner.Write(ref writer, value, context);
+			this.serializedObjects[value] = (assignedIndex, true);
 		}
 	}
 
@@ -80,7 +87,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 			value = (T)(object)Strings.WeakIntern((string)(object)value);
 		}
 
-		if (this.serializedObjects.TryGetValue(value, out int referenceId))
+		if (this.TryGetSerializedObject(value, out int referenceId))
 		{
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
@@ -92,8 +99,10 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		}
 		else
 		{
-			this.serializedObjects.Add(value, this.serializingObjectCounter++);
+			int assignedIndex = this.serializingObjectCounter++;
+			this.serializedObjects.Add(value, (assignedIndex, false));
 			await inner.WriteAsync(writer, value, context).ConfigureAwait(false);
+			this.serializedObjects[value] = (assignedIndex, true);
 		}
 	}
 
@@ -118,16 +127,30 @@ internal class ReferenceEqualityTracker : IPoolableObject
 			{
 				int id = provisionaryReader.ReadInt32();
 				reader = provisionaryReader;
-				return (T?)this.deserializedObjects[id] ?? throw new MessagePackSerializationException("Unexpected null element in shared object array. Dependency cycle?");
+				return (T?)this.GetDeserializedObject(id)!;
 			}
 		}
 
 		// Reserve our position in the array.
-		int reservation = this.deserializedObjects.Count;
+		context.ReferenceIndex = this.deserializedObjects.Count;
 		this.deserializedObjects.Add(null);
 		T value = inner.Read(ref reader, context) ?? throw new MessagePackSerializationException("Converter returned null for non-null value.");
-		this.deserializedObjects[reservation] = value;
+		this.deserializedObjects[context.ReferenceIndex] = value;
 		return value;
+	}
+
+	/// <summary>
+	/// Reports the construction of an object and stores it if cycles are allowed.
+	/// </summary>
+	/// <param name="value">The constructed object to be reported and stored for reference.</param>
+	/// <param name="referenceIndex">Indicates the position in the collection where the object should be stored.</param>
+	internal void ReportObjectConstructed(object? value, int referenceIndex)
+	{
+		if (this.Mode == ReferencePreservationMode.AllowCycles)
+		{
+			Verify.Operation(this.deserializedObjects[referenceIndex] is null, "The object was already constructed and should not be reported again.");
+			this.deserializedObjects[referenceIndex] = value;
+		}
 	}
 
 	/// <summary>
@@ -163,18 +186,57 @@ internal class ReferenceEqualityTracker : IPoolableObject
 				int id = provisionaryReader.ReadInt32();
 				syncReader = provisionaryReader;
 				reader.ReturnReader(ref syncReader);
-				return (T?)this.deserializedObjects[id] ?? throw new MessagePackSerializationException("Unexpected null element in shared object array. Dependency cycle?");
+				return (T?)this.GetDeserializedObject(id)!;
 			}
 
 			reader.ReturnReader(ref syncReader);
 		}
 
 		// Reserve our position in the array.
-		int reservation = this.deserializedObjects.Count;
+		context.ReferenceIndex = this.deserializedObjects.Count;
 		this.deserializedObjects.Add(null);
 		T value = (await inner.ReadAsync(reader, context).ConfigureAwait(false)) ?? throw new MessagePackSerializationException("Converter returned null for non-null value.");
-		this.deserializedObjects[reservation] = value;
+		this.deserializedObjects[context.ReferenceIndex] = value;
 		return value;
+	}
+
+	private object? GetDeserializedObject(int id)
+	{
+		if (this.deserializedObjects[id] is object result)
+		{
+			// No cycle detected.
+			return result;
+		}
+		else if (this.Mode == ReferencePreservationMode.AllowCycles)
+		{
+			// Reference cycle detected and allowed.
+			// But we don't have the object yet, because the converter responsible for creating it has not or cannot report the object's reference back (yet).
+			// This may be because the object has a non-default constructor (or "required" properties) and
+			// and the cycle implicates the properties that must be constructed before the object itself.
+			throw new NotSupportedException("A reference cycle cannot be reconstructed due to a limitation in the converters or the data types themselves.");
+		}
+		else
+		{
+			// Reference cycle detected and not allowed.
+			throw new MessagePackSerializationException("Disallowed reference cycle detected.");
+		}
+	}
+
+	private bool TryGetSerializedObject(object value, out int referenceId)
+	{
+		if (!this.serializedObjects.TryGetValue(value, out (int ReferenceId, bool Done) slot))
+		{
+			referenceId = 0;
+			return false;
+		}
+
+		if (!slot.Done && this.Mode != ReferencePreservationMode.AllowCycles)
+		{
+			throw new MessagePackSerializationException("Disallowed reference cycle detected.");
+		}
+
+		referenceId = slot.ReferenceId;
+		return true;
 	}
 
 	/// <summary>

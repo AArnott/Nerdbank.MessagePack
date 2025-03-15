@@ -68,7 +68,7 @@ internal static class PrimitiveConverterLookup
 	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
 	/// <param name="converter">Receives the converter, if one is available.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
-	internal static bool TryGetPrimitiveConverter<T>(bool referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	internal static bool TryGetPrimitiveConverter<T>(ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
 		if (typeof(T) == typeof(char))
 		{
@@ -198,7 +198,7 @@ internal static class PrimitiveConverterLookup
 
 		if (typeof(T) == typeof(string))
 		{
-			if (referencePreserving)
+			if (referencePreserving != ReferencePreservationMode.Off)
 			{
 				converter = (MessagePackConverter<T>)(_StringConverterReferencePreserving ??= new StringConverter().WrapWithReferencePreservation());
 			}
@@ -212,7 +212,7 @@ internal static class PrimitiveConverterLookup
 
 		if (typeof(T) == typeof(Version))
 		{
-			if (referencePreserving)
+			if (referencePreserving != ReferencePreservationMode.Off)
 			{
 				converter = (MessagePackConverter<T>)(_VersionConverterReferencePreserving ??= new VersionConverter().WrapWithReferencePreservation());
 			}
@@ -226,7 +226,7 @@ internal static class PrimitiveConverterLookup
 
 		if (typeof(T) == typeof(Uri))
 		{
-			if (referencePreserving)
+			if (referencePreserving != ReferencePreservationMode.Off)
 			{
 				converter = (MessagePackConverter<T>)(_UriConverterReferencePreserving ??= new UriConverter().WrapWithReferencePreservation());
 			}
@@ -240,7 +240,7 @@ internal static class PrimitiveConverterLookup
 
 		if (typeof(T) == typeof(byte[]))
 		{
-			if (referencePreserving)
+			if (referencePreserving != ReferencePreservationMode.Off)
 			{
 				converter = (MessagePackConverter<T>)(_ByteArrayConverterReferencePreserving ??= new ByteArrayConverter().WrapWithReferencePreservation());
 			}

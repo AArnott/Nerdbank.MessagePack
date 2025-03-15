@@ -68,6 +68,11 @@ public record struct SerializationContext
 	internal ConverterCache? Cache { get; private init; }
 
 	/// <summary>
+	/// Gets or sets the index of the object being deserialized in the reference equality tracker.
+	/// </summary>
+	internal int ReferenceIndex { get; set; } = -1;
+
+	/// <summary>
 	/// Gets the reference equality tracker for this serialization operation.
 	/// </summary>
 	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
@@ -116,6 +121,33 @@ public record struct SerializationContext
 		if (--this.MaxDepth < 0)
 		{
 			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
+		}
+	}
+
+	/// <summary>
+	/// Shares the reference to an object as soon as it is constructed during deserialization.
+	/// </summary>
+	/// <param name="value">The constructed object.</param>
+	/// <remarks>
+	/// <para>
+	/// This method should never be called with a boxed value type.
+	/// The caller may use <see cref="Type.IsValueType"/> to determine if the value is a value type
+	/// and call this method only if this property is <see langword="false" />.
+	/// </para>
+	/// <para>
+	/// Converters are not required to call this method, and there is no point in calling it just before
+	/// the <see cref="MessagePackConverter{T}.Read(ref MessagePackReader, SerializationContext)"/>
+	/// method returns the object to its caller.
+	/// But if such a method activates the object and is about to start deserializing its properties,
+	/// calling this method first can help provide support for reference cycles that involve the
+	/// object being deserialized.
+	/// </para>
+	/// </remarks>
+	public void ReportObjectConstructed(object? value)
+	{
+		if (this.ReferenceIndex >= 0)
+		{
+			this.ReferenceEqualityTracker?.ReportObjectConstructed(value, this.ReferenceIndex);
 		}
 	}
 
@@ -216,7 +248,7 @@ public record struct SerializationContext
 		return this with
 		{
 			Cache = cache,
-			ReferenceEqualityTracker = cache.PreserveReferences ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
+			ReferenceEqualityTracker = cache.PreserveReferences != ReferencePreservationMode.Off ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
 			TypeShapeProvider = provider,
 			CancellationToken = cancellationToken,
 		};

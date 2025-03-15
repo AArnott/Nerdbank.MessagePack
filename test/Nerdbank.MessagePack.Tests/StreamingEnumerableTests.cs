@@ -192,7 +192,7 @@ public partial class StreamingEnumerableTests(ITestOutputHelper logger) : Messag
 	[Fact]
 	public async Task DeserializeEnumerableAsync_ReferencesPreserved()
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = true };
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 		SimpleStreamingContainerKeyed original = new();
 		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>([original, original], TestContext.Current.CancellationToken);
 		this.LogMsgPack(new(msgpack));
