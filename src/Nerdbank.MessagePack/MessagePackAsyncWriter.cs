@@ -170,7 +170,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// </summary>
 	/// <param name="context">The serialization context.</param>
 	/// <returns><see langword="true" /> if the pipe buffers are reaching their preferred capacity; <see langword="false" /> otherwise.</returns>
-	public bool IsTimeToFlush(SerializationContext context)
+	public bool IsTimeToFlush(in SerializationContext context)
 	{
 		return pipeWriter.CanGetUnflushedBytes && pipeWriter.UnflushedBytes > context.UnflushedBytesThreshold;
 	}
@@ -181,7 +181,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// <param name="context">The serialization context.</param>
 	/// <param name="syncWriter">The synchronous writer that may have unflushed bytes to consider as well.</param>
 	/// <returns><see langword="true" /> if the pipe buffers are reaching their preferred capacity; <see langword="false" /> otherwise.</returns>
-	public bool IsTimeToFlush(SerializationContext context, in MessagePackWriter syncWriter)
+	public bool IsTimeToFlush(in SerializationContext context, in MessagePackWriter syncWriter)
 	{
 		return pipeWriter.CanGetUnflushedBytes && (pipeWriter.UnflushedBytes + syncWriter.UnflushedBytes) > context.UnflushedBytesThreshold;
 	}
