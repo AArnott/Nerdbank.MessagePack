@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using PolyType.Utilities;
 
@@ -23,15 +24,29 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 	internal class DelayedConverter<T>(DelayedValue<MessagePackConverter<T>> self) : MessagePackConverter<T>
 	{
 		/// <inheritdoc/>
-		public override T? Read(ref MessagePackReader reader, SerializationContext context)
-			=> self.Result.Read(ref reader, context);
-
-		/// <inheritdoc/>
-		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
-			=> self.Result.Write(ref writer, value, context);
+		public override bool PreferAsyncSerialization => self.Result.PreferAsyncSerialization;
 
 		/// <inheritdoc/>
 		public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 			=> self.Result.GetJsonSchema(context, typeShape);
+
+		/// <inheritdoc/>
+		public override T? Read(ref MessagePackReader reader, SerializationContext context)
+			=> self.Result.Read(ref reader, context);
+
+		/// <inheritdoc/>
+		[Experimental("NBMsgPackAsync")]
+		public override ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+			=> self.Result.ReadAsync(reader, context);
+
+		/// <inheritdoc/>
+		[Experimental("NBMsgPackAsync")]
+		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+			=> self.Result.Write(ref writer, value, context);
+
+		/// <inheritdoc/>
+		[Experimental("NBMsgPackAsync")]
+		public override ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
+			=> self.Result.WriteAsync(writer, value, context);
 	}
 }
