@@ -212,6 +212,7 @@ public record struct SerializationContext
 	/// <returns>The new context for the operation.</returns>
 	internal SerializationContext Start(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
+		cancellationToken.ThrowIfCancellationRequested();
 		return this with
 		{
 			Cache = cache,
