@@ -27,33 +27,36 @@ In the @"Nerdbank.MessagePack.MessagePackConverter`1.Read*" method, use @Nerdban
 
 Custom converters are encouraged to override @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*?displayProperty=nameWithType to support the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType methods.
 
+Data types and custom converters should typically be declared as `public` so that when these data types are used by other assemblies (directly or indirectly), the type shapes required for serialization and any custom converters are accessible by those assemblies.
+
 ### Generic types
 
-Generic types may have custom converters created for them.
+Generic data types may have generic or non-generic custom converters.
 
 The converter may be non-generic and written for a specific _closed_ generic data type:
 
 ```cs
-class MyConverter : MessagePackConverter<MyType<string>>
+public class MyConverter : MessagePackConverter<MyType<string>>
 ```
 
 Or the converter may itself be generic and support an open generic data type:
 
 ```cs
-class MyConverter<T> : MessagePackConverter<MyType<T>>
+public class MyConverter<T> : MessagePackConverter<MyType<T>>
 ```
 
 You may configure your data type to use this converter as you normally would, using the open generic type syntax:
 
 ```cs
 [MessagePackConverter(typeof(MyConverter<>))]
-class MyType<T>
+public class MyType<T>
 {
     public T Value { get; set; }
 }
 ```
 
 Or you may register the converter at runtime with the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter* method, using the open generic type syntax:
+
 ```cs
 serializer.RegisterConverter(typeof(MyConverter<>));
 ```
