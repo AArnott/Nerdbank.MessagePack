@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -9,7 +10,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// Provides the raw msgpack transport intended for the <see cref="RawMessagePack"/> type.
 /// </summary>
 [SuppressMessage("Usage", "NBMsgPack032", Justification = "This converter by design has no idea what msgpack it reads or writes.")]
-internal class RawMessagePackConverter : MessagePackConverter<RawMessagePack>
+[EditorBrowsable(EditorBrowsableState.Never)]
+public class RawMessagePackConverter : MessagePackConverter<RawMessagePack>
 {
 	/// <inheritdoc/>
 	/// <remarks>

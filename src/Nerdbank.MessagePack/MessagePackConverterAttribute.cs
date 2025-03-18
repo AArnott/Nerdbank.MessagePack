@@ -9,24 +9,17 @@ namespace Nerdbank.MessagePack;
 /// A class applied to a custom data type to prescribe a custom <see cref="MessagePackConverter{T}"/>
 /// implementation to use for serialization.
 /// </summary>
+/// <param name="converterType">
+/// A type that implements <see cref="MessagePackConverter{T}"/>
+/// where <c>T</c> is a type argument matching the type to which this attribute is applied.
+/// </param>
 [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-public class MessagePackConverterAttribute : Attribute
+[AssociatedTypeAttribute(nameof(converterType))]
+public class MessagePackConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType) : Attribute
 {
-	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackConverterAttribute"/> class.
-	/// </summary>
-	/// <param name="converterType">
-	/// A type that implements <see cref="MessagePackConverter{T}"/>
-	/// where <c>T</c> is a type argument matching the type to which this attribute is applied.
-	/// </param>
-	public MessagePackConverterAttribute(Type converterType)
-	{
-		this.ConverterType = converterType;
-	}
-
 	/// <summary>
 	/// Gets the type that implements <see cref="MessagePackConverter{T}"/>.
 	/// </summary>
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-	public Type ConverterType { get; }
+	public Type ConverterType => converterType;
 }
