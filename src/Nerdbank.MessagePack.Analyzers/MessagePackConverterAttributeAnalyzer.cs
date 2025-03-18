@@ -62,7 +62,7 @@ public class MessagePackConverterAttributeAnalyzer : DiagnosticAnalyzer
 					{
 						context.ReportDiagnostic(Diagnostic.Create(InvalidConverterTypeDescriptor, GetArgumentLocation(0), appliedType.Name));
 					}
-					else if (!converterType.InstanceConstructors.Any(c => c.Parameters.IsEmpty && c.DeclaredAccessibility == Accessibility.Public))
+					else if (!converterType.OriginalDefinition.InstanceConstructors.Any(c => c.Parameters.IsEmpty && c.DeclaredAccessibility == Accessibility.Public))
 					{
 						context.ReportDiagnostic(Diagnostic.Create(ConverterMissingDefaultCtorDescriptor, GetArgumentLocation(0), appliedType.Name));
 					}

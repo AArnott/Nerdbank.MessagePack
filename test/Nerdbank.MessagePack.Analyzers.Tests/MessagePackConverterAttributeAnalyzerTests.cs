@@ -28,6 +28,28 @@ public class MessagePackConverterAttributeAnalyzerTests
 	}
 
 	[Fact]
+	public async Task NoIssues_OpenGeneric()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			[MessagePackConverter(typeof(MyTypeConverter<>))]
+			public class MyType<T>
+			{
+			}
+
+			public class MyTypeConverter<T> : MessagePackConverter<MyType<T>>
+			{
+				public override MyType<T> Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
+				public override void Write(ref MessagePackWriter writer, in MyType<T> value, SerializationContext context) => throw new System.NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task MissingPublicDefaultCtor()
 	{
 		string source = /* lang=c#-test */ """

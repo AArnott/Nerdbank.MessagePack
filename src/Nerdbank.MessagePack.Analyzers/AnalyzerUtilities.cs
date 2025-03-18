@@ -62,12 +62,43 @@ public static class AnalyzerUtilities
 		static INamedTypeSymbol TryUnbindGeneric(INamedTypeSymbol type) => type.IsGenericType && !type.IsUnboundGenericType ? type.ConstructUnboundGenericType() : type;
 	}
 
+	public static bool IsEquivalent(this ITypeSymbol left, ITypeSymbol right)
+	{
+		if (SymbolEqualityComparer.Default.Equals(left, right))
+		{
+			return true;
+		}
+
+		if (left is ITypeParameterSymbol leftParam && right is ITypeParameterSymbol rightParam &&
+			leftParam.MetadataName == rightParam.MetadataName)
+		{
+			return true;
+		}
+
+		if (left is INamedTypeSymbol { IsGenericType: true, IsUnboundGenericType: false } boundCurrent &&
+			right is INamedTypeSymbol { IsGenericType: true, IsUnboundGenericType: false } boundBaseType)
+		{
+			// Both types are bound, yet they are not equal.
+			// This may be because they contain "unique" generic type *parameters*, which we don't consider to be unique.
+			if (SymbolEqualityComparer.Default.Equals(boundCurrent.ConstructedFrom, boundBaseType.ConstructedFrom))
+			{
+				// Compare generic type arguments
+				if (boundCurrent.TypeArguments.Zip(boundBaseType.TypeArguments, static (left, right) => (left, right)).All(static pair => IsEquivalent(pair.left, pair.right)))
+				{
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	public static bool IsOrDerivedFrom(this ITypeSymbol subType, ITypeSymbol baseType)
 	{
 		ITypeSymbol? current = subType;
 		while (current != null)
 		{
-			if (SymbolEqualityComparer.Default.Equals(current, baseType))
+			if (IsEquivalent(current, baseType))
 			{
 				return true;
 			}
