@@ -42,7 +42,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <remarks>
 	/// This may be changed to a wrapping visitor implementation to implement features such as reference preservation.
 	/// </remarks>
-	internal ITypeShapeVisitor OutwardVisitor { get; set; }
+	internal TypeShapeVisitor OutwardVisitor { get; set; }
 
 	/// <inheritdoc/>
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
@@ -55,7 +55,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		if (this.owner.InternStrings && typeof(T) == typeof(string))
 		{
-			return this.owner.PreserveReferences ? ReferencePreservingInterningStringConverter : InterningStringConverter;
+			return this.owner.PreserveReferences != ReferencePreservationMode.Off ? ReferencePreservingInterningStringConverter : InterningStringConverter;
 		}
 
 		// Check if the type has a built-in converter.
@@ -130,12 +130,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
 					if (accessors.MsgPackWriters is var (serialize, serializeAsync))
 					{
-						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.PreferAsyncSerialization, accessors.ShouldSerialize, property));
+						serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.Converter, accessors.ShouldSerialize, property));
 					}
 
 					if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
 					{
-						deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.PreferAsyncSerialization));
+						deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter));
 					}
 				}
 			}
@@ -344,7 +344,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return suppressIfNoConstructorParameter && constructorParameterShape is null
 			? null
-			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter.PreferAsyncSerialization, shouldSerialize, propertyShape);
+			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter, shouldSerialize, propertyShape);
 	}
 
 	/// <inheritdoc/>
@@ -438,7 +438,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
 				return state;
 			},
-			converter.PreferAsyncSerialization);
+			converter);
 	}
 
 	/// <inheritdoc/>
@@ -635,7 +635,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> converterFactory)
 		{
 			MessagePackConverter<T> converter = (MessagePackConverter<T>)converterFactory();
-			if (this.owner.PreserveReferences)
+			if (this.owner.PreserveReferences != ReferencePreservationMode.Off)
 			{
 				converter = converter.WrapWithReferencePreservation();
 			}

@@ -148,6 +148,10 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		T value = constructor();
+		if (!typeof(T).IsValueType)
+		{
+			context.ReportObjectConstructed(value);
+		}
 
 		if (deserializable.Value.Readers is not null)
 		{
@@ -203,6 +207,10 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		T value = constructor();
+		if (!typeof(T).IsValueType)
+		{
+			context.ReportObjectConstructed(value);
+		}
 
 		if (deserializable.Value.Readers is not null)
 		{

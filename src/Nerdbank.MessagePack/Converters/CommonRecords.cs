@@ -65,10 +65,14 @@ internal record struct MapSerializableProperties<TDeclaringType>(ReadOnlyMemory<
 /// <param name="RawPropertyNameString">The entire msgpack encoding of the property name, including the string header.</param>
 /// <param name="Write">A delegate that synchronously serializes the value of the property.</param>
 /// <param name="WriteAsync">A delegate that asynchonously serializes the value of the property.</param>
-/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
+/// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
 /// <param name="ShouldSerialize"><inheritdoc cref="PropertyAccessors{TDeclaringType}.ShouldSerialize"/></param>
 /// <param name="Shape">The property shape, for use when generating schema.</param>
-internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, bool PreferAsyncSerialization, Func<TDeclaringType, bool>? ShouldSerialize, IPropertyShape Shape);
+internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, MessagePackConverter Converter, Func<TDeclaringType, bool>? ShouldSerialize, IPropertyShape Shape)
+{
+	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
+	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
+}
 
 /// <summary>
 /// A map of deserializable properties.
@@ -85,8 +89,12 @@ internal record struct MapDeserializableProperties<TDeclaringType>(SpanDictionar
 /// <param name="PropertyNameUtf8">The UTF-8 encoding of the property name.</param>
 /// <param name="Read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
 /// <param name="ReadAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
-/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
-internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync, bool PreferAsyncSerialization);
+/// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
+internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync, MessagePackConverter Converter)
+{
+	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
+	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
+}
 
 /// <summary>
 /// Encapsulates serializing accessors for a particular property of some data type.
@@ -94,18 +102,22 @@ internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadO
 /// <typeparam name="TDeclaringType">The data type that declares the property that these accessors can serialize and deserialize values for.</typeparam>
 /// <param name="MsgPackWriters">Delegates that can serialize the value of a property.</param>
 /// <param name="MsgPackReaders">Delegates that can initialize the property with a value deserialized from msgpack.</param>
-/// <param name="PreferAsyncSerialization"><inheritdoc cref="MessagePackConverter{T}.PreferAsyncSerialization"/></param>
+/// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
 /// <param name="ShouldSerialize">An optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</param>
 /// <param name="Shape">The property shape, for use with generating schema.</param>
 internal record struct PropertyAccessors<TDeclaringType>(
 	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters,
 	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? MsgPackReaders,
-	bool PreferAsyncSerialization,
+	MessagePackConverter Converter,
 	Func<TDeclaringType, bool>? ShouldSerialize,
-	IPropertyShape Shape);
+	IPropertyShape Shape)
+{
+	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
+	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
+}
 
 /// <summary>
-/// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
+/// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
 /// when serializing an object as a map.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
@@ -115,7 +127,7 @@ internal record struct PropertyAccessors<TDeclaringType>(
 internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IConstructorParameterShape> ParametersByName);
 
 /// <summary>
-/// Encapsulates the data passed through <see cref="ITypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
+/// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
 /// when serializing an object as an array.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>

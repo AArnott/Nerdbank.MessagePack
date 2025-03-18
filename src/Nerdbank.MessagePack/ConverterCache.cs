@@ -45,7 +45,7 @@ internal record class ConverterCache
 	private MultiDimensionalArrayFormat multiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested;
 #endif
 
-	private bool preserveReferences;
+	private ReferencePreservationMode preserveReferences;
 	private bool serializeEnumValuesByName;
 	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
 	private bool internStrings;
@@ -66,31 +66,14 @@ internal record class ConverterCache
 #endif
 
 	/// <summary>
-	/// Gets a value indicating whether to preserve reference equality when serializing objects.
+	/// Gets a setting that determines how references to objects are preserved during serialization and deserialization.
 	/// </summary>
-	/// <value>The default value is <see langword="false" />.</value>
-	/// <remarks>
-	/// <para>
-	/// When <see langword="false" />, if an object appears multiple times in a serialized object graph, it will be serialized at each location.
-	/// This has two outcomes: redundant data leading to larger serialized payloads and the loss of reference equality when deserialized.
-	/// This is the default behavior because it requires no msgpack extensions and is compatible with all msgpack readers.
-	/// </para>
-	/// <para>
-	/// When <see langword="true"/>, every object is serialized normally the first time it appears in the object graph.
-	/// Each subsequent type the object appears in the object graph, it is serialized as a reference to the first occurrence.
-	/// This reference requires between 3-6 bytes of overhead per reference instead of whatever the object's by-value representation would have required.
-	/// Upon deserialization, all objects that were shared across the object graph will also be shared across the deserialized object graph.
-	/// Of course there will not be reference equality between the original and deserialized objects, but the deserialized objects will have reference equality with each other.
-	/// This option utilizes a proprietary msgpack extension and can only be deserialized by libraries that understand this extension.
-	/// There is a small perf penalty for this feature, but depending on the object graph it may turn out to improve performance due to avoiding redundant serializations.
-	/// </para>
-	/// <para>
-	/// Reference cycles (where an object refers to itself or to another object that eventually refers back to it) are <em>not</em> supported in either mode.
-	/// When this property is <see langword="true" />, an exception will be thrown when a cycle is detected.
-	/// When this property is <see langword="false" />, a cycle will eventually result in a <see cref="StackOverflowException" /> being thrown.
-	/// </para>
-	/// </remarks>
-	internal bool PreserveReferences
+	/// <value>
+	/// The default value is <see cref="ReferencePreservationMode.Off" />
+	/// because it requires no msgpack extensions, is compatible with all msgpack readers,
+	/// adds no security considerations and is the most performant.
+	/// </value>
+	internal ReferencePreservationMode PreserveReferences
 	{
 		get => this.preserveReferences;
 		init
@@ -265,7 +248,7 @@ internal record class ConverterCache
 					ValueBuilderFactory = ctx =>
 					{
 						StandardVisitor standardVisitor = new StandardVisitor(this, ctx);
-						if (!this.PreserveReferences)
+						if (this.PreserveReferences == ReferencePreservationMode.Off)
 						{
 							return standardVisitor;
 						}
@@ -295,7 +278,7 @@ internal record class ConverterCache
 	{
 		Requires.NotNull(converter);
 		this.OnChangingConfiguration();
-		this.userProvidedConverterObjects[typeof(T)] = this.PreserveReferences
+		this.userProvidedConverterObjects[typeof(T)] = this.PreserveReferences != ReferencePreservationMode.Off
 			? ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation()
 			: converter;
 	}
@@ -499,7 +482,9 @@ internal record class ConverterCache
 		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverterObjects)
 		{
 			IMessagePackConverterInternal converter = (IMessagePackConverterInternal)pair.Value;
-			this.userProvidedConverterObjects[pair.Key] = this.PreserveReferences ? converter.WrapWithReferencePreservation() : converter.UnwrapReferencePreservation();
+			this.userProvidedConverterObjects[pair.Key] = this.PreserveReferences != ReferencePreservationMode.Off
+				? converter.WrapWithReferencePreservation()
+				: converter.UnwrapReferencePreservation();
 		}
 	}
 

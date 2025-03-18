@@ -35,6 +35,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
+		if (!typeof(T).IsValueType)
+		{
+			context.ReportObjectConstructed(value);
+		}
+
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
 			// The indexes we have are the keys in the map rather than indexes into the array.
@@ -353,6 +358,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
+		if (!typeof(T).IsValueType)
+		{
+			context.ReportObjectConstructed(value);
+		}
 
 		MessagePackType peekType;
 		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())

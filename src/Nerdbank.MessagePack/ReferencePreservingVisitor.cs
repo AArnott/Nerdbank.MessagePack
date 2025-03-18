@@ -7,7 +7,7 @@ namespace Nerdbank.MessagePack;
 /// A visitor that wraps the result of another visitor with a reference-preserving converter.
 /// </summary>
 /// <param name="inner">The inner visitor.</param>
-internal class ReferencePreservingVisitor(ITypeShapeVisitor inner) : TypeShapeVisitor
+internal class ReferencePreservingVisitor(TypeShapeVisitor inner) : TypeShapeVisitor
 {
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)

@@ -6,8 +6,8 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <RoslynVersion>4.13.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
-    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.24629.2</CodeAnalysisAnalyzerVersion>
-    <PolyTypeVersion>0.29.3-g4b0aeb5295</PolyTypeVersion>
+    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25076.3</CodeAnalysisAnalyzerVersion>
+    <PolyTypeVersion>0.31.1</PolyTypeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
@@ -18,14 +18,14 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.NET.StringTools" Version="17.13.9" />
-    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.13.2" />
+    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.13.61" />
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.8.8" />
-    <PackageVersion Include="Nerdbank.Streams" Version="2.11.86" />
+    <PackageVersion Include="Nerdbank.Streams" Version="2.11.90" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)" />
-    <PackageVersion Include="System.IO.Pipelines" Version="9.0.2" />
+    <PackageVersion Include="System.IO.Pipelines" Version="9.0.3" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
@@ -52,8 +52,7 @@
   <ItemGroup Label="Library.Template">
     <GlobalPackageReference Include="CSharpIsNullAnalyzer" Version="0.1.593" />
     <GlobalPackageReference Include="DotNetAnalyzers.DocumentationAnalyzers" Version="1.0.0-beta.59" />
-    <!-- The condition works around https://github.com/dotnet/sdk/issues/44951 -->
-    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.8.38-alpha" Condition="!('$(TF_BUILD)'=='true' and '$(dotnetformat)'=='true')" />
+    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.8.38-alpha" />
     <GlobalPackageReference Include="PolySharp" Version="1.15.0" />
     <GlobalPackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.556" />
   </ItemGroup>

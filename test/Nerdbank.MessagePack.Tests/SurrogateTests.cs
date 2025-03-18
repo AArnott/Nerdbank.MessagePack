@@ -38,7 +38,7 @@ public partial class SurrogateTests(ITestOutputHelper logger) : MessagePackSeria
 	[Trait("ReferencePreservation", "true")]
 	public void ReferencePreservation()
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = true };
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 		OriginalType original = new(1, 2);
 		OriginalType[]? deserializedArray = this.Roundtrip<OriginalType[], Witness>([original, original]);
 		Assert.NotNull(deserializedArray);
