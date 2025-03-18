@@ -22,7 +22,7 @@
 			"allowedVersions": "!/-g[a-f0-9]+$/"
 		},
 		{
-			"matchPackageNames": ["System.Collections.Immutable", "System.Text.Json"],
+			"matchPackageNames": ["System.Collections.Immutable", "System.Text.Json", "System.IO.Pipelines"],
 			"allowedVersions": "<9.0",
 			"groupName": "Included in .NET runtime"
 		},
