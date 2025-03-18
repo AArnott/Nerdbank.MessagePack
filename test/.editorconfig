@@ -53,6 +53,3 @@ dotnet_diagnostic.SA1401.severity = silent
 
 # SA1133: Do not combine attributes
 dotnet_diagnostic.SA1133.severity = silent
-
-# SA1202: 'public' members should come before 'internal' members
-dotnet_diagnostic.SA1202.severity = silent

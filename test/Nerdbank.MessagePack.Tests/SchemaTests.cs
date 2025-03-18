@@ -422,11 +422,11 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	}
 
 	[GenerateShape, MessagePackConverter(typeof(NonDocumentingCustomConverter))]
-	public partial class TypeWithNonDocumentingCustomConverter
+	internal partial class TypeWithNonDocumentingCustomConverter
 	{
 	}
 
-	public class NonDocumentingCustomConverter : MessagePackConverter<TypeWithNonDocumentingCustomConverter>
+	internal class NonDocumentingCustomConverter : MessagePackConverter<TypeWithNonDocumentingCustomConverter>
 	{
 		public override TypeWithNonDocumentingCustomConverter? Read(ref MessagePackReader reader, SerializationContext context)
 		{

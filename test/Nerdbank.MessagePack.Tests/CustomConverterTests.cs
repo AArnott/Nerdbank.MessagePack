@@ -119,7 +119,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 
 	[GenerateShape]
 	[MessagePackConverter(typeof(StatefulConverter))]
-	public partial record struct TypeWithStatefulConverter(int Value);
+	internal partial record struct TypeWithStatefulConverter(int Value);
 
 	[GenerateShape]
 	[TypeShape(AssociatedTypes = [typeof(TreeConverterPlus2)])]
@@ -157,7 +157,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		public override string ToString() => this.InternalProperty ?? "(null)";
 
 		[GenerateShape<string>]
-		public partial class CustomTypeConverter : MessagePackConverter<CustomType>
+		internal partial class CustomTypeConverter : MessagePackConverter<CustomType>
 		{
 			public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
 			{
@@ -314,6 +314,25 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 		}
 	}
 
+	internal class StatefulConverter : MessagePackConverter<TypeWithStatefulConverter>
+	{
+		public override TypeWithStatefulConverter Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			int multiplier = (int)context["ValueMultiplier"]!;
+			int serializedValue = reader.ReadInt32();
+			return new TypeWithStatefulConverter(serializedValue / multiplier);
+		}
+
+		public override void Write(ref MessagePackWriter writer, in TypeWithStatefulConverter value, SerializationContext context)
+		{
+			int multiplier = (int)context["ValueMultiplier"]!;
+			writer.Write(value.Value * multiplier);
+
+			// This is used by the test to validate that additions to the state dictionary do not impact callers (though it may impact callees).
+			context["SHOULDVANISH"] = new object();
+		}
+	}
+
 	[GenerateShape<string>]
 	private partial class CustomTypeConverterNonGenericTypeShapeProvider : MessagePackConverter<CustomType>
 	{
@@ -380,25 +399,6 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 			}
 
 			writer.Write(value.FruitCount);
-		}
-	}
-
-	public class StatefulConverter : MessagePackConverter<TypeWithStatefulConverter>
-	{
-		public override TypeWithStatefulConverter Read(ref MessagePackReader reader, SerializationContext context)
-		{
-			int multiplier = (int)context["ValueMultiplier"]!;
-			int serializedValue = reader.ReadInt32();
-			return new TypeWithStatefulConverter(serializedValue / multiplier);
-		}
-
-		public override void Write(ref MessagePackWriter writer, in TypeWithStatefulConverter value, SerializationContext context)
-		{
-			int multiplier = (int)context["ValueMultiplier"]!;
-			writer.Write(value.Value * multiplier);
-
-			// This is used by the test to validate that additions to the state dictionary do not impact callers (though it may impact callees).
-			context["SHOULDVANISH"] = new object();
 		}
 	}
 
