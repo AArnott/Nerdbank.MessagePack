@@ -30,13 +30,29 @@ Unity is currently limited to .NET Framework or .NET Standard 2.1 libraries.
 Some of the preferred APIs in Nerdbank.MessagePack are exposed uniquely to .NET 8+ projects.
 As a result, when reviewing documentation and samples for this library, be sure to look at the samples in their ".NET Standard" form.
 
-### Referencing source-generated APIs fail to resolve in Visual Studio
-
-Use of [witness classes](type-shapes.md#witness-classes) is required in unity due to its lack of a .NET 8 runtime.
-When compiled, a source generator adds a `ShapeProvider` property to these witness classes that you must provide to various APIs that require an @PolyType.ITypeShapeProvider.
-Unfortunately, unity does not arrange for the execution of these source generators when you are editing in Visual Studio, so you are likely to see errors reported in the Error List, despite the fact that Unity will succeed at compiling your code.
-
 ### Use of generic attributes
 
 The [UnityRoslynUpdater README](https://github.com/DaZombieKiller/UnityRoslynUpdater?tab=readme-ov-file#c-11) warns against using generic attributes or your game will crash.
 This warning does not apply for uses of the @PolyType.GenerateShapeAttribute`1 attribute because the attribute is never included in your compiled assembly.
+
+### PolyType name collisions
+
+If you encounter a compilation error suc as the following:
+
+> error CS0234: The type or namespace name 'ptSubject' does not exist in the namespace 'PolyType'"
+
+Resolve it by taking the following steps:
+
+1. Turn off "Auto Reference" for the conflicting assemblies.
+   1. Within the Unity Editor, navigate to the Assets\Packages\PolyType.*\lib\libstandard2.x folder in your Project.
+   1. Select the PolyType.dll file.
+   1. Within the Inspector, uncheck the "Auto Reference" option. Click Apply.
+   ![](../images/TurnOffAutoReference.png)
+   1. Repeat these steps to turn off Auto Reference from Assets\Packages\Nerdbank.MessagePack.*\lib\netstandard2.x as well.
+1. Manually reference these two assemblies from your code.
+   1. Within the Unity editor, create an Assembly Definition or select your existing one.
+   1. In the Inspector, check the "Override References" option.
+   1. Under Assembly References, click the Add button. Select the PolyType.dll assembly.
+   1. Repeat the prior step, this time selecting to add a reference to the Nerdbank.MessagePack.dll.
+   ![](../images/ReferencePolyTypeInAssemblyDefinition.png)
+   1. Scroll down as necessary in the Inspector and click Apply.
