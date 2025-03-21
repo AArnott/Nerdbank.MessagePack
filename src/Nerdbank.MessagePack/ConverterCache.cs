@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft;
@@ -13,18 +12,24 @@ namespace Nerdbank.MessagePack;
 /// Tracks all inputs to converter construction and caches the results of construction itself.
 /// </summary>
 /// <remarks>
+/// <para>
+/// This type is <em>not</em> thread-safe for adding user-specified converters, which should be done
+/// while initializing the object.
+/// </para>
+/// <para>
 /// This type offers something of an information barrier to converter construction.
 /// The <see cref="StandardVisitor"/> only gets a reference to this object,
 /// and this object does <em>not</em> have a reference to <see cref="MessagePackSerializer"/>.
 /// This ensures that properties on <see cref="MessagePackSerializer"/> cannot serve as inputs to the converters.
 /// Thus, the only properties that should reset the <see cref="cachedConverters"/> are those declared on this type.
+/// </para>
 /// </remarks>
 internal record class ConverterCache
 {
 	/// <summary>
 	/// A mapping of data types to their custom converters that were registered at runtime.
 	/// </summary>
-	private readonly ConcurrentDictionary<Type, object> userProvidedConverterObjects = new();
+	private readonly Dictionary<Type, object> userProvidedConverterObjects = new();
 
 	/// <summary>
 	/// A collection of user provided converter factories that were registered at runtime.
@@ -34,9 +39,9 @@ internal record class ConverterCache
 	/// <summary>
 	/// A mapping of data types to their custom converter types that were registered at runtime.
 	/// </summary>
-	private readonly ConcurrentDictionary<Type, Type> userProvidedConverterTypes = new();
+	private readonly Dictionary<Type, Type> userProvidedConverterTypes = new();
 
-	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
+	private readonly Dictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
 
 	/// <summary>
 	/// An optimization that avoids the dictionary lookup to start serialization

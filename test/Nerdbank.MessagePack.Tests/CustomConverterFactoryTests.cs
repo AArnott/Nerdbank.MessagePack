@@ -5,6 +5,12 @@ using System.Reflection;
 
 public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
+	[RpcMarshaled, GenerateShape]
+	internal partial interface IMarshaledInterface
+	{
+		Task DoSomethingAsync();
+	}
+
 	[Fact]
 	public void CustomUnionSerializer()
 	{
@@ -41,12 +47,6 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 
 	[GenerateShape, TypeShape(Kind = TypeShapeKind.None)]
 	internal partial class B : A;
-
-	[RpcMarshaled, GenerateShape]
-	internal partial interface IMarshaledInterface
-	{
-		Task DoSomethingAsync();
-	}
 
 	internal class MarshaledObject : IMarshaledInterface
 	{
@@ -115,7 +115,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 		}
 	}
 
-	class CustomUnionConverter<T> : MessagePackConverter<T>
+	private class CustomUnionConverter<T> : MessagePackConverter<T>
 	{
 		public override T? Read(ref MessagePackReader reader, SerializationContext context)
 		{
