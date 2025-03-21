@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft;
@@ -29,7 +30,7 @@ internal record class ConverterCache
 	/// <summary>
 	/// A mapping of data types to their custom converters that were registered at runtime.
 	/// </summary>
-	private readonly Dictionary<Type, object> userProvidedConverterObjects = new();
+	private readonly ConcurrentDictionary<Type, object> userProvidedConverterObjects = new();
 
 	/// <summary>
 	/// A collection of user provided converter factories that were registered at runtime.
@@ -39,9 +40,9 @@ internal record class ConverterCache
 	/// <summary>
 	/// A mapping of data types to their custom converter types that were registered at runtime.
 	/// </summary>
-	private readonly Dictionary<Type, Type> userProvidedConverterTypes = new();
+	private readonly ConcurrentDictionary<Type, Type> userProvidedConverterTypes = new();
 
-	private readonly Dictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
+	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
 
 	/// <summary>
 	/// An optimization that avoids the dictionary lookup to start serialization
@@ -449,7 +450,7 @@ internal record class ConverterCache
 		{
 			if (factory.CreateConverter<T>() is MessagePackConverter<T> factoryConverter)
 			{
-				converter = factoryConverter;
+				converter = this.PreserveReferences == ReferencePreservationMode.Off ? factoryConverter : factoryConverter.WrapWithReferencePreservation();
 				return true;
 			}
 		}

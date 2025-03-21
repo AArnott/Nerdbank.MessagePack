@@ -39,6 +39,23 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 		Assert.IsType<MarshaledInterfaceProxy>(proxy);
 	}
 
+	[Fact]
+	[Trait("ReferencePreservation", "true")]
+	public void FactoryWithReferencePreservation()
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
+		this.Serializer.RegisterConverterFactory(new CustomUnionConverterFactory());
+
+		A a = new A();
+		A[] array = [a, a];
+
+		A[]? deserialized = this.Roundtrip<A[], Witness>(array);
+
+		Assert.NotNull(deserialized);
+		Assert.Same(deserialized[0], deserialized[1]);
+		Assert.True(deserialized[0].CustomSerialized);
+	}
+
 	[GenerateShape, TypeShape(Kind = TypeShapeKind.None)]
 	internal partial class A
 	{
@@ -145,4 +162,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 			writer.Write(value.GetType().Name);
 		}
 	}
+
+	[GenerateShape<A[]>]
+	private partial class Witness;
 }
