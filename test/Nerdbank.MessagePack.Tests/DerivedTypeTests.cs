@@ -39,7 +39,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	{
 		DerivedTypeMapping<BaseClass> mapping = new();
 		mapping.Add<BaseClass>(3, Witness.ShapeProvider);
-		this.Serializer.RegisterDerivedTypes(mapping);
+		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
 		BaseClass? result = this.Roundtrip(new BaseClass());
 
@@ -156,7 +156,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 			mapping.Add<DerivedA>(1, Witness.ShapeProvider);
 			mapping.Add<DerivedAA>(2, Witness.ShapeProvider);
 			mapping.Add<DerivedB>(3, Witness.ShapeProvider);
-			this.Serializer.RegisterDerivedTypes(mapping);
+			this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 		}
 
 		Assert.IsType<DerivedA>(this.Roundtrip<BaseClass>(new DerivedAUnknown()));
@@ -211,7 +211,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.ShapeProvider);
 		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.ShapeProvider);
 #endif
-		this.Serializer.RegisterDerivedTypes(mapping);
+		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredBase());
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
@@ -229,7 +229,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.ShapeProvider);
 		mapping.Add<DynamicallyRegisteredDerivedB>("B", Witness.ShapeProvider);
 #endif
-		this.Serializer.RegisterDerivedTypes(mapping);
+		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredBase());
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
@@ -241,7 +241,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	{
 		DerivedTypeMapping<BaseClass> mapping = new();
 		mapping.Add<DerivedB>(1, Witness.ShapeProvider);
-		this.Serializer.RegisterDerivedTypes(mapping);
+		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
 		// Verify that the base type has just one header.
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<BaseClass>(new BaseClass { BaseClassProperty = 5 });
@@ -267,7 +267,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	public void RuntimeRegistration_EmptyMapping()
 	{
 		DerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
-		this.Serializer.RegisterDerivedTypes(mapping);
+		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal(2, reader.ReadArrayHeader());

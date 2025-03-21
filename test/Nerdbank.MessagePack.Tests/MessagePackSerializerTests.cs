@@ -262,7 +262,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void CustomConverterVsBuiltIn_TopLevel()
 	{
-		this.Serializer.RegisterConverter(new CustomStringConverter());
+		this.Serializer = this.Serializer with { Converters = [new CustomStringConverter()] };
 		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello", TestContext.Current.CancellationToken);
 		this.LogMsgPack(new(msgpack));
 		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack, TestContext.Current.CancellationToken));
@@ -271,7 +271,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[Fact]
 	public void CustomConverterVsBuiltIn_SubLevel()
 	{
-		this.Serializer.RegisterConverter(new CustomStringConverter());
+		this.Serializer = this.Serializer with { Converters = [new CustomStringConverter()] };
 		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0), TestContext.Current.CancellationToken);
 		this.LogMsgPack(new(msgpack));
 		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack, TestContext.Current.CancellationToken)?.AString);

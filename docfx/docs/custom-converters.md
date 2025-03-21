@@ -55,10 +55,10 @@ public class MyType<T>
 }
 ```
 
-Or you may register the converter at runtime with the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter* method, using the open generic type syntax:
+Or you may register the converter at runtime with the @Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes?displayProperty=nameWithType collection, using the open generic type syntax:
 
 ```cs
-serializer.RegisterConverter(typeof(MyConverter<>));
+serializer = serializer with { ConverterTypes = [typeof(MyConverter<>)] };
 ```
 
 ### Security considerations
@@ -222,9 +222,9 @@ The generic converter will be constructed using the same list of generic type ar
 
 ### Runtime registration
 
-For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverter*.
+For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.Converters property.
 
-[!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByRegister)]
+[!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterRegisteredAtRuntime)]
 
 Runtime registration of open generic converters (i.e. converters that themselves are generic types) can either be as live objects (which necessarily locks the converters down to just one closed generic type) or you can register the converter's open generic type itself, in which case the converter will be activated on-demand when an object graph that carries an instance of the generic data type needs to be serialized.
 
@@ -232,7 +232,7 @@ Runtime registration of open generic converters (i.e. converters that themselves
 
 When you have a converter that must be applied to many (possibly unrelated) types, you can define it as an open generic class and define a converter factory for it by implementing an @Nerdbank.MessagePack.IMessagePackConverterFactory.
 A converter factory is consulted for any data type that requires a converter and has the option to return a matching converter.
-You register your converter factory using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverterFactory* method.
+You register your converter factory using the @Nerdbank.MessagePack.MessagePackSerializer.ConverterFactories property.
 
 In the following example, a converter operates on arbitrary data types by serializing only a handle to them instead of the data itself.
 The converter factory applies this novel converter for any type that has a particular attribute applied.

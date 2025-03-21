@@ -144,13 +144,13 @@ namespace RuntimeSubTypes
 
     class SerializationConfigurator
     {
-        internal void ConfigureAnimalsMapping(MessagePackSerializer serializer)
+        internal MessagePackSerializer ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
             DerivedTypeMapping<Animal> mapping = new();
             mapping.Add<Horse>(1);
             mapping.Add<Cow>(2);
 
-            serializer.RegisterDerivedTypes(mapping);
+            return serializer with { DerivedTypeMappings = [.. serializer.DerivedTypeMappings, mapping] };
         }
     }
     #endregion
@@ -170,13 +170,13 @@ namespace RuntimeSubTypes
 
     class SerializationConfigurator
     {
-        internal void ConfigureAnimalsMapping(MessagePackSerializer serializer)
+        internal MessagePackSerializer ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
             DerivedTypeMapping<Animal> mapping = new();
             mapping.Add<Horse>(1, Witness.ShapeProvider);
             mapping.Add<Cow>(2, Witness.ShapeProvider);
 
-            serializer.RegisterDerivedTypes(mapping);
+            return serializer with { DerivedTypeMappings = [.. serializer.DerivedTypeMappings, mapping] };
         }
     }
     #endregion
