@@ -3,42 +3,65 @@
 
 using System.Reflection;
 
-public class CustomConverterFactoryTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
 {
 	[Fact]
 	public void CustomUnionSerializer()
 	{
 		this.Serializer.RegisterConverterFactory(new CustomUnionConverterFactory());
+
+		A? a = this.Roundtrip(new A());
+		Assert.NotNull(a);
+		Assert.True(a.CustomSerialized);
+
+		A? bAsA = this.Roundtrip<A>(new B());
+		Assert.IsType<B>(bAsA);
+		Assert.True(bAsA.CustomSerialized);
+
+		B? bAsB = this.Roundtrip(new B());
+		Assert.IsType<B>(bAsB);
+		Assert.True(bAsB.CustomSerialized);
 	}
 
 	[Fact]
 	public void MarshaledInterfaceSerializer()
 	{
 		this.Serializer.RegisterConverterFactory(new MarshaledObjectConverterFactory());
+
+		MarshaledObject obj = new();
+		IMarshaledInterface? proxy = this.Roundtrip<IMarshaledInterface>(obj);
+		Assert.IsType<MarshaledInterfaceProxy>(proxy);
 	}
 
-	internal class A;
+	[GenerateShape, TypeShape(Kind = TypeShapeKind.None)]
+	internal partial class A
+	{
+		public bool CustomSerialized { get; set; }
+	}
 
-	internal class B : A;
+	[GenerateShape, TypeShape(Kind = TypeShapeKind.None)]
+	internal partial class B : A;
 
-	internal class C : A;
-
-	[RpcMarshaled]
-	internal interface IMarshaledInterface
+	[RpcMarshaled, GenerateShape]
+	internal partial interface IMarshaledInterface
 	{
 		Task DoSomethingAsync();
 	}
 
-	[RpcMarshaled]
-	internal interface IMarshaledInterface2
+	internal class MarshaledObject : IMarshaledInterface
 	{
-		Task DoSomethingAsync();
+		public Task DoSomethingAsync() => throw new NotImplementedException();
+	}
+
+	internal class MarshaledInterfaceProxy : IMarshaledInterface
+	{
+		public Task DoSomethingAsync() => throw new NotImplementedException();
 	}
 
 	[AttributeUsage(AttributeTargets.Interface)]
 	internal class RpcMarshaledAttribute : Attribute;
 
-	internal class MarshaledObjectConverterFactory : IConverterFactory
+	internal class MarshaledObjectConverterFactory : IMessagePackConverterFactory
 	{
 		public MessagePackConverter<T>? CreateConverter<T>()
 		{
@@ -55,16 +78,31 @@ public class CustomConverterFactoryTests(ITestOutputHelper logger) : MessagePack
 	{
 		public override T? Read(ref MessagePackReader reader, SerializationContext context)
 		{
-			throw new NotImplementedException();
+			if (reader.TryReadNil())
+			{
+				return default;
+			}
+
+			return reader.ReadString() switch
+			{
+				nameof(IMarshaledInterface) => (T)(object)new MarshaledInterfaceProxy(),
+				_ => throw new NotImplementedException(),
+			};
 		}
 
 		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
 		{
-			throw new NotImplementedException();
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.Write(typeof(T).Name);
 		}
 	}
 
-	internal class CustomUnionConverterFactory : IConverterFactory
+	internal class CustomUnionConverterFactory : IMessagePackConverterFactory
 	{
 		public MessagePackConverter<T>? CreateConverter<T>()
 		{
@@ -86,13 +124,14 @@ public class CustomConverterFactoryTests(ITestOutputHelper logger) : MessagePack
 				return default;
 			}
 
-			return reader.ReadString() switch
+			A result = reader.ReadString() switch
 			{
-				"A" => (T)(object)new A(),
-				"B" => (T)(object)new B(),
-				"C" => (T)(object)new C(),
+				"A" => new A(),
+				"B" => new B(),
 				_ => throw new InvalidOperationException("Unknown type"),
 			};
+			result.CustomSerialized = true;
+			return (T)(object)result;
 		}
 
 		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)

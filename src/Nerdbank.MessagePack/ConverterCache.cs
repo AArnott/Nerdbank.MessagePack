@@ -27,6 +27,11 @@ internal record class ConverterCache
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverterObjects = new();
 
 	/// <summary>
+	/// A collection of user provided converter factories that were registered at runtime.
+	/// </summary>
+	private readonly List<IMessagePackConverterFactory> userProvidedConverterFactories = [];
+
+	/// <summary>
 	/// A mapping of data types to their custom converter types that were registered at runtime.
 	/// </summary>
 	private readonly ConcurrentDictionary<Type, Type> userProvidedConverterTypes = new();
@@ -284,6 +289,22 @@ internal record class ConverterCache
 	}
 
 	/// <summary>
+	/// Registers a converter factory.
+	/// </summary>
+	/// <param name="factory">The converter factory.</param>
+	/// <remarks>
+	/// Converters registered for specific types take precedence over those registered via factories.
+	/// Factories are consulted in the order they are added, such that the first factory registered
+	/// gets the first opportunity to create a converter for a given type.
+	/// </remarks>
+	internal void RegisterConverterFactory(IMessagePackConverterFactory factory)
+	{
+		Requires.NotNull(factory);
+		this.OnChangingConfiguration();
+		this.userProvidedConverterFactories.Add(factory);
+	}
+
+	/// <summary>
 	/// Registers a converter for use with this serializer.
 	/// </summary>
 	/// <param name="converterType">
@@ -416,6 +437,15 @@ internal record class ConverterCache
 			else
 			{
 				throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {typeShape.Type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
+			}
+		}
+
+		foreach (IMessagePackConverterFactory factory in this.userProvidedConverterFactories)
+		{
+			if (factory.CreateConverter<T>() is MessagePackConverter<T> factoryConverter)
+			{
+				converter = factoryConverter;
+				return true;
 			}
 		}
 
