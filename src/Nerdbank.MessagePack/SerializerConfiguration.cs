@@ -78,7 +78,7 @@ internal record SerializerConfiguration
 	}
 
 	/// <summary>
-	/// Gets an array of <see cref="DerivedTypeMapping{TBase}"/> objects that add runtime insight into what derived
+	/// Gets an array of <see cref="DerivedShapeMapping{TBase}"/> objects that add runtime insight into what derived
 	/// types may appear in the serialized data for a given base type.
 	/// </summary>
 	public DerivedTypeMappingCollection DerivedTypeMappings

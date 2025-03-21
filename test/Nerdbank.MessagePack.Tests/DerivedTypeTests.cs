@@ -37,7 +37,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	[Fact]
 	public void BaseTypeExplicitIdentifier_RuntimeMapping()
 	{
-		DerivedTypeMapping<BaseClass> mapping = new();
+		DerivedShapeMapping<BaseClass> mapping = new();
 		mapping.Add<BaseClass>(3, Witness.ShapeProvider);
 		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
@@ -152,7 +152,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	{
 		if (runtimeMapping)
 		{
-			DerivedTypeMapping<BaseClass> mapping = new();
+			DerivedShapeMapping<BaseClass> mapping = new();
 			mapping.Add<DerivedA>(1, Witness.ShapeProvider);
 			mapping.Add<DerivedAA>(2, Witness.ShapeProvider);
 			mapping.Add<DerivedB>(3, Witness.ShapeProvider);
@@ -203,7 +203,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	[Fact]
 	public void RuntimeRegistration_Integers()
 	{
-		DerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
 #if NET
 		mapping.Add<DynamicallyRegisteredDerivedA>(1);
 		mapping.Add<DynamicallyRegisteredDerivedB>(2);
@@ -221,7 +221,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	[Fact]
 	public void RuntimeRegistration_Strings()
 	{
-		DerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
 #if NET
 		mapping.Add<DynamicallyRegisteredDerivedA>("A");
 		mapping.Add<DynamicallyRegisteredDerivedB>("B");
@@ -239,7 +239,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	[Fact]
 	public void RuntimeRegistration_OverridesStatic()
 	{
-		DerivedTypeMapping<BaseClass> mapping = new();
+		DerivedShapeMapping<BaseClass> mapping = new();
 		mapping.Add<DerivedB>(1, Witness.ShapeProvider);
 		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
@@ -266,7 +266,7 @@ public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSer
 	[Fact]
 	public void RuntimeRegistration_EmptyMapping()
 	{
-		DerivedTypeMapping<DynamicallyRegisteredBase> mapping = new();
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
 		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DynamicallyRegisteredBase());
 		MessagePackReader reader = new(msgpack);

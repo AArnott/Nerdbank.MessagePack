@@ -6,17 +6,17 @@ using System.Collections.Frozen;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A non-generic abstract base class for <see cref="DerivedTypeMapping{TBase}"/>.
+/// A non-generic abstract base class for <see cref="DerivedShapeMapping{TBase}"/>.
 /// </summary>
 /// <remarks>
-/// All users of this class should create an instance of the generic derived <see cref="DerivedTypeMapping{TBase}"/> class instead.
+/// All users of this class should create an instance of the generic derived <see cref="DerivedShapeMapping{TBase}"/> class instead.
 /// </remarks>
 public abstract class DerivedTypeMapping : IDerivedTypeMapping
 {
 	/// <summary>
 	/// Gets the base union type.
 	/// </summary>
-	internal abstract Type BaseType { get; }
+	public abstract Type BaseType { get; }
 
 	/// <inheritdoc/>
 	FrozenDictionary<DerivedTypeIdentifier, ITypeShape> IDerivedTypeMapping.CreateDerivedTypesMapping() => this.CreateDerivedTypesMapping();

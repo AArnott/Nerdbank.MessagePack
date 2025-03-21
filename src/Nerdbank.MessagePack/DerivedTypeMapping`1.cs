@@ -1,119 +1,47 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Frozen;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
-/// <summary>
-/// Describes a mapping between a base type and its known sub-types, along with the aliases that identify them.
-/// </summary>
-/// <typeparam name="TBase">The base type or interface that all sub-types derive from or implement.</typeparam>
-public class DerivedTypeMapping<TBase> : DerivedTypeMapping
+/// <inheritdoc cref="DerivedShapeMapping{TBase}" path="/summary"/>
+/// <inheritdoc cref="DerivedShapeMapping{TBase}" path="/typeparam"/>
+/// <param name="provider">The type shape provider to use for a type when added without an express shape or provider.</param>
+public class DerivedTypeMapping<TBase>(ITypeShapeProvider provider) : DerivedShapeMapping<TBase>
 {
-	private readonly Dictionary<DerivedTypeIdentifier, ITypeShape> map = new();
-	private readonly HashSet<Type> addedTypes = new();
-
 	/// <inheritdoc/>
-	internal override Type BaseType => typeof(TBase);
+	public override Type BaseType => typeof(TBase);
 
 	/// <summary>
-	/// Adds a known sub-type to the mapping.
+	/// Gets or sets a sub-type's <see cref="Type"/> by its alias.
 	/// </summary>
-	/// <typeparam name="TDerived">The sub-type.</typeparam>
-	/// <param name="alias">The alias for the sub-type.</param>
-	/// <param name="typeShape">The shape of the sub-type.</param>
-	/// <exception cref="ArgumentException">Thrown when <paramref name="alias"/> or the <see cref="Type"/> described by <paramref name="typeShape"/> have already been added to this mapping.</exception>
-	public void Add<TDerived>(int alias, ITypeShape<TDerived> typeShape)
-		where TDerived : TBase
+	/// <param name="alias">The alias of the sub-type.</param>
+	/// <returns>The <see cref="Type"/> associated with the specified alias.</returns>
+	/// <remarks>
+	/// When adding a subtype via this indexer, the <see cref="ITypeShape{T}"/> for the <paramref name="value"/> will be obtained from the <see cref="ITypeShapeProvider"/> provided to the constructor.
+	/// </remarks>
+	public Type this[DerivedTypeIdentifier alias]
 	{
-		Requires.NotNull(typeShape);
-		this.map.Add(alias, typeShape);
-		if (!this.addedTypes.Add(typeof(TDerived)))
+		get => this.Get(alias).Type;
+		set
 		{
-			this.map.Remove(alias);
-			throw new ArgumentException($"The type {typeof(TDerived)} has already been added to the mapping.", nameof(alias));
+			Requires.Argument(typeof(TBase).IsAssignableFrom(value), nameof(value), $"Type must be assignable to {typeof(TBase).Name}.");
+			this.Set(alias, provider.Resolve(value));
 		}
 	}
 
 	/// <summary>
 	/// Adds a known sub-type to the mapping.
 	/// </summary>
-	/// <typeparam name="TDerived">The sub-type.</typeparam>
 	/// <param name="alias">The alias for the sub-type.</param>
-	/// <param name="typeShape">The shape of the sub-type.</param>
-	/// <exception cref="ArgumentException">Thrown when <paramref name="alias"/> or the <see cref="Type"/> described by <paramref name="typeShape"/> have already been added to this mapping.</exception>
-	public void Add<TDerived>(string alias, ITypeShape<TDerived> typeShape)
-		where TDerived : TBase
+	/// <param name="type">The <see cref="Type"/> of the sub-type.</param>
+	/// <remarks>
+	/// The <see cref="ITypeShape{T}"/> for the <paramref name="type"/> will be obtained from the <see cref="ITypeShapeProvider"/> provided to the constructor.
+	/// </remarks>
+	public void Add(DerivedTypeIdentifier alias, Type type)
 	{
-		Requires.NotNull(typeShape);
-		this.map.Add(alias, typeShape);
-		if (!this.addedTypes.Add(typeof(TDerived)))
-		{
-			this.map.Remove(alias);
-			throw new ArgumentException($"The type {typeof(TDerived)} has already been added to the mapping.", nameof(alias));
-		}
+		Requires.Argument(typeof(TBase).IsAssignableFrom(type), nameof(type), $"Type must be assignable to {typeof(TBase).Name}.");
+		this.Add(alias, provider.Resolve(type));
 	}
-
-	/// <inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/summary" />
-	/// <inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/exception" />
-	/// <param name="alias"><inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/param[@name='alias']" /></param>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
-	public void Add<TDerived>(int alias, ITypeShapeProvider provider)
-		where TDerived : TBase
-	{
-		Requires.NotNull(provider);
-
-		ITypeShape<TDerived>? shape = (ITypeShape<TDerived>?)provider.GetShape(typeof(TDerived));
-		Requires.Argument(shape is not null, nameof(provider), "The provider did not provide a shape for the given type.");
-		this.Add(alias, shape);
-	}
-
-	/// <inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" path="/summary" />
-	/// <inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" path="/exception" />
-	/// <param name="alias"><inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" path="/param[@name='alias']" /></param>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
-	public void Add<TDerived>(string alias, ITypeShapeProvider provider)
-		where TDerived : TBase
-	{
-		Requires.NotNull(provider);
-
-		ITypeShape<TDerived>? shape = (ITypeShape<TDerived>?)provider.GetShape(typeof(TDerived));
-		Requires.Argument(shape is not null, nameof(provider), "The provider did not provide a shape for the given type.");
-		this.Add(alias, shape);
-	}
-
-#if NET
-	/// <inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" />
-	public void Add<TDerived>(int alias)
-		where TDerived : TBase, IShapeable<TDerived> => this.Add(alias, TDerived.GetShape());
-
-	/// <inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/summary" />
-	/// <inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/exception" />
-	/// <param name="alias"><inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/param[@name='alias']" /></param>
-	/// <typeparam name="TDerived"><inheritdoc cref="Add{TDerived}(int, ITypeShape{TDerived})" path="/typeparam[@name='TDerived']"/></typeparam>
-	/// <typeparam name="TProvider">The witness class that provides a type shape for <typeparamref name="TDerived"/>.</typeparam>
-	public void Add<TDerived, TProvider>(int alias)
-		where TDerived : TBase
-		where TProvider : IShapeable<TDerived>
-		=> this.Add(alias, TProvider.GetShape());
-
-	/// <inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" />
-	public void Add<TDerived>(string alias)
-		where TDerived : TBase, IShapeable<TDerived> => this.Add(alias, TDerived.GetShape());
-
-	/// <inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" path="/summary" />
-	/// <inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" path="/exception" />
-	/// <param name="alias"><inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" path="/param[@name='alias']" /></param>
-	/// <typeparam name="TDerived"><inheritdoc cref="Add{TDerived}(string, ITypeShape{TDerived})" path="/typeparam[@name='TDerived']"/></typeparam>
-	/// <typeparam name="TProvider">The witness class that provides a type shape for <typeparamref name="TDerived"/>.</typeparam>
-	public void Add<TDerived, TProvider>(string alias)
-		where TDerived : TBase
-		where TProvider : IShapeable<TDerived>
-		=> this.Add(alias, TProvider.GetShape());
-#endif
-
-	/// <inheritdoc />
-	internal override FrozenDictionary<DerivedTypeIdentifier, ITypeShape> CreateDerivedTypesMapping() => this.map.ToFrozenDictionary();
 }

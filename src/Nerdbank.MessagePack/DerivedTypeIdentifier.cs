@@ -9,7 +9,7 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Acts as a type union between a <see cref="string"/> and an <see cref="int"/>, which are the allowed types for sub-type aliases.
 /// </summary>
-internal struct DerivedTypeIdentifier : IEquatable<DerivedTypeIdentifier>
+public struct DerivedTypeIdentifier : IEquatable<DerivedTypeIdentifier>
 {
 	private string? stringAlias;
 	private ReadOnlyMemory<byte> utfAlias;
@@ -17,7 +17,7 @@ internal struct DerivedTypeIdentifier : IEquatable<DerivedTypeIdentifier>
 	private int? intAlias;
 
 	/// <inheritdoc cref="DerivedTypeIdentifier(string)"/>
-	internal DerivedTypeIdentifier(int alias)
+	public DerivedTypeIdentifier(int alias)
 	{
 		this.intAlias = alias;
 		byte[] msgpack = new byte[5]; // maximum possible value can be encoded in this buffer.
@@ -29,7 +29,7 @@ internal struct DerivedTypeIdentifier : IEquatable<DerivedTypeIdentifier>
 	/// Initializes a new instance of the <see cref="DerivedTypeIdentifier"/> struct.
 	/// </summary>
 	/// <param name="alias">The alias.</param>
-	internal DerivedTypeIdentifier(string alias)
+	public DerivedTypeIdentifier(string alias)
 	{
 		this.stringAlias = alias;
 		StringEncoding.GetEncodedStringBytes(alias, out this.utfAlias, out this.msgpackAlias);
@@ -38,7 +38,7 @@ internal struct DerivedTypeIdentifier : IEquatable<DerivedTypeIdentifier>
 	/// <summary>
 	/// The types of values that are allowed for use as aliases.
 	/// </summary>
-	internal enum AliasType
+	public enum AliasType
 	{
 		/// <summary>
 		/// The struct is uninitialized. This constitutes an internal error.
@@ -84,8 +84,16 @@ internal struct DerivedTypeIdentifier : IEquatable<DerivedTypeIdentifier>
 	/// <exception cref="InvalidOperationException">Thrown if <see cref="Type"/> is not <see cref="AliasType.String"/>.</exception>
 	public ReadOnlyMemory<byte> Utf8Alias => this.stringAlias is not null ? this.utfAlias : throw new InvalidOperationException();
 
+	/// <summary>
+	/// Converts an <see cref="string"/> to a <see cref="DerivedTypeIdentifier"/> instance.
+	/// </summary>
+	/// <param name="alias">The value of the type alias.</param>
 	public static implicit operator DerivedTypeIdentifier(string alias) => new(alias);
 
+	/// <summary>
+	/// Converts an <see cref="int"/> to a <see cref="DerivedTypeIdentifier"/> instance.
+	/// </summary>
+	/// <param name="alias">The value of the type alias.</param>
 	public static implicit operator DerivedTypeIdentifier(int alias) => new(alias);
 
 	/// <inheritdoc/>

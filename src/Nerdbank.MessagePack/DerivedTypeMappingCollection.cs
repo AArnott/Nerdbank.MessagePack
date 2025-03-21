@@ -11,7 +11,7 @@ using Microsoft;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// An immutable collection of <see cref="DerivedTypeMapping{TBase}"/> objects.
+/// An immutable collection of <see cref="DerivedShapeMapping{TBase}"/> objects.
 /// </summary>
 /// <remarks>
 /// Since the <see cref="DerivedTypeMapping"/> object is mutable and this collection must be immutable,
@@ -34,7 +34,7 @@ public class DerivedTypeMappingCollection : IReadOnlyCollection<DerivedTypeMappi
 	private FrozenDictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>> Map { get; }
 
 	/// <summary>
-	/// Constructs a new <see cref="DerivedTypeMappingCollection"/> from a collection of <see cref="DerivedTypeMapping{TBase}"/> objects.
+	/// Constructs a new <see cref="DerivedTypeMappingCollection"/> from a collection of <see cref="DerivedShapeMapping{TBase}"/> objects.
 	/// </summary>
 	/// <param name="derivedTypeMappings">The mappings to fill the collection with.</param>
 	/// <returns>A new instance of <see cref="DerivedTypeMappingCollection"/>.</returns>
