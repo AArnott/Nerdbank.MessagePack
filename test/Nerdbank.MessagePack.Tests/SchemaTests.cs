@@ -153,7 +153,7 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[Fact]
 	public void CustomConverterWithDocumentedSchema()
 	{
-		this.Serializer.RegisterConverter(new DocumentingCustomConverter());
+		this.Serializer = this.Serializer with { Converters = [new DocumentingCustomConverter()] };
 		this.AssertSchema([new CustomType(), null]);
 	}
 
@@ -167,9 +167,11 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 	[Fact]
 	public void ReferencePreservationGraphReset()
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
-		this.Serializer.RegisterConverter(new DocumentingCustomConverter());
-		this.Serializer.RegisterConverter(new NonDocumentingCustomConverter());
+		this.Serializer = this.Serializer with
+		{
+			PreserveReferences = ReferencePreservationMode.RejectCycles,
+			Converters = [new DocumentingCustomConverter(), new NonDocumentingCustomConverter()],
+		};
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.Off };
 		JsonObject schema = this.Serializer.GetJsonSchema<CustomType>();
 		string schemaString = schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });

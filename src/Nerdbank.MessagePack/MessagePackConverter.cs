@@ -22,6 +22,11 @@ public abstract class MessagePackConverter
 	public abstract bool PreferAsyncSerialization { get; }
 
 	/// <summary>
+	/// Gets the data type that this converter can serialize and deserialize.
+	/// </summary>
+	internal abstract Type DataType { get; }
+
+	/// <summary>
 	/// Serializes an instance of an object.
 	/// </summary>
 	/// <param name="writer">The writer to use.</param>

@@ -35,6 +35,9 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 	/// <inheritdoc />
 	public override bool PreferAsyncSerialization => false;
 
+	/// <inheritdoc />
+	internal override Type DataType => typeof(T);
+
 	/// <summary>
 	/// Serializes an instance of <typeparamref name="T"/>.
 	/// </summary>

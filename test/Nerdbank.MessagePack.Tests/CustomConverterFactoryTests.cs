@@ -14,7 +14,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 	[Fact]
 	public void CustomUnionSerializer()
 	{
-		this.Serializer.RegisterConverterFactory(new CustomUnionConverterFactory());
+		this.Serializer = this.Serializer with { ConverterFactories = [new CustomUnionConverterFactory()] };
 
 		A? a = this.Roundtrip(new A());
 		Assert.NotNull(a);
@@ -32,7 +32,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 	[Fact]
 	public void MarshaledInterfaceSerializer()
 	{
-		this.Serializer.RegisterConverterFactory(new MarshaledObjectConverterFactory());
+		this.Serializer = this.Serializer with { ConverterFactories = [new MarshaledObjectConverterFactory()] };
 
 		MarshaledObject obj = new();
 		IMarshaledInterface? proxy = this.Roundtrip<IMarshaledInterface>(obj);
@@ -43,8 +43,11 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 	[Trait("ReferencePreservation", "true")]
 	public void FactoryWithReferencePreservation()
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
-		this.Serializer.RegisterConverterFactory(new CustomUnionConverterFactory());
+		this.Serializer = this.Serializer with
+		{
+			PreserveReferences = ReferencePreservationMode.RejectCycles,
+			ConverterFactories = [new CustomUnionConverterFactory()],
+		};
 
 		A a = new A();
 		A[] array = [a, a];

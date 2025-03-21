@@ -323,13 +323,13 @@ namespace CustomConverterRegistration
         }
     }
 
-    class CustomConverterByRegister
+    class CustomConverterRegisteredAtRuntime
     {
         void Main()
         {
-            #region CustomConverterByRegister
+            #region CustomConverterRegisteredAtRuntime
             MessagePackSerializer serializer = new();
-            serializer.RegisterConverter(new MyCustomTypeConverter());
+            serializer = serializer with { Converters = [new MyCustomTypeConverter()] };
             #endregion
         }
     }
@@ -626,8 +626,8 @@ namespace CustomConverterFactory
                 {
                     ["MarshalingState"] = new Dictionary<int, object?>(),
                 },
+                ConverterFactories = [new MarshalingConverterFactory("MarshalingState")],
             };
-            serializer.RegisterConverterFactory(new MarshalingConverterFactory("MarshalingState"));
 
             // Use the serializer to pass object graphs that may include objects that must retain reference identity
             // between parties.

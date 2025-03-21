@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft;
@@ -12,10 +13,10 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Tracks all inputs to converter construction and caches the results of construction itself.
 /// </summary>
+/// <param name="configuration">An immutable configuration that this cache builds upon.</param>
 /// <remarks>
 /// <para>
-/// This type is <em>not</em> thread-safe for adding user-specified converters, which should be done
-/// while initializing the object.
+/// This type is observably immutable and thread-safe.
 /// </para>
 /// <para>
 /// This type offers something of an information barrier to converter construction.
@@ -25,25 +26,8 @@ namespace Nerdbank.MessagePack;
 /// Thus, the only properties that should reset the <see cref="cachedConverters"/> are those declared on this type.
 /// </para>
 /// </remarks>
-internal record class ConverterCache
+internal class ConverterCache(SerializerConfiguration configuration)
 {
-	/// <summary>
-	/// A mapping of data types to their custom converters that were registered at runtime.
-	/// </summary>
-	private readonly ConcurrentDictionary<Type, object> userProvidedConverterObjects = new();
-
-	/// <summary>
-	/// A collection of user provided converter factories that were registered at runtime.
-	/// </summary>
-	private readonly List<IMessagePackConverterFactory> userProvidedConverterFactories = [];
-
-	/// <summary>
-	/// A mapping of data types to their custom converter types that were registered at runtime.
-	/// </summary>
-	private readonly ConcurrentDictionary<Type, Type> userProvidedConverterTypes = new();
-
-	private readonly ConcurrentDictionary<Type, IDerivedTypeMapping> userProvidedKnownSubTypes = new();
-
 	/// <summary>
 	/// An optimization that avoids the dictionary lookup to start serialization
 	/// when the caller repeatedly serializes the same type.
@@ -53,196 +37,30 @@ internal record class ConverterCache
 	private MultiProviderTypeCache? cachedConverters;
 
 #if NET
-	private MultiDimensionalArrayFormat multiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested;
+	/// <inheritdoc cref="SerializerConfiguration.MultiDimensionalArrayFormat"/>
+	internal MultiDimensionalArrayFormat MultiDimensionalArrayFormat => configuration.MultiDimensionalArrayFormat;
 #endif
 
-	private ReferencePreservationMode preserveReferences;
-	private bool serializeEnumValuesByName;
-	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
-	private bool internStrings;
-	private bool disableHardwareAcceleration;
-	private MessagePackNamingPolicy? propertyNamingPolicy;
-	private bool perfOverStability;
+	/// <inheritdoc cref="SerializerConfiguration.PreserveReferences"/>
+	internal ReferencePreservationMode PreserveReferences => configuration.PreserveReferences;
 
-#if NET
+	/// <inheritdoc cref="SerializerConfiguration.SerializeEnumValuesByName"/>
+	internal bool SerializeEnumValuesByName => configuration.SerializeEnumValuesByName;
 
-	/// <summary>
-	/// Gets the format to use when serializing multi-dimensional arrays.
-	/// </summary>
-	internal MultiDimensionalArrayFormat MultiDimensionalArrayFormat
-	{
-		get => this.multiDimensionalArrayFormat;
-		init => this.ChangeSetting(ref this.multiDimensionalArrayFormat, value);
-	}
-#endif
+	/// <inheritdoc cref="SerializerConfiguration.SerializeDefaultValues"/>
+	internal SerializeDefaultValuesPolicy SerializeDefaultValues => configuration.SerializeDefaultValues;
 
-	/// <summary>
-	/// Gets a setting that determines how references to objects are preserved during serialization and deserialization.
-	/// </summary>
-	/// <value>
-	/// The default value is <see cref="ReferencePreservationMode.Off" />
-	/// because it requires no msgpack extensions, is compatible with all msgpack readers,
-	/// adds no security considerations and is the most performant.
-	/// </value>
-	internal ReferencePreservationMode PreserveReferences
-	{
-		get => this.preserveReferences;
-		init
-		{
-			if (this.ChangeSetting(ref this.preserveReferences, value))
-			{
-				// Extra steps must be taken when this property changes because
-				// we apply this setting to user-provided converters as they are added.
-				this.ReconfigureUserProvidedConverters();
-			}
-		}
-	}
+	/// <inheritdoc cref="SerializerConfiguration.InternStrings"/>
+	internal bool InternStrings => configuration.InternStrings;
 
-	/// <summary>
-	/// Gets a value indicating whether enum values will be serialized by name rather than by their numeric value.
-	/// </summary>
-	/// <remarks>
-	/// <para>
-	/// Serializing by name is a best effort.
-	/// Most enums do not define a name for every possible value, and flags enums may have complicated string representations when multiple named enum elements are combined to form a value.
-	/// When a simple string cannot be constructed for a given value, the numeric form is used.
-	/// </para>
-	/// <para>
-	/// When deserializing enums by name, name matching is case <em>insensitive</em> unless the enum type defines multiple values with names that are only distinguished by case.
-	/// </para>
-	/// </remarks>
-	internal bool SerializeEnumValuesByName
-	{
-		get => this.serializeEnumValuesByName;
-		init => this.ChangeSetting(ref this.serializeEnumValuesByName, value);
-	}
+	/// <inheritdoc cref="SerializerConfiguration.PropertyNamingPolicy"/>
+	internal MessagePackNamingPolicy? PropertyNamingPolicy => configuration.PropertyNamingPolicy;
 
-	/// <summary>
-	/// Gets the policy concerning which properties to serialize though they are set to their default values.
-	/// </summary>
-	/// <value>The default value is <see cref="SerializeDefaultValuesPolicy.Required"/>, meaning that only required properties or properties with non-default values will be serialized.</value>
-	/// <remarks>
-	/// <para>
-	/// By default, the serializer omits properties and fields that are set to their default values when serializing objects.
-	/// This property can be used to override that behavior and serialize all properties and fields, regardless of their value.
-	/// </para>
-	/// <para>
-	/// Objects that are serialized as arrays (i.e. types that use <see cref="KeyAttribute"/> on their members),
-	/// have a limited ability to omit default values because the order of the elements in the array is significant.
-	/// See the <see cref="KeyAttribute" /> documentation for details.
-	/// </para>
-	/// <para>
-	/// Default values are assumed to be <c>default(TPropertyType)</c> except where overridden, as follows:
-	/// <list type="bullet">
-	///   <item><description>Primary constructor default parameter values. e.g. <c>record Person(int Age = 18)</c></description></item>
-	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] internal int Age { get; set; } = 18;</c></description></item>
-	/// </list>
-	/// </para>
-	/// </remarks>
-	internal SerializeDefaultValuesPolicy SerializeDefaultValues
-	{
-		get => this.serializeDefaultValues;
-		init => this.ChangeSetting(ref this.serializeDefaultValues, value);
-	}
+	/// <inheritdoc cref="SerializerConfiguration.PerfOverSchemaStability"/>
+	internal bool PerfOverSchemaStability => configuration.PerfOverSchemaStability;
 
-	/// <summary>
-	/// Gets a value indicating whether to intern strings during deserialization.
-	/// </summary>
-	/// <remarks>
-	/// <para>
-	/// String interning means that a string that appears multiple times (within a single deserialization or across many)
-	/// in the msgpack data will be deserialized as the same <see cref="string"/> instance, reducing GC pressure.
-	/// </para>
-	/// <para>
-	/// When enabled, all deserialized are retained with a weak reference, allowing them to be garbage collected
-	/// while also being reusable for future deserializations as long as they are in memory.
-	/// </para>
-	/// <para>
-	/// This feature has a positive impact on memory usage but may have a negative impact on performance due to searching
-	/// through previously deserialized strings to find a match.
-	/// If your application is performance sensitive, you should measure the impact of this feature on your application.
-	/// </para>
-	/// <para>
-	/// This feature is orthogonal and complementary to <see cref="PreserveReferences"/>.
-	/// Preserving references impacts the serialized result and can hurt interoperability if the other party is not using the same feature.
-	/// Preserving references also does not guarantee that equal strings will be reused because the original serialization may have had
-	/// multiple string objects for the same value, so deserialization would produce the same result.
-	/// Preserving references alone will never reuse strings across top-level deserialization operations either.
-	/// Interning strings however, has no impact on the serialized result and is always safe to use.
-	/// Interning strings will guarantee string objects are reused within and across deserialization operations so long as their values are equal.
-	/// The combination of the two features will ensure the most compact msgpack, and will produce faster deserialization times than string interning alone.
-	/// Combining the two features also activates special behavior to ensure that serialization only writes a string once
-	/// and references that string later in that same serialization, even if the equal strings were unique objects.
-	/// </para>
-	/// </remarks>
-	internal bool InternStrings
-	{
-		get => this.internStrings;
-		init => this.ChangeSetting(ref this.internStrings, value);
-	}
-
-	/// <summary>
-	/// Gets the transformation function to apply to property names before serializing them.
-	/// </summary>
-	/// <value>
-	/// The default value is null, indicating that property names should be persisted exactly as they are declared in .NET.
-	/// </value>
-	internal MessagePackNamingPolicy? PropertyNamingPolicy
-	{
-		get => this.propertyNamingPolicy;
-		init => this.ChangeSetting(ref this.propertyNamingPolicy, value);
-	}
-
-	/// <summary>
-	/// Gets a value indicating whether to boost performance
-	/// using methods that may compromise the stability of the serialized schema.
-	/// </summary>
-	/// <value>The default value is <see langword="false" />.</value>
-	/// <remarks>
-	/// <para>
-	/// This setting is intended for use in performance-sensitive scenarios where the serialized data
-	/// will not be stored or shared with other systems, but rather is used in a single system live data
-	/// such that the schema need not be stable between versions of the application.
-	/// </para>
-	/// <para>
-	/// Examples of behavioral changes that may occur when this setting is <see langword="true" />:
-	/// <list type="bullet">
-	/// <item>All objects are serialized with an array of their values instead of maps that include their property names.</item>
-	/// <item>Polymorphic type identifiers are always integers.</item>
-	/// </list>
-	/// </para>
-	/// <para>
-	/// In particular, the schema is liable to change when this property is <see langword="true"/> and:
-	/// <list type="bullet">
-	/// <item>Serialized members are added, removed or reordered within their declaring type.</item>
-	/// <item>A <see cref="DerivedTypeShapeAttribute"/> is removed, or inserted before the last such attribute on a given type.</item>
-	/// </list>
-	/// </para>
-	/// <para>
-	/// Changing this property (either direction) is itself liable to alter the schema of the serialized data.
-	/// </para>
-	/// <para>
-	/// Performance and schema stability can both be achieved at once by:
-	/// <list type="bullet">
-	/// <item>Using the <see cref="KeyAttribute"/> on all serialized properties.</item>
-	/// <item>Specifying <see cref="DerivedTypeShapeAttribute.Tag"/> explicitly for all polymorphic types.</item>
-	/// </list>
-	/// </para>
-	/// </remarks>
-	internal bool PerfOverSchemaStability
-	{
-		get => this.perfOverStability;
-		init => this.ChangeSetting(ref this.perfOverStability, value);
-	}
-
-	/// <summary>
-	/// Gets a value indicating whether hardware accelerated converters should be avoided.
-	/// </summary>
-	internal bool DisableHardwareAcceleration
-	{
-		get => this.disableHardwareAcceleration;
-		init => this.ChangeSetting(ref this.disableHardwareAcceleration, value);
-	}
+	/// <inheritdoc cref="SerializerConfiguration.DisableHardwareAcceleration"/>
+	internal bool DisableHardwareAcceleration => configuration.DisableHardwareAcceleration;
 
 	/// <summary>
 	/// Gets all the converters this instance knows about so far.
@@ -273,105 +91,6 @@ internal record class ConverterCache
 
 			return this.cachedConverters;
 		}
-	}
-
-	/// <summary>
-	/// Registers a converter for use with this serializer.
-	/// </summary>
-	/// <typeparam name="T">The convertible type.</typeparam>
-	/// <param name="converter">The converter.</param>
-	/// <remarks>
-	/// If a converter for the data type has already been cached, the new value takes its place.
-	/// Custom converters should be registered before serializing anything on this
-	/// instance of <see cref="MessagePackSerializer" />.
-	/// </remarks>
-	internal void RegisterConverter<T>(MessagePackConverter<T> converter)
-	{
-		Requires.NotNull(converter);
-		this.OnChangingConfiguration();
-		this.userProvidedConverterObjects[typeof(T)] = this.PreserveReferences != ReferencePreservationMode.Off
-			? ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation()
-			: converter;
-	}
-
-	/// <summary>
-	/// Registers a converter factory.
-	/// </summary>
-	/// <param name="factory">The converter factory.</param>
-	/// <remarks>
-	/// Converters registered for specific types take precedence over those registered via factories.
-	/// Factories are consulted in the order they are added, such that the first factory registered
-	/// gets the first opportunity to create a converter for a given type.
-	/// </remarks>
-	internal void RegisterConverterFactory(IMessagePackConverterFactory factory)
-	{
-		Requires.NotNull(factory);
-		this.OnChangingConfiguration();
-		this.userProvidedConverterFactories.Add(factory);
-	}
-
-	/// <summary>
-	/// Registers a converter for use with this serializer.
-	/// </summary>
-	/// <param name="converterType">
-	/// The type of the converter.
-	/// This class must declare a public default constructor and derive from <see cref="MessagePackConverter{T}"/>.
-	/// </param>
-	/// <remarks>
-	/// The assembly that declares the converter class should also declare a
-	/// <see cref="TypeShapeExtensionAttribute"/> that describes the link from the data type converted to the converter itself.
-	/// This is particularly important when the converter being registered is an open generic type that must be closed
-	/// using type arguments on the data type to be converted.
-	/// </remarks>
-	internal void RegisterConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType)
-	{
-		Requires.NotNull(converterType);
-		Requires.Argument(converterType.IsClass && !converterType.IsAbstract, nameof(converterType), "Type must be a concrete class.");
-
-		// Discover what the data type being converted is.
-		Type? baseType = converterType.BaseType;
-		while (baseType is not null && !(baseType.IsGenericType && typeof(MessagePackConverter<>).IsAssignableFrom(baseType.GetGenericTypeDefinition())))
-		{
-			baseType = baseType.BaseType;
-		}
-
-		Requires.Argument(baseType is not null, nameof(converterType), $"Type does not derive from MessagePackConverter<T>.");
-		Type dataType = baseType.GetGenericArguments()[0];
-
-		// If the data type has no generic type arguments, turn it into a proper generic type definition so we can find it later.
-		if (dataType.GenericTypeArguments is [{ IsGenericParameter: true }, ..])
-		{
-			dataType = dataType.GetGenericTypeDefinition();
-		}
-
-		this.OnChangingConfiguration();
-		this.userProvidedConverterTypes[dataType] = converterType;
-	}
-
-	/// <summary>
-	/// Registers a known sub-type mapping for a base type.
-	/// </summary>
-	/// <typeparam name="TBase"><inheritdoc cref="DerivedTypeMapping{TBase}" path="/typeparam[@name='TBase']" /></typeparam>
-	/// <param name="mapping">The mapping.</param>
-	/// <remarks>
-	/// <para>
-	/// This method provides a runtime dynamic alternative to the otherwise simpler but static
-	/// <see cref="DerivedTypeShapeAttribute"/>, enabling scenarios such as sub-types that are not known at compile time.
-	/// </para>
-	/// <para>
-	/// This is also the only way to force the serialized schema to <em>support</em> sub-types in the future when
-	/// no sub-types are defined yet, such that they can be added later without a schema-breaking change.
-	/// </para>
-	/// <para>
-	/// A mapping provided for a given <typeparamref name="TBase"/> will completely replace any mapping from
-	/// <see cref="DerivedTypeShapeAttribute"/> attributes that may be applied to that same <typeparamref name="TBase"/>.
-	/// </para>
-	/// </remarks>
-	internal void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping)
-	{
-		Requires.NotNull(mapping);
-		this.OnChangingConfiguration();
-		this.userProvidedKnownSubTypes[typeof(TBase)] = mapping;
 	}
 
 	/// <summary>
@@ -422,41 +141,43 @@ internal record class ConverterCache
 	/// </summary>
 	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
 	/// <param name="typeShape">The shape of the data type that requires a converter.</param>
-	/// <param name="converter">Receives the converter, if the user provided one (e.g. via <see cref="RegisterConverter{T}(MessagePackConverter{T})"/>.</param>
+	/// <param name="converter">Receives the converter, if the user provided one.</param>
 	/// <returns>A value indicating whether a customer converter exists.</returns>
 	internal bool TryGetUserDefinedConverter<T>(ITypeShape<T> typeShape, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
-		if (this.userProvidedConverterObjects.TryGetValue(typeof(T), out object? value))
+		converter = null;
+		if (!configuration.Converters.TryGetConverter(out converter))
 		{
-			converter = (MessagePackConverter<T>)value;
-			return true;
-		}
-
-		if (this.userProvidedConverterTypes.TryGetValue(typeof(T), out Type? converterType) ||
-			(typeof(T).IsGenericType && this.userProvidedConverterTypes.TryGetValue(typeof(T).GetGenericTypeDefinition(), out converterType)))
-		{
-			if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> factory)
+			if (configuration.ConverterTypes.TryGetConverterType(typeof(T), out Type? converterType) ||
+				(typeof(T).IsGenericType && configuration.ConverterTypes.TryGetConverterType(typeof(T).GetGenericTypeDefinition(), out converterType)))
 			{
-				converter = (MessagePackConverter<T>)factory();
-				return true;
+				if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> factory)
+				{
+					converter = (MessagePackConverter<T>)factory();
+				}
+				else
+				{
+					throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {typeShape.Type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
+				}
 			}
 			else
 			{
-				throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {typeShape.Type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
+				foreach (IMessagePackConverterFactory factory in configuration.ConverterFactories)
+				{
+					if ((converter = factory.CreateConverter<T>()) is not null)
+					{
+						break;
+					}
+				}
 			}
 		}
 
-		foreach (IMessagePackConverterFactory factory in this.userProvidedConverterFactories)
+		if (converter is not null && configuration.PreserveReferences != ReferencePreservationMode.Off)
 		{
-			if (factory.CreateConverter<T>() is MessagePackConverter<T> factoryConverter)
-			{
-				converter = this.PreserveReferences == ReferencePreservationMode.Off ? factoryConverter : factoryConverter.WrapWithReferencePreservation();
-				return true;
-			}
+			converter = converter.WrapWithReferencePreservation();
 		}
 
-		converter = default;
-		return false;
+		return converter is not null;
 	}
 
 	/// <summary>
@@ -467,9 +188,9 @@ internal record class ConverterCache
 	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
 	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes)
 	{
-		if (this.userProvidedKnownSubTypes.TryGetValue(baseType, out IDerivedTypeMapping? mapping))
+		if (configuration.DerivedTypeMappings.TryGetDerivedTypeMapping(baseType, out FrozenDictionary<DerivedTypeIdentifier, ITypeShape>? mapping))
 		{
-			subTypes = mapping.CreateDerivedTypesMapping();
+			subTypes = mapping;
 			return true;
 		}
 
@@ -497,42 +218,5 @@ internal record class ConverterCache
 		}
 
 		return this.PropertyNamingPolicy.ConvertName(name);
-	}
-
-	/// <summary>
-	/// Throws <see cref="InvalidOperationException"/> if this object should not be mutated any more
-	/// (because serializations have already happened, so mutating again can lead to unpredictable behavior).
-	/// </summary>
-	private void OnChangingConfiguration()
-	{
-		// Once we start building converters, they may read from any properties set on this object.
-		// If the properties on this object are changed, we necessarily must drop all cached converters and rebuild.
-		// Even if this cache had a Clear method, we do *not* use it since the cache may still be in use by other
-		// instances of this record.
-		this.cachedConverters = null;
-		this.lastConverter = null;
-	}
-
-	private void ReconfigureUserProvidedConverters()
-	{
-		foreach (KeyValuePair<Type, object> pair in this.userProvidedConverterObjects)
-		{
-			IMessagePackConverterInternal converter = (IMessagePackConverterInternal)pair.Value;
-			this.userProvidedConverterObjects[pair.Key] = this.PreserveReferences != ReferencePreservationMode.Off
-				? converter.WrapWithReferencePreservation()
-				: converter.UnwrapReferencePreservation();
-		}
-	}
-
-	private bool ChangeSetting<T>(ref T location, T value)
-	{
-		if (!EqualityComparer<T>.Default.Equals(location, value))
-		{
-			this.OnChangingConfiguration();
-			location = value;
-			return true;
-		}
-
-		return false;
 	}
 }

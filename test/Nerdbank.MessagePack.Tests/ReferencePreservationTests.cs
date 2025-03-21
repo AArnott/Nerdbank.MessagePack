@@ -55,7 +55,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void CustomConverterByRegistrationSkippedByReferencePreservation()
 	{
-		this.Serializer.RegisterConverter(new CustomTypeConverter());
+		this.Serializer = this.Serializer with { Converters = [new CustomTypeConverter()] };
 		CustomType value = new() { Message = "test" };
 		CustomType[] array = [value, value];
 		CustomType[]? deserializedArray = this.Roundtrip<CustomType[], Witness>(array);
@@ -69,8 +69,11 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void CustomConverterByRegistrationSkippedByReferencePreservation_Reconfigured()
 	{
-		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.Off };
-		this.Serializer.RegisterConverter(new CustomTypeConverter());
+		this.Serializer = this.Serializer with
+		{
+			PreserveReferences = ReferencePreservationMode.Off,
+			Converters = [new CustomTypeConverter()],
+		};
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 
 		CustomType value = new() { Message = "test" };
@@ -227,7 +230,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	{
 		DerivedTypeMapping<BaseRecord> mapping = new();
 		mapping.Add<DerivedRecordB>(1, Witness.ShapeProvider);
-		this.Serializer.RegisterDerivedTypes(mapping);
+		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
 		BaseRecord baseInstance = new BaseRecord();
 		BaseRecord derivedInstance = new DerivedRecordB();

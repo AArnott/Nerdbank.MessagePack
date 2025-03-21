@@ -3,8 +3,8 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
+using System.Collections.Immutable;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
@@ -18,91 +18,72 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This type is <em>not</em> thread-safe for adding user-specified converters, which should be done
-/// while initializing the serializer.
-/// Serializing <em>is</em> thread-safe.
+/// This type is immutable and thread-safe.
 /// </para>
 /// <para>
-/// As a <see langword="record" />, properties on this object can be mutated using the
-/// <see langword="with" /> keyword.
-/// Registered converters are kept in collections that are shared across mutations of
-/// this object, and thus persist across these mutations, and additional registrations
-/// will impact earlier revisions of this object, if they are kept.
-/// The recommended construction pattern is to create a new object, initialize its properties,
-/// and register any custom converters before exposing the object for active use.
+/// Changes to properties on this object should be performed with the record syntax <see langword="with" /> keyword.
 /// </para>
 /// </remarks>
-/// <devremarks>
-/// <para>
-/// This class may declare properties that customize how msgpack serialization is performed.
-/// These properties must use <see langword="init"/> accessors to prevent modification after construction,
-/// since there is no means to replace converters once they are created.
-/// </para>
-/// <para>
-/// If the ability to add custom converters is exposed publicly, such a method should throw once generated converters have started being generated
-/// because generated ones have already locked-in their dependencies.
-/// </para>
-/// </devremarks>
 public partial record MessagePackSerializer
 {
 #if NET
 	private const string PreferTypeConstrainedOverloads = "Use an overload that does not take an ITypeShape<T> or ITypeShapeProvider, instead constraining T : IShapeable<T>.";
 #endif
 
-	private ConverterCache converterCache = new();
+	private SerializerConfiguration configuration = SerializerConfiguration.Default;
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
 #if NET
 
-	/// <inheritdoc cref="ConverterCache.MultiDimensionalArrayFormat"/>
+	/// <inheritdoc cref="SerializerConfiguration.MultiDimensionalArrayFormat"/>
 	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat
 	{
-		get => this.converterCache.MultiDimensionalArrayFormat;
-		init => this.converterCache = this.converterCache with { MultiDimensionalArrayFormat = value };
+		get => this.configuration.MultiDimensionalArrayFormat;
+		init => this.configuration = this.configuration with { MultiDimensionalArrayFormat = value };
 	}
 
 #endif
 
-	/// <inheritdoc cref="ConverterCache.PropertyNamingPolicy"/>
+	/// <inheritdoc cref="SerializerConfiguration.PropertyNamingPolicy"/>
 	public MessagePackNamingPolicy? PropertyNamingPolicy
 	{
-		get => this.converterCache.PropertyNamingPolicy;
-		init => this.converterCache = this.converterCache with { PropertyNamingPolicy = value };
+		get => this.configuration.PropertyNamingPolicy;
+		init => this.configuration = this.configuration with { PropertyNamingPolicy = value };
 	}
 
-	/// <inheritdoc cref="ConverterCache.PerfOverSchemaStability"/>
+	/// <inheritdoc cref="SerializerConfiguration.PerfOverSchemaStability"/>
 	public bool PerfOverSchemaStability
 	{
-		get => this.converterCache.PerfOverSchemaStability;
-		init => this.converterCache = this.converterCache with { PerfOverSchemaStability = value };
+		get => this.configuration.PerfOverSchemaStability;
+		init => this.configuration = this.configuration with { PerfOverSchemaStability = value };
 	}
 
-	/// <inheritdoc cref="ConverterCache.SerializeEnumValuesByName"/>
+	/// <inheritdoc cref="SerializerConfiguration.SerializeEnumValuesByName"/>
 	public bool SerializeEnumValuesByName
 	{
-		get => this.converterCache.SerializeEnumValuesByName;
-		init => this.converterCache = this.converterCache with { SerializeEnumValuesByName = value };
+		get => this.configuration.SerializeEnumValuesByName;
+		init => this.configuration = this.configuration with { SerializeEnumValuesByName = value };
 	}
 
-	/// <inheritdoc cref="ConverterCache.SerializeDefaultValues"/>
+	/// <inheritdoc cref="SerializerConfiguration.SerializeDefaultValues"/>
 	public SerializeDefaultValuesPolicy SerializeDefaultValues
 	{
-		get => this.converterCache.SerializeDefaultValues;
-		init => this.converterCache = this.converterCache with { SerializeDefaultValues = value };
+		get => this.configuration.SerializeDefaultValues;
+		init => this.configuration = this.configuration with { SerializeDefaultValues = value };
 	}
 
-	/// <inheritdoc cref="ConverterCache.PreserveReferences"/>
+	/// <inheritdoc cref="SerializerConfiguration.PreserveReferences"/>
 	public ReferencePreservationMode PreserveReferences
 	{
-		get => this.converterCache.PreserveReferences;
-		init => this.converterCache = this.converterCache with { PreserveReferences = value };
+		get => this.configuration.PreserveReferences;
+		init => this.configuration = this.configuration with { PreserveReferences = value };
 	}
 
-	/// <inheritdoc cref="ConverterCache.InternStrings"/>
+	/// <inheritdoc cref="SerializerConfiguration.InternStrings"/>
 	public bool InternStrings
 	{
-		get => this.converterCache.InternStrings;
-		init => this.converterCache = this.converterCache with { InternStrings = value };
+		get => this.configuration.InternStrings;
+		init => this.configuration = this.configuration with { InternStrings = value };
 	}
 
 	/// <summary>
@@ -113,6 +94,34 @@ public partial record MessagePackSerializer
 	/// in order to avoid conflicts with other libraries the application is using.
 	/// </remarks>
 	public LibraryReservedMessagePackExtensionTypeCode LibraryExtensionTypeCodes { get; init; } = LibraryReservedMessagePackExtensionTypeCode.Default;
+
+	/// <inheritdoc cref="SerializerConfiguration.Converters"/>
+	public ConverterCollection Converters
+	{
+		get => this.configuration.Converters;
+		init => this.configuration = this.configuration with { Converters = value };
+	}
+
+	/// <inheritdoc cref="SerializerConfiguration.ConverterTypes"/>
+	public ConverterTypeCollection ConverterTypes
+	{
+		get => this.configuration.ConverterTypes;
+		init => this.configuration = this.configuration with { ConverterTypes = value };
+	}
+
+	/// <inheritdoc cref="SerializerConfiguration.ConverterFactories"/>
+	public ImmutableArray<IMessagePackConverterFactory> ConverterFactories
+	{
+		get => this.configuration.ConverterFactories;
+		init => this.configuration = this.configuration with { ConverterFactories = value };
+	}
+
+	/// <inheritdoc cref="SerializerConfiguration.DerivedTypeMappings"/>
+	public DerivedTypeMappingCollection DerivedTypeMappings
+	{
+		get => this.configuration.DerivedTypeMappings;
+		init => this.configuration = this.configuration with { DerivedTypeMappings = value };
+	}
 
 	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
@@ -151,22 +160,12 @@ public partial record MessagePackSerializer
 	/// </summary>
 	internal bool DisableHardwareAcceleration
 	{
-		get => this.converterCache.DisableHardwareAcceleration;
-		init => this.converterCache = this.converterCache with { DisableHardwareAcceleration = value };
+		get => this.configuration.DisableHardwareAcceleration;
+		init => this.configuration = this.configuration with { DisableHardwareAcceleration = value };
 	}
 
-	/// <inheritdoc cref="ConverterCache.RegisterConverter{T}(MessagePackConverter{T})"/>
-	public void RegisterConverter<T>(MessagePackConverter<T> converter) => this.converterCache.RegisterConverter(converter);
-
-	/// <inheritdoc cref="ConverterCache.RegisterConverter(Type)"/>
-	public void RegisterConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType)
-		=> this.converterCache.RegisterConverter(converterType);
-
-	/// <inheritdoc cref="ConverterCache.RegisterConverterFactory(IMessagePackConverterFactory)"/>
-	public void RegisterConverterFactory(IMessagePackConverterFactory factory) => this.converterCache.RegisterConverterFactory(factory);
-
-	/// <inheritdoc cref="ConverterCache.RegisterDerivedTypes{TBase}(DerivedTypeMapping{TBase})"/>
-	public void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping) => this.converterCache.RegisterDerivedTypes(mapping);
+	/// <inheritdoc cref="SerializerConfiguration.ConverterCache"/>
+	internal ConverterCache ConverterCache => this.configuration.ConverterCache;
 
 	/// <summary>
 	/// Serializes an untyped value.
@@ -188,7 +187,7 @@ public partial record MessagePackSerializer
 		try
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			this.converterCache.GetOrAddConverter(shape).WriteObject(ref writer, value, context.Value);
+			this.ConverterCache.GetOrAddConverter(shape).WriteObject(ref writer, value, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -215,7 +214,7 @@ public partial record MessagePackSerializer
 		try
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			this.converterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
+			this.ConverterCache.GetOrAddConverter(shape).Write(ref writer, value, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -240,7 +239,7 @@ public partial record MessagePackSerializer
 		try
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-			this.converterCache.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
+			this.ConverterCache.GetOrAddConverter<T>(provider).Write(ref writer, value, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -265,7 +264,7 @@ public partial record MessagePackSerializer
 		try
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			return this.converterCache.GetOrAddConverter(shape).ReadObject(ref reader, context.Value);
+			return this.ConverterCache.GetOrAddConverter(shape).ReadObject(ref reader, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -291,7 +290,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 		try
 		{
-			return this.converterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
+			return this.ConverterCache.GetOrAddConverter(shape).Read(ref reader, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -320,7 +319,7 @@ public partial record MessagePackSerializer
 		try
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
-			return this.converterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
+			return this.ConverterCache.GetOrAddConverter<T>(provider).Read(ref reader, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -351,7 +350,7 @@ public partial record MessagePackSerializer
 #pragma warning disable NBMsgPackAsync
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 			MessagePackAsyncWriter asyncWriter = new(writer);
-			await this.converterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			await this.ConverterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 			asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 		}
@@ -383,7 +382,7 @@ public partial record MessagePackSerializer
 #pragma warning disable NBMsgPackAsync
 			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 			MessagePackAsyncWriter asyncWriter = new(writer);
-			await this.converterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			await this.ConverterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 			asyncWriter.Flush();
 #pragma warning restore NBMsgPackAsync
 		}
@@ -406,7 +405,7 @@ public partial record MessagePackSerializer
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
-		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter(shape), cancellationToken);
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.ConverterCache.GetOrAddConverter(shape), cancellationToken);
 
 	/// <summary>
 	/// Deserializes a value from a <see cref="PipeReader"/>.
@@ -421,7 +420,7 @@ public partial record MessagePackSerializer
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
+		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.ConverterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte}, JsonOptions?)"/>
 	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack, JsonOptions? options = null) => ConvertToJson(new ReadOnlySequence<byte>(msgpack), options);
@@ -644,7 +643,7 @@ public partial record MessagePackSerializer
 #endif
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.converterCache.GetOrAddConverter(shape), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.ConverterCache.GetOrAddConverter(shape), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
 #if NET
@@ -652,7 +651,7 @@ public partial record MessagePackSerializer
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.converterCache.GetOrAddConverter<T>(provider), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.ConverterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
@@ -663,7 +662,7 @@ public partial record MessagePackSerializer
 #endif
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.ConverterCache.GetOrAddConverter(shape.Provider.Resolve<TElement>()), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 #if NET
@@ -671,14 +670,14 @@ public partial record MessagePackSerializer
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.converterCache.GetOrAddConverter<TElement>(provider), cancellationToken);
+		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.ConverterCache.GetOrAddConverter<TElement>(provider), cancellationToken);
 
 	/// <summary>
 	/// Gets a converter for a given type shape.
 	/// </summary>
 	/// <param name="typeShape">The type shape.</param>
 	/// <returns>A converter.</returns>
-	internal MessagePackConverter GetConverter(ITypeShape typeShape) => this.converterCache.GetOrAddConverter(typeShape);
+	internal MessagePackConverter GetConverter(ITypeShape typeShape) => this.ConverterCache.GetOrAddConverter(typeShape);
 
 	/// <summary>
 	/// Creates a new serialization context that is ready to process a serialization job.
@@ -692,7 +691,7 @@ public partial record MessagePackSerializer
 	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(provider);
-		return new(this.StartingContext.Start(this, this.converterCache, provider, cancellationToken));
+		return new(this.StartingContext.Start(this, this.ConverterCache, provider, cancellationToken));
 	}
 
 	/// <summary>

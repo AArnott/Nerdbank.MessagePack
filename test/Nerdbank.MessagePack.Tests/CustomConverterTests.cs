@@ -26,7 +26,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 
 		// Registering a converter after serialization is allowed (but will reset the converter cache).
 		TreeConverter treeConverter = new();
-		this.Serializer.RegisterConverter(treeConverter);
+		this.Serializer = this.Serializer with { Converters = [treeConverter] };
 
 		// Verify that the converter was used.
 		this.AssertRoundtrip(new Tree(3));
@@ -36,14 +36,14 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void UseNonGenericSubConverters_ShapeProvider()
 	{
-		this.Serializer.RegisterConverter(new CustomTypeConverterNonGenericTypeShapeProvider());
+		this.Serializer = this.Serializer with { Converters = [new CustomTypeConverterNonGenericTypeShapeProvider()] };
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
 	[Fact]
 	public void UseNonGenericSubConverters_Shape()
 	{
-		this.Serializer.RegisterConverter(new CustomTypeConverterNonGenericTypeShape());
+		this.Serializer = this.Serializer with { Converters = [new CustomTypeConverterNonGenericTypeShape()] };
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
@@ -76,7 +76,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void GenericDataAndGenericConverterByClosedGenericRuntimeRegistration()
 	{
-		this.Serializer.RegisterConverter(new GenericDataConverter2<string>());
+		this.Serializer = this.Serializer with { Converters = [new GenericDataConverter2<string>()] };
 		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
 		Assert.Equal("Hello, World!22", deserialized?.Value);
 	}
@@ -84,7 +84,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void GenericDataAndGenericConverterByOpenGenericRuntimeRegistration()
 	{
-		this.Serializer.RegisterConverter(typeof(GenericDataConverter2<>));
+		this.Serializer = this.Serializer with { ConverterTypes = [typeof(GenericDataConverter2<>)] };
 		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
 		Assert.Equal("Hello, World!22", deserialized?.Value);
 	}
@@ -92,7 +92,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void GenericDataAndNonGenericConverterByRuntimeRegistration()
 	{
-		this.Serializer.RegisterConverter(typeof(GenericDataConverterNonGeneric));
+		this.Serializer = this.Serializer with { ConverterTypes = [typeof(GenericDataConverterNonGeneric)] };
 		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
 		Assert.Equal("Hello, World!44", deserialized?.Value);
 
@@ -104,7 +104,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void NonGenericRuntimeRegistrationOfConverterByType()
 	{
-		this.Serializer.RegisterConverter(typeof(TreeConverterPlus2));
+		this.Serializer = this.Serializer with { ConverterTypes = [typeof(TreeConverterPlus2)] };
 		Tree? deserialized = this.Roundtrip(new Tree(3));
 		Assert.Equal(5, deserialized?.FruitCount);
 	}
@@ -112,7 +112,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public void GenericDataAndGenericConverterByOpenGenericRuntimeRegistration_NotAssociated()
 	{
-		this.Serializer.RegisterConverter(typeof(GenericDataConverter3<>));
+		this.Serializer = this.Serializer with { ConverterTypes = [typeof(GenericDataConverter3<>)] };
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" }, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.Message);
 	}
