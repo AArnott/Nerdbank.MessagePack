@@ -16,6 +16,22 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// Serializes .NET objects using the MessagePack format.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This type is <em>not</em> thread-safe for adding user-specified converters, which should be done
+/// while initializing the serializer.
+/// Serializing <em>is</em> thread-safe.
+/// </para>
+/// <para>
+/// As a <see langword="record" />, properties on this object can be mutated using the
+/// <see langword="with" /> keyword.
+/// Registered converters are kept in collections that are shared across mutations of
+/// this object, and thus persist across these mutations, and additional registrations
+/// will impact earlier revisions of this object, if they are kept.
+/// The recommended construction pattern is to create a new object, initialize its properties,
+/// and register any custom converters before exposing the object for active use.
+/// </para>
+/// </remarks>
 /// <devremarks>
 /// <para>
 /// This class may declare properties that customize how msgpack serialization is performed.
@@ -145,6 +161,9 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="ConverterCache.RegisterConverter(Type)"/>
 	public void RegisterConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType)
 		=> this.converterCache.RegisterConverter(converterType);
+
+	/// <inheritdoc cref="ConverterCache.RegisterConverterFactory(IMessagePackConverterFactory)"/>
+	public void RegisterConverterFactory(IMessagePackConverterFactory factory) => this.converterCache.RegisterConverterFactory(factory);
 
 	/// <inheritdoc cref="ConverterCache.RegisterDerivedTypes{TBase}(DerivedTypeMapping{TBase})"/>
 	public void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping) => this.converterCache.RegisterDerivedTypes(mapping);

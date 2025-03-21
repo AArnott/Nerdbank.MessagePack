@@ -13,11 +13,17 @@ namespace Nerdbank.MessagePack;
 /// Tracks all inputs to converter construction and caches the results of construction itself.
 /// </summary>
 /// <remarks>
+/// <para>
+/// This type is <em>not</em> thread-safe for adding user-specified converters, which should be done
+/// while initializing the object.
+/// </para>
+/// <para>
 /// This type offers something of an information barrier to converter construction.
 /// The <see cref="StandardVisitor"/> only gets a reference to this object,
 /// and this object does <em>not</em> have a reference to <see cref="MessagePackSerializer"/>.
 /// This ensures that properties on <see cref="MessagePackSerializer"/> cannot serve as inputs to the converters.
 /// Thus, the only properties that should reset the <see cref="cachedConverters"/> are those declared on this type.
+/// </para>
 /// </remarks>
 internal record class ConverterCache
 {
@@ -25,6 +31,11 @@ internal record class ConverterCache
 	/// A mapping of data types to their custom converters that were registered at runtime.
 	/// </summary>
 	private readonly ConcurrentDictionary<Type, object> userProvidedConverterObjects = new();
+
+	/// <summary>
+	/// A collection of user provided converter factories that were registered at runtime.
+	/// </summary>
+	private readonly List<IMessagePackConverterFactory> userProvidedConverterFactories = [];
 
 	/// <summary>
 	/// A mapping of data types to their custom converter types that were registered at runtime.
@@ -284,6 +295,22 @@ internal record class ConverterCache
 	}
 
 	/// <summary>
+	/// Registers a converter factory.
+	/// </summary>
+	/// <param name="factory">The converter factory.</param>
+	/// <remarks>
+	/// Converters registered for specific types take precedence over those registered via factories.
+	/// Factories are consulted in the order they are added, such that the first factory registered
+	/// gets the first opportunity to create a converter for a given type.
+	/// </remarks>
+	internal void RegisterConverterFactory(IMessagePackConverterFactory factory)
+	{
+		Requires.NotNull(factory);
+		this.OnChangingConfiguration();
+		this.userProvidedConverterFactories.Add(factory);
+	}
+
+	/// <summary>
 	/// Registers a converter for use with this serializer.
 	/// </summary>
 	/// <param name="converterType">
@@ -416,6 +443,15 @@ internal record class ConverterCache
 			else
 			{
 				throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {typeShape.Type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
+			}
+		}
+
+		foreach (IMessagePackConverterFactory factory in this.userProvidedConverterFactories)
+		{
+			if (factory.CreateConverter<T>() is MessagePackConverter<T> factoryConverter)
+			{
+				converter = this.PreserveReferences == ReferencePreservationMode.Off ? factoryConverter : factoryConverter.WrapWithReferencePreservation();
+				return true;
 			}
 		}
 
