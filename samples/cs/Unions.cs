@@ -146,7 +146,7 @@ namespace RuntimeSubTypes
     {
         internal MessagePackSerializer ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
-            DerivedTypeMapping<Animal> mapping = new();
+            DerivedShapeMapping<Animal> mapping = new();
             mapping.Add<Horse>(1);
             mapping.Add<Cow>(2);
 
@@ -172,9 +172,11 @@ namespace RuntimeSubTypes
     {
         internal MessagePackSerializer ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
-            DerivedTypeMapping<Animal> mapping = new();
-            mapping.Add<Horse>(1, Witness.ShapeProvider);
-            mapping.Add<Cow>(2, Witness.ShapeProvider);
+            DerivedTypeMapping<Animal> mapping = new(Witness.ShapeProvider)
+            {
+                [1] = typeof(Horse),
+                [2] = typeof(Cow),
+            };
 
             return serializer with { DerivedTypeMappings = [.. serializer.DerivedTypeMappings, mapping] };
         }

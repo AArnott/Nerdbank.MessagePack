@@ -228,7 +228,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void KnownSubTypes_DynamicRegistration()
 	{
-		DerivedTypeMapping<BaseRecord> mapping = new();
+		DerivedShapeMapping<BaseRecord> mapping = new();
 		mapping.Add<DerivedRecordB>(1, Witness.ShapeProvider);
 		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 

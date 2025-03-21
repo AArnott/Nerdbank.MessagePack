@@ -6,7 +6,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniqueAliasesRejected_Integers()
 	{
-		DerivedTypeMapping<MyBase> mapping = new();
+		DerivedShapeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1));
@@ -20,7 +20,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniqueAliasesRejected_Strings()
 	{
-		DerivedTypeMapping<MyBase> mapping = new();
+		DerivedShapeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A"));
@@ -34,7 +34,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniqueTypesRejected_Integers()
 	{
-		DerivedTypeMapping<MyBase> mapping = new();
+		DerivedShapeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
@@ -48,7 +48,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniqueTypesRejected_Strings()
 	{
-		DerivedTypeMapping<MyBase> mapping = new();
+		DerivedShapeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
@@ -62,7 +62,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniquePairsRejected_Integers()
 	{
-		DerivedTypeMapping<MyBase> mapping = new();
+		DerivedShapeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1));
@@ -76,7 +76,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void NonUniquePairsRejected_Strings()
 	{
-		DerivedTypeMapping<MyBase> mapping = new();
+		DerivedShapeMapping<MyBase> mapping = new();
 #if NET
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A"));
@@ -85,6 +85,85 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A", Witness.ShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
+	public void ObjectInitializerSyntax()
+	{
+		DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+		{
+			{ 1, typeof(MyDerivedA) },
+			{ "B", typeof(MyDerivedB) },
+		};
+		Assert.Equal(2, mapping.Count);
+		Assert.Equal(typeof(MyDerivedA), mapping[1]);
+		Assert.Equal(typeof(MyDerivedB), mapping["B"]);
+	}
+
+	[Fact]
+	public void DictionaryInitializerSyntax()
+	{
+		DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+		{
+			[1] = typeof(MyDerivedA),
+			["B"] = typeof(MyDerivedB),
+		};
+		Assert.Equal(2, mapping.Count);
+		Assert.Equal(typeof(MyDerivedA), mapping[1]);
+		Assert.Equal(typeof(MyDerivedB), mapping["B"]);
+	}
+
+	[Fact]
+	public void ObjectInitializerSyntax_NonUniqueTypes()
+	{
+		Assert.Throws<ArgumentException>(() =>
+		{
+			DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+			{
+				{ 1, typeof(MyDerivedA) },
+				{ "A", typeof(MyDerivedA) },
+			};
+		});
+	}
+
+	[Fact]
+	public void ObjectInitializerSyntax_NonUniqueAlias()
+	{
+		Assert.Throws<ArgumentException>(() =>
+		{
+			DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+			{
+				{ 1, typeof(MyDerivedA) },
+				{ 1, typeof(MyDerivedB) },
+			};
+		});
+	}
+
+	[Fact]
+	public void DictionaryInitializerSyntax_NonUniqueTypes()
+	{
+		Assert.Throws<ArgumentException>(() =>
+		{
+			DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+			{
+				[1] = typeof(MyDerivedA),
+				["B"] = typeof(MyDerivedA),
+			};
+		});
+	}
+
+	[Fact]
+	public void DictionaryInitializerSyntax_AddTypeAgainAfterImplicitRemoval()
+	{
+		DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+		{
+			[1] = typeof(MyDerivedA),   // adds MyDerivedA
+			[1] = typeof(MyDerivedB),   // implicitly removes MyDerivedA
+			["A"] = typeof(MyDerivedA), // adds MyDerivedA again
+		};
+		Assert.Equal(2, mapping.Count);
+		Assert.Equal(typeof(MyDerivedB), mapping[1]);
+		Assert.Equal(typeof(MyDerivedA), mapping["A"]);
 	}
 
 	[GenerateShape]

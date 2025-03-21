@@ -6,7 +6,7 @@ using System.Collections.Frozen;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A non-generic accessor for <see cref="DerivedTypeMapping{TBase}"/>
+/// A non-generic accessor for <see cref="DerivedShapeMapping{TBase}"/>
 /// so that multiple such mappings can be stored in a collection and retrieved later.
 /// </summary>
 internal interface IDerivedTypeMapping
