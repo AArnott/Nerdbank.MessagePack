@@ -4,6 +4,7 @@
 #pragma warning disable SA1202 // 'public' members should come before 'internal' members
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace CustomConverter
 {
@@ -562,4 +563,75 @@ namespace Stateful
             return serializer;
         }
     }
+}
+
+namespace CustomConverterFactory
+{
+    #region CustomConverterFactory
+    [AttributeUsage(AttributeTargets.Interface)]
+    class MarshalByRefAttribute : Attribute;
+
+    class MarshalingConverterFactory(object trackerKey) : IMessagePackConverterFactory
+    {
+        public MessagePackConverter<T>? CreateConverter<T>()
+        {
+            if (typeof(T).GetCustomAttribute<MarshalByRefAttribute>() is not null)
+            {
+                return new MarshalingConverter<T>(trackerKey);
+            }
+
+            return null;
+        }
+    }
+
+    class MarshalingConverter<T>(object trackerKey) : MessagePackConverter<T>
+    {
+        public override T? Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            if (reader.TryReadNil())
+            {
+                return default;
+            }
+
+            // This is for demonstration purposes of converter factories only. Do not use.
+            Dictionary<int, object?> state = (Dictionary<int, object?>?)context[trackerKey] ?? throw new InvalidOperationException();
+            int handle = reader.ReadInt32();
+            state.TryGetValue(handle, out var value);
+            return (T?)value;
+        }
+
+        public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+        {
+            if (value is null)
+            {
+                writer.WriteNil();
+                return;
+            }
+
+            // This is for demonstration purposes of converter factories only. Do not use.
+            Dictionary<int, object?> state = (Dictionary<int, object?>?)context[trackerKey] ?? throw new InvalidOperationException();
+            int handle = state.Count;
+            state.Add(handle, value);
+            writer.Write(handle);
+        }
+    }
+
+    class Program
+    {
+        static void Main()
+        {
+            MessagePackSerializer serializer = new()
+            {
+                StartingContext = new SerializationContext
+                {
+                    ["MarshalingState"] = new Dictionary<int, object?>(),
+                },
+            };
+            serializer.RegisterConverterFactory(new MarshalingConverterFactory("MarshalingState"));
+
+            // Use the serializer to pass object graphs that may include objects that must retain reference identity
+            // between parties.
+        }
+    }
+    #endregion
 }

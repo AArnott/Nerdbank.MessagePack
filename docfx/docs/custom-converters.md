@@ -227,3 +227,15 @@ For precise runtime control of where your converter is used and/or how it is ins
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByRegister)]
 
 Runtime registration of open generic converters (i.e. converters that themselves are generic types) can either be as live objects (which necessarily locks the converters down to just one closed generic type) or you can register the converter's open generic type itself, in which case the converter will be activated on-demand when an object graph that carries an instance of the generic data type needs to be serialized.
+
+## Converter factories
+
+When you have a converter that must be applied to many (possibly unrelated) types, you can define it as an open generic class and define a converter factory for it by implementing an @Nerdbank.MessagePack.IMessagePackConverterFactory.
+A converter factory is consulted for any data type that requires a converter and has the option to return a matching converter.
+You register your converter factory using the @Nerdbank.MessagePack.MessagePackSerializer.RegisterConverterFactory* method.
+
+In the following example, a converter operates on arbitrary data types by serializing only a handle to them instead of the data itself.
+The converter factory applies this novel converter for any type that has a particular attribute applied.
+This example happens to also use techniques from the [stateful converters](#stateful-converters) section.
+
+[!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterFactory)]
