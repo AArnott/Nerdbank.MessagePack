@@ -13,6 +13,11 @@ using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
+public interface IConverterFactory
+{
+	MessagePackConverter<T>? CreateConverter<T>();
+}
+
 /// <summary>
 /// Serializes .NET objects using the MessagePack format.
 /// </summary>
@@ -145,6 +150,8 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="ConverterCache.RegisterConverter(Type)"/>
 	public void RegisterConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType)
 		=> this.converterCache.RegisterConverter(converterType);
+
+	public void RegisterConverterFactory(IConverterFactory factory) => this.converterCache.RegisterConverterFactory(factory);
 
 	/// <inheritdoc cref="ConverterCache.RegisterDerivedTypes{TBase}(DerivedTypeMapping{TBase})"/>
 	public void RegisterDerivedTypes<TBase>(DerivedTypeMapping<TBase> mapping) => this.converterCache.RegisterDerivedTypes(mapping);
