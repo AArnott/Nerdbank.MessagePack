@@ -3,8 +3,10 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
+using System.Collections;
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Dynamic;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
@@ -269,6 +271,91 @@ public partial record MessagePackSerializer
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
 			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
+	}
+
+	/// <summary>
+	/// Deserializes msgpack into primitive values, maps and arrays.
+	/// </summary>
+	/// <param name="reader">The source of msgpack to decode.</param>
+	/// <returns>A value, dictionary or array.</returns>
+	/// <exception cref="NotSupportedException">Thrown if a msgpack map includes a <see langword="null" /> key.</exception>
+	/// <remarks>
+	/// <para>
+	/// The resulting object is designed to work conveniently with the C# <c>dynamic</c> type.
+	/// </para>
+	/// <para>
+	/// Maps become dynamic objects whose members are named after the keys in the maps.
+	/// When maps do not use string keys, the values are still accessible by using the indexer on the object.
+	/// All members on maps are discoverable using <see langword="foreach" />, which enumerates the keys on the object.
+	/// </para>
+	/// <para>
+	/// Keep in mind when using numeric keys that msgpack doesn't preserve integer length information.
+	/// All negative integers are decoded as <see cref="long"/>, while other integers may be decoded as either <see cref="ulong"/> or <see cref="long"/>.
+	/// </para>
+	/// <para>
+	/// All arrays are instances of <c>object?[]</c>.
+	/// </para>
+	/// <para>
+	/// Msgpack binary data is represented as a <c>byte[]</c> object.
+	/// </para>
+	/// <para>
+	/// Msgpack extensions are represented by <see cref="Extension"/> values.
+	/// </para>
+	/// </remarks>
+	/// <example>
+	/// <para>
+	/// The following snippet demonstrates a way to use this method.
+	/// </para>
+	/// <code source="../../samples/cs/PrimitiveDeserialization.cs" region="DeserializePrimitives" lang="C#" />
+	/// </example>
+	public static dynamic? DeserializeDynamic(ref MessagePackReader reader)
+	{
+		return ReadOneObject(ref reader);
+
+		static object? ReadOneObject(ref MessagePackReader reader)
+			=> reader.NextMessagePackType switch
+			{
+				MessagePackType.Nil => reader.ReadNil(),
+				MessagePackType.Integer => MessagePackCode.IsSignedInteger(reader.NextCode) ? reader.ReadInt64() : reader.ReadUInt64(),
+				MessagePackType.Boolean => reader.ReadBoolean(),
+				MessagePackType.Float => reader.NextCode == MessagePackCode.Float32 ? reader.ReadSingle() : (dynamic)reader.ReadDouble(),
+				MessagePackType.String => reader.ReadString(),
+				MessagePackType.Array => ReadArray(ref reader),
+				MessagePackType.Map => ReadMap(ref reader),
+				MessagePackType.Binary => reader.ReadBytes()!.Value.ToArray(),
+				MessagePackType.Extension => reader.ReadExtension(),
+				_ => throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented."),
+			};
+
+		static object?[] ReadArray(ref MessagePackReader reader)
+		{
+			object?[] array = new object?[reader.ReadArrayHeader()];
+			for (int i = 0; i < array.Length; i++)
+			{
+				array[i] = ReadOneObject(ref reader);
+			}
+
+			return array;
+		}
+
+		static object? ReadMap(ref MessagePackReader reader)
+		{
+			int count = reader.ReadMapHeader();
+			Dictionary<object, object?> map = new(count);
+			for (int i = 0; i < count; i++)
+			{
+				object? key = ReadOneObject(ref reader);
+				if (key is null)
+				{
+					throw new NotSupportedException("Null key in map cannot be represented in a .NET object graph.");
+				}
+
+				object? value = ReadOneObject(ref reader);
+				map[key] = value;
+			}
+
+			return new DynamicDictionary(map);
 		}
 	}
 
@@ -967,5 +1054,30 @@ public partial record MessagePackSerializer
 		/// When this value is <see langword="false"/>, a <see cref="MessagePackSerializationException"/> is thrown when <see cref="Path"/> does not lead to a sequence.
 		/// </remarks>
 		public bool EmptySequenceForUndiscoverablePath { get; init; }
+	}
+
+	private class DynamicDictionary(Dictionary<object, object?> underlying) : DynamicObject, IEnumerable
+	{
+		public override bool TryGetMember(GetMemberBinder binder, out object? result)
+		{
+			result = underlying[binder.Name];
+			return true;
+		}
+
+		public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object? result)
+		{
+			if (indexes.Length != 1)
+			{
+				result = null;
+				return false;
+			}
+
+			result = underlying[indexes[0]];
+			return true;
+		}
+
+		public override IEnumerable<string> GetDynamicMemberNames() => underlying.Keys.OfType<string>();
+
+		public IEnumerator GetEnumerator() => underlying.Keys.GetEnumerator();
 	}
 }

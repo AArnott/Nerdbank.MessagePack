@@ -1,7 +1,6 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq.Expressions;
 using Xunit.Sdk;
 
 public partial class MessagePackSerializerTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
@@ -318,6 +317,48 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	public void ClassWithIndexerCanBeSerialized()
 	{
 		this.AssertRoundtrip(new ClassWithIndexer { Member = 3 });
+	}
+
+	[Fact]
+	public void DeserializePrimitives()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(4);
+		writer.Write("Prop1");
+		writer.Write("Value1");
+		writer.Write("Prop2");
+		writer.Write(42);
+		writer.Write("deeper");
+		writer.WriteArrayHeader(3);
+		writer.Write(true);
+		writer.Write(3.5);
+		writer.Write(new Extension(15, new byte[] { 1, 2, 3 }));
+		writer.Write(45); // A non-string key.
+		writer.Write([1, 2, 3]);
+		writer.Flush();
+
+		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(seq));
+
+		MessagePackReader reader = new(seq);
+		dynamic deserialized = MessagePackSerializer.DeserializeDynamic(ref reader)!;
+		Assert.NotNull(deserialized);
+		Assert.Equal("Value1", deserialized.Prop1);
+		Assert.Equal(42, (int)deserialized.Prop2);
+		Assert.Equal(3, deserialized.deeper.Length);
+		Assert.Equal(true, deserialized.deeper[0]);
+		Assert.Equal(3.5, deserialized.deeper[1]);
+		Assert.Equal(new Extension(15, new byte[] { 1, 2, 3 }), deserialized.deeper[2]);
+		Assert.Equal(new byte[] { 1, 2, 3 }, deserialized[45UL]);
+
+		Assert.Throws<KeyNotFoundException>(() => deserialized.nonexistent);
+		Assert.Throws<KeyNotFoundException>(() => deserialized[88]);
+
+		foreach (object key in deserialized)
+		{
+			this.Logger.WriteLine($"{key.GetType().Name}: {key}");
+			this.Logger.WriteLine($"\t{deserialized[key]}");
+		}
 	}
 
 	/// <summary>

@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" />
     <PackageReference Include="Nerdbank.Streams" />
   </ItemGroup>
 
