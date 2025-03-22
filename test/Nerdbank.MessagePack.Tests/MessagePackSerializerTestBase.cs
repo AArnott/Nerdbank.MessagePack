@@ -209,6 +209,8 @@ public abstract class MessagePackSerializerTestBase
 		}
 	}
 
+	protected void LogMsgPack(ReadOnlyMemory<byte> msgPack) => this.LogMsgPack(new ReadOnlySequence<byte>(msgPack));
+
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
 	{
 		this.logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));

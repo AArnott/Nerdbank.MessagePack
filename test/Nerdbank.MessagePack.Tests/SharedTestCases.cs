@@ -20,7 +20,7 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;
 			byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
-			this.LogMsgPack(new(msgpack));
+			this.LogMsgPack(msgpack);
 
 			if (IsDeserializable(testCase))
 			{
