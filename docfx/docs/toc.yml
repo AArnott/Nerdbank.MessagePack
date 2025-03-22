@@ -11,6 +11,7 @@ items:
 - href: surrogate-types.md
 - name: Custom converters
   href: custom-converters.md
+- href: built-in-converters.md
 - name: Performance
   href: performance.md
 - name: Security

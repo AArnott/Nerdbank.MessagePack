@@ -52,6 +52,11 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _UriConverterReferencePreserving;
 	private static IMessagePackConverterInternal? _ByteArrayConverter;
 	private static IMessagePackConverterInternal? _ByteArrayConverterReferencePreserving;
+	private static IMessagePackConverterInternal? _JsonNodeConverter;
+	private static IMessagePackConverterInternal? _JsonNodeConverterReferencePreserving;
+	private static IMessagePackConverterInternal? _JsonElementConverter;
+	private static IMessagePackConverterInternal? _JsonDocumentConverter;
+	private static IMessagePackConverterInternal? _JsonDocumentConverterReferencePreserving;
 #if NET
 	private static IMessagePackConverterInternal? _RuneConverter;
 	private static IMessagePackConverterInternal? _Int128Converter;
@@ -247,6 +252,40 @@ internal static class PrimitiveConverterLookup
 			else
 			{
 				converter = (MessagePackConverter<T>)(_ByteArrayConverter ??= new ByteArrayConverter());
+			}
+
+			return true;
+		}
+
+		if (typeof(T) == typeof(System.Text.Json.Nodes.JsonNode))
+		{
+			if (referencePreserving != ReferencePreservationMode.Off)
+			{
+				converter = (MessagePackConverter<T>)(_JsonNodeConverterReferencePreserving ??= new JsonNodeConverter().WrapWithReferencePreservation());
+			}
+			else
+			{
+				converter = (MessagePackConverter<T>)(_JsonNodeConverter ??= new JsonNodeConverter());
+			}
+
+			return true;
+		}
+
+		if (typeof(T) == typeof(System.Text.Json.JsonElement))
+		{
+			converter = (MessagePackConverter<T>)(_JsonElementConverter ??= new JsonElementConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(System.Text.Json.JsonDocument))
+		{
+			if (referencePreserving != ReferencePreservationMode.Off)
+			{
+				converter = (MessagePackConverter<T>)(_JsonDocumentConverterReferencePreserving ??= new JsonDocumentConverter().WrapWithReferencePreservation());
+			}
+			else
+			{
+				converter = (MessagePackConverter<T>)(_JsonDocumentConverter ??= new JsonDocumentConverter());
 			}
 
 			return true;
