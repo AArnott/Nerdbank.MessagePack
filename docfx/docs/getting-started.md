@@ -74,3 +74,9 @@ In particular the following limitations apply:
 The exact JSON emitted, especially for the msgpack-only tokens, is subject to change in future versions of this library.
 You should *not* write programs that are expected to parse the JSON produced by this diagnostic method.
 Use a JSON serialization library if you want interop-safe, machine-parseable JSON.
+
+## Deserialize to dynamic
+
+When you do not have types declared that resemble the msgpack schema you need to deserialize, you can use the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeDynamic*?displayProperty=nameWithType method.
+
+[!code-csharp[](../../samples/cs/PrimitiveDeserialization.cs#DeserializePrimitives)]

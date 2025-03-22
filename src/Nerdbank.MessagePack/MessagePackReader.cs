@@ -132,12 +132,15 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// Reads a <see cref="MessagePackCode.Nil"/> value.
 	/// </summary>
-	public void ReadNil()
+	/// <returns>
+	/// Always a <see langword="null"/> value.
+	/// </returns>
+	public object? ReadNil()
 	{
 		switch (this.streamingReader.TryReadNil())
 		{
 			case MessagePackPrimitives.DecodeResult.Success:
-				return;
+				return null;
 			case MessagePackPrimitives.DecodeResult.TokenMismatch:
 				throw ThrowInvalidCode(this.NextCode);
 			default:
