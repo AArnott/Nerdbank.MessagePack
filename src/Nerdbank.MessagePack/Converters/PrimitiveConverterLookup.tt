@@ -84,7 +84,7 @@ internal static class PrimitiveConverterLookup
 	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
 	/// <param name="converter">Receives the converter, if one is available.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
-	internal static bool TryGetPrimitiveConverter<T>(bool referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	internal static bool TryGetPrimitiveConverter<T>(ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
 <# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
 	 if (converterGroup.Key is not null) { #>
@@ -96,7 +96,7 @@ internal static class PrimitiveConverterLookup
 <#
 	if (converter.IsRefType) {
 #>
-			if (referencePreserving)
+			if (referencePreserving != ReferencePreservationMode.Off)
 			{
 				converter = (MessagePackConverter<T>)(<#=converter.ReferencePreservingFieldName#> ??= new <#=converter.ConverterName#>().WrapWithReferencePreservation());
 			}
