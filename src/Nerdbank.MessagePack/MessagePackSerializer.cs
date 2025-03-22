@@ -3,8 +3,11 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
+using System.Collections;
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
@@ -265,6 +268,32 @@ public partial record MessagePackSerializer
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 			return this.ConverterCache.GetOrAddConverter(shape).ReadObject(ref reader, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
+	}
+
+	/// <summary>
+	/// Deserializes msgpack into primitive values, maps and arrays.
+	/// </summary>
+	/// <param name="reader">The source of msgpack to decode.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <inheritdoc cref="PrimitivesOnlyReader.Read" path="/remarks"/>
+	/// <inheritdoc cref="PrimitivesOnlyReader.Read" path="/returns"/>
+	/// <example>
+	/// <para>
+	/// The following snippet demonstrates a way to use this method.
+	/// </para>
+	/// <code source="../../samples/cs/PrimitiveDeserialization.cs" region="DeserializePrimitives" lang="C#" />
+	/// </example>
+	public dynamic? DeserializeDynamic(ref MessagePackReader reader, CancellationToken cancellationToken = default)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.ShapeProvider, cancellationToken);
+		try
+		{
+			return PrimitivesOnlyReader.Instance.Read(ref reader, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{

@@ -43,6 +43,7 @@ Although these types have built-in support, a [type shape](type-shapes.md) is al
 - @System.Text.Json.Nodes.JsonNode
 - @System.Text.Json.JsonElement
 - @System.Text.Json.JsonDocument
+- @System.Dynamic.ExpandoObject
 
 ## Other
 
