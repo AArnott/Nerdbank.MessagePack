@@ -5,7 +5,7 @@ Nerdbank.MessagePack's [union support](unions.md) includes support for native F#
 
 The following snippet shows serializing a farm with various animals, converting to JSON for inspection, and deserializing the msgpack back again.
 
-[!code-fsharp[](../../samples/fs/Program.fs#L7-L32)]
+[!code-fsharp[](../../samples/fs/Program.fs#L4-L32)]
 
 ## AOT readiness
 
