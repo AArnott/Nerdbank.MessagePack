@@ -1,7 +1,6 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq.Expressions;
 using Xunit.Sdk;
 
 public partial class MessagePackSerializerTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
@@ -264,7 +263,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		this.Serializer = this.Serializer with { Converters = [new CustomStringConverter()] };
 		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello", TestContext.Current.CancellationToken);
-		this.LogMsgPack(new(msgpack));
+		this.LogMsgPack(msgpack);
 		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack, TestContext.Current.CancellationToken));
 	}
 
@@ -273,7 +272,7 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	{
 		this.Serializer = this.Serializer with { Converters = [new CustomStringConverter()] };
 		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0), TestContext.Current.CancellationToken);
-		this.LogMsgPack(new(msgpack));
+		this.LogMsgPack(msgpack);
 		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack, TestContext.Current.CancellationToken)?.AString);
 	}
 
