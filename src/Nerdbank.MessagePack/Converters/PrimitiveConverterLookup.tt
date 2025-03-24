@@ -53,6 +53,7 @@ var convertersByType = new List<ConverterInfo>
     new ConverterInfo("System.Text.Json.JsonDocument", "JsonDocumentConverter", IsRefType: true),
     new ConverterInfo("System.Dynamic.ExpandoObject", "ExpandoObjectConverter", IsRefType: true),
     new ConverterInfo("Nerdbank.MessagePack.RawMessagePack", "RawMessagePackConverter"),
+    new ConverterInfo("Nerdbank.MessagePack.MessagePackValue", "MessagePackValueConverter"),
 };
 #>
 /// <summary>
