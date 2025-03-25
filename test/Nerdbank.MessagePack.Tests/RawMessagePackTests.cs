@@ -104,6 +104,12 @@ public partial class RawMessagePackTests(ITestOutputHelper logger) : MessagePack
 		Assert.Equal(owned.MsgPack, reowned.MsgPack);
 	}
 
+	[Fact]
+	public void ToString_Overridden()
+	{
+		Assert.Equal("<raw msgpack>", default(RawMessagePack).ToString());
+	}
+
 	[GenerateShape]
 	public partial record Envelope
 	{

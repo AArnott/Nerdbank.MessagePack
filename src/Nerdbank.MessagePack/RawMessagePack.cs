@@ -108,4 +108,7 @@ public partial struct RawMessagePack : IEquatable<RawMessagePack>
 
 		return this;
 	}
+
+	/// <inheritdoc/>
+	public override string ToString() => "<raw msgpack>";
 }
