@@ -788,8 +788,8 @@ internal static class HardwareAccelerated
 					break;
 			}
 
-			ReadOnlySequence<byte> sequence = reader.ReadRaw(count);
-			foreach (ReadOnlyMemory<byte> segment in sequence)
+			RawMessagePack sequence = reader.ReadRaw(count);
+			foreach (ReadOnlyMemory<byte> segment in sequence.MsgPack)
 			{
 				if (!MessagePackPrimitiveSpanUtility.Read(ref MemoryMarshal.GetReference(span), in MemoryMarshal.GetReference(segment.Span), segment.Length))
 				{

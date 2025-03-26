@@ -171,14 +171,14 @@ public ref partial struct MessagePackReader
 	/// <summary>
 	/// Reads a sequence of bytes without any decoding.
 	/// </summary>
-	/// <param name="length"><inheritdoc cref="MessagePackStreamingReader.TryReadRaw(long, out ReadOnlySequence{byte})" path="/param[@name='length']"/></param>
+	/// <param name="length"><inheritdoc cref="MessagePackStreamingReader.TryReadRaw(long, out RawMessagePack)" path="/param[@name='length']"/></param>
 	/// <returns>
 	/// The raw MessagePack sequence, taken as a slice from the <see cref="Sequence"/>.
 	/// The caller should copy any data that must out-live its underlying buffers.
 	/// </returns>
-	public ReadOnlySequence<byte> ReadRaw(long length)
+	public RawMessagePack ReadRaw(long length)
 	{
-		switch (this.streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> result))
+		switch (this.streamingReader.TryReadRaw(length, out RawMessagePack result))
 		{
 			case MessagePackPrimitives.DecodeResult.Success:
 				return result;
@@ -201,11 +201,11 @@ public ref partial struct MessagePackReader
 	/// <remarks>
 	/// The entire structure is read, including content of maps or arrays, or any other type with payloads.
 	/// </remarks>
-	public ReadOnlySequence<byte> ReadRaw(SerializationContext context)
+	public RawMessagePack ReadRaw(SerializationContext context)
 	{
 		SequencePosition initialPosition = this.Position;
 		this.Skip(context);
-		return this.Sequence.Slice(initialPosition, this.Position);
+		return (RawMessagePack)this.Sequence.Slice(initialPosition, this.Position);
 	}
 
 	/// <summary>

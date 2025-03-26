@@ -552,11 +552,11 @@ public ref partial struct MessagePackStreamingReader
 	/// <param name="length">The number of bytes to read. This should always be the length of exactly one msgpack structure.</param>
 	/// <param name="rawMsgPack">The bytes if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
-	public DecodeResult TryReadRaw(long length, out ReadOnlySequence<byte> rawMsgPack)
+	public DecodeResult TryReadRaw(long length, out RawMessagePack rawMsgPack)
 	{
 		if (this.reader.Remaining >= length)
 		{
-			rawMsgPack = this.reader.Sequence.Slice(this.reader.Position, length);
+			rawMsgPack = (RawMessagePack)this.reader.Sequence.Slice(this.reader.Position, length);
 			this.Advance(length);
 			return DecodeResult.Success;
 		}
@@ -670,7 +670,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <param name="extensionHeader">Receives the extension header if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
 	/// <remarks>
-	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out RawMessagePack)"/>,
 	/// with the length of bytes specified by <see cref="ExtensionHeader.Length"/> (even if zero), so that the overall structure can be recorded as read.
 	/// </remarks>
 	public DecodeResult TryRead(out ExtensionHeader extensionHeader)
@@ -971,7 +971,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <returns>The result classification of the read operation.</returns>
 	/// <inheritdoc cref="MessagePackPrimitives.TryReadBinHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />
 	/// <remarks>
-	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out RawMessagePack)"/>,
 	/// with the length specified by <paramref name="length"/> (even if zero), so that the overall structure can be recorded as read.
 	/// </remarks>
 	public DecodeResult TryReadBinHeader(out uint length)
@@ -1033,7 +1033,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <param name="length">Receives the length of the next string, when successful.</param>
 	/// <returns>The result classification of the read operation.</returns>
 	/// <remarks>
-	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out ReadOnlySequence{byte})"/>,
+	/// A successful call should always be followed by a successful call to <see cref="TryReadRaw(long, out RawMessagePack)"/>,
 	/// with the length of bytes specified by the extension (even if zero), so that the overall structure can be recorded as read.
 	/// </remarks>
 	/// <inheritdoc cref="MessagePackPrimitives.TryReadStringHeader(ReadOnlySpan{byte}, out uint, out int)" path="/remarks" />

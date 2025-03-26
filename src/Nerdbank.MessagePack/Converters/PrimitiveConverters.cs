@@ -57,7 +57,7 @@ internal class StringConverter : MessagePackConverter<string>
 		}
 
 		string result;
-		if (streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> utf8BytesSequence).NeedsMoreBytes())
+		if (streamingReader.TryReadRaw(length, out RawMessagePack utf8BytesSequence).NeedsMoreBytes())
 		{
 			uint remainingBytesToDecode = length;
 			using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
@@ -76,9 +76,9 @@ internal class StringConverter : MessagePackConverter<string>
 
 				int thisLoopLength = unchecked((int)Math.Min(int.MaxValue, Math.Min(checked((uint)streamingReader.SequenceReader.Remaining), remainingBytesToDecode)));
 				Assumes.True(streamingReader.TryReadRaw(thisLoopLength, out utf8BytesSequence) == MessagePackPrimitives.DecodeResult.Success);
-				bool flush = utf8BytesSequence.Length == remainingBytesToDecode;
+				bool flush = utf8BytesSequence.MsgPack.Length == remainingBytesToDecode;
 				decoder.Convert(utf8BytesSequence, charSequence, flush, out _, out _);
-				remainingBytesToDecode -= checked((uint)utf8BytesSequence.Length);
+				remainingBytesToDecode -= checked((uint)utf8BytesSequence.MsgPack.Length);
 			}
 
 			result = string.Create(
