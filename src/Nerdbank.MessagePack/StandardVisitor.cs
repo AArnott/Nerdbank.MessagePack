@@ -78,14 +78,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		IConstructorShape? ctorShape = objectShape.Constructor;
 
-		Dictionary<string, IConstructorParameterShape>? ctorParametersByName = null;
+		Dictionary<string, IParameterShape>? ctorParametersByName = null;
 		if (ctorShape is not null)
 		{
 			ctorParametersByName = new(StringComparer.Ordinal);
-			foreach (IConstructorParameterShape ctorParameter in ctorShape.Parameters)
+			foreach (IParameterShape ctorParameter in ctorShape.Parameters)
 			{
 				// Keep the one with the Kind that we prefer.
-				if (ctorParameter.Kind == ConstructorParameterKind.ConstructorParameter)
+				if (ctorParameter.Kind == ParameterKind.MethodParameter)
 				{
 					ctorParametersByName[ctorParameter.Name] = ctorParameter;
 				}
@@ -105,7 +105,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			propertyIndex++;
 			string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 
-			IConstructorParameterShape? matchingConstructorParameter = null;
+			IParameterShape? matchingConstructorParameter = null;
 			ctorParametersByName?.TryGetValue(property.Name, out matchingConstructorParameter);
 
 			if (property.Accept(this, matchingConstructorParameter) is PropertyAccessors<T> accessors)
@@ -237,7 +237,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
 	{
-		IConstructorParameterShape? constructorParameterShape = (IConstructorParameterShape?)state;
+		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
 		MessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
 
@@ -366,7 +366,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
 
 					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = inputs.ParametersByName.Values
-						.Select<IConstructorParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
+						.Select<IParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
 						{
 							ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Name)?.AttributeProvider;
 							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this)!;
@@ -403,7 +403,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					}
 
 					DeserializableProperty<TArgumentState>?[] parameters = new DeserializableProperty<TArgumentState>?[inputs.Properties.Count];
-					foreach (IConstructorParameterShape parameter in constructorShape.Parameters)
+					foreach (IParameterShape parameter in constructorShape.Parameters)
 					{
 						int index = propertyIndexesByName[parameter.Name];
 						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this)!;
@@ -423,7 +423,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	}
 
 	/// <inheritdoc/>
-	public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
+	public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
 		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType);
 

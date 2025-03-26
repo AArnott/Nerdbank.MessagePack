@@ -518,7 +518,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		if (objectShape.Properties.Count > 0)
 		{
-			Dictionary<string, IConstructorParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
+			Dictionary<string, IParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
 
 			JsonObject propertiesObject = [];
 			JsonArray? items = [];
@@ -531,7 +531,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					continue;
 				}
 
-				IConstructorParameterShape? associatedParameter = null;
+				IParameterShape? associatedParameter = null;
 				ctorParams?.TryGetValue(property.Shape.Name, out associatedParameter);
 
 				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
