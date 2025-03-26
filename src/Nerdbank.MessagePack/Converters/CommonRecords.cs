@@ -124,7 +124,7 @@ internal record struct PropertyAccessors<TDeclaringType>(
 /// <param name="Serializers">Serializable properties on the data type.</param>
 /// <param name="Deserializers">Deserializable properties on the data type.</param>
 /// <param name="ParametersByName">A collection of constructor parameters, with any conflicting names removed.</param>
-internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IConstructorParameterShape> ParametersByName);
+internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IParameterShape> ParametersByName);
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments

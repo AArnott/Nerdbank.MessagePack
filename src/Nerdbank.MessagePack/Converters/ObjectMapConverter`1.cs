@@ -327,7 +327,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (objectShape.Properties.Count > 0)
 		{
-			Dictionary<string, IConstructorParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
+			Dictionary<string, IParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
 
 			JsonObject properties = new();
 			JsonArray? required = null;
@@ -335,7 +335,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			{
 				SerializableProperty<T> property = serializable.Properties.Span[i];
 
-				IConstructorParameterShape? associatedParameter = null;
+				IParameterShape? associatedParameter = null;
 				ctorParams?.TryGetValue(property.Name, out associatedParameter);
 
 				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
