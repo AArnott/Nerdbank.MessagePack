@@ -8,7 +8,7 @@ using System.Text.Json.Nodes;
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
-/// A converter that can write msgpack primitives typed as <see cref="object"/>
+/// A converter that can write msgpack primitives or other convertible values typed as <see cref="object"/>
 /// and reads everything into primitives, dictionaries and arrays.
 /// </summary>
 /// <remarks>
@@ -178,7 +178,8 @@ public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 				writer.Write(v);
 				break;
 			default:
-				throw new NotSupportedException($"Unsupported type as object: {value.GetType()}");
+				context.GetConverter(value.GetType(), null).WriteObject(ref writer, value, context);
+				break;
 		}
 	}
 
