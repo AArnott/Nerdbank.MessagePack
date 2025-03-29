@@ -280,8 +280,8 @@ public partial record MessagePackSerializer
 	/// </summary>
 	/// <param name="reader">The source of msgpack to decode.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
-	/// <inheritdoc cref="PrimitivesOnlyReader.Read" path="/remarks"/>
-	/// <inheritdoc cref="PrimitivesOnlyReader.Read" path="/returns"/>
+	/// <inheritdoc cref="PrimitivesAsObjectConverter.Read" path="/remarks"/>
+	/// <inheritdoc cref="PrimitivesAsObjectConverter.Read" path="/returns"/>
 	/// <example>
 	/// <para>
 	/// The following snippet demonstrates a way to use this method.
@@ -293,7 +293,7 @@ public partial record MessagePackSerializer
 		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.ShapeProvider, cancellationToken);
 		try
 		{
-			return PrimitivesOnlyReader.Instance.Read(ref reader, context.Value);
+			return PrimitivesAsObjectConverter.Instance.Read(ref reader, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{

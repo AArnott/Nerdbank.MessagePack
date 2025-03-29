@@ -8,14 +8,20 @@ using System.Text.Json.Nodes;
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
-/// A read-only converter that reads everything into primitives, dictionaries and arrays.
+/// A converter that can write msgpack primitives typed as <see cref="object"/>
+/// and reads everything into primitives, dictionaries and arrays.
 /// </summary>
-internal class PrimitivesOnlyReader : MessagePackConverter<object?>
+/// <remarks>
+/// This converter is not included by default because untyped serialization is not generally desirable.
+/// But it is offered as a converter that may be added to <see cref="MessagePackSerializer.Converters"/>
+/// in order to enable limited untyped serialization.
+/// </remarks>
+public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 {
 	/// <summary>
 	/// Gets the default instance of the converter.
 	/// </summary>
-	internal static readonly PrimitivesOnlyReader Instance = new PrimitivesOnlyReader();
+	public static readonly PrimitivesAsObjectConverter Instance = new PrimitivesAsObjectConverter();
 
 	/// <summary>Reads any one msgpack structure.</summary>
 	/// <param name="reader">The msgpack reader.</param>
@@ -122,7 +128,59 @@ internal class PrimitivesOnlyReader : MessagePackConverter<object?>
 
 	/// <inheritdoc />
 	/// <exception cref="NotSupportedException">Always thrown.</exception>
-	public override void Write(ref MessagePackWriter writer, in object? value, SerializationContext context) => throw new NotSupportedException();
+	public override void Write(ref MessagePackWriter writer, in object? value, SerializationContext context)
+	{
+		switch (value)
+		{
+			case null:
+				writer.WriteNil();
+				break;
+			case bool v:
+				writer.Write(v);
+				break;
+			case string v:
+				writer.Write(v);
+				break;
+			case char v:
+				writer.Write(v);
+				break;
+			case DateTime v:
+				writer.Write(v);
+				break;
+			case byte v:
+				writer.Write(v);
+				break;
+			case ushort v:
+				writer.Write(v);
+				break;
+			case uint v:
+				writer.Write(v);
+				break;
+			case ulong v:
+				writer.Write(v);
+				break;
+			case sbyte v:
+				writer.Write(v);
+				break;
+			case short v:
+				writer.Write(v);
+				break;
+			case int v:
+				writer.Write(v);
+				break;
+			case long v:
+				writer.Write(v);
+				break;
+			case double v:
+				writer.Write(v);
+				break;
+			case float v:
+				writer.Write(v);
+				break;
+			default:
+				throw new NotSupportedException($"Unsupported type as object: {value.GetType()}");
+		}
+	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateUndocumentedSchema(this.GetType());

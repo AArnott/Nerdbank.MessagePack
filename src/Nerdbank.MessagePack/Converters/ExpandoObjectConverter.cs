@@ -39,7 +39,7 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 					throw new NotSupportedException("Null key in map.");
 				}
 
-				object? value = PrimitivesOnlyReader.Instance.Read(ref reader, context);
+				object? value = PrimitivesAsObjectConverter.Instance.Read(ref reader, context);
 				dictionary.Add(key, value);
 			}
 		}
