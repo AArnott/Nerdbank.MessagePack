@@ -99,6 +99,53 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 	}
 
 	[Fact]
+	public void IDictionaryOfKV()
+	{
+		dynamic deserialized = this.DeserializeDynamic();
+		IDictionary<object, object?> dict = (IDictionary<object, object?>)deserialized;
+
+		Assert.True(dict.IsReadOnly);
+		Assert.Throws<NotSupportedException>(() => dict.Clear());
+		Assert.Throws<NotSupportedException>(() => dict.Add("5", "3"));
+		Assert.Throws<NotSupportedException>(() => dict.Add(new KeyValuePair<object, object?>("5", "3")));
+		Assert.Throws<NotSupportedException>(() => dict.Remove("5"));
+		Assert.Throws<NotSupportedException>(() => ((ICollection<KeyValuePair<object, object?>>)dict).Remove(new KeyValuePair<object, object?>("5", "3")));
+		Assert.Throws<NotSupportedException>(() => dict["5"] = "3");
+
+		Assert.True(dict.Contains(new KeyValuePair<object, object?>("Prop1", "Value1")));
+		Assert.False(dict.Contains(new KeyValuePair<object, object?>("Prop1", "Value2")));
+		Assert.False(dict.Contains(new KeyValuePair<object, object?>("PropX", "Value2")));
+
+		KeyValuePair<object, object?>[] array = new KeyValuePair<object, object?>[6];
+		dict.CopyTo(array, 1);
+		Assert.Null(array[0].Key);
+		Assert.Equal("Prop1", array[1].Key);
+		Assert.Equal("Value1", array[1].Value);
+
+		Assert.Equal(5, dict.Count);
+
+		Assert.True(dict.ContainsKey("deeper"));
+		Assert.IsType<object?[]>(dict["deeper"]);
+		Assert.True(dict.TryGetValue("deeper", out object? deeper));
+		Assert.IsType<object?[]>(deeper);
+
+		Assert.False(dict.ContainsKey("doesnotexist"));
+		Assert.Throws<KeyNotFoundException>(() => dict["doesnotexist"]);
+		Assert.False(dict.TryGetValue("doesnotexist", out _));
+
+		bool encounteredDeeper = false;
+		foreach (KeyValuePair<object, object?> item in dict)
+		{
+			encounteredDeeper |= item.Key is "deeper";
+		}
+
+		Assert.True(encounteredDeeper);
+
+		Assert.Equal(["Prop1", "Prop2", "deeper", 45UL, -45L], dict.Keys);
+		Assert.Equal(dict.Count, dict.Values.Count());
+	}
+
+	[Fact]
 	public void Enumerate()
 	{
 		dynamic deserialized = this.DeserializeDynamic();
