@@ -12,6 +12,7 @@ public interface IMessagePackConverterFactory
 	/// Creates a converter for the given type if this factory is capable of it.
 	/// </summary>
 	/// <typeparam name="T">The data type.</typeparam>
+	/// <param name="shape">The shape of the type to be serialized.</param>
 	/// <returns>The converter for the data type, or <see langword="null" />.</returns>
-	MessagePackConverter<T>? CreateConverter<T>();
+	MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape);
 }
