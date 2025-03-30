@@ -573,7 +573,7 @@ namespace CustomConverterFactory
 
     class MarshalingConverterFactory(object trackerKey) : IMessagePackConverterFactory
     {
-        public MessagePackConverter<T>? CreateConverter<T>()
+        public MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape)
         {
             if (typeof(T).GetCustomAttribute<MarshalByRefAttribute>() is not null)
             {
