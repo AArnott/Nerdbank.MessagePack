@@ -6,7 +6,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <RoslynVersion>4.13.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
-    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25076.3</CodeAnalysisAnalyzerVersion>
+    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25123.3</CodeAnalysisAnalyzerVersion>
     <PolyTypeVersion>0.34.1</PolyTypeVersion>
   </PropertyGroup>
   <ItemGroup>
