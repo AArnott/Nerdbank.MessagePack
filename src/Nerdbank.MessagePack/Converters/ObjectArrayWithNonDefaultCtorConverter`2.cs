@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -33,6 +34,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		bool supportsUnused = typeof(TDeclaringType).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Array? unused = null;
 
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
@@ -47,7 +50,15 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				}
 				else
 				{
-					reader.Skip(context);
+					if (supportsUnused)
+					{
+						unused ??= new();
+						unused.Add(index, reader.ReadRaw(context));
+					}
+					else
+					{
+						reader.Skip(context);
+					}
 				}
 			}
 		}
@@ -60,6 +71,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				{
 					deserialize.Read(ref argState, ref reader, context);
 				}
+				else if (supportsUnused)
+				{
+					unused ??= new();
+					unused.Add(i, reader.ReadRaw(context));
+				}
 				else
 				{
 					reader.Skip(context);
@@ -68,6 +84,10 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		TDeclaringType value = ctor(ref argState);
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
+		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{
@@ -96,6 +116,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		bool supportsUnused = typeof(TDeclaringType).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Array? unused = null;
 
 		MessagePackType peekType;
 		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
@@ -126,6 +148,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					if (propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
 					{
 						deserialize(ref argState, ref syncReader, context);
+					}
+					else if (supportsUnused)
+					{
+						unused ??= new();
+						unused.Add(propertyIndex, syncReader.ReadRaw(context));
 					}
 					else
 					{
@@ -190,6 +217,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 						{
 							deserialize(ref argState, ref syncReader, context);
 						}
+						else if (supportsUnused)
+						{
+							unused ??= new();
+							unused.Add(i, syncReader.ReadRaw(context));
+						}
 						else
 						{
 							syncReader.Skip(context);
@@ -232,6 +264,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		TDeclaringType value = ctor(ref argState);
+
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
+		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{

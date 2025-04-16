@@ -33,6 +33,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		bool supportsUnused = typeof(TDeclaringType).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Map? unused = null;
+
 		if (parameters.Readers is not null)
 		{
 			int count = reader.ReadMapHeader();
@@ -42,6 +45,11 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
 				{
 					deserializeArg.Read(ref argState, ref reader, context);
+				}
+				else if (supportsUnused)
+				{
+					unused ??= new();
+					unused.Add(propertyName, reader.ReadRaw(context));
 				}
 				else
 				{
@@ -56,6 +64,11 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		}
 
 		TDeclaringType value = ctor(ref argState);
+
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
+		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{
@@ -84,6 +97,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		bool supportsUnused = typeof(TDeclaringType).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Map? unused = null;
 
 		if (parameters.Readers is not null)
 		{
@@ -108,6 +123,11 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 					{
 						propertyReader.Read(ref argState, ref syncReader, context);
+					}
+					else if (supportsUnused)
+					{
+						unused ??= new();
+						unused.Add(propertyName, syncReader.ReadRaw(context));
 					}
 					else
 					{
@@ -153,9 +173,24 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 							reader.ReturnReader(ref syncReader);
 
 							streamingReader = reader.CreateStreamingReader();
-							while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+							if (supportsUnused)
 							{
-								streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								unused ??= new();
+								RawMessagePack msgpack;
+								ReadOnlyMemory<byte> propertyNameMemory = UnusedDataPacket.Map.GetPropertyNameMemory(propertyName);
+								while (streamingReader.TryReadRaw(ref context, out msgpack).NeedsMoreBytes())
+								{
+									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								}
+
+								unused.Add(propertyNameMemory, msgpack);
+							}
+							else
+							{
+								while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+								{
+									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								}
 							}
 
 							reader.ReturnReader(ref streamingReader);
@@ -181,6 +216,11 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		}
 
 		TDeclaringType value = ctor(ref argState);
+
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
+		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{

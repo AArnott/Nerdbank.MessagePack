@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
@@ -57,12 +58,15 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, SerializationContext context)
 		{
-			writer.WriteMapHeader(properties.Length);
+			UnusedDataPacket.Map? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Map;
+			writer.WriteMapHeader(properties.Length + (unused?.Count ?? 0));
 			foreach (SerializableProperty<T> property in properties)
 			{
 				writer.WriteRaw(property.RawPropertyNameString.Span);
 				property.Write(value, ref writer, context);
 			}
+
+			unused?.WriteTo(ref writer);
 		}
 	}
 
@@ -82,6 +86,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		context.DepthStep();
+		UnusedDataPacket.Map? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Map;
 		ReadOnlyMemory<SerializableProperty<T>> propertiesToSerialize;
 		SerializableProperty<T>[]? borrowedArray = null;
 		try
@@ -97,7 +102,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			}
 
 			MessagePackWriter syncWriter = writer.CreateWriter();
-			syncWriter.WriteMapHeader(propertiesToSerialize.Length);
+			syncWriter.WriteMapHeader(propertiesToSerialize.Length + (unused?.Count ?? 0));
 			for (int i = 0; i < propertiesToSerialize.Length; i++)
 			{
 				SerializableProperty<T> property = propertiesToSerialize.Span[i];
@@ -122,7 +127,16 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				}
 			}
 
-			writer.ReturnWriter(ref syncWriter);
+			if (unused is not null)
+			{
+				unused?.WriteTo(ref syncWriter);
+				writer.ReturnWriter(ref syncWriter);
+				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+			}
+			else
+			{
+				writer.ReturnWriter(ref syncWriter);
+			}
 		}
 		finally
 		{
@@ -148,6 +162,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		T value = constructor();
+		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Map? unused = null;
+
 		if (!typeof(T).IsValueType)
 		{
 			context.ReportObjectConstructed(value);
@@ -163,6 +180,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				{
 					propertyReader.Read(ref value, ref reader, context);
 				}
+				else if (supportsUnused)
+				{
+					unused ??= new();
+					unused.Add(propertyName, reader.ReadRaw(context));
+				}
 				else
 				{
 					reader.Skip(context);
@@ -173,6 +195,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		{
 			// We have nothing to read into, so just skip any data in the object.
 			reader.Skip(context);
+		}
+
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
@@ -207,6 +234,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		T value = constructor();
+		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Map? unused = null;
+
 		if (!typeof(T).IsValueType)
 		{
 			context.ReportObjectConstructed(value);
@@ -235,6 +265,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
 					{
 						propertyReader.Read(ref value, ref syncReader, context);
+					}
+					else if (supportsUnused)
+					{
+						unused ??= new();
+						unused.Add(propertyName, syncReader.ReadRaw(context));
 					}
 					else
 					{
@@ -280,9 +315,25 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 							reader.ReturnReader(ref syncReader);
 
 							streamingReader = reader.CreateStreamingReader();
-							while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+
+							if (supportsUnused)
 							{
-								streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								unused ??= new();
+								RawMessagePack msgpack;
+								ReadOnlyMemory<byte> propertyNameMemory = UnusedDataPacket.Map.GetPropertyNameMemory(propertyName);
+								while (streamingReader.TryReadRaw(ref context, out msgpack).NeedsMoreBytes())
+								{
+									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								}
+
+								unused.Add(propertyNameMemory, msgpack);
+							}
+							else
+							{
+								while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+								{
+									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								}
 							}
 
 							reader.ReturnReader(ref streamingReader);
@@ -305,6 +356,11 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			}
 
 			reader.ReturnReader(ref streamingReader);
+		}
+
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)

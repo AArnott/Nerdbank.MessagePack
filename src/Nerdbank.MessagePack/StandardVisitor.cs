@@ -241,6 +241,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		MessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
 
+		if (propertyShape.PropertyType.Type == typeof(UnusedDataPacket))
+		{
+			throw new NotSupportedException($"The type {propertyShape.DeclaringType.Type.FullName} declares the property {propertyShape.Name} typed as {typeof(UnusedDataPacket).Name}. This property should only be declared as an explicit interface implementation of {typeof(IVersionSafeObject)}.");
+		}
+
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
 		if (propertyShape.HasGetter)

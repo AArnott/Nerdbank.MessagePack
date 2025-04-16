@@ -1,4 +1,4 @@
-# Performance comparisons
+﻿# Performance comparisons
 
 Perf isn't everything, but it can be important in some scenarios.
 Nerdbank.MessagePack is very fast, but not quite as fast as MessagePack-CSharp v3 with source generation turned on.
@@ -28,10 +28,10 @@ Some libraries are absent from some comparisons because they don't support a par
 ```mermaid
 xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS", "STJ", "Newtonsoft"]
-     y-axis "Time (ns)" 0 --> 900
+     y-axis "Time (ns)" 0 --> 1100
      title "object as map"
-     bar "Serialize+Deserialize" [281.69,263.65,552.22,856.47]
-     bar "Serialize" [89.98,92.99,100.59,303.5]
+     bar "Serialize+Deserialize" [269.13,222.12,480.03,1030.56]
+     bar "Serialize" [88.53,81.61,99.59,368.74]
  ```
  ```mermaid
 xychart-beta
@@ -44,10 +44,10 @@ xychart-beta
  ```mermaid
 xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS"]
-     y-axis "Time (ns)" 0 --> 300
+     y-axis "Time (ns)" 0 --> 200
      title "object as array"
-     bar "Serialize+Deserialize" [202.75,205.79]
-     bar "Serialize" [90.1,85.32]
+     bar "Serialize+Deserialize" [190.18,185.39]
+     bar "Serialize" [86.48,76.03]
  ```
  ```mermaid
 xychart-beta

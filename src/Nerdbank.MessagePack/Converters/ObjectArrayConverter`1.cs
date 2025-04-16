@@ -3,7 +3,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 using System.Text.Json.Nodes;
+using Microsoft;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -35,6 +37,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
+		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Array? unused = null;
+
 		if (!typeof(T).IsValueType)
 		{
 			context.ReportObjectConstructed(value);
@@ -51,6 +56,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					deserialize(ref value, ref reader, context);
 				}
+				else if (supportsUnused)
+				{
+					unused ??= new();
+					unused.Add(index, reader.ReadRaw(context));
+				}
 				else
 				{
 					reader.Skip(context);
@@ -66,11 +76,21 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					deserialize(ref value, ref reader, context);
 				}
+				else if (supportsUnused)
+				{
+					unused ??= new();
+					unused.Add(i, reader.ReadRaw(context));
+				}
 				else
 				{
 					reader.Skip(context);
 				}
 			}
+		}
+
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
@@ -98,13 +118,14 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 
 		context.DepthStep();
+		UnusedDataPacket.Array? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Array;
 
 		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
 			int[]? indexesToIncludeArray = null;
 			try
 			{
-				if (this.ShouldUseMap(value, ref indexesToIncludeArray, out _, out ReadOnlySpan<int> indexesToInclude))
+				if (this.ShouldUseMap(value, unused, ref indexesToIncludeArray, out _, out ReadOnlySpan<int> indexesToInclude))
 				{
 					writer.WriteMapHeader(indexesToInclude.Length);
 					for (int i = 0; i < indexesToInclude.Length; i++)
@@ -115,9 +136,20 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						// It is faster and more compact that way, and we have the user-assigned indexes to use anyway.
 						writer.Write(index);
 
-						// The null forgiveness operators are safe because our filter would only have included
-						// this index if these values are non-null.
-						properties.Span[index]!.Value.MsgPackWriters!.Value.Serialize(value, ref writer, context);
+						if (properties.Length > index && properties.Span[index] is { } x)
+						{
+							// The null forgiveness operators are safe because our filter would only have included
+							// this index if these values are non-null.
+							x.MsgPackWriters!.Value.Serialize(value, ref writer, context);
+						}
+						else if (unused?.TryGetValue(index, out RawMessagePack unusedValue) is true)
+						{
+							writer.WriteRaw(unusedValue);
+						}
+						else
+						{
+							Assumes.NotReachable();
+						}
 					}
 				}
 				else if (indexesToInclude.Length == 0)
@@ -128,7 +160,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					// Just serialize as an array, but truncate to the last index that *wanted* to be serialized.
 					// We +1 to the last index because the slice has an exclusive end index.
-					WriteArray(ref writer, value, properties.Span[..(indexesToInclude[^1] + 1)], context);
+					WriteArray(ref writer, value, unused, properties.Length > indexesToInclude[^1] ? properties.Span[..(indexesToInclude[^1] + 1)] : properties.Span, context);
 				}
 			}
 			finally
@@ -141,17 +173,22 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 		else
 		{
-			WriteArray(ref writer, value, properties.Span, context);
+			WriteArray(ref writer, value, unused, properties.Span, context);
 		}
 
-		static void WriteArray(ref MessagePackWriter writer, in T value, ReadOnlySpan<PropertyAccessors<T>?> properties, SerializationContext context)
+		static void WriteArray(ref MessagePackWriter writer, in T value, UnusedDataPacket.Array? unused, ReadOnlySpan<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
-			writer.WriteArrayHeader(properties.Length);
-			for (int i = 0; i < properties.Length; i++)
+			int maxCount = Math.Max(properties.Length, (unused?.MaxIndex + 1) ?? 0);
+			writer.WriteArrayHeader(maxCount);
+			for (int i = 0; i < maxCount; i++)
 			{
-				if (properties[i]?.MsgPackWriters is var (serialize, _))
+				if (properties.Length > i && properties[i]?.MsgPackWriters is var (serialize, _))
 				{
 					serialize(value, ref writer, context);
+				}
+				else if (unused?.TryGetValue(i, out RawMessagePack unusedValue) is true)
+				{
+					writer.WriteRaw(unusedValue);
 				}
 				else
 				{
@@ -177,15 +214,16 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 
 		context.DepthStep();
+		UnusedDataPacket.Array? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Array;
 
 		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
 			int[]? indexesToIncludeArray = null;
 			try
 			{
-				if (this.ShouldUseMap(value, ref indexesToIncludeArray, out ReadOnlyMemory<int> indexesToInclude, out _))
+				if (this.ShouldUseMap(value, unused, ref indexesToIncludeArray, out ReadOnlyMemory<int> indexesToInclude, out _))
 				{
-					await WriteAsMapAsync(writer, value, indexesToInclude, properties, context).ConfigureAwait(false);
+					await WriteAsMapAsync(writer, value, unused, indexesToInclude, properties, context).ConfigureAwait(false);
 				}
 				else if (indexesToInclude.Length == 0)
 				{
@@ -195,7 +233,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					// Just serialize as an array, but truncate to the last index that *wanted* to be serialized.
 					// We +1 to the last index because the slice has an exclusive end index.
-					await WriteAsArrayAsync(writer, value, properties[..(indexesToInclude.Span[^1] + 1)], context).ConfigureAwait(false);
+					await WriteAsArrayAsync(writer, value, unused, properties[..(indexesToInclude.Span[^1] + 1)], context).ConfigureAwait(false);
 				}
 			}
 			finally
@@ -208,12 +246,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 		else
 		{
-			await WriteAsArrayAsync(writer, value, properties, context).ConfigureAwait(false);
+			await WriteAsArrayAsync(writer, value, unused, properties, context).ConfigureAwait(false);
 		}
 
-		static async ValueTask WriteAsMapAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
+		static async ValueTask WriteAsMapAsync(MessagePackAsyncWriter writer, T value, UnusedDataPacket.Array? unused, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
 		{
-			writer.WriteMapHeader(properties.Length);
+			int maxCount = Math.Max(properties.Length, (unused?.MaxIndex + 1) ?? 0);
+			writer.WriteMapHeader(maxCount);
 			int i = 0;
 			while (i < properties.Length)
 			{
@@ -229,9 +268,20 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					{
 						syncWriter.Write(properties.Span[i]);
 
-						// The null forgiveness operators are safe because our filter would only have included
-						// this index if these values are non-null.
-						allProperties.Span[properties.Span[i]]!.Value.MsgPackWriters!.Value.Serialize(value, ref syncWriter, context);
+						if (properties.Length > i && allProperties.Span[properties.Span[i]] is { } x)
+						{
+							// The null forgiveness operators are safe because our filter would only have included
+							// this index if these values are non-null.
+							x.MsgPackWriters!.Value.Serialize(value, ref syncWriter, context);
+						}
+						else if (unused?.TryGetValue(i, out RawMessagePack unusedValue) is true)
+						{
+							syncWriter.WriteRaw(unusedValue);
+						}
+						else
+						{
+							Assumes.NotReachable();
+						}
 					}
 
 					writer.ReturnWriter(ref syncWriter);
@@ -269,13 +319,22 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					return properties.Length - i;
 				}
 			}
+
+			if (unused is not null)
+			{
+				MessagePackWriter syncWriter = writer.CreateWriter();
+				unused.WriteMapTo(ref syncWriter);
+				writer.ReturnWriter(ref syncWriter);
+				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+			}
 		}
 
-		static async ValueTask WriteAsArrayAsync(MessagePackAsyncWriter writer, T value, ReadOnlyMemory<PropertyAccessors<T>?> properties, SerializationContext context)
+		static async ValueTask WriteAsArrayAsync(MessagePackAsyncWriter writer, T value, UnusedDataPacket.Array? unused, ReadOnlyMemory<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
-			writer.WriteArrayHeader(properties.Length);
+			int maxCount = Math.Max(properties.Length, (unused?.MaxIndex + 1) ?? 0);
+			writer.WriteArrayHeader(maxCount);
 			int i = 0;
-			while (i < properties.Length)
+			while (i < maxCount)
 			{
 				// Do a batch of all the consecutive properties that should be written synchronously.
 				int syncBatchSize = NextSyncBatchSize();
@@ -287,9 +346,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					MessagePackWriter syncWriter = writer.CreateWriter();
 					for (; i < syncWriteEndExclusive && !writer.IsTimeToFlush(context, syncWriter); i++)
 					{
-						if (properties.Span[i] is { MsgPackWriters: var (serialize, _) })
+						if (properties.Length > i && properties.Span[i] is { MsgPackWriters: var (serialize, _) })
 						{
 							serialize(value, ref syncWriter, context);
+						}
+						else if (unused?.TryGetValue(i, out RawMessagePack unusedValue) is true)
+						{
+							syncWriter.WriteRaw(unusedValue);
 						}
 						else
 						{
@@ -314,7 +377,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 				int NextSyncBatchSize()
 				{
-					// We want to count the number of array elements need to be written up to the next async property.
+					// We want to count the number of array elements that need to be written up to the next async property.
 					for (int j = i; j < properties.Length; j++)
 					{
 						if (properties.Length > j)
@@ -328,7 +391,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					}
 
 					// We didn't encounter any more async property readers.
-					return properties.Length - i;
+					return maxCount - i;
 				}
 			}
 		}
@@ -358,6 +421,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
+		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
+		UnusedDataPacket.Array? unused = null;
+
 		if (!typeof(T).IsValueType)
 		{
 			context.ReportObjectConstructed(value);
@@ -392,6 +458,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { MsgPackReaders: { Deserialize: { } deserialize } })
 					{
 						deserialize(ref value, ref syncReader, context);
+					}
+					else if (supportsUnused)
+					{
+						unused ??= new();
+						unused.Add(propertyIndex, syncReader.ReadRaw(context));
 					}
 					else
 					{
@@ -457,6 +528,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						{
 							deserialize(ref value, ref syncReader, context);
 						}
+						else if (supportsUnused)
+						{
+							unused ??= new();
+							unused.Add(i, syncReader.ReadRaw(context));
+						}
 						else
 						{
 							syncReader.Skip(context);
@@ -496,6 +572,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					return arrayLength - i;
 				}
 			}
+		}
+
+		if (unused is not null && value is not null)
+		{
+			((IVersionSafeObject)value).UnusedData = unused;
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
@@ -686,18 +767,33 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 	}
 
-	private Memory<int> GetPropertiesToSerialize(in T value, Memory<int> include)
+	/// <summary>
+	/// Initializes an array to the property keys that should be serialized.
+	/// </summary>
+	/// <param name="value">The object to be serialized.</param>
+	/// <param name="unused">The unused data packet that may need to be serialized.</param>
+	/// <param name="include">The memory to initialize.</param>
+	/// <returns>The slice of memory that was actually initialized, to the length matching the number of properties that actually should be serialized.</returns>
+	private Memory<int> GetPropertiesToSerialize(in T value, UnusedDataPacket.Array? unused, Memory<int> include)
 	{
-		return include[..this.GetPropertiesToSerialize(value, include.Span)];
+		return include[..this.GetPropertiesToSerialize(value, unused, include.Span)];
 	}
 
-	private int GetPropertiesToSerialize(in T value, Span<int> include)
+	/// <summary>
+	/// Initializes a span of integers to the property keys that should be serialized.
+	/// </summary>
+	/// <param name="value">The object to be serialized.</param>
+	/// <param name="unused">The unused data packet that may need to be serialized.</param>
+	/// <param name="include">The span to initialize.</param>
+	/// <returns>The number of elements in <paramref name="include"/> that were initialized; i.e. the number of properties to initialize.</returns>
+	private int GetPropertiesToSerialize(in T value, UnusedDataPacket.Array? unused, Span<int> include)
 	{
 		ReadOnlySpan<PropertyAccessors<T>?> propertiesSpan = properties.Span;
+		int maxCount = Math.Max(propertiesSpan.Length, (unused?.MaxIndex + 1) ?? 0);
 		int propertyCount = 0;
-		for (int i = 0; i < propertiesSpan.Length; i++)
+		for (int i = 0; i < maxCount; i++)
 		{
-			if (propertiesSpan[i] is { MsgPackWriters: not null } property && property.ShouldSerialize?.Invoke(value) is not false)
+			if (unused?.ContainsKey(i) is true || (propertiesSpan.Length > i && propertiesSpan[i] is { MsgPackWriters: not null } property && property.ShouldSerialize?.Invoke(value) is not false))
 			{
 				include[propertyCount++] = i;
 			}
@@ -706,11 +802,13 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		return propertyCount;
 	}
 
-	private bool ShouldUseMap(in T value, ref int[]? indexesToIncludeArray, out ReadOnlyMemory<int> indexesToIncludeMemory, out ReadOnlySpan<int> indexesToIncludeSpan)
+	private bool ShouldUseMap(in T value, UnusedDataPacket.Array? unused, ref int[]? indexesToIncludeArray, out ReadOnlyMemory<int> indexesToIncludeMemory, out ReadOnlySpan<int> indexesToIncludeSpan)
 	{
-		indexesToIncludeArray = ArrayPool<int>.Shared.Rent(properties.Length);
+		int maxIndexSaved = unused?.MaxIndex ?? -1;
 
-		indexesToIncludeMemory = this.GetPropertiesToSerialize(value, indexesToIncludeArray.AsMemory());
+		indexesToIncludeArray = ArrayPool<int>.Shared.Rent(maxIndexSaved >= 0 ? Math.Max(maxIndexSaved + 1, properties.Length) : properties.Length);
+
+		indexesToIncludeMemory = this.GetPropertiesToSerialize(value, unused, indexesToIncludeArray.AsMemory());
 		indexesToIncludeSpan = indexesToIncludeMemory.Span;
 		if (indexesToIncludeMemory.Length == 0)
 		{
