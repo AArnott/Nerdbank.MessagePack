@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Microsoft;
 
@@ -15,12 +16,18 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
 /// <param name="properties">The properties to be serialized.</param>
+/// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="constructor">The constructor for the deserialized type.</param>
-/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter(MapSerializableProperties{T}, MapDeserializableProperties{T}?, Func{T}?, SerializeDefaultValuesPolicy)" path="/param[@name='defaultValuesPolicy']"/></param>
-internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
+/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
+internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
+
+	/// <summary>
+	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
+	/// </summary>
+	protected DirectPropertyAccess<T, UnusedDataPacket> UnusedDataProperty => unusedDataProperty;
 
 	/// <inheritdoc/>
 	public override T? Read(ref MessagePackReader reader, SerializationContext context)
@@ -37,7 +44,6 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
-		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
 		UnusedDataPacket.Array? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -56,7 +62,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					deserialize(ref value, ref reader, context);
 				}
-				else if (supportsUnused)
+				else if (unusedDataProperty.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(index, reader.ReadRaw(context));
@@ -76,7 +82,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				{
 					deserialize(ref value, ref reader, context);
 				}
-				else if (supportsUnused)
+				else if (unusedDataProperty.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(i, reader.ReadRaw(context));
@@ -88,9 +94,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			}
 		}
 
-		if (unused is not null && value is not null)
+		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
 		{
-			((IVersionSafeObject)value).UnusedData = unused;
+			unusedDataProperty.Setter(ref value, unused);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
@@ -118,7 +124,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 
 		context.DepthStep();
-		UnusedDataPacket.Array? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Array;
+		UnusedDataPacket.Array? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
 
 		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
@@ -214,7 +220,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 		}
 
 		context.DepthStep();
-		UnusedDataPacket.Array? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Array;
+		UnusedDataPacket.Array? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
 
 		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
@@ -421,7 +427,6 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		context.DepthStep();
 		T value = constructor();
-		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
 		UnusedDataPacket.Array? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -459,7 +464,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					{
 						deserialize(ref value, ref syncReader, context);
 					}
-					else if (supportsUnused)
+					else if (unusedDataProperty.Setter is not null)
 					{
 						unused ??= new();
 						unused.Add(propertyIndex, syncReader.ReadRaw(context));
@@ -528,7 +533,7 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 						{
 							deserialize(ref value, ref syncReader, context);
 						}
-						else if (supportsUnused)
+						else if (unusedDataProperty.Setter is not null)
 						{
 							unused ??= new();
 							unused.Add(i, syncReader.ReadRaw(context));
@@ -574,9 +579,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 			}
 		}
 
-		if (unused is not null && value is not null)
+		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
 		{
-			((IVersionSafeObject)value).UnusedData = unused;
+			unusedDataProperty.Setter(ref value, unused);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)

@@ -105,11 +105,12 @@ namespace SerializeWithKey
 namespace VersionSafeObject
 {
     #region VersionSafeObject
-    public class Person : IVersionSafeObject
+    public class Person
     {
         public required string Name { get; set; }
 
-        UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
+        [PropertyShape]
+        private UnusedDataPacket? UnusedData { get; set; }
     }
     #endregion
 }

@@ -4,8 +4,14 @@
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// Captures unknown data that was not deserialized into a known property.
+/// When used as the type of a property or field on a data type,
+/// captures deserialized data that could not be assigned to a known property.
 /// </summary>
+/// <example>
+/// <para>The following data type recognizes its own declared properties and will avoid data loss when round-tripping data from a different declaration of the class that has additional properties.</para>
+/// <code source="../../samples/cs/CustomizingSerialization.cs" region="VersionSafeObject" lang="C#" />
+/// </example>
+[TypeShape(Kind = TypeShapeKind.None)]
 public abstract class UnusedDataPacket
 {
 	/// <summary>

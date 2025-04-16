@@ -140,14 +140,21 @@ public partial class VersionSafeSerializationTests(ITestOutputHelper logger) : M
 	}
 
 	[Fact]
-	public void NonExplicitImplementationsThrow()
+	public void StructWithVersionSafety()
 	{
-		// We don't ever want the unused data packet to be serialized as an ordinary member of a class.
-		// Our converters should throw when they observe this happening.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Serialize(new UnusedDataImplementedNonExplicitly(), TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.ToString());
-		Assert.IsType<NotSupportedException>(ex.GetBaseException());
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(2);
+		writer.Write(nameof(VersionSafeStruct.Name));
+		writer.Write("Andrew");
+		writer.Write("Age");
+		writer.Write(18);
+		writer.Flush();
+
+		RawMessagePack result = this.ReverseRoundtrip<VersionSafeStruct>((RawMessagePack)seq.AsReadOnlySequence);
+
+		MessagePackReader reader = new(result);
+		Assert.Equal(2, reader.ReadMapHeader());
 	}
 
 	private static bool IsMap(byte[] msgpack)
@@ -193,26 +200,49 @@ public partial class VersionSafeSerializationTests(ITestOutputHelper logger) : M
 		}
 	}
 
-	[GenerateShape]
-	public partial class MapModelV1 : IVersionSafeObject
+	private RawMessagePack ReverseRoundtrip<T>(RawMessagePack raw)
+#if NET
+		where T : IShapeable<T>
+#endif
 	{
-		public string? Name { get; set; }
-
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
+		this.LogMsgPack(raw);
+		T? value = this.Serializer.Deserialize<T>(raw, TestContext.Current.CancellationToken);
+		RawMessagePack result = (RawMessagePack)this.Serializer.Serialize(value, TestContext.Current.CancellationToken);
+		this.LogMsgPack(result);
+		return result;
 	}
 
 	[GenerateShape]
-	public partial class MapModelV2 : IVersionSafeObject
+	public partial struct VersionSafeStruct
+	{
+		public string? Name { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class MapModelV1
+	{
+		public string? Name { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class MapModelV2
 	{
 		public string? Name { get; set; }
 
 		public int Age { get; set; }
 
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
 	}
 
 	[GenerateShape]
-	public partial class ArrayModelV1 : IVersionSafeObject
+	public partial class ArrayModelV1
 	{
 		[Key(0)]
 		public string? Name { get; set; }
@@ -220,14 +250,68 @@ public partial class VersionSafeSerializationTests(ITestOutputHelper logger) : M
 		[Key(8)]
 		public bool ForceMap { get; set; }
 
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
 	}
 
 	[GenerateShape]
-	public partial class ArrayModelV2 : IVersionSafeObject
+	public partial class ArrayModelV2
 	{
 		[Key(0)]
 		public string? Name { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+
+		[Key(1)]
+#pragma warning disable SA1202 // Elements should be ordered by access - We want to test the special property not being the last one.
+		public int Age { get; set; }
+#pragma warning restore SA1202 // Elements should be ordered by access
+
+		[Key(8)]
+		public bool ForceMap { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class MapModelV1NonDefaultCtor
+	{
+		public required string? Name { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class MapModelV2NonDefaultCtor
+	{
+		public required string? Name { get; set; }
+
+		public int Age { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class ArrayModelV1NonDefaultCtor
+	{
+		[Key(0)]
+		public required string? Name { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+
+		[Key(8)]
+#pragma warning disable SA1202 // Elements should be ordered by access - We want to test the special property not being the last one.
+		public bool ForceMap { get; set; }
+#pragma warning restore SA1202 // Elements should be ordered by access
+	}
+
+	[GenerateShape]
+	public partial class ArrayModelV2NonDefaultCtor
+	{
+		[Key(0)]
+		public required string? Name { get; set; }
 
 		[Key(1)]
 		public int Age { get; set; }
@@ -235,59 +319,7 @@ public partial class VersionSafeSerializationTests(ITestOutputHelper logger) : M
 		[Key(8)]
 		public bool ForceMap { get; set; }
 
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
-	}
-
-	[GenerateShape]
-	public partial class MapModelV1NonDefaultCtor : IVersionSafeObject
-	{
-		public required string? Name { get; set; }
-
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
-	}
-
-	[GenerateShape]
-	public partial class MapModelV2NonDefaultCtor : IVersionSafeObject
-	{
-		public required string? Name { get; set; }
-
-		public int Age { get; set; }
-
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
-	}
-
-	[GenerateShape]
-	public partial class ArrayModelV1NonDefaultCtor : IVersionSafeObject
-	{
-		[Key(0)]
-		public required string? Name { get; set; }
-
-		[Key(8)]
-		public bool ForceMap { get; set; }
-
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
-	}
-
-	[GenerateShape]
-	public partial class ArrayModelV2NonDefaultCtor : IVersionSafeObject
-	{
-		[Key(0)]
-		public required string? Name { get; set; }
-
-		[Key(1)]
-		public int Age { get; set; }
-
-		[Key(8)]
-		public bool ForceMap { get; set; }
-
-		UnusedDataPacket? IVersionSafeObject.UnusedData { get; set; }
-	}
-
-	[GenerateShape]
-	public partial class UnusedDataImplementedNonExplicitly : IVersionSafeObject
-	{
-		public string? Name { get; set; }
-
-		public UnusedDataPacket? UnusedData { get; set; }
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
 	}
 }

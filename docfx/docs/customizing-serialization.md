@@ -239,7 +239,12 @@ sequenceDiagram
     V1->>V2: { name: Andrew }
 ```
 
-To avoid dropping unrecognized data, `Person` can be declared as implementing @Nerdbank.MessagePack.IVersionSafeObject.
+To avoid dropping unrecognized data, `Person` can be declared with a special @Nerdbank.MessagePack.UnusedDataPacket property.
+Since there is no reason to access it except from the serializer, declaring this property as `private` is recommended.
+As a non-public member, it must have @PolyType.PropertyShapeAttribute applied to it to ensure it can be accessed from the serializer.
+It may be declared as a field instead.
+
+Here is an example:
 
 [!code-csharp[](../../samples/cs/CustomizingSerialization.cs#VersionSafeObject)]
 
@@ -256,8 +261,8 @@ sequenceDiagram
 
 ### Sparse type definitions
 
-Another possible use case for @Nerdbank.MessagePack.IVersionSafeObject is where you have an existing msgpack data stream that you only wish to partially modify.
+Another possible use case for @Nerdbank.MessagePack.UnusedDataPacket is where you have an existing msgpack data stream that you only wish to partially modify.
 Instead of declaring types that can deserialize the entire msgpack stream, you can declare just the properties that allow you to traverse from root to leaf of interest.
-If each type along that path implements @Nerdbank.MessagePack.IVersionSafeObject, then you can deserialize and reserialize with your changes without data loss.
+If each type along that path declares a @Nerdbank.MessagePack.UnusedDataPacket property, then you can deserialize and re-serialize with your changes without data loss.
 
 Note that there isn't a guarantee of byte-for-byte equivalence of the serialized form, since the types you declare may serialize as maps or arrays or use different msgpack encoding for those maps or arrays than the original had.

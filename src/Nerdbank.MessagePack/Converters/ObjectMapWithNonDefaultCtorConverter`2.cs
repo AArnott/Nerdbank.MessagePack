@@ -12,16 +12,18 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TDeclaringType">The type of objects that can be serialized or deserialized with this converter.</typeparam>
 /// <typeparam name="TArgumentState">The state object that stores individual member values until the constructor delegate can be invoked.</typeparam>
 /// <param name="serializable">Tools for serializing individual property values.</param>
+/// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Tools for deserializing individual property values.</param>
-/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter(MapSerializableProperties{T}, MapDeserializableProperties{T}?, Func{T}?, SerializeDefaultValuesPolicy)" path="/param[@name='defaultValuesPolicy']"/></param>
+/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	MapSerializableProperties<TDeclaringType> serializable,
 	Func<TArgumentState> argStateCtor,
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket> unusedDataProperty,
 	Constructor<TArgumentState, TDeclaringType> ctor,
 	MapDeserializableProperties<TArgumentState> parameters,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, null, defaultValuesPolicy)
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, unusedDataProperty, null, defaultValuesPolicy)
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -33,7 +35,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
-		bool supportsUnused = typeof(TDeclaringType).IsAssignableTo(typeof(IVersionSafeObject));
 		UnusedDataPacket.Map? unused = null;
 
 		if (parameters.Readers is not null)
@@ -46,7 +47,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 				{
 					deserializeArg.Read(ref argState, ref reader, context);
 				}
-				else if (supportsUnused)
+				else if (this.UnusedDataProperty.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(propertyName, reader.ReadRaw(context));
@@ -65,9 +66,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		TDeclaringType value = ctor(ref argState);
 
-		if (unused is not null && value is not null)
+		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
 		{
-			((IVersionSafeObject)value).UnusedData = unused;
+			this.UnusedDataProperty.Setter(ref value, unused);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
@@ -97,7 +98,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
-		bool supportsUnused = typeof(TDeclaringType).IsAssignableTo(typeof(IVersionSafeObject));
 		UnusedDataPacket.Map? unused = null;
 
 		if (parameters.Readers is not null)
@@ -124,7 +124,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					{
 						propertyReader.Read(ref argState, ref syncReader, context);
 					}
-					else if (supportsUnused)
+					else if (this.UnusedDataProperty.Setter is not null)
 					{
 						unused ??= new();
 						unused.Add(propertyName, syncReader.ReadRaw(context));
@@ -173,7 +173,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 							reader.ReturnReader(ref syncReader);
 
 							streamingReader = reader.CreateStreamingReader();
-							if (supportsUnused)
+							if (this.UnusedDataProperty.Setter is not null)
 							{
 								unused ??= new();
 								RawMessagePack msgpack;
@@ -217,9 +217,9 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		TDeclaringType value = ctor(ref argState);
 
-		if (unused is not null && value is not null)
+		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
 		{
-			((IVersionSafeObject)value).UnusedData = unused;
+			this.UnusedDataProperty.Setter(ref value, unused);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)

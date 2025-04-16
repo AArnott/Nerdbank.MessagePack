@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -14,12 +15,18 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="T">The type of objects that can be serialized or deserialized with this converter.</typeparam>
 /// <param name="serializable">Tools for serializing individual property values.</param>
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
+/// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="constructor">The default constructor, if present.</param>
 /// <param name="defaultValuesPolicy">The policy for whether to serialize properties. When not <see cref="SerializeDefaultValuesPolicy.Always"/>, the <see cref="SerializableProperty{TDeclaringType}.ShouldSerialize"/> property will be consulted prior to serialization.</param>
-internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
+internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, MapDeserializableProperties<T>? deserializable, DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
+
+	/// <summary>
+	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
+	/// </summary>
+	protected DirectPropertyAccess<T, UnusedDataPacket> UnusedDataProperty => unusedDataProperty;
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
@@ -44,7 +51,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			SerializableProperty<T>[] include = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
 			try
 			{
-				WriteProperties(ref writer, value, this.GetPropertiesToSerialize(value, include.AsMemory()).Span, context);
+				WriteProperties(ref writer, value, this.GetPropertiesToSerialize(value, include.AsMemory()).Span, unusedDataProperty, context);
 			}
 			finally
 			{
@@ -53,12 +60,12 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 		else
 		{
-			WriteProperties(ref writer, value, serializable.Properties.Span, context);
+			WriteProperties(ref writer, value, serializable.Properties.Span, unusedDataProperty, context);
 		}
 
-		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, SerializationContext context)
+		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty, SerializationContext context)
 		{
-			UnusedDataPacket.Map? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Map;
+			UnusedDataPacket.Map? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
 			writer.WriteMapHeader(properties.Length + (unused?.Count ?? 0));
 			foreach (SerializableProperty<T> property in properties)
 			{
@@ -86,7 +93,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 		}
 
 		context.DepthStep();
-		UnusedDataPacket.Map? unused = (value as IVersionSafeObject)?.UnusedData as UnusedDataPacket.Map;
+		UnusedDataPacket.Map? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
 		ReadOnlyMemory<SerializableProperty<T>> propertiesToSerialize;
 		SerializableProperty<T>[]? borrowedArray = null;
 		try
@@ -162,7 +169,6 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		T value = constructor();
-		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
 		UnusedDataPacket.Map? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -180,7 +186,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				{
 					propertyReader.Read(ref value, ref reader, context);
 				}
-				else if (supportsUnused)
+				else if (unusedDataProperty.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(propertyName, reader.ReadRaw(context));
@@ -197,9 +203,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			reader.Skip(context);
 		}
 
-		if (unused is not null && value is not null)
+		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
 		{
-			((IVersionSafeObject)value).UnusedData = unused;
+			unusedDataProperty.Setter(ref value, unused);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
@@ -234,7 +240,6 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		context.DepthStep();
 		T value = constructor();
-		bool supportsUnused = typeof(T).IsAssignableTo(typeof(IVersionSafeObject));
 		UnusedDataPacket.Map? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -266,7 +271,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 					{
 						propertyReader.Read(ref value, ref syncReader, context);
 					}
-					else if (supportsUnused)
+					else if (unusedDataProperty.Setter is not null)
 					{
 						unused ??= new();
 						unused.Add(propertyName, syncReader.ReadRaw(context));
@@ -316,7 +321,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 							streamingReader = reader.CreateStreamingReader();
 
-							if (supportsUnused)
+							if (unusedDataProperty.Setter is not null)
 							{
 								unused ??= new();
 								RawMessagePack msgpack;
@@ -358,9 +363,9 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 			reader.ReturnReader(ref streamingReader);
 		}
 
-		if (unused is not null && value is not null)
+		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
 		{
-			((IVersionSafeObject)value).UnusedData = unused;
+			unusedDataProperty.Setter(ref value, unused);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)

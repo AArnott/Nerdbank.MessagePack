@@ -99,9 +99,24 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		List<SerializableProperty<T>>? serializable = null;
 		List<DeserializableProperty<T>>? deserializable = null;
 		List<(string Name, PropertyAccessors<T> Accessors)?>? propertyAccessors = null;
+		DirectPropertyAccess<T, UnusedDataPacket>? unusedDataPropertyAccess = null;
 		int propertyIndex = -1;
 		foreach (IPropertyShape property in objectShape.Properties)
 		{
+			if (property is IPropertyShape<T, UnusedDataPacket> unusedDataProperty)
+			{
+				if (unusedDataPropertyAccess is null)
+				{
+					unusedDataPropertyAccess = new DirectPropertyAccess<T, UnusedDataPacket>(unusedDataProperty.HasSetter ? unusedDataProperty.GetSetter() : null, unusedDataProperty.HasGetter ? unusedDataProperty.GetGetter() : null);
+				}
+				else
+				{
+					throw new MessagePackSerializationException($"The type {objectShape.Type.FullName} has multiple properties of type {typeof(UnusedDataPacket).FullName}. Only one such property is allowed.");
+				}
+
+				continue;
+			}
+
 			propertyIndex++;
 			string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 
@@ -150,10 +165,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				throw new MessagePackSerializationException($"The type {objectShape.Type.FullName} has fields/properties that are candidates for serialization but are inconsistently attributed with {nameof(KeyAttribute)}.\nMembers with the attribute: {string.Join(", ", propertyAccessors.Where(a => a is not null).Select(a => a!.Value.Name))}\nMembers without the attribute: {string.Join(", ", serializable.Select(p => p.Name))}");
 			}
 
-			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors);
+			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors, unusedDataPropertyAccess ?? default);
 			converter = ctorShape is not null
 				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), null, this.owner.SerializeDefaultValues);
+				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), unusedDataPropertyAccess ?? default, null, this.owner.SerializeDefaultValues);
 		}
 		else
 		{
@@ -166,13 +181,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 			if (ctorShape is not null)
 			{
-				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!);
+				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!, unusedDataPropertyAccess ?? default);
 				converter = (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!;
 			}
 			else
 			{
 				Func<T>? ctor = typeof(T) == typeof(object) ? (Func<T>)(object)new Func<object>(() => new object()) : null;
-				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, ctor, this.owner.SerializeDefaultValues);
+				converter = new ObjectMapConverter<T>(serializableMap, deserializableMap, unusedDataPropertyAccess ?? default, ctor, this.owner.SerializeDefaultValues);
 			}
 		}
 
@@ -240,11 +255,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
 		MessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
-
-		if (propertyShape.PropertyType.Type == typeof(UnusedDataPacket))
-		{
-			throw new NotSupportedException($"The type {propertyShape.DeclaringType.Type.FullName} declares the property {propertyShape.Name} typed as {typeof(UnusedDataPacket).Name}. This property should only be declared as an explicit interface implementation of {typeof(IVersionSafeObject)}.");
-		}
 
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
@@ -364,6 +374,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						return new ObjectMapConverter<TDeclaringType>(
 							inputs.Serializers,
 							inputs.Deserializers,
+							inputs.UnusedDataProperty,
 							constructorShape.GetDefaultConstructor(),
 							this.owner.SerializeDefaultValues);
 					}
@@ -386,6 +397,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 						serializeable,
 						constructorShape.GetArgumentStateConstructor(),
+						inputs.UnusedDataProperty,
 						constructorShape.GetParameterizedConstructor(),
 						new MapDeserializableProperties<TArgumentState>(parameters),
 						this.owner.SerializeDefaultValues);
@@ -395,7 +407,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				{
 					if (constructorShape.Parameters.Count == 0)
 					{
-						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), constructorShape.GetDefaultConstructor(), this.owner.SerializeDefaultValues);
+						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), inputs.UnusedDataProperty, constructorShape.GetDefaultConstructor(), this.owner.SerializeDefaultValues);
 					}
 
 					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
@@ -410,12 +422,18 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					DeserializableProperty<TArgumentState>?[] parameters = new DeserializableProperty<TArgumentState>?[inputs.Properties.Count];
 					foreach (IParameterShape parameter in constructorShape.Parameters)
 					{
+						if (parameter is IParameterShape<TArgumentState, UnusedDataPacket>)
+						{
+							continue;
+						}
+
 						int index = propertyIndexesByName[parameter.Name];
 						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this)!;
 					}
 
 					return new ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 						inputs.GetJustAccessors(),
+						inputs.UnusedDataProperty,
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
 						parameters,
