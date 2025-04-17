@@ -91,6 +91,12 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 						continue;
 					}
 
+					if (AnalyzerUtilities.IsUnusedDataPacketMember(memberSymbol, referenceSymbols))
+					{
+						// Another analyzer scans this special member.
+						continue;
+					}
+
 					if (keyAttributeApplied is null)
 					{
 						keyAttributeApplied = keyAttribute is not null;

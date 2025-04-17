@@ -242,6 +242,7 @@ sequenceDiagram
 To avoid dropping unrecognized data, `Person` can be declared with a special @Nerdbank.MessagePack.UnusedDataPacket property.
 Since there is no reason to access it except from the serializer, declaring this property as `private` is recommended.
 As a non-public member, it must have @PolyType.PropertyShapeAttribute applied to it to ensure it can be accessed from the serializer.
+The name of this property is of no consequence at all.
 It may be declared as a field instead.
 
 Here is an example:

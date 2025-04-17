@@ -23,6 +23,9 @@ public class KeyAttributeUseAnalyzerTests
 
 				[Key(2), PropertyShape]
 				internal int MyProperty3 { get; set; }
+
+				[PropertyShape]
+				private UnusedDataPacket Extension;
 			}
 			""";
 
