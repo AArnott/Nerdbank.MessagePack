@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
+
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -22,6 +24,7 @@ public abstract class UnusedDataPacket
 	/// <summary>
 	/// Stores the data from deserializing an object that was serialized as a map of property names to values, specifically for the unrecognized property names.
 	/// </summary>
+	[DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
 	internal sealed class Map : UnusedDataPacket
 	{
 		private static readonly InternedBuffers Buffers = new();
@@ -35,6 +38,8 @@ public abstract class UnusedDataPacket
 		/// Gets the number of properties in this packet.
 		/// </summary>
 		internal int Count => this.values.Count;
+
+		private string DebuggerDisplay => $"{this.Count} properties";
 
 		/// <summary>
 		/// Interns a UTF-8 encoded property name to a heap-friendly memory buffer.
@@ -74,6 +79,7 @@ public abstract class UnusedDataPacket
 	/// <summary>
 	/// Stores the data from deserializing an object that was serialized as an array of values at unrecognized indices.
 	/// </summary>
+	[DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
 	internal sealed class Array : UnusedDataPacket
 	{
 		/// <summary>
@@ -88,6 +94,8 @@ public abstract class UnusedDataPacket
 		/// Gets the maximum index of an array element that was added to this packet.
 		/// </summary>
 		internal int MaxIndex { get; private set; }
+
+		private string DebuggerDisplay => $"{this.values.Count} properties";
 
 		/// <summary>
 		/// Adds a new value to the unused data packet.
