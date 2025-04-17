@@ -14,6 +14,7 @@ public record ReferenceSymbols(
 	INamedTypeSymbol MessagePackStreamingReader,
 	INamedTypeSymbol MessagePackWriter,
 	INamedTypeSymbol KeyAttribute,
+	INamedTypeSymbol UnusedDataPacket,
 	INamedTypeSymbol DerivedTypeShapeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute,
@@ -95,6 +96,13 @@ public record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? unusedDataPacket = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.UnusedDataPacket");
+		if (unusedDataPacket is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "PolyType.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference polytypeReference ||
 			compilation.GetAssemblyOrModuleSymbol(polytypeReference) is not IAssemblySymbol polytypeAssembly)
 		{
@@ -139,6 +147,7 @@ public record ReferenceSymbols(
 			messagePackStreamingReader,
 			messagePackWriter,
 			keyAttribute,
+			unusedDataPacket,
 			derivedTypeShapeAttribute,
 			generateShapeAttribute,
 			propertyShapeAttribute,

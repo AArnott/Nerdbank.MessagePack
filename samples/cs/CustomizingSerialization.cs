@@ -101,3 +101,16 @@ namespace SerializeWithKey
     }
     #endregion
 }
+
+namespace VersionSafeObject
+{
+    #region VersionSafeObject
+    public class Person
+    {
+        public required string Name { get; set; }
+
+        [PropertyShape]
+        private UnusedDataPacket? UnusedData { get; set; }
+    }
+    #endregion
+}

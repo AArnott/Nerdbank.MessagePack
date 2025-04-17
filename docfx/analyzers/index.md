@@ -25,6 +25,9 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack037](NBMsgPack037.md) | Usage | Warning | Async converters should override @Nerdbank.MessagePack.MessagePackConverter`1.PreferAsyncSerialization
 [NBMsgPack050](NBMsgPack050.md) | Usage | Warning | Use ref parameters for ref structs
 [NBMsgPack051](NBMsgPack051.md) | Usage | Warning | Prefer modern .NET APIs
+[NBMsgPack060](NBMsgPack060.md) | Usage | Error | @Nerdbank.MessagePack.UnusedDataPacket member should have a property shape
+[NBMsgPack061](NBMsgPack061.md) | Usage | Error | @Nerdbank.MessagePack.UnusedDataPacket member should not have a KeyAttribute
+[NBMsgPack062](NBMsgPack062.md) | Usage | Warning | @Nerdbank.MessagePack.UnusedDataPacket properties should be private
 [NBMsgPack100](NBMsgPack100.md) | Migration | Info | Migrate MessagePack-CSharp formatter
 [NBMsgPack101](NBMsgPack101.md) | Migration | Info | Migrate to @Nerdbank.MessagePack.MessagePackConverterAttribute
 [NBMsgPack102](NBMsgPack102.md) | Migration | Info | Remove use of MessagePackObjectAttribute

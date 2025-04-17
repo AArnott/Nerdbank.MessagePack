@@ -117,6 +117,15 @@ internal record struct PropertyAccessors<TDeclaringType>(
 }
 
 /// <summary>
+/// Provides direct access to the setter and getter for a property.
+/// </summary>
+/// <typeparam name="TDeclaringType">The type that declares the property.</typeparam>
+/// <typeparam name="TValue">The value to be set or retrieved.</typeparam>
+/// <param name="Setter">The setter.</param>
+/// <param name="Getter">The getter.</param>
+internal record struct DirectPropertyAccess<TDeclaringType, TValue>(Setter<TDeclaringType, TValue>? Setter, Getter<TDeclaringType, TValue>? Getter);
+
+/// <summary>
 /// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
 /// when serializing an object as a map.
 /// </summary>
@@ -124,7 +133,8 @@ internal record struct PropertyAccessors<TDeclaringType>(
 /// <param name="Serializers">Serializable properties on the data type.</param>
 /// <param name="Deserializers">Deserializable properties on the data type.</param>
 /// <param name="ParametersByName">A collection of constructor parameters, with any conflicting names removed.</param>
-internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IParameterShape> ParametersByName);
+/// <param name="UnusedDataProperty">The special unused data property, if present.</param>
+internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IParameterShape> ParametersByName, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty);
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
@@ -132,7 +142,8 @@ internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializablePrope
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
 /// <param name="Properties">The accessors to use for accessing each array element.</param>
-internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties)
+/// <param name="UnusedDataProperty">The special unused data property, if present.</param>
+internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty)
 {
 	/// <summary>
 	/// Constructs an array of just the property accessors (without property names).

@@ -214,3 +214,56 @@ Consider that custom converters registered with an @Nerdbank.MessagePack.Message
 Be sure to set these properties before calling @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*.
 
 The schema generator has no insight into custom converters, so a warning will be included in the schema at locations where custom converters would be used, but the schema will attempt to represent what would typically be serialized without a custom converter.
+
+## Retaining unrecognized data
+
+When deserializing and re-serializing data, any values associated with properties that your types do _not_ define are lost during deserialization, by default.
+Consider the case where two versions of your program are active.
+Both versions define a `Person` class, but only the newer one declares an `Age` property on that class.
+
+```mermaid
+classDiagram
+    PersonV1 : string name
+
+    PersonV2 : string name
+    PersonV2 : int age
+```
+
+When the newer version serializes a `Person` with an `Age` property, and the older version deserializes that data, the `Age` property will be discarded.
+If that older version then serializes that `Person` and sends it back to the newer version, the data is lost.
+
+```mermaid
+sequenceDiagram
+    V2->>V1: { name: Andrew, age: 18 }
+    Note right of V1: age dropped<br/> as unrecognized
+    V1->>V2: { name: Andrew }
+```
+
+To avoid dropping unrecognized data, `Person` can be declared with a special @Nerdbank.MessagePack.UnusedDataPacket property.
+Since there is no reason to access it except from the serializer, declaring this property as `private` is recommended.
+As a non-public member, it must have @PolyType.PropertyShapeAttribute applied to it to ensure it can be accessed from the serializer.
+The name of this property is of no consequence at all.
+It may be declared as a field instead.
+
+Here is an example:
+
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#VersionSafeObject)]
+
+Note this must be done on the declaration of the earliest version that should retain unrecognized data.
+
+The data is no longer dropped, even though V1 doesn't know what `age` means:
+
+```mermaid
+sequenceDiagram
+    V2->>V1: { name: Andrew, age: 18 }
+    Note right of V1: V1 note to self:<br/>Remember "age: 18"
+    V1->>V2: { name: Andrew, age: 18 }
+```
+
+### Sparse type definitions
+
+Another possible use case for @Nerdbank.MessagePack.UnusedDataPacket is where you have an existing msgpack data stream that you only wish to partially modify.
+Instead of declaring types that can deserialize the entire msgpack stream, you can declare just the properties that allow you to traverse from root to leaf of interest.
+If each type along that path declares a @Nerdbank.MessagePack.UnusedDataPacket property, then you can deserialize and re-serialize with your changes without data loss.
+
+Note that there isn't a guarantee of byte-for-byte equivalence of the serialized form, since the types you declare may serialize as maps or arrays or use different msgpack encoding for those maps or arrays than the original had.

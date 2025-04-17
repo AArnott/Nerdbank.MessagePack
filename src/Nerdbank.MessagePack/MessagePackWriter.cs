@@ -142,6 +142,12 @@ public ref struct MessagePackWriter
 	/// <summary>
 	/// Copies bytes directly into the message pack writer.
 	/// </summary>
+	/// <param name="msgpack">The msgpack bytes to copy.</param>
+	public void Write(RawMessagePack msgpack) => this.WriteRaw(msgpack.MsgPack);
+
+	/// <summary>
+	/// Copies bytes directly into the message pack writer.
+	/// </summary>
 	/// <param name="rawMessagePackBlock">The span of bytes to copy from.</param>
 	public void WriteRaw(ReadOnlySpan<byte> rawMessagePackBlock) => this.writer.Write(rawMessagePackBlock);
 

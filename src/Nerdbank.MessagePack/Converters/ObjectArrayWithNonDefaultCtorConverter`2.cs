@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -12,16 +13,18 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TDeclaringType">The type of objects that can be serialized or deserialized with this converter.</typeparam>
 /// <typeparam name="TArgumentState">The state object that stores individual member values until the constructor delegate can be invoked.</typeparam>
 /// <param name="properties">Property accessors, in array positions matching serialization indexes.</param>
+/// <param name="unusedDataProperty"><inheritdoc cref="ObjectArrayConverter{T}.ObjectArrayConverter" path="/param[@name='unusedDataProperty']"/></param>
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Constructor parameter initializers, in array positions matching serialization indexes.</param>
-/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectArrayConverter{T}.ObjectArrayConverter(ReadOnlyMemory{PropertyAccessors{T}?}, Func{T}?, SerializeDefaultValuesPolicy)" path="/param[@name='defaultValuesPolicy']"/></param>
+/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectArrayConverter{T}.ObjectArrayConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	PropertyAccessors<TDeclaringType>?[] properties,
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket> unusedDataProperty,
 	Func<TArgumentState> argStateCtor,
 	Constructor<TArgumentState, TDeclaringType> ctor,
 	DeserializableProperty<TArgumentState>?[] parameters,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectArrayConverter<TDeclaringType>(properties, null, defaultValuesPolicy)
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectArrayConverter<TDeclaringType>(properties, unusedDataProperty, null, defaultValuesPolicy)
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -33,6 +36,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		UnusedDataPacket.Array? unused = null;
 
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
@@ -47,7 +51,15 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				}
 				else
 				{
-					reader.Skip(context);
+					if (this.UnusedDataProperty.Setter is not null)
+					{
+						unused ??= new();
+						unused.Add(index, reader.ReadRaw(context));
+					}
+					else
+					{
+						reader.Skip(context);
+					}
 				}
 			}
 		}
@@ -60,6 +72,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				{
 					deserialize.Read(ref argState, ref reader, context);
 				}
+				else if (this.UnusedDataProperty.Setter is not null)
+				{
+					unused ??= new();
+					unused.Add(i, reader.ReadRaw(context));
+				}
 				else
 				{
 					reader.Skip(context);
@@ -68,6 +85,10 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		TDeclaringType value = ctor(ref argState);
+		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
+		{
+			this.UnusedDataProperty.Setter(ref value, unused);
+		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{
@@ -96,6 +117,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		UnusedDataPacket.Array? unused = null;
 
 		MessagePackType peekType;
 		while (streamingReader.TryPeekNextMessagePackType(out peekType).NeedsMoreBytes())
@@ -126,6 +148,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					if (propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
 					{
 						deserialize(ref argState, ref syncReader, context);
+					}
+					else if (this.UnusedDataProperty.Setter is not null)
+					{
+						unused ??= new();
+						unused.Add(propertyIndex, syncReader.ReadRaw(context));
 					}
 					else
 					{
@@ -190,6 +217,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 						{
 							deserialize(ref argState, ref syncReader, context);
 						}
+						else if (this.UnusedDataProperty.Setter is not null)
+						{
+							unused ??= new();
+							unused.Add(i, syncReader.ReadRaw(context));
+						}
 						else
 						{
 							syncReader.Skip(context);
@@ -232,6 +264,11 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		TDeclaringType value = ctor(ref argState);
+
+		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
+		{
+			this.UnusedDataProperty.Setter(ref value, unused);
+		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{

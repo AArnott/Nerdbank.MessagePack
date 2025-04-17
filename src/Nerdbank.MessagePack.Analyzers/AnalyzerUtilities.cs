@@ -188,4 +188,37 @@ public static class AnalyzerUtilities
 	}
 
 	internal static string GetHelpLink(string diagnosticId) => $"https://aarnott.github.io/Nerdbank.MessagePack/analyzers/{diagnosticId}.html";
+
+	/// <summary>
+	/// Checks whether a given member is a property or field for which we can expect
+	/// PolyType to produce an IPropertyShape (assuming its declaring type gets an IObjectTypeShape.)
+	/// </summary>
+	/// <param name="member">The symbol.</param>
+	/// <param name="referenceSymbols">The known symbols.</param>
+	/// <returns><see langword="true" /> if the member is a field or property that will get a property shape; <see langword="false" /> otherwise.</returns>
+	internal static bool HasPropertyShape(ISymbol member, ReferenceSymbols referenceSymbols)
+	{
+		if (member is not (IFieldSymbol or IPropertySymbol))
+		{
+			return false;
+		}
+
+		AttributeData? propertyShapeAttribute = member.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
+		bool? ignored = propertyShapeAttribute?.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.IgnoreProperty).Value.Value as bool?;
+		return ignored is not true &&
+			(member.DeclaredAccessibility is Accessibility.Public || propertyShapeAttribute is not null);
+	}
+
+	internal static bool IsUnusedDataPacketMember(ISymbol member, ReferenceSymbols referenceSymbols)
+	{
+		IPropertySymbol? propertySymbol = member as IPropertySymbol;
+		IFieldSymbol? fieldSymbol = member as IFieldSymbol;
+		ITypeSymbol? memberType = propertySymbol?.Type ?? fieldSymbol?.Type;
+		if (memberType is null)
+		{
+			return false;
+		}
+
+		return SymbolEqualityComparer.Default.Equals(memberType, referenceSymbols.UnusedDataPacket);
+	}
 }

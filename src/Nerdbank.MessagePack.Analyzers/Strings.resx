@@ -237,6 +237,24 @@
   <data name="NBMsgPack051_Title" xml:space="preserve">
     <value>Prefer modern .NET APIs</value>
   </data>
+  <data name="NBMsgPack060_MessageFormat" xml:space="preserve">
+    <value>The '{0}' member on type '{1}' should have [PropertyShape] applied (without setting Ignore = true).</value>
+  </data>
+  <data name="NBMsgPack060_Title" xml:space="preserve">
+    <value>UnusedDataPacket member should have a property shape</value>
+  </data>
+  <data name="NBMsgPack061_MessageFormat" xml:space="preserve">
+    <value>The '{0}' member on type '{1}' should not have a [KeyAttribute] applied.</value>
+  </data>
+  <data name="NBMsgPack061_Title" xml:space="preserve">
+    <value>UnusedDataPacket member should not have a KeyAttribute</value>
+  </data>
+  <data name="NBMsgPack062_MessageFormat" xml:space="preserve">
+    <value>The '{0}' member on type '{1}' should be private</value>
+  </data>
+  <data name="NBMsgPack062_Title" xml:space="preserve">
+    <value>UnusedDataPacket properties should be private</value>
+  </data>
   <data name="NBMsgPack100_MessageFormat" xml:space="preserve">
     <value>This is a formatter for the MessagePack-CSharp library. You may want to migrate this to a converter for the newer Nerdbank.MessagePack library.</value>
   </data>

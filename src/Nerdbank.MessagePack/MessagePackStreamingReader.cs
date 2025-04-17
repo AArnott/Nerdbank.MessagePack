@@ -550,19 +550,46 @@ public ref partial struct MessagePackStreamingReader
 	/// Reads a given number of bytes from the msgpack stream without decoding them.
 	/// </summary>
 	/// <param name="length">The number of bytes to read. This should always be the length of exactly one msgpack structure.</param>
-	/// <param name="rawMsgPack">The bytes if the read was successful.</param>
+	/// <param name="value">The bytes if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
-	public DecodeResult TryReadRaw(long length, out RawMessagePack rawMsgPack)
+	public DecodeResult TryReadRaw(long length, out RawMessagePack value)
 	{
 		if (this.reader.Remaining >= length)
 		{
-			rawMsgPack = (RawMessagePack)this.reader.Sequence.Slice(this.reader.Position, length);
+			value = (RawMessagePack)this.reader.Sequence.Slice(this.reader.Position, length);
 			this.Advance(length);
 			return DecodeResult.Success;
 		}
 
-		rawMsgPack = default;
+		value = default;
 		return this.InsufficientBytes;
+	}
+
+	/// <summary>
+	/// Reads the next MessagePack structure.
+	/// </summary>
+	/// <param name="context">The serialization context. Used for the stack guard.</param>
+	/// <param name="value">The bytes if the read was successful.</param>
+	/// <returns>
+	/// The raw MessagePack sequence, taken as a slice from the underlying buffers.
+	/// The caller should copy any data that must out-live its underlying buffers.
+	/// </returns>
+	/// <remarks>
+	/// The entire structure is read, including content of maps or arrays, or any other type with payloads.
+	/// </remarks>
+	public DecodeResult TryReadRaw(ref SerializationContext context, out RawMessagePack value)
+	{
+		SequencePosition initialPosition = this.Position;
+		DecodeResult result = this.TrySkip(ref context);
+		if (result != DecodeResult.Success)
+		{
+			value = default;
+			return result;
+		}
+
+		value = (RawMessagePack)this.reader.Sequence.Slice(initialPosition, this.Position);
+
+		return result;
 	}
 
 	/// <summary>
