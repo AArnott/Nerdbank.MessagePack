@@ -655,7 +655,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		Type converterType = customConverterAttribute.ConverterType;
-		if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> converterFactory)
+		if ((typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> converterFactory)
 		{
 			MessagePackConverter<T> converter = (MessagePackConverter<T>)converterFactory();
 			if (this.owner.PreserveReferences != ReferencePreservationMode.Off)

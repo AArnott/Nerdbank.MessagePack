@@ -151,7 +151,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 			if (configuration.ConverterTypes.TryGetConverterType(typeof(T), out Type? converterType) ||
 				(typeof(T).IsGenericType && configuration.ConverterTypes.TryGetConverterType(typeof(T).GetGenericTypeDefinition(), out converterType)))
 			{
-				if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> factory)
+				if ((typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> factory)
 				{
 					converter = (MessagePackConverter<T>)factory();
 				}
