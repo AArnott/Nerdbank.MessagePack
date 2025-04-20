@@ -122,7 +122,7 @@ public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePac
 	internal partial record struct TypeWithStatefulConverter(int Value);
 
 	[GenerateShape]
-	[TypeShape(AssociatedTypes = [typeof(TreeConverterPlus2)])]
+	[AssociatedTypeShape(typeof(TreeConverterPlus2))]
 	public partial record Tree(int FruitCount);
 
 	public class TreeConverterPlus2 : MessagePackConverter<Tree>
