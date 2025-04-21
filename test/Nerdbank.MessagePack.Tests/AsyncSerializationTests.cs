@@ -14,6 +14,12 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 	public async Task LargeArray() => await this.AssertRoundtripAsync(new ArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToArray()));
 
 	[Fact]
+	public async Task LargeList() => await this.AssertRoundtripAsync(new ListOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToList()));
+
+	[Fact]
+	public async Task LargeImmutableArray() => await this.AssertRoundtripAsync(new ImmutableArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToImmutableArray()));
+
+	[Fact]
 	public async Task Null_Array() => await this.AssertRoundtripAsync(new ArrayOfPocos(null));
 
 	[Fact]
@@ -125,6 +131,22 @@ public partial class AsyncSerializationTests(ITestOutputHelper logger) : Message
 		public Poco[]? Pocos => pocos;
 
 		public bool Equals(ArrayOfPocos? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
+	}
+
+	[GenerateShape]
+	public partial class ListOfPocos(List<Poco>? pocos) : IEquatable<ListOfPocos>
+	{
+		public List<Poco>? Pocos => pocos;
+
+		public bool Equals(ListOfPocos? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
+	}
+
+	[GenerateShape]
+	public partial class ImmutableArrayOfPocos(ImmutableArray<Poco>? pocos) : IEquatable<ImmutableArrayOfPocos>
+	{
+		public ImmutableArray<Poco>? Pocos => pocos;
+
+		public bool Equals(ImmutableArrayOfPocos? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
 	}
 
 	[GenerateShape]
