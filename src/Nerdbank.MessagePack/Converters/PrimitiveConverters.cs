@@ -909,6 +909,9 @@ internal class OptionalConverter<TOptional, TElement>(
 	Func<TElement, TOptional> createSome) : MessagePackConverter<TOptional>
 {
 	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => elementConverter.PreferAsyncSerialization;
+
+	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TOptional? value, SerializationContext context)
 	{
 		if (!deconstructor(value, out TElement? element))
@@ -921,6 +924,18 @@ internal class OptionalConverter<TOptional, TElement>(
 	}
 
 	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TOptional? value, SerializationContext context)
+	{
+		if (!deconstructor(value, out TElement? element))
+		{
+			writer.WriteNil();
+		}
+
+		return elementConverter.WriteAsync(writer, element, context);
+	}
+
+	/// <inheritdoc/>
 	public override TOptional Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
@@ -929,6 +944,26 @@ internal class OptionalConverter<TOptional, TElement>(
 		}
 
 		return createSome(elementConverter.Read(ref reader, context)!);
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TOptional?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool wasNil;
+		while (streamingReader.TryReadNil(out wasNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		if (wasNil)
+		{
+			return createNone();
+		}
+
+		return createSome((await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
 	}
 
 	/// <inheritdoc/>

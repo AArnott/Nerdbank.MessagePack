@@ -63,16 +63,18 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		// We do not expect these cases to work.
 		Assert.SkipWhen(typeof(T) == typeof(object), "T = object");
 
+		IEqualityComparer<T> equalityComparer;
 		try
 		{
-			IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
-			Assert.True(equalityComparer.Equals(testCase.Value!, testCase.Value!));
+			equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
 		}
 		catch (NotSupportedException ex)
 		{
 			// We don't expect all types to be supported.
 			throw SkipException.ForSkip($"Unsupported: {ex.Message}");
 		}
+
+		Assert.True(equalityComparer.Equals(testCase.Value!, testCase.Value!));
 	}
 
 	[Theory]
@@ -87,21 +89,22 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		// We do not expect these cases to work.
 		Assert.SkipWhen(typeof(T) == typeof(object), "T = object");
 
+		IEqualityComparer<T> equalityComparer;
 		try
 		{
-			IEqualityComparer<T> equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
-
-			// We don't really have anything useful to check the return value against, but
-			// at least verify it doesn't throw.
-			if (testCase.Value is not null)
-			{
-				equalityComparer.GetHashCode(testCase.Value);
-			}
+			equalityComparer = this.GetEqualityComparer(testCase.DefaultShape);
 		}
 		catch (NotSupportedException ex)
 		{
 			// We don't expect all types to be supported.
 			throw SkipException.ForSkip($"Unsupported: {ex.Message}");
+		}
+
+		// We don't really have anything useful to check the return value against, but
+		// at least verify it doesn't throw.
+		if (testCase.Value is not null)
+		{
+			equalityComparer.GetHashCode(testCase.Value);
 		}
 	}
 
