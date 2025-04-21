@@ -14,10 +14,10 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
-internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
+internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>>? getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
 {
 	/// <inheritdoc />
-	public override bool PreferAsyncSerialization => this.ElementPrefersAsyncSerialization;
+	public override bool PreferAsyncSerialization => getEnumerable is null || this.ElementPrefersAsyncSerialization;
 
 	/// <summary>
 	/// Gets a value indicating whether the element converter prefers async serialization.
@@ -48,9 +48,20 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		context.DepthStep();
 
 		List<TElement> elements = [];
-		foreach (TElement element in getEnumerable(value))
+		if (getEnumerable is not null)
 		{
-			elements.Add(element);
+			foreach (TElement element in getEnumerable(value))
+			{
+				elements.Add(element);
+			}
+		}
+		else
+		{
+			IAsyncEnumerable<TElement> enumerable = (IAsyncEnumerable<TElement>)value;
+			await foreach (TElement element in enumerable.WithCancellation(context.CancellationToken).ConfigureAwait(false))
+			{
+				elements.Add(element);
+			}
 		}
 
 		if (elementConverter.PreferAsyncSerialization)
@@ -84,6 +95,11 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
 	{
+		if (getEnumerable is null)
+		{
+			throw new NotSupportedException($"The type {typeof(TEnumerable)} does not support synchronous serialization because it implements IAsyncEnumerable<T>. Use async serialization instead.");
+		}
+
 		if (value is null)
 		{
 			writer.WriteNil();
@@ -193,7 +209,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 /// <param name="addElement">The delegate that adds an element to the enumerable.</param>
 /// <param name="ctor">The default constructor for the enumerable type.</param>
 internal class MutableEnumerableConverter<TEnumerable, TElement>(
-	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	Setter<TEnumerable, TElement> addElement,
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
@@ -290,7 +306,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 /// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
 /// <param name="ctor">A enumerable initializer that constructs from a span of elements.</param>
 internal class SpanEnumerableConverter<TEnumerable, TElement>(
-	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
@@ -382,7 +398,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 /// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
 /// <param name="ctor">A enumerable initializer that constructs from an enumerable of elements.</param>
 internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
-	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
