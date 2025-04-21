@@ -19,7 +19,20 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 		try
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;
-			byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			byte[] msgpack;
+			if (testCase.DefaultShape is IEnumerableTypeShape { IsAsyncEnumerable: true })
+			{
+				// Async enumerables requires async serialization.
+				Exception ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken));
+				this.Logger.WriteLine(ex.GetBaseException().Message);
+				Assert.IsType<NotSupportedException>(ex.GetBaseException());
+				return;
+			}
+			else
+			{
+				msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			}
+
 			this.LogMsgPack(msgpack);
 
 			if (IsDeserializable(testCase))
