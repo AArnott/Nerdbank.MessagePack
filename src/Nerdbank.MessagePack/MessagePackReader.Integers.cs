@@ -11,7 +11,7 @@
 
 namespace Nerdbank.MessagePack;
 
-public ref partial struct MessagePackReader
+public partial struct MessagePackReader
 {
 	/// <summary>
 	/// Reads an <see cref="Byte"/> value from:

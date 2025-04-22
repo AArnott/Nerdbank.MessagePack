@@ -28,7 +28,7 @@ namespace Nerdbank.MessagePack;
 /// <code source="../../samples/cs/CustomConverters.cs" region="GetMoreBytesPattern" lang="C#" />
 /// </example>
 [Experimental("NBMsgPackAsync")]
-public ref partial struct MessagePackStreamingReader
+public partial struct MessagePackStreamingReader
 {
 	private readonly GetMoreBytesAsync? getMoreBytesAsync;
 	private readonly object? getMoreBytesState;

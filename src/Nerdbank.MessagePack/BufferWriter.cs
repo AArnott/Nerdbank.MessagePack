@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -12,31 +11,17 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// A fast access struct that wraps <see cref="IBufferWriter{T}"/>.
 /// </summary>
-internal ref struct BufferWriter
+internal struct BufferWriter
 {
-	private readonly bool usingBufferMemoryWriter;
-
-#if NET
-	private ref BufferMemoryWriter memoryWriter;
-#else
-	private BufferMemoryWriter memoryWriter;
-#endif
-
 	/// <summary>
 	/// The underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>
 	private IBufferWriter<byte>? output;
 
 	/// <summary>
-	/// The result of the last call to <see cref="IBufferWriter{T}.GetSpan(int)"/>, less any bytes already "consumed" with <see cref="Advance(int)"/>.
-	/// Backing field for the <see cref="Span"/> property.
+	/// The result of the last call to <see cref="IBufferWriter{T}.GetMemory(int)"/>.
 	/// </summary>
-	private Span<byte> span;
-
-	/// <summary>
-	/// The result of the last call to <see cref="IBufferWriter{T}.GetMemory(int)"/>, less any bytes already "consumed" with <see cref="Advance(int)"/>.
-	/// </summary>
-	private ArraySegment<byte> segment;
+	private Memory<byte> memory;
 
 	/// <summary>
 	/// The number of uncommitted bytes (all the calls to <see cref="Advance(int)"/> since the last call to <see cref="Commit"/>).
@@ -51,29 +36,14 @@ internal ref struct BufferWriter
 	/// Initializes a new instance of the <see cref="BufferWriter"/> struct.
 	/// </summary>
 	/// <param name="output">The <see cref="IBufferWriter{T}"/> to be wrapped.</param>
+	/// <remarks>
+	/// Results of writing will be available on <paramref name="output"/> after calling <see cref="Commit"/>.
+	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal BufferWriter(IBufferWriter<byte> output)
 	{
-		this.output = output ?? throw new ArgumentNullException(nameof(output));
-
-		Memory<byte> memory = this.output.GetMemoryCheckResult();
-		MemoryMarshal.TryGetArray(memory, out this.segment);
-		this.span = memory.Span;
-	}
-
-	/// <summary>
-	/// Initializes a new instance of the <see cref="BufferWriter"/> struct.
-	/// </summary>
-	/// <param name="memoryWriter">The async compatible equivalent to this struct, that this struct will temporarily wrap.</param>
-	internal BufferWriter(ref BufferMemoryWriter memoryWriter)
-	{
-#if NET
-		this.memoryWriter = ref memoryWriter;
-#else
-		this.memoryWriter = memoryWriter;
-#endif
-		this.usingBufferMemoryWriter = true;
-		this.span = this.memoryWriter.GetSpan();
+		this.output = output;
+		this.memory = this.output.GetMemoryCheckResult();
 	}
 
 	/// <summary>
@@ -81,61 +51,32 @@ internal ref struct BufferWriter
 	/// </summary>
 	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required..</param>
 	/// <param name="array">An array to start with so we can avoid accessing the <paramref name="sequencePool"/> if possible.</param>
+	/// <remarks>
+	/// Results of writing will be available by calling <see cref="ToArray"/>.
+	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal BufferWriter(SequencePool<byte> sequencePool, byte[] array)
 	{
-		this.sequencePool = sequencePool ?? throw new ArgumentNullException(nameof(sequencePool));
-
-		this.segment = new ArraySegment<byte>(array);
-		this.span = this.segment.AsSpan();
+		this.sequencePool = sequencePool;
+		this.memory = array;
 	}
 
 	/// <summary>
-	/// Gets the result of the last call to <see cref="IBufferWriter{T}.GetSpan(int)"/>.
+	/// Gets the remaining span that can be written to without interacting with an underlying <see cref="IBufferWriter{T}"/>.
 	/// </summary>
-	internal Span<byte> Span => this.span;
+	internal Span<byte> Span => this.memory.Span[this.buffered..];
 
 	/// <summary>
 	/// Gets the number of bytes written but not yet <see cref="Commit">committed</see>.
 	/// </summary>
 	internal int UncommittedBytes => this.buffered;
 
-	/// <summary>
-	/// Gets the rental.
-	/// </summary>
-	internal SequencePool<byte>.Rental SequenceRental => this.rental;
-
-	/// <summary>
-	/// Gets the <see cref="BufferMemoryWriter"/> underlying this writer.
-	/// </summary>
-	[UnscopedRef]
-	internal ref BufferMemoryWriter BufferMemoryWriter => ref this.memoryWriter;
-
 	/// <inheritdoc cref="IBufferWriter{T}.GetSpan(int)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Span<byte> GetSpan(int sizeHint = 0)
 	{
 		this.Ensure(sizeHint);
 		return this.Span;
-	}
-
-	/// <summary>
-	/// Gets a reference to the next byte to write to.
-	/// </summary>
-	/// <param name="sizeHint">The minimum size to guarantee is available in the buffer.</param>
-	/// <returns>The first byte in the buffer.</returns>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal ref byte GetPointer(int sizeHint = 0)
-	{
-		this.Ensure(sizeHint);
-
-		if (this.segment.Array != null)
-		{
-			return ref this.segment.Array[this.segment.Offset + this.buffered];
-		}
-		else
-		{
-			return ref this.span.GetPinnableReference();
-		}
 	}
 
 	/// <summary>
@@ -145,23 +86,15 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Commit()
 	{
-		int buffered = this.buffered;
-		if (buffered > 0)
+		// We only need to commit something if we have a writer
+		// and we have a buffer from it.
+		// In that case, we MUST call Advance (even with 0) to assure the caller
+		// that the IBufferWriter<byte> is not in the state between issuing a buffer and a call to Advance.
+		if (this.output is not null && !this.memory.IsEmpty)
 		{
-			if (this.usingBufferMemoryWriter)
-			{
-				this.memoryWriter.Advance(buffered);
-			}
-			else
-			{
-				this.MigrateToSequence();
-
-				Assumes.NotNull(this.output);
-				this.output.Advance(buffered);
-			}
-
+			this.output.Advance(this.buffered);
+			this.memory = default;
 			this.buffered = 0;
-			this.span = default;
 		}
 	}
 
@@ -172,8 +105,13 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Advance(int count)
 	{
-		this.buffered += count;
-		this.span = this.span[count..];
+		int buffered = this.buffered + count;
+		if (buffered > this.memory.Length)
+		{
+			Requires.FailRange(nameof(count), "Exceeds remaining buffer.");
+		}
+
+		this.buffered = buffered;
 	}
 
 	/// <summary>
@@ -183,10 +121,11 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Write(ReadOnlySpan<byte> source)
 	{
-		if (this.span.Length >= source.Length)
+		Span<byte> span = this.Span;
+		if (span.Length >= source.Length)
 		{
-			source.CopyTo(this.span);
-			this.Advance(source.Length);
+			source.CopyTo(span);
+			this.buffered += source.Length;
 		}
 		else
 		{
@@ -195,33 +134,53 @@ internal ref struct BufferWriter
 	}
 
 	/// <summary>
+	/// Returns a rented <see cref="Sequence{T}"/>.
+	/// This struct must not be used after calling this method.
+	/// </summary>
+	internal void Dispose()
+	{
+		this.rental.Dispose();
+
+		// Clear all fields so that further use of this struct will likely throw NRE.
+		this = default;
+	}
+
+	/// <summary>
+	/// Returns a new array with all written bytes copied into it.
+	/// </summary>
+	/// <returns>The new array.</returns>
+	/// <exception cref="InvalidOperationException">Thrown if this value was not constructed with <see cref="BufferWriter(SequencePool{byte}, byte[])"/>.</exception>
+	internal byte[] ToArray()
+	{
+		// Only the pool constructor guarantees that our IBufferWriter<byte> is actually a
+		// Sequence<byte> which we can get all written bytes from.
+		if (this.sequencePool is null && this.rental.Value is null)
+		{
+			throw new InvalidOperationException("This instance was not initialized to support this operation.");
+		}
+
+		// If we haven't got a buffer writer, then all bytes are in our scratch array.
+		if (this.output is null)
+		{
+			return this.memory[..this.buffered].ToArray();
+		}
+
+		this.Commit();
+		return this.rental.Value.AsReadOnlySequence.ToArray();
+	}
+
+	/// <summary>
 	/// Acquires a new buffer if necessary to ensure that some given number of bytes can be written to a single buffer.
 	/// </summary>
 	/// <param name="count">The number of bytes that must be allocated in a single buffer.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void Ensure(int count = 0)
+	private void Ensure(int count = 0)
 	{
-		if (this.span.Length < count || this.span.Length == 0)
+		Span<byte> span = this.Span;
+		if (span.Length < count || span.Length == 0)
 		{
 			this.EnsureMore(count);
 		}
-	}
-
-	/// <summary>
-	/// Gets the span to the bytes written if they were never committed to the underlying buffer writer.
-	/// </summary>
-	/// <param name="span">Receives the uncommitted span.</param>
-	/// <returns><see langword="true" /> if an uncommitted span was set; otherwise <see langword="false" />.</returns>
-	internal bool TryGetUncommittedSpan(out ReadOnlySpan<byte> span)
-	{
-		if (this.sequencePool != null)
-		{
-			span = this.segment.AsSpan(0, this.buffered);
-			return true;
-		}
-
-		span = default;
-		return false;
 	}
 
 	/// <summary>
@@ -231,29 +190,32 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void EnsureMore(int sizeHint = 0)
 	{
-		if (this.buffered > 0)
+		if (this.output is null)
+		{
+			// We're going to need an IBufferWriter<byte> at this point to get a new buffer.
+			Debug.Assert(this.sequencePool is not null, "Invalid internal state.");
+			this.rental = this.sequencePool!.Rent();
+			this.sequencePool = null;
+			this.output = this.rental.Value;
+
+			// Transfer any uncommitted bytes
+			int buffered = this.buffered;
+			if (buffered > 0)
+			{
+				Memory<byte> realMemory = this.output.GetMemory(buffered);
+				this.Span[..buffered].CopyTo(realMemory.Span);
+				this.output.Advance(buffered);
+				buffered = 0;
+			}
+
+			this.memory = default;
+		}
+		else
 		{
 			this.Commit();
 		}
-		else
-		{
-			this.MigrateToSequence();
-		}
 
-		if (this.usingBufferMemoryWriter)
-		{
-			this.span = this.memoryWriter.GetSpan(sizeHint);
-		}
-		else if (this.output is not null)
-		{
-			Memory<byte> memory = this.output.GetMemoryCheckResult(sizeHint);
-			MemoryMarshal.TryGetArray(memory, out this.segment);
-			this.span = memory.Span;
-		}
-		else
-		{
-			Assumes.NotReachable();
-		}
+		this.memory = this.output.GetMemoryCheckResult(sizeHint);
 	}
 
 	/// <summary>
@@ -266,29 +228,12 @@ internal ref struct BufferWriter
 		int bytesLeftToCopy = source.Length;
 		while (bytesLeftToCopy > 0)
 		{
-			if (this.span.Length == 0)
-			{
-				this.EnsureMore();
-			}
-
-			int writable = Math.Min(bytesLeftToCopy, this.span.Length);
-			source.Slice(copiedBytes, writable).CopyTo(this.span);
+			Span<byte> span = this.GetSpan();
+			int writable = Math.Min(bytesLeftToCopy, span.Length);
+			source.Slice(copiedBytes, writable).CopyTo(span);
 			copiedBytes += writable;
 			bytesLeftToCopy -= writable;
 			this.Advance(writable);
-		}
-	}
-
-	private void MigrateToSequence()
-	{
-		if (this.sequencePool != null)
-		{
-			// We were writing to our private scratch memory, so we have to copy it into the actual writer.
-			this.rental = this.sequencePool.Rent();
-			this.output = this.rental.Value;
-			Span<byte> realSpan = this.output.GetSpan(this.buffered);
-			this.segment.AsSpan(0, this.buffered).CopyTo(realSpan);
-			this.sequencePool = null;
 		}
 	}
 }

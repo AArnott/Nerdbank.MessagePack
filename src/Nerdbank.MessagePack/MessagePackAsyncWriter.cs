@@ -22,7 +22,7 @@ namespace Nerdbank.MessagePack;
 [Experimental("NBMsgPackAsync")]
 public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 {
-	private BufferMemoryWriter bufferWriter = new(pipeWriter);
+	private BufferWriter bufferWriter = new(pipeWriter);
 
 	/// <summary>
 	/// The delegate type that may be provided to the <see cref="Write{TState}(SyncWriter{TState}, TState)"/> method.
@@ -41,12 +41,10 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// </remarks>
 	public MessagePackWriter CreateWriter()
 	{
-#if !NET
 		// ref fields are not supported on .NET Framework, so we have to prepare to copy the struct.
 		this.bufferWriter.Commit();
-#endif
 
-		return new(new BufferWriter(ref this.bufferWriter));
+		return new(this.bufferWriter);
 	}
 
 	/// <summary>
@@ -57,10 +55,7 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	{
 		writer.Flush();
 
-#if !NET
-		// ref fields are not supported on .NET Framework, so we have to copy the struct since it'll disappear.
-		this.bufferWriter = writer.Writer.BufferMemoryWriter;
-#endif
+		this.bufferWriter = writer.Writer;
 
 		// Help prevent misuse of the writer after it's been returned.
 		writer = default;

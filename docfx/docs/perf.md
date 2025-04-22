@@ -30,8 +30,8 @@ xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS", "STJ", "Newtonsoft"]
      y-axis "Time (ns)" 0 --> 1100
      title "object as map"
-     bar "Serialize+Deserialize" [269.13,222.12,480.03,1030.56]
-     bar "Serialize" [88.53,81.61,99.59,368.74]
+     bar "Serialize+Deserialize" [323.85,219.42,479.19,1014.76]
+     bar "Serialize" [94.21,87.23,99.95,370.93]
  ```
  ```mermaid
 xychart-beta
@@ -44,10 +44,10 @@ xychart-beta
  ```mermaid
 xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS"]
-     y-axis "Time (ns)" 0 --> 200
+     y-axis "Time (ns)" 0 --> 300
      title "object as array"
-     bar "Serialize+Deserialize" [190.18,185.39]
-     bar "Serialize" [86.48,76.03]
+     bar "Serialize+Deserialize" [246.1,182.45]
+     bar "Serialize" [83.6,75.09]
  ```
  ```mermaid
 xychart-beta

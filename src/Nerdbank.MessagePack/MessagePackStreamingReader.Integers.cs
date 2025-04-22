@@ -13,7 +13,7 @@ using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
 namespace Nerdbank.MessagePack;
 
-public ref partial struct MessagePackStreamingReader
+public partial struct MessagePackStreamingReader
 {
 	/// <summary>
 	/// Reads an <see cref="Byte"/> value from:

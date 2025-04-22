@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if !NET
-
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -12,7 +10,7 @@ namespace Nerdbank.MessagePack;
 /// A .NET Framework implementation of the SequenceReader from .NET.
 /// </summary>
 /// <typeparam name="T">The type of element to be read.</typeparam>
-internal ref struct SequenceReader<T>
+internal struct SequenceReader<T>
 	where T : unmanaged, IEquatable<T>
 {
 	/// <summary>
@@ -50,6 +48,10 @@ internal ref struct SequenceReader<T>
 	/// </summary>
 	private long length;
 
+	private ReadOnlyMemory<T> currentMemory;
+
+	private int currentMemoryIndex;
+
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SequenceReader{T}"/> struct
 	/// over the given <see cref="ReadOnlySequence{T}"/>.
@@ -59,16 +61,16 @@ internal ref struct SequenceReader<T>
 	public SequenceReader(scoped in ReadOnlySequence<T> sequence)
 	{
 		this.usingSequence = true;
-		this.CurrentSpanIndex = 0;
+		this.currentMemoryIndex = 0;
 		this.Consumed = 0;
 		this.sequence = sequence;
 		this.memory = default;
 		this.currentPosition = sequence.Start;
 		this.length = -1;
 
-		ReadOnlySpan<T> first = sequence.First.Span;
+		ReadOnlyMemory<T> first = sequence.First;
 		this.nextPosition = sequence.GetPosition(first.Length);
-		this.CurrentSpan = first;
+		this.currentMemory = first;
 		this.moreData = first.Length > 0;
 
 		if (!this.moreData && !sequence.IsSingleSegment)
@@ -87,10 +89,10 @@ internal ref struct SequenceReader<T>
 	public SequenceReader(ReadOnlyMemory<T> memory)
 	{
 		this.usingSequence = false;
-		this.CurrentSpanIndex = 0;
+		this.currentMemoryIndex = 0;
 		this.Consumed = 0;
 		this.memory = memory;
-		this.CurrentSpan = memory.Span;
+		this.currentMemory = memory;
 		this.length = memory.Length;
 		this.moreData = memory.Length > 0;
 
@@ -136,17 +138,17 @@ internal ref struct SequenceReader<T>
 	/// Gets the current position in the <see cref="Sequence"/>.
 	/// </summary>
 	public readonly SequencePosition Position
-		=> this.Sequence.GetPosition(this.CurrentSpanIndex, this.currentPosition);
+		=> this.Sequence.GetPosition(this.currentMemoryIndex, this.currentPosition);
 
 	/// <summary>
 	/// Gets the current segment in the <see cref="Sequence"/> as a span.
 	/// </summary>
-	public ReadOnlySpan<T> CurrentSpan { get; private set; }
+	public readonly ReadOnlySpan<T> CurrentSpan => this.currentMemory.Span;
 
 	/// <summary>
 	/// Gets the index in the <see cref="CurrentSpan"/>.
 	/// </summary>
-	public int CurrentSpanIndex { get; private set; }
+	public readonly int CurrentSpanIndex => this.currentMemoryIndex;
 
 	/// <summary>
 	/// Gets the unread portion of the <see cref="CurrentSpan"/>.
@@ -154,7 +156,7 @@ internal ref struct SequenceReader<T>
 	public readonly ReadOnlySpan<T> UnreadSpan
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => this.CurrentSpan.Slice(this.CurrentSpanIndex);
+		get => this.CurrentSpan.Slice(this.currentMemoryIndex);
 	}
 
 	/// <summary>
@@ -196,7 +198,7 @@ internal ref struct SequenceReader<T>
 	{
 		if (this.moreData)
 		{
-			value = this.CurrentSpan[this.CurrentSpanIndex];
+			value = this.CurrentSpan[this.currentMemoryIndex];
 			return true;
 		}
 		else
@@ -220,11 +222,11 @@ internal ref struct SequenceReader<T>
 			return false;
 		}
 
-		value = this.CurrentSpan[this.CurrentSpanIndex];
-		this.CurrentSpanIndex++;
+		value = this.CurrentSpan[this.currentMemoryIndex];
+		this.currentMemoryIndex++;
 		this.Consumed++;
 
-		if (this.CurrentSpanIndex >= this.CurrentSpan.Length)
+		if (this.currentMemoryIndex >= this.CurrentSpan.Length)
 		{
 			if (this.usingSequence)
 			{
@@ -253,9 +255,9 @@ internal ref struct SequenceReader<T>
 
 		this.Consumed -= count;
 
-		if (this.CurrentSpanIndex >= count)
+		if (this.currentMemoryIndex >= count)
 		{
-			this.CurrentSpanIndex -= (int)count;
+			this.currentMemoryIndex -= (int)count;
 			this.moreData = true;
 		}
 		else if (this.usingSequence)
@@ -277,9 +279,9 @@ internal ref struct SequenceReader<T>
 	public void Advance(long count)
 	{
 		const long TooBigOrNegative = unchecked((long)0xFFFFFFFF80000000);
-		if ((count & TooBigOrNegative) == 0 && this.CurrentSpan.Length - this.CurrentSpanIndex > (int)count)
+		if ((count & TooBigOrNegative) == 0 && this.CurrentSpan.Length - this.currentMemoryIndex > (int)count)
 		{
-			this.CurrentSpanIndex += (int)count;
+			this.currentMemoryIndex += (int)count;
 			this.Consumed += count;
 		}
 		else if (this.usingSequence)
@@ -287,9 +289,9 @@ internal ref struct SequenceReader<T>
 			// Can't satisfy from the current span
 			this.AdvanceToNextSpan(count);
 		}
-		else if (this.CurrentSpan.Length - this.CurrentSpanIndex == (int)count)
+		else if (this.CurrentSpan.Length - this.currentMemoryIndex == (int)count)
 		{
-			this.CurrentSpanIndex += (int)count;
+			this.currentMemoryIndex += (int)count;
 			this.Consumed += count;
 			this.moreData = false;
 		}
@@ -327,8 +329,8 @@ internal ref struct SequenceReader<T>
 		Debug.Assert(count >= 0, "count >= 0");
 
 		this.Consumed += count;
-		this.CurrentSpanIndex += (int)count;
-		if (this.usingSequence && this.CurrentSpanIndex >= this.CurrentSpan.Length)
+		this.currentMemoryIndex += (int)count;
+		if (this.usingSequence && this.currentMemoryIndex >= this.CurrentSpan.Length)
 		{
 			this.GetNextSpan();
 		}
@@ -345,9 +347,9 @@ internal ref struct SequenceReader<T>
 		Debug.Assert(count >= 0, "count >= 0");
 
 		this.Consumed += count;
-		this.CurrentSpanIndex += (int)count;
+		this.currentMemoryIndex += (int)count;
 
-		Debug.Assert(this.CurrentSpanIndex < this.CurrentSpan.Length, "this.CurrentSpanIndex < this.CurrentSpan.Length");
+		Debug.Assert(this.currentMemoryIndex < this.CurrentSpan.Length, "this.currentMemoryIndex < this.CurrentSpan.Length");
 	}
 
 	/// <summary>
@@ -378,18 +380,18 @@ internal ref struct SequenceReader<T>
 		this.Consumed += count;
 		while (this.moreData)
 		{
-			int remaining = this.CurrentSpan.Length - this.CurrentSpanIndex;
+			int remaining = this.CurrentSpan.Length - this.currentMemoryIndex;
 
 			if (remaining > count)
 			{
-				this.CurrentSpanIndex += (int)count;
+				this.currentMemoryIndex += (int)count;
 				count = 0;
 				break;
 			}
 
 			// As there may not be any further segments we need to
 			// push the current index to the end of the span.
-			this.CurrentSpanIndex += remaining;
+			this.currentMemoryIndex += remaining;
 			count -= remaining;
 			Debug.Assert(count >= 0, "count >= 0");
 
@@ -420,7 +422,7 @@ internal ref struct SequenceReader<T>
 	private void ResetReader()
 	{
 		Debug.Assert(this.usingSequence, "usingSequence");
-		this.CurrentSpanIndex = 0;
+		this.currentMemoryIndex = 0;
 		this.Consumed = 0;
 		this.currentPosition = this.Sequence.Start;
 		this.nextPosition = this.currentPosition;
@@ -431,21 +433,21 @@ internal ref struct SequenceReader<T>
 
 			if (memory.Length == 0)
 			{
-				this.CurrentSpan = default;
+				this.currentMemory = default;
 
 				// No data in the first span, move to one with data
 				this.GetNextSpan();
 			}
 			else
 			{
-				this.CurrentSpan = memory.Span;
+				this.currentMemory = memory;
 			}
 		}
 		else
 		{
 			// No data in any spans and at end of sequence
 			this.moreData = false;
-			this.CurrentSpan = default;
+			this.currentMemory = default;
 		}
 	}
 
@@ -463,14 +465,14 @@ internal ref struct SequenceReader<T>
 				this.currentPosition = previousNextPosition;
 				if (memory.Length > 0)
 				{
-					this.CurrentSpan = memory.Span;
-					this.CurrentSpanIndex = 0;
+					this.currentMemory = memory;
+					this.currentMemoryIndex = 0;
 					return;
 				}
 				else
 				{
-					this.CurrentSpan = default;
-					this.CurrentSpanIndex = 0;
+					this.currentMemory = default;
+					this.currentMemoryIndex = 0;
 					previousNextPosition = this.nextPosition;
 				}
 			}
@@ -512,5 +514,3 @@ internal ref struct SequenceReader<T>
 		return true;
 	}
 }
-
-#endif

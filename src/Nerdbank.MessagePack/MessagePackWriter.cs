@@ -14,7 +14,7 @@ namespace Nerdbank.MessagePack;
 /// <remarks>
 /// <see href="https://github.com/msgpack/msgpack/blob/master/spec.md">The MessagePack spec.</see>.
 /// </remarks>
-public ref struct MessagePackWriter
+public struct MessagePackWriter
 {
 	/// <summary>
 	/// The writer to use.
@@ -35,7 +35,7 @@ public ref struct MessagePackWriter
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MessagePackWriter"/> struct.
 	/// </summary>
-	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required..</param>
+	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required.</param>
 	/// <param name="array">An array to start with so we can avoid accessing the <paramref name="sequencePool"/> if possible.</param>
 	internal MessagePackWriter(SequencePool<byte> sequencePool, byte[] array)
 		: this()
@@ -750,25 +750,12 @@ public ref struct MessagePackWriter
 	/// Flushes the writer and returns the written data as a byte array.
 	/// </summary>
 	/// <returns>A byte array containing the written data.</returns>
-	/// <exception cref="NotSupportedException">Thrown if the instance was not initialized to support this operation.</exception>
+	/// <exception cref="InvalidOperationException">Thrown if the instance was not initialized with <see cref="MessagePackWriter(SequencePool{byte}, byte[])"/>.</exception>
 	internal byte[] FlushAndGetArray()
 	{
-		if (this.writer.TryGetUncommittedSpan(out ReadOnlySpan<byte> span))
-		{
-			return span.ToArray();
-		}
-		else
-		{
-			if (this.writer.SequenceRental.Value == null)
-			{
-				throw new NotSupportedException("This instance was not initialized to support this operation.");
-			}
-
-			this.Flush();
-			byte[] result = this.writer.SequenceRental.Value.AsReadOnlySequence.ToArray();
-			this.writer.SequenceRental.Dispose();
-			return result;
-		}
+		byte[] result = this.writer.ToArray();
+		this.writer.Dispose();
+		return result;
 	}
 
 	private static unsafe void WriteBigEndian(ushort value, byte* span)
@@ -808,7 +795,7 @@ public ref struct MessagePackWriter
 
 		// ensure buffer by MaxByteCount(faster than GetByteCount)
 		bufferSize = StringEncoding.UTF8.GetMaxByteCount(characterLength) + 5;
-		ref byte buffer = ref this.writer.GetPointer(bufferSize);
+		ref byte buffer = ref this.writer.GetSpan(bufferSize).GetPinnableReference();
 
 		int useOffset;
 		if (characterLength <= MessagePackRange.MaxFixStringLength)

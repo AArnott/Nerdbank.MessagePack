@@ -17,7 +17,7 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 /// <exception cref="MessagePackSerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
-public ref partial struct MessagePackReader
+public partial struct MessagePackReader
 {
 	/// <summary>
 	/// The reader over the sequence.

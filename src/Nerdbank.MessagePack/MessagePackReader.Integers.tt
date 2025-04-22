@@ -13,7 +13,7 @@
 
 namespace Nerdbank.MessagePack;
 
-public ref partial struct MessagePackReader
+public partial struct MessagePackReader
 {<#
 var unsignedTypes = new Type[]
 {
