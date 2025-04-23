@@ -26,6 +26,7 @@ public class DerivedTypeMappingCollection : IReadOnlyCollection<DerivedTypeMappi
 	private DerivedTypeMappingCollection(FrozenDictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>> map, ImmutableArray<DerivedTypeMapping> mappings)
 	{
 		this.Map = map;
+		this.derivedTypeMappings = mappings;
 	}
 
 	/// <inheritdoc/>
