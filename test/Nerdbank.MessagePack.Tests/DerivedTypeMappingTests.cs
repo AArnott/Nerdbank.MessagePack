@@ -166,6 +166,19 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		Assert.Equal(typeof(MyDerivedA), mapping["A"]);
 	}
 
+	[Fact]
+	[SuppressMessage("Assertions", "xUnit2013:Do not use equality check to check for collection size.", Justification = "The whole point of this test is to ensure that the Count property matches what the enumerator would produce.")]
+	public void EnumerateMappings()
+	{
+		MessagePackSerializer serializer = new();
+		Assert.Equal(0, serializer.DerivedTypeMappings.Count);
+		Assert.Equal(serializer.DerivedTypeMappings.Count, serializer.DerivedTypeMappings.Count());
+
+		serializer = serializer with { DerivedTypeMappings = [new DerivedTypeMapping<MyBase>(Witness.ShapeProvider) { [1] = typeof(MyDerivedA) }] };
+		Assert.Equal(1, serializer.DerivedTypeMappings.Count);
+		Assert.Equal(serializer.DerivedTypeMappings.Count, serializer.DerivedTypeMappings.Count());
+	}
+
 	[GenerateShape]
 	internal partial class MyBase;
 
