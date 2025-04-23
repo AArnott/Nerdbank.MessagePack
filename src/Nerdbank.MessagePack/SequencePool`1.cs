@@ -121,6 +121,7 @@ internal class SequencePool<T>
 	internal struct Rental : IDisposable
 	{
 		private readonly SequencePool<T> owner;
+		private Sequence<T>? value;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Rental"/> struct.
@@ -130,13 +131,13 @@ internal class SequencePool<T>
 		internal Rental(SequencePool<T> owner, Sequence<T> value)
 		{
 			this.owner = owner;
-			this.Value = value;
+			this.value = value;
 		}
 
 		/// <summary>
 		/// Gets the recyclable object.
 		/// </summary>
-		public Sequence<T> Value { get; }
+		public Sequence<T> Value => this.value ?? throw new ObjectDisposedException(nameof(Rental));
 
 		/// <summary>
 		/// Returns the recyclable object to the pool.
@@ -148,6 +149,7 @@ internal class SequencePool<T>
 		public void Dispose()
 		{
 			this.owner?.Return(this.Value);
+			this.value = null;
 		}
 	}
 }
