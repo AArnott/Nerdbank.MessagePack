@@ -16,21 +16,10 @@ permissions:
   contents: write
   id-token: write # Required for requesting the JWT
 
-env:
-  AZURE_SUBSCRIPTION_ID: 997e7c30-fd83-4b3d-bcf5-492e194f9b98
-  AZURE_CLIENT_ID: 81cbb9da-0c8d-4472-910a-97df10bed770
-  AZURE_TENANT_ID: 16076fdc-fcc1-4a15-b1ca-32c9a255900e
-  KEY_VAULT_URL: https://sc-nerdbank-258792a3d4d7.vault.azure.net/
-  KEY_VAULT_CERTIFICATE: NerdBank-SC
-
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      with:
-        fetch-depth: 1
-
     - name: ⚙️ Initialization
       shell: pwsh
       run: |
@@ -84,31 +73,6 @@ jobs:
         run-id: ${{ steps.findrunid.outputs.runid }}
         github-token: ${{ github.token }}
 
-    # Login to Azure using a ServicePrincipal configured to authenticate agaist a GitHub Action
-    - name: 🔓 Authorizing signing
-      uses: azure/login@v2.3.0
-      with:
-        allow-no-subscriptions: true
-        client-id: ${{ env.AZURE_CLIENT_ID }}
-        tenant-id: ${{ env.AZURE_TENANT_ID }}
-        subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
-
-    - name: 🔏 Code sign
-      run: >
-        rm global.json # avoid a need to install a particular SDK version
-
-        dotnet tool install --tool-path obj --prerelease sign
-
-        obj/sign code azure-key-vault
-        '**/*'
-        --base-directory '${{ runner.temp }}/deployables'
-        --file-list '${{ github.workspace }}/azure-pipelines/signfiles.txt'
-        --azure-key-vault-managed-identity true
-        --azure-key-vault-url "${{ env.KEY_VAULT_URL }}"
-        --azure-key-vault-certificate "${{ env.KEY_VAULT_CERTIFICATE }}"
-
-      shell: pwsh
-
     - name: 💽 Upload artifacts to release
       shell: pwsh
       if: ${{ github.event_name == 'release' && github.event.release.assets_url != '' }}
@@ -121,5 +85,5 @@ jobs:
         }
 
     - name: 🚀 Push NuGet packages
-      run: dotnet nuget push ${{ runner.temp }}\deployables\*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ secrets.NUGET_API_KEY }}'
+      run: dotnet nuget push ${{ runner.temp }}/deployables/*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ secrets.NUGET_API_KEY }}'
       if: ${{ env.NUGET_API_KEY_DEFINED == 'true' }}
