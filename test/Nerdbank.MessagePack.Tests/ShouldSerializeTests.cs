@@ -240,6 +240,16 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		}
 	}
 
+	[Theory]
+	[InlineData(SerializeDefaultValuesPolicy.Never)]
+	[InlineData(SerializeDefaultValuesPolicy.Required)]
+	[InlineData(SerializeDefaultValuesPolicy.Always)]
+	public void PropertyWithNonDefaultInitializer_PreservesValue(SerializeDefaultValuesPolicy policy)
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = policy };
+		this.AssertRoundtrip(new PropertyWithNonDefaultInitializer { A = false });
+	}
+
 	[GenerateShape]
 	public partial record Person
 	{
@@ -282,4 +292,11 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 
 	[GenerateShape]
 	public partial record PersonWithRequiredAndOptionalParameters(string? Name, int? Age = null);
+
+	[GenerateShape]
+	public partial record PropertyWithNonDefaultInitializer
+	{
+		[DefaultValue(true)]
+		public bool A { get; set; } = true;
+	}
 }

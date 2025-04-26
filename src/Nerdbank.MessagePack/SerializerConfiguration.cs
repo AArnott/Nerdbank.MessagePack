@@ -240,6 +240,15 @@ internal record SerializerConfiguration
 	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] internal int Age { get; set; } = 18;</c></description></item>
 	/// </list>
 	/// </para>
+	/// <para>
+	/// When using anything besides <see cref="SerializeDefaultValuesPolicy.Always"/>,
+	/// avoid using member initializers to set default values without also using <see cref="System.ComponentModel.DefaultValueAttribute"/>.
+	/// Otherwise round-trip serialization may not work as expected.
+	/// For example a property declared as <c>public int Age = 18;</c> may be skipped during serialization when its value is 0 (because <c>default(int) == 0</c>),
+	/// and upon deserialization, the value of Age will be 18 because no value for the property was provided.
+	/// But simply adding <c>[DefaultValue(18)]</c> to that same property declaration allows the serializer to understand what value should be considered the default value,
+	/// so that it is only skipped during serialization if the age was 18, allowing all values to be correctly round-tripped.
+	/// </para>
 	/// </remarks>
 	public SerializeDefaultValuesPolicy SerializeDefaultValues
 	{
