@@ -47,6 +47,14 @@ Taken together with the added @PolyType.TypeShapeAttribute that refers to the ma
 
 [!code-csharp[](../../samples/cs/SurrogateTypes.cs#CompleteSample)]
 
+### Surrogates for external types
+
+When the unserializable type is declared in an assembly you don't control, such that you cannot add a <xref:PolyType.TypeShapeExtensionAttribute> to the type declaration, you can use a type shape *extension* to achieve the same end:
+
+```cs
+[assembly: TypeShapeExtension(typeof(SomeExternalType), Marshaller = typeof(MyMarshallerForSomeExternalType))]
+```
+
 ### Open generic data type
 
 Open generic data types can define surrogates for themselves as well.
