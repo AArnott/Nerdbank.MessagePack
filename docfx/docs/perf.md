@@ -4,7 +4,7 @@ Perf isn't everything, but it can be important in some scenarios.
 Nerdbank.MessagePack is very fast, but not quite as fast as MessagePack-CSharp v3 with source generation turned on.
 
 Features and ease of use are also important.
-Nerdbank.MessagePack is much simpler to use, and comes [loaded with features](migrating.md#feature-comparison) that MessagePack-CSharp does not have.
+Nerdbank.MessagePack is much simpler to use, and comes [loaded with features](features.md#feature-comparison) that MessagePack-CSharp does not have.
 Nerdbank.MessagePack also reliably works in AOT environments, while MessagePack-CSharp does not.
 
 In the perf comparisons below, the following legend applies
@@ -57,4 +57,3 @@ xychart-beta
      bar "Serialize+Deserialize" [80,80]
      bar "Serialize" [0,0]
  ```
-
