@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -18,8 +17,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="properties">The properties to be serialized.</param>
 /// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="constructor">The constructor for the deserialized type.</param>
+/// <param name="assignmentTrackingManager">A property assignment tracking system to track which properties are set.</param>
 /// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
-internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> properties, DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty, Func<T>? constructor, SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
+internal class ObjectArrayConverter<T>(
+	ReadOnlyMemory<PropertyAccessors<T>?> properties,
+	DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty,
+	Func<T>? constructor,
+	PropertyAssignmentTrackingManager<T> assignmentTrackingManager,
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -28,6 +33,11 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
 	/// </summary>
 	protected DirectPropertyAccess<T, UnusedDataPacket> UnusedDataProperty => unusedDataProperty;
+
+	/// <summary>
+	/// Gets the property assignment tracking manager.
+	/// </summary>
+	protected PropertyAssignmentTrackingManager<T> AssignmentTrackingManager => assignmentTrackingManager;
 
 	/// <inheritdoc/>
 	public override T? Read(ref MessagePackReader reader, SerializationContext context)
@@ -53,13 +63,16 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
+			PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
+
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
 				int index = reader.ReadInt32();
-				if (properties.Length > index && properties.Span[index]?.MsgPackReaders is var (deserialize, _))
+				if (properties.Length > index && properties.Span[index] is { MsgPackReaders: var (deserialize, _), AssignmentTrackingIndex: int assignmentTrackingIndex })
 				{
+					assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
 					deserialize(ref value, ref reader, context);
 				}
 				else if (unusedDataProperty.Setter is not null)
@@ -72,6 +85,8 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					reader.Skip(context);
 				}
 			}
+
+			assignmentTracker.ReportDeserializationComplete();
 		}
 		else
 		{
@@ -442,6 +457,8 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 		if (peekType == MessagePackType.Map)
 		{
+			PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
+
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
@@ -460,8 +477,9 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					int propertyIndex = syncReader.ReadInt32();
-					if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { MsgPackReaders: { Deserialize: { } deserialize } })
+					if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { MsgPackReaders: { Deserialize: { } deserialize }, AssignmentTrackingIndex: int assignmentTrackingIndex })
 					{
+						assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
 						deserialize(ref value, ref syncReader, context);
 					}
 					else if (unusedDataProperty.Setter is not null)
@@ -485,8 +503,10 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 					{
 						// The property name has already been buffered.
 						int propertyIndex = syncReader.ReadInt32();
-						if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader })
+						if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader, AssignmentTrackingIndex: int assignmentTrackingIndex })
 						{
+							assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
+
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
 							reader.ReturnReader(ref syncReader);
 							value = await propertyReader.DeserializeAsync(value, reader, context).ConfigureAwait(false);
@@ -508,6 +528,8 @@ internal class ObjectArrayConverter<T>(ReadOnlyMemory<PropertyAccessors<T>?> pro
 
 				reader.ReturnReader(ref syncReader);
 			}
+
+			assignmentTracker.ReportDeserializationComplete();
 		}
 		else
 		{

@@ -60,3 +60,22 @@ In this example, we use @Nerdbank.MessagePack.StructuralEqualityComparer.GetHash
 This implementation uses the SIP hash algorithm, which is known for its high performance and collision resistance.
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
 Please review the documentation for @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* for more information.
+
+## Multiple values for the same property
+
+Attackers will sometimes attempt to exploit vulnerabilities in a system by providing multiple values for the same property.
+Consider this JSON object:
+
+```json
+{ "accessRequested": "guest", "accessRequested": "admin" }
+```
+
+If this object represents a request and was received and checked for necessary permissions before the being forwarded to a processor, there's a potential exploit.
+If the permission check only scans for the first definition of the `accessRequested` property and sees that `guest` permission is requested, it may approve and forward the request to the processor.
+The processor may need to understand the whole object and therefore fully deserialize it.
+If the deserializer is implemented as most are, the last value given for a property may be the one last applied to the deserialized object.
+This means that although the security check saw "guest", the processor will see "admin".
+
+There is no good reason for a serialized object to define two values for the same property.
+The same exploit is possible with objects encoded in messagepack.
+Nerdbank.MessagePack mitigates this threat automatically by throwing a <xref:Nerdbank.MessagePack.MessagePackSerializationException> with its <xref:Nerdbank.MessagePack.MessagePackSerializationException.Code> property set to <xref:Nerdbank.MessagePack.MessagePackSerializationException.ErrorCode.DoublePropertyAssignment> during deserialization when any such double assignment is detected.

@@ -39,6 +39,7 @@ JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerialize
 Secure defaults           | ✅ | ❌ |
 Automatic hash collection deserialization in secure mode | ❌ | ✅ |
 Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.StructuralEqualityComparer) | ❌ |
+Rejection of data that defines multiple values for the same property | [✅](security.md#multiple-values-for-the-same-property) | ❌ |
 Free of mutable statics   | ✅ | ❌ |
 Structural `IEqualityComparer<T>` for arbitrary types | ✅ | ❌ |
 

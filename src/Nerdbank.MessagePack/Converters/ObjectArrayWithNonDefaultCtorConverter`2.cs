@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -17,6 +16,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Constructor parameter initializers, in array positions matching serialization indexes.</param>
+/// <param name="assignmentTrackingManager">A property assignment tracking system to track which properties are set.</param>
 /// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectArrayConverter{T}.ObjectArrayConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	PropertyAccessors<TDeclaringType>?[] properties,
@@ -24,7 +24,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	Func<TArgumentState> argStateCtor,
 	Constructor<TArgumentState, TDeclaringType> ctor,
 	DeserializableProperty<TArgumentState>?[] parameters,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectArrayConverter<TDeclaringType>(properties, unusedDataProperty, null, defaultValuesPolicy)
+	PropertyAssignmentTrackingManager<TDeclaringType> assignmentTrackingManager,
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectArrayConverter<TDeclaringType>(properties, unusedDataProperty, null, assignmentTrackingManager, defaultValuesPolicy)
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -40,6 +41,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
+			PropertyAssignmentTrackingManager<TDeclaringType>.Tracker assignmentTracker = this.AssignmentTrackingManager.CreateTracker();
+
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
@@ -47,6 +50,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				int index = reader.ReadInt32();
 				if (properties.Length > index && parameters[index] is { } deserialize)
 				{
+					assignmentTracker.ReportPropertyAssignment(deserialize.AssignmentTrackingIndex);
 					deserialize.Read(ref argState, ref reader, context);
 				}
 				else
@@ -62,6 +66,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					}
 				}
 			}
+
+			assignmentTracker.ReportDeserializationComplete();
 		}
 		else
 		{
@@ -127,6 +133,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		if (peekType == MessagePackType.Map)
 		{
+			PropertyAssignmentTrackingManager<TDeclaringType>.Tracker assignmentTracker = this.AssignmentTrackingManager.CreateTracker();
+
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
@@ -145,8 +153,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					int propertyIndex = syncReader.ReadInt32();
-					if (propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
+					if (propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize, AssignmentTrackingIndex: int assignmentTrackingIndex })
 					{
+						assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
 						deserialize(ref argState, ref syncReader, context);
 					}
 					else if (this.UnusedDataProperty.Setter is not null)
@@ -164,14 +173,16 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 				if (remainingEntries > 0)
 				{
-					// To know whether the next property is async, we need to know its index.
-					// If its index isn't in the buffer, we'll just loop around and get it in the next buffer.
+					// To know whether the next property is async, we need to know its assignmentTrackingIndex.
+					// If its assignmentTrackingIndex isn't in the buffer, we'll just loop around and get it in the next buffer.
 					if (bufferedStructures % 2 == 1)
 					{
 						// The property name has already been buffered.
 						int propertyIndex = syncReader.ReadInt32();
-						if (propertyIndex < parameters.Length && parameters[propertyIndex] is { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync })
+						if (propertyIndex < parameters.Length && parameters[propertyIndex] is { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync, AssignmentTrackingIndex: int assignmentTrackingIndex })
 						{
+							assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
+
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
 							reader.ReturnReader(ref syncReader);
 							argState = await deserializeAsync(argState, reader, context).ConfigureAwait(false);
@@ -192,6 +203,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 				reader.ReturnReader(ref syncReader);
 			}
+
+			assignmentTracker.ReportDeserializationComplete();
 		}
 		else
 		{

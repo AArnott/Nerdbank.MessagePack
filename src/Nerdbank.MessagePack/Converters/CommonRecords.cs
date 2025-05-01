@@ -90,7 +90,8 @@ internal record struct MapDeserializableProperties<TDeclaringType>(SpanDictionar
 /// <param name="Read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
 /// <param name="ReadAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
 /// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
-internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync, MessagePackConverter Converter)
+/// <param name="AssignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
+internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync, MessagePackConverter Converter, int AssignmentTrackingIndex)
 {
 	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
 	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
@@ -105,12 +106,14 @@ internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadO
 /// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
 /// <param name="ShouldSerialize">An optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</param>
 /// <param name="Shape">The property shape, for use with generating schema.</param>
+/// <param name="AssignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
 internal record struct PropertyAccessors<TDeclaringType>(
 	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters,
 	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? MsgPackReaders,
 	MessagePackConverter Converter,
 	Func<TDeclaringType, bool>? ShouldSerialize,
-	IPropertyShape Shape)
+	IPropertyShape Shape,
+	int AssignmentTrackingIndex)
 {
 	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
 	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
