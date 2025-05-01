@@ -32,6 +32,7 @@ internal record SerializerConfiguration
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
+	private DeserializeDefaultValuesPolicy deserializeDefaultValues = DeserializeDefaultValuesPolicy.Default;
 	private LibraryReservedMessagePackExtensionTypeCode libraryExtensionTypeCodes = LibraryReservedMessagePackExtensionTypeCode.Default;
 #if NET
 	private MultiDimensionalArrayFormat multiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested;
@@ -254,6 +255,17 @@ internal record SerializerConfiguration
 	{
 		get => this.serializeDefaultValues;
 		init => this.ChangeSetting(ref this.serializeDefaultValues, value);
+	}
+
+	/// <summary>
+	/// Gets the policy concerning how to handle missing or <see langword="null" /> properties
+	/// during deserialization.
+	/// </summary>
+	/// <value>The default value is <see cref="DeserializeDefaultValuesPolicy.Default"/>.</value>
+	public DeserializeDefaultValuesPolicy DeserializeDefaultValues
+	{
+		get => this.deserializeDefaultValues;
+		init => this.ChangeSetting(ref this.deserializeDefaultValues, value);
 	}
 
 	/// <summary>

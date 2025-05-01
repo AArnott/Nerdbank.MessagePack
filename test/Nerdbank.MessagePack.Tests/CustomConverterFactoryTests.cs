@@ -148,7 +148,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 			{
 				"A" => new A(),
 				"B" => new B(),
-				_ => throw new InvalidOperationException("Unknown type"),
+				_ => throw new InvalidOperationException("Unspecified type"),
 			};
 			result.CustomSerialized = true;
 			return (T)(object)result;

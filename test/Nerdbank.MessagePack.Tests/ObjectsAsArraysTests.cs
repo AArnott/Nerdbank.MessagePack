@@ -49,7 +49,11 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	[Theory, PairwiseData]
 	public async Task Person_WithoutLastName(bool async)
 	{
-		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+		this.Serializer = this.Serializer with
+		{
+			SerializeDefaultValues = SerializeDefaultValuesPolicy.Never,
+			DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties,
+		};
 
 		// The most compact representation of this is an array of length 1.
 		// Verify that this is what the converter chose.
@@ -63,7 +67,11 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	[Theory, PairwiseData]
 	public async Task Person_WithoutFirstName(bool async)
 	{
-		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+		this.Serializer = this.Serializer with
+		{
+			SerializeDefaultValues = SerializeDefaultValuesPolicy.Never,
+			DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties,
+		};
 
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose.
@@ -77,7 +85,11 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	[Theory, PairwiseData]
 	public async Task Person_AllDefaultValues(bool async)
 	{
-		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+		this.Serializer = this.Serializer with
+		{
+			SerializeDefaultValues = SerializeDefaultValuesPolicy.Never,
+			DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties,
+		};
 
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose.
@@ -227,7 +239,11 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	[Fact]
 	public async Task AsyncAndSyncPropertyMix_AsMap()
 	{
-		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+		this.Serializer = this.Serializer with
+		{
+			SerializeDefaultValues = SerializeDefaultValuesPolicy.Never,
+			DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties,
+		};
 
 		// Initialize a default late in the array to motivate serialization as a map.
 		FamilyWithAsyncProperties family = new()
@@ -246,6 +262,11 @@ public partial class ObjectsAsArraysTests(ITestOutputHelper logger) : MessagePac
 	[Theory, PairwiseData]
 	public async Task AsyncAndSyncPropertyMix_ReadMapFromNonContiguousBuffer(bool breakBeforeIndex)
 	{
+		this.Serializer = this.Serializer with
+		{
+			DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties,
+		};
+
 		FamilyWithAsyncProperties expectedFamily = new()
 		{
 			Father = null,

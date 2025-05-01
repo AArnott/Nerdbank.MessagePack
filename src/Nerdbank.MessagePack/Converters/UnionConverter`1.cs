@@ -43,7 +43,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 			int alias = reader.ReadInt32();
 			if (!subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias {alias}.");
+				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
 			}
 		}
 		else
@@ -51,7 +51,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
 			if (!subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
 		}
 
@@ -143,7 +143,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 
 			if (!subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias {alias}.");
+				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
 			}
 		}
 		else
@@ -163,7 +163,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 
 			if (!subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
-				throw new MessagePackSerializationException($"Unknown alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
 		}
 

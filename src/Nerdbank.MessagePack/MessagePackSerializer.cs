@@ -75,6 +75,13 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { SerializeDefaultValues = value };
 	}
 
+	/// <inheritdoc cref="SerializerConfiguration.DeserializeDefaultValues"/>
+	public DeserializeDefaultValuesPolicy DeserializeDefaultValues
+	{
+		get => this.configuration.DeserializeDefaultValues;
+		init => this.configuration = this.configuration with { DeserializeDefaultValues = value };
+	}
+
 	/// <inheritdoc cref="SerializerConfiguration.PreserveReferences"/>
 	public ReferencePreservationMode PreserveReferences
 	{

@@ -16,6 +16,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Tools for deserializing individual property values.</param>
+/// <param name="assignmentTrackingManager">A property assignment tracking system to track which properties are set.</param>
 /// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	MapSerializableProperties<TDeclaringType> serializable,
@@ -23,7 +24,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 	DirectPropertyAccess<TDeclaringType, UnusedDataPacket> unusedDataProperty,
 	Constructor<TArgumentState, TDeclaringType> ctor,
 	MapDeserializableProperties<TArgumentState> parameters,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, unusedDataProperty, null, defaultValuesPolicy)
+	PropertyAssignmentTrackingManager<TDeclaringType> assignmentTrackingManager,
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, unusedDataProperty, null, assignmentTrackingManager, defaultValuesPolicy)
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -35,6 +37,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		PropertyAssignmentTrackingManager<TDeclaringType>.Tracker assignmentTracker = this.AssignmentTrackingManager.CreateTracker();
 		UnusedDataPacket.Map? unused = null;
 
 		if (parameters.Readers is not null)
@@ -43,9 +46,10 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
-				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> deserializeArg))
+				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 				{
-					deserializeArg.Read(ref argState, ref reader, context);
+					assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
+					propertyReader.Read(ref argState, ref reader, context);
 				}
 				else if (this.UnusedDataProperty.Setter is not null)
 				{
@@ -64,6 +68,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.Skip(context);
 		}
 
+		assignmentTracker.ReportDeserializationComplete();
 		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
@@ -98,6 +103,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
+		PropertyAssignmentTrackingManager<TDeclaringType>.Tracker assignmentTracker = this.AssignmentTrackingManager.CreateTracker();
 		UnusedDataPacket.Map? unused = null;
 
 		if (parameters.Readers is not null)
@@ -122,6 +128,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 					{
+						assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 						propertyReader.Read(ref argState, ref syncReader, context);
 					}
 					else if (this.UnusedDataProperty.Setter is not null)
@@ -147,6 +154,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState> propertyReader))
 						{
+							assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 							if (propertyReader.PreferAsyncSerialization)
 							{
 								// The next property value is async, so turn in our sync reader and read it asynchronously.
@@ -215,6 +223,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.ReturnReader(ref streamingReader);
 		}
 
+		assignmentTracker.ReportDeserializationComplete();
 		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)

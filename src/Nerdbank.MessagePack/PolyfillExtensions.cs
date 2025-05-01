@@ -6,6 +6,7 @@
 #pragma warning disable SA1403 // multiple namespaces
 
 using System.Buffers.Binary;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -55,6 +56,19 @@ namespace Nerdbank.MessagePack
 	/// </content>
 	internal static partial class PolyfillExtensions
 	{
+		internal static bool HasAnySet(this BitArray bitArray)
+		{
+			for (int i = 0; i < bitArray.Count; i++)
+			{
+				if (bitArray[i])
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		internal static unsafe int GetChars(this Encoding encoding, ReadOnlySpan<byte> source, Span<char> destination)
 		{
 			fixed (byte* pSource = source)

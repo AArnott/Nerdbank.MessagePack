@@ -50,6 +50,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <inheritdoc cref="SerializerConfiguration.SerializeDefaultValues"/>
 	internal SerializeDefaultValuesPolicy SerializeDefaultValues => configuration.SerializeDefaultValues;
 
+	/// <inheritdoc cref="SerializerConfiguration.DeserializeDefaultValues"/>
+	internal DeserializeDefaultValuesPolicy DeserializeDefaultValues => configuration.DeserializeDefaultValues;
+
 	/// <inheritdoc cref="SerializerConfiguration.InternStrings"/>
 	internal bool InternStrings => configuration.InternStrings;
 

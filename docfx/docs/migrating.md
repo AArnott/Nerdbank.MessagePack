@@ -21,6 +21,7 @@ F# union type support     | [✅](fsharp.md) | ❌ |
 Typeless serialization    | ❌ | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
 `dynamic` serialization    | [✅](getting-started.md#deserialize-to-dynamic) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md)
 Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) |
+Required and non-nullable property deserialization guaranteed | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeDefaultValues) | ❌ |
 Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) |
 Surrogate types for automatic serialization of unserializable types | [✅](surrogate-types.md) | ❌ |
 Custom converters         | [✅](custom-converters.md) | ✅ |
@@ -39,6 +40,7 @@ JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerialize
 Secure defaults           | ✅ | ❌ |
 Automatic hash collection deserialization in secure mode | ❌ | ✅ |
 Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.StructuralEqualityComparer) | ❌ |
+Rejection of data that defines multiple values for the same property | [✅](security.md#multiple-values-for-the-same-property) | ❌ |
 Free of mutable statics   | ✅ | ❌ |
 Structural `IEqualityComparer<T>` for arbitrary types | ✅ | ❌ |
 
