@@ -12,6 +12,11 @@ public enum SerializeDefaultValuesPolicy
 	/// <summary>
 	/// Do not serialize any default values.
 	/// </summary>
+	/// <remarks>
+	/// Use this setting with care, because it can break round-tripping of data types that consider properties to be required.
+	/// Consider setting <see cref="DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties"/>
+	/// on <see cref="MessagePackSerializer.DeserializeDefaultValues"/> when using this setting.
+	/// </remarks>
 	Never = 0x0,
 
 	/// <summary>

@@ -17,7 +17,7 @@ public partial class DoubleAssignmentTests(ITestOutputHelper logger) : MessagePa
 		writer.Write(3);
 		writer.Flush();
 
-		await this.DeserializeMaybeAsync<MapNoArgState>(seq, async);
+		await this.ExpectDeserializationThrowsAsync<MapNoArgState>(seq, async);
 	}
 
 	[Theory, PairwiseData]
@@ -34,7 +34,25 @@ public partial class DoubleAssignmentTests(ITestOutputHelper logger) : MessagePa
 		writer.Write(3);
 		writer.Flush();
 
-		await this.DeserializeMaybeAsync<MapWithArgState>(seq, async);
+		await this.ExpectDeserializationThrowsAsync<MapWithArgState>(seq, async);
+	}
+
+	[Fact]
+	public async Task VeryLargeType_Collision()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(3);
+		writer.Write("P1");
+		writer.Write(false);
+		writer.Write("P2");
+		writer.Write(false);
+		writer.Write("P2");
+		writer.Write(true);
+		writer.Flush();
+
+		MessagePackSerializationException ex = await this.ExpectDeserializationThrowsAsync<SharedTestTypes.RecordWith66RequiredProperties>(seq, async: false);
+		Assert.Contains("P2", ex.Message);
 	}
 
 	[Theory, PairwiseData]
@@ -54,7 +72,7 @@ public partial class DoubleAssignmentTests(ITestOutputHelper logger) : MessagePa
 		writer.Write(false);
 		writer.Flush();
 
-		await this.DeserializeMaybeAsync<ArrayNoArgState>(seq, async);
+		await this.ExpectDeserializationThrowsAsync<ArrayNoArgState>(seq, async);
 	}
 
 	[Theory, PairwiseData]
@@ -74,10 +92,10 @@ public partial class DoubleAssignmentTests(ITestOutputHelper logger) : MessagePa
 		writer.Write(false);
 		writer.Flush();
 
-		await this.DeserializeMaybeAsync<ArrayWithArgState>(seq, async);
+		await this.ExpectDeserializationThrowsAsync<ArrayWithArgState>(seq, async);
 	}
 
-	private async ValueTask<MessagePackSerializationException> DeserializeMaybeAsync<T>(ReadOnlySequence<byte> msgpack, bool async)
+	private async ValueTask<MessagePackSerializationException> ExpectDeserializationThrowsAsync<T>(ReadOnlySequence<byte> msgpack, bool async)
 #if NET
 		where T : IShapeable<T>
 #endif
@@ -86,7 +104,9 @@ public partial class DoubleAssignmentTests(ITestOutputHelper logger) : MessagePa
 			? await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.DeserializeAsync<T>(new MemoryStream(msgpack.ToArray()), TestContext.Current.CancellationToken).AsTask())
 			: Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<T>(msgpack, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.GetBaseException().Message);
-		return ex;
+		MessagePackSerializationException rootCauseException = Assert.IsType<MessagePackSerializationException>(ex.GetBaseException());
+		Assert.Equal(MessagePackSerializationException.ErrorCode.DoublePropertyAssignment, rootCauseException.Code);
+		return rootCauseException;
 	}
 
 	[GenerateShape]

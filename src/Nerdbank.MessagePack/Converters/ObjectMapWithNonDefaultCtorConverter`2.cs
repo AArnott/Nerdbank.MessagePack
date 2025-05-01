@@ -68,9 +68,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.Skip(context);
 		}
 
-		TDeclaringType value = ctor(ref argState);
-
 		assignmentTracker.ReportDeserializationComplete();
+		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
 		{
@@ -224,9 +223,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.ReturnReader(ref streamingReader);
 		}
 
-		TDeclaringType value = ctor(ref argState);
-
 		assignmentTracker.ReportDeserializationComplete();
+		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
 		{

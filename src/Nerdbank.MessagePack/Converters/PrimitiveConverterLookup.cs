@@ -42,6 +42,7 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _TimeSpanConverter;
 	private static IMessagePackConverterInternal? _GuidConverter;
 	private static IMessagePackConverterInternal? _SystemDrawingColorConverter;
+	private static IMessagePackConverterInternal? _SystemDrawingPointConverter;
 	private static IMessagePackConverterInternal? _MemoryOfByteConverter;
 	private static IMessagePackConverterInternal? _ReadOnlyMemoryOfByteConverter;
 	private static IMessagePackConverterInternal? _StringConverter;
@@ -190,6 +191,12 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(System.Drawing.Color))
 		{
 			converter = (MessagePackConverter<T>)(_SystemDrawingColorConverter ??= new SystemDrawingColorConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(System.Drawing.Point))
+		{
+			converter = (MessagePackConverter<T>)(_SystemDrawingPointConverter ??= new SystemDrawingPointConverter());
 			return true;
 		}
 

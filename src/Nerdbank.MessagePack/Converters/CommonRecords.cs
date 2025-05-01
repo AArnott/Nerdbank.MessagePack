@@ -137,7 +137,8 @@ internal record struct DirectPropertyAccess<TDeclaringType, TValue>(Setter<TDecl
 /// <param name="Deserializers">Deserializable properties on the data type.</param>
 /// <param name="ParametersByName">A collection of constructor parameters, with any conflicting names removed.</param>
 /// <param name="UnusedDataProperty">The special unused data property, if present.</param>
-internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IParameterShape> ParametersByName, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty);
+/// <param name="AssignmentTrackingManager">The parameter assignment tracking manager.</param>
+internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IParameterShape> ParametersByName, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty, PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager);
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
@@ -146,7 +147,8 @@ internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializablePrope
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
 /// <param name="Properties">The accessors to use for accessing each array element.</param>
 /// <param name="UnusedDataProperty">The special unused data property, if present.</param>
-internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty)
+/// <param name="AssignmentTrackingManager">The parameter assignment tracking manager.</param>
+internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty, PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager)
 {
 	/// <summary>
 	/// Constructs an array of just the property accessors (without property names).

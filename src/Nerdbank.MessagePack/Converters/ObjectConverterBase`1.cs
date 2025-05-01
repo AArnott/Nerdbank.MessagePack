@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Nodes;
 using PolyType.Utilities;
@@ -85,4 +86,10 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 			.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
 		return ctorParams;
 	}
+
+	/// <summary>
+	/// Throws a <see cref="MessagePackSerializationException"/> that indicates required properties are missing during deserialization.
+	/// </summary>
+	[DoesNotReturn]
+	protected static void ThrowMissingRequiredProperties() => throw new MessagePackSerializationException("Missing required properties.");
 }

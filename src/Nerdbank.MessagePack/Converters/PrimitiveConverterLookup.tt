@@ -42,6 +42,7 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("TimeOnly", "TimeOnlyConverter", "NET"),
 	new ConverterInfo("DateOnly", "DateOnlyConverter", "NET"),
 	new ConverterInfo("System.Drawing.Color", "SystemDrawingColorConverter"),
+	new ConverterInfo("System.Drawing.Point", "SystemDrawingPointConverter"),
 	new ConverterInfo("Memory<byte>", "MemoryOfByteConverter"),
 	new ConverterInfo("ReadOnlyMemory<byte>", "ReadOnlyMemoryOfByteConverter"),
 	new ConverterInfo("string", "StringConverter", IsRefType: true),
