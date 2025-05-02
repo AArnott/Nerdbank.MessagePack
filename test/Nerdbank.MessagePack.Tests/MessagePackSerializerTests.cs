@@ -319,6 +319,22 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		this.AssertRoundtrip(new ClassWithIndexer { Member = 3 });
 	}
 
+	[Fact]
+	public void TupleSerializedAsArray()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<Tuple<int, bool>, Witness>(new(1, true));
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+	}
+
+	[Fact]
+	public void ValueTupleSerializedAsArray()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<(int, bool), Witness>(new(1, true));
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+	}
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
@@ -549,6 +565,8 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	[GenerateShape<byte[]>]
 	[GenerateShape<Memory<byte>>]
 	[GenerateShape<ReadOnlyMemory<byte>>]
+	[GenerateShape<Tuple<int, bool>>]
+	[GenerateShape<(int, bool)>]
 	internal partial class Witness;
 
 	private class CustomStringConverter : MessagePackConverter<string>
