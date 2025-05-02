@@ -127,7 +127,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (property.Accept(this, (matchingConstructorParameter, (IPropertyAssignmentTrackingManager)assignmentTrackingManager)) is PropertyAccessors<T> accessors)
 			{
 				KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
-				if (keyAttribute is not null || this.owner.PerfOverSchemaStability)
+				if (keyAttribute is not null || this.owner.PerfOverSchemaStability || objectShape.IsTupleType)
 				{
 					propertyAccessors ??= new();
 					int index = keyAttribute?.Index ?? propertyIndex;
