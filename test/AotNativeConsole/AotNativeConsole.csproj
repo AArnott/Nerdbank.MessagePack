@@ -5,6 +5,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <!-- Used by sizoscope -->

@@ -42,6 +42,10 @@
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
   </ItemGroup>
+  <ItemGroup Condition="'$(IsTestProject)'=='true'">
+    <PackageVersion Update="System.Collections.Immutable" Version="9.0.0" />
+    <PackageVersion Update="System.IO.Pipelines" Version="9.0.0" />
+  </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0" />
