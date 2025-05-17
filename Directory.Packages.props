@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <RoslynVersion>4.13.0</RoslynVersion>
+    <RoslynVersion>4.14.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25173.3</CodeAnalysisAnalyzerVersion>
     <PolyTypeVersion>0.37.1</PolyTypeVersion>
@@ -41,6 +41,10 @@
     <PackageVersion Update="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsTestProject)'=='true'">
+    <PackageVersion Update="System.Collections.Immutable" Version="9.0.0" />
+    <PackageVersion Update="System.IO.Pipelines" Version="9.0.0" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
