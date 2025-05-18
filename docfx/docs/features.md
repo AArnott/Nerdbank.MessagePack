@@ -50,7 +50,7 @@ Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerialize
 Cyclical references       | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
 JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
 Secure defaults           | ✅ | ❌ |
-Automatic hash collection deserialization in secure mode | ❌ | ✅ |
+Automatic hash collection deserialization in secure mode | ✅ | ✅ |
 Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.StructuralEqualityComparer) | ❌ |
 Rejection of data that defines multiple values for the same property | [✅](security.md#multiple-values-for-the-same-property) | ❌ |
 Free of mutable statics   | ✅ | ❌ |
