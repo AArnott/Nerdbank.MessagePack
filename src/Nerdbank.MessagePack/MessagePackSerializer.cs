@@ -3,11 +3,8 @@
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
-using System.Collections;
 using System.Collections.Immutable;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Dynamic;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
@@ -52,6 +49,13 @@ public partial record MessagePackSerializer
 	{
 		get => this.configuration.PropertyNamingPolicy;
 		init => this.configuration = this.configuration with { PropertyNamingPolicy = value };
+	}
+
+	/// <inheritdoc cref="SerializerConfiguration.ComparerProvider"/>
+	public IComparerProvider? ComparerProvider
+	{
+		get => this.configuration.ComparerProvider;
+		init => this.configuration = this.configuration with { ComparerProvider = value };
 	}
 
 	/// <inheritdoc cref="SerializerConfiguration.PerfOverSchemaStability"/>

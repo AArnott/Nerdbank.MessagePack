@@ -16,6 +16,10 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 	public void Roundtrip_Value<T, TProvider>(TestCase<T> testCase)
 #endif
 	{
+		// Avoid using our secure hash algorithm because that messes with the order of elements
+		// in unordered collections, causing our equality testing to fail.
+		this.Serializer = this.Serializer with { ComparerProvider = null };
+
 		try
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;

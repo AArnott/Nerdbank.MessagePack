@@ -335,6 +335,56 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
+	[Fact]
+	public void ComparerProvider_CanBeOverridden()
+	{
+		this.Serializer = this.Serializer with { ComparerProvider = null };
+
+		KeyedCollections testData = new()
+		{
+			StringSet = ["a", "b"],
+			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
+			FruitSet = [new Fruit { Seeds = 3 }],
+			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
+		};
+		KeyedCollections? deserializedData = this.Roundtrip(testData);
+		Assert.NotNull(deserializedData);
+
+		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+
+		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
+		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
+		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
+		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
+	}
+
+	[Fact]
+	public void ComparerProvider_CollisionResistantDefault()
+	{
+		KeyedCollections testData = new()
+		{
+			StringSet = ["a", "b"],
+			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
+			FruitSet = [new Fruit { Seeds = 3 }],
+			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
+		};
+		KeyedCollections? deserializedData = this.Roundtrip(testData);
+		Assert.NotNull(deserializedData);
+
+		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+
+		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
+		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
+		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
+		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
+	}
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
@@ -348,6 +398,18 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 		writer.Write(3);
 		writer.Flush();
 		return sequence;
+	}
+
+	[GenerateShape]
+	public partial class KeyedCollections
+	{
+		public required HashSet<string> StringSet { get; set; }
+
+		public required Dictionary<string, int> StringDictionary { get; set; }
+
+		public required HashSet<Fruit> FruitSet { get; set; }
+
+		public required Dictionary<Fruit, int> FruitDictionary { get; set; }
 	}
 
 	[GenerateShape]

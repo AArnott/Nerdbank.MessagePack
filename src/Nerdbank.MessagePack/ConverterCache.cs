@@ -1,11 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using Microsoft;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
@@ -58,6 +56,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 
 	/// <inheritdoc cref="SerializerConfiguration.PropertyNamingPolicy"/>
 	internal MessagePackNamingPolicy? PropertyNamingPolicy => configuration.PropertyNamingPolicy;
+
+	/// <inheritdoc cref="SerializerConfiguration.ComparerProvider"/>
+	internal IComparerProvider? ComparerProvider => configuration.ComparerProvider;
 
 	/// <inheritdoc cref="SerializerConfiguration.PerfOverSchemaStability"/>
 	internal bool PerfOverSchemaStability => configuration.PerfOverSchemaStability;

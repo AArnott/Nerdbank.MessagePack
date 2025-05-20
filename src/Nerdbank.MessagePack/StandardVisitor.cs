@@ -514,9 +514,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return dictionaryShape.ConstructionStrategy switch
 		{
 			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter),
-			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetDefaultConstructor()),
-			CollectionConstructionStrategy.Span => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetSpanConstructor()),
-			CollectionConstructionStrategy.Enumerable => new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetEnumerableConstructor()),
+			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetDefaultConstructor(this.GetCollectionOptions(dictionaryShape))),
+			CollectionConstructionStrategy.Span => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetSpanConstructor(this.GetCollectionOptions(dictionaryShape))),
+			CollectionConstructionStrategy.Enumerable => new EnumerableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetEnumerableConstructor(this.GetCollectionOptions(dictionaryShape))),
 			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
 		};
 	}
@@ -565,13 +565,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return enumerableShape.ConstructionStrategy switch
 		{
 			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
-			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor()),
+			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetDefaultConstructor(this.GetCollectionOptions(enumerableShape))),
 #if NET
 			CollectionConstructionStrategy.Span when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
 #endif
-			CollectionConstructionStrategy.Span when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetSpanConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
-			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor()),
-			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor()),
+			CollectionConstructionStrategy.Span when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetSpanConstructor(this.GetCollectionOptions(enumerableShape)), out MessagePackConverter<TEnumerable>? converter) => converter,
+			CollectionConstructionStrategy.Span => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetSpanConstructor(this.GetCollectionOptions(enumerableShape))),
+			CollectionConstructionStrategy.Enumerable => new EnumerableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetEnumerableConstructor(this.GetCollectionOptions(enumerableShape))),
 			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
 		};
 	}
@@ -706,6 +706,29 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
+	}
+
+	private CollectionConstructionOptions<TKey>? GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape)
+		where TKey : notnull
+		=> this.GetCollectionOptions(dictionaryShape.KeyType, dictionaryShape.ComparerOptions);
+
+	private CollectionConstructionOptions<TElement>? GetCollectionOptions<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape)
+		=> this.GetCollectionOptions(enumerableShape.ElementType, enumerableShape.ComparerOptions);
+
+	private CollectionConstructionOptions<TKey>? GetCollectionOptions<TKey>(ITypeShape<TKey> keyShape, CollectionComparerOptions requiredComparer)
+	{
+		if (this.owner.ComparerProvider is null)
+		{
+			return default;
+		}
+
+		return requiredComparer switch
+		{
+			CollectionComparerOptions.None => default,
+			CollectionComparerOptions.Comparer => new() { Comparer = this.owner.ComparerProvider.GetComparer(keyShape) },
+			CollectionComparerOptions.EqualityComparer => new() { EqualityComparer = this.owner.ComparerProvider.GetEqualityComparer(keyShape) },
+			_ => throw new NotSupportedException(),
+		};
 	}
 
 	/// <summary>
