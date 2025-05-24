@@ -1,0 +1,41 @@
+name: 🏭 Prepare release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # - name: Set up .NET
+      #   uses: actions/setup-dotnet@v4
+      #   with:
+      #     dotnet-version: '8.0.x'
+
+      - name: Install Nerdbank.GitVersioning tool
+        run: dotnet tool install --global nbgv
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(nbgv get-version -v nugetpackageversion)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Tag the release
+        run: |
+          nbgv tag
+          git push origin "v${{ steps.get_version.outputs.version }}"
+
+      - name: Set up GitHub CLI
+        uses: cli/cli-action@v2
+
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create --generate-notes -d "v${{ steps.get_version.outputs.version }}"
