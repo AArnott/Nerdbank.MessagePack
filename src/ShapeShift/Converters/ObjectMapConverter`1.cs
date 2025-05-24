@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
+using ShapeShift.MessagePack;
 
 namespace ShapeShift.Converters;
 
@@ -155,7 +156,8 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 	/// <inheritdoc/>
 	public override T? Read(ref Reader reader, SerializationContext context)
 	{
-		if (reader.TryReadNull())
+		var deformatter = (MessagePackDeformatter)reader.Deformatter;
+		if (deformatter.TryReadNull(ref reader))
 		{
 			return default;
 		}
@@ -170,7 +172,7 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 
 		if (deserializable.Value.Readers is not null)
 		{
-			int? count = reader.ReadStartMap();
+			int? count = deformatter.ReadStartMap(ref reader);
 			bool isFirstElement = true;
 			for (int i = 0; i < count /*|| (count is null && reader.TryAdvanceToNextElement(ref isFirstElement))*/; i++)
 			{
@@ -183,14 +185,14 @@ internal class ObjectMapConverter<T>(MapSerializableProperties<T> serializable, 
 				}
 				else
 				{
-					reader.Skip(context);
+					deformatter.Skip(ref reader, context);
 				}
 			}
 		}
 		else
 		{
 			// We have nothing to read into, so just skip any data in the object.
-			reader.Skip(context);
+			deformatter.Skip(ref reader, context);
 		}
 
 		if (value is ISerializationCallbacks callbacks)
