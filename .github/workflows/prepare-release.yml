@@ -12,16 +12,6 @@ jobs:
         with:
           ref: main
 
-      # - name: Set up .NET
-      #   uses: actions/setup-dotnet@v4
-      #   with:
-      #     dotnet-version: '8.0.x'
-
-      - name: Install Nerdbank.GitVersioning tool
-        run: |
-          rm global.json
-          dotnet tool install --global nbgv
-
       - name: Get version
         id: get_version
         run: |
