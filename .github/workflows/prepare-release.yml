@@ -18,7 +18,9 @@ jobs:
       #     dotnet-version: '8.0.x'
 
       - name: Install Nerdbank.GitVersioning tool
-        run: dotnet tool install --global nbgv
+        run: |
+          rm global.json
+          dotnet tool install --global nbgv
 
       - name: Get version
         id: get_version
