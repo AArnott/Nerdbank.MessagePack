@@ -6,6 +6,8 @@ on:
 jobs:
   prepare-release:
     runs-on: ubuntu-latest
+    env:
+      PUBLICRELEASE: true
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v4
@@ -13,19 +15,16 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Get version
-        id: get_version
-        run: |
-          VERSION=$(nbgv get-version -v nugetpackageversion)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - uses: dotnet/nbgv@master
+        id: nbgv
 
       - name: Tag the release
         run: |
-          nbgv tag
-          git push origin "v${{ steps.get_version.outputs.version }}"
+          git tag v${{ steps.nbgv.outputs.SemVer2 }}
+          git push origin "v${{ steps.nbgv.outputs.SemVer2 }}"
 
       - name: Create draft GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create --generate-notes -d "v${{ steps.get_version.outputs.version }}"
+          gh release create --generate-notes -d "v${{ steps.nbgv.outputs.SemVer2 }}"
