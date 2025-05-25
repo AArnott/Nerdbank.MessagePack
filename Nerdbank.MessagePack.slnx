@@ -19,11 +19,13 @@
     <File Path="src/Analyzers.props" />
     <File Path="src/Directory.Build.props" />
     <File Path="src/Directory.Build.targets" />
+    <File Path="src/dirs.proj" />
   </Folder>
   <Folder Name="/Solution Items/test/">
     <File Path="test/.editorconfig" />
     <File Path="test/Directory.Build.props" />
     <File Path="test/Directory.Build.targets" />
+    <File Path="test/dirs.proj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Nerdbank.MessagePack.Analyzers.CodeFixes/Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
