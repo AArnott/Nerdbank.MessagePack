@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
+using System.Linq.Expressions;
 
 namespace Nerdbank.MessagePack;
 
@@ -11,6 +12,7 @@ namespace Nerdbank.MessagePack;
 /// A schema-less dictionary deserialized from msgpack, optimized to work great with the C# <c>dynamic</c> keyword.
 /// </summary>
 /// <param name="underlying">The underlying dictionary.</param>
+[UnconditionalSuppressMessage("Trimming", "IL3050", Justification = "DynamicObject members are overridden with code that does not require dynamic code.")]
 internal class DynamicDictionary(IReadOnlyDictionary<object, object?> underlying) : DynamicObject, IReadOnlyDictionary<object, object?>, IDictionary<object, object?>, IEnumerable
 {
 	private ICollection<object>? keys;
@@ -69,6 +71,9 @@ internal class DynamicDictionary(IReadOnlyDictionary<object, object?> underlying
 
 	/// <inheritdoc/>
 	public override IEnumerable<string> GetDynamicMemberNames() => underlying.Keys.OfType<string>();
+
+	/// <inheritdoc/>
+	public override DynamicMetaObject GetMetaObject(Expression parameter) => throw new NotSupportedException();
 
 	/// <inheritdoc/>
 	public IEnumerator GetEnumerator() => underlying.Keys.GetEnumerator();
