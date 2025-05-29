@@ -58,8 +58,6 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _JsonElementConverter;
 	private static IMessagePackConverterInternal? _JsonDocumentConverter;
 	private static IMessagePackConverterInternal? _JsonDocumentConverterReferencePreserving;
-	private static IMessagePackConverterInternal? _ExpandoObjectConverter;
-	private static IMessagePackConverterInternal? _ExpandoObjectConverterReferencePreserving;
 	private static IMessagePackConverterInternal? _RawMessagePackConverter;
 	private static IMessagePackConverterInternal? _MessagePackValueConverter;
 #if NET
@@ -297,20 +295,6 @@ internal static class PrimitiveConverterLookup
 			else
 			{
 				converter = (MessagePackConverter<T>)(_JsonDocumentConverter ??= new JsonDocumentConverter());
-			}
-
-			return true;
-		}
-
-		if (typeof(T) == typeof(System.Dynamic.ExpandoObject))
-		{
-			if (referencePreserving != ReferencePreservationMode.Off)
-			{
-				converter = (MessagePackConverter<T>)(_ExpandoObjectConverterReferencePreserving ??= new ExpandoObjectConverter().WrapWithReferencePreservation());
-			}
-			else
-			{
-				converter = (MessagePackConverter<T>)(_ExpandoObjectConverter ??= new ExpandoObjectConverter());
 			}
 
 			return true;

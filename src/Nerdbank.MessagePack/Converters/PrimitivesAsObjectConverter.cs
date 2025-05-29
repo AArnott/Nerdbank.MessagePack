@@ -3,6 +3,7 @@
 
 #pragma warning disable NBMsgPack031
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -12,16 +13,23 @@ namespace Nerdbank.MessagePack.Converters;
 /// and reads everything into primitives, dictionaries and arrays.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This converter is not included by default because untyped serialization is not generally desirable.
 /// But it is offered as a converter that may be added to <see cref="MessagePackSerializer.Converters"/>
 /// in order to enable limited untyped serialization.
+/// </para>
+/// <para>
+/// Maps are deserialized as objects that implement <see cref="IReadOnlyDictionary{TKey, TValue}"/>
+/// where the key is <see cref="object"/> and the value is a nullable <see cref="object"/>.
+/// </para>
 /// </remarks>
+/// <seealso cref="PrimitivesAsDynamicConverter"/>
 public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 {
 	/// <summary>
 	/// Gets the default instance of the converter.
 	/// </summary>
-	public static readonly PrimitivesAsObjectConverter Instance = new PrimitivesAsObjectConverter();
+	public static readonly PrimitivesAsObjectConverter Instance = new();
 
 	/// <summary>Reads any one msgpack structure.</summary>
 	/// <param name="reader">The msgpack reader.</param>
@@ -58,7 +66,7 @@ public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 	{
 		return ReadOneObject(ref reader, context);
 
-		static object? ReadOneObject(ref MessagePackReader reader, SerializationContext context)
+		object? ReadOneObject(ref MessagePackReader reader, SerializationContext context)
 			=> reader.NextMessagePackType switch
 			{
 				MessagePackType.Nil => reader.ReadNil(),
@@ -91,7 +99,7 @@ public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 			return true;
 		}
 
-		static object?[] ReadArray(ref MessagePackReader reader, SerializationContext context)
+		object?[] ReadArray(ref MessagePackReader reader, SerializationContext context)
 		{
 			context.DepthStep();
 			object?[] array = new object?[reader.ReadArrayHeader()];
@@ -104,7 +112,7 @@ public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 			return array;
 		}
 
-		static object? ReadMap(ref MessagePackReader reader, SerializationContext context)
+		object? ReadMap(ref MessagePackReader reader, SerializationContext context)
 		{
 			context.DepthStep();
 			int count = reader.ReadMapHeader();
@@ -122,7 +130,7 @@ public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 				map[key] = value;
 			}
 
-			return new DynamicDictionary(map);
+			return this.WrapDictionary(map);
 		}
 	}
 
@@ -185,4 +193,96 @@ public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateUndocumentedSchema(this.GetType());
+
+	/// <summary>
+	/// Wraps a dictionary in a more convenient accessor (i.e. minimally one that stretches integers).
+	/// </summary>
+	/// <param name="content">The dictionary to be wrapped.</param>
+	/// <returns>The wrapper.</returns>
+	protected virtual IReadOnlyDictionary<object, object?> WrapDictionary(IReadOnlyDictionary<object, object?> content)
+		=> new IntegerStretchingDictionary(content ?? throw new ArgumentNullException(nameof(content)));
+
+	private class IntegerStretchingDictionary(IReadOnlyDictionary<object, object?> underlying) : IReadOnlyDictionary<object, object?>, IDictionary<object, object?>, System.Collections.IEnumerable
+	{
+		private ICollection<object>? keys;
+		private ICollection<object?>? values;
+
+		/// <inheritdoc/>
+		IEnumerable<object> IReadOnlyDictionary<object, object?>.Keys => underlying.Keys;
+
+		/// <inheritdoc/>
+		ICollection<object> IDictionary<object, object?>.Keys => this.keys ??= underlying.Keys as ICollection<object> ?? [.. underlying.Keys];
+
+		/// <inheritdoc/>
+		IEnumerable<object?> IReadOnlyDictionary<object, object?>.Values => underlying.Values;
+
+		/// <inheritdoc/>
+		ICollection<object?> IDictionary<object, object?>.Values => this.values ??= underlying.Values as ICollection<object?> ?? [.. underlying.Values];
+
+		/// <inheritdoc/>
+		int IReadOnlyCollection<KeyValuePair<object, object?>>.Count => underlying.Count;
+
+		/// <inheritdoc/>
+		int ICollection<KeyValuePair<object, object?>>.Count => underlying.Count;
+
+		/// <inheritdoc/>
+		bool ICollection<KeyValuePair<object, object?>>.IsReadOnly => true;
+
+		/// <inheritdoc/>
+		public object? this[object key] => underlying[StretchInteger(key)];
+
+		/// <inheritdoc/>
+		object? IDictionary<object, object?>.this[object key]
+		{
+			get => underlying[StretchInteger(key)];
+			set => throw new NotSupportedException();
+		}
+
+		/// <inheritdoc/>
+		public System.Collections.IEnumerator GetEnumerator() => underlying.Keys.GetEnumerator();
+
+		/// <inheritdoc/>
+		bool IReadOnlyDictionary<object, object?>.ContainsKey(object key) => underlying.ContainsKey(StretchInteger(key));
+
+		/// <inheritdoc/>
+		bool IDictionary<object, object?>.ContainsKey(object key) => underlying.ContainsKey(StretchInteger(key));
+
+		/// <inheritdoc/>
+		bool ICollection<KeyValuePair<object, object?>>.Contains(KeyValuePair<object, object?> item) => underlying.TryGetValue(StretchInteger(item.Key), out object? value) && EqualityComparer<object?>.Default.Equals(value, item.Value);
+
+		/// <inheritdoc/>
+		bool IReadOnlyDictionary<object, object?>.TryGetValue(object key, [MaybeNullWhen(false)] out object? value) => underlying.TryGetValue(StretchInteger(key), out value);
+
+		/// <inheritdoc/>
+		bool IDictionary<object, object?>.TryGetValue(object key, out object? value) => underlying.TryGetValue(StretchInteger(key), out value);
+
+		/// <inheritdoc/>
+		IEnumerator<KeyValuePair<object, object?>> IEnumerable<KeyValuePair<object, object?>>.GetEnumerator() => underlying.GetEnumerator();
+
+		/// <inheritdoc/>
+		void ICollection<KeyValuePair<object, object?>>.CopyTo(KeyValuePair<object, object?>[] array, int arrayIndex)
+		{
+			foreach (KeyValuePair<object, object?> item in underlying)
+			{
+				array[arrayIndex++] = item;
+			}
+		}
+
+		/// <inheritdoc/>
+		void IDictionary<object, object?>.Add(object key, object? value) => throw new NotSupportedException();
+
+		/// <inheritdoc/>
+		bool IDictionary<object, object?>.Remove(object key) => throw new NotSupportedException();
+
+		/// <inheritdoc/>
+		void ICollection<KeyValuePair<object, object?>>.Add(KeyValuePair<object, object?> item) => throw new NotSupportedException();
+
+		/// <inheritdoc/>
+		bool ICollection<KeyValuePair<object, object?>>.Remove(KeyValuePair<object, object?> item) => throw new NotSupportedException();
+
+		/// <inheritdoc/>
+		void ICollection<KeyValuePair<object, object?>>.Clear() => throw new NotSupportedException();
+
+		private static object StretchInteger(object key) => DynamicDictionary.StretchInteger(key);
+	}
 }

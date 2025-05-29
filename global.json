@@ -1,7 +1,10 @@
 {
-  "sdk": {
-    "version": "9.0.300",
-    "rollForward": "patch",
-    "allowPrerelease": false
-  }
+	"sdk": {
+		"version": "9.0.300",
+		"rollForward": "patch",
+		"allowPrerelease": false
+	},
+	"msbuild-sdks": {
+		"Microsoft.Build.Traversal": "4.1.82"
+	}
 }

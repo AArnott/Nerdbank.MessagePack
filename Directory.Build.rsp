@@ -14,4 +14,4 @@
 /m
 /verbosity:minimal
 /clp:Summary;ForceNoAlign
-/graph
+#/graph # MSBuild bug: https://github.com/dotnet/msbuild/issues/11922
