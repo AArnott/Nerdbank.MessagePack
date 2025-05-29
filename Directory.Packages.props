@@ -27,7 +27,9 @@
     <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" />
+    <PackageVersion Include="TUnit.Engine" Version="0.25.6" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
+    <PackageVersion Include="xunit.v3.assert" Version="2.0.3" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
     <!-- The versions specified here should be the latest ones supported by the OLDEST .NET runtime version that is still supported
