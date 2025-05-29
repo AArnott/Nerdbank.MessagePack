@@ -1,0 +1,27 @@
+<Project>
+  <Import Project="AOT.props" />
+  <ItemGroup>
+    <PackageReference Include="TUnit.Engine" />
+    <PackageReference Include="xunit.v3.assert" />
+  </ItemGroup>
+
+  <!-- Workaround https://github.com/thomhurst/TUnit/issues/1463 -->
+  <PropertyGroup>
+    <TUnitImplicitUsings>false</TUnitImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="TUnit.Core" />
+  </ItemGroup>
+
+  <!-- Workaround https://github.com/thomhurst/TUnit/issues/1460 -->
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" VersionOverride="9.0.5" />
+    <PackageReference Include="System.IO.Pipelines" VersionOverride="9.0.5" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <EnableTUnitPolyfills>false</EnableTUnitPolyfills>
+    <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+  </PropertyGroup>
+
+</Project>
