@@ -68,9 +68,9 @@ try {
     # Get last 10 AOT file size entries
     $aotQuery = "PartitionKey eq 'AotFileSize'"
     $aotEntities = Get-AzTableRow -Table $table.CloudTable -CustomFilter $aotQuery | 
-                   Sort-Object BuildNumber -Descending | 
+                   Sort-Object VersionMajor, VersionMinor, BuildNumber -Descending | 
                    Select-Object -First 10 |
-                   Sort-Object BuildNumber
+                   Sort-Object VersionMajor, VersionMinor, BuildNumber
     
     if ($aotEntities.Count -eq 0) {
         Write-Warning "⚠️ No historical AOT file size data found"
@@ -114,9 +114,9 @@ try {
         # Get historical data for this benchmark
         $benchmarkQuery = "PartitionKey eq 'Benchmark' and MethodName eq '$benchmarkName'"
         $benchmarkEntities = Get-AzTableRow -Table $table.CloudTable -CustomFilter $benchmarkQuery |
-                            Sort-Object BuildNumber -Descending |
+                            Sort-Object VersionMajor, VersionMinor, BuildNumber -Descending |
                             Select-Object -First 10 |
-                            Sort-Object BuildNumber
+                            Sort-Object VersionMajor, VersionMinor, BuildNumber
         
         if ($benchmarkEntities.Count -eq 0) {
             Write-Warning "  ⚠️ No historical data found for $benchmarkName"
