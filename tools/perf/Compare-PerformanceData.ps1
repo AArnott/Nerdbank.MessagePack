@@ -36,9 +36,15 @@ param(
 )
 
 try {
-    # Import required modules
-    Import-Module Az.Storage -Force
-    Import-Module Az.Accounts -Force
+    # Check and install required modules if not available
+    $requiredModules = @('Az.Storage', 'Az.Accounts')
+    foreach ($module in $requiredModules) {
+        if (-not (Get-Module -ListAvailable -Name $module)) {
+            Write-Host "📦 Installing module: $module"
+            Install-Module -Name $module -Force -Scope CurrentUser -Repository PSGallery
+        }
+        Import-Module $module -Force
+    }
     
     Write-Host "🔐 Authenticating to Azure using Managed Identity..."
     # Connect using managed identity

@@ -46,7 +46,7 @@ jobs:
         cd test/Benchmarks
         # Run only the specific methods we want to track (not the comparison methods with _MsgPackCSharp, _STJ, etc.)
         dotnet run -c ${{ env.BUILDCONFIGURATION }} --no-build -- \
-          --filter "*DeserializeMapInit" "*DeserializeMap" "*SerializeMap" "*SerializeAsArray" "*DeserializeAsArray" \
+          --filter "*SimplePoco*" \
           --method "DeserializeMapInit" "DeserializeMap" "SerializeMap" "SerializeAsArray" "DeserializeAsArray" \
           --exporters json \
           --artifacts ./BenchmarkDotNet.Artifacts
@@ -203,11 +203,15 @@ Performance trend analysis will be available once:
         PR_NUMBER: ${{ github.event.pull_request.number }}
 
     # Set build status based on performance results
-    - name: 🚦 Set build status
-      if: github.event_name == 'pull_request' && env.PERFORMANCE_REGRESSIONS == 'True'
+    - name: 🚦 Set build status  
+      if: github.event_name == 'pull_request'
       run: |
-        Write-Error "❌ Performance regressions detected - failing build"
-        exit 1
+        if ($env:PERFORMANCE_REGRESSIONS -eq 'True') {
+          Write-Error "❌ Performance regressions detected - failing build"
+          exit 1
+        } else {
+          Write-Host "✅ No performance regressions detected"
+        }
       shell: pwsh
 
     - name: 📤 Upload benchmark artifacts
