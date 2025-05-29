@@ -5,6 +5,7 @@
 
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
@@ -299,12 +300,13 @@ public partial record MessagePackSerializer
 	/// </para>
 	/// <code source="../../samples/cs/PrimitiveDeserialization.cs" region="DeserializePrimitives" lang="C#" />
 	/// </example>
+	[RequiresDynamicCode(Reasons.DynamicObject)]
 	public dynamic? DeserializeDynamic(ref MessagePackReader reader, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.ShapeProvider, cancellationToken);
 		try
 		{
-			return PrimitivesAsObjectConverter.Instance.Read(ref reader, context.Value);
+			return PrimitivesAsDynamicConverter.Instance.Read(ref reader, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{

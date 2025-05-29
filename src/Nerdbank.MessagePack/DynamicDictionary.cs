@@ -10,47 +10,63 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// A schema-less dictionary deserialized from msgpack, optimized to work great with the C# <c>dynamic</c> keyword.
 /// </summary>
-/// <param name="underlying">The underlying dictionary.</param>
-internal class DynamicDictionary(IReadOnlyDictionary<object, object?> underlying) : DynamicObject, IReadOnlyDictionary<object, object?>, IDictionary<object, object?>, IEnumerable
+/// <remarks>
+/// This class <em>could</em> be rewritten to resemble a read-only <see cref="ExpandoObject"/>, which
+/// does not require dynamic code support in the runtime.
+/// That would be a lot of code to copy from the runtime though, so until someone asks for it,
+/// this is simply restricted in its use.
+/// </remarks>
+internal class DynamicDictionary : DynamicObject, IReadOnlyDictionary<object, object?>, IDictionary<object, object?>, IEnumerable
 {
+	private readonly IReadOnlyDictionary<object, object?> underlying;
 	private ICollection<object>? keys;
 	private ICollection<object?>? values;
 
-	/// <inheritdoc/>
-	IEnumerable<object> IReadOnlyDictionary<object, object?>.Keys => underlying.Keys;
+	/// <summary>
+	/// Initializes a new instance of the <see cref="DynamicDictionary"/> class.
+	/// </summary>
+	/// <param name="underlying">The underlying dictionary.</param>
+	[RequiresDynamicCode(Reasons.DynamicObject)]
+	internal DynamicDictionary(IReadOnlyDictionary<object, object?> underlying)
+	{
+		this.underlying = underlying;
+	}
 
 	/// <inheritdoc/>
-	ICollection<object> IDictionary<object, object?>.Keys => this.keys ??= underlying.Keys as ICollection<object> ?? [.. underlying.Keys];
+	IEnumerable<object> IReadOnlyDictionary<object, object?>.Keys => this.underlying.Keys;
 
 	/// <inheritdoc/>
-	IEnumerable<object?> IReadOnlyDictionary<object, object?>.Values => underlying.Values;
+	ICollection<object> IDictionary<object, object?>.Keys => this.keys ??= this.underlying.Keys as ICollection<object> ?? [.. this.underlying.Keys];
 
 	/// <inheritdoc/>
-	ICollection<object?> IDictionary<object, object?>.Values => this.values ??= underlying.Values as ICollection<object?> ?? [.. underlying.Values];
+	IEnumerable<object?> IReadOnlyDictionary<object, object?>.Values => this.underlying.Values;
 
 	/// <inheritdoc/>
-	int IReadOnlyCollection<KeyValuePair<object, object?>>.Count => underlying.Count;
+	ICollection<object?> IDictionary<object, object?>.Values => this.values ??= this.underlying.Values as ICollection<object?> ?? [.. this.underlying.Values];
 
 	/// <inheritdoc/>
-	int ICollection<KeyValuePair<object, object?>>.Count => underlying.Count;
+	int IReadOnlyCollection<KeyValuePair<object, object?>>.Count => this.underlying.Count;
+
+	/// <inheritdoc/>
+	int ICollection<KeyValuePair<object, object?>>.Count => this.underlying.Count;
 
 	/// <inheritdoc/>
 	bool ICollection<KeyValuePair<object, object?>>.IsReadOnly => true;
 
 	/// <inheritdoc/>
-	object? IReadOnlyDictionary<object, object?>.this[object key] => underlying[StretchInteger(key)];
+	object? IReadOnlyDictionary<object, object?>.this[object key] => this.underlying[StretchInteger(key)];
 
 	/// <inheritdoc/>
 	object? IDictionary<object, object?>.this[object key]
 	{
-		get => underlying[StretchInteger(key)];
+		get => this.underlying[StretchInteger(key)];
 		set => throw new NotSupportedException();
 	}
 
 	/// <inheritdoc/>
 	public override bool TryGetMember(GetMemberBinder binder, out object? result)
 	{
-		result = underlying[binder.Name];
+		result = this.underlying[binder.Name];
 		return true;
 	}
 
@@ -63,38 +79,38 @@ internal class DynamicDictionary(IReadOnlyDictionary<object, object?> underlying
 			return false;
 		}
 
-		result = underlying[StretchInteger(indexes[0])];
+		result = this.underlying[StretchInteger(indexes[0])];
 		return true;
 	}
 
 	/// <inheritdoc/>
-	public override IEnumerable<string> GetDynamicMemberNames() => underlying.Keys.OfType<string>();
+	public override IEnumerable<string> GetDynamicMemberNames() => this.underlying.Keys.OfType<string>();
 
 	/// <inheritdoc/>
-	public IEnumerator GetEnumerator() => underlying.Keys.GetEnumerator();
+	public IEnumerator GetEnumerator() => this.underlying.Keys.GetEnumerator();
 
 	/// <inheritdoc/>
-	bool IReadOnlyDictionary<object, object?>.ContainsKey(object key) => underlying.ContainsKey(StretchInteger(key));
+	bool IReadOnlyDictionary<object, object?>.ContainsKey(object key) => this.underlying.ContainsKey(StretchInteger(key));
 
 	/// <inheritdoc/>
-	bool IDictionary<object, object?>.ContainsKey(object key) => underlying.ContainsKey(StretchInteger(key));
+	bool IDictionary<object, object?>.ContainsKey(object key) => this.underlying.ContainsKey(StretchInteger(key));
 
 	/// <inheritdoc/>
-	bool ICollection<KeyValuePair<object, object?>>.Contains(KeyValuePair<object, object?> item) => underlying.TryGetValue(StretchInteger(item.Key), out object? value) && EqualityComparer<object?>.Default.Equals(value, item.Value);
+	bool ICollection<KeyValuePair<object, object?>>.Contains(KeyValuePair<object, object?> item) => this.underlying.TryGetValue(StretchInteger(item.Key), out object? value) && EqualityComparer<object?>.Default.Equals(value, item.Value);
 
 	/// <inheritdoc/>
-	bool IReadOnlyDictionary<object, object?>.TryGetValue(object key, [MaybeNullWhen(false)] out object? value) => underlying.TryGetValue(StretchInteger(key), out value);
+	bool IReadOnlyDictionary<object, object?>.TryGetValue(object key, [MaybeNullWhen(false)] out object? value) => this.underlying.TryGetValue(StretchInteger(key), out value);
 
 	/// <inheritdoc/>
-	bool IDictionary<object, object?>.TryGetValue(object key, out object? value) => underlying.TryGetValue(StretchInteger(key), out value);
+	bool IDictionary<object, object?>.TryGetValue(object key, out object? value) => this.underlying.TryGetValue(StretchInteger(key), out value);
 
 	/// <inheritdoc/>
-	IEnumerator<KeyValuePair<object, object?>> IEnumerable<KeyValuePair<object, object?>>.GetEnumerator() => underlying.GetEnumerator();
+	IEnumerator<KeyValuePair<object, object?>> IEnumerable<KeyValuePair<object, object?>>.GetEnumerator() => this.underlying.GetEnumerator();
 
 	/// <inheritdoc/>
 	void ICollection<KeyValuePair<object, object?>>.CopyTo(KeyValuePair<object, object?>[] array, int arrayIndex)
 	{
-		foreach (KeyValuePair<object, object?> item in underlying)
+		foreach (KeyValuePair<object, object?> item in this.underlying)
 		{
 			array[arrayIndex++] = item;
 		}
@@ -115,7 +131,19 @@ internal class DynamicDictionary(IReadOnlyDictionary<object, object?> underlying
 	/// <inheritdoc/>
 	void ICollection<KeyValuePair<object, object?>>.Clear() => throw new NotSupportedException();
 
-	private static object StretchInteger(object key)
+	/// <summary>
+	/// Stretches an integer value to its 64-bit representation.
+	/// </summary>
+	/// <param name="key">The boxed integer, or a value of any other type.</param>
+	/// <returns>
+	/// If <paramref name="key"/> is a positive integer,
+	/// the result will be a boxed <see cref="ulong"/>.
+	/// If <paramref name="key"/> is a negative integer,
+	/// the result will be a boxed <see cref="long"/>.
+	/// For all other <paramref name="key"/> values,
+	/// the result will be the original value.
+	/// </returns>
+	internal static object StretchInteger(object key)
 		=> key switch
 		{
 			sbyte v => v < 0 ? (long)v : (ulong)v,

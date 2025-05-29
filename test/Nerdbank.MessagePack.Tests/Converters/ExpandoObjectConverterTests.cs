@@ -2,12 +2,22 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Dynamic;
+using Nerdbank.MessagePack.Converters;
 
 namespace Converters;
 
 [Trait("dynamic", "true")]
-public partial class ExpandoObjectConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ExpandoObjectConverterTests : MessagePackSerializerTestBase
 {
+	public ExpandoObjectConverterTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+		this.Serializer = this.Serializer with
+		{
+			Converters = [.. this.Serializer.Converters, ExpandoObjectConverter.Instance],
+		};
+	}
+
 	[Fact]
 	public void SimplePropertyValues()
 	{
