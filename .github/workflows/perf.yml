@@ -1,0 +1,225 @@
+name: 📊 Performance Benchmarks
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+  id-token: write # Required for Azure managed identity
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  BUILDCONFIGURATION: Release
+  AZURE_STORAGE_ACCOUNT: nbmsgpackperf
+  AZURE_TABLE_NAME: PerformanceData
+
+jobs:
+  performance:
+    name: 📊 Performance Benchmarks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required for nbgv to work properly
+
+    - name: ⚙ Install prerequisites
+      run: |
+        ./init.ps1 -UpgradePrerequisites -NoNuGetCredProvider
+        dotnet --info
+      shell: pwsh
+
+    - name: 🛠 Build projects
+      run: |
+        dotnet build test/Benchmarks/Benchmarks.csproj -c ${{ env.BUILDCONFIGURATION }} --no-restore
+        dotnet build test/AotNativeConsole/AotNativeConsole.csproj -c ${{ env.BUILDCONFIGURATION }} --no-restore
+      shell: pwsh
+
+    - name: 📊 Run performance benchmarks
+      run: |
+        cd test/Benchmarks
+        # Run only the specific methods we want to track (not the comparison methods with _MsgPackCSharp, _STJ, etc.)
+        dotnet run -c ${{ env.BUILDCONFIGURATION }} --no-build -- \
+          --filter "*DeserializeMapInit" "*DeserializeMap" "*SerializeMap" "*SerializeAsArray" "*DeserializeAsArray" \
+          --method "DeserializeMapInit" "DeserializeMap" "SerializeMap" "SerializeAsArray" "DeserializeAsArray" \
+          --exporters json \
+          --artifacts ./BenchmarkDotNet.Artifacts
+      shell: pwsh
+      
+    - name: 📏 Measure AotNativeConsole file size
+      run: |
+        dotnet publish test/AotNativeConsole/AotNativeConsole.csproj -c ${{ env.BUILDCONFIGURATION }} --no-build
+        $Path = './bin/AotNativeConsole/${{ env.BUILDCONFIGURATION }}/net9.0/linux-x64/publish/AotNativeConsole'
+        $FileSizeBytes = (Get-Item $Path).Length
+        $FileSizeMB = [math]::Round($FileSizeBytes / 1024 / 1024, 2)
+        Write-Host "AotNativeConsole size: $FileSizeMB MB"
+        Write-Output "AOT_FILE_SIZE_MB=$FileSizeMB" >> $env:GITHUB_ENV
+      shell: pwsh
+
+    - name: 🔢 Get version information
+      run: |
+        $CloudBuildNumber = nbgv get-version -v CloudBuildNumber
+        $Version = nbgv get-version -v Version
+        $VersionMajor = nbgv get-version -v VersionMajor
+        $VersionMinor = nbgv get-version -v VersionMinor
+        $BuildNumber = nbgv get-version -v BuildNumber
+        $CommitId = git rev-parse HEAD
+        
+        Write-Output "CLOUD_BUILD_NUMBER=$CloudBuildNumber" >> $env:GITHUB_ENV
+        Write-Output "VERSION=$Version" >> $env:GITHUB_ENV
+        Write-Output "VERSION_MAJOR=$VersionMajor" >> $env:GITHUB_ENV
+        Write-Output "VERSION_MINOR=$VersionMinor" >> $env:GITHUB_ENV
+        Write-Output "BUILD_NUMBER=$BuildNumber" >> $env:GITHUB_ENV
+        Write-Output "COMMIT_ID=$CommitId" >> $env:GITHUB_ENV
+      shell: pwsh
+
+    # For main branch: Store data in Azure Table Storage
+    - name: 🏪 Store performance data (main branch only)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      continue-on-error: true
+      run: |
+        $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.SimplePoco-report.json"
+        
+        if (-not (Test-Path $benchmarkResultsPath)) {
+          Write-Warning "⚠️ Benchmark results file not found at: $benchmarkResultsPath"
+          Get-ChildItem "test/Benchmarks/BenchmarkDotNet.Artifacts/results/" -ErrorAction SilentlyContinue
+          exit 0
+        }
+        
+        try {
+          tools/perf/Store-PerformanceData.ps1 `
+            -StorageAccount $env:AZURE_STORAGE_ACCOUNT `
+            -TableName $env:AZURE_TABLE_NAME `
+            -BenchmarkResultsPath $benchmarkResultsPath `
+            -AotFileSizeMB $env:AOT_FILE_SIZE_MB `
+            -CloudBuildNumber $env:CLOUD_BUILD_NUMBER `
+            -Version $env:VERSION `
+            -VersionMajor $env:VERSION_MAJOR `
+            -VersionMinor $env:VERSION_MINOR `
+            -BuildNumber $env:BUILD_NUMBER `
+            -CommitId $env:COMMIT_ID
+        } catch {
+          Write-Warning "⚠️ Failed to store performance data to Azure (this is expected if Azure is not configured): $($_.Exception.Message)"
+        }
+      shell: pwsh
+
+    # For PRs: Retrieve historical data and generate comparison
+    - name: 📈 Generate performance comparison (PR only)
+      if: github.event_name == 'pull_request'
+      continue-on-error: true
+      run: |
+        $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.SimplePoco-report.json"
+        
+        if (-not (Test-Path $benchmarkResultsPath)) {
+          Write-Warning "⚠️ Benchmark results file not found at: $benchmarkResultsPath"
+          Get-ChildItem "test/Benchmarks/BenchmarkDotNet.Artifacts/results/" -ErrorAction SilentlyContinue
+          
+          # Create a basic summary for when benchmarks are missing
+          $summaryReport = @"
+# Performance Comparison Report
+
+## Status
+⚠️ **Unable to analyze performance**: Benchmark results file not found.
+
+This may indicate that:
+- Benchmarks failed to execute
+- The expected benchmark methods were not found
+- There was an issue with the benchmark execution
+
+Please check the build logs for more details.
+
+---
+*Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
+"@
+          $outputDir = "./perf-comparison"
+          New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+          $summaryPath = Join-Path $outputDir "performance-summary.md"
+          $summaryReport | Out-File -FilePath $summaryPath -Encoding UTF8
+          Write-Output "SUMMARY_REPORT_PATH=$summaryPath" >> $env:GITHUB_ENV
+          Write-Output "PERFORMANCE_REGRESSIONS=False" >> $env:GITHUB_ENV
+          exit 0
+        }
+        
+        try {
+          tools/perf/Compare-PerformanceData.ps1 `
+            -StorageAccount $env:AZURE_STORAGE_ACCOUNT `
+            -TableName $env:AZURE_TABLE_NAME `
+            -BenchmarkResultsPath $benchmarkResultsPath `
+            -AotFileSizeMB $env:AOT_FILE_SIZE_MB `
+            -OutputPath "./perf-comparison"
+        } catch {
+          Write-Warning "⚠️ Failed to retrieve historical data from Azure (this is expected for first-time setup): $($_.Exception.Message)"
+          
+          # Create a basic summary for when Azure is not configured
+          $summaryReport = @"
+# Performance Comparison Report
+
+## Status  
+ℹ️ **Historical data not available**: This is the first run or Azure storage is not configured.
+
+## Current Results
+- **AOT Native Console File Size:** $env:AOT_FILE_SIZE_MB MB
+- **Benchmarks:** Executed successfully (detailed results in artifacts)
+
+## Note
+Performance trend analysis will be available once:
+1. Azure Table Storage is configured with managed identity
+2. Historical data from CI builds is accumulated
+
+---
+*Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
+"@
+          $outputDir = "./perf-comparison"
+          New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+          $summaryPath = Join-Path $outputDir "performance-summary.md"
+          $summaryReport | Out-File -FilePath $summaryPath -Encoding UTF8
+          Write-Output "SUMMARY_REPORT_PATH=$summaryPath" >> $env:GITHUB_ENV
+          Write-Output "PERFORMANCE_REGRESSIONS=False" >> $env:GITHUB_ENV
+        }
+      shell: pwsh
+
+    # Post PR comment with results
+    - name: 📝 Post performance results to PR
+      if: github.event_name == 'pull_request' && always()
+      run: |
+        if (Test-Path $env:SUMMARY_REPORT_PATH) {
+          tools/perf/Post-PerfComment.ps1 `
+            -GitHubToken $env:GITHUB_TOKEN `
+            -Repository $env:GITHUB_REPOSITORY `
+            -PullRequestNumber $env:PR_NUMBER `
+            -SummaryReportPath $env:SUMMARY_REPORT_PATH
+        } else {
+          Write-Warning "Summary report not found - skipping PR comment"
+        }
+      shell: pwsh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+
+    # Set build status based on performance results
+    - name: 🚦 Set build status
+      if: github.event_name == 'pull_request' && env.PERFORMANCE_REGRESSIONS == 'True'
+      run: |
+        Write-Error "❌ Performance regressions detected - failing build"
+        exit 1
+      shell: pwsh
+
+    - name: 📤 Upload benchmark artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: benchmark-results
+        path: test/Benchmarks/BenchmarkDotNet.Artifacts/
+        
+    - name: 📤 Upload performance comparison results
+      uses: actions/upload-artifact@v4
+      if: github.event_name == 'pull_request' && always()
+      with:
+        name: performance-comparison
+        path: ./perf-comparison/
