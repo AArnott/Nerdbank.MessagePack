@@ -55,6 +55,8 @@ jobs:
     - name: 🧪 test
       run: tools/dotnet-test-cloud.ps1 -Configuration ${{ env.BUILDCONFIGURATION }} -Agent ${{ runner.os }}
       shell: pwsh
+    - name: 🧪 NativeAOT testing
+      run: bin/Nerdbank.MessagePack.TUnit/${{ env.BUILDCONFIGURATION }}/net9.0/${{ matrix.rid }}/publish/Nerdbank.MessagePack.TUnit
     - name: 🏭 Verify NativeAOT image size
       run: |
         Function GetSizeInMB($Path) {
