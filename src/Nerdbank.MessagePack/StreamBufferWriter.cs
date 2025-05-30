@@ -30,7 +30,7 @@ internal class StreamBufferWriter(Stream stream) : IBufferWriter<byte>, IDisposa
 	/// <inheritdoc/>
 	public Memory<byte> GetMemory(int sizeHint = 0)
 	{
-		Verify.Operation(!this.advanceNext, $"Call {nameof(this.Advance)} betwen calls to this method.");
+		Verify.Operation(!this.advanceNext, $"Call {nameof(this.Advance)} between calls to this method.");
 		Verify.NotDisposed(!this.disposed, this);
 
 		this.advanceNext = true;
@@ -40,7 +40,7 @@ internal class StreamBufferWriter(Stream stream) : IBufferWriter<byte>, IDisposa
 	/// <inheritdoc/>
 	public Span<byte> GetSpan(int sizeHint = 0)
 	{
-		Verify.Operation(!this.advanceNext, $"Call {nameof(this.Advance)} betwen calls to this method.");
+		Verify.Operation(!this.advanceNext, $"Call {nameof(this.Advance)} between calls to this method.");
 		Verify.NotDisposed(!this.disposed, this);
 
 		this.advanceNext = true;
