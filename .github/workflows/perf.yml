@@ -89,7 +89,7 @@ jobs:
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       continue-on-error: true
       run: |
-        $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.SimplePoco-report.json"
+        $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/SimplePoco-report-full-compressed.json"
 
         if (-not (Test-Path $benchmarkResultsPath)) {
           Write-Warning "⚠️ Benchmark results file not found at: $benchmarkResultsPath"
@@ -119,7 +119,7 @@ jobs:
       if: github.event_name == 'pull_request'
       continue-on-error: true
       run: |
-        $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.SimplePoco-report.json"
+        $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/SimplePoco-report-full-compressed.json"
 
         if (-not (Test-Path $benchmarkResultsPath)) {
           Write-Warning "⚠️ Benchmark results file not found at: $benchmarkResultsPath"
