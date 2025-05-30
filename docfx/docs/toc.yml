@@ -22,5 +22,6 @@ items:
   href: type-shapes.md
 - href: fsharp.md
 - href: perf.md
+- href: trimming.md
 - name: Migrating
   href: migrating.md

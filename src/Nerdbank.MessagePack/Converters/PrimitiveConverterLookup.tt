@@ -48,9 +48,9 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("Version", "VersionConverter", IsRefType: true),
 	new ConverterInfo("Uri", "UriConverter", IsRefType: true),
 	new ConverterInfo("byte[]", "ByteArrayConverter", IsRefType: true),
-    new ConverterInfo("System.Text.Json.Nodes.JsonNode", "JsonNodeConverter", IsRefType: true),
-    new ConverterInfo("System.Text.Json.JsonElement", "JsonElementConverter"),
-    new ConverterInfo("System.Text.Json.JsonDocument", "JsonDocumentConverter", IsRefType: true),
+    new ConverterInfo("System.Text.Json.Nodes.JsonNode", "JsonNodeConverter", IsRefType: true, Feature: "SystemTextJsonConverters"),
+    new ConverterInfo("System.Text.Json.JsonElement", "JsonElementConverter", Feature: "SystemTextJsonConverters"),
+    new ConverterInfo("System.Text.Json.JsonDocument", "JsonDocumentConverter", IsRefType: true, Feature: "SystemTextJsonConverters"),
 };
 #>
 /// <summary>
@@ -68,7 +68,7 @@ internal static class PrimitiveConverterLookup
 <# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
 	 if (converterGroup.Key is not null) { #>
 #if <#=converterGroup.Key#>
-<#   } 
+<#   }
 	 foreach (var converter in converterGroup) { #>
 	private static IMessagePackConverterInternal? <#=converter.FieldName#>;
 <#	  if (converter.IsRefType) { #>
@@ -92,9 +92,11 @@ internal static class PrimitiveConverterLookup
 <# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
 	 if (converterGroup.Key is not null) { #>
 #if <#=converterGroup.Key#>
-<#   } 
-	 foreach (var converter in converterGroup) { #>
-		if (typeof(T) == typeof(<#=converter.TypeName#>))
+<#   }
+	 foreach (var converter in converterGroup) {
+        string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty;
+        #>
+		if (typeof(T) == typeof(<#=converter.TypeName#>)<#=featureCondition#>)
 		{
 <#
 	if (converter.IsRefType) {
@@ -124,7 +126,7 @@ internal static class PrimitiveConverterLookup
 	}
 }
 <#+
-record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false)
+record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false, string? Feature = null)
 {
 	internal string FieldName => $"_{ConverterName}";
 	internal string ReferencePreservingFieldName => $"{FieldName}ReferencePreserving";
