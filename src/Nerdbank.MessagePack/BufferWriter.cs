@@ -145,24 +145,23 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void Commit()
 	{
+		// When called, we must call Advance even if this.buffered is 0,
+		// because the caller may be preparing to call GetMemory (with a larger buffer requirement).
 		int buffered = this.buffered;
-		if (buffered > 0)
+		if (this.usingBufferMemoryWriter)
 		{
-			if (this.usingBufferMemoryWriter)
-			{
-				this.memoryWriter.Advance(buffered);
-			}
-			else
-			{
-				this.MigrateToSequence();
-
-				Assumes.NotNull(this.output);
-				this.output.Advance(buffered);
-			}
-
-			this.buffered = 0;
-			this.span = default;
+			this.memoryWriter.Advance(buffered);
 		}
+		else
+		{
+			this.MigrateToSequence();
+
+			Assumes.NotNull(this.output);
+			this.output.Advance(buffered);
+		}
+
+		this.buffered = 0;
+		this.span = default;
 	}
 
 	/// <summary>
@@ -231,14 +230,7 @@ internal ref struct BufferWriter
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void EnsureMore(int sizeHint = 0)
 	{
-		if (this.buffered > 0)
-		{
-			this.Commit();
-		}
-		else
-		{
-			this.MigrateToSequence();
-		}
+		this.Commit();
 
 		if (this.usingBufferMemoryWriter)
 		{
@@ -281,14 +273,16 @@ internal ref struct BufferWriter
 
 	private void MigrateToSequence()
 	{
-		if (this.sequencePool != null)
+		if (this.sequencePool is null)
 		{
-			// We were writing to our private scratch memory, so we have to copy it into the actual writer.
-			this.rental = this.sequencePool.Rent();
-			this.output = this.rental.Value;
-			Span<byte> realSpan = this.output.GetSpan(this.buffered);
-			this.segment.AsSpan(0, this.buffered).CopyTo(realSpan);
-			this.sequencePool = null;
+			return;
 		}
+
+		// We were writing to our private scratch memory, so we have to copy it into the actual writer.
+		this.rental = this.sequencePool.Rent();
+		this.output = this.rental.Value;
+		Span<byte> realSpan = this.output.GetSpan(this.buffered);
+		this.segment.AsSpan(0, this.buffered).CopyTo(realSpan);
+		this.sequencePool = null;
 	}
 }

@@ -386,6 +386,16 @@ public partial class MessagePackSerializerTests(ITestOutputHelper logger) : Mess
 	}
 
 	/// <summary>
+	/// Regression test for <see href="https://github.com/AArnott/Nerdbank.MessagePack/issues/416">issue 416</see>.
+	/// </summary>
+	[Fact]
+	public void WriteLargeStringToStream()
+	{
+		string value = new string('x', 100 * 1024);
+		this.Serializer.Serialize(Stream.Null, value, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+	}
+
+	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
 	private static Sequence<byte> GetByteArrayAsActualMsgPackArray()
