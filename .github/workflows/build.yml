@@ -29,13 +29,10 @@ jobs:
         include:
           - os: ubuntu-22.04
             rid: linux-x64
-            aotSampleSize: 51.8
           - os: macos-14
             rid: osx-arm64
-            aotSampleSize: 46.3
           - os: windows-2022
             rid: win-x64
-            aotSampleSize: 36.1
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -73,7 +70,13 @@ jobs:
 
         # Allow variance of a small threshold of the expected value.
         # Fail even if it's smaller than anticipated so that the expected window can be shrunk in this file.
-        $ExpectedSize = ${{ matrix.aotSampleSize }}
+        if ($IsLinux) {
+          $ExpectedSize = 6.5
+        } elseif ($IsMacOS) {
+          $ExpectedSize = 6.2
+        } else {
+          $ExpectedSize = 5.2
+        }
         $AllowedVariance = 3
         if ([math]::Abs($ActualSize - $ExpectedSize) -gt $AllowedVariance) {
           Write-Error ("NativeAOT image size {0:0.0} MB is outside the expected range of {1:0.0}±{2:0.0} MB." -f $ActualSize, $ExpectedSize, $AllowedVariance)

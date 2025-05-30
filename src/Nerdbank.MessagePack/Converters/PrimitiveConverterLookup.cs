@@ -266,7 +266,7 @@ internal static class PrimitiveConverterLookup
 			return true;
 		}
 
-		if (typeof(T) == typeof(System.Text.Json.Nodes.JsonNode))
+		if (typeof(T) == typeof(System.Text.Json.Nodes.JsonNode) && Features.SystemTextJsonConverters)
 		{
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
@@ -280,13 +280,13 @@ internal static class PrimitiveConverterLookup
 			return true;
 		}
 
-		if (typeof(T) == typeof(System.Text.Json.JsonElement))
+		if (typeof(T) == typeof(System.Text.Json.JsonElement) && Features.SystemTextJsonConverters)
 		{
 			converter = (MessagePackConverter<T>)(_JsonElementConverter ??= new JsonElementConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(System.Text.Json.JsonDocument))
+		if (typeof(T) == typeof(System.Text.Json.JsonDocument) && Features.SystemTextJsonConverters)
 		{
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
