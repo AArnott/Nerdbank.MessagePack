@@ -23,7 +23,7 @@ jobs:
   performance:
     name: 📊 Performance Benchmarks
     runs-on: windows-latest
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -51,7 +51,7 @@ jobs:
           --exporters json \
           --artifacts ./BenchmarkDotNet.Artifacts
       shell: pwsh
-      
+
     - name: 📏 Measure AotNativeConsole file size
       run: |
         dotnet publish test/AotNativeConsole/AotNativeConsole.csproj -c ${{ env.BUILDCONFIGURATION }} --no-build
@@ -70,7 +70,7 @@ jobs:
         $VersionMinor = nbgv get-version -v VersionMinor
         $BuildNumber = nbgv get-version -v BuildNumber
         $CommitId = git rev-parse HEAD
-        
+
         Write-Output "CLOUD_BUILD_NUMBER=$CloudBuildNumber" >> $env:GITHUB_ENV
         Write-Output "VERSION=$Version" >> $env:GITHUB_ENV
         Write-Output "VERSION_MAJOR=$VersionMajor" >> $env:GITHUB_ENV
@@ -85,13 +85,13 @@ jobs:
       continue-on-error: true
       run: |
         $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.SimplePoco-report.json"
-        
+
         if (-not (Test-Path $benchmarkResultsPath)) {
           Write-Warning "⚠️ Benchmark results file not found at: $benchmarkResultsPath"
           Get-ChildItem "test/Benchmarks/BenchmarkDotNet.Artifacts/results/" -ErrorAction SilentlyContinue
           exit 0
         }
-        
+
         try {
           tools/perf/Store-PerformanceData.ps1 `
             -StorageAccount $env:AZURE_STORAGE_ACCOUNT `
@@ -115,28 +115,28 @@ jobs:
       continue-on-error: true
       run: |
         $benchmarkResultsPath = "test/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.SimplePoco-report.json"
-        
+
         if (-not (Test-Path $benchmarkResultsPath)) {
           Write-Warning "⚠️ Benchmark results file not found at: $benchmarkResultsPath"
           Get-ChildItem "test/Benchmarks/BenchmarkDotNet.Artifacts/results/" -ErrorAction SilentlyContinue
-          
+
           # Create a basic summary for when benchmarks are missing
           $summaryReport = @"
-# Performance Comparison Report
+          # Performance Comparison Report
 
-## Status
-⚠️ **Unable to analyze performance**: Benchmark results file not found.
+          ## Status
+          ⚠️ **Unable to analyze performance**: Benchmark results file not found.
 
-This may indicate that:
-- Benchmarks failed to execute
-- The expected benchmark methods were not found
-- There was an issue with the benchmark execution
+          This may indicate that:
+          - Benchmarks failed to execute
+          - The expected benchmark methods were not found
+          - There was an issue with the benchmark execution
 
-Please check the build logs for more details.
+          Please check the build logs for more details.
 
----
-*Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
-"@
+          ---
+          *Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
+          "@
           $outputDir = "./perf-comparison"
           New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
           $summaryPath = Join-Path $outputDir "performance-summary.md"
@@ -145,7 +145,7 @@ Please check the build logs for more details.
           Write-Output "PERFORMANCE_REGRESSIONS=False" >> $env:GITHUB_ENV
           exit 0
         }
-        
+
         try {
           tools/perf/Compare-PerformanceData.ps1 `
             -StorageAccount $env:AZURE_STORAGE_ACCOUNT `
@@ -155,26 +155,26 @@ Please check the build logs for more details.
             -OutputPath "./perf-comparison"
         } catch {
           Write-Warning "⚠️ Failed to retrieve historical data from Azure (this is expected for first-time setup): $($_.Exception.Message)"
-          
+
           # Create a basic summary for when Azure is not configured
           $summaryReport = @"
-# Performance Comparison Report
+          # Performance Comparison Report
 
-## Status  
-ℹ️ **Historical data not available**: This is the first run or Azure storage is not configured.
+          ## Status
+          ℹ️ **Historical data not available**: This is the first run or Azure storage is not configured.
 
-## Current Results
-- **AOT Native Console File Size:** $env:AOT_FILE_SIZE_MB MB
-- **Benchmarks:** Executed successfully (detailed results in artifacts)
+          ## Current Results
+          - **AOT Native Console File Size:** $env:AOT_FILE_SIZE_MB MB
+          - **Benchmarks:** Executed successfully (detailed results in artifacts)
 
-## Note
-Performance trend analysis will be available once:
-1. Azure Table Storage is configured with managed identity
-2. Historical data from CI builds is accumulated
+          ## Note
+          Performance trend analysis will be available once:
+          1. Azure Table Storage is configured with managed identity
+          2. Historical data from CI builds is accumulated
 
----
-*Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
-"@
+          ---
+          *Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
+          "@
           $outputDir = "./perf-comparison"
           New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
           $summaryPath = Join-Path $outputDir "performance-summary.md"
@@ -203,7 +203,7 @@ Performance trend analysis will be available once:
         PR_NUMBER: ${{ github.event.pull_request.number }}
 
     # Set build status based on performance results
-    - name: 🚦 Set build status  
+    - name: 🚦 Set build status
       if: github.event_name == 'pull_request'
       run: |
         if ($env:PERFORMANCE_REGRESSIONS -eq 'True') {
@@ -220,7 +220,7 @@ Performance trend analysis will be available once:
       with:
         name: benchmark-results
         path: test/Benchmarks/BenchmarkDotNet.Artifacts/
-        
+
     - name: 📤 Upload performance comparison results
       uses: actions/upload-artifact@v4
       if: github.event_name == 'pull_request' && always()
