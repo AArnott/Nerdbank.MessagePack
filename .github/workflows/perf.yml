@@ -46,8 +46,12 @@ jobs:
         cd test/Benchmarks
         # Run only the specific methods we want to track (not the comparison methods with _MsgPackCSharp, _STJ, etc.)
         dotnet run -c ${{ env.BUILDCONFIGURATION }} --no-build -- `
-          --filter "*SimplePoco*" `
-          --method "DeserializeMapInit" "DeserializeMap" "SerializeMap" "SerializeAsArray" "DeserializeAsArray" `
+          --filter `
+            SimplePoco.DeserializeMapInit `
+            SimplePoco.DeserializeMap `
+            SimplePoco.SerializeMap `
+            SimplePoco.SerializeAsArray `
+            SimplePoco.DeserializeAsArray `
           --exporters json `
           --artifacts ./BenchmarkDotNet.Artifacts
       shell: pwsh
@@ -64,11 +68,12 @@ jobs:
 
     - name: 🔢 Get version information
       run: |
-        $CloudBuildNumber = nbgv get-version -v CloudBuildNumber
-        $Version = nbgv get-version -v Version
-        $VersionMajor = nbgv get-version -v VersionMajor
-        $VersionMinor = nbgv get-version -v VersionMinor
-        $BuildNumber = nbgv get-version -v BuildNumber
+        $versionData = nbgv get-version -f json | ConvertFrom-Json
+        $CloudBuildNumber = $versionData.CloudBuildNumber
+        $Version = $versionData.Version
+        $VersionMajor = $versionData.VersionMajor
+        $VersionMinor = $versionData.VersionMinor
+        $BuildNumber = $versionData.BuildNumber
         $CommitId = git rev-parse HEAD
 
         Write-Output "CLOUD_BUILD_NUMBER=$CloudBuildNumber" >> $env:GITHUB_ENV
@@ -122,21 +127,21 @@ jobs:
 
           # Create a basic summary for when benchmarks are missing
           $summaryReport = @"
-          # Performance Comparison Report
+        # Performance Comparison Report
 
-          ## Status
-          ⚠️ **Unable to analyze performance**: Benchmark results file not found.
+        ## Status
+        ⚠️ **Unable to analyze performance**: Benchmark results file not found.
 
-          This may indicate that:
-          - Benchmarks failed to execute
-          - The expected benchmark methods were not found
-          - There was an issue with the benchmark execution
+        This may indicate that:
+        - Benchmarks failed to execute
+        - The expected benchmark methods were not found
+        - There was an issue with the benchmark execution
 
-          Please check the build logs for more details.
+        Please check the build logs for more details.
 
-          ---
-          *Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
-          "@
+        ---
+        *Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
+        "@
           $outputDir = "./perf-comparison"
           New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
           $summaryPath = Join-Path $outputDir "performance-summary.md"
@@ -158,23 +163,23 @@ jobs:
 
           # Create a basic summary for when Azure is not configured
           $summaryReport = @"
-          # Performance Comparison Report
+        # Performance Comparison Report
 
-          ## Status
-          ℹ️ **Historical data not available**: This is the first run or Azure storage is not configured.
+        ## Status
+        ℹ️ **Historical data not available**: This is the first run or Azure storage is not configured.
 
-          ## Current Results
-          - **AOT Native Console File Size:** $env:AOT_FILE_SIZE_MB MB
-          - **Benchmarks:** Executed successfully (detailed results in artifacts)
+        ## Current Results
+        - **AOT Native Console File Size:** $env:AOT_FILE_SIZE_MB MB
+        - **Benchmarks:** Executed successfully (detailed results in artifacts)
 
-          ## Note
-          Performance trend analysis will be available once:
-          1. Azure Table Storage is configured with managed identity
-          2. Historical data from CI builds is accumulated
+        ## Note
+        Performance trend analysis will be available once:
+        1. Azure Table Storage is configured with managed identity
+        2. Historical data from CI builds is accumulated
 
-          ---
-          *Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
-          "@
+        ---
+        *Generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')*
+        "@
           $outputDir = "./perf-comparison"
           New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
           $summaryPath = Join-Path $outputDir "performance-summary.md"
