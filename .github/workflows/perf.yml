@@ -16,7 +16,7 @@ permissions:
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BUILDCONFIGURATION: Release
-  AZURE_STORAGE_ACCOUNT: nbmsgpackperf
+  AZURE_STORAGE_ACCOUNT: ghapersistence
   AZURE_TABLE_NAME: PerformanceData
 
 jobs:
@@ -45,10 +45,10 @@ jobs:
       run: |
         cd test/Benchmarks
         # Run only the specific methods we want to track (not the comparison methods with _MsgPackCSharp, _STJ, etc.)
-        dotnet run -c ${{ env.BUILDCONFIGURATION }} --no-build -- \
-          --filter "*SimplePoco*" \
-          --method "DeserializeMapInit" "DeserializeMap" "SerializeMap" "SerializeAsArray" "DeserializeAsArray" \
-          --exporters json \
+        dotnet run -c ${{ env.BUILDCONFIGURATION }} --no-build -- `
+          --filter "*SimplePoco*" `
+          --method "DeserializeMapInit" "DeserializeMap" "SerializeMap" "SerializeAsArray" "DeserializeAsArray" `
+          --exporters json `
           --artifacts ./BenchmarkDotNet.Artifacts
       shell: pwsh
 
