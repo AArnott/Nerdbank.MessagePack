@@ -29,13 +29,13 @@ jobs:
         include:
           - os: ubuntu-22.04
             rid: linux-x64
-            aotSampleSize: 51.8
+            aotSampleSize: 6.5
           - os: macos-14
             rid: osx-arm64
-            aotSampleSize: 46.3
+            aotSampleSize: 6.2
           - os: windows-2022
             rid: win-x64
-            aotSampleSize: 36.1
+            aotSampleSize: 5.2
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
