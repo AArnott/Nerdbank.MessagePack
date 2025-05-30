@@ -83,7 +83,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 
 	internal class MarshaledObjectConverterFactory : IMessagePackConverterFactory
 	{
-		public MessagePackConverter<T>? CreateConverter<T>()
+		public MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape)
 		{
 			if (typeof(T).GetCustomAttribute<RpcMarshaledAttribute>() is null)
 			{
@@ -124,7 +124,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 
 	internal class CustomUnionConverterFactory : IMessagePackConverterFactory
 	{
-		public MessagePackConverter<T>? CreateConverter<T>()
+		public MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape)
 		{
 			if (typeof(A).IsAssignableFrom(typeof(T)))
 			{
@@ -148,7 +148,7 @@ public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : Mes
 			{
 				"A" => new A(),
 				"B" => new B(),
-				_ => throw new InvalidOperationException("Unknown type"),
+				_ => throw new InvalidOperationException("Unspecified type"),
 			};
 			result.CustomSerialized = true;
 			return (T)(object)result;

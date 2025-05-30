@@ -35,7 +35,7 @@ public ref struct MessagePackWriter
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MessagePackWriter"/> struct.
 	/// </summary>
-	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required..</param>
+	/// <param name="sequencePool">The pool from which to draw an <see cref="IBufferWriter{T}"/> if required.</param>
 	/// <param name="array">An array to start with so we can avoid accessing the <paramref name="sequencePool"/> if possible.</param>
 	internal MessagePackWriter(SequencePool<byte> sequencePool, byte[] array)
 		: this()
@@ -138,6 +138,12 @@ public ref struct MessagePackWriter
 		Assumes.True(MessagePackPrimitives.TryWriteNil(span, out int written));
 		this.writer.Advance(written);
 	}
+
+	/// <summary>
+	/// Copies bytes directly into the message pack writer.
+	/// </summary>
+	/// <param name="msgpack">The msgpack bytes to copy.</param>
+	public void Write(RawMessagePack msgpack) => this.WriteRaw(msgpack.MsgPack);
 
 	/// <summary>
 	/// Copies bytes directly into the message pack writer.

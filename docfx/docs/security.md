@@ -33,15 +33,21 @@ Doing so dramatically increases the cost to the attacker to carry out this attac
 > The @System.HashCode type in particular does _not_ offer collision resistance.
 > They must come from your own code or a library with cryptographic hash functions.
 
-This library does not (yet) have the capability to create collections during deserialization that have collision resistant hash functions, due to [a limitation in PolyType](https://github.com/eiriktsarpalis/PolyType/issues/33), which it depends on.
+Nerdbank.MessagePack protects against such attacks by using a collision resistant hash function for all hash-based collections that accept an @System.Collections.Generic.IEqualityComparer`1 during construction.
+Collision resistant hashing comes at a small perf cost during deserialization.
 
-Instead, you can provide your own defense by initializing your collections with a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1 in your data type's constructor.
+This secure-by-default behavior may be overridden by setting the <xref:Nerdbank.MessagePack.MessagePackSerializer.ComparerProvider?displayProperty=nameWithType> property.
+This property may be cleared of its default value to improve performance when deserializing trusted data, or you may wish to provide your own object that is aware of the particular hashing/equality needs of your data types.
 
 > [!NOTE]
 > Hash collision resistance has no impact on the serialized data itself.
 > A program may defend itself against hash collision attacks without breaking interoperability with other parties that they exchange data with.
 
-Here is an example of a defense against hash collisions:
+### Specifying custom comparers
+
+You can specify a particular @System.Collections.Generic.IEqualityComparer`1 for a particular collection by instantiating your collections yourself in your data type's constructor or using a field or property initializer.
+
+Here is an example:
 
 # [.NET](#tab/net)
 
@@ -53,10 +59,30 @@ Here is an example of a defense against hash collisions:
 
 ---
 
-Note how the collection properties do _not_ define a property setter.
-This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.
+> [!IMPORTANT]
+> Note how the collection properties do _not_ define a property setter.
+> This is crucial to the threat mitigation, since it activates the deserializer behavior of not recreating the collection using the default (insecure) equality comparer.
 
 In this example, we use @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant*?displayProperty=nameWithType, which provides a collision resistant implementation of @System.Collections.Generic.IEqualityComparer`1.
 This implementation uses the SIP hash algorithm, which is known for its high performance and collision resistance.
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
 Please review the documentation for @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* for more information.
+
+## Multiple values for the same property
+
+Attackers will sometimes attempt to exploit vulnerabilities in a system by providing multiple values for the same property.
+Consider this JSON object:
+
+```json
+{ "accessRequested": "guest", "accessRequested": "admin" }
+```
+
+If this object represents a request and was received and checked for necessary permissions before the being forwarded to a processor, there's a potential exploit.
+If the permission check only scans for the first definition of the `accessRequested` property and sees that `guest` permission is requested, it may approve and forward the request to the processor.
+The processor may need to understand the whole object and therefore fully deserialize it.
+If the deserializer is implemented as most are, the last value given for a property may be the one last applied to the deserialized object.
+This means that although the security check saw "guest", the processor will see "admin".
+
+There is no good reason for a serialized object to define two values for the same property.
+The same exploit is possible with objects encoded in messagepack.
+Nerdbank.MessagePack mitigates this threat automatically by throwing a <xref:Nerdbank.MessagePack.MessagePackSerializationException> with its <xref:Nerdbank.MessagePack.MessagePackSerializationException.Code> property set to <xref:Nerdbank.MessagePack.MessagePackSerializationException.ErrorCode.DoublePropertyAssignment> during deserialization when any such double assignment is detected.

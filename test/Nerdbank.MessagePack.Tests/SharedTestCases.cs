@@ -16,10 +16,27 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 	public void Roundtrip_Value<T, TProvider>(TestCase<T> testCase)
 #endif
 	{
+		// Avoid using our secure hash algorithm because that messes with the order of elements
+		// in unordered collections, causing our equality testing to fail.
+		this.Serializer = this.Serializer with { ComparerProvider = null };
+
 		try
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;
-			byte[] msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			byte[] msgpack;
+			if (testCase.DefaultShape is IEnumerableTypeShape { IsAsyncEnumerable: true })
+			{
+				// Async enumerables requires async serialization.
+				Exception ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken));
+				this.Logger.WriteLine(ex.GetBaseException().Message);
+				Assert.IsType<NotSupportedException>(ex.GetBaseException());
+				return;
+			}
+			else
+			{
+				msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+			}
+
 			this.LogMsgPack(msgpack);
 
 			if (IsDeserializable(testCase))

@@ -21,15 +21,9 @@ partial class Security
     [GenerateShape]
     public partial class HashCollisionResistance
     {
-        public HashCollisionResistance()
-        {
-            this.Dictionary = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>());
-            this.HashSet = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>());
-        }
+        public Dictionary<CustomType, string> Dictionary { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>());
 
-        public Dictionary<CustomType, string> Dictionary { get; }
-
-        public HashSet<CustomType> HashSet { get; }
+        public HashSet<CustomType> HashSet { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>());
     }
 
     [GenerateShape]
@@ -45,15 +39,9 @@ partial class Security
     [GenerateShape]
     public partial class HashCollisionResistance
     {
-        public HashCollisionResistance()
-        {
-            this.Dictionary = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
-            this.HashSet = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
-        }
+        public Dictionary<CustomType, string> Dictionary { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
 
-        public Dictionary<CustomType, string> Dictionary { get; }
-
-        public HashSet<CustomType> HashSet { get; }
+        public HashSet<CustomType> HashSet { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
     }
 
     [GenerateShape]

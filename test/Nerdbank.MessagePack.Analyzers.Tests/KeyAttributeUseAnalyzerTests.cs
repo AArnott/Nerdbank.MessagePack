@@ -23,6 +23,9 @@ public class KeyAttributeUseAnalyzerTests
 
 				[Key(2), PropertyShape]
 				internal int MyProperty3 { get; set; }
+
+				[PropertyShape]
+				private UnusedDataPacket Extension;
 			}
 			""";
 
@@ -171,6 +174,27 @@ public class KeyAttributeUseAnalyzerTests
 			[GenerateShape]
 			public partial record ClassWithUnserializedPropertyGetters
 			{
+				public string PropertyChanged => throw new System.NotImplementedException();
+
+				[Key(0)]
+				public bool Value { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task KeyNotOnPropertyWithOnlyGetterWithPropertyShapeAttribute()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			
+			[GenerateShape]
+			public partial record ClassWithUnserializedPropertyGetters
+			{
+				[PropertyShape]
 				public string PropertyChanged => throw new System.NotImplementedException();
 
 				[Key(0)]

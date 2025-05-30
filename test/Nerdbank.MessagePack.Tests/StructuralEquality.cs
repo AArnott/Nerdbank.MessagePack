@@ -54,6 +54,51 @@ internal static class StructuralEquality
 		return true;
 	}
 
+	internal static bool Equal<T>(ImmutableArray<T>? left, ImmutableArray<T>? right, IEqualityComparer<T>? equalityComparer = null)
+	{
+		equalityComparer ??= EqualityComparer<T>.Default;
+
+		if (left is null || right is null)
+		{
+			return left is null == right is null;
+		}
+
+		if (left.Value.Length != right.Value.Length)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < left.Value.Length; i++)
+		{
+			if (!equalityComparer.Equals(left.Value[i], right.Value[i]))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	internal static bool Equal<T>(ReadOnlySpan<T> left, ReadOnlySpan<T> right, IEqualityComparer<T>? equalityComparer = null)
+	{
+		equalityComparer ??= EqualityComparer<T>.Default;
+
+		if (left.Length != right.Length)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < left.Length; i++)
+		{
+			if (!equalityComparer.Equals(left[i], right[i]))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	internal static bool Equal<T>(Array? left, Array? right, IEqualityComparer<T>? equalityComparer = null)
 	{
 		equalityComparer ??= EqualityComparer<T>.Default;

@@ -93,7 +93,7 @@ public partial record MessagePackSerializer
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		// Fast path for MemoryStream.
-		if (stream is MemoryStream ms)
+		if (stream is MemoryStream)
 		{
 			this.Serialize(stream, value, shape, cancellationToken);
 			return;

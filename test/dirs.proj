@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <ItemGroup>
+    <ProjectReference Include="Benchmarks\Benchmarks.csproj" Publish="false" />
+    <ProjectReference Include="Nerdbank.MessagePack.Tests\Nerdbank.MessagePack.Tests.csproj" Publish="false" />
+    <ProjectReference Include="Nerdbank.MessagePack.Analyzers.Tests\Nerdbank.MessagePack.Analyzers.Tests.csproj" Publish="false" />
+
+    <MultiRIDProjectReference Include="AotNativeConsole\AotNativeConsole.csproj" />
+  </ItemGroup>
+</Project>

@@ -57,7 +57,7 @@ internal class StringConverter : MessagePackConverter<string>
 		}
 
 		string result;
-		if (streamingReader.TryReadRaw(length, out ReadOnlySequence<byte> utf8BytesSequence).NeedsMoreBytes())
+		if (streamingReader.TryReadRaw(length, out RawMessagePack utf8BytesSequence).NeedsMoreBytes())
 		{
 			uint remainingBytesToDecode = length;
 			using SequencePool<char>.Rental sequenceRental = SequencePool<char>.Shared.Rent();
@@ -76,9 +76,9 @@ internal class StringConverter : MessagePackConverter<string>
 
 				int thisLoopLength = unchecked((int)Math.Min(int.MaxValue, Math.Min(checked((uint)streamingReader.SequenceReader.Remaining), remainingBytesToDecode)));
 				Assumes.True(streamingReader.TryReadRaw(thisLoopLength, out utf8BytesSequence) == MessagePackPrimitives.DecodeResult.Success);
-				bool flush = utf8BytesSequence.Length == remainingBytesToDecode;
+				bool flush = utf8BytesSequence.MsgPack.Length == remainingBytesToDecode;
 				decoder.Convert(utf8BytesSequence, charSequence, flush, out _, out _);
-				remainingBytesToDecode -= checked((uint)utf8BytesSequence.Length);
+				remainingBytesToDecode -= checked((uint)utf8BytesSequence.MsgPack.Length);
 			}
 
 			result = string.Create(
@@ -909,6 +909,9 @@ internal class OptionalConverter<TOptional, TElement>(
 	Func<TElement, TOptional> createSome) : MessagePackConverter<TOptional>
 {
 	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => elementConverter.PreferAsyncSerialization;
+
+	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TOptional? value, SerializationContext context)
 	{
 		if (!deconstructor(value, out TElement? element))
@@ -921,6 +924,18 @@ internal class OptionalConverter<TOptional, TElement>(
 	}
 
 	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TOptional? value, SerializationContext context)
+	{
+		if (!deconstructor(value, out TElement? element))
+		{
+			writer.WriteNil();
+		}
+
+		return elementConverter.WriteAsync(writer, element, context);
+	}
+
+	/// <inheritdoc/>
 	public override TOptional Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		if (reader.TryReadNil())
@@ -929,6 +944,26 @@ internal class OptionalConverter<TOptional, TElement>(
 		}
 
 		return createSome(elementConverter.Read(ref reader, context)!);
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TOptional?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool wasNil;
+		while (streamingReader.TryReadNil(out wasNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		if (wasNil)
+		{
+			return createNone();
+		}
+
+		return createSome((await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
 	}
 
 	/// <inheritdoc/>

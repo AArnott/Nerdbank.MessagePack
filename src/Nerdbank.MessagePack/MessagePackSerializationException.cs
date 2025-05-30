@@ -34,7 +34,47 @@ public class MessagePackSerializationException : Exception
 	public MessagePackSerializationException(string? message, Exception? innerException)
 		: base(message, innerException)
 	{
+		if (innerException is MessagePackSerializationException inner)
+		{
+			this.Code = inner.Code;
+		}
 	}
+
+	/// <summary>
+	/// Specified causes for serialization or deserialization failure.
+	/// </summary>
+	public enum ErrorCode
+	{
+		/// <summary>
+		/// No specific cause for the failure was set.
+		/// </summary>
+		Unspecified,
+
+		/// <summary>
+		/// Deserialization failed because the data was missing a value for a required property.
+		/// </summary>
+		MissingRequiredProperty,
+
+		/// <summary>
+		/// Deserialization failed because the data specified a <see langword="null"/> value for a non-nullable property.
+		/// </summary>
+		DisallowedNullValue,
+
+		/// <summary>
+		/// Deserialization failed because the data specified a <see langword="null"/> token at an unexpected or disallowed place.
+		/// </summary>
+		UnexpectedNull,
+
+		/// <summary>
+		/// Deserialization failed because the data specified multiple values for a single property.
+		/// </summary>
+		DoublePropertyAssignment,
+	}
+
+	/// <summary>
+	/// Gets the specific cause for a failure, if specified.
+	/// </summary>
+	public ErrorCode Code { get; init; }
 
 	/// <summary>
 	/// Throws an exception explaining that nil was unexpectedly encountered while deserializing a value type.
@@ -42,5 +82,5 @@ public class MessagePackSerializationException : Exception
 	/// <typeparam name="T">The value type that was being deserialized.</typeparam>
 	/// <returns>Nothing. This method always throws.</returns>
 	[DoesNotReturn]
-	internal static MessagePackSerializationException ThrowUnexpectedNilWhileDeserializing<T>() => throw new MessagePackSerializationException("Unexpected nil encountered while deserializing " + typeof(T).FullName);
+	internal static MessagePackSerializationException ThrowUnexpectedNilWhileDeserializing<T>() => throw new MessagePackSerializationException("Unexpected nil encountered while deserializing " + typeof(T).FullName) { Code = ErrorCode.UnexpectedNull };
 }

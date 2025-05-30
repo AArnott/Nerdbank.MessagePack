@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft;
-
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -19,8 +17,8 @@ namespace Nerdbank.MessagePack;
 /// an independent lifetime.
 /// </para>
 /// </remarks>
-[MessagePackConverter(typeof(RawMessagePackConverter))]
-public struct RawMessagePack : IEquatable<RawMessagePack>
+[GenerateShape]
+public partial struct RawMessagePack : IEquatable<RawMessagePack>
 {
 	/// <summary>
 	/// Initializes a new instance of the <see cref="RawMessagePack"/> struct.
@@ -110,4 +108,7 @@ public struct RawMessagePack : IEquatable<RawMessagePack>
 
 		return this;
 	}
+
+	/// <inheritdoc/>
+	public override string ToString() => "<raw msgpack>";
 }

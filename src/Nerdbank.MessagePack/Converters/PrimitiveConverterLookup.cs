@@ -42,6 +42,7 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _TimeSpanConverter;
 	private static IMessagePackConverterInternal? _GuidConverter;
 	private static IMessagePackConverterInternal? _SystemDrawingColorConverter;
+	private static IMessagePackConverterInternal? _SystemDrawingPointConverter;
 	private static IMessagePackConverterInternal? _MemoryOfByteConverter;
 	private static IMessagePackConverterInternal? _ReadOnlyMemoryOfByteConverter;
 	private static IMessagePackConverterInternal? _StringConverter;
@@ -57,6 +58,8 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _JsonElementConverter;
 	private static IMessagePackConverterInternal? _JsonDocumentConverter;
 	private static IMessagePackConverterInternal? _JsonDocumentConverterReferencePreserving;
+	private static IMessagePackConverterInternal? _RawMessagePackConverter;
+	private static IMessagePackConverterInternal? _MessagePackValueConverter;
 #if NET
 	private static IMessagePackConverterInternal? _RuneConverter;
 	private static IMessagePackConverterInternal? _Int128Converter;
@@ -189,6 +192,12 @@ internal static class PrimitiveConverterLookup
 			return true;
 		}
 
+		if (typeof(T) == typeof(System.Drawing.Point))
+		{
+			converter = (MessagePackConverter<T>)(_SystemDrawingPointConverter ??= new SystemDrawingPointConverter());
+			return true;
+		}
+
 		if (typeof(T) == typeof(Memory<byte>))
 		{
 			converter = (MessagePackConverter<T>)(_MemoryOfByteConverter ??= new MemoryOfByteConverter());
@@ -288,6 +297,18 @@ internal static class PrimitiveConverterLookup
 				converter = (MessagePackConverter<T>)(_JsonDocumentConverter ??= new JsonDocumentConverter());
 			}
 
+			return true;
+		}
+
+		if (typeof(T) == typeof(Nerdbank.MessagePack.RawMessagePack))
+		{
+			converter = (MessagePackConverter<T>)(_RawMessagePackConverter ??= new RawMessagePackConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(Nerdbank.MessagePack.MessagePackValue))
+		{
+			converter = (MessagePackConverter<T>)(_MessagePackValueConverter ??= new MessagePackValueConverter());
 			return true;
 		}
 

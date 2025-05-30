@@ -1,12 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections;
-using System.Collections.Frozen;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -32,7 +27,9 @@ internal record SerializerConfiguration
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
+	private DeserializeDefaultValuesPolicy deserializeDefaultValues = DeserializeDefaultValuesPolicy.Default;
 	private LibraryReservedMessagePackExtensionTypeCode libraryExtensionTypeCodes = LibraryReservedMessagePackExtensionTypeCode.Default;
+	private IComparerProvider? comparerProvider = SecureComparerProvider.Default;
 #if NET
 	private MultiDimensionalArrayFormat multiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested;
 #endif
@@ -240,11 +237,31 @@ internal record SerializerConfiguration
 	///   <item><description>Properties or fields attributed with <see cref="System.ComponentModel.DefaultValueAttribute"/>. e.g. <c>[DefaultValue(18)] internal int Age { get; set; } = 18;</c></description></item>
 	/// </list>
 	/// </para>
+	/// <para>
+	/// When using anything besides <see cref="SerializeDefaultValuesPolicy.Always"/>,
+	/// avoid using member initializers to set default values without also using <see cref="System.ComponentModel.DefaultValueAttribute"/>.
+	/// Otherwise round-trip serialization may not work as expected.
+	/// For example a property declared as <c>public int Age = 18;</c> may be skipped during serialization when its value is 0 (because <c>default(int) == 0</c>),
+	/// and upon deserialization, the value of Age will be 18 because no value for the property was provided.
+	/// But simply adding <c>[DefaultValue(18)]</c> to that same property declaration allows the serializer to understand what value should be considered the default value,
+	/// so that it is only skipped during serialization if the age was 18, allowing all values to be correctly round-tripped.
+	/// </para>
 	/// </remarks>
 	public SerializeDefaultValuesPolicy SerializeDefaultValues
 	{
 		get => this.serializeDefaultValues;
 		init => this.ChangeSetting(ref this.serializeDefaultValues, value);
+	}
+
+	/// <summary>
+	/// Gets the policy concerning how to handle missing or <see langword="null" /> properties
+	/// during deserialization.
+	/// </summary>
+	/// <value>The default value is <see cref="DeserializeDefaultValuesPolicy.Default"/>.</value>
+	public DeserializeDefaultValuesPolicy DeserializeDefaultValues
+	{
+		get => this.deserializeDefaultValues;
+		init => this.ChangeSetting(ref this.deserializeDefaultValues, value);
 	}
 
 	/// <summary>
@@ -258,6 +275,24 @@ internal record SerializerConfiguration
 	{
 		get => this.libraryExtensionTypeCodes;
 		init => this.ChangeSetting(ref this.libraryExtensionTypeCodes, value);
+	}
+
+	/// <summary>
+	/// Gets the provider of <see cref="IEqualityComparer{T}"/> and <see cref="IComparer{T}"/> instances
+	/// to use when instantiating collections that support them.
+	/// </summary>
+	/// <value>
+	/// The default value is an instance of <see cref="SecureComparerProvider"/>,
+	/// which provides hash collision resistance for improved security when deserializing untrusted data.
+	/// </value>
+	/// <remarks>
+	/// This property may be cleared from its secure default for improved performance when deserializing trusted data.
+	/// </remarks>
+	/// <seealso href="../docs/security.html#hash-collisions">Security: hash collisions</seealso>
+	public IComparerProvider? ComparerProvider
+	{
+		get => this.comparerProvider;
+		init => this.ChangeSetting(ref this.comparerProvider, value);
 	}
 
 #if NET

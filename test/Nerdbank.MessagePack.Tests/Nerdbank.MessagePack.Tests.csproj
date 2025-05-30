@@ -7,6 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace />
     <NoWarn>$(NoWarn);NBMsgPack051</NoWarn>
+    <EmitCompilerGeneratedFiles>false</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
@@ -55,6 +56,10 @@
     <AssemblyMetadata Include="ResourcesPath">
       <Value>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)','Resources','KnownGoodSchemas'))</Value>
     </AssemblyMetadata>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
   </ItemGroup>
 
 </Project>

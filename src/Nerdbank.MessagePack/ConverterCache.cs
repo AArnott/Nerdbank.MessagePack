@@ -1,11 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using Microsoft;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
@@ -50,11 +48,17 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <inheritdoc cref="SerializerConfiguration.SerializeDefaultValues"/>
 	internal SerializeDefaultValuesPolicy SerializeDefaultValues => configuration.SerializeDefaultValues;
 
+	/// <inheritdoc cref="SerializerConfiguration.DeserializeDefaultValues"/>
+	internal DeserializeDefaultValuesPolicy DeserializeDefaultValues => configuration.DeserializeDefaultValues;
+
 	/// <inheritdoc cref="SerializerConfiguration.InternStrings"/>
 	internal bool InternStrings => configuration.InternStrings;
 
 	/// <inheritdoc cref="SerializerConfiguration.PropertyNamingPolicy"/>
 	internal MessagePackNamingPolicy? PropertyNamingPolicy => configuration.PropertyNamingPolicy;
+
+	/// <inheritdoc cref="SerializerConfiguration.ComparerProvider"/>
+	internal IComparerProvider? ComparerProvider => configuration.ComparerProvider;
 
 	/// <inheritdoc cref="SerializerConfiguration.PerfOverSchemaStability"/>
 	internal bool PerfOverSchemaStability => configuration.PerfOverSchemaStability;
@@ -151,7 +155,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 			if (configuration.ConverterTypes.TryGetConverterType(typeof(T), out Type? converterType) ||
 				(typeof(T).IsGenericType && configuration.ConverterTypes.TryGetConverterType(typeof(T).GetGenericTypeDefinition(), out converterType)))
 			{
-				if (typeShape.GetAssociatedTypeFactory(converterType) is Func<object> factory)
+				if ((typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> factory)
 				{
 					converter = (MessagePackConverter<T>)factory();
 				}
@@ -164,7 +168,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 			{
 				foreach (IMessagePackConverterFactory factory in configuration.ConverterFactories)
 				{
-					if ((converter = factory.CreateConverter<T>()) is not null)
+					if ((converter = factory.CreateConverter<T>(typeShape)) is not null)
 					{
 						break;
 					}

@@ -1,0 +1,41 @@
+<Solution>
+  <Folder Name="/Samples/">
+    <Project Path="samples/cs/Samples.csproj" />
+    <Project Path="samples/fs/FSharpSamples.fsproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+    <File Path="stylecop.json" />
+    <File Path="version.json" />
+  </Folder>
+  <Folder Name="/Solution Items/src/">
+    <File Path="src/.editorconfig" />
+    <File Path="src/Analyzers.props" />
+    <File Path="src/Directory.Build.props" />
+    <File Path="src/Directory.Build.targets" />
+    <File Path="src/dirs.proj" />
+  </Folder>
+  <Folder Name="/Solution Items/test/">
+    <File Path="test/.editorconfig" />
+    <File Path="test/Directory.Build.props" />
+    <File Path="test/Directory.Build.targets" />
+    <File Path="test/dirs.proj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Nerdbank.MessagePack.Analyzers.CodeFixes/Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
+    <Project Path="src/Nerdbank.MessagePack.Analyzers/Nerdbank.MessagePack.Analyzers.csproj" />
+    <Project Path="src/Nerdbank.MessagePack/Nerdbank.MessagePack.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/AotNativeConsole/AotNativeConsole.csproj" />
+    <Project Path="test/Benchmarks/Benchmarks.csproj" />
+    <Project Path="test/Nerdbank.MessagePack.Analyzers.Tests/Nerdbank.MessagePack.Analyzers.Tests.csproj" />
+    <Project Path="test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj" />
+  </Folder>
+</Solution>

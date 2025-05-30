@@ -14,8 +14,11 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
-internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>> getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
+internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>>? getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
 {
+	/// <inheritdoc />
+	public override bool PreferAsyncSerialization => getEnumerable is null || this.ElementPrefersAsyncSerialization;
+
 	/// <summary>
 	/// Gets a value indicating whether the element converter prefers async serialization.
 	/// </summary>
@@ -33,8 +36,70 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TEnumerable? value, SerializationContext context)
+	{
+		if (value is null)
+		{
+			writer.WriteNil();
+			return;
+		}
+
+		context.DepthStep();
+
+		List<TElement> elements = [];
+		if (getEnumerable is not null)
+		{
+			foreach (TElement element in getEnumerable(value))
+			{
+				elements.Add(element);
+			}
+		}
+		else
+		{
+			IAsyncEnumerable<TElement> enumerable = (IAsyncEnumerable<TElement>)value;
+			await foreach (TElement element in enumerable.WithCancellation(context.CancellationToken).ConfigureAwait(false))
+			{
+				elements.Add(element);
+			}
+		}
+
+		if (elementConverter.PreferAsyncSerialization)
+		{
+			writer.WriteArrayHeader(elements.Count);
+			for (int i = 0; i < elements.Count; i++)
+			{
+				await elementConverter.WriteAsync(writer, elements[i], context).ConfigureAwait(false);
+			}
+		}
+		else
+		{
+			MessagePackWriter syncWriter = writer.CreateWriter();
+			syncWriter.WriteArrayHeader(elements.Count);
+			for (int i = 0; i < elements.Count; i++)
+			{
+				elementConverter.Write(ref syncWriter, elements[i], context);
+
+				if (writer.IsTimeToFlush(context, syncWriter))
+				{
+					writer.ReturnWriter(ref syncWriter);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+					syncWriter = writer.CreateWriter();
+				}
+			}
+
+			writer.ReturnWriter(ref syncWriter);
+		}
+	}
+
+	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
 	{
+		if (getEnumerable is null)
+		{
+			throw new NotSupportedException($"The type {typeof(TEnumerable)} does not support synchronous serialization because it implements IAsyncEnumerable<T>. Use async serialization instead.");
+		}
+
 		if (value is null)
 		{
 			writer.WriteNil();
@@ -144,7 +209,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 /// <param name="addElement">The delegate that adds an element to the enumerable.</param>
 /// <param name="ctor">The default constructor for the enumerable type.</param>
 internal class MutableEnumerableConverter<TEnumerable, TElement>(
-	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	Setter<TEnumerable, TElement> addElement,
 	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
@@ -162,7 +227,27 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		this.DeserializeInto(ref reader, ref result, context);
 		return result;
 	}
-#pragma warning restore NBMsgPack03
+#pragma warning restore NBMsgPack031
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		reader.ReturnReader(ref streamingReader);
+		if (isNil)
+		{
+			return default;
+		}
+
+		return await this.DeserializeIntoAsync(reader, ctor(), context).ConfigureAwait(false);
+	}
 
 	/// <inheritdoc/>
 	public void DeserializeInto(ref MessagePackReader reader, ref TEnumerable collection, SerializationContext context)
@@ -177,7 +262,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context)
+	public async ValueTask<TEnumerable> DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context)
 	{
 		context.DepthStep();
 
@@ -190,6 +275,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
+			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
 				addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));
@@ -207,6 +293,8 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 			reader.ReturnReader(ref syncReader);
 		}
+
+		return collection;
 	}
 }
 
@@ -218,7 +306,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 /// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
 /// <param name="ctor">A enumerable initializer that constructs from a span of elements.</param>
 internal class SpanEnumerableConverter<TEnumerable, TElement>(
-	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
@@ -247,6 +335,59 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 			ArrayPool<TElement>.Shared.Return(elements);
 		}
 	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		if (this.ElementPrefersAsyncSerialization)
+		{
+			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			bool isNil;
+			while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (isNil)
+			{
+				reader.ReturnReader(ref streamingReader);
+				return default;
+			}
+
+			context.DepthStep();
+
+			int count;
+			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			reader.ReturnReader(ref streamingReader);
+			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
+			try
+			{
+				for (int i = 0; i < count; i++)
+				{
+					elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
+				}
+
+				return ctor(elements.AsSpan(0, count));
+			}
+			finally
+			{
+				ArrayPool<TElement>.Shared.Return(elements);
+			}
+		}
+		else
+		{
+			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
+			MessagePackReader syncReader = reader.CreateBufferedReader();
+			TEnumerable? result = this.Read(ref syncReader, context);
+			reader.ReturnReader(ref syncReader);
+			return result;
+		}
+	}
 }
 
 /// <summary>
@@ -257,7 +398,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 /// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
 /// <param name="ctor">A enumerable initializer that constructs from an enumerable of elements.</param>
 internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
-	Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
@@ -284,6 +425,59 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 		finally
 		{
 			ArrayPool<TElement>.Shared.Return(elements);
+		}
+	}
+
+	/// <inheritdoc/>
+	[Experimental("NBMsgPackAsync")]
+	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		if (this.ElementPrefersAsyncSerialization)
+		{
+			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+			bool isNil;
+			while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (isNil)
+			{
+				reader.ReturnReader(ref streamingReader);
+				return default;
+			}
+
+			context.DepthStep();
+
+			int count;
+			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			reader.ReturnReader(ref streamingReader);
+			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
+			try
+			{
+				for (int i = 0; i < count; i++)
+				{
+					elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
+				}
+
+				return ctor(elements.Take(count));
+			}
+			finally
+			{
+				ArrayPool<TElement>.Shared.Return(elements);
+			}
+		}
+		else
+		{
+			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
+			MessagePackReader syncReader = reader.CreateBufferedReader();
+			TEnumerable? result = this.Read(ref syncReader, context);
+			reader.ReturnReader(ref syncReader);
+			return result;
 		}
 	}
 }

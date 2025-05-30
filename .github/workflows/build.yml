@@ -26,10 +26,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - ubuntu-22.04
-        #- macos-14
-        - windows-2022
+        include:
+          - os: ubuntu-22.04
+            rid: linux-x64
+            aotSampleSize: 51.8
+          - os: macos-14
+            rid: osx-arm64
+            aotSampleSize: 46.3
+          - os: windows-2022
+            rid: win-x64
+            aotSampleSize: 36.1
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -49,9 +55,30 @@ jobs:
       run: tools/variables/_define.ps1
       shell: pwsh
     - name: 🛠 build
-      run: dotnet build -t:build,pack --no-restore -c ${{ env.BUILDCONFIGURATION }} -warnAsError -warnNotAsError:NU1901,NU1902,NU1903,NU1904 /bl:"${{ runner.temp }}/_artifacts/build_logs/build.binlog"
+      run: dotnet build tools/dirs.proj -t:build,pack,publish --no-restore -c ${{ env.BUILDCONFIGURATION }} -warnAsError -warnNotAsError:NU1901,NU1902,NU1903,NU1904 /bl:"${{ runner.temp }}/_artifacts/build_logs/build.binlog"
     - name: 🧪 test
       run: tools/dotnet-test-cloud.ps1 -Configuration ${{ env.BUILDCONFIGURATION }} -Agent ${{ runner.os }}
+      shell: pwsh
+    - name: 🏭 Verify NativeAOT image size
+      run: |
+        Function GetSizeInMB($Path) {
+          if (!($IsMacOS -or $IsLinux)) { $Path += '.exe' }
+          $FileName = Split-Path $Path -Leaf
+          (gci $Path).Length / 1024 / 1024
+        }
+
+        $Path = './bin/AotNativeConsole/${{ env.BUILDCONFIGURATION }}/net9.0/${{ matrix.rid }}/publish/AotNativeConsole'
+        $ActualSize = GetSizeInMB($Path)
+        Write-Host ("$FileName size: {0:0.0} MB" -f $ActualSize)
+
+        # Allow variance of a small threshold of the expected value.
+        # Fail even if it's smaller than anticipated so that the expected window can be shrunk in this file.
+        $ExpectedSize = ${{ matrix.aotSampleSize }}
+        $AllowedVariance = 3
+        if ([math]::Abs($ActualSize - $ExpectedSize) -gt $AllowedVariance) {
+          Write-Error ("NativeAOT image size {0:0.0} MB is outside the expected range of {1:0.0}±{2:0.0} MB." -f $ActualSize, $ExpectedSize, $AllowedVariance)
+          exit 1
+        }
       shell: pwsh
     - name: 💅🏻 Verify formatted code
       run: dotnet format --verify-no-changes --no-restore --exclude ./samples/AnalyzerDocs/NBMsgPack051.cs

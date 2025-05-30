@@ -20,6 +20,9 @@ NBMsgPack036 | Usage | Error | Async converters should not reuse readers after r
 NBMsgPack037 | Usage | Warning | Async converters should override PreferAsyncSerialization
 NBMsgPack050 | Usage | Warning | Use ref parameters for ref structs
 NBMsgPack051 | Usage | Warning | Prefer modern .NET APIs
+NBMsgPack060 | Usage | Error | `UnusedDataPacket` member should have a property shape
+NBMsgPack061 | Usage | Error | `UnusedDataPacket` member should not have a KeyAttribute
+NBMsgPack062 | Usage | Warning | `UnusedDataPacket` properties should be private
 NBMsgPack100 | Migration | Info | Migrate MessagePack-CSharp formatter
 NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute
 NBMsgPack102 | Migration | Info | Remove use of MessagePackObjectAttribute

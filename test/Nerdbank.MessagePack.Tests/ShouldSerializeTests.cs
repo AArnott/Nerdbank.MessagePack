@@ -4,8 +4,19 @@
 using System.ComponentModel;
 
 [Trait("ShouldSerialize", "true")]
-public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 {
+	public ShouldSerializeTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+		// This class is full of partially serialized objects as part of testing serialization behavior.
+		// We don't want to fail to deserialize due to missing required properties.
+		this.Serializer = this.Serializer with
+		{
+			DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties,
+		};
+	}
+
 	public static IEnumerable<SerializeDefaultValuesPolicy> AllPolicies
 	{
 		get
@@ -240,6 +251,16 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 		}
 	}
 
+	[Theory]
+	[InlineData(SerializeDefaultValuesPolicy.Never)]
+	[InlineData(SerializeDefaultValuesPolicy.Required)]
+	[InlineData(SerializeDefaultValuesPolicy.Always)]
+	public void PropertyWithNonDefaultInitializer_PreservesValue(SerializeDefaultValuesPolicy policy)
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = policy };
+		this.AssertRoundtrip(new PropertyWithNonDefaultInitializer { A = false });
+	}
+
 	[GenerateShape]
 	public partial record Person
 	{
@@ -282,4 +303,11 @@ public partial class ShouldSerializeTests(ITestOutputHelper logger) : MessagePac
 
 	[GenerateShape]
 	public partial record PersonWithRequiredAndOptionalParameters(string? Name, int? Age = null);
+
+	[GenerateShape]
+	public partial record PropertyWithNonDefaultInitializer
+	{
+		[DefaultValue(true)]
+		public bool A { get; set; } = true;
+	}
 }

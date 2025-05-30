@@ -1,0 +1,34 @@
+name: 🏭 Prepare release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    env:
+      PUBLICRELEASE: true
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: |
+          nbgv tag
+          VERSION=$(nbgv get-version -v nugetpackageversion)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "$VERSION"
+
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin "v${{ steps.get_version.outputs.version }}"
+          gh release create --generate-notes -d "v${{ steps.get_version.outputs.version }}"

@@ -239,7 +239,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 	/// <inheritdoc/>
 	[Experimental("NBMsgPackAsync")]
-	public async ValueTask DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context)
+	public async ValueTask<TDictionary> DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context)
 	{
 		context.DepthStep();
 
@@ -271,6 +271,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 			reader.ReturnReader(ref syncReader);
 		}
+
+		return collection;
 	}
 }
 

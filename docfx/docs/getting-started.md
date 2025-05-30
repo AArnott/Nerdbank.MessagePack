@@ -74,3 +74,23 @@ In particular the following limitations apply:
 The exact JSON emitted, especially for the msgpack-only tokens, is subject to change in future versions of this library.
 You should *not* write programs that are expected to parse the JSON produced by this diagnostic method.
 Use a JSON serialization library if you want interop-safe, machine-parseable JSON.
+
+## Deserialize to dynamic
+
+When you do not have types declared that resemble the msgpack schema you need to deserialize, you can use the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeDynamic*?displayProperty=nameWithType method.
+
+[!code-csharp[](../../samples/cs/PrimitiveDeserialization.cs#DeserializePrimitives)]
+
+A built-in @System.Dynamic.ExpandoObject converter is included in the library as well.
+It will deserialize any msgpack structure into primitives and simple structures.
+Serializing an `ExpandoObject` requires that serialization start with a shape provider that can describe every runtime type in the object graph.
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/cs/PrimitiveDeserialization.cs#DeserializeExpandoObjectNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/cs/PrimitiveDeserialization.cs#DeserializeExpandoObjectNETFX)]
+
+---

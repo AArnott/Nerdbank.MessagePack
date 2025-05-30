@@ -91,6 +91,12 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 						continue;
 					}
 
+					if (AnalyzerUtilities.IsUnusedDataPacketMember(memberSymbol, referenceSymbols))
+					{
+						// Another analyzer scans this special member.
+						continue;
+					}
+
 					if (keyAttributeApplied is null)
 					{
 						keyAttributeApplied = keyAttribute is not null;
@@ -140,16 +146,13 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 
 	private bool IsMemberSerialized(ISymbol member, ImmutableHashSet<string> ctorParameterNames, ReferenceSymbols referenceSymbols)
 	{
-		AttributeData? propertyShapeAttribute = member.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
-		bool? ignored = propertyShapeAttribute?.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.IgnoreProperty).Value.Value as bool?;
 		bool isReadOnly = !ctorParameterNames.Contains(member.Name) && member switch
 		{
 			IPropertySymbol p => p.IsReadOnly,
 			IFieldSymbol f => f.IsReadOnly,
 			_ => false,
 		};
-		return ignored is not true &&
-			((member.DeclaredAccessibility is Accessibility.Public && !isReadOnly) || propertyShapeAttribute is not null);
+		return AnalyzerUtilities.HasPropertyShape(member, referenceSymbols) && !isReadOnly;
 	}
 
 	private IMethodSymbol? GetDeserializingConstructor(INamedTypeSymbol? typeSymbol, ReferenceSymbols referenceSymbols)
