@@ -17,13 +17,15 @@ Declare a class that derives from @"Nerdbank.MessagePack.MessagePackConverter`1"
 > [!CAUTION]
 > It is imperative that each `Write` and `Read` method write and read *exactly one* msgpack structure.
 
-A converter that reads or writes more than one msgpack structure may appear to work correctly, but will result in invalid, unparseable msgpack.
+A converter that reads or writes more or less than one msgpack structure may appear to work correctly, but will result in invalid, unparseable msgpack.
 Msgpack is a structured, self-describing format similar to JSON.
 In JSON, an individual array element or object property value must be described as a single element or the JSON would be invalid.
 
 If you have more than one value to serialize or deserialize (e.g. multiple fields on an object) you MUST use a map or array header with the appropriate number of elements you intend to serialize.
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Write*" method, use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader*.
 In the @"Nerdbank.MessagePack.MessagePackConverter`1.Read*" method, use @Nerdbank.MessagePack.MessagePackReader.ReadMapHeader or @Nerdbank.MessagePack.MessagePackReader.ReadArrayHeader.
+
+If you have nothing to serialize (e.g. because the value to serialize is empty), you should either use @Nerdbank.MessagePack.MessagePackWriter.WriteNil or use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader* with an argument of 0.
 
 Custom converters are encouraged to override @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*?displayProperty=nameWithType to support the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType methods.
 
@@ -217,8 +219,14 @@ To get your converter to be automatically used wherever the data type that it fo
 
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByAttribute)]
 
-When the converter is generic, it must have exactly the same number of generic type parameters as the data type it supports.
+When the converter is specified as an *open* generic, it must have exactly the same number of generic type parameters as the data type it supports.
 The generic converter will be constructed using the same list of generic type arguments that the data type to be serialized uses.
+
+You may also use your converter for a specific use of your data type by applying @Nerdbank.MessagePack.MessagePackConverterAttribute to a field or property.
+
+[!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByAttributeOnMember)]
+
+When the converter is specified as an *open* generic, it must have exactly the same number of generic type parameters as the type the property or field the attribute is applied to has.
 
 ### Runtime registration
 
@@ -227,6 +235,9 @@ For precise runtime control of where your converter is used and/or how it is ins
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterRegisteredAtRuntime)]
 
 Runtime registration of open generic converters (i.e. converters that themselves are generic types) can either be as live objects (which necessarily locks the converters down to just one closed generic type) or you can register the converter's open generic type itself, in which case the converter will be activated on-demand when an object graph that carries an instance of the generic data type needs to be serialized.
+
+Runtime registration cannot be used to apply a converter to only a specific property or field.
+Use the attribute approach documented above for that.
 
 ## Converter factories
 

@@ -48,29 +48,53 @@ public class MessagePackConverterAttributeAnalyzer : DiagnosticAnalyzer
 				context =>
 				{
 					var appliedType = (INamedTypeSymbol)context.Symbol;
-					if (appliedType.FindAttributes(referenceSymbols.MessagePackConverterAttribute).FirstOrDefault() is not { } att)
+					AnalyzeAttributeOnSymbol(appliedType, appliedType);
+
+					foreach (ISymbol member in appliedType.GetMembers())
 					{
-						return;
+						switch (member)
+						{
+							case IPropertySymbol property:
+								AnalyzeAttributeOnSymbol(property, property.Type);
+								break;
+							case IFieldSymbol field:
+								AnalyzeAttributeOnSymbol(field, field.Type);
+								break;
+						}
 					}
 
-					if (att.ConstructorArguments is not [{ Value: INamedTypeSymbol converterType }])
+					void AnalyzeAttributeOnSymbol(ISymbol targetSymbol, ITypeSymbol appliedType)
 					{
-						return;
-					}
+						if (targetSymbol.FindAttributes(referenceSymbols.MessagePackConverterAttribute).FirstOrDefault() is not { } att)
+						{
+							return;
+						}
 
-					if (!converterType.IsOrDerivedFrom(referenceSymbols.MessagePackConverter.Construct(appliedType)))
-					{
-						context.ReportDiagnostic(Diagnostic.Create(InvalidConverterTypeDescriptor, GetArgumentLocation(0), appliedType.Name));
-					}
-					else if (!converterType.OriginalDefinition.InstanceConstructors.Any(c => c.Parameters.IsEmpty && c.DeclaredAccessibility == Accessibility.Public))
-					{
-						context.ReportDiagnostic(Diagnostic.Create(ConverterMissingDefaultCtorDescriptor, GetArgumentLocation(0), appliedType.Name));
-					}
+						if (att.ConstructorArguments is not [{ Value: INamedTypeSymbol converterType }])
+						{
+							return;
+						}
 
-					Location? GetArgumentLocation(int argumentIndex)
-					{
-						return AnalyzerUtilities.GetArgumentLocation(att, argumentIndex, context.CancellationToken)
-							?? appliedType.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
+						if (converterType is { IsUnboundGenericType: true, TypeArguments.Length: int requiredTypeArgsCount } && appliedType is INamedTypeSymbol { IsUnboundGenericType: false, TypeArguments: { } supplied } &&
+							requiredTypeArgsCount == supplied.Length)
+						{
+							converterType = converterType.OriginalDefinition.Construct([.. supplied]);
+						}
+
+						if (!converterType.IsOrDerivedFrom(referenceSymbols.MessagePackConverter.Construct(appliedType)))
+						{
+							context.ReportDiagnostic(Diagnostic.Create(InvalidConverterTypeDescriptor, GetArgumentLocation(0), appliedType.Name));
+						}
+						else if (!converterType.OriginalDefinition.InstanceConstructors.Any(c => c.Parameters.IsEmpty && c.DeclaredAccessibility == Accessibility.Public))
+						{
+							context.ReportDiagnostic(Diagnostic.Create(ConverterMissingDefaultCtorDescriptor, GetArgumentLocation(0), appliedType.Name));
+						}
+
+						Location? GetArgumentLocation(int argumentIndex)
+						{
+							return AnalyzerUtilities.GetArgumentLocation(att, argumentIndex, context.CancellationToken)
+								?? appliedType.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(context.CancellationToken).GetLocation();
+						}
 					}
 				},
 				SymbolKind.NamedType);

@@ -13,7 +13,7 @@ namespace Nerdbank.MessagePack;
 /// A type that implements <see cref="MessagePackConverter{T}"/>
 /// where <c>T</c> is a type argument matching the type to which this attribute is applied.
 /// </param>
-[AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
 [AssociatedTypeAttribute(nameof(converterType), TypeShapeRequirements.Constructor)]
 public class MessagePackConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType) : Attribute
 {

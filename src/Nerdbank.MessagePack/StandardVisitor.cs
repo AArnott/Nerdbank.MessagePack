@@ -71,7 +71,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (this.GetCustomConverter(objectShape) is MessagePackConverter<T> customConverter)
+		if (this.GetCustomConverter(objectShape, objectShape.AttributeProvider) is MessagePackConverter<T> customConverter)
 		{
 			return customConverter;
 		}
@@ -261,7 +261,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		(IParameterShape? constructorParameterShape, IPropertyAssignmentTrackingManager assignmentTrackingManager) = ((IParameterShape?, IPropertyAssignmentTrackingManager))state!;
 
-		MessagePackConverter<TPropertyType> converter = this.GetConverter(propertyShape.PropertyType);
+		MessagePackConverter<TPropertyType> converter =
+			this.GetCustomConverter(propertyShape.PropertyType, propertyShape.AttributeProvider) ??
+			this.GetConverter(propertyShape.PropertyType);
 
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
@@ -681,9 +683,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		};
 	}
 
-	private MessagePackConverter<T>? GetCustomConverter<T>(ITypeShape<T> typeShape)
+	private MessagePackConverter<T>? GetCustomConverter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider)
 	{
-		if (typeShape.AttributeProvider?.GetCustomAttributes(typeof(MessagePackConverterAttribute), false).FirstOrDefault() is not MessagePackConverterAttribute customConverterAttribute)
+		if (attributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is not { } customConverterAttribute)
 		{
 			return null;
 		}
