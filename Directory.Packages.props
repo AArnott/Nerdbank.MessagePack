@@ -7,7 +7,7 @@
     <RoslynVersion>4.14.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25173.3</CodeAnalysisAnalyzerVersion>
-    <PolyTypeVersion>0.40.1</PolyTypeVersion>
+    <PolyTypeVersion>0.41.1</PolyTypeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.0" />
@@ -44,7 +44,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsTestProject)'=='true'">
     <PackageVersion Update="System.Collections.Immutable" Version="9.0.0" />
-    <PackageVersion Update="System.IO.Pipelines" Version="9.0.0" />
+    <PackageVersion Update="System.IO.Pipelines" Version="9.0.5" />
+    <PackageVersion Update="System.Text.Json" Version="9.0.5" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
