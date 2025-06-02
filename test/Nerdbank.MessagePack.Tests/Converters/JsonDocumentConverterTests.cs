@@ -5,11 +5,17 @@ using System.Text.Json;
 
 namespace Converters;
 
-public partial class JsonDocumentConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class JsonDocumentConverterTests : MessagePackSerializerTestBase
 {
 	private const string Json = """
 		{"a":1,"b":[2,3],"c":{"d":"e"},"f":null}
 		""";
+
+	public JsonDocumentConverterTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
+	}
 
 	[Fact]
 	public void RoundtripDOM()

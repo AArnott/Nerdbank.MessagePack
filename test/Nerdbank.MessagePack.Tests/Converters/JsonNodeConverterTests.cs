@@ -5,8 +5,14 @@ using System.Text.Json.Nodes;
 
 namespace Converters;
 
-public partial class JsonNodeConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 {
+	public JsonNodeConverterTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
+	}
+
 	[Fact]
 	public void Roundtrip_JsonNode()
 	{

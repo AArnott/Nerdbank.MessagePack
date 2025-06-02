@@ -6,13 +6,19 @@ using System.Text.Json;
 
 namespace Converters;
 
-public partial class JsonElementConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class JsonElementConverterTests : MessagePackSerializerTestBase
 {
 	private const string Json = """
 		{"a":1,"b":[2,3],"c":{"d":"e"},"f":null}
 		""";
 
 	private static readonly ReadOnlyMemory<byte> JsonUtf8 = Encoding.UTF8.GetBytes(Json);
+
+	public JsonElementConverterTests(ITestOutputHelper logger)
+		: base(logger)
+	{
+		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
+	}
 
 	[Fact]
 	public void RoundtripDOM()

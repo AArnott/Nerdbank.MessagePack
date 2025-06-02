@@ -49,9 +49,6 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("Version", "VersionConverter", IsRefType: true),
 	new ConverterInfo("Uri", "UriConverter", IsRefType: true),
 	new ConverterInfo("byte[]", "ByteArrayConverter", IsRefType: true),
-    new ConverterInfo("System.Text.Json.Nodes.JsonNode", "JsonNodeConverter", IsRefType: true, Feature: "SystemTextJsonConverters"),
-    new ConverterInfo("System.Text.Json.JsonElement", "JsonElementConverter", Feature: "SystemTextJsonConverters"),
-    new ConverterInfo("System.Text.Json.JsonDocument", "JsonDocumentConverter", IsRefType: true, Feature: "SystemTextJsonConverters"),
     new ConverterInfo("Nerdbank.MessagePack.RawMessagePack", "RawMessagePackConverter"),
     new ConverterInfo("Nerdbank.MessagePack.MessagePackValue", "MessagePackValueConverter"),
 };
@@ -129,7 +126,7 @@ internal static class PrimitiveConverterLookup
 	}
 }
 <#+
-record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false, string? Feature = null)
+record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false, string Feature = null)
 {
 	internal string FieldName => $"_{ConverterName}";
 	internal string ReferencePreservingFieldName => $"{FieldName}ReferencePreserving";
