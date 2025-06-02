@@ -12,10 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="Feature.MessagePack.SystemTextJsonConverters" Value="false" Trim="true" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
   </ItemGroup>
   <ItemGroup>

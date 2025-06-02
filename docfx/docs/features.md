@@ -49,14 +49,14 @@ Endless streaming deserialization | [✅](streaming-deserialization.md) | [✅](
 Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
 Cyclical references       | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
 JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
-Secure defaults           | ✅ | ❌ |
+Secure defaults           | [✅](security.md) | ❌ |
 Automatic hash collection deserialization in secure mode | ✅ | ✅ |
 Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.StructuralEqualityComparer) | ❌ |
 Rejection of data that defines multiple values for the same property | [✅](security.md#multiple-values-for-the-same-property) | ❌ |
 Free of mutable statics   | ✅ | ❌ |
 Structural `IEqualityComparer<T>` for arbitrary types | ✅ | ❌ |
 
-Security is a complex subject, and an area where Nerdbank.MessagePack is actively evolving.
+Security is a complex subject.
 [Learn more about how to secure your deserializer](security.md).
 
 [^1]: Nerdbank.MessagePack's approach is more likely to be correct by default and more flexible to fixing when it is not.
