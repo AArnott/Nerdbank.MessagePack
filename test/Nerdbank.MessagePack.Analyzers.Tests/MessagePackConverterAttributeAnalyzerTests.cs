@@ -17,6 +17,12 @@ public class MessagePackConverterAttributeAnalyzerTests
 			{
 			}
 
+			public class Members
+			{
+				[MessagePackConverter(typeof(MyTypeConverter))]
+				public MyType Value { get; set; }
+			}
+
 			public class MyTypeConverter : MessagePackConverter<MyType>
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
@@ -39,6 +45,18 @@ public class MessagePackConverterAttributeAnalyzerTests
 			{
 			}
 
+			public class MemberOf<T>
+			{
+				[MessagePackConverter(typeof(MyTypeConverter<>))]
+				public MyType<T> Value { get; set; }
+			}
+
+			public class MemberOf
+			{
+				[MessagePackConverter(typeof(MyTypeConverter<>))]
+				public MyType<int> Value { get; set; }
+			}
+
 			public class MyTypeConverter<T> : MessagePackConverter<MyType<T>>
 			{
 				public override MyType<T> Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
@@ -59,6 +77,12 @@ public class MessagePackConverterAttributeAnalyzerTests
 			[MessagePackConverter({|NBMsgPack021:typeof(MyTypeConverter)|})]
 			public class MyType
 			{
+			}
+
+			public class MemberApplied
+			{
+				[MessagePackConverter({|NBMsgPack021:typeof(MyTypeConverter)|})]
+				public MyType Value { get; set; }
 			}
 
 			public class MyTypeConverter : MessagePackConverter<MyType>
@@ -84,6 +108,12 @@ public class MessagePackConverterAttributeAnalyzerTests
 			{
 			}
 
+			public class MemberApplied
+			{
+				[MessagePackConverter({|NBMsgPack020:typeof(MyTypeConverter)|})]
+				public MyType Value { get; set; }
+			}
+
 			public class MyTypeConverter
 			{
 				public MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
@@ -104,6 +134,12 @@ public class MessagePackConverterAttributeAnalyzerTests
 			[MessagePackConverter({|NBMsgPack020:typeof(IntConverter)|})]
 			public class MyType
 			{
+			}
+
+			public class MemberApplied
+			{
+				[MessagePackConverter({|NBMsgPack020:typeof(IntConverter)|})]
+				public string Value { get; set; }
 			}
 
 			public class IntConverter : MessagePackConverter<int>

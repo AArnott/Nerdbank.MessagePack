@@ -303,7 +303,7 @@ namespace WitnessForArray
     }
 }
 
-namespace CustomConverterRegistration
+namespace CustomConverterTypeRegistration
 {
     #region CustomConverterByAttribute
     [MessagePackConverter(typeof(MyCustomTypeConverter))]
@@ -332,6 +332,27 @@ namespace CustomConverterRegistration
             serializer = serializer with { Converters = [new MyCustomTypeConverter()] };
             #endregion
         }
+    }
+}
+
+namespace CustomConverterMemberRegistration
+{
+    #region CustomConverterByAttributeOnMember
+    public class MyCustomType
+    {
+        [MessagePackConverter(typeof(EncryptingIntegerConverter))]
+        public int Value { get; set; }
+    }
+    #endregion
+
+    /// <summary>
+    /// Simple XOR encryption for demonstration.
+    /// </summary>
+    public class EncryptingIntegerConverter : MessagePackConverter<int>
+    {
+        public override int Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt32() ^ 0x12345678;
+
+        public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => writer.Write(value ^ 0x12345678); // Simple XOR encryption for demonstration
     }
 }
 
