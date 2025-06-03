@@ -31,38 +31,38 @@
 param(
     [Parameter(Mandatory)]
     [string]$StorageAccount,
-    
+
     [Parameter(Mandatory)]
     [string]$TableName,
-    
+
     [Parameter(Mandatory)]
     [string]$BenchmarkResultsPath,
-    
+
     [Parameter(Mandatory)]
     [double]$AotFileSizeMB,
-    
+
     [Parameter(Mandatory)]
     [string]$CloudBuildNumber,
-    
+
     [Parameter(Mandatory)]
     [string]$Version,
-    
+
     [Parameter(Mandatory)]
     [int]$VersionMajor,
-    
+
     [Parameter(Mandatory)]
     [int]$VersionMinor,
-    
+
     [Parameter(Mandatory)]
     [int]$BuildNumber,
-    
+
     [Parameter(Mandatory)]
     [string]$CommitId
 )
 
 try {
     # Check and install required modules if not available
-    $requiredModules = @('Az.Storage', 'Az.Accounts')
+    $requiredModules = @('Az.Storage', 'Az.Resources', 'Az.Accounts', 'AzTable')
     foreach ($module in $requiredModules) {
         if (-not (Get-Module -ListAvailable -Name $module)) {
             Write-Host "📦 Installing module: $module"
@@ -70,37 +70,35 @@ try {
         }
         Import-Module $module -Force
     }
-    
+
     Write-Host "🔐 Authenticating to Azure using Managed Identity..."
     # Connect using managed identity
     Connect-AzAccount -Identity
-    
+
     Write-Host "🏪 Connecting to storage account: $StorageAccount"
     $storageContext = New-AzStorageContext -StorageAccountName $StorageAccount -UseConnectedAccount
-    
+
     # Get or create table
     $table = Get-AzStorageTable -Name $TableName -Context $storageContext -ErrorAction SilentlyContinue
     if (-not $table) {
         Write-Host "📊 Creating table: $TableName"
         $table = New-AzStorageTable -Name $TableName -Context $storageContext
     }
-    
+
     Write-Host "📈 Reading benchmark results from: $BenchmarkResultsPath"
     if (-not (Test-Path $BenchmarkResultsPath)) {
         throw "Benchmark results file not found: $BenchmarkResultsPath"
     }
-    
+
     $benchmarkData = Get-Content $BenchmarkResultsPath -Raw | ConvertFrom-Json
-    
+
     # Create table entity for AOT file size
     $timestamp = Get-Date
     $partitionKey = "AotFileSize"
     $rowKey = $CloudBuildNumber
-    
+
     Write-Host "💾 Storing AOT file size data..."
     $aotEntity = @{
-        PartitionKey = $partitionKey
-        RowKey = $rowKey
         Timestamp = $timestamp
         CommitId = $CommitId
         CloudBuildNumber = $CloudBuildNumber
@@ -110,28 +108,26 @@ try {
         BuildNumber = $BuildNumber
         FileSizeMB = $AotFileSizeMB
     }
-    
-    Add-AzTableRow -Table $table.CloudTable -Entity $aotEntity
-    
+
+    Add-AzTableRow -Table $table.CloudTable -PartitionKey $partitionKey -RowKey $rowKey -property $aotEntity
+
     # Store benchmark data for each tracked benchmark
     $trackedBenchmarks = @(
         'SimplePoco.DeserializeMapInit',
-        'SimplePoco.DeserializeMap', 
+        'SimplePoco.DeserializeMap',
         'SimplePoco.SerializeMap',
         'SimplePoco.SerializeAsArray',
         'SimplePoco.DeserializeAsArray'
     )
-    
+
     Write-Host "📊 Storing benchmark data..."
     foreach ($benchmark in $benchmarkData.Benchmarks) {
         $methodName = $benchmark.MethodTitle
         if ($methodName -in $trackedBenchmarks) {
             $partitionKey = "Benchmark"
             $rowKey = "$CloudBuildNumber-$methodName"
-            
+
             $benchmarkEntity = @{
-                PartitionKey = $partitionKey
-                RowKey = $rowKey
                 Timestamp = $timestamp
                 CommitId = $CommitId
                 CloudBuildNumber = $CloudBuildNumber
@@ -146,12 +142,12 @@ try {
                 Max = $benchmark.Statistics.Max
                 Allocated = $benchmark.Memory.Allocated
             }
-            
-            Add-AzTableRow -Table $table.CloudTable -Entity $benchmarkEntity
+
+            Add-AzTableRow -Table $table.CloudTable -PartitionKey $partitionKey -RowKey $rowKey -property $benchmarkEntity
             Write-Host "  ✅ Stored: $methodName (Mean: $($benchmark.Statistics.Mean) ns)"
         }
     }
-    
+
     Write-Host "✅ Successfully stored performance data to Azure Table Storage"
 }
 catch {

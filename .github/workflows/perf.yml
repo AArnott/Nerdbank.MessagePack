@@ -69,19 +69,13 @@ jobs:
     - name: 🔢 Get version information
       run: |
         $versionData = nbgv get-version -f json | ConvertFrom-Json
-        $CloudBuildNumber = $versionData.CloudBuildNumber
-        $Version = $versionData.Version
-        $VersionMajor = $versionData.VersionMajor
-        $VersionMinor = $versionData.VersionMinor
-        $BuildNumber = $versionData.BuildNumber
-        $CommitId = git rev-parse HEAD
-
-        Write-Output "CLOUD_BUILD_NUMBER=$CloudBuildNumber" >> $env:GITHUB_ENV
-        Write-Output "VERSION=$Version" >> $env:GITHUB_ENV
-        Write-Output "VERSION_MAJOR=$VersionMajor" >> $env:GITHUB_ENV
-        Write-Output "VERSION_MINOR=$VersionMinor" >> $env:GITHUB_ENV
-        Write-Output "BUILD_NUMBER=$BuildNumber" >> $env:GITHUB_ENV
-        Write-Output "COMMIT_ID=$CommitId" >> $env:GITHUB_ENV
+        Write-Output "CLOUD_BUILD_NUMBER=$($versionData.CloudBuildNumber)" >> $env:GITHUB_ENV
+        Write-Output "VERSION=$($versionData.Version)" >> $env:GITHUB_ENV
+        Write-Output "VERSION_MAJOR=$($versionData.VersionMajor)" >> $env:GITHUB_ENV
+        Write-Output "VERSION_MINOR=$($versionData.VersionMinor)" >> $env:GITHUB_ENV
+        Write-Output "BUILD_NUMBER=$($versionData.BuildNumber)" >> $env:GITHUB_ENV
+        Write-Output "COMMIT_ID=$(git rev-parse HEAD)" >> $env:GITHUB_ENV
+        Write-Output "PUBLIC_RELEASE=$($versionData.PublicRelease)" >> $env:GITHUB_ENV
       shell: pwsh
 
     # For main branch: Store data in Azure Table Storage
