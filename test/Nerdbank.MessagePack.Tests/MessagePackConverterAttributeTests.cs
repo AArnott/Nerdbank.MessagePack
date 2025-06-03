@@ -36,7 +36,6 @@ public partial class MessagePackConverterAttributeTests(ITestOutputHelper logger
 		this.AssertRoundtrip(new Container() { Value = new(42) });
 	}
 
-	[AssociatedTypeShape(typeof(GenericConverter<>), Requirements = TypeShapeRequirements.Constructor)] // workaround https://github.com/eiriktsarpalis/PolyType/issues/181
 	public record struct GenericData<T>(int Value);
 
 	[GenerateShape]
