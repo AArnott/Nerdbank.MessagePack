@@ -29,12 +29,12 @@ namespace Nerdbank.MessagePack.Converters;
 /// </para>
 /// </remarks>
 [RequiresDynamicCode(Reasons.DynamicObject)]
-public class PrimitivesAsDynamicConverter : PrimitivesAsObjectConverter
+internal class PrimitivesAsDynamicConverter : PrimitivesAsObjectConverter
 {
 	/// <summary>
 	/// Gets the default instance of the converter.
 	/// </summary>
-	public static new readonly PrimitivesAsDynamicConverter Instance = new();
+	internal static new readonly PrimitivesAsDynamicConverter Instance = new();
 
 	/// <inheritdoc/>
 	protected override IReadOnlyDictionary<object, object?> WrapDictionary(IReadOnlyDictionary<object, object?> content)
