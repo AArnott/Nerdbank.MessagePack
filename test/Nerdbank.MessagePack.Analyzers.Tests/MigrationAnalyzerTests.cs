@@ -302,14 +302,14 @@ public class MigrationAnalyzerTests
 
 			class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
 			{
-				void IMessagePackSerializationCallbackReceiver.OnAfterDeserialize()
-				{
-					// deserialize
-				}
-
 				void IMessagePackSerializationCallbackReceiver.OnBeforeSerialize()
 				{
 					// serialize
+				}
+
+				void IMessagePackSerializationCallbackReceiver.OnAfterDeserialize()
+				{
+					// deserialize
 				}
 			}
 			""";
@@ -320,14 +320,22 @@ public class MigrationAnalyzerTests
 
 			class A : IMessagePackSerializationCallbacks
 			{
+				void IMessagePackSerializationCallbacks.OnBeforeSerialize()
+				{
+					// serialize
+				}
+
 				void IMessagePackSerializationCallbacks.OnAfterDeserialize()
 				{
 					// deserialize
 				}
-
-				void IMessagePackSerializationCallbacks.OnBeforeSerialize()
+			
+				void IMessagePackSerializationCallbacks.OnAfterSerialize()
 				{
-					// serialize
+				}
+			
+				void IMessagePackSerializationCallbacks.OnBeforeDeserialize()
+				{
 				}
 			}
 			""";
@@ -343,14 +351,14 @@ public class MigrationAnalyzerTests
 
 			class A : {|NBMsgPack105:IMessagePackSerializationCallbackReceiver|}
 			{
-				public void OnAfterDeserialize()
-				{
-					// deserialize
-				}
-
 				public void OnBeforeSerialize()
 				{
 					// serialize
+				}
+
+				public void OnAfterDeserialize()
+				{
+					// deserialize
 				}
 			}
 			""";
@@ -361,14 +369,22 @@ public class MigrationAnalyzerTests
 
 			class A : IMessagePackSerializationCallbacks
 			{
+				public void OnBeforeSerialize()
+				{
+					// serialize
+				}
+			
 				public void OnAfterDeserialize()
 				{
 					// deserialize
 				}
-
-				public void OnBeforeSerialize()
+			
+				public void OnAfterSerialize()
 				{
-					// serialize
+				}
+			
+				public void OnBeforeDeserialize()
+				{
 				}
 			}
 			""";
