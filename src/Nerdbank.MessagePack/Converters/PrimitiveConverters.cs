@@ -849,10 +849,15 @@ internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemo
 }
 
 /// <summary>
-/// Serializes a <see cref="Guid"/> value.
+/// Serializes a <see cref="Guid"/> value as a 16 byte binary blob, using little endian integer encoding.
 /// </summary>
-internal class GuidConverter : MessagePackConverter<Guid>
+internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 {
+	/// <summary>
+	/// A shared instance.
+	/// </summary>
+	internal static readonly GuidAsLittleEndianBinaryConverter Instance = new();
+
 	private const int GuidLength = 16;
 
 	/// <inheritdoc/>
@@ -865,7 +870,7 @@ internal class GuidConverter : MessagePackConverter<Guid>
 #if NET
 			return new Guid(bytes.FirstSpan);
 #else
-			return PolyfillExtensions.CreateGuid(bytes.First.Span);
+			return PolyfillExtensions.ParseGuidFromLittleEndianBytes(bytes.First.Span);
 #endif
 		}
 		else
@@ -875,7 +880,7 @@ internal class GuidConverter : MessagePackConverter<Guid>
 #if NET
 			return new Guid(guidValue);
 #else
-			return PolyfillExtensions.CreateGuid(guidValue);
+			return PolyfillExtensions.ParseGuidFromLittleEndianBytes(guidValue);
 #endif
 		}
 	}
@@ -891,6 +896,94 @@ internal class GuidConverter : MessagePackConverter<Guid>
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		=> CreateMsgPackBinarySchema("The binary representation of the GUID.");
+}
+
+/// <summary>
+/// Serializes a <see cref="Guid"/> value as a string.
+/// </summary>
+internal class GuidAsStringConverter : MessagePackConverter<Guid>
+{
+	/// <summary>
+	/// A shared instance.
+	/// </summary>
+	internal static readonly GuidAsStringConverter Instance = new();
+
+	private const int LongestLength = 68; // Format "X" produces the longest length.
+	private char format = 'D';
+
+	/// <summary>
+	/// Gets the format to use when formatting the GUID as a string.
+	/// </summary>
+	/// <value>
+	/// Default is "D".
+	/// Allowed values are "N", "D", "B", "P", or "X".
+	/// </value>
+	/// <remarks>
+	/// While the deserializer may be optimized based on the value specified here,
+	/// all formats will be allowed during deserialization.
+	/// </remarks>
+	internal char Format
+	{
+		get => this.format;
+		init
+		{
+			Requires.Argument(value is 'N' or 'D' or 'B' or 'P' or 'X', nameof(value), "Format must be one of 'N', 'D', 'B', 'P', or 'X'.");
+			this.format = value;
+		}
+	}
+
+	/// <inheritdoc/>
+	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
+	{
+		ReadOnlySequence<byte> utf8Guid = reader.ReadStringSequence() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Guid>();
+		if (utf8Guid.Length > LongestLength)
+		{
+			throw new MessagePackSerializationException($"The string representation of the GUID is longer than the max allowed ({LongestLength}).");
+		}
+
+		if (utf8Guid.IsSingleSegment)
+		{
+			if (GuidBits.TryParseUtf8(utf8Guid.First.Span, out Guid guid))
+			{
+				return guid;
+			}
+		}
+		else
+		{
+			Span<byte> utf8GuidSpan = stackalloc byte[(int)utf8Guid.Length];
+			utf8Guid.CopyTo(utf8GuidSpan);
+			if (GuidBits.TryParseUtf8(utf8GuidSpan, out Guid guid))
+			{
+				return guid;
+			}
+		}
+
+		throw new MessagePackSerializationException("Not a recognized GUID format.");
+	}
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in Guid value, SerializationContext context)
+	{
+		Span<byte> buffer = stackalloc byte[LongestLength];
+		Assumes.True(value.TryFormat(buffer, out int bytesWritten, [this.Format]));
+		writer.WriteString(buffer[..bytesWritten]);
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["pattern"] = this.Format switch
+			{
+				'N' => @"^[0-9a-fA-F]{32}$", // 32 digits, no hyphens.
+				'D' => @"^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$", // 8-4-4-4-12 digits, with hyphens.
+				'B' => @"^\{[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\}$", // 8-4-4-4-12 digits, with hyphens and braces.
+				'P' => @"^\([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\)$", // 8-4-4-4-12 digits, with hyphens and parentheses.
+				'X' => @"^\{0x[0-9a-fA-F]{8}(?:,0x[0-9a-fA-F]{4}){2},\{0x[0-9a-fA-F]{2}(?:,0x[0-9a-fA-F]{2}){7}\}\}$", // Hexadecimal format with braces.
+				_ => string.Empty, // unknown format.
+			},
+		};
 }
 
 /// <summary>

@@ -5,10 +5,9 @@
 #pragma warning disable SA1402 // multiple types
 #pragma warning disable SA1403 // multiple namespaces
 
-using System.Buffers.Binary;
+using System.Buffers.Text;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft;
@@ -209,6 +208,154 @@ namespace Nerdbank.MessagePack
 			}
 		}
 
+		/// <summary>
+		/// Writes a <see cref="Guid"/> as UTF-8 characters.
+		/// </summary>
+		/// <param name="value">The value to be written.</param>
+		/// <param name="destination">A buffer to write to. The longest <paramref name="format"/> requires 68 characters.</param>
+		/// <param name="bytesWritten">Receives the number of bytes written to <paramref name="destination"/>.</param>
+		/// <param name="format">The format for the GUID. May be "N", "D", "B", "P", or "X".</param>
+		/// <returns><see langword="true" /> if <paramref name="destination"/> is large enough; otherwise <see langword="false" />.</returns>
+		internal static bool TryFormat(this Guid value, Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format = default)
+		{
+			format = format.IsEmpty ? ['D'] : format; // Default to "D" if no format is specified.
+			bytesWritten = 0;
+			GuidBits bits = new(value);
+
+			/*
+			 * N: 32 digits, no hyphens. e.g. 69b942342c9e468b9bae77df7a288e45
+			 * D: 8-4-4-4-12 digits, with hyphens. e.g. 69b94234-2c9e-468b-9bae-77df7a288e45
+			 * B: 8-4-4-4-12 digits, with hyphens, enclosed in braces. e.g. {69b94234-2c9e-468b-9bae-77df7a288e45}
+			 * P: 8-4-4-4-12 digits, with hyphens, enclosed in parentheses. e.g. (69b94234-2c9e-468b-9bae-77df7a288e45)
+			 * X: 8-4-4-4-12 digits, with hyphens, enclosed in braces, with each group of digits in hexadecimal format. {0x69b94234,0x2c9e,0x468b,{0x9b,0xae,0x77,0xdf,0x7a,0x28,0x8e,0x45}}
+			 */
+
+			if (format[0] is 'N')
+			{
+				return TryWriteInt(destination, ref bytesWritten, bits.a)
+					&& TryWriteShort(destination, ref bytesWritten, bits.b)
+					&& TryWriteShort(destination, ref bytesWritten, bits.c)
+					&& TryWriteByte(destination, ref bytesWritten, bits.d)
+					&& TryWriteByte(destination, ref bytesWritten, bits.e)
+					&& TryWriteByte(destination, ref bytesWritten, bits.f)
+					&& TryWriteByte(destination, ref bytesWritten, bits.g)
+					&& TryWriteByte(destination, ref bytesWritten, bits.h)
+					&& TryWriteByte(destination, ref bytesWritten, bits.i)
+					&& TryWriteByte(destination, ref bytesWritten, bits.j)
+					&& TryWriteByte(destination, ref bytesWritten, bits.k);
+			}
+
+			// Write out the opening character, if needed.
+			if (format[0] is 'B' or 'X')
+			{
+				destination[bytesWritten++] = (byte)'{';
+			}
+			else if (format[0] is 'P')
+			{
+				destination[bytesWritten++] = (byte)'(';
+			}
+
+			if (format[0] is 'X')
+			{
+				// X format is a bit more complex, as it requires the 0x prefix and braces around the last 8 bytes.
+				if (!(
+					TryWrite0x(destination, ref bytesWritten) &&
+					TryWriteInt(destination, ref bytesWritten, bits.a) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteShort(destination, ref bytesWritten, bits.b) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteShort(destination, ref bytesWritten, bits.c) &&
+					TryAppend(destination, ref bytesWritten, ",{0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.d) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.e) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.f) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.g) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.h) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.i) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.j) &&
+					TryAppend(destination, ref bytesWritten, ",0x"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.k) &&
+					TryAppend(destination, ref bytesWritten, "}"u8)))
+				{
+					return false;
+				}
+			}
+			else
+			{
+				// D B P formats all use the same format aside from their wrapper, so we can write the values out the same way.
+				if (!(
+					TryWriteInt(destination, ref bytesWritten, bits.a) &&
+					TryAppend(destination, ref bytesWritten, "-"u8) &&
+					TryWriteShort(destination, ref bytesWritten, bits.b) &&
+					TryAppend(destination, ref bytesWritten, "-"u8) &&
+					TryWriteShort(destination, ref bytesWritten, bits.c) &&
+					TryAppend(destination, ref bytesWritten, "-"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.d) &&
+					TryWriteByte(destination, ref bytesWritten, bits.e) &&
+					TryAppend(destination, ref bytesWritten, "-"u8) &&
+					TryWriteByte(destination, ref bytesWritten, bits.f) &&
+					TryWriteByte(destination, ref bytesWritten, bits.g) &&
+					TryWriteByte(destination, ref bytesWritten, bits.h) &&
+					TryWriteByte(destination, ref bytesWritten, bits.i) &&
+					TryWriteByte(destination, ref bytesWritten, bits.j) &&
+					TryWriteByte(destination, ref bytesWritten, bits.k)))
+				{
+					return false;
+				}
+			}
+
+			// Write out the closing character, if needed.
+			if (format[0] is 'B' or 'X')
+			{
+				destination[bytesWritten++] = (byte)'}';
+			}
+			else if (format[0] is 'P')
+			{
+				destination[bytesWritten++] = (byte)')';
+			}
+
+			return true;
+
+			static bool TryAppend(Span<byte> dest, ref int index, ReadOnlySpan<byte> utf8Bytes)
+			{
+				if (index + utf8Bytes.Length > dest.Length)
+				{
+					return false;
+				}
+
+				utf8Bytes.CopyTo(dest[index..]);
+				index += utf8Bytes.Length;
+				return true;
+			}
+
+			static bool TryWrite0x(Span<byte> dest, ref int index) => TryAppend(dest, ref index, "0x"u8);
+			static bool TryWriteInt(Span<byte> dest, ref int index, int value) => TryWriteInteger(dest, ref index, unchecked((uint)value), sizeof(int) * 2);
+			static bool TryWriteShort(Span<byte> dest, ref int index, short value) => TryWriteInteger(dest, ref index, unchecked((ushort)value), sizeof(short) * 2);
+			static bool TryWriteByte(Span<byte> dest, ref int index, byte value) => TryWriteInteger(dest, ref index, value, sizeof(byte) * 2);
+			static bool TryWriteInteger(Span<byte> dest, ref int index, uint value, byte padding)
+			{
+				if (!Utf8Formatter.TryFormat(value, dest[index..], out int written, new('x', padding)))
+				{
+					return false;
+				}
+
+				index += written;
+				return true;
+			}
+		}
+
+		/// <summary>
+		/// Writes a <see cref="Guid"/> as a little-endian binary representation.
+		/// </summary>
+		/// <param name="value">The value to be written.</param>
+		/// <param name="destination">A buffer of at least 16 bytes. Exactly 16 bytes will be written to this.</param>
+		/// <returns><see langword="true" /> if the buffer was at least 16 bytes and initialized; otherwise <see langword="false" />.</returns>
 		internal static bool TryWriteBytes(this Guid value, Span<byte> destination)
 		{
 			if (destination.Length < 16)
@@ -232,7 +379,12 @@ namespace Nerdbank.MessagePack
 			return true;
 		}
 
-		internal static Guid CreateGuid(ReadOnlySpan<byte> bytes) => new GuidBits(bytes, bigEndian: false);
+		/// <summary>
+		/// Parse a <see cref="Guid"/> from a little-endian binary representation.
+		/// </summary>
+		/// <param name="bytes">The span of exactly 16 byes.</param>
+		/// <returns>The parsed guid.</returns>
+		internal static Guid ParseGuidFromLittleEndianBytes(ReadOnlySpan<byte> bytes) => new GuidBits(bytes, bigEndian: false);
 
 		internal static bool IsAssignableTo(this Type left, Type right) => right.IsAssignableFrom(left);
 
@@ -260,44 +412,6 @@ namespace Nerdbank.MessagePack
 		}
 
 		internal static Exception ThrowNotSupportedOnNETFramework() => throw new PlatformNotSupportedException("This functionality is only supported on .NET.");
-
-		private readonly struct GuidBits
-		{
-			private readonly int a;
-			private readonly short b;
-			private readonly short c;
-#pragma warning disable CS0169 // The field is never used
-			private readonly byte d;
-			private readonly byte e;
-			private readonly byte f;
-			private readonly byte g;
-			private readonly byte h;
-			private readonly byte i;
-			private readonly byte j;
-			private readonly byte k;
-#pragma warning restore CS0169 // The field is never used
-
-			internal GuidBits(ReadOnlySpan<byte> b, bool bigEndian = false)
-			{
-				if (b.Length != 16)
-				{
-					throw new ArgumentException();
-				}
-
-				this = MemoryMarshal.Read<GuidBits>(b);
-
-				if (bigEndian == BitConverter.IsLittleEndian)
-				{
-					this.a = BinaryPrimitives.ReverseEndianness(this.a);
-					this.b = BinaryPrimitives.ReverseEndianness(this.b);
-					this.c = BinaryPrimitives.ReverseEndianness(this.c);
-				}
-			}
-
-			public static implicit operator Guid(GuidBits value) => Unsafe.As<GuidBits, Guid>(ref value);
-
-			public static implicit operator GuidBits(Guid value) => Unsafe.As<Guid, GuidBits>(ref value);
-		}
 	}
 #endif
 }

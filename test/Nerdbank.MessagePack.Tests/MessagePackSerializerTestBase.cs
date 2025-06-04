@@ -2,6 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 
 public abstract class MessagePackSerializerTestBase
 {
@@ -93,6 +98,23 @@ public abstract class MessagePackSerializerTestBase
 				}
 			}
 		});
+	}
+
+	protected static string SchemaToString(JsonObject schema)
+	{
+		string schemaString = schema
+			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+			.Replace($"Nerdbank.MessagePack.Tests, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
+
+#if NETFRAMEWORK
+		// Normalize from .NET Framework specific strings to .NET strings.
+		schemaString = schemaString.Replace("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
+#endif
+
+		// Normalize across .NET versions.
+		schemaString = Regex.Replace(schemaString, @"System\.Private\.CoreLib, Version=\d+\.0\.0\.0", "System.Private.CoreLib, Version=x.0.0.0");
+
+		return schemaString;
 	}
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
@@ -206,6 +228,25 @@ public abstract class MessagePackSerializerTestBase
 		{
 			this.lastRoundtrippedMsgpack = loggingSequence;
 			this.LogMsgPack(loggingSequence);
+		}
+	}
+
+	protected bool DataMatchesSchema(ReadOnlySequence<byte> msgpack, ITypeShape shape)
+	{
+		JsonObject schema = this.Serializer.GetJsonSchema(shape);
+		string schemaString = SchemaToString(schema);
+		JSchema parsedSchema = JSchema.Parse(schemaString);
+		string json = MessagePackSerializer.ConvertToJson(msgpack);
+		var parsed = JsonNode.Parse(json);
+		try
+		{
+			JToken.Parse(json).Validate(parsedSchema);
+			return true;
+		}
+		catch (Exception ex)
+		{
+			this.logger.WriteLine(ex.Message);
+			return false;
 		}
 	}
 

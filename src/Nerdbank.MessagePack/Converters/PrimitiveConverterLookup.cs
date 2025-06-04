@@ -40,7 +40,6 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _DateTimeConverter;
 	private static IMessagePackConverterInternal? _DateTimeOffsetConverter;
 	private static IMessagePackConverterInternal? _TimeSpanConverter;
-	private static IMessagePackConverterInternal? _GuidConverter;
 	private static IMessagePackConverterInternal? _SystemDrawingColorConverter;
 	private static IMessagePackConverterInternal? _SystemDrawingPointConverter;
 	private static IMessagePackConverterInternal? _MemoryOfByteConverter;
@@ -172,12 +171,6 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(TimeSpan))
 		{
 			converter = (MessagePackConverter<T>)(_TimeSpanConverter ??= new TimeSpanConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(Guid))
-		{
-			converter = (MessagePackConverter<T>)(_GuidConverter ??= new GuidConverter());
 			return true;
 		}
 

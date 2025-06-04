@@ -34,7 +34,6 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("DateTime", "DateTimeConverter"),
 	new ConverterInfo("DateTimeOffset", "DateTimeOffsetConverter"),
 	new ConverterInfo("TimeSpan", "TimeSpanConverter"),
-	new ConverterInfo("Guid", "GuidConverter"),
 	new ConverterInfo("System.Text.Rune", "RuneConverter", "NET"),
 	new ConverterInfo("Int128", "Int128Converter", "NET"),
 	new ConverterInfo("UInt128", "UInt128Converter", "NET"),
