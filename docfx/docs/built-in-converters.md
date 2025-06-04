@@ -51,7 +51,6 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 - @System.Drawing.Color
 - @System.Version
 - @System.Uri
-- @System.Guid
 - @Nerdbank.MessagePack.RawMessagePack
 
 ## Optional converters
@@ -59,13 +58,14 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 A number of optional converters are included but not active by default in order to keep the size of your application small and startup fast.
 You can activate these converters in code when you need them using the extension methods on <xref:Nerdbank.MessagePack.OptionalConverters>.
 
-For example, to enable support for converting these `System.Text.Json` types:
+Data type | API to enable
+--|--
+@System.Guid | <xref:Nerdbank.MessagePack.OptionalConverters.WithGuidConverter*>
+@System.Text.Json.Nodes.JsonNode | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
+@System.Text.Json.JsonElement | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
+@System.Text.Json.JsonDocument | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 
-- @System.Text.Json.Nodes.JsonNode
-- @System.Text.Json.JsonElement
-- @System.Text.Json.JsonDocument
-
-Use this code to create a msgpack serializer that can convert System.Text.Json DOM types:
+For example, use this code to create a msgpack serializer that can convert System.Text.Json DOM types:
 
 [!code-csharp[](../../samples/cs/BuiltInConverters.cs#STJOptionalConverters)]
 

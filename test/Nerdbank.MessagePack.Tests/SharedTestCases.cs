@@ -20,6 +20,9 @@ public class SharedTestCases(ITestOutputHelper logger) : MessagePackSerializerTe
 		// in unordered collections, causing our equality testing to fail.
 		this.Serializer = this.Serializer with { ComparerProvider = null };
 
+		// Add our optional converters to support types that are in this exhaustive test suite.
+		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.BinaryLittleEndian);
+
 		try
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;

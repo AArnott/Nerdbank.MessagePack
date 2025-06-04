@@ -149,7 +149,7 @@ public ref struct MessagePackWriter
 	/// Copies bytes directly into the message pack writer.
 	/// </summary>
 	/// <param name="rawMessagePackBlock">The span of bytes to copy from.</param>
-	public void WriteRaw(ReadOnlySpan<byte> rawMessagePackBlock) => this.writer.Write(rawMessagePackBlock);
+	public void WriteRaw(scoped ReadOnlySpan<byte> rawMessagePackBlock) => this.writer.Write(rawMessagePackBlock);
 
 	/// <summary>
 	/// Copies bytes directly into the message pack writer.
@@ -513,7 +513,7 @@ public ref struct MessagePackWriter
 	/// <remarks>
 	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
 	/// </remarks>
-	public void Write(ReadOnlySpan<byte> src)
+	public void Write(scoped ReadOnlySpan<byte> src)
 	{
 		int length = src.Length;
 		this.WriteBinHeader(length);
@@ -598,7 +598,7 @@ public ref struct MessagePackWriter
 	/// <see cref="MessagePackCode.Str32"/>.
 	/// </summary>
 	/// <param name="utf8stringBytes">The bytes to write.</param>
-	public void WriteString(ReadOnlySpan<byte> utf8stringBytes)
+	public void WriteString(scoped ReadOnlySpan<byte> utf8stringBytes)
 	{
 		int length = utf8stringBytes.Length;
 		this.WriteStringHeader(length);
@@ -666,7 +666,7 @@ public ref struct MessagePackWriter
 	/// <see cref="MessagePackCode.Str32"/>.
 	/// </summary>
 	/// <param name="value">The value to write.</param>
-	public unsafe void Write(ReadOnlySpan<char> value)
+	public unsafe void Write(scoped ReadOnlySpan<char> value)
 	{
 		ref byte buffer = ref this.WriteString_PrepareSpan(value.Length, out int bufferSize, out int useOffset);
 		fixed (char* pValue = value)

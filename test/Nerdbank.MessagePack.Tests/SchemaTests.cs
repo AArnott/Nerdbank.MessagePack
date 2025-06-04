@@ -179,23 +179,6 @@ public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializ
 		Assert.DoesNotContain("ReferencePreservingConverter", schemaString);
 	}
 
-	private static string SchemaToString(JsonObject schema)
-	{
-		string schemaString = schema
-			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-			.Replace($"Nerdbank.MessagePack.Tests, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
-
-#if NETFRAMEWORK
-		// Normalize from .NET Framework specific strings to .NET strings.
-		schemaString = schemaString.Replace("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", "System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
-#endif
-
-		// Normalize across .NET versions.
-		schemaString = Regex.Replace(schemaString, @"System\.Private\.CoreLib, Version=\d+\.0\.0\.0", "System.Private.CoreLib, Version=x.0.0.0");
-
-		return schemaString;
-	}
-
 	private static void Record(JsonObject schema, string testName)
 	{
 		string schemaString = SchemaToString(schema);
