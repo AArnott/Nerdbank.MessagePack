@@ -8,6 +8,8 @@
     <RootNamespace />
     <NoWarn>$(NoWarn);NBMsgPack051</NoWarn>
     <EmitCompilerGeneratedFiles>false</EmitCompilerGeneratedFiles>
+    <!-- Allow references to non-strong named assemblies when the test isn't targeting .NET Framework. -->
+    <NoWarn Condition="'$(TargetFramework)'!='net472'">$(NoWarn);CS8002</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +28,7 @@
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="NetArchTest.eNhancedEdition" Condition="'$(TargetFrameworkIdentifier)'=='.NETCoreApp'" />
     <PackageReference Include="Newtonsoft.Json.Schema" />
     <PackageReference Include="PolyType.TestCases" />
     <PackageReference Include="Xunit.Combinatorial" />

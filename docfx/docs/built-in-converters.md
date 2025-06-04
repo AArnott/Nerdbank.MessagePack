@@ -40,10 +40,6 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 - @System.TimeOnly
 - @System.TimeSpan
 
-## Complex types
-
-- @System.Dynamic.ExpandoObject
-
 ## Other
 
 - @System.Boolean
@@ -61,6 +57,8 @@ You can activate these converters in code when you need them using the extension
 Data type | API to enable
 --|--
 @System.Guid | <xref:Nerdbank.MessagePack.OptionalConverters.WithGuidConverter*>
+@System.Dynamic.ExpandoObject | <xref:Nerdbank.MessagePack.OptionalConverters.WithExpandoObjectConverter*>
+@System.Object | <xref:Nerdbank.MessagePack.OptionalConverters.WithObjectPrimitiveConverter*> or <xref:Nerdbank.MessagePack.OptionalConverters.WithObjectDynamicConverter*>
 @System.Text.Json.Nodes.JsonNode | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 @System.Text.Json.JsonElement | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 @System.Text.Json.JsonDocument | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>

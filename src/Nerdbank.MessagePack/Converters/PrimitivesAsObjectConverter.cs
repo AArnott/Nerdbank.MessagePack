@@ -24,12 +24,12 @@ namespace Nerdbank.MessagePack.Converters;
 /// </para>
 /// </remarks>
 /// <seealso cref="PrimitivesAsDynamicConverter"/>
-public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
+internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 {
 	/// <summary>
 	/// Gets the default instance of the converter.
 	/// </summary>
-	public static readonly PrimitivesAsObjectConverter Instance = new();
+	internal static readonly PrimitivesAsObjectConverter Instance = new();
 
 	/// <summary>Reads any one msgpack structure.</summary>
 	/// <param name="reader">The msgpack reader.</param>
@@ -135,7 +135,6 @@ public class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 	}
 
 	/// <inheritdoc />
-	/// <exception cref="NotSupportedException">Always thrown.</exception>
 	public override void Write(ref MessagePackWriter writer, in object? value, SerializationContext context)
 	{
 		switch (value)

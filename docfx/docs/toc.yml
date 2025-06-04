@@ -6,12 +6,12 @@ items:
 - name: Unions
   href: unions.md
 - href: streaming-deserialization.md
+- href: built-in-converters.md
+- name: Custom converters
+  href: custom-converters.md
 - name: Customizing serialization
   href: customizing-serialization.md
 - href: surrogate-types.md
-- name: Custom converters
-  href: custom-converters.md
-- href: built-in-converters.md
 - name: Performance
   href: performance.md
 - name: Security
