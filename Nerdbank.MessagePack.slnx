@@ -26,6 +26,7 @@
     <File Path="test/Directory.Build.props" />
     <File Path="test/Directory.Build.targets" />
     <File Path="test/dirs.proj" />
+    <File Path="test/TUnit.props" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Nerdbank.MessagePack.Analyzers.CodeFixes/Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
@@ -37,5 +38,6 @@
     <Project Path="test/Benchmarks/Benchmarks.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Analyzers.Tests/Nerdbank.MessagePack.Analyzers.Tests.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj" />
+    <Project Path="test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj" />
   </Folder>
 </Solution>
