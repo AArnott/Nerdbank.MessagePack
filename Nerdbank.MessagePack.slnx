@@ -33,6 +33,7 @@
     <Project Path="src/Nerdbank.MessagePack/Nerdbank.MessagePack.csproj" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="test/AotCompatibilityTest/AotCompatibilityTest.csproj" />
     <Project Path="test/AotNativeConsole/AotNativeConsole.csproj" />
     <Project Path="test/Benchmarks/Benchmarks.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Analyzers.Tests/Nerdbank.MessagePack.Analyzers.Tests.csproj" />

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\AOT.props" />
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Nerdbank.MessagePack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+  </ItemGroup>
+
+</Project>
