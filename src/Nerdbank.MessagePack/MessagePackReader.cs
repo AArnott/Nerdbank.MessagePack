@@ -174,7 +174,7 @@ public ref partial struct MessagePackReader
 	/// <param name="length"><inheritdoc cref="MessagePackStreamingReader.TryReadRaw(long, out RawMessagePack)" path="/param[@name='length']"/></param>
 	/// <returns>
 	/// The raw MessagePack sequence, taken as a slice from the <see cref="Sequence"/>.
-	/// The caller should copy any data that must out-live its underlying buffers.
+	/// The caller should copy any data that must out-live its underlying buffers using <see cref="RawMessagePack.ToOwned()" />.
 	/// </returns>
 	public RawMessagePack ReadRaw(long length)
 	{
@@ -196,7 +196,7 @@ public ref partial struct MessagePackReader
 	/// <param name="context">The serialization context. Used for the stack guard.</param>
 	/// <returns>
 	/// The raw MessagePack sequence, taken as a slice from the <see cref="Sequence"/>.
-	/// The caller should copy any data that must out-live its underlying buffers.
+	/// The caller should copy any data that must out-live its underlying buffers using <see cref="RawMessagePack.ToOwned()" />.
 	/// </returns>
 	/// <remarks>
 	/// The entire structure is read, including content of maps or arrays, or any other type with payloads.

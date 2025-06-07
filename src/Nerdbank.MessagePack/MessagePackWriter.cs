@@ -142,19 +142,29 @@ public ref struct MessagePackWriter
 	/// <summary>
 	/// Copies bytes directly into the message pack writer.
 	/// </summary>
-	/// <param name="msgpack">The msgpack bytes to copy.</param>
+	/// <param name="msgpack">The bytes to copy directly to the output buffer.</param>
 	public void Write(RawMessagePack msgpack) => this.WriteRaw(msgpack.MsgPack);
 
 	/// <summary>
-	/// Copies bytes directly into the message pack writer.
+	/// Copies msgpack bytes directly into the message pack writer.
 	/// </summary>
-	/// <param name="rawMessagePackBlock">The span of bytes to copy from.</param>
+	/// <param name="rawMessagePackBlock">The bytes to copy directly to the output buffer.</param>
+	/// <remarks>
+	/// This method is for copy valid msgpack structures directly to the output buffer.
+	/// Arbitrary binary blobs may only be written using this method directly following a call to <see cref="WriteBinHeader(int)"/>.
+	/// Otherwise use <see cref="Write(ReadOnlySpan{byte})"/> to write arbitrary binary blobs.
+	/// </remarks>
 	public void WriteRaw(scoped ReadOnlySpan<byte> rawMessagePackBlock) => this.writer.Write(rawMessagePackBlock);
 
 	/// <summary>
-	/// Copies bytes directly into the message pack writer.
+	/// Copies msgpack bytes directly into the message pack writer.
 	/// </summary>
-	/// <param name="rawMessagePackBlock">The span of bytes to copy from.</param>
+	/// <param name="rawMessagePackBlock">The bytes to copy directly to the output buffer.</param>
+	/// <remarks>
+	/// This method is for copy valid msgpack structures directly to the output buffer.
+	/// Arbitrary binary blobs may only be written using this method directly following a call to <see cref="WriteBinHeader(int)"/>.
+	/// Otherwise use <see cref="Write(ReadOnlySpan{byte})"/> to write arbitrary binary blobs.
+	/// </remarks>
 	public void WriteRaw(in ReadOnlySequence<byte> rawMessagePackBlock)
 	{
 		foreach (ReadOnlyMemory<byte> segment in rawMessagePackBlock)
@@ -484,13 +494,18 @@ public ref struct MessagePackWriter
 	}
 
 	/// <summary>
-	/// Writes a <see cref="byte"/>[], prefixed with a length encoded as the smallest fitting from:
+	/// Writes an arbitrary <see cref="byte"/>[], prefixed with a length encoded as the smallest fitting from:
 	/// <see cref="MessagePackCode.Bin8"/>,
 	/// <see cref="MessagePackCode.Bin16"/>,
 	/// <see cref="MessagePackCode.Bin32"/>,
 	/// or <see cref="MessagePackCode.Nil"/> if <paramref name="src"/> is <see langword="null"/>.
 	/// </summary>
 	/// <param name="src">The array of bytes to write. May be <see langword="null"/>.</param>
+	/// <remarks>
+	/// <para>
+	/// Use <see cref="MessagePackReader.ReadBytes"/> to read the bytes back.
+	/// </para>
+	/// </remarks>
 	public void Write(byte[]? src)
 	{
 		if (src == null)
@@ -504,14 +519,19 @@ public ref struct MessagePackWriter
 	}
 
 	/// <summary>
-	/// Writes a span of bytes, prefixed with a length encoded as the smallest fitting from:
+	/// Writes an arbitrary span of bytes, prefixed with a length encoded as the smallest fitting from:
 	/// <see cref="MessagePackCode.Bin8"/>,
 	/// <see cref="MessagePackCode.Bin16"/>, or
 	/// <see cref="MessagePackCode.Bin32"/>.
 	/// </summary>
 	/// <param name="src">The span of bytes to write.</param>
 	/// <remarks>
+	/// <para>
+	/// Use <see cref="MessagePackReader.ReadBytes"/> to read the bytes back.
+	/// </para>
+	/// <para>
 	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
+	/// </para>
 	/// </remarks>
 	public void Write(scoped ReadOnlySpan<byte> src)
 	{
@@ -523,14 +543,19 @@ public ref struct MessagePackWriter
 	}
 
 	/// <summary>
-	/// Writes a sequence of bytes, prefixed with a length encoded as the smallest fitting from:
+	/// Writes an arbitrary sequence of bytes, prefixed with a length encoded as the smallest fitting from:
 	/// <see cref="MessagePackCode.Bin8"/>,
 	/// <see cref="MessagePackCode.Bin16"/>, or
 	/// <see cref="MessagePackCode.Bin32"/>.
 	/// </summary>
 	/// <param name="src">The span of bytes to write.</param>
 	/// <remarks>
+	/// <para>
+	/// Use <see cref="MessagePackReader.ReadBytes"/> to read the bytes back.
+	/// </para>
+	/// <para>
 	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
+	/// </para>
 	/// </remarks>
 	public void Write(in ReadOnlySequence<byte> src)
 	{
@@ -542,7 +567,7 @@ public ref struct MessagePackWriter
 	}
 
 	/// <summary>
-	/// Writes the header that precedes a raw binary sequence with a length encoded as the smallest fitting from:
+	/// Writes the header that precedes an arbitrary binary sequence with a length encoded as the smallest fitting from:
 	/// <see cref="MessagePackCode.Bin8"/>,
 	/// <see cref="MessagePackCode.Bin16"/>, or
 	/// <see cref="MessagePackCode.Bin32"/>.

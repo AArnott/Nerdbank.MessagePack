@@ -153,6 +153,9 @@ internal record SerializerConfiguration
 	/// because it requires no msgpack extensions, is compatible with all msgpack readers,
 	/// adds no security considerations and is the most performant.
 	/// </value>
+	/// <remarks>
+	/// Preserving references impacts the serialized result and can hurt interoperability if the other party is not using the same feature.
+	/// </remarks>
 	public ReferencePreservationMode PreserveReferences
 	{
 		get => this.preserveReferences;
@@ -180,7 +183,7 @@ internal record SerializerConfiguration
 	/// in the msgpack data will be deserialized as the same <see cref="string"/> instance, reducing GC pressure.
 	/// </para>
 	/// <para>
-	/// When enabled, all deserialized are retained with a weak reference, allowing them to be garbage collected
+	/// When enabled, all deserialized strings are retained with a weak reference, allowing them to be garbage collected
 	/// while also being reusable for future deserializations as long as they are in memory.
 	/// </para>
 	/// <para>
