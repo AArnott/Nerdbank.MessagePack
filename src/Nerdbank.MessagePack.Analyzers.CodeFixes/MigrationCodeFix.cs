@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -360,7 +359,14 @@ public class MigrationCodeFix : CodeFixProvider
 				}
 			}
 
-			root = root.TrackNodes([baseType, .. methods]);
+			BaseTypeDeclarationSyntax? typeDeclSyntax = (BaseTypeDeclarationSyntax?)((BaseListSyntax?)baseType.Parent)?.Parent;
+			List<SyntaxNode> trackedNodes = [baseType, .. methods];
+			if (typeDeclSyntax is not null)
+			{
+				trackedNodes.Add(typeDeclSyntax);
+			}
+
+			root = root.TrackNodes(trackedNodes);
 
 			if (root.GetCurrentNode(baseType) is { } currentBaseType)
 			{
@@ -377,6 +383,29 @@ public class MigrationCodeFix : CodeFixProvider
 						currentMethod,
 						currentMethod.WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName("IMessagePackSerializationCallbacks"))));
 				}
+			}
+
+			// Add the two new methods OnAfterSerialize and OnBeforeDeserialize.
+			typeDeclSyntax = typeDeclSyntax is not null ? root.GetCurrentNode(typeDeclSyntax) as BaseTypeDeclarationSyntax : null;
+			if (typeDeclSyntax is not null)
+			{
+				bool hasExplicitImplementations = methods.Count > 0;
+				string[] newMethodNames = ["OnAfterSerialize", "OnBeforeDeserialize"];
+				MethodDeclarationSyntax[] newMethods = [.. newMethodNames.Select(name =>
+				MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), name).WithBody(Block()))];
+				for (int i = 0; i < newMethods.Length; i++)
+				{
+					newMethods[i] = hasExplicitImplementations
+						? newMethods[i].WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(IdentifierName("IMessagePackSerializationCallbacks")))
+						: newMethods[i].AddModifiers(Token(SyntaxKind.PublicKeyword));
+				}
+
+				root = typeDeclSyntax switch
+				{
+					ClassDeclarationSyntax classDecl => root.ReplaceNode(classDecl, classDecl.AddMembers(newMethods)),
+					StructDeclarationSyntax structDecl => root.ReplaceNode(structDecl, structDecl.AddMembers(newMethods)),
+					_ => root,
+				};
 			}
 		}
 

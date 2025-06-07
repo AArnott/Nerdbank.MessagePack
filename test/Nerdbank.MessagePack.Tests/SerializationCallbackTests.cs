@@ -21,6 +21,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 		}
 
 		Assert.Equal(1, this.objectAsArray.OnBeforeSerializeCounter);
+		Assert.Equal(1, this.objectAsArray.OnAfterSerializeCounter);
+		Assert.Equal(0, this.objectAsArray.OnBeforeDeserializeCounter);
 		Assert.Equal(0, this.objectAsArray.OnAfterDeserializeCounter);
 	}
 
@@ -37,6 +39,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 		}
 
 		Assert.Equal(1, this.objectAsMap.OnBeforeSerializeCounter);
+		Assert.Equal(1, this.objectAsMap.OnAfterSerializeCounter);
+		Assert.Equal(0, this.objectAsMap.OnBeforeDeserializeCounter);
 		Assert.Equal(0, this.objectAsMap.OnAfterDeserializeCounter);
 	}
 
@@ -49,6 +53,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
+		Assert.Equal(0, obj.OnAfterSerializeCounter);
+		Assert.Equal(1, obj.OnBeforeDeserializeCounter);
 		Assert.Equal(1, obj.OnAfterDeserializeCounter);
 	}
 
@@ -61,6 +67,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
+		Assert.Equal(0, obj.OnAfterSerializeCounter);
+		Assert.Equal(1, obj.OnBeforeDeserializeCounter);
 		Assert.Equal(1, obj.OnAfterDeserializeCounter);
 	}
 
@@ -73,6 +81,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
+		Assert.Equal(0, obj.OnAfterSerializeCounter);
+		Assert.Equal(0, obj.OnBeforeDeserializeCounter); // Because PolyType constructs these objects all at once, so we can't intercept to invoke a callback.
 		Assert.Equal(1, obj.OnAfterDeserializeCounter);
 	}
 
@@ -85,6 +95,8 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 		Assert.NotNull(obj);
 
 		Assert.Equal(0, obj.OnBeforeSerializeCounter);
+		Assert.Equal(0, obj.OnAfterSerializeCounter);
+		Assert.Equal(0, obj.OnBeforeDeserializeCounter); // Because PolyType constructs these objects all at once, so we can't intercept to invoke a callback.
 		Assert.Equal(1, obj.OnAfterDeserializeCounter);
 	}
 
@@ -95,9 +107,17 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 
 		internal int OnBeforeSerializeCounter { get; private set; }
 
+		internal int OnAfterSerializeCounter { get; private set; }
+
+		internal int OnBeforeDeserializeCounter { get; private set; }
+
 		internal int OnAfterDeserializeCounter { get; private set; }
 
 		void IMessagePackSerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCounter++;
+
+		void IMessagePackSerializationCallbacks.OnAfterSerialize() => this.OnAfterSerializeCounter++;
+
+		void IMessagePackSerializationCallbacks.OnBeforeDeserialize() => this.OnBeforeDeserializeCounter++;
 
 		void IMessagePackSerializationCallbacks.OnAfterDeserialize() => this.OnAfterDeserializeCounter++;
 
@@ -112,9 +132,17 @@ public partial class SerializationCallbackTests(ITestOutputHelper logger) : Mess
 
 		internal int OnBeforeSerializeCounter { get; private set; }
 
+		internal int OnAfterSerializeCounter { get; private set; }
+
+		internal int OnBeforeDeserializeCounter { get; private set; }
+
 		internal int OnAfterDeserializeCounter { get; private set; }
 
 		void IMessagePackSerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCounter++;
+
+		void IMessagePackSerializationCallbacks.OnAfterSerialize() => this.OnAfterSerializeCounter++;
+
+		void IMessagePackSerializationCallbacks.OnBeforeDeserialize() => this.OnBeforeDeserializeCounter++;
 
 		void IMessagePackSerializationCallbacks.OnAfterDeserialize() => this.OnAfterDeserializeCounter++;
 

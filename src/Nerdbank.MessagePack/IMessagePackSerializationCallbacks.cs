@@ -20,6 +20,34 @@ public interface IMessagePackSerializationCallbacks
 #endif
 
 	/// <summary>
+	/// Performs any additional operations on an object after it is serialized.
+	/// </summary>
+	void OnAfterSerialize()
+#if NET
+	{
+	}
+#else
+	;
+#endif
+
+	/// <summary>
+	/// Performs any additional operations on an object before any properties are set.
+	/// </summary>
+	/// <remarks>
+	/// A converter may not call this method if it is not supported.
+	/// In particular, types with <see langword="required" /> or <see langword="init" /> properties
+	/// or a deserializing constructor should expect this method to not be called
+	/// if the default converter is used.
+	/// </remarks>
+	void OnBeforeDeserialize()
+#if NET
+	{
+	}
+#else
+	;
+#endif
+
+	/// <summary>
 	/// Performs any additional operations on an object after it has been deserialized.
 	/// </summary>
 	void OnAfterDeserialize()
