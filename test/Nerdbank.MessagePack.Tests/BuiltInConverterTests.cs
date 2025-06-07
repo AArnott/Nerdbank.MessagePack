@@ -4,7 +4,7 @@
 using System.Drawing;
 using System.Numerics;
 
-public partial class BuiltInConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 {
 	private const string BadGuidFormatErrorMessage = "Not a recognized GUID format.";
 

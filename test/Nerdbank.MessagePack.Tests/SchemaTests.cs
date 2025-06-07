@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
 [Trait("JsonSchema", "true")]
-public partial class SchemaTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class SchemaTests : MessagePackSerializerTestBase
 {
 	private const bool RecordMode =
 #if RECORD

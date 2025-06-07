@@ -4,7 +4,7 @@
 [assembly: TypeShapeExtension(typeof(CustomConverterTests.GenericData<>), AssociatedTypes = [typeof(CustomConverterTests.GenericDataConverter2<>)])]
 [assembly: TypeShapeExtension(typeof(CustomConverterTests.GenericData<>), AssociatedTypes = [typeof(CustomConverterTests.GenericDataConverterNonGeneric)])]
 
-public partial class CustomConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class CustomConverterTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void ConverterThatDelegates()

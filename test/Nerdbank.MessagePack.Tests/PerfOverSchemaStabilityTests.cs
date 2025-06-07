@@ -4,8 +4,7 @@
 [Trait("PerfOverSchemaStability", "true")]
 public partial class PerfOverSchemaStabilityTests : MessagePackSerializerTestBase
 {
-	public PerfOverSchemaStabilityTests(ITestOutputHelper logger)
-		: base(logger)
+	public PerfOverSchemaStabilityTests()
 	{
 		this.Serializer = this.Serializer with { PerfOverSchemaStability = true };
 	}

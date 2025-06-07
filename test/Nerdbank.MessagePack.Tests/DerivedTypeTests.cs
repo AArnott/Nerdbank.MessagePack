@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class DerivedTypeTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class DerivedTypeTests : MessagePackSerializerTestBase
 {
 	[Theory, PairwiseData]
 	public async Task BaseType(bool async)

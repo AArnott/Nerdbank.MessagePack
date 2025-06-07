@@ -6,7 +6,7 @@ using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder;
 
 [Trait("dynamic", "true")]
-public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public class DynamicSerializationTests : MessagePackSerializerTestBase
 {
 	private static readonly DateTime ExpectedDateTime = new(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc);
 

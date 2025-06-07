@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-public partial class ConvertToJsonTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void Null() => this.AssertConvertToJson<Primitives>("null", null);

@@ -8,8 +8,7 @@ namespace Converters;
 [Trait("dynamic", "true")]
 public partial class ExpandoObjectConverterTests : MessagePackSerializerTestBase
 {
-	public ExpandoObjectConverterTests(ITestOutputHelper logger)
-		: base(logger)
+	public ExpandoObjectConverterTests()
 	{
 		this.Serializer = this.Serializer.WithExpandoObjectConverter();
 	}
