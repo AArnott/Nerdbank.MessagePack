@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class DeserializeDefaultValueTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBase
 {
 	private static readonly ReadOnlySequence<byte> NullMessageMsgPackMap = CreateNullMessageObject();
 	private static readonly ReadOnlySequence<byte> EmptyMsgPackMap = CreateEmptyMap();

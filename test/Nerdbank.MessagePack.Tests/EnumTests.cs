@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public abstract partial class EnumTests : MessagePackSerializerTestBase
 {
 	public enum Simple
 	{
@@ -109,8 +109,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 
 	public class EnumAsStringTests : EnumTests
 	{
-		public EnumAsStringTests(ITestOutputHelper logger)
-			: base(logger)
+		public EnumAsStringTests()
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
 			this.ExpectedType = MessagePackType.String;
@@ -139,8 +138,7 @@ public abstract partial class EnumTests(ITestOutputHelper logger) : MessagePackS
 
 	public class EnumAsOrdinalTests : EnumTests
 	{
-		public EnumAsOrdinalTests(ITestOutputHelper logger)
-			: base(logger)
+		public EnumAsOrdinalTests()
 		{
 			this.Serializer = this.Serializer with { SerializeEnumValuesByName = false };
 			this.ExpectedType = MessagePackType.Integer;

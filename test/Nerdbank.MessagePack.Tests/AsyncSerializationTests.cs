@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 [Trait("AsyncSerialization", "true")]
-public partial class AsyncSerializationTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public async Task RoundtripPoco() => await this.AssertRoundtripAsync(new Poco(1, 2));

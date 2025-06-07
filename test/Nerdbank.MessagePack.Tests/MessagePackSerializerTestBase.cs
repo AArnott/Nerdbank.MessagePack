@@ -11,12 +11,9 @@ using Newtonsoft.Json.Schema;
 public abstract class MessagePackSerializerTestBase
 {
 	protected ReadOnlySequence<byte> lastRoundtrippedMsgpack;
-	private readonly ITestOutputHelper logger;
 
-	public MessagePackSerializerTestBase(ITestOutputHelper logger)
+	public MessagePackSerializerTestBase()
 	{
-		this.logger = logger;
-
 		this.Serializer = new MessagePackSerializer
 		{
 			// Most async tests primarily mean to exercise the async code paths,
@@ -33,7 +30,7 @@ public abstract class MessagePackSerializerTestBase
 
 	protected MessagePackSerializer Serializer { get; set; }
 
-	protected ITestOutputHelper Logger => this.logger;
+	protected ITestOutputHelper Logger => TestContext.Current.TestOutputHelper ?? throw new InvalidOperationException("No logger available.");
 
 #if !NET
 	internal static ITypeShapeProvider GetShapeProvider<TProvider>()
@@ -245,7 +242,7 @@ public abstract class MessagePackSerializerTestBase
 		}
 		catch (Exception ex)
 		{
-			this.logger.WriteLine(ex.Message);
+			this.Logger.WriteLine(ex.Message);
 			return false;
 		}
 	}
@@ -254,6 +251,6 @@ public abstract class MessagePackSerializerTestBase
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
 	{
-		this.logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));
+		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));
 	}
 }

@@ -4,7 +4,7 @@
 using System.Numerics;
 using System.Reflection;
 
-public partial class ArraysOfPrimitivesTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 {
 #if NET
 	private static readonly Random Random = Random.Shared;

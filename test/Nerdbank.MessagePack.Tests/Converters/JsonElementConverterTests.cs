@@ -14,8 +14,7 @@ public partial class JsonElementConverterTests : MessagePackSerializerTestBase
 
 	private static readonly ReadOnlyMemory<byte> JsonUtf8 = Encoding.UTF8.GetBytes(Json);
 
-	public JsonElementConverterTests(ITestOutputHelper logger)
-		: base(logger)
+	public JsonElementConverterTests()
 	{
 		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
 	}

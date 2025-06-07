@@ -3,8 +3,7 @@
 
 public partial class StringInterningTests : MessagePackSerializerTestBase
 {
-	public StringInterningTests(ITestOutputHelper logger)
-		: base(logger)
+	public StringInterningTests()
 	{
 		this.Serializer = this.Serializer with { InternStrings = true };
 	}

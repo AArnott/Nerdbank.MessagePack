@@ -11,8 +11,7 @@ public partial class JsonDocumentConverterTests : MessagePackSerializerTestBase
 		{"a":1,"b":[2,3],"c":{"d":"e"},"f":null}
 		""";
 
-	public JsonDocumentConverterTests(ITestOutputHelper logger)
-		: base(logger)
+	public JsonDocumentConverterTests()
 	{
 		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
 	}

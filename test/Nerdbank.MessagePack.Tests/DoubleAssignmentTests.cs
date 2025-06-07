@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class DoubleAssignmentTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class DoubleAssignmentTests : MessagePackSerializerTestBase
 {
 	[Theory, PairwiseData]
 	public async Task MapNoArgState_Collision(bool async)
