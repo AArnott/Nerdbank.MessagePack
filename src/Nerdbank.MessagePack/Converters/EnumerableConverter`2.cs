@@ -412,20 +412,16 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
-		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
-		try
-		{
-			for (int i = 0; i < count; i++)
-			{
-				elements[i] = this.ReadElement(ref reader, context);
-			}
 
-			return ctor(elements.Take(count));
-		}
-		finally
+		// Avoid ArrayPool, which provides only approximate sizes that requires .Take(int) to be used later,
+		// which is an allocation and requires much more native code gen for value types.
+		var elements = new TElement[count];
+		for (int i = 0; i < count; i++)
 		{
-			ArrayPool<TElement>.Shared.Return(elements);
+			elements[i] = this.ReadElement(ref reader, context);
 		}
+
+		return ctor(elements);
 	}
 
 	/// <inheritdoc/>
@@ -456,20 +452,16 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
-			try
-			{
-				for (int i = 0; i < count; i++)
-				{
-					elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
-				}
 
-				return ctor(elements.Take(count));
-			}
-			finally
+			// Avoid ArrayPool, which provides only approximate sizes that requires .Take(int) to be used later,
+			// which is an allocation and requires much more native code gen for value types.
+			var elements = new TElement[count];
+			for (int i = 0; i < count; i++)
 			{
-				ArrayPool<TElement>.Shared.Return(elements);
+				elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
 			}
+
+			return ctor(elements);
 		}
 		else
 		{

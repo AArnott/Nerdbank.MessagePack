@@ -21,7 +21,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectArrayConverter<T>(
 	ReadOnlyMemory<PropertyAccessors<T>?> properties,
-	DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty,
+	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
 	PropertyAssignmentTrackingManager<T> assignmentTrackingManager,
 	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
@@ -32,7 +32,7 @@ internal class ObjectArrayConverter<T>(
 	/// <summary>
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
 	/// </summary>
-	protected DirectPropertyAccess<T, UnusedDataPacket> UnusedDataProperty => unusedDataProperty;
+	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
 
 	/// <summary>
 	/// Gets the property assignment tracking manager.
@@ -75,7 +75,7 @@ internal class ObjectArrayConverter<T>(
 					assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
 					deserialize(ref value, ref reader, context);
 				}
-				else if (unusedDataProperty.Setter is not null)
+				else if (unusedDataProperty?.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(index, reader.ReadRaw(context));
@@ -97,7 +97,7 @@ internal class ObjectArrayConverter<T>(
 				{
 					deserialize(ref value, ref reader, context);
 				}
-				else if (unusedDataProperty.Setter is not null)
+				else if (unusedDataProperty?.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(i, reader.ReadRaw(context));
@@ -109,7 +109,7 @@ internal class ObjectArrayConverter<T>(
 			}
 		}
 
-		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
+		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
 		{
 			unusedDataProperty.Setter(ref value, unused);
 		}
@@ -139,7 +139,7 @@ internal class ObjectArrayConverter<T>(
 		}
 
 		context.DepthStep();
-		UnusedDataPacket.Array? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
+		UnusedDataPacket.Array? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
 
 		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
@@ -235,7 +235,7 @@ internal class ObjectArrayConverter<T>(
 		}
 
 		context.DepthStep();
-		UnusedDataPacket.Array? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
+		UnusedDataPacket.Array? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
 
 		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
 		{
@@ -329,7 +329,7 @@ internal class ObjectArrayConverter<T>(
 						if (properties.Length > j)
 						{
 							PropertyAccessors<T>? property = allProperties.Span[properties.Span[j]];
-							if (property?.PreferAsyncSerialization is true && property.Value.MsgPackWriters is not null)
+							if (property?.PreferAsyncSerialization is true && property.MsgPackWriters is not null)
 							{
 								return j - i;
 							}
@@ -404,7 +404,7 @@ internal class ObjectArrayConverter<T>(
 						if (properties.Length > j)
 						{
 							PropertyAccessors<T>? property = properties.Span[j];
-							if (property?.PreferAsyncSerialization is true && property.Value.MsgPackWriters is not null)
+							if (property?.PreferAsyncSerialization is true && property.MsgPackWriters is not null)
 							{
 								return j - i;
 							}
@@ -482,7 +482,7 @@ internal class ObjectArrayConverter<T>(
 						assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
 						deserialize(ref value, ref syncReader, context);
 					}
-					else if (unusedDataProperty.Setter is not null)
+					else if (unusedDataProperty?.Setter is not null)
 					{
 						unused ??= new();
 						unused.Add(propertyIndex, syncReader.ReadRaw(context));
@@ -555,7 +555,7 @@ internal class ObjectArrayConverter<T>(
 						{
 							deserialize(ref value, ref syncReader, context);
 						}
-						else if (unusedDataProperty.Setter is not null)
+						else if (unusedDataProperty?.Setter is not null)
 						{
 							unused ??= new();
 							unused.Add(i, syncReader.ReadRaw(context));
@@ -588,7 +588,7 @@ internal class ObjectArrayConverter<T>(
 						if (properties.Length > j)
 						{
 							PropertyAccessors<T>? property = properties.Span[j];
-							if (property?.PreferAsyncSerialization is true && property.Value.MsgPackReaders is not null)
+							if (property?.PreferAsyncSerialization is true && property.MsgPackReaders is not null)
 							{
 								return j - i;
 							}
@@ -601,7 +601,7 @@ internal class ObjectArrayConverter<T>(
 			}
 		}
 
-		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
+		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
 		{
 			unusedDataProperty.Setter(ref value, unused);
 		}

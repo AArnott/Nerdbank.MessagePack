@@ -6,16 +6,19 @@
 using AotNativeConsole.Converters;
 using AotNativeConsole.Models;
 using AotNativeConsole.Models.Animals;
+using Nerdbank.MessagePack;
 
 internal static class ManyModels
 {
+	internal static MessagePackSerializer Serializer { get; } = CreateSerializer();
+
 	internal static void Run()
 	{
 		MyShape myShape = CreateShape();
-		byte[] bytes = EngineSerializer.Instance.Serializer.Serialize(myShape);
+		byte[] bytes = Serializer.Serialize(myShape);
 
-		MyShape? myShape2 = EngineSerializer.Instance.Serializer.Deserialize<MyShape>(bytes);
-		byte[] bytes2 = EngineSerializer.Instance.Serializer.Serialize(myShape2);
+		MyShape? myShape2 = Serializer.Deserialize<MyShape>(bytes);
+		byte[] bytes2 = Serializer.Serialize(myShape2);
 
 		if (bytes.Length != bytes2.Length)
 		{
@@ -46,5 +49,18 @@ internal static class ManyModels
 			]);
 
 		return shape;
+	}
+
+	private static MessagePackSerializer CreateSerializer()
+	{
+		MessagePackSerializer serializer = new MessagePackSerializer().WithGuidConverter();
+		return serializer with
+		{
+			Converters = [
+				..serializer.Converters,
+				new AotNativeConsole.Converters.RectangleConverter(),
+				new Vector2Converter(),
+			],
+		};
 	}
 }
