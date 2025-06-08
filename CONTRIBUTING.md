@@ -97,3 +97,21 @@ git checkout origin/main
 # resolve any conflicts, then commit the merge commit.
 git push origin -u HEAD
 ```
+
+## Code editing guidelines
+
+### Monitoring and mitigating code gen size
+
+Optimized NativeAOT targeting is a very important feature of this library.
+Not just that it's possible, but that the emitted code size is reasonably small.
+We use PR/CI checks in our GitHub workflow to guard the emitted code size so that it does not creep up without intentional review.
+
+We use the `sizoscope` .NET CLI tool to understand what contributes to our NativeAOT output size so we can understand what we can do to reduce the emitted binary size.
+
+There are two very important things you can do to keep emitted binary size down:
+
+1. Avoid using generic types and methods with user-defined types type arguments, *especially* if they might be value types.
+   This often manifests as avoiding Linq extension methods when any type argument is not known to be a ref type.
+   Value type arguments force unique native code to be emitted, multiplying the size of the native code.
+2. When defining generic types that will close over user-defined types, make them classes instead of structs.
+   This will help users of these types to follow guideline number one in this list.

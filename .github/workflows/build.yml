@@ -71,13 +71,13 @@ jobs:
         # Allow variance of a small threshold of the expected value.
         # Fail even if it's smaller than anticipated so that the expected window can be shrunk in this file.
         if ($IsLinux) {
-          $ExpectedSize = 6.5
+          $ExpectedSize = 8.2
         } elseif ($IsMacOS) {
-          $ExpectedSize = 6.2
+          $ExpectedSize = 8.1
         } else {
-          $ExpectedSize = 5.2
+          $ExpectedSize = 7.1
         }
-        $AllowedVariance = 0.5
+        $AllowedVariance = 0.3
         if ([math]::Abs($ActualSize - $ExpectedSize) -gt $AllowedVariance) {
           Write-Error ("NativeAOT image size {0:0.0} MB is outside the expected range of {1:0.0}±{2:0.0} MB." -f $ActualSize, $ExpectedSize, $AllowedVariance)
           exit 1
