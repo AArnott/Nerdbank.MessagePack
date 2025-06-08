@@ -443,7 +443,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = new(spanDictContent, ByteSpanEqualityComparer.Ordinal);
 
-					MapSerializableProperties<TDeclaringType> serializeable = inputs.Serializers with { Properties = propertySerializers.ToArray() };
+					MapSerializableProperties<TDeclaringType> serializeable = inputs.Serializers;
+					serializeable.Properties = propertySerializers.ToArray();
 					return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 						serializeable,
 						constructorShape.GetArgumentStateConstructor(),

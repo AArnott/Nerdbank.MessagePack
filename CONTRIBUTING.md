@@ -115,3 +115,4 @@ There are two very important things you can do to keep emitted binary size down:
    Value type arguments force unique native code to be emitted, multiplying the size of the native code.
 2. When defining generic types that will close over user-defined types, make them classes instead of structs.
    This will help users of these types to follow guideline number one in this list.
+3. Avoid declaring `record` where `class` or `struct` would suffice. The extra `IEquatable<T>` implementation bloats the code size, especially on generic types.
