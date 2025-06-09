@@ -32,7 +32,6 @@ internal class StringConverter : MessagePackConverter<string>
 
 #if NET
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<string?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		const uint MinChunkSize = 2048;
@@ -97,7 +96,6 @@ internal class StringConverter : MessagePackConverter<string>
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, string? value, SerializationContext context)
 	{
 		// We *could* do incremental string encoding, flushing periodically based on the user's preferred flush threshold.
@@ -1017,7 +1015,6 @@ internal class OptionalConverter<TOptional, TElement>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TOptional? value, SerializationContext context)
 	{
 		if (!deconstructor(value, out TElement? element))
@@ -1040,7 +1037,6 @@ internal class OptionalConverter<TOptional, TElement>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TOptional?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();

@@ -3,7 +3,6 @@
 
 #pragma warning disable SA1202 // 'public' members should come before 'internal' members
 
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace CustomConverter
@@ -375,7 +374,6 @@ namespace AsyncConverters
             throw new NotImplementedException();
         }
 
-        [Experimental("NBMsgPack")]
         public override async ValueTask<MyCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
         {
             MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();

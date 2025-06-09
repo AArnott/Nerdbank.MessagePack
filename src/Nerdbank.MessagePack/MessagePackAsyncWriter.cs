@@ -19,7 +19,6 @@ namespace Nerdbank.MessagePack;
 /// </para>
 /// <see href="https://github.com/msgpack/msgpack/blob/master/spec.md">The MessagePack spec.</see>.
 /// </remarks>
-[Experimental("NBMsgPackAsync")]
 public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 {
 	private BufferMemoryWriter bufferWriter = new(pipeWriter);

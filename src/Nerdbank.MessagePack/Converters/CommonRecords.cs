@@ -6,7 +6,6 @@
 #pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -27,7 +26,6 @@ internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType conta
 /// <param name="writer">The means by which msgpack should be written.</param>
 /// <param name="context">The serialization context.</param>
 /// <returns>A task that represents the asynchronous operation.</returns>
-[Experimental("NBMsgPackAsync")]
 internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context);
 
 /// <summary>
@@ -47,7 +45,6 @@ internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType co
 /// <param name="reader">The means by which msgpack should be read.</param>
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 /// <returns>The <paramref name="container"/>, with the property initialized. This is useful when <typeparamref name="TDeclaringType"/> is a struct.</returns>
-[Experimental("NBMsgPackAsync")]
 internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context);
 
 /// <summary>

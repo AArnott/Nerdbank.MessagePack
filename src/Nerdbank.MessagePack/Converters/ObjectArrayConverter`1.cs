@@ -220,7 +220,6 @@ internal class ObjectArrayConverter<T>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 	{
 		if (value is null)
@@ -419,7 +418,6 @@ internal class ObjectArrayConverter<T>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -695,7 +693,6 @@ internal class ObjectArrayConverter<T>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
 	{
 		int index = -1;
