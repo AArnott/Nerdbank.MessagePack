@@ -34,5 +34,5 @@ public class ExtensionTests
 	}
 
 	private static long GetSecureHashCode<T>(T expected)
-		where T : IDeepSecureEqualityComparer<T> => expected.GetSecureHashCode();
+		where T : IStructuralSecureEqualityComparer<T> => expected.GetSecureHashCode();
 }

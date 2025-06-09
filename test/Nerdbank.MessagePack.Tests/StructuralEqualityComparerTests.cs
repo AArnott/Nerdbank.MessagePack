@@ -231,13 +231,13 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	}
 
 	[GenerateShape]
-	internal partial class CustomHasher : IDeepSecureEqualityComparer<CustomHasher>
+	internal partial class CustomHasher : IStructuralSecureEqualityComparer<CustomHasher>
 	{
 		// This is internal on purpose, so that PolyType will ignore the property for purposes of equality
 		// and hashing, and tests will only pass if the custom hash and equality methods on this class are used.
 		internal int SpecialCode { get; set; } = 42;
 
-		public bool DeepEquals(CustomHasher? other) => other is not null && this.SpecialCode == other.SpecialCode;
+		public bool StructuralEquals(CustomHasher? other) => other is not null && this.SpecialCode == other.SpecialCode;
 
 		public long GetSecureHashCode() => this.SpecialCode * 2;
 

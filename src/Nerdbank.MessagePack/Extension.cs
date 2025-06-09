@@ -10,7 +10,7 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <param name="TypeCode"><inheritdoc cref="ExtensionHeader(sbyte, uint)" path="/param[@name='TypeCode']"/></param>
 /// <param name="Data">The data payload, in whatever format is prescribed by the extension as per the <paramref name="TypeCode"/>.</param>
-public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data) : IDeepSecureEqualityComparer<Extension>
+public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data) : IStructuralSecureEqualityComparer<Extension>
 {
 	/// <summary>
 	/// Initializes a new instance of the <see cref="Extension"/> struct.
@@ -34,10 +34,10 @@ public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data) : ID
 	public override readonly int GetHashCode() => HashCode.Combine(this.TypeCode, this.Data.Length);
 
 	/// <inheritdoc/>
-	bool IDeepSecureEqualityComparer<Extension>.DeepEquals(Extension other) => this.Equals(other);
+	bool IStructuralSecureEqualityComparer<Extension>.StructuralEquals(Extension other) => this.Equals(other);
 
 	/// <inheritdoc/>
-	long IDeepSecureEqualityComparer<Extension>.GetSecureHashCode()
+	long IStructuralSecureEqualityComparer<Extension>.GetSecureHashCode()
 	{
 		// We don't have an incremental SipHash implementation, so we have to copy the data to a rented buffer.
 		byte[] rented = ArrayPool<byte>.Shared.Rent(checked((int)this.Data.Length));

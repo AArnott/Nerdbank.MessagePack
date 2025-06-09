@@ -10,13 +10,13 @@ namespace Nerdbank.MessagePack;
 /// <typeparam name="T">The same type that is implementing this interface.</typeparam>
 /// <remarks>
 /// <para>
-/// When a type implements this interface, <see cref="GetHashCode"/> and <see cref="DeepEquals(T?)"/>
+/// When a type implements this interface, <see cref="GetHashCode"/> and <see cref="StructuralEquals(T?)"/>
 /// is used to determine equality and hash codes for the type by the
 /// <see cref="StructuralEqualityComparer"/> equality comparer
 /// instead of the deep by-value automatic implementation.
 /// </para>
 /// </remarks>
-public interface IDeepSecureEqualityComparer<T>
+public interface IStructuralSecureEqualityComparer<T>
 {
 	/// <summary>
 	/// Tests deep equality of this object with another object.
@@ -26,13 +26,17 @@ public interface IDeepSecureEqualityComparer<T>
 	/// <remarks>
 	/// An implementation may use <see cref="StructuralEqualityComparer.GetDefault{T}(ITypeShape{T})"/> to obtain equality comparers for any sub-values that must be tested.
 	/// </remarks>
-	bool DeepEquals(T? other);
+	bool StructuralEquals(T? other);
 
 	/// <summary>
 	/// Gets a collision resistant hash code for this object.
 	/// </summary>
 	/// <returns>A 64-bit integer.</returns>
 	/// <exception cref="NotSupportedException">May be thrown if not supported.</exception>
+	/// <remarks>
+	/// This method should be compatible with <see cref="StructuralEquals(T?)"/>
+	/// such that if two objects are structurally equal, they will return the same hash code.
+	/// </remarks>
 	long GetSecureHashCode();
 
 	/// <summary>
@@ -40,7 +44,17 @@ public interface IDeepSecureEqualityComparer<T>
 	/// </summary>
 	/// <returns>A 32-bit integer.</returns>
 	/// <remarks>
-	/// The default implementation of this method is to truncate the result of <see cref="GetSecureHashCode"/>.
+	/// <para>
+	/// This method should be compatible with <see cref="StructuralEquals(T?)"/>
+	/// such that if two objects are structurally equal, they will return the same hash code.
+	/// On types that implement <see cref="object.Equals(object?)"/> with shallow equality,
+	/// this means this <see cref="GetHashCode"/> method may need to be implemented as an
+	/// explicit interface implementation so it can have structural equality semantics
+	/// while <see cref="object.GetHashCode"/> can match the default shallow equality semantics.
+	/// </para>
+	/// <para>
+	/// On .NET, the default implementation of this method is to truncate the result of <see cref="GetSecureHashCode"/>.
+	/// </para>
 	/// </remarks>
 	int GetHashCode()
 #if NET
