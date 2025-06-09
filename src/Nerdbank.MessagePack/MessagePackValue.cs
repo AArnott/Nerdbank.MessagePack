@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Nerdbank.MessagePack.SecureHash;
 
 namespace Nerdbank.MessagePack;
 
@@ -15,12 +16,14 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 [DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
 [GenerateShape]
-public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>
+public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>, IDeepSecureEqualityComparer<MessagePackValue>
 {
 	/// <summary>
 	/// A token that represents Nil.
 	/// </summary>
 	public static readonly MessagePackValue Nil = new((string?)null);
+
+	private static readonly CollisionResistantHasherUnmanaged<ulong> ULongSecureHasher = new();
 
 	private readonly MessagePackValueKind kind;
 
@@ -619,7 +622,105 @@ public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>
 		};
 
 	/// <inheritdoc/>
-	public bool Equals(MessagePackValue other)
+	public bool Equals(MessagePackValue other) => this.Equals(other, structural: false);
+
+	/// <inheritdoc/>
+	public bool DeepEquals(MessagePackValue other) => this.Equals(other, structural: true);
+
+	/// <inheritdoc/>
+	public override bool Equals([NotNullWhen(true)] object? obj) => obj is MessagePackValue other && this.Equals(other);
+
+	/// <inheritdoc/>
+	public override int GetHashCode()
+	{
+		HashCode hashCode = default;
+		hashCode.Add((byte)this.kind);
+		switch (this.kind)
+		{
+			case MessagePackValueKind.Nil:
+				break;
+			case MessagePackValueKind.UnsignedInteger or MessagePackValueKind.SignedInteger:
+				hashCode.Add(this.value.Integer);
+				break;
+			case MessagePackValueKind.Boolean:
+				hashCode.Add(this.value.Boolean);
+				break;
+			case MessagePackValueKind.Single:
+				hashCode.Add(this.value.Float32);
+				break;
+			case MessagePackValueKind.Double:
+				hashCode.Add(this.value.Float64);
+				break;
+			case MessagePackValueKind.String:
+				hashCode.Add((string?)this.refValue);
+				break;
+			case MessagePackValueKind.Binary:
+				hashCode.Add((byte[])this.refValue!);
+				break;
+			case MessagePackValueKind.Array:
+				hashCode.Add((MessagePackValue[])this.refValue!);
+				break;
+			case MessagePackValueKind.Map:
+				hashCode.Add((IReadOnlyDictionary<MessagePackValue, MessagePackValue>)this.refValue!);
+				break;
+			case MessagePackValueKind.Extension:
+				hashCode.Add((Extension)this.refValue!);
+				break;
+			case MessagePackValueKind.DateTime:
+				hashCode.Add(this.value.DateTime);
+				break;
+			default:
+				throw new NotImplementedException();
+		}
+
+		return hashCode.ToHashCode();
+	}
+
+	/// <inheritdoc/>
+	long IDeepSecureEqualityComparer<MessagePackValue>.GetSecureHashCode() => this.GetSecureHashCode();
+
+	private long GetSecureHashCode()
+	{
+		return (byte)this.kind + this.kind switch
+		{
+			MessagePackValueKind.Nil => 0,
+			MessagePackValueKind.UnsignedInteger or MessagePackValueKind.SignedInteger => ULongSecureHasher.GetSecureHashCode(this.value.Integer),
+			MessagePackValueKind.Boolean => HashCollisionResistantPrimitives.BooleanEqualityComparer.Instance.GetSecureHashCode(this.value.Boolean),
+			MessagePackValueKind.Single => HashCollisionResistantPrimitives.SingleEqualityComparer.Instance.GetSecureHashCode(this.value.Float32),
+			MessagePackValueKind.Double => HashCollisionResistantPrimitives.DoubleEqualityComparer.Instance.GetSecureHashCode(this.value.Float64),
+			MessagePackValueKind.String => HashCollisionResistantPrimitives.StringEqualityComparer.Instance.GetSecureHashCode((string?)this.refValue),
+			MessagePackValueKind.Binary => HashCollisionResistantPrimitives.ByteArrayEqualityComparer.Default.GetSecureHashCode((byte[])this.refValue!),
+			MessagePackValueKind.Array => UncheckedArraySum(this),
+			MessagePackValueKind.Map => UncheckedMapSum(this),
+			MessagePackValueKind.Extension => ((IDeepSecureEqualityComparer<Extension>)this.refValue!).GetSecureHashCode(),
+			MessagePackValueKind.DateTime => HashCollisionResistantPrimitives.DateTimeEqualityComparer.Instance.GetSecureHashCode(this.value.DateTime),
+			_ => throw new NotImplementedException(),
+		};
+
+		static long UncheckedArraySum(in MessagePackValue self)
+		{
+			long sum = 0;
+			foreach (MessagePackValue element in (MessagePackValue[])self.refValue!)
+			{
+				sum = unchecked(sum + element.GetSecureHashCode());
+			}
+
+			return sum;
+		}
+
+		static long UncheckedMapSum(in MessagePackValue self)
+		{
+			long sum = 0;
+			foreach (KeyValuePair<MessagePackValue, MessagePackValue> pair in (IReadOnlyDictionary<MessagePackValue, MessagePackValue>)self.refValue!)
+			{
+				sum = unchecked(sum + pair.Key.GetSecureHashCode() + pair.Value.GetSecureHashCode());
+			}
+
+			return sum;
+		}
+	}
+
+	private bool Equals(MessagePackValue other, bool structural)
 	{
 		if (this.kind != other.kind)
 		{
@@ -635,8 +736,8 @@ public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>
 			MessagePackValueKind.Double => this.value.Float64 == other.value.Float64,
 			MessagePackValueKind.String => (string?)this.refValue == (string?)other.refValue,
 			MessagePackValueKind.Binary => ((byte[])this.refValue!).SequenceEqual((byte[])other.refValue!),
-			MessagePackValueKind.Array => this.refValue == other.refValue || ((MessagePackValue[])this.refValue!).SequenceEqual((MessagePackValue[])other.refValue!),
-			MessagePackValueKind.Map => MapEquals((IReadOnlyDictionary<MessagePackValue, MessagePackValue>?)this.refValue, (IReadOnlyDictionary<MessagePackValue, MessagePackValue>?)other.refValue),
+			MessagePackValueKind.Array => this.refValue == other.refValue || (structural && ((MessagePackValue[])this.refValue!).SequenceEqual((MessagePackValue[])other.refValue!)),
+			MessagePackValueKind.Map => this.refValue == other.refValue || (structural && MapEquals((IReadOnlyDictionary<MessagePackValue, MessagePackValue>?)this.refValue, (IReadOnlyDictionary<MessagePackValue, MessagePackValue>?)other.refValue)),
 			MessagePackValueKind.Extension => ((Extension)this.refValue!).Equals((Extension)other.refValue!),
 			MessagePackValueKind.DateTime => this.value.DateTime != other.value.DateTime,
 			_ => throw new NotImplementedException(),
@@ -644,11 +745,6 @@ public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>
 
 		static bool MapEquals<TKey, TValue>(IReadOnlyDictionary<TKey, TValue>? left, IReadOnlyDictionary<TKey, TValue>? right)
 		{
-			if (object.ReferenceEquals(left, right))
-			{
-				return true;
-			}
-
 			if (left is null || right is null)
 			{
 				return false;

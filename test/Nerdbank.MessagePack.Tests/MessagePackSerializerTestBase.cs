@@ -132,7 +132,15 @@ public abstract class MessagePackSerializerTestBase
 #else
 		T? roundtripped = this.Roundtrip(value, GetShape<T, TProvider>());
 #endif
-		Assert.Equal(value, roundtripped);
+		if (value is IDeepSecureEqualityComparer<T> deepComparer)
+		{
+			Assert.True(deepComparer.DeepEquals(roundtripped), "Roundtripped value does not match the original value by deep equality.");
+		}
+		else
+		{
+			Assert.Equal(value, roundtripped);
+		}
+
 		return this.lastRoundtrippedMsgpack;
 	}
 
