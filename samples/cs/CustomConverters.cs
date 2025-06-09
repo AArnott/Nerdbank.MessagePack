@@ -375,7 +375,7 @@ namespace AsyncConverters
             throw new NotImplementedException();
         }
 
-        [Experimental("NBMsgPack")]
+        [Experimental("NBMsgPackAsync")]
         public override async ValueTask<MyCustomType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
         {
             MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
