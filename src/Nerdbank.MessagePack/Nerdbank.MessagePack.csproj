@@ -5,8 +5,14 @@
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">true</IsAotCompatible>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackAnalyzers</TargetsForTfmSpecificContentInPackage>
-    <PackageDescription>A fast and more user-friendly MessagePack serialization library for .NET. With ground-up support for trimming and Native AOT.</PackageDescription>
+    <PackageDescription>A fast and more user-friendly MessagePack serialization library for .NET and .NET Framework. This package is brought to you by one of the two major contributors to MessagePack-CSharp. As its natural successor, this library comes packed with features that its predecessor lacks, and has ongoing support.
+
+Premium support for trimming and Native AOT, secure deserialization of untrusted data, async serialization, streaming deserialization, skip serializing of default values, reference preservation, and support for reference cycles.
+
+Also features an automatic structural equality API.</PackageDescription>
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageTags>MsgPack MessagePack Serialization Serializer Unity structural-equality secure-hash</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.StringTools" />
@@ -21,6 +27,7 @@
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="icon.png" Pack="true" PackagePath="" />
     <None Update="Converters\ArraysOfPrimitivesConverters.Generated.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ArraysOfPrimitivesConverters.Generated.cs</LastGenOutput>
