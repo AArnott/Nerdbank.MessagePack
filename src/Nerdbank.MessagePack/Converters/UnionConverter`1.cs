@@ -85,7 +85,6 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -172,7 +171,6 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context)
 	{
 		if (value is null)

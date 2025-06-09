@@ -28,19 +28,15 @@ internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnio
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => inner.GetJsonSchema(context, typeShape);
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => await inner.ReadAsync(reader, context).ConfigureAwait(false);
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context) => inner.WriteAsync(writer, (TUnionCase?)value, context);
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context) => inner.SkipToIndexValueAsync(reader, index, context);
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context) => inner.SkipToPropertyValueAsync(reader, propertyShape, context);
 
 	/// <inheritdoc/>

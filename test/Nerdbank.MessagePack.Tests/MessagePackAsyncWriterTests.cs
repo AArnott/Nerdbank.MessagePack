@@ -7,7 +7,6 @@ using System.IO.Pipelines;
 public class MessagePackAsyncWriterTests
 {
 	[Fact]
-	[Experimental("NBMsgPackAsync")]
 	public void WriteVeryLargeData()
 	{
 		MessagePackAsyncWriter writer = new(PipeWriter.Create(Stream.Null));

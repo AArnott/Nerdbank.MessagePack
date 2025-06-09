@@ -32,7 +32,6 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -66,7 +65,6 @@ internal class ReferencePreservingConverter<T>(MessagePackConverter<T> inner) : 
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 	{
 		if (value is null)

@@ -77,7 +77,6 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
 	{
 		if (index is null)
@@ -159,7 +158,6 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <param name="reader">The reader.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The key=value pair.</returns>
-	[Experimental("NBMsgPackAsync")]
 	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		TKey? key = await keyConverter.ReadAsync(reader, context).ConfigureAwait(false);
@@ -204,7 +202,6 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 #pragma warning restore NBMsgPack03
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -238,7 +235,6 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public async ValueTask<TDictionary> DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context)
 	{
 		context.DepthStep();
