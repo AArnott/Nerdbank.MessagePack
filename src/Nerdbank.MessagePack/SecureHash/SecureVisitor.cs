@@ -77,7 +77,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 			return HashCollisionResistantPrimitives.ByteArrayEqualityComparer.Default;
 		}
 
-		if (typeof(IDeepSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
+		if (typeof(IStructuralSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
 		{
 			return SecureCustomEqualityComparer<T>.Default;
 		}

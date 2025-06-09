@@ -16,7 +16,7 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 [DebuggerDisplay($"{{{nameof(DebuggerDisplay)},nq}}")]
 [GenerateShape]
-public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>, IDeepSecureEqualityComparer<MessagePackValue>
+public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>, IStructuralSecureEqualityComparer<MessagePackValue>
 {
 	/// <summary>
 	/// A token that represents Nil.
@@ -625,7 +625,7 @@ public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>, 
 	public bool Equals(MessagePackValue other) => this.Equals(other, structural: false);
 
 	/// <inheritdoc/>
-	public bool DeepEquals(MessagePackValue other) => this.Equals(other, structural: true);
+	public bool StructuralEquals(MessagePackValue other) => this.Equals(other, structural: true);
 
 	/// <inheritdoc/>
 	public override bool Equals([NotNullWhen(true)] object? obj) => obj is MessagePackValue other && this.Equals(other);
@@ -677,7 +677,7 @@ public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>, 
 	}
 
 	/// <inheritdoc/>
-	long IDeepSecureEqualityComparer<MessagePackValue>.GetSecureHashCode() => this.GetSecureHashCode();
+	long IStructuralSecureEqualityComparer<MessagePackValue>.GetSecureHashCode() => this.GetSecureHashCode();
 
 	private long GetSecureHashCode()
 	{
@@ -692,7 +692,7 @@ public readonly partial struct MessagePackValue : IEquatable<MessagePackValue>, 
 			MessagePackValueKind.Binary => HashCollisionResistantPrimitives.ByteArrayEqualityComparer.Default.GetSecureHashCode((byte[])this.refValue!),
 			MessagePackValueKind.Array => UncheckedArraySum(this),
 			MessagePackValueKind.Map => UncheckedMapSum(this),
-			MessagePackValueKind.Extension => ((IDeepSecureEqualityComparer<Extension>)this.refValue!).GetSecureHashCode(),
+			MessagePackValueKind.Extension => ((IStructuralSecureEqualityComparer<Extension>)this.refValue!).GetSecureHashCode(),
 			MessagePackValueKind.DateTime => HashCollisionResistantPrimitives.DateTimeEqualityComparer.Instance.GetSecureHashCode(this.value.DateTime),
 			_ => throw new NotImplementedException(),
 		};

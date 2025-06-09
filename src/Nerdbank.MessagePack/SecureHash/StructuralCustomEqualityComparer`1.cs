@@ -11,13 +11,13 @@ using System.Diagnostics.CodeAnalysis;
 namespace Nerdbank.MessagePack.SecureHash;
 
 /// <summary>
-/// An implementation of <see cref="IEqualityComparer{T}"/> that delegates to <see cref="IDeepSecureEqualityComparer{T}"/> on an object.
+/// An implementation of <see cref="IEqualityComparer{T}"/> that delegates to <see cref="IStructuralSecureEqualityComparer{T}"/> on an object.
 /// </summary>
 /// <typeparam name="T">The self-implementing type to be compared.</typeparam>
 internal class StructuralCustomEqualityComparer<T> : IEqualityComparer<T>
 {
 	/// <summary>
-	/// The singleton that may be used for any type that implements <see cref="IDeepSecureEqualityComparer{T}"/>.
+	/// The singleton that may be used for any type that implements <see cref="IStructuralSecureEqualityComparer{T}"/>.
 	/// </summary>
 	internal static readonly StructuralCustomEqualityComparer<T> Default = new();
 
@@ -29,9 +29,9 @@ internal class StructuralCustomEqualityComparer<T> : IEqualityComparer<T>
 			return ReferenceEquals(x, y);
 		}
 
-		return ((IDeepSecureEqualityComparer<T>)x).DeepEquals(y);
+		return ((IStructuralSecureEqualityComparer<T>)x).StructuralEquals(y);
 	}
 
 	/// <inheritdoc/>
-	public int GetHashCode([DisallowNull] T obj) => ((IDeepSecureEqualityComparer<T>)obj).GetHashCode();
+	public int GetHashCode([DisallowNull] T obj) => ((IStructuralSecureEqualityComparer<T>)obj).GetHashCode();
 }
