@@ -8,12 +8,9 @@
 #pragma warning disable CS8767 // null ref annotations
 #endif
 
-using System.Collections;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft;
 
@@ -37,6 +34,8 @@ internal static class HashCollisionResistantPrimitives
 
 	internal class BooleanEqualityComparer : CollisionResistantHasherUnmanaged<bool>
 	{
+		internal static readonly BooleanEqualityComparer Instance = new();
+
 		public override long GetSecureHashCode(bool value) => base.GetSecureHashCode(value is true);
 
 		public override bool Equals(bool x, bool y) => x is true == y is true;
@@ -58,6 +57,8 @@ internal static class HashCollisionResistantPrimitives
 
 	internal class SingleEqualityComparer : CollisionResistantHasherUnmanaged<float>
 	{
+		internal static readonly SingleEqualityComparer Instance = new();
+
 		/// <inheritdoc/>
 		public override unsafe long GetSecureHashCode(float value)
 			=> base.GetSecureHashCode(value switch
@@ -70,6 +71,8 @@ internal static class HashCollisionResistantPrimitives
 
 	internal class DoubleEqualityComparer : CollisionResistantHasherUnmanaged<double>
 	{
+		internal static readonly DoubleEqualityComparer Instance = new();
+
 		/// <inheritdoc/>
 		public override unsafe long GetSecureHashCode(double value)
 			=> base.GetSecureHashCode(value switch
@@ -82,6 +85,8 @@ internal static class HashCollisionResistantPrimitives
 
 	internal class DateTimeEqualityComparer : CollisionResistantHasherUnmanaged<DateTime>
 	{
+		internal static readonly DateTimeEqualityComparer Instance = new();
+
 		/// <inheritdoc/>
 		public override unsafe long GetSecureHashCode(DateTime value) => SecureHash(value.Ticks);
 	}
@@ -92,12 +97,12 @@ internal static class HashCollisionResistantPrimitives
 		public override unsafe long GetSecureHashCode(DateTimeOffset value) => SecureHash(value.UtcDateTime.Ticks);
 	}
 
-	internal class StringEqualityComparer : SecureEqualityComparer<string>
+	internal class StringEqualityComparer : SecureEqualityComparer<string?>
 	{
 		internal static readonly StringEqualityComparer Instance = new();
 
 		/// <inheritdoc/>
-		public override long GetSecureHashCode(string value)
+		public override long GetSecureHashCode(string? value)
 		{
 			// The Cast call could result in OverflowException at runtime if value is greater than 1bn chars in length.
 			return SecureHash(MemoryMarshal.Cast<char, byte>(value.AsSpan()));
