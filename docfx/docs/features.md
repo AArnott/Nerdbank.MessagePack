@@ -23,38 +23,38 @@ See how this library compares to other .NET MessagePack libraries.
 
 In many cases, the ✅ or ❌ in the table below are hyperlinks to the relevant documentation or an issue you can vote up to request the feature.
 
-Feature                   | Nerdbank.MessagePack | MessagePack-CSharp  |
---------------------------|:--------------------:|:-------------------:|
-Optimized for high performance | [✅](performance.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#performance) |
-Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
-Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) |
-Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] |
-F# union type support     | [✅](fsharp.md) | ❌ |
-Typeless serialization    | [✅](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectPrimitiveConverter*) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) |
-`dynamic` serialization    | [✅](getting-started.md#deserialize-to-dynamic) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md)
-Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) |
-Required and non-nullable property deserialization guaranteed | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeDefaultValues) | ❌ |
-Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) |
-Surrogate types for automatic serialization of unserializable types | [✅](surrogate-types.md) | ❌ |
-Custom converters         | [✅](custom-converters.md) | ✅ |
-Stateful converters       | [✅](custom-converters.md#stateful-converters) | ❌ |
-Deserialization callback  | [✅](xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) |
-MsgPack extensions        | ✅ | ✅ |
-LZ4 compression           | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/34) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression) |
-Trim-safe                 | ✅ | ❌ |
-NativeAOT ready           | ✅ | ❌[^2] |
-Unity                     | [✅](unity.md)[^3] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#unity-support) |
-Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ |
-Endless streaming deserialization | [✅](streaming-deserialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream)
-Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
-Cyclical references       | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ |
-JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ |
-Secure defaults           | [✅](security.md) | ❌ |
-Automatic hash collection deserialization in secure mode | ✅ | ✅ |
-Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.StructuralEqualityComparer) | ❌ |
-Rejection of data that defines multiple values for the same property | [✅](security.md#multiple-values-for-the-same-property) | ❌ |
-Free of mutable statics   | ✅ | ❌ |
-Structural `IEqualityComparer<T>` for arbitrary types | ✅ | ❌ |
+Feature                   | Nerdbank.MessagePack | MessagePack-CSharp  | Serde.NET
+--------------------------|:--------------------:|:-------------------:|:-----------:|
+Optimized for high performance | [✅](performance.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#performance) | ✅
+Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) | ❌ |
+Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) | [✅](https://serdedotnet.github.io/generator/options.html)
+Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] | [✅](https://serdedotnet.github.io/data-model.html)
+F# union type support     | [✅](fsharp.md) | ❌ | ❌ |
+Typeless serialization    | [✅](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectPrimitiveConverter*) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) | ❌ |
+`dynamic` serialization    | [✅](getting-started.md#deserialize-to-dynamic) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md) | ❌ |
+Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) | 🌗 |
+Required and non-nullable property deserialization guaranteed | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeDefaultValues) | ❌ | ✅ |
+Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) | ❌ |
+Surrogate types for automatic serialization of unserializable types | [✅](surrogate-types.md) | ❌ | [✅](https://serdedotnet.github.io/foreign-types.html) |
+Custom converters         | [✅](custom-converters.md) | ✅ | [✅](https://serdedotnet.github.io/customization.html)
+Stateful converters       | [✅](custom-converters.md#stateful-converters) | ❌ | ❌ |
+Deserialization callback  | [✅](xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#serialization-callback) | ❌ |
+MsgPack extensions        | ✅ | ✅ | ❌ |
+LZ4 compression           | [❌](https://github.com/AArnott/Nerdbank.MessagePack/issues/34) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#lz4-compression) | ❌ |
+Trim-safe                 | ✅ | ❌ | ✅ |
+NativeAOT ready           | ✅ | ❌[^2] | ✅ |
+Unity                     | [✅](unity.md)[^3] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#unity-support) | ❔ |
+Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ | ❌ |
+Endless streaming deserialization | [✅](streaming-deserialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream) | ❌ |
+Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ | ❌ |
+Cyclical references       | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ | ❌ |
+JSON schema export        | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*) | ❌ | ❌ |
+Secure defaults           | [✅](security.md) | ❌ | ❌ |
+Automatic hash collection deserialization in secure mode | ✅ | ✅ | ❌ |
+Automatic collision-resistant hash function for arbitrary types | [✅](xref:Nerdbank.MessagePack.StructuralEqualityComparer) | ❌ | ❌ |
+Rejection of data that defines multiple values for the same property | [✅](security.md#multiple-values-for-the-same-property) | ❌ | ❌ |
+Free of mutable statics   | ✅ | ❌ | ✅ |
+Structural `IEqualityComparer<T>` for arbitrary types | ✅ | ❌ | ❌ |
 
 Security is a complex subject.
 [Learn more about how to secure your deserializer](security.md).
