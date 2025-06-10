@@ -50,10 +50,8 @@ internal class ObjectMapConverter<T>(
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnBeforeSerialize();
-		}
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeSerialize();
 
 		context.DepthStep();
 
@@ -73,6 +71,8 @@ internal class ObjectMapConverter<T>(
 		{
 			WriteProperties(ref writer, value, serializable.Properties.Span, unusedDataProperty, context);
 		}
+
+		callbacks?.OnAfterSerialize();
 
 		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty, SerializationContext context)
 		{
@@ -97,10 +97,8 @@ internal class ObjectMapConverter<T>(
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnBeforeSerialize();
-		}
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeSerialize();
 
 		context.DepthStep();
 		UnusedDataPacket.Map? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
@@ -162,6 +160,8 @@ internal class ObjectMapConverter<T>(
 				ArrayPool<SerializableProperty<T>>.Shared.Return(borrowedArray);
 			}
 		}
+
+		callbacks?.OnAfterSerialize();
 	}
 
 	/// <inheritdoc/>
@@ -179,6 +179,8 @@ internal class ObjectMapConverter<T>(
 
 		context.DepthStep();
 		T value = constructor();
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeDeserialize();
 		PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
 		UnusedDataPacket.Map? unused = null;
 
@@ -222,10 +224,7 @@ internal class ObjectMapConverter<T>(
 			unusedDataProperty.Setter(ref value, unused);
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnAfterDeserialize();
-		}
+		callbacks?.OnAfterDeserialize();
 
 		return value;
 	}
@@ -253,6 +252,8 @@ internal class ObjectMapConverter<T>(
 
 		context.DepthStep();
 		T value = constructor();
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeDeserialize();
 		PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
 		UnusedDataPacket.Map? unused = null;
 
@@ -386,10 +387,7 @@ internal class ObjectMapConverter<T>(
 			unusedDataProperty.Setter(ref value, unused);
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnAfterDeserialize();
-		}
+		callbacks?.OnAfterDeserialize();
 
 		return value;
 	}

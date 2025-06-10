@@ -54,6 +54,9 @@ internal class ObjectArrayConverter<T>(
 
 		context.DepthStep();
 		T value = constructor();
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeDeserialize();
+
 		UnusedDataPacket.Array? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -114,10 +117,7 @@ internal class ObjectArrayConverter<T>(
 			unusedDataProperty.Setter(ref value, unused);
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnAfterDeserialize();
-		}
+		callbacks?.OnAfterDeserialize();
 
 		return value;
 	}
@@ -133,10 +133,8 @@ internal class ObjectArrayConverter<T>(
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnBeforeSerialize();
-		}
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeSerialize();
 
 		context.DepthStep();
 		UnusedDataPacket.Array? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
@@ -197,6 +195,8 @@ internal class ObjectArrayConverter<T>(
 			WriteArray(ref writer, value, unused, properties.Span, context);
 		}
 
+		callbacks?.OnAfterSerialize();
+
 		static void WriteArray(ref MessagePackWriter writer, in T value, UnusedDataPacket.Array? unused, ReadOnlySpan<PropertyAccessors<T>?> properties, SerializationContext context)
 		{
 			int maxCount = Math.Max(properties.Length, (unused?.MaxIndex + 1) ?? 0);
@@ -228,10 +228,8 @@ internal class ObjectArrayConverter<T>(
 			return;
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnBeforeSerialize();
-		}
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeSerialize();
 
 		context.DepthStep();
 		UnusedDataPacket.Array? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
@@ -268,6 +266,8 @@ internal class ObjectArrayConverter<T>(
 		{
 			await WriteAsArrayAsync(writer, value, unused, properties, context).ConfigureAwait(false);
 		}
+
+		callbacks?.OnAfterSerialize();
 
 		static async ValueTask WriteAsMapAsync(MessagePackAsyncWriter writer, T value, UnusedDataPacket.Array? unused, ReadOnlyMemory<int> properties, ReadOnlyMemory<PropertyAccessors<T>?> allProperties, SerializationContext context)
 		{
@@ -440,6 +440,8 @@ internal class ObjectArrayConverter<T>(
 
 		context.DepthStep();
 		T value = constructor();
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeDeserialize();
 		UnusedDataPacket.Array? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -604,10 +606,7 @@ internal class ObjectArrayConverter<T>(
 			unusedDataProperty.Setter(ref value, unused);
 		}
 
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnAfterDeserialize();
-		}
+		callbacks?.OnAfterDeserialize();
 
 		return value;
 	}
