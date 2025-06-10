@@ -3,7 +3,7 @@
 
 using System.Buffers;
 
-public partial class SecurityTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class SecurityTests : MessagePackSerializerTestBase
 {
 	/// <summary>
 	/// Verifies that the serializer will guard against stack overflow attacks for map-formatted objects.

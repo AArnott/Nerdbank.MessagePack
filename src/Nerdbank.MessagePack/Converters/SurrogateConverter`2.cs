@@ -28,12 +28,10 @@ internal class SurrogateConverter<T, TSurrogate>(ISurrogateTypeShape<T, TSurroga
 		=> surrogateConverter.Write(ref writer, shape.Marshaller.ToSurrogate(value), context);
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 		=> shape.Marshaller.FromSurrogate(await surrogateConverter.ReadAsync(reader, context).ConfigureAwait(false));
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 		=> surrogateConverter.WriteAsync(writer, shape.Marshaller.ToSurrogate(value), context);
 

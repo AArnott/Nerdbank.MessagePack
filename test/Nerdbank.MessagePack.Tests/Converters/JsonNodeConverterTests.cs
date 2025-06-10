@@ -7,8 +7,7 @@ namespace Converters;
 
 public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 {
-	public JsonNodeConverterTests(ITestOutputHelper logger)
-		: base(logger)
+	public JsonNodeConverterTests()
 	{
 		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
 	}

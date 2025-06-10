@@ -456,5 +456,26 @@ public class MessagePackValueTests
 	{
 		MessagePackValue left = 5, right = "hi";
 		Assert.NotEqual(left, right);
+		Assert.NotEqual(left.GetHashCode(), right.GetHashCode());
 	}
+
+	[Fact]
+	public void GetHashCode_Shallow_Deep()
+	{
+		MessagePackValue v1a = new MessagePackValue[] { 1, 2, 3 };
+		MessagePackValue v1b = new MessagePackValue[] { 1, 2, 3 };
+		MessagePackValue v2 = new MessagePackValue[] { 4, 5, 6 };
+
+		// Shallow hash code is based on reference equality.
+		// Secure hash code is based on structural equality.
+		Assert.NotEqual(v1a.GetHashCode(), v1b.GetHashCode());
+		Assert.Equal(GetSecureHashCode(v1a), GetSecureHashCode(v1b));
+
+		// These are structurally distinct.
+		Assert.NotEqual(v1a.GetHashCode(), v2.GetHashCode());
+		Assert.NotEqual(GetSecureHashCode(v1a), GetSecureHashCode(v2));
+	}
+
+	private static long GetSecureHashCode<T>(T expected)
+		where T : IStructuralSecureEqualityComparer<T> => expected.GetSecureHashCode();
 }

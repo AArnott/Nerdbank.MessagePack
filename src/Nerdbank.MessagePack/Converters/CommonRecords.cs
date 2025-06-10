@@ -6,7 +6,6 @@
 #pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -27,7 +26,6 @@ internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType conta
 /// <param name="writer">The means by which msgpack should be written.</param>
 /// <param name="context">The serialization context.</param>
 /// <returns>A task that represents the asynchronous operation.</returns>
-[Experimental("NBMsgPackAsync")]
 internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context);
 
 /// <summary>
@@ -47,29 +45,60 @@ internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType co
 /// <param name="reader">The means by which msgpack should be read.</param>
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 /// <returns>The <paramref name="container"/>, with the property initialized. This is useful when <typeparamref name="TDeclaringType"/> is a struct.</returns>
-[Experimental("NBMsgPackAsync")]
 internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context);
 
 /// <summary>
 /// A map of serializable properties.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that contains the properties to be serialized.</typeparam>
-/// <param name="Properties">The list of serializable properties, including the msgpack encoding of the property name and the delegate to serialize that property.</param>
-internal record struct MapSerializableProperties<TDeclaringType>(ReadOnlyMemory<SerializableProperty<TDeclaringType>> Properties);
+/// <param name="properties">The list of serializable properties, including the msgpack encoding of the property name and the delegate to serialize that property.</param>
+internal class MapSerializableProperties<TDeclaringType>(ReadOnlyMemory<SerializableProperty<TDeclaringType>> properties)
+{
+	/// <summary>Gets or sets the list of serializable properties.</summary>
+	public ReadOnlyMemory<SerializableProperty<TDeclaringType>> Properties { get; set; } = properties;
+}
 
 /// <summary>
 /// Contains the data necessary for a converter to serialize the value of a particular property.
 /// </summary>
 /// <typeparam name="TDeclaringType">The type that declares the property to be serialized.</typeparam>
-/// <param name="Name">The property name.</param>
-/// <param name="RawPropertyNameString">The entire msgpack encoding of the property name, including the string header.</param>
-/// <param name="Write">A delegate that synchronously serializes the value of the property.</param>
-/// <param name="WriteAsync">A delegate that asynchonously serializes the value of the property.</param>
-/// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
-/// <param name="ShouldSerialize"><inheritdoc cref="PropertyAccessors{TDeclaringType}.ShouldSerialize"/></param>
-/// <param name="Shape">The property shape, for use when generating schema.</param>
-internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> RawPropertyNameString, SerializeProperty<TDeclaringType> Write, SerializePropertyAsync<TDeclaringType> WriteAsync, MessagePackConverter Converter, Func<TDeclaringType, bool>? ShouldSerialize, IPropertyShape Shape)
+/// <param name="name">The property name.</param>
+/// <param name="rawPropertyNameString">The entire msgpack encoding of the property name, including the string header.</param>
+/// <param name="write">A delegate that synchronously serializes the value of the property.</param>
+/// <param name="writeAsync">A delegate that asynchonously serializes the value of the property.</param>
+/// <param name="converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
+/// <param name="shouldSerialize"><inheritdoc cref="PropertyAccessors{TDeclaringType}.ShouldSerialize"/></param>
+/// <param name="shape">The property shape, for use when generating schema.</param>
+internal class SerializableProperty<TDeclaringType>(
+	string name,
+	ReadOnlyMemory<byte> rawPropertyNameString,
+	SerializeProperty<TDeclaringType> write,
+	SerializePropertyAsync<TDeclaringType> writeAsync,
+	MessagePackConverter converter,
+	Func<TDeclaringType, bool>? shouldSerialize,
+	IPropertyShape shape)
 {
+	/// <summary>Gets the property name.</summary>
+	public string Name => name;
+
+	/// <summary>Gets the entire msgpack encoding of the property name, including the string header.</summary>
+	public ReadOnlyMemory<byte> RawPropertyNameString => rawPropertyNameString;
+
+	/// <summary>Gets the delegate that synchronously serializes the value of the property.</summary>
+	public SerializeProperty<TDeclaringType> Write => write;
+
+	/// <summary>Gets the delegate that asynchronously serializes the value of the property.</summary>
+	public SerializePropertyAsync<TDeclaringType> WriteAsync => writeAsync;
+
+	/// <summary>Gets the converter backing this property.</summary>
+	public MessagePackConverter Converter => converter;
+
+	/// <summary>Gets the optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</summary>
+	public Func<TDeclaringType, bool>? ShouldSerialize => shouldSerialize;
+
+	/// <summary>Gets the property shape, for use when generating schema.</summary>
+	public IPropertyShape Shape => shape;
+
 	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
 	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
 }
@@ -78,21 +107,49 @@ internal record struct SerializableProperty<TDeclaringType>(string Name, ReadOnl
 /// A map of deserializable properties.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that contains properties to be deserialized.</typeparam>
-/// <param name="Readers">The map of deserializable properties, keyed by the UTF-8 encoding of the property name.</param>
-internal record struct MapDeserializableProperties<TDeclaringType>(SpanDictionary<byte, DeserializableProperty<TDeclaringType>>? Readers);
+/// <param name="readers">The map of deserializable properties, keyed by the UTF-8 encoding of the property name.</param>
+internal class MapDeserializableProperties<TDeclaringType>(SpanDictionary<byte, DeserializableProperty<TDeclaringType>>? readers)
+{
+	/// <summary>Gets the map of deserializable properties, keyed by the UTF-8 encoding of the property name.</summary>
+	public SpanDictionary<byte, DeserializableProperty<TDeclaringType>>? Readers => readers;
+}
 
 /// <summary>
 /// Contains the data necessary for a converter to initialize some property with a value deserialized from msgpack.
 /// </summary>
-/// <typeparam name="TDeclaringType">The type that declares the property to be serialized.</typeparam>
-/// <param name="Name">The property name.</param>
-/// <param name="PropertyNameUtf8">The UTF-8 encoding of the property name.</param>
-/// <param name="Read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
-/// <param name="ReadAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
-/// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
-/// <param name="AssignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
-internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadOnlyMemory<byte> PropertyNameUtf8, DeserializeProperty<TDeclaringType> Read, DeserializePropertyAsync<TDeclaringType> ReadAsync, MessagePackConverter Converter, int AssignmentTrackingIndex)
+/// <typeparam name="TDeclaringType">The type that declares the property to be deserialized.</typeparam>
+/// <param name="name">The property name.</param>
+/// <param name="propertyNameUtf8">The UTF-8 encoding of the property name.</param>
+/// <param name="read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
+/// <param name="readAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
+/// <param name="converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
+/// <param name="assignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
+internal class DeserializableProperty<TDeclaringType>(
+	string name,
+	ReadOnlyMemory<byte> propertyNameUtf8,
+	DeserializeProperty<TDeclaringType> read,
+	DeserializePropertyAsync<TDeclaringType> readAsync,
+	MessagePackConverter converter,
+	int assignmentTrackingIndex)
 {
+	/// <summary>Gets the property name.</summary>
+	public string Name => name;
+
+	/// <summary>Gets the UTF-8 encoding of the property name.</summary>
+	public ReadOnlyMemory<byte> PropertyNameUtf8 => propertyNameUtf8;
+
+	/// <summary>Gets the delegate that synchronously deserializes the value of the property.</summary>
+	public DeserializeProperty<TDeclaringType> Read => read;
+
+	/// <summary>Gets the delegate that asynchronously deserializes the value of the property.</summary>
+	public DeserializePropertyAsync<TDeclaringType> ReadAsync => readAsync;
+
+	/// <summary>Gets the converter backing this property.</summary>
+	public MessagePackConverter Converter => converter;
+
+	/// <summary>Gets the unique position of the property within the declaring type for property assignment tracking.</summary>
+	public int AssignmentTrackingIndex => assignmentTrackingIndex;
+
 	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
 	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
 }
@@ -101,20 +158,38 @@ internal record struct DeserializableProperty<TDeclaringType>(string Name, ReadO
 /// Encapsulates serializing accessors for a particular property of some data type.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that declares the property that these accessors can serialize and deserialize values for.</typeparam>
-/// <param name="MsgPackWriters">Delegates that can serialize the value of a property.</param>
-/// <param name="MsgPackReaders">Delegates that can initialize the property with a value deserialized from msgpack.</param>
-/// <param name="Converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
-/// <param name="ShouldSerialize">An optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</param>
-/// <param name="Shape">The property shape, for use with generating schema.</param>
-/// <param name="AssignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
-internal record struct PropertyAccessors<TDeclaringType>(
-	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters,
-	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? MsgPackReaders,
-	MessagePackConverter Converter,
-	Func<TDeclaringType, bool>? ShouldSerialize,
-	IPropertyShape Shape,
-	int AssignmentTrackingIndex)
+/// <param name="msgPackWriters">Delegates that can serialize the value of a property.</param>
+/// <param name="msgPackReaders">Delegates that can initialize the property with a value deserialized from msgpack.</param>
+/// <param name="converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
+/// <param name="shouldSerialize">An optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</param>
+/// <param name="shape">The property shape, for use with generating schema.</param>
+/// <param name="assignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
+internal class PropertyAccessors<TDeclaringType>(
+	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? msgPackWriters,
+	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? msgPackReaders,
+	MessagePackConverter converter,
+	Func<TDeclaringType, bool>? shouldSerialize,
+	IPropertyShape shape,
+	int assignmentTrackingIndex)
 {
+	/// <summary>Gets the delegates that can serialize the value of a property.</summary>
+	public (SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters => msgPackWriters;
+
+	/// <summary>Gets the delegates that can initialize the property with a value deserialized from msgpack.</summary>
+	public (DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? MsgPackReaders => msgPackReaders;
+
+	/// <summary>Gets the converter backing this property.</summary>
+	public MessagePackConverter Converter => converter;
+
+	/// <summary>Gets the optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</summary>
+	public Func<TDeclaringType, bool>? ShouldSerialize => shouldSerialize;
+
+	/// <summary>Gets the property shape, for use with generating schema.</summary>
+	public IPropertyShape Shape => shape;
+
+	/// <summary>Gets the unique position of the property within the declaring type for property assignment tracking.</summary>
+	public int AssignmentTrackingIndex => assignmentTrackingIndex;
+
 	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
 	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
 }
@@ -124,37 +199,88 @@ internal record struct PropertyAccessors<TDeclaringType>(
 /// </summary>
 /// <typeparam name="TDeclaringType">The type that declares the property.</typeparam>
 /// <typeparam name="TValue">The value to be set or retrieved.</typeparam>
-/// <param name="Setter">The setter.</param>
-/// <param name="Getter">The getter.</param>
-internal record struct DirectPropertyAccess<TDeclaringType, TValue>(Setter<TDeclaringType, TValue>? Setter, Getter<TDeclaringType, TValue>? Getter);
+/// <param name="setter">The setter.</param>
+/// <param name="getter">The getter.</param>
+internal class DirectPropertyAccess<TDeclaringType, TValue>(
+	Setter<TDeclaringType, TValue>? setter,
+	Getter<TDeclaringType, TValue>? getter)
+{
+	/// <summary>Gets the setter.</summary>
+	public Setter<TDeclaringType, TValue>? Setter => setter;
+
+	/// <summary>Gets the getter.</summary>
+	public Getter<TDeclaringType, TValue>? Getter => getter;
+}
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
 /// when serializing an object as a map.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
-/// <param name="Serializers">Serializable properties on the data type.</param>
-/// <param name="Deserializers">Deserializable properties on the data type.</param>
-/// <param name="ParametersByName">A collection of constructor parameters, with any conflicting names removed.</param>
-/// <param name="UnusedDataProperty">The special unused data property, if present.</param>
-/// <param name="AssignmentTrackingManager">The parameter assignment tracking manager.</param>
-internal record MapConstructorVisitorInputs<TDeclaringType>(MapSerializableProperties<TDeclaringType> Serializers, MapDeserializableProperties<TDeclaringType> Deserializers, Dictionary<string, IParameterShape> ParametersByName, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty, PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager);
+/// <param name="serializers">Serializable properties on the data type.</param>
+/// <param name="deserializers">Deserializable properties on the data type.</param>
+/// <param name="parametersByName">A collection of constructor parameters, with any conflicting names removed.</param>
+/// <param name="unusedDataProperty">The special unused data property, if present.</param>
+/// <param name="assignmentTrackingManager">The parameter assignment tracking manager.</param>
+internal class MapConstructorVisitorInputs<TDeclaringType>(
+	MapSerializableProperties<TDeclaringType> serializers,
+	MapDeserializableProperties<TDeclaringType> deserializers,
+	Dictionary<string, IParameterShape> parametersByName,
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty,
+	PropertyAssignmentTrackingManager<TDeclaringType> assignmentTrackingManager)
+{
+	/// <summary>Gets the serializable properties on the data type.</summary>
+	public MapSerializableProperties<TDeclaringType> Serializers => serializers;
+
+	/// <summary>Gets the deserializable properties on the data type.</summary>
+	public MapDeserializableProperties<TDeclaringType> Deserializers => deserializers;
+
+	/// <summary>Gets the collection of constructor parameters, with any conflicting names removed.</summary>
+	public Dictionary<string, IParameterShape> ParametersByName => parametersByName;
+
+	/// <summary>Gets the special unused data property, if present.</summary>
+	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
+
+	/// <summary>Gets the parameter assignment tracking manager.</summary>
+	public PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager => assignmentTrackingManager;
+}
 
 /// <summary>
 /// Encapsulates the data passed through <see cref="TypeShapeVisitor.VisitConstructor{TDeclaringType, TArgumentState}(IConstructorShape{TDeclaringType, TArgumentState}, object?)"/> state arguments
 /// when serializing an object as an array.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
-/// <param name="Properties">The accessors to use for accessing each array element.</param>
-/// <param name="UnusedDataProperty">The special unused data property, if present.</param>
-/// <param name="AssignmentTrackingManager">The parameter assignment tracking manager.</param>
-internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties, DirectPropertyAccess<TDeclaringType, UnusedDataPacket> UnusedDataProperty, PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager)
+/// <param name="properties">The accessors to use for accessing each array element.</param>
+/// <param name="unusedDataProperty">The special unused data property, if present.</param>
+/// <param name="assignmentTrackingManager">The parameter assignment tracking manager.</param>
+internal class ArrayConstructorVisitorInputs<TDeclaringType>(
+	List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> properties,
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty,
+	PropertyAssignmentTrackingManager<TDeclaringType> assignmentTrackingManager)
 {
+	/// <summary>Gets the accessors to use for accessing each array element.</summary>
+	public List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties => properties;
+
+	/// <summary>Gets the special unused data property, if present.</summary>
+	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
+
+	/// <summary>Gets the parameter assignment tracking manager.</summary>
+	public PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager => assignmentTrackingManager;
+
 	/// <summary>
 	/// Constructs an array of just the property accessors (without property names).
 	/// </summary>
 	/// <returns>An array of accessors.</returns>
-	internal PropertyAccessors<TDeclaringType>?[] GetJustAccessors() => this.Properties.Select(p => p?.Accessors).ToArray();
+	internal PropertyAccessors<TDeclaringType>?[] GetJustAccessors()
+	{
+		var result = new PropertyAccessors<TDeclaringType>?[this.Properties.Count];
+		for (int i = 0; i < this.Properties.Count; i++)
+		{
+			result[i] = this.Properties[i]?.Accessors;
+		}
+
+		return result;
+	}
 }
 
 /// <summary>
@@ -162,25 +288,17 @@ internal record ArrayConstructorVisitorInputs<TDeclaringType>(List<(string Name,
 /// for serialization, or may be referenced by an alias in the serialized data for deserialization.
 /// </summary>
 /// <typeparam name="TUnion">The common base type.</typeparam>
-internal record SubTypes<TUnion>
+internal class SubTypes<TUnion>
 {
-	/// <summary>
-	/// Gets the converters to use to deserialize a subtype, keyed by its integer alias.
-	/// </summary>
-	internal required FrozenDictionary<int, MessagePackConverter> DeserializersByIntAlias { get; init; }
+	/// <summary>Gets the converters to use to deserialize a subtype, keyed by its integer alias.</summary>
+	public required FrozenDictionary<int, MessagePackConverter> DeserializersByIntAlias { get; init; }
 
-	/// <summary>
-	/// Gets the converter to use to deserialize a subtype, keyed by its UTF-8 encoded string alias.
-	/// </summary>
-	internal required SpanDictionary<byte, MessagePackConverter> DeserializersByStringAlias { get; init; }
+	/// <summary>Gets the converter to use to deserialize a subtype, keyed by its UTF-8 encoded string alias.</summary>
+	public required SpanDictionary<byte, MessagePackConverter> DeserializersByStringAlias { get; init; }
 
-	/// <summary>
-	/// Gets the set of converters and aliases.
-	/// </summary>
-	internal required FrozenSet<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
+	/// <summary>Gets the set of converters and aliases.</summary>
+	public required FrozenSet<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> Serializers { get; init; }
 
-	/// <summary>
-	/// Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.
-	/// </summary>
-	internal required Getter<TUnion, (DerivedTypeIdentifier Alias, MessagePackConverter Converter)?> TryGetSerializer { get; init; }
+	/// <summary>Gets the converter and alias to use for a subtype, keyed by their <see cref="Type"/>.</summary>
+	public required Getter<TUnion, (DerivedTypeIdentifier Alias, MessagePackConverter Converter)?> TryGetSerializer { get; init; }
 }

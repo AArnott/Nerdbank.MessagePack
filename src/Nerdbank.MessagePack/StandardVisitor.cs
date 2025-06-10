@@ -163,13 +163,49 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (serializable is { Count: > 0 })
 			{
 				// Members with and without KeyAttribute have been detected as intended for serialization. These two worlds are incompatible.
-				throw new MessagePackSerializationException($"The type {objectShape.Type.FullName} has fields/properties that are candidates for serialization but are inconsistently attributed with {nameof(KeyAttribute)}.\nMembers with the attribute: {string.Join(", ", propertyAccessors.Where(a => a is not null).Select(a => a!.Value.Name))}\nMembers without the attribute: {string.Join(", ", serializable.Select(p => p.Name))}");
+				throw new MessagePackSerializationException(PrepareExceptionMessage());
+
+				string PrepareExceptionMessage()
+				{
+					// Avoid use of Linq methods since it will lead to native code gen that closes generics over user types.
+					StringBuilder builder = new();
+					builder.Append($"The type {objectShape.Type.FullName} has fields/properties that are candidates for serialization but are inconsistently attributed with {nameof(KeyAttribute)}.\nMembers with the attribute: ");
+					bool first = true;
+					foreach ((string Name, PropertyAccessors<T> Accessors)? a in propertyAccessors)
+					{
+						if (a is not null)
+						{
+							if (!first)
+							{
+								builder.Append(", ");
+							}
+
+							first = false;
+							builder.Append(a.Value.Name);
+						}
+					}
+
+					builder.Append("\nMembers without the attribute: ");
+					first = true;
+					foreach (SerializableProperty<T> p in serializable)
+					{
+						if (!first)
+						{
+							builder.Append(", ");
+						}
+
+						first = false;
+						builder.Append(p.Name);
+					}
+
+					return builder.ToString();
+				}
 			}
 
-			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors, unusedDataPropertyAccess ?? default, assignmentTrackingManager);
+			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors, unusedDataPropertyAccess, assignmentTrackingManager);
 			converter = ctorShape is not null
 				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), unusedDataPropertyAccess ?? default, null, assignmentTrackingManager, this.owner.SerializeDefaultValues);
+				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), unusedDataPropertyAccess, null, assignmentTrackingManager, this.owner.SerializeDefaultValues);
 		}
 		else
 		{
@@ -182,7 +218,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 			if (ctorShape is not null)
 			{
-				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!, unusedDataPropertyAccess ?? default, assignmentTrackingManager);
+				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!, unusedDataPropertyAccess, assignmentTrackingManager);
 				converter = (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!;
 			}
 			else
@@ -191,14 +227,18 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				converter = new ObjectMapConverter<T>(
 					serializableMap,
 					deserializableMap,
-					unusedDataPropertyAccess ?? default,
+					unusedDataPropertyAccess,
 					ctor,
 					assignmentTrackingManager,
 					this.owner.SerializeDefaultValues);
 			}
 		}
 
-		return this.DiscoverUnionTypes(objectShape, converter) is { } unionTypes ? new UnionConverter<T>(converter, unionTypes) : converter;
+		// Test IsValueType before calling DiscoverUnionTypes so that the native compiler
+		// does not have to generate a SubTypes<T> for value types which will never be used.
+		return !typeof(T).IsValueType && this.DiscoverUnionTypes(objectShape, converter) is { } unionTypes
+			? new UnionConverter<T>(converter, unionTypes)
+			: converter;
 	}
 
 	/// <inheritdoc/>
@@ -391,19 +431,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 					List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
 
-					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = inputs.ParametersByName.Values
-						.Select<IParameterShape, (string Name, DeserializableProperty<TArgumentState> Deserialize)>(p =>
-						{
-							ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Name)?.AttributeProvider;
-							var prop = (DeserializableProperty<TArgumentState>)p.Accept(this, inputs.AssignmentTrackingManager)!;
-							string name = this.owner.GetSerializedPropertyName(p.Name, propertyAttributeProvider);
-							return (name, prop);
-						}).ToSpanDictionary(
-							p => Encoding.UTF8.GetBytes(p.Name),
-							p => p.Deserialize,
-							ByteSpanEqualityComparer.Ordinal);
+					var spanDictContent = new KeyValuePair<ReadOnlyMemory<byte>, DeserializableProperty<TArgumentState>>[inputs.ParametersByName.Count];
+					int i = 0;
+					foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
+					{
+						ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
+						var prop = (DeserializableProperty<TArgumentState>)p.Value.Accept(this, inputs.AssignmentTrackingManager)!;
+						string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
+						spanDictContent[i++] = new(Encoding.UTF8.GetBytes(name), prop);
+					}
 
-					MapSerializableProperties<TDeclaringType> serializeable = inputs.Serializers with { Properties = propertySerializers.ToArray() };
+					SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = new(spanDictContent, ByteSpanEqualityComparer.Ordinal);
+
+					MapSerializableProperties<TDeclaringType> serializeable = inputs.Serializers;
+					serializeable.Properties = propertySerializers.ToArray();
 					return new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 						serializeable,
 						constructorShape.GetArgumentStateConstructor(),

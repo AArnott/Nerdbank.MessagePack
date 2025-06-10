@@ -6,7 +6,7 @@ using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder;
 
 [Trait("dynamic", "true")]
-public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public class DynamicSerializationTests : MessagePackSerializerTestBase
 {
 	private static readonly DateTime ExpectedDateTime = new(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc);
 
@@ -55,18 +55,25 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 	{
 		// C# doesn't offer a way to call this method like other languages would, so we'll call it directly.
 		DynamicObject deserialized = (DynamicObject)this.DeserializeDynamic();
-		Assert.Equal(["Prop1", "Prop2", "deeper"], deserialized.GetDynamicMemberNames());
+		Assert.Equal(["Prop1", "Prop2", "nestedArray", "nestedObject"], deserialized.GetDynamicMemberNames());
 	}
 
 	[Fact]
 	public void ReachIntoArray()
 	{
 		dynamic deserialized = this.DeserializeDynamic();
-		Assert.Equal(4, deserialized.deeper.Length);
-		Assert.Equal(true, deserialized.deeper[0]);
-		Assert.Equal(3.5, deserialized.deeper[1]);
-		Assert.Equal(new Extension(15, new byte[] { 1, 2, 3 }), deserialized.deeper[2]);
-		Assert.Equal<DateTime>(ExpectedDateTime, deserialized.deeper[3]);
+		Assert.Equal(4, deserialized.nestedArray.Length);
+		Assert.Equal(true, deserialized.nestedArray[0]);
+		Assert.Equal(3.5, deserialized.nestedArray[1]);
+		Assert.Equal(new Extension(15, new byte[] { 1, 2, 3 }), deserialized.nestedArray[2]);
+		Assert.Equal<DateTime>(ExpectedDateTime, deserialized.nestedArray[3]);
+	}
+
+	[Fact]
+	public void ReachIntoMap()
+	{
+		dynamic deserialized = this.DeserializeDynamic();
+		Assert.Equal("nestedValue", deserialized.nestedObject.nestedProp);
 	}
 
 	[Fact]
@@ -75,12 +82,12 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 		dynamic deserialized = this.DeserializeDynamic();
 		IReadOnlyDictionary<object, object?> dict = (IReadOnlyDictionary<object, object?>)deserialized;
 
-		Assert.Equal(5, dict.Count);
+		Assert.Equal(6, dict.Count);
 
-		Assert.True(dict.ContainsKey("deeper"));
-		Assert.IsType<object?[]>(dict["deeper"]);
-		Assert.True(dict.TryGetValue("deeper", out object? deeper));
-		Assert.IsType<object?[]>(deeper);
+		Assert.True(dict.ContainsKey("nestedArray"));
+		Assert.IsType<object?[]>(dict["nestedArray"]);
+		Assert.True(dict.TryGetValue("nestedArray", out object? nestedArray));
+		Assert.IsType<object?[]>(nestedArray);
 
 		Assert.False(dict.ContainsKey("doesnotexist"));
 		Assert.Throws<KeyNotFoundException>(() => dict["doesnotexist"]);
@@ -89,12 +96,12 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 		bool encounteredDeeper = false;
 		foreach (KeyValuePair<object, object?> item in dict)
 		{
-			encounteredDeeper |= item.Key is "deeper";
+			encounteredDeeper |= item.Key is "nestedArray";
 		}
 
 		Assert.True(encounteredDeeper);
 
-		Assert.Equal(["Prop1", "Prop2", "deeper", 45UL, -45L], dict.Keys);
+		Assert.Equal(["Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject"], dict.Keys);
 		Assert.Equal(dict.Count, dict.Values.Count());
 	}
 
@@ -116,18 +123,18 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.False(dict.Contains(new KeyValuePair<object, object?>("Prop1", "Value2")));
 		Assert.False(dict.Contains(new KeyValuePair<object, object?>("PropX", "Value2")));
 
-		KeyValuePair<object, object?>[] array = new KeyValuePair<object, object?>[6];
+		KeyValuePair<object, object?>[] array = new KeyValuePair<object, object?>[7];
 		dict.CopyTo(array, 1);
 		Assert.Null(array[0].Key);
 		Assert.Equal("Prop1", array[1].Key);
 		Assert.Equal("Value1", array[1].Value);
 
-		Assert.Equal(5, dict.Count);
+		Assert.Equal(6, dict.Count);
 
-		Assert.True(dict.ContainsKey("deeper"));
-		Assert.IsType<object?[]>(dict["deeper"]);
-		Assert.True(dict.TryGetValue("deeper", out object? deeper));
-		Assert.IsType<object?[]>(deeper);
+		Assert.True(dict.ContainsKey("nestedArray"));
+		Assert.IsType<object?[]>(dict["nestedArray"]);
+		Assert.True(dict.TryGetValue("nestedArray", out object? nestedArray));
+		Assert.IsType<object?[]>(nestedArray);
 
 		Assert.False(dict.ContainsKey("doesnotexist"));
 		Assert.Throws<KeyNotFoundException>(() => dict["doesnotexist"]);
@@ -136,12 +143,12 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 		bool encounteredDeeper = false;
 		foreach (KeyValuePair<object, object?> item in dict)
 		{
-			encounteredDeeper |= item.Key is "deeper";
+			encounteredDeeper |= item.Key is "nestedArray";
 		}
 
 		Assert.True(encounteredDeeper);
 
-		Assert.Equal(["Prop1", "Prop2", "deeper", 45UL, -45L], dict.Keys);
+		Assert.Equal(["Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject"], dict.Keys);
 		Assert.Equal(dict.Count, dict.Values.Count());
 	}
 
@@ -160,11 +167,13 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 		Assert.True(enumerator.MoveNext());
 		Assert.Equal("Prop2", enumerator.Current);
 		Assert.True(enumerator.MoveNext());
-		Assert.Equal("deeper", enumerator.Current);
+		Assert.Equal("nestedArray", enumerator.Current);
 		Assert.True(enumerator.MoveNext());
 		Assert.Equal(45UL, enumerator.Current);
 		Assert.True(enumerator.MoveNext());
 		Assert.Equal(-45L, enumerator.Current);
+		Assert.True(enumerator.MoveNext());
+		Assert.Equal("nestedObject", enumerator.Current);
 		Assert.False(enumerator.MoveNext());
 	}
 
@@ -187,12 +196,12 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 	{
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
-		writer.WriteMapHeader(5);
+		writer.WriteMapHeader(6);
 		writer.Write("Prop1");
 		writer.Write("Value1");
 		writer.Write("Prop2");
 		writer.Write(42);
-		writer.Write("deeper");
+		writer.Write("nestedArray");
 		writer.WriteArrayHeader(4);
 		writer.Write(true);
 		writer.Write(3.5);
@@ -202,6 +211,12 @@ public class DynamicSerializationTests(ITestOutputHelper logger) : MessagePackSe
 		writer.Write([1, 2, 3]);
 		writer.Write(-45); // negative int key for stretching tests
 		writer.Write(false);
+
+		writer.Write("nestedObject");
+		writer.WriteMapHeader(1);
+		writer.Write("nestedProp");
+		writer.Write("nestedValue");
+
 		writer.Flush();
 
 		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(seq));

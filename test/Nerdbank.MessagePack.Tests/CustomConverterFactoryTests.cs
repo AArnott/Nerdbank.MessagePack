@@ -3,7 +3,7 @@
 
 using System.Reflection;
 
-public partial class CustomConverterFactoryTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 {
 	[RpcMarshaled, GenerateShape]
 	internal partial interface IMarshaledInterface

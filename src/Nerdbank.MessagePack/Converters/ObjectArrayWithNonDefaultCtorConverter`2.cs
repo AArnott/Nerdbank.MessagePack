@@ -20,7 +20,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectArrayConverter{T}.ObjectArrayConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	PropertyAccessors<TDeclaringType>?[] properties,
-	DirectPropertyAccess<TDeclaringType, UnusedDataPacket> unusedDataProperty,
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty,
 	Func<TArgumentState> argStateCtor,
 	Constructor<TArgumentState, TDeclaringType> ctor,
 	DeserializableProperty<TArgumentState>?[] parameters,
@@ -55,7 +55,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				}
 				else
 				{
-					if (this.UnusedDataProperty.Setter is not null)
+					if (this.UnusedDataProperty?.Setter is not null)
 					{
 						unused ??= new();
 						unused.Add(index, reader.ReadRaw(context));
@@ -78,7 +78,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				{
 					deserialize.Read(ref argState, ref reader, context);
 				}
-				else if (this.UnusedDataProperty.Setter is not null)
+				else if (this.UnusedDataProperty?.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(i, reader.ReadRaw(context));
@@ -91,7 +91,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		TDeclaringType value = ctor(ref argState);
-		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
+		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
 		{
 			this.UnusedDataProperty.Setter(ref value, unused);
 		}
@@ -105,7 +105,6 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TDeclaringType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -158,7 +157,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 						assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
 						deserialize(ref argState, ref syncReader, context);
 					}
-					else if (this.UnusedDataProperty.Setter is not null)
+					else if (this.UnusedDataProperty?.Setter is not null)
 					{
 						unused ??= new();
 						unused.Add(propertyIndex, syncReader.ReadRaw(context));
@@ -230,7 +229,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 						{
 							deserialize(ref argState, ref syncReader, context);
 						}
-						else if (this.UnusedDataProperty.Setter is not null)
+						else if (this.UnusedDataProperty?.Setter is not null)
 						{
 							unused ??= new();
 							unused.Add(i, syncReader.ReadRaw(context));
@@ -278,7 +277,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		TDeclaringType value = ctor(ref argState);
 
-		if (unused is not null && value is not null && this.UnusedDataProperty.Setter is not null)
+		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
 		{
 			this.UnusedDataProperty.Setter(ref value, unused);
 		}

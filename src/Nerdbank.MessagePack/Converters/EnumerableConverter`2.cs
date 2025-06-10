@@ -36,7 +36,6 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TEnumerable? value, SerializationContext context)
 	{
 		if (value is null)
@@ -138,7 +137,6 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
 	{
 		int skipCount = (int)index!;
@@ -195,7 +193,6 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// <param name="reader">The reader.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
 	/// <returns>The element.</returns>
-	[Experimental("NBMsgPackAsync")]
 	protected ValueTask<TElement> ReadElementAsync(MessagePackAsyncReader reader, SerializationContext context)
 		=> elementConverter.ReadAsync(reader, context)!;
 }
@@ -230,7 +227,6 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 #pragma warning restore NBMsgPack031
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -261,7 +257,6 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public async ValueTask<TEnumerable> DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context)
 	{
 		context.DepthStep();
@@ -337,7 +332,6 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		if (this.ElementPrefersAsyncSerialization)
@@ -412,24 +406,19 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
-		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
-		try
-		{
-			for (int i = 0; i < count; i++)
-			{
-				elements[i] = this.ReadElement(ref reader, context);
-			}
 
-			return ctor(elements.Take(count));
-		}
-		finally
+		// Avoid ArrayPool, which provides only approximate sizes that requires .Take(int) to be used later,
+		// which is an allocation and requires much more native code gen for value types.
+		var elements = new TElement[count];
+		for (int i = 0; i < count; i++)
 		{
-			ArrayPool<TElement>.Shared.Return(elements);
+			elements[i] = this.ReadElement(ref reader, context);
 		}
+
+		return ctor(elements);
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		if (this.ElementPrefersAsyncSerialization)
@@ -456,20 +445,16 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
-			try
-			{
-				for (int i = 0; i < count; i++)
-				{
-					elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
-				}
 
-				return ctor(elements.Take(count));
-			}
-			finally
+			// Avoid ArrayPool, which provides only approximate sizes that requires .Take(int) to be used later,
+			// which is an allocation and requires much more native code gen for value types.
+			var elements = new TElement[count];
+			for (int i = 0; i < count; i++)
 			{
-				ArrayPool<TElement>.Shared.Return(elements);
+				elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
 			}
+
+			return ctor(elements);
 		}
 		else
 		{

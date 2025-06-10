@@ -6,8 +6,7 @@ using System.ComponentModel;
 [Trait("ShouldSerialize", "true")]
 public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 {
-	public ShouldSerializeTests(ITestOutputHelper logger)
-		: base(logger)
+	public ShouldSerializeTests()
 	{
 		// This class is full of partially serialized objects as part of testing serialization behavior.
 		// We don't want to fail to deserialize due to missing required properties.

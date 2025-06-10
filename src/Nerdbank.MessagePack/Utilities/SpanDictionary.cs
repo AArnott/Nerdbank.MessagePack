@@ -19,7 +19,7 @@ internal static class SpanDictionary
 	/// <typeparam name="TKey"><inheritdoc cref="SpanDictionary{TKey, TValue}" path="/typeparam[@name='TKey']"/></typeparam>
 	/// <inheritdoc cref="ToSpanDictionary{TSource, TKey, TValue}(IEnumerable{TSource}, Func{TSource, ReadOnlyMemory{TKey}}, Func{TSource, TValue}, ISpanEqualityComparer{TKey})"/>
 	/// <returns>The newly created <see cref="SpanDictionary{TKey, TValue}"/>.</returns>
-	public static SpanDictionary<TKey, TSource> ToSpanDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, ReadOnlyMemory<TKey>> keySelector, ISpanEqualityComparer<TKey> keyComparer)
+	internal static SpanDictionary<TKey, TSource> ToSpanDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, ReadOnlyMemory<TKey>> keySelector, ISpanEqualityComparer<TKey> keyComparer)
 		=> new(source.Select(t => new KeyValuePair<ReadOnlyMemory<TKey>, TSource>(keySelector(t), t)), keyComparer);
 
 	/// <summary>Maps the specified enumerable using a dictionary using the provided transformers.</summary>
@@ -31,7 +31,7 @@ internal static class SpanDictionary
 	/// <param name="valueSelector">The function that transforms an element from <paramref name="source"/> into a value in the dictionary.</param>
 	/// <param name="keyComparer">The equality comparer to use for matching keys.</param>
 	/// <returns>The newly created <see cref="SpanDictionary{TKey, TValue}"/>.</returns>
-	public static SpanDictionary<TKey, TValue> ToSpanDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, ReadOnlyMemory<TKey>> keySelector, Func<TSource, TValue> valueSelector, ISpanEqualityComparer<TKey> keyComparer)
+	internal static SpanDictionary<TKey, TValue> ToSpanDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, ReadOnlyMemory<TKey>> keySelector, Func<TSource, TValue> valueSelector, ISpanEqualityComparer<TKey> keyComparer)
 		=> new(source.Select(t => new KeyValuePair<ReadOnlyMemory<TKey>, TValue>(keySelector(t), valueSelector(t))), keyComparer);
 }
 

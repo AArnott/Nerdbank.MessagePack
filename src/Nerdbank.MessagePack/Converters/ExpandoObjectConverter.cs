@@ -22,12 +22,12 @@ namespace Nerdbank.MessagePack.Converters;
 /// </para>
 /// </remarks>
 [RequiresDynamicCode(Reasons.DynamicObject)]
-public class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
+internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 {
 	/// <summary>
 	/// A reusable, shareable instance of this converter.
 	/// </summary>
-	public static readonly ExpandoObjectConverter Instance = new();
+	internal static readonly ExpandoObjectConverter Instance = new();
 
 	/// <inheritdoc/>
 	public override ExpandoObject? Read(ref MessagePackReader reader, SerializationContext context)

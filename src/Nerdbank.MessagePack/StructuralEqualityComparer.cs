@@ -35,13 +35,13 @@ namespace Nerdbank.MessagePack;
 /// When using user-defined types for which this implementation is inappropriate,
 /// a custom implementation of <see cref="IEqualityComparer{T}"/> may be used if the type is used directly.
 /// But if the type is referenced in a type reference graph such that is used for by-value comparison,
-/// implementing <see cref="IDeepSecureEqualityComparer{T}"/> on that type will allow the type to take control
+/// implementing <see cref="IStructuralSecureEqualityComparer{T}"/> on that type will allow the type to take control
 /// of just its contribution to the hash code and equality comparison.
 /// <see cref="TypeShapeAttribute.Marshaller">Type surrogates</see> may alternatively be used for a
 /// simpler way to guide the comparison of a type.
 /// </para>
 /// <para>
-/// Types that define no (public or opted in) properties and do not implement <see cref="IDeepSecureEqualityComparer{T}"/> will throw a <see cref="NotSupportedException"/> when attempting to create an equality comparer.
+/// Types that define no (public or opted in) properties and do not implement <see cref="IStructuralSecureEqualityComparer{T}"/> will throw a <see cref="NotSupportedException"/> when attempting to create an equality comparer.
 /// </para>
 /// <para>
 /// This implementation should only be used for acyclic graphs, since cyclic graphs will cause a

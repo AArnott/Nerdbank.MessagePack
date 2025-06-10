@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class SerializationCallbackTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class SerializationCallbackTests : MessagePackSerializerTestBase
 {
 	private static readonly byte[] ObjectAsArrayMsgPack = new MessagePackSerializer().Serialize(new BusyClassArray { Name = "Alice" });
 	private static readonly byte[] ObjectAsMapMsgPack = new MessagePackSerializer().Serialize(new BusyClassMap { Name = "Alice" });

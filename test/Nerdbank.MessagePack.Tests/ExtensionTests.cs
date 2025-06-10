@@ -23,4 +23,16 @@ public class ExtensionTests
 		Assert.NotEqual(this.ext1a.GetHashCode(), this.ext2.GetHashCode());
 		Assert.NotEqual(this.ext1a.GetHashCode(), this.ext3.GetHashCode());
 	}
+
+	[Fact]
+	public void GetSecureHashCode_StructuralEquality()
+	{
+		// The secure hash code should be the same for two structurally equal extensions.
+		Assert.Equal(GetSecureHashCode(this.ext1a), GetSecureHashCode(this.ext1b));
+		Assert.NotEqual(GetSecureHashCode(this.ext1a), GetSecureHashCode(this.ext2));
+		Assert.NotEqual(GetSecureHashCode(this.ext1a), GetSecureHashCode(this.ext3));
+	}
+
+	private static long GetSecureHashCode<T>(T expected)
+		where T : IStructuralSecureEqualityComparer<T> => expected.GetSecureHashCode();
 }

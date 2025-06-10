@@ -85,7 +85,6 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -172,7 +171,6 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context)
 	{
 		if (value is null)
@@ -214,7 +212,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
 		var unionTypeShape = (IUnionTypeShape)typeShape;
-		JsonArray oneOfArray = [CreateOneOfElement(null, baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(baseConverter.GetType()))];
+		JsonArray oneOfArray = new(CreateOneOfElement(null, baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(baseConverter.GetType())));
 
 		foreach ((DerivedTypeIdentifier alias, _, ITypeShape shape) in subTypes.Serializers)
 		{

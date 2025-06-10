@@ -21,7 +21,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ObjectMapConverter<T>(
 	MapSerializableProperties<T> serializable,
 	MapDeserializableProperties<T>? deserializable,
-	DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty,
+	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
 	PropertyAssignmentTrackingManager<T> assignmentTrackingManager,
 	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
@@ -32,7 +32,7 @@ internal class ObjectMapConverter<T>(
 	/// <summary>
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
 	/// </summary>
-	protected DirectPropertyAccess<T, UnusedDataPacket> UnusedDataProperty => unusedDataProperty;
+	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
 
 	/// <summary>
 	/// Gets the property assignment tracking manager.
@@ -74,9 +74,9 @@ internal class ObjectMapConverter<T>(
 
 		callbacks?.OnAfterSerialize();
 
-		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket> unusedDataProperty, SerializationContext context)
+		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty, SerializationContext context)
 		{
-			UnusedDataPacket.Map? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
+			UnusedDataPacket.Map? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
 			writer.WriteMapHeader(properties.Length + (unused?.Count ?? 0));
 			foreach (SerializableProperty<T> property in properties)
 			{
@@ -89,7 +89,6 @@ internal class ObjectMapConverter<T>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 	{
 		if (value is null)
@@ -102,7 +101,7 @@ internal class ObjectMapConverter<T>(
 		callbacks?.OnBeforeSerialize();
 
 		context.DepthStep();
-		UnusedDataPacket.Map? unused = unusedDataProperty.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
+		UnusedDataPacket.Map? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
 		ReadOnlyMemory<SerializableProperty<T>> propertiesToSerialize;
 		SerializableProperty<T>[]? borrowedArray = null;
 		try
@@ -190,18 +189,18 @@ internal class ObjectMapConverter<T>(
 			context.ReportObjectConstructed(value);
 		}
 
-		if (deserializable.Value.Readers is not null)
+		if (deserializable.Readers is not null)
 		{
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
-				if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
+				if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 				{
 					assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 					propertyReader.Read(ref value, ref reader, context);
 				}
-				else if (unusedDataProperty.Setter is not null)
+				else if (unusedDataProperty?.Setter is not null)
 				{
 					unused ??= new();
 					unused.Add(propertyName, reader.ReadRaw(context));
@@ -220,7 +219,7 @@ internal class ObjectMapConverter<T>(
 
 		assignmentTracker.ReportDeserializationComplete();
 
-		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
+		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
 		{
 			unusedDataProperty.Setter(ref value, unused);
 		}
@@ -231,7 +230,6 @@ internal class ObjectMapConverter<T>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -264,7 +262,7 @@ internal class ObjectMapConverter<T>(
 			context.ReportObjectConstructed(value);
 		}
 
-		if (deserializable.Value.Readers is not null)
+		if (deserializable.Readers is not null)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -284,12 +282,12 @@ internal class ObjectMapConverter<T>(
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-					if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
+					if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 					{
 						assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 						propertyReader.Read(ref value, ref syncReader, context);
 					}
-					else if (unusedDataProperty.Setter is not null)
+					else if (unusedDataProperty?.Setter is not null)
 					{
 						unused ??= new();
 						unused.Add(propertyName, syncReader.ReadRaw(context));
@@ -310,7 +308,7 @@ internal class ObjectMapConverter<T>(
 					{
 						// The property name has already been buffered.
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-						if (deserializable.Value.Readers.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader))
+						if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 						{
 							assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 							if (propertyReader.PreferAsyncSerialization)
@@ -340,7 +338,7 @@ internal class ObjectMapConverter<T>(
 
 							streamingReader = reader.CreateStreamingReader();
 
-							if (unusedDataProperty.Setter is not null)
+							if (unusedDataProperty?.Setter is not null)
 							{
 								unused ??= new();
 								RawMessagePack msgpack;
@@ -384,7 +382,7 @@ internal class ObjectMapConverter<T>(
 
 		assignmentTracker.ReportDeserializationComplete();
 
-		if (unused is not null && value is not null && unusedDataProperty.Setter is not null)
+		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
 		{
 			unusedDataProperty.Setter(ref value, unused);
 		}
@@ -452,7 +450,6 @@ internal class ObjectMapConverter<T>(
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -528,7 +525,7 @@ internal class ObjectMapConverter<T>(
 	/// </remarks>
 	private protected virtual bool TryMatchPropertyName(ReadOnlySpan<byte> propertyName, string expectedName)
 	{
-		return deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T> propertyReader) is true && propertyReader.Name == expectedName;
+		return deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader) is true && propertyReader.Name == expectedName;
 	}
 
 	private Memory<SerializableProperty<T>> GetPropertiesToSerialize(in T value, Memory<SerializableProperty<T>> include)

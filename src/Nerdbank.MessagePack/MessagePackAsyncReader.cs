@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Microsoft;
 
@@ -22,7 +20,6 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 /// <exception cref="MessagePackSerializationException">Thrown when reading methods fail due to invalid data.</exception>
 /// <exception cref="EndOfStreamException">Thrown by reading methods when there are not enough bytes to read the required value.</exception>
-[Experimental("NBMsgPackAsync")]
 public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 {
 	private MessagePackStreamingReader.BufferRefresh? refresh;

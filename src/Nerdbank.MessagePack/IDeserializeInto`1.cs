@@ -36,6 +36,5 @@ internal interface IDeserializeInto<TCollectionType>
 	/// <remarks>
 	/// Implementations may assume that the messagepack token is not <see cref="MessagePackCode.Nil"/>.
 	/// </remarks>
-	[Experimental("NBMsgPackAsync")]
 	ValueTask<TCollectionType> DeserializeIntoAsync(MessagePackAsyncReader reader, TCollectionType collection, SerializationContext context);
 }

@@ -28,7 +28,7 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 			return StructuralByteArrayEqualityComparer.Default;
 		}
 
-		if (typeof(IDeepSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
+		if (typeof(IStructuralSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
 		{
 			return StructuralCustomEqualityComparer<T>.Default;
 		}

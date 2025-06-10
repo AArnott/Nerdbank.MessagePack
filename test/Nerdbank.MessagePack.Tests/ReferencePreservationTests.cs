@@ -6,8 +6,7 @@ using System.Collections.Generic;
 [Trait("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
-	public ReferencePreservationTests(ITestOutputHelper logger)
-		: base(logger)
+	public ReferencePreservationTests()
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 	}

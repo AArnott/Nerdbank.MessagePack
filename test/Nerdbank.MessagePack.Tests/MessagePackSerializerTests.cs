@@ -3,7 +3,7 @@
 
 using Xunit.Sdk;
 
-public partial class MessagePackSerializerTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 {
 	public enum SomeEnum
 	{

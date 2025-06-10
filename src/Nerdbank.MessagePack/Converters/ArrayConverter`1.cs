@@ -52,7 +52,6 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TElement[]? value, SerializationContext context)
 	{
 		if (value is null)
@@ -92,7 +91,6 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 	}
 
 	/// <inheritdoc/>
-	[Experimental("NBMsgPackAsync")]
 	public override async ValueTask<TElement[]?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();

@@ -14,17 +14,21 @@
 ## Features
 
 * Serializes in the compact and fast [MessagePack format](https://msgpack.org/).
-* [Performance](#perf) is on par with the highly tuned and popular MessagePack-CSharp library.
-* Automatically serialize any type annotated with the [PolyType](https://github.com/eiriktsarpalis/PolyType) `[GenerateShape]` attribute.
-* Automatically serialize non-annotated types by adding [a 'witness' type](https://aarnott.github.io/Nerdbank.MessagePack/docs/getting-started.html#witness) with a similar annotation.
+* [Performance](https://aarnott.github.io/Nerdbank.MessagePack/docs/performance.html) is on par with the highly tuned and popular MessagePack-CSharp library.
+* Automatically serialize any type annotated with the [PolyType `[GenerateShape]`](https://eiriktsarpalis.github.io/PolyType/api/PolyType.GenerateShapeAttribute.html) attribute
+  or non-annotated types by adding [a 'witness' type](https://aarnott.github.io/Nerdbank.MessagePack/docs/type-shapes.html#witness-classes) with a similar annotation.
 * Fast `ref`-based serialization and deserialization minimizes copying of large structs.
 * NativeAOT and trimming compatible.
+* Serialize only properties that have non-default values (optionally).
 * Keep memory pressure low by using async serialization directly to/from I/O like a network, IPC pipe or file.
+* [Streaming deserialization](https://aarnott.github.io/Nerdbank.MessagePack/docs/streaming-deserialization.html) for large or over-time sequences.
 * Primitive msgpack reader and writer APIs for low-level scenarios.
 * Author custom converters for advanced scenarios.
 * Security mitigations for stack overflows.
 * Optionally serialize your custom types as arrays of values instead of maps of names and value for more compact representation and even higher performance.
 * Support for serializing instances of certain types derived from the declared type and deserializing them back to their original runtime types using [unions](https://aarnott.github.io/Nerdbank.MessagePack/docs/unions.html).
+* Optionally [preserve reference equality](https://aarnott.github.io/Nerdbank.MessagePack/api/Nerdbank.MessagePack.MessagePackSerializer.html#Nerdbank_MessagePack_MessagePackSerializer_PreserveReferences) across serialization/deserialization.
+* Structural (i.e. deep, by-value) equality checking for arbitrary types, both with and without collision resistant hash functions.
 
 ## Usage
 
@@ -75,7 +79,7 @@ Here are some reasons a new library was created:
 * Nerdbank.MessagePack is far simpler to use. One attribute at the base of an object graph is typically all you need. MessagePack-CSharp demands attributes on every single type and every single field or property (even members that will not be serialized).
 * Nerdbank.MessagePack makes adding some long-sought for features from MessagePack-CSharp far easier to implement.
 
-See [a feature comparison table](https://aarnott.github.io/Nerdbank.MessagePack/docs/migrating.html#feature-comparison) that compares the two libraries.
+See [a feature comparison table](https://aarnott.github.io/Nerdbank.MessagePack/docs/features.html#feature-comparison) that compares the two libraries.
 
 ## Consuming CI builds
 

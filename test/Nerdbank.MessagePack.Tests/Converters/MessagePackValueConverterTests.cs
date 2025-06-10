@@ -3,7 +3,7 @@
 
 namespace Converters;
 
-public partial class MessagePackValueConverterTests(ITestOutputHelper logger) : MessagePackSerializerTestBase(logger)
+public partial class MessagePackValueConverterTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void Null() => this.AssertRoundtrip(MessagePackValue.Nil);
