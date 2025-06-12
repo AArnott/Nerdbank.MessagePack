@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Text.Json.Nodes;
 
@@ -15,13 +14,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// This can <em>deserialize</em> anything, but can only <em>serialize</em> object graphs for which every runtime type
 /// has a shape available as provided by <see cref="SerializationContext.TypeShapeProvider"/>.
 /// </para>
-/// <para>
-/// This converter is not included by default because it requires dynamic code support in the runtime.
-/// But it is offered as a converter that may be added to <see cref="MessagePackSerializer.Converters"/>
-/// in order to enable <see cref="ExpandoObject"/> serialization.
-/// </para>
 /// </remarks>
-[RequiresDynamicCode(Reasons.DynamicObject)]
 internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 {
 	/// <summary>
@@ -42,7 +35,7 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 		if (count > 0)
 		{
 			MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.ShapeProvider);
-			IDictionary<string, object?> dictionary = result;
+			IDictionary<string, object?> expandoAsDictionary = result;
 
 			context.DepthStep();
 			for (int i = 0; i < count; i++)
@@ -54,7 +47,7 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 				}
 
 				object? value = PrimitivesAsDynamicConverter.Instance.Read(ref reader, context);
-				dictionary.Add(key, value);
+				expandoAsDictionary.Add(key, value);
 			}
 		}
 
@@ -70,11 +63,11 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 			return;
 		}
 
-		IDictionary<string, object?> dict = value;
+		IDictionary<string, object?> expandoAsDictionary = value;
 		MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.ShapeProvider);
 
-		writer.WriteMapHeader(dict.Count);
-		foreach (KeyValuePair<string, object?> item in dict)
+		writer.WriteMapHeader(expandoAsDictionary.Count);
+		foreach (KeyValuePair<string, object?> item in expandoAsDictionary)
 		{
 			keyFormatter.Write(ref writer, item.Key, context);
 			if (item.Value is null)
