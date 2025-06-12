@@ -15,12 +15,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// <remarks>
 /// <para>
 /// This converter is not included by default because untyped serialization is not generally desirable.
-/// But it is offered as a converter that may be added to <see cref="MessagePackSerializer.Converters"/>
+/// It is offered as a converter that may be added to <see cref="MessagePackSerializer.Converters"/>
 /// in order to enable limited untyped serialization.
 /// </para>
 /// <para>
 /// Maps are deserialized as objects that implement <see cref="IReadOnlyDictionary{TKey, TValue}"/>
 /// where the key is <see cref="object"/> and the value is a nullable <see cref="object"/>.
+/// This converter deserializes an entire msgpack structure using these primitives,
+/// since no type information is available to deserialize any sub-graph as a higher-level type.
 /// </para>
 /// </remarks>
 /// <seealso cref="PrimitivesAsDynamicConverter"/>
@@ -38,14 +40,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 	/// <exception cref="NotSupportedException">Thrown if a msgpack map includes a <see langword="null" /> key.</exception>
 	/// <remarks>
 	/// <para>
-	/// The resulting object is designed to work conveniently with the C# <c>dynamic</c> type.
-	/// </para>
-	/// <para>
-	/// Maps become dynamic objects whose members are named after the keys in the maps.
-	/// When maps do not use string keys, the values are still accessible by using the indexer on the object.
-	/// Attempts to access values with keys that do not exist on the original msgpack object result in throwing a <see cref="KeyNotFoundException"/>.
-	/// All members on maps are discoverable using <see langword="foreach" />, which enumerates the keys on the object.
-	/// Maps also implement <see cref="IReadOnlyDictionary{TKey, TValue}"/> with <see cref="object" /> keys and values.
+	/// Maps implement <see cref="IReadOnlyDictionary{TKey, TValue}"/> with <see cref="object" /> keys and values.
 	/// </para>
 	/// <para>
 	/// Keep in mind when using integers that msgpack doesn't preserve integer length information.
@@ -200,88 +195,4 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 	/// <returns>The wrapper.</returns>
 	protected virtual IReadOnlyDictionary<object, object?> WrapDictionary(IReadOnlyDictionary<object, object?> content)
 		=> new IntegerStretchingDictionary(content ?? throw new ArgumentNullException(nameof(content)));
-
-	private class IntegerStretchingDictionary(IReadOnlyDictionary<object, object?> underlying) : IReadOnlyDictionary<object, object?>, IDictionary<object, object?>, System.Collections.IEnumerable
-	{
-		private ICollection<object>? keys;
-		private ICollection<object?>? values;
-
-		/// <inheritdoc/>
-		IEnumerable<object> IReadOnlyDictionary<object, object?>.Keys => underlying.Keys;
-
-		/// <inheritdoc/>
-		ICollection<object> IDictionary<object, object?>.Keys => this.keys ??= underlying.Keys as ICollection<object> ?? [.. underlying.Keys];
-
-		/// <inheritdoc/>
-		IEnumerable<object?> IReadOnlyDictionary<object, object?>.Values => underlying.Values;
-
-		/// <inheritdoc/>
-		ICollection<object?> IDictionary<object, object?>.Values => this.values ??= underlying.Values as ICollection<object?> ?? [.. underlying.Values];
-
-		/// <inheritdoc/>
-		int IReadOnlyCollection<KeyValuePair<object, object?>>.Count => underlying.Count;
-
-		/// <inheritdoc/>
-		int ICollection<KeyValuePair<object, object?>>.Count => underlying.Count;
-
-		/// <inheritdoc/>
-		bool ICollection<KeyValuePair<object, object?>>.IsReadOnly => true;
-
-		/// <inheritdoc/>
-		public object? this[object key] => underlying[StretchInteger(key)];
-
-		/// <inheritdoc/>
-		object? IDictionary<object, object?>.this[object key]
-		{
-			get => underlying[StretchInteger(key)];
-			set => throw new NotSupportedException();
-		}
-
-		/// <inheritdoc/>
-		public System.Collections.IEnumerator GetEnumerator() => underlying.Keys.GetEnumerator();
-
-		/// <inheritdoc/>
-		bool IReadOnlyDictionary<object, object?>.ContainsKey(object key) => underlying.ContainsKey(StretchInteger(key));
-
-		/// <inheritdoc/>
-		bool IDictionary<object, object?>.ContainsKey(object key) => underlying.ContainsKey(StretchInteger(key));
-
-		/// <inheritdoc/>
-		bool ICollection<KeyValuePair<object, object?>>.Contains(KeyValuePair<object, object?> item) => underlying.TryGetValue(StretchInteger(item.Key), out object? value) && EqualityComparer<object?>.Default.Equals(value, item.Value);
-
-		/// <inheritdoc/>
-		bool IReadOnlyDictionary<object, object?>.TryGetValue(object key, [MaybeNullWhen(false)] out object? value) => underlying.TryGetValue(StretchInteger(key), out value);
-
-		/// <inheritdoc/>
-		bool IDictionary<object, object?>.TryGetValue(object key, out object? value) => underlying.TryGetValue(StretchInteger(key), out value);
-
-		/// <inheritdoc/>
-		IEnumerator<KeyValuePair<object, object?>> IEnumerable<KeyValuePair<object, object?>>.GetEnumerator() => underlying.GetEnumerator();
-
-		/// <inheritdoc/>
-		void ICollection<KeyValuePair<object, object?>>.CopyTo(KeyValuePair<object, object?>[] array, int arrayIndex)
-		{
-			foreach (KeyValuePair<object, object?> item in underlying)
-			{
-				array[arrayIndex++] = item;
-			}
-		}
-
-		/// <inheritdoc/>
-		void IDictionary<object, object?>.Add(object key, object? value) => throw new NotSupportedException();
-
-		/// <inheritdoc/>
-		bool IDictionary<object, object?>.Remove(object key) => throw new NotSupportedException();
-
-		/// <inheritdoc/>
-		void ICollection<KeyValuePair<object, object?>>.Add(KeyValuePair<object, object?> item) => throw new NotSupportedException();
-
-		/// <inheritdoc/>
-		bool ICollection<KeyValuePair<object, object?>>.Remove(KeyValuePair<object, object?> item) => throw new NotSupportedException();
-
-		/// <inheritdoc/>
-		void ICollection<KeyValuePair<object, object?>>.Clear() => throw new NotSupportedException();
-
-		private static object StretchInteger(object key) => DynamicDictionary.StretchInteger(key);
-	}
 }

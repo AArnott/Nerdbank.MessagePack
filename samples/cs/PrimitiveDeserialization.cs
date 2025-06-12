@@ -7,10 +7,11 @@ namespace PrimitiveDeserialization
 {
     internal partial class PrimitiveDeserialization
     {
-        void DeserializeDynamic(MessagePackSerializer serializer, ref MessagePackReader reader)
+        void DeserializeDynamicPrimitives(MessagePackSerializer serializer, byte[] msgpack)
         {
-            #region DeserializePrimitives
-            dynamic? deserialized = serializer.DeserializeDynamic(ref reader);
+            #region DeserializeDynamicPrimitives
+            MessagePackReader reader = new(msgpack);
+            dynamic? deserialized = serializer.DeserializeDynamicPrimitives(ref reader);
             string prop1 = deserialized!.Prop1;
             int prop2 = deserialized.Prop2;
             bool deeperBool = deserialized.deeper.IsAdult;
@@ -20,6 +21,25 @@ namespace PrimitiveDeserialization
             foreach (object key in deserialized)
             {
                 Console.WriteLine($"{key}: {deserialized[key]}");
+            }
+            #endregion
+        }
+
+        void DeserializePrimitives(MessagePackSerializer serializer, byte[] msgpack)
+        {
+            #region DeserializePrimitives
+            MessagePackReader reader = new(msgpack);
+            object? deserialized = serializer.DeserializePrimitives(ref reader);
+            var map = (IReadOnlyDictionary<object, object?>)deserialized!;
+            string prop1 = (string)map!["Prop1"]!;
+            int prop2 = (int)map!["Prop2"]!;
+            bool deeperBool = (bool)((IReadOnlyDictionary<object, object?>)map["deeper"]!)["IsAdult"]!;
+            int age = (int)((IReadOnlyDictionary<object, object?>)((IReadOnlyDictionary<object, object?>)map["People"]!)[3]!)["Age"]!;
+
+            // Did we miss anything? Dump out all the keys and their values.
+            foreach (KeyValuePair<object, object?> pair in map)
+            {
+                Console.WriteLine($"{pair.Key}: {pair.Value}");
             }
             #endregion
         }
