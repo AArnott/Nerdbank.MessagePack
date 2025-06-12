@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -166,7 +165,12 @@ public static class OptionalConverters
 	/// <returns>The modified serializer.</returns>
 	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="object"/> has already been added.</exception>
 	/// <inheritdoc cref="PrimitivesAsObjectConverter" path="/remarks"/>
-	public static MessagePackSerializer WithObjectPrimitiveConverter(this MessagePackSerializer serializer)
+	/// <remarks>
+	/// Deserialized arrays will be typed as <see cref="object"/> arrays.
+	/// Deserialized dictionaries will be typed with <see cref="object"/> keys and values.
+	/// </remarks>
+	/// <seealso cref="WithDynamicObjectConverter(MessagePackSerializer)"/>
+	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		return serializer with
@@ -188,12 +192,11 @@ public static class OptionalConverters
 	/// <returns>The modified serializer.</returns>
 	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="object"/> has already been added.</exception>
 	/// <remarks>
-	/// This converter is very similar to the one added by <see cref="WithObjectPrimitiveConverter(MessagePackSerializer)"/>,
+	/// This converter is very similar to the one added by <see cref="WithObjectConverter(MessagePackSerializer)"/>,
 	/// except that the deserialized result can be used with the C# <c>dynamic</c> keyword where the content
 	/// of maps can also be accessed using <see langword="string"/> keys as if they were properties.
 	/// </remarks>
-	[RequiresDynamicCode(Reasons.DynamicObject)]
-	public static MessagePackSerializer WithObjectDynamicConverter(this MessagePackSerializer serializer)
+	public static MessagePackSerializer WithDynamicObjectConverter(this MessagePackSerializer serializer)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		return serializer with

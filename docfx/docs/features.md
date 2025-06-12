@@ -30,8 +30,8 @@ Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github
 Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) | [✅](https://serdedotnet.github.io/generator/options.html)
 Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] | [✅](https://serdedotnet.github.io/data-model.html)
 F# union type support     | [✅](fsharp.md) | ❌ | ❌ |
-Typeless serialization    | [✅](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectPrimitiveConverter*) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) | ❌ |
-`dynamic` serialization    | [✅](getting-started.md#deserialize-to-dynamic) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md) | ❌ |
+Typeless serialization    | [✅](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) | ❌ |
+`dynamic` serialization    | [✅](getting-started.md#untyped-deserialization) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md) | ❌ |
 Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) | 🌗 |
 Required and non-nullable property deserialization guaranteed | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeDefaultValues) | ❌ | ✅ |
 Dynamically use maps or arrays for most compact format | [✅](customizing-serialization.md#array-or-map) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/1953) | ❌ |

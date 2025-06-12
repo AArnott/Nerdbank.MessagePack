@@ -5,7 +5,6 @@
 
 using System.Collections.Immutable;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
@@ -288,6 +287,42 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Deserializes msgpack into primitive values, maps and arrays,
+	/// where the maps are specially implemented to play nicely with the C# <c>dynamic</c> keyword.
+	/// </summary>
+	/// <param name="reader">The source of msgpack to decode.</param>
+	/// <param name="cancellationToken">A cancellation token.</param>
+	/// <inheritdoc cref="PrimitivesAsObjectConverter.Read" path="/returns"/>
+	/// <remarks>
+	/// <inheritdoc cref="PrimitivesAsObjectConverter.Read" path="/remarks/para"/>
+	/// <para>
+	/// The resulting object is designed to work conveniently with the C# <c>dynamic</c> type.
+	/// Maps become dynamic objects whose members are named after the keys in the maps.
+	/// When maps do not use string keys, the values are still accessible by using the indexer on the object.
+	/// Attempts to access values with keys that do not exist on the original msgpack object result in throwing a <see cref="KeyNotFoundException"/>.
+	/// All members on maps are discoverable using <see langword="foreach" />, which enumerates the keys on the object.
+	/// </para>
+	/// </remarks>
+	/// <example>
+	/// <para>
+	/// The following snippet demonstrates a way to use this method.
+	/// </para>
+	/// <code source="../../samples/cs/PrimitiveDeserialization.cs" region="DeserializeDynamicPrimitives" lang="C#" />
+	/// </example>
+	public dynamic? DeserializeDynamicPrimitives(ref MessagePackReader reader, CancellationToken cancellationToken = default)
+	{
+		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.ShapeProvider, cancellationToken);
+		try
+		{
+			return PrimitivesAsDynamicConverter.Instance.Read(ref reader, context.Value);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
+	}
+
+	/// <summary>
 	/// Deserializes msgpack into primitive values, maps and arrays.
 	/// </summary>
 	/// <param name="reader">The source of msgpack to decode.</param>
@@ -300,13 +335,12 @@ public partial record MessagePackSerializer
 	/// </para>
 	/// <code source="../../samples/cs/PrimitiveDeserialization.cs" region="DeserializePrimitives" lang="C#" />
 	/// </example>
-	[RequiresDynamicCode(Reasons.DynamicObject)]
-	public dynamic? DeserializeDynamic(ref MessagePackReader reader, CancellationToken cancellationToken = default)
+	public object? DeserializePrimitives(ref MessagePackReader reader, CancellationToken cancellationToken = default)
 	{
 		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.ShapeProvider, cancellationToken);
 		try
 		{
-			return PrimitivesAsDynamicConverter.Instance.Read(ref reader, context.Value);
+			return PrimitivesAsObjectConverter.Instance.Read(ref reader, context.Value);
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{

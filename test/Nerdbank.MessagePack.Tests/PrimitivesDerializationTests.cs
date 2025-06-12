@@ -2,18 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections;
-using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder;
 
-[Trait("dynamic", "true")]
-public class DynamicSerializationTests : MessagePackSerializerTestBase
+public partial class PrimitivesDerializationTests : MessagePackSerializerTestBase
 {
-	private static readonly DateTime ExpectedDateTime = new(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc);
+	protected static readonly DateTime ExpectedDateTime = new(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc);
 
 	[Fact]
 	public void PositiveIntKeyStretching()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		Assert.IsType<byte[]>(deserialized[45]);
 		Assert.IsType<byte[]>(deserialized[45UL]);
 		Assert.IsType<byte[]>(deserialized[(byte)45]);
@@ -26,7 +24,7 @@ public class DynamicSerializationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void NegativeIntKeyStretching()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		Assert.IsType<bool>(deserialized[-45]);
 		Assert.IsType<bool>(deserialized[-45L]);
 		Assert.IsType<bool>(deserialized[(sbyte)-45]);
@@ -34,52 +32,31 @@ public class DynamicSerializationTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void SimpleValuesByMember()
-	{
-		dynamic deserialized = this.DeserializeDynamic();
-		Assert.NotNull(deserialized);
-		Assert.Equal("Value1", deserialized.Prop1);
-		Assert.Equal(42, (int)deserialized.Prop2);
-	}
-
-	[Fact]
 	public void SimpleValuesByIndex()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		Assert.Equal(new byte[] { 1, 2, 3 }, deserialized[45]);
-		Assert.Throws<RuntimeBinderException>(() => deserialized[45, 1]);
 	}
 
 	[Fact]
-	public void GetDynamicMemberNames()
+	public void Keys()
 	{
 		// C# doesn't offer a way to call this method like other languages would, so we'll call it directly.
-		DynamicObject deserialized = (DynamicObject)this.DeserializeDynamic();
-		Assert.Equal(["Prop1", "Prop2", "nestedArray", "nestedObject"], deserialized.GetDynamicMemberNames());
-	}
-
-	[Fact]
-	public void ReachIntoArray()
-	{
-		dynamic deserialized = this.DeserializeDynamic();
-		Assert.Equal(4, deserialized.nestedArray.Length);
-		Assert.Equal(true, deserialized.nestedArray[0]);
-		Assert.Equal(3.5, deserialized.nestedArray[1]);
-		Assert.Equal(new Extension(15, new byte[] { 1, 2, 3 }), deserialized.nestedArray[2]);
-		Assert.Equal<DateTime>(ExpectedDateTime, deserialized.nestedArray[3]);
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
+		Assert.Equal(["Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject"], deserialized.Keys);
 	}
 
 	[Fact]
 	public void ReachIntoMap()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
-		Assert.Equal("nestedValue", deserialized.nestedObject.nestedProp);
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
+		Assert.Equal("nestedValue", ((IDictionary<object, object?>)deserialized["nestedObject"]!)["nestedProp"]);
 	}
 
 	[Fact]
 	public void IReadOnlyDictionary()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		IReadOnlyDictionary<object, object?> dict = (IReadOnlyDictionary<object, object?>)deserialized;
 
 		Assert.Equal(6, dict.Count);
@@ -108,7 +85,7 @@ public class DynamicSerializationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void IDictionaryOfKV()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		IDictionary<object, object?> dict = (IDictionary<object, object?>)deserialized;
 
 		Assert.True(dict.IsReadOnly);
@@ -153,12 +130,12 @@ public class DynamicSerializationTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void Enumerate()
+	public void Enumerate_Dictionary()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
-		foreach (object key in deserialized)
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
+		foreach (KeyValuePair<object, object?> pair in deserialized)
 		{
-			this.Logger.WriteLine($"{key} ({key.GetType().Name}) = {deserialized[key]}");
+			this.Logger.WriteLine($"{pair.Key} ({pair.Key.GetType().Name}) = {deserialized[pair.Key]}");
 		}
 
 		IEnumerator enumerator = ((IEnumerable)deserialized).GetEnumerator();
@@ -178,21 +155,29 @@ public class DynamicSerializationTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void MissingMembers()
+	public void MissingMembers_Indexer()
 	{
-		dynamic deserialized = this.DeserializeDynamic();
-		Assert.Throws<KeyNotFoundException>(() => deserialized.nonexistent);
-		Assert.Throws<KeyNotFoundException>(() => deserialized[88]);
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
+		this.Logger.WriteLine(Assert.Throws<KeyNotFoundException>(() => deserialized[88]).Message);
 	}
 
-	private dynamic DeserializeDynamic()
+	[Fact]
+	public void WritingNotAllowed_Indexer()
+	{
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
+		this.Logger.WriteLine(Assert.Throws<NotSupportedException>(() => deserialized["doesNotExist"] = "hi").Message);
+		this.Logger.WriteLine(Assert.Throws<NotSupportedException>(() => deserialized["nestedObject"] = "hi").Message);
+	}
+
+	protected virtual IDictionary<object, object?> DeserializePrimitives()
 	{
 		MessagePackReader reader = this.ConstructReader();
-		dynamic deserialized = this.Serializer.DeserializeDynamic(ref reader, TestContext.Current.CancellationToken)!;
-		return deserialized;
+		object? deserialized = this.Serializer.DeserializePrimitives(ref reader, TestContext.Current.CancellationToken);
+		Assert.NotNull(deserialized);
+		return (IDictionary<object, object?>)deserialized;
 	}
 
-	private MessagePackReader ConstructReader()
+	protected MessagePackReader ConstructReader()
 	{
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
@@ -222,4 +207,7 @@ public class DynamicSerializationTests : MessagePackSerializerTestBase
 		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(seq));
 		return new MessagePackReader(seq);
 	}
+
+	[GenerateShape<IReadOnlyDictionary<MessagePackValue, object>>]
+	private partial class Witness;
 }

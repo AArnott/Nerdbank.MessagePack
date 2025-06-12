@@ -58,7 +58,7 @@ Data type | API to enable
 --|--
 @System.Guid | <xref:Nerdbank.MessagePack.OptionalConverters.WithGuidConverter*>
 @System.Dynamic.ExpandoObject | <xref:Nerdbank.MessagePack.OptionalConverters.WithExpandoObjectConverter*>
-@System.Object | <xref:Nerdbank.MessagePack.OptionalConverters.WithObjectPrimitiveConverter*> or <xref:Nerdbank.MessagePack.OptionalConverters.WithObjectDynamicConverter*>
+@System.Object | <xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*> or <xref:Nerdbank.MessagePack.OptionalConverters.WithDynamicObjectConverter*>
 @System.Text.Json.Nodes.JsonNode | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 @System.Text.Json.JsonElement | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 @System.Text.Json.JsonDocument | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
