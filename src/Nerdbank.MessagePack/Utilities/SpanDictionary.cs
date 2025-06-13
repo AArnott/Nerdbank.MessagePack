@@ -8,12 +8,28 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using EntryType = Nerdbank.MessagePack.Utilities.SpanDictionary.EntryType;
 
 namespace Nerdbank.MessagePack.Utilities;
 
 /// <summary>Defines factory methods for <see cref="SpanDictionary{TKey, TValue}"/>.</summary>
 internal static class SpanDictionary
 {
+	/// <summary>
+	/// Classifies an <see cref="SpanDictionary{TKey, TValue}.Entry" />.
+	/// </summary>
+	internal enum EntryType
+	{
+		/// <summary>Nothing in this bucket.</summary>
+		None,
+
+		/// <summary>A single entry is in this bucket.</summary>
+		Single,
+
+		/// <summary>Multiple entries are in this bucket.</summary>
+		Multi,
+	}
+
 	/// <summary>Maps the specified enumerable using a dictionary using the provided transformers.</summary>
 	/// <typeparam name="TSource">The type of element in the sequence to be converted to a dictionary.</typeparam>
 	/// <typeparam name="TKey"><inheritdoc cref="SpanDictionary{TKey, TValue}" path="/typeparam[@name='TKey']"/></typeparam>
@@ -133,13 +149,6 @@ internal sealed class SpanDictionary<TKey, TValue>
 				}
 			}
 		}
-	}
-
-	private enum EntryType
-	{
-		None,
-		Single,
-		Multi,
 	}
 
 	/// <summary>Gets the numbers of entries on the dictionary.</summary>
