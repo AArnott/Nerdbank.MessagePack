@@ -250,3 +250,14 @@ The converter factory applies this novel converter for any type that has a parti
 This example happens to also use techniques from the [stateful converters](#stateful-converters) section.
 
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterFactory)]
+
+## Real converters as samples
+
+The following are fully defined converters that add support for serializing data types that are not included in .NET, such that supporting them in-box would add extra dependencies to your application which many might find undesirable.
+But these converters are easily defined in your own application if/when you have such dependencies already.
+
+Remember to [register](#register-your-custom-converter) any of these user-defined converters of externally-defined data types.
+
+### <xref:System.BinaryData?displayProperty=fullName>
+
+[!code-csharp[](../../samples/cs/Converters/BinaryDataConverter.cs#Converter)]

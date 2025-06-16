@@ -328,7 +328,13 @@ namespace CustomConverterTypeRegistration
         {
             #region CustomConverterRegisteredAtRuntime
             MessagePackSerializer serializer = new();
-            serializer = serializer with { Converters = [new MyCustomTypeConverter()] };
+            serializer = serializer with
+            {
+                Converters = [
+                    .. serializer.Converters,    // preserve existing converters...
+                    new MyCustomTypeConverter(), // ... while adding our own.
+                ],
+            };
             #endregion
         }
     }
