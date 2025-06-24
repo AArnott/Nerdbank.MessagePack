@@ -56,11 +56,9 @@ Learn more about [witness classes](type-shapes.md#witness-classes).
 Not all types are suitable for serialization.
 I/O types (e.g. `Steam`) or types that are more about function that data (e.g. `Task<T>`, `CancellationToken`) are not suitable for serialization.
 
-Typeless serialization is not supported.
-For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time.
-
-Reference cycles in the object graph are not supported.
-[Reference equality preservation is an option](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) that can be turned on.
+For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time, by default.
+An [optional `object` converter](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) can be used to serialize any runtime type for which a shape is available. It will deserialize into maps, arrays, and primitives rather than the original type.
+[Custom converters](custom-converters.md) can be written to overcome these limitations where required.
 
 ## Converting to JSON
 
