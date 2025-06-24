@@ -126,6 +126,37 @@ public static class OptionalConverters
 	}
 
 	/// <summary>
+	/// Configures the built-in <see cref="DateTime"/> converter to assume a specific <see cref="DateTimeKind"/>
+	/// when serializing values that have a <see cref="DateTimeKind.Unspecified"/> kind.
+	/// </summary>
+	/// <param name="serializer">The serializer to add converters to.</param>
+	/// <param name="kind">Either <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/>.</param>
+	/// <returns>The modified serializer.</returns>
+	/// <remarks>
+	/// By default, serializing a <see cref="DateTime"/> with an <see cref="DateTimeKind.Unspecified"/> kind
+	/// throws an exception because the MessagePack format does not permit that kind of ambiguity.
+	/// While an explicit <see cref="DateTimeKind"/> is always preferred, this method allows you to
+	/// assume a specific <see cref="DateTimeKind"/> for such values.
+	/// Such assumptions will be recorded in the serialized data, such that deserializing the data
+	/// will produce a <see cref="DateTime"/> with the <see cref="DateTimeKind"/> specified
+	/// in <paramref name="kind"/>.
+	/// </remarks>
+	/// <exception cref="ArgumentException">Thrown if this method has already been called on the given <paramref name="serializer"/> or a custom <see cref="DateTime"/> converter has already been set.</exception>
+	public static MessagePackSerializer WithAssumedDateTimeKind(this MessagePackSerializer serializer, DateTimeKind kind)
+	{
+		Requires.NotNull(serializer, nameof(serializer));
+		Requires.Argument(kind is DateTimeKind.Utc or DateTimeKind.Local, nameof(kind), "Only UTC and Local DateTimeKind values are supported.");
+		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter<DateTime>(ReferencePreservationMode.Off, out MessagePackConverter<DateTime>? builtin));
+		return serializer with
+		{
+			Converters = [
+				..serializer.Converters.Except([builtin]),
+				new DateTimeConverter { UnspecifiedKindAssumption = kind },
+			],
+		};
+	}
+
+	/// <summary>
 	/// Adds a converter for <see cref="ExpandoObject"/> to the specified serializer.
 	/// </summary>
 	/// <param name="serializer">The serializer to add converters to.</param>

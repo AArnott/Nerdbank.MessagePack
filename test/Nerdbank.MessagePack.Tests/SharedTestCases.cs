@@ -23,6 +23,10 @@ public class SharedTestCases : MessagePackSerializerTestBase
 		// Add our optional converters to support types that are in this exhaustive test suite.
 		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.BinaryLittleEndian);
 
+		// The PolyType test cases don't consistently specify DateTimeKind.
+		// Make an assumption for Kind so we can get through them all.
+		this.Serializer = this.Serializer.WithAssumedDateTimeKind(DateTimeKind.Local);
+
 		try
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;

@@ -34,7 +34,8 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 
 ## Time
 
-- @System.DateTime
+- @System.DateTime - values with @System.DateTime.Kind?displayProperty=nameWithType left at @System.DateTimeKind.Unspecified will throw an exception by default.
+  Use <xref:Nerdbank.MessagePack.OptionalConverters.WithAssumedDateTimeKind*> to allow serialization of such values.
 - @System.DateTimeOffset
 - @System.DateOnly
 - @System.TimeOnly

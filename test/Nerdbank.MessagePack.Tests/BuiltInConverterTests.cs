@@ -105,6 +105,29 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public void DateTime() => this.AssertRoundtrip(new HasDateTime(System.DateTime.UtcNow));
 
 	[Fact]
+	public void DateTime_Unspecified()
+	{
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() =>
+			this.Serializer.Serialize(new HasDateTime(new System.DateTime(2000, 1, 1)), TestContext.Current.CancellationToken));
+		ArgumentException inner = Assert.IsType<ArgumentException>(ex.GetBaseException());
+		this.Logger.WriteLine(inner.Message);
+	}
+
+	[Theory]
+	[InlineData(DateTimeKind.Utc)]
+	[InlineData(DateTimeKind.Local)]
+	public void DateTime_Unspecified_UnderConfiguration(DateTimeKind kind)
+	{
+		this.Serializer = this.Serializer.WithAssumedDateTimeKind(kind);
+		DateTime original = new(2000, 1, 1); // Unspecified kind.
+		HasDateTime? deserialized = this.Roundtrip(new HasDateTime(original));
+
+		// Deserialized value should always be UTC.
+		Assert.Equal(System.DateTime.SpecifyKind(original, kind).ToUniversalTime(), deserialized?.Value);
+		Assert.Equal(DateTimeKind.Utc, deserialized?.Value.Kind);
+	}
+
+	[Fact]
 	public void DateTimeOffset() => this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now));
 
 	private (Guid Before, Guid After) RoundtripModifiedGuid(Func<string, string> modifier, MessagePackSerializer? serializer = null, MessagePackSerializer? deserializer = null)

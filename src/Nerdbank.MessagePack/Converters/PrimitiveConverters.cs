@@ -4,7 +4,6 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -610,11 +609,29 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 /// </summary>
 internal class DateTimeConverter : MessagePackConverter<DateTime>
 {
+	/// <summary>
+	/// Gets the <see cref="DateTimeKind"/> the be used when serializing
+	/// <see cref="DateTime"/> values whose <see cref="DateTime.Kind"/> value
+	/// is left <see cref="DateTimeKind.Unspecified"/>.
+	/// </summary>
+	internal DateTimeKind? UnspecifiedKindAssumption { get; init; }
+
 	/// <inheritdoc/>
 	public override DateTime Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadDateTime();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in DateTime value, SerializationContext context) => writer.Write(value);
+	public override void Write(ref MessagePackWriter writer, in DateTime value, SerializationContext context)
+	{
+		if (value.Kind == DateTimeKind.Unspecified && this.UnspecifiedKindAssumption.HasValue)
+		{
+			// If the Kind is unspecified, use the user-supplied assumed Kind.
+			writer.Write(DateTime.SpecifyKind(value, this.UnspecifiedKindAssumption.Value));
+		}
+		else
+		{
+			writer.Write(value);
+		}
+	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime);
