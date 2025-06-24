@@ -16,4 +16,23 @@ public class OptionalConvertersTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.BinaryLittleEndian);
 		Assert.Throws<ArgumentException>(() => this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.StringN));
 	}
+
+	[Fact]
+	public void WithAssumedDateTimeKind_InvalidInputs()
+	{
+		// The valid inputs are tested in the BuiltInConverterTests class.
+		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithAssumedDateTimeKind(null!, DateTimeKind.Local));
+		Assert.Throws<ArgumentException>("kind", () => OptionalConverters.WithAssumedDateTimeKind(this.Serializer, (DateTimeKind)999));
+		Assert.Throws<ArgumentException>("kind", () => OptionalConverters.WithAssumedDateTimeKind(this.Serializer, DateTimeKind.Unspecified));
+	}
+
+	[Fact]
+	public void WithAssumedDateTimeKind_Twice()
+	{
+		ArgumentException ex = Assert.Throws<ArgumentException>(
+			   () => this.Serializer
+			   .WithAssumedDateTimeKind(DateTimeKind.Local)
+			   .WithAssumedDateTimeKind(DateTimeKind.Utc));
+		this.Logger.WriteLine(ex.Message);
+	}
 }

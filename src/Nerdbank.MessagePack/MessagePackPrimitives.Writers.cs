@@ -751,12 +751,13 @@ public static partial class MessagePackPrimitives
 	/// Writes a <see cref="DateTime"/> value to the specified buffer, if the buffer is large enough.
 	/// </summary>
 	/// <param name="destination">The buffer to write to. This should be at least 315 bytes in length to ensure success.</param>
-	/// <param name="value">The <see cref="DateTime"/> value to write.</param>
+	/// <param name="value">The <see cref="DateTime"/> value to write. This must not have <see cref="DateTime.Kind" /> set to <see cref="DateTimeKind.Unspecified" />.</param>
 	/// <param name="bytesWritten">The number of bytes required to write the value, whether successful or not.</param>
 	/// <returns>
 	/// <see langword="true" /> if <paramref name="destination"/> was large enough and the value written; otherwise, <see langword="false" />.
 	/// When <see langword="false"/>, the value of <paramref name="bytesWritten"/> indicates how many bytes are required to write the value successfully.
 	/// </returns>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="value" /> has a <see cref="DateTime.Kind" /> set to <see cref="DateTimeKind.Unspecified" />.</exception>
 	/// <remarks>
 	/// The value is encoded as an extension type with a type code of <see cref="ReservedMessagePackExtensionTypeCode.DateTime"/>.
 	/// </remarks>
@@ -771,11 +772,15 @@ public static partial class MessagePackPrimitives
 		// Ext8(12,-1) => nanoseconds + seconds | [-584554047284-02-23 16:59:44 UTC, 584554051223-11-09 07:00:16.000000000 UTC) range
 
 		// The spec requires UTC. Convert to UTC if we're sure the value was expressed as Local time.
-		// If it's Unspecified, we want to leave it alone since .NET will change the value when we convert
-		// and we simply don't know, so we should leave it as-is.
-		if (value.Kind == DateTimeKind.Local)
+		// If it's Unspecified, we just don't know and upon deserialization UTC will be assumed.
+		// Avoid silent datetime corruption by throwing here to force our caller to specify the Kind before serialization.
+		switch (value.Kind)
 		{
-			value = value.ToUniversalTime();
+			case DateTimeKind.Local:
+				value = value.ToUniversalTime();
+				break;
+			case DateTimeKind.Unspecified:
+				throw new ArgumentException("DateTime.Kind must be specified before serialization, but was Unspecified.");
 		}
 
 		long secondsSinceBclEpoch = value.Ticks / TimeSpan.TicksPerSecond;

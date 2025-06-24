@@ -477,9 +477,10 @@ public ref struct MessagePackWriter
 	/// <summary>
 	/// Writes a <see cref="DateTime"/> using the message code <see cref="ReservedMessagePackExtensionTypeCode.DateTime"/>.
 	/// </summary>
-	/// <param name="dateTime">The value to write.</param>
+	/// <param name="value">The value to write. This must not have <see cref="DateTime.Kind" /> set to <see cref="DateTimeKind.Unspecified" />.</param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="value" /> has a <see cref="DateTime.Kind" /> set to <see cref="DateTimeKind.Unspecified" />.</exception>
 	/// <exception cref="NotSupportedException">Thrown when <see cref="OldSpec"/> is true because the old spec does not define a <see cref="DateTime"/> format.</exception>
-	public void Write(DateTime dateTime)
+	public void Write(DateTime value)
 	{
 		if (this.OldSpec)
 		{
@@ -488,7 +489,7 @@ public ref struct MessagePackWriter
 		else
 		{
 			Span<byte> span = this.writer.GetSpan(15);
-			Assumes.True(MessagePackPrimitives.TryWrite(span, dateTime, out int written));
+			Assumes.True(MessagePackPrimitives.TryWrite(span, value, out int written));
 			this.writer.Advance(written);
 		}
 	}
