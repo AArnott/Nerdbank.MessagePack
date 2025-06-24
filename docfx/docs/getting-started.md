@@ -24,9 +24,17 @@ C# automatically produces errors if you try to use certain newer language featur
 
 ## Usage
 
-Given a type annotated with [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) like this:
+Given a type annotated with <xref:PolyType.GenerateShapeAttribute> like this:
 
 [!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecord)]
+
+> [!IMPORTANT]
+> All types attributed with <xref:PolyType.GenerateShapeAttribute> must be declared with the `partial` modifier.
+> If these are nested types, all containing types must also have the `partial` modifier.
+
+Only the top-level types that you serialize need <xref:PolyType.GenerateShapeAttribute>.
+All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.
+This means that only the top-level types need to be declared with the `partial` modifier.
 
 You can serialize and deserialize it like this:
 
@@ -39,9 +47,6 @@ You can serialize and deserialize it like this:
 [!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecordRoundtripNETFX)]
 
 ---
-
-Only the top-level types that you serialize need the attribute.
-All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.
 
 If you need to directly serialize a type that isn't declared in your project and is not annotated with `[GenerateShape]`, you can define another class in your own project to provide that shape.
 Learn more about [witness classes](type-shapes.md#witness-classes).
