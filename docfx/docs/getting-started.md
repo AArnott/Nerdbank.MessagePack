@@ -24,9 +24,17 @@ C# automatically produces errors if you try to use certain newer language featur
 
 ## Usage
 
-Given a type annotated with [`GenerateShapeAttribute`](xref:PolyType.GenerateShapeAttribute) like this:
+Given a type annotated with <xref:PolyType.GenerateShapeAttribute> like this:
 
 [!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecord)]
+
+> [!IMPORTANT]
+> All types attributed with <xref:PolyType.GenerateShapeAttribute> must be declared with the `partial` modifier.
+> If these are nested types, all containing types must also have the `partial` modifier.
+
+Only the top-level types that you serialize need <xref:PolyType.GenerateShapeAttribute>.
+All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.
+This means that only the top-level types need to be declared with the `partial` modifier.
 
 You can serialize and deserialize it like this:
 
@@ -40,9 +48,6 @@ You can serialize and deserialize it like this:
 
 ---
 
-Only the top-level types that you serialize need the attribute.
-All types that they reference will automatically have their 'shape' source generated as well so the whole object graph can be serialized.
-
 If you need to directly serialize a type that isn't declared in your project and is not annotated with `[GenerateShape]`, you can define another class in your own project to provide that shape.
 Learn more about [witness classes](type-shapes.md#witness-classes).
 
@@ -51,11 +56,9 @@ Learn more about [witness classes](type-shapes.md#witness-classes).
 Not all types are suitable for serialization.
 I/O types (e.g. `Steam`) or types that are more about function that data (e.g. `Task<T>`, `CancellationToken`) are not suitable for serialization.
 
-Typeless serialization is not supported.
-For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time.
-
-Reference cycles in the object graph are not supported.
-[Reference equality preservation is an option](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) that can be turned on.
+For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time, by default.
+An [optional `object` converter](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) can be used to serialize any runtime type for which a shape is available. It will deserialize into maps, arrays, and primitives rather than the original type.
+[Custom converters](custom-converters.md) can be written to overcome these limitations where required.
 
 ## Converting to JSON
 

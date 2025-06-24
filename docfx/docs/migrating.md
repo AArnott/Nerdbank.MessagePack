@@ -173,8 +173,10 @@ In Nerdbank.MessagePack, security mitigations are provided by the @Nerdbank.Mess
 
 Some functionality in MessagePack-CSharp has no equivalent in Nerdbank.MessagePack, as follows:
 
-- Typeless serialization: MessagePack-CSharp supports serializing and deserializing objects without knowing their type at compile time.
-  Nerdbank.MessagePack requires knowing at least something about the type (see [Unions](unions.md)) at compile time for security reasons and NativeAOT support.
+- Typeless serialization: MessagePack-CSharp supports serializing and deserializing objects without knowing their type at compile time by serializing the type name after a runtime type check. Deserialization activates an object matching the original type.
+
+  Nerdbank.MessagePack generally requires knowing at least something about the type (see [Unions](unions.md)) at compile time for security reasons and NativeAOT support.
+  An [optional `object` converter](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) can be used to serialize any runtime type for which a shape is available. It will deserialize into maps, arrays, and primitives rather than the original type.
   [Custom converters](custom-converters.md) can be written to overcome these limitations where required.
 
 ### Other API changes
