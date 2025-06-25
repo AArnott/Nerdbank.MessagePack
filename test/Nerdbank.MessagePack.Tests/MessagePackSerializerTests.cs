@@ -175,6 +175,22 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		await this.AssertRoundtripAsync(testData);
 	}
 
+	[Fact]
+	public void ReadOnlyObjectProperty_IsNotSerialized()
+	{
+		ClassWithReadOnlyObjectProperty obj = new() { AgeAccessor = 15 };
+		byte[] msgpack = this.Serializer.Serialize(obj, TestContext.Current.CancellationToken);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(0, reader.ReadMapHeader());
+	}
+
+	[Fact]
+	public void ReadOnlyObjectPropertyWithCtorParameter_IsSerialized()
+	{
+		ClassWithReadOnlyObjectPropertyAndCtorParam obj = new(15);
+		this.AssertRoundtrip(obj);
+	}
+
 	/// <summary>
 	/// Verifies that an unexpected nil value doesn't disturb deserializing readonly collections.
 	/// </summary>
@@ -431,6 +447,28 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 
 		public bool Equals(ClassWithReadOnlyCollectionProperties? other)
 			=> StructuralEquality.Equal(this.List, other?.List) && StructuralEquality.Equal(this.Dictionary, other?.Dictionary);
+	}
+
+	[GenerateShape]
+	public partial class ClassWithReadOnlyObjectProperty : IEquatable<ClassWithReadOnlyObjectProperty>
+	{
+		public int Age => this.AgeAccessor;
+
+		internal int AgeAccessor { get; set; }
+
+		public bool Equals(ClassWithReadOnlyObjectProperty? other) => other is not null && this.Age == other.Age;
+	}
+
+	[GenerateShape]
+	public partial class ClassWithReadOnlyObjectPropertyAndCtorParam : IEquatable<ClassWithReadOnlyObjectPropertyAndCtorParam>
+	{
+		public ClassWithReadOnlyObjectPropertyAndCtorParam(int age) => this.AgeAccessor = age;
+
+		public int Age => this.AgeAccessor;
+
+		internal int AgeAccessor { get; set; }
+
+		public bool Equals(ClassWithReadOnlyObjectPropertyAndCtorParam? other) => other is not null && this.Age == other.Age;
 	}
 
 	[GenerateShape]

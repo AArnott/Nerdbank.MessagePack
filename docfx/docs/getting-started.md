@@ -51,6 +51,8 @@ You can serialize and deserialize it like this:
 If you need to directly serialize a type that isn't declared in your project and is not annotated with `[GenerateShape]`, you can define another class in your own project to provide that shape.
 Learn more about [witness classes](type-shapes.md#witness-classes).
 
+Learn more about serialization policies and how to customize them over at [Customizing Serialization](customizing-serialization.md).
+
 ### Limitations
 
 Not all types are suitable for serialization.

@@ -11,13 +11,23 @@ Review the API documentation for each property to learn about them.
 
 ## Including/excluding members
 
-By default, only public properties and fields are included in serialization.
-
-Non-public fields and properties may be included by applying @PolyType.PropertyShapeAttribute to the member.
-
-Public fields and properties may similarly be *excluded* from serialiation by applying @PolyType.PropertyShapeAttribute to the member and settings its @PolyType.PropertyShapeAttribute.Ignore property to `true`.
+- Public properties (and fields) are serialized by default. Opt out by applying <xref:PolyType.PropertyShapeAttribute> with <xref:PolyType.PropertyShapeAttribute.Ignore> set to `true`.
+- Non-public properties (and fields) are ignored by default. Opt in by applying <xref:PolyType.PropertyShapeAttribute>.
 
 [!code-csharp[](../../samples/cs/CustomizingSerialization.cs#IncludingExcludingMembers)]
+
+The following additional constraints apply to properties:
+
+- Properties typed as collections that expose only a `get` accessor are serialized, and may be deserialized _if_ the property is initialized with an instance of the collection in the object's constructor, using the collection's Add method.
+- Non-collection properties are only serialized when they expose a `get` accessor _and_ either a `set`/`init` accessor or a matching deserializing constructor parameter.
+
+There are serialization options that impact whether a particular object's properties get serialized, including <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues> and <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeDefaultValues>.
+
+## Required properties
+
+Properties (and fields) with the `required` modifier or that appear in the deserializing constructor as a parameter without a default value specified are considered required during deserialization.
+This means that a value for these members *must* appear in the data for an object to deserialize.
+Individual members may override their required status through <xref:PolyType.PropertyShapeAttribute.IsRequired?displayProperty=nameWithType>.
 
 ## Changing property name
 
