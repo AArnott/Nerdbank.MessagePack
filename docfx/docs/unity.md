@@ -37,7 +37,7 @@ This warning does not apply for uses of the @PolyType.GenerateShapeAttribute`1 a
 
 ### PolyType name collisions
 
-If you encounter a compilation error suc as the following:
+If you encounter a compilation error such as the following:
 
 > error CS0234: The type or namespace name 'ptSubject' does not exist in the namespace 'PolyType'"
 
