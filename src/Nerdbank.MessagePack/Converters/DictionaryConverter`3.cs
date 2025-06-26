@@ -3,7 +3,6 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -174,13 +173,15 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 /// <param name="keyConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='keyConverter']"/></param>
 /// <param name="valueConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='valueConverter']"/></param>
 /// <param name="addEntry">The delegate that adds an entry to the dictionary.</param>
-/// <param name="ctor">The default constructor for the dictionary type.</param>
+/// <param name="ctor">The constructor for the dictionary type.</param>
+/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
 internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry,
-	Func<TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
+	MutableCollectionConstructor<TKey, TDictionary> ctor,
+	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 	where TKey : notnull
 {
 	/// <inheritdoc/>
@@ -195,7 +196,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			return default;
 		}
 
-		TDictionary result = ctor();
+		TDictionary result = ctor(collectionConstructionOptions);
 		this.DeserializeInto(ref reader, ref result, context);
 		return result;
 	}
@@ -280,11 +281,13 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 /// <param name="keyConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='keyConverter']"/></param>
 /// <param name="valueConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='valueConverter']"/></param>
 /// <param name="ctor">A dictionary initializer that constructs from a span of entries.</param>
+/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
 internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
-	SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> ctor,
+	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 	where TKey : notnull
 {
 	/// <inheritdoc/>
@@ -306,7 +309,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 				entries[i] = new(key, value);
 			}
 
-			return ctor(entries.AsSpan(0, count));
+			return ctor(entries.AsSpan(0, count), collectionConstructionOptions);
 		}
 		finally
 		{
@@ -323,11 +326,13 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 /// <param name="keyConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='keyConverter']"/></param>
 /// <param name="valueConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='valueConverter']"/></param>
 /// <param name="ctor">A dictionary initializer that constructs from an enumerable of entries.</param>
+/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
 internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
-	Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> ctor) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> ctor,
+	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 	where TKey : notnull
 {
 	/// <inheritdoc/>
@@ -349,7 +354,7 @@ internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
 				entries[i] = new(key, value);
 			}
 
-			return ctor(entries.Take(count));
+			return ctor(entries.Take(count), collectionConstructionOptions);
 		}
 		finally
 		{

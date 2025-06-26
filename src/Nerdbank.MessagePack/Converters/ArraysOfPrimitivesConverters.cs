@@ -26,7 +26,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <param name="spanConstructor">The constructor for the enumerable type.</param>
 	private abstract class PrimitiveArrayConverter<TEnumerable, TElement>(
 		Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-		SpanConstructor<TElement, TEnumerable>? spanConstructor) : MessagePackConverter<TEnumerable>
+		SpanCollectionConstructor<TElement, TElement, TEnumerable>? spanConstructor) : MessagePackConverter<TEnumerable>
 		where TElement : unmanaged
 	{
 		/// <summary>
