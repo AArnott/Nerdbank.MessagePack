@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
 
@@ -19,20 +18,24 @@ namespace Nerdbank.MessagePack.Converters;
 /// </remarks>
 internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConverter<TEnum>
 	where TEnum : struct, Enum
+	where TUnderlyingType : unmanaged
 {
-	private readonly SpanDictionary<byte, TEnum> valueByUtf8Name;
-	private readonly Dictionary<string, TEnum> valueByName = new(StringComparer.OrdinalIgnoreCase);
-	private readonly Dictionary<TEnum, ReadOnlyMemory<byte>> msgpackEncodedNameByValue = new();
+	private readonly SpanDictionary<byte, TUnderlyingType> valueByUtf8Name;
+	private readonly Dictionary<string, TUnderlyingType> valueByName;
+	private readonly Dictionary<TUnderlyingType, ReadOnlyMemory<byte>> msgpackEncodedNameByValue = new();
 	private readonly MessagePackConverter<TUnderlyingType> primitiveConverter;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="EnumAsStringConverter{TEnum, TUnderlyingType}"/> class.
 	/// </summary>
 	/// <param name="primitiveConverter">The converter for the primitive underlying type.</param>
-	public EnumAsStringConverter(MessagePackConverter<TUnderlyingType> primitiveConverter)
+	/// <param name="members">A map of the enum members.</param>
+	public EnumAsStringConverter(MessagePackConverter<TUnderlyingType> primitiveConverter, IReadOnlyDictionary<string, TUnderlyingType> members)
 	{
 		this.primitiveConverter = primitiveConverter;
 
+		// First try in case-insensitive mode.
+		this.valueByName = new(StringComparer.OrdinalIgnoreCase);
 		if (!TryPopulateDictionary())
 		{
 			// Fallback to case sensitive mode.
@@ -41,55 +44,36 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 			Assumes.True(TryPopulateDictionary(), $"Failed to populate enum fields from {typeof(TEnum).FullName}.");
 		}
 
-		this.valueByUtf8Name = new SpanDictionary<byte, TEnum>(this.valueByName.Select(n => new KeyValuePair<ReadOnlyMemory<byte>, TEnum>(StringEncoding.UTF8.GetBytes(n.Key), n.Value)), ByteSpanEqualityComparer.Ordinal);
+		this.valueByUtf8Name = new SpanDictionary<byte, TUnderlyingType>(this.valueByName.Select(n => new KeyValuePair<ReadOnlyMemory<byte>, TUnderlyingType>(StringEncoding.UTF8.GetBytes(n.Key), n.Value)), ByteSpanEqualityComparer.Ordinal);
 
 		bool TryPopulateDictionary()
 		{
 			bool nonUniqueNameDetected = false;
-#if NET
-			foreach (TEnum value in Enum.GetValues<TEnum>())
-#else
-			foreach (TEnum value in Enum.GetValues(typeof(TEnum)))
-#endif
+			foreach (KeyValuePair<string, TUnderlyingType> pair in members)
 			{
-#if NET
-				if (Enum.GetName(value) is string name)
-#else
-				if (Enum.GetName(typeof(TEnum), value) is string name)
-#endif
+				if (!this.valueByName.TryAdd(pair.Key, pair.Value))
 				{
-					if (!this.valueByName.TryAdd(name, value))
+					if (!EqualityComparer<TUnderlyingType>.Default.Equals(this.valueByName[pair.Key], pair.Value))
 					{
-						if (!EqualityComparer<TEnum>.Default.Equals(this.valueByName[name], value))
-						{
-							// Unique values assigned to names that collided, apparently only by case.
-							return false;
-						}
-
-						nonUniqueNameDetected = true;
+						// Unique values assigned to names that collided, apparently only by case.
+						return false;
 					}
 
-					// Values may be assigned to multiple names, so we don't guarantee uniqueness.
-					StringEncoding.GetEncodedStringBytes(name, out _, out ReadOnlyMemory<byte> msgpackEncodedName);
-					this.msgpackEncodedNameByValue.TryAdd(value, msgpackEncodedName);
+					nonUniqueNameDetected = true;
 				}
+
+				// Values may be assigned to multiple names, so we don't guarantee uniqueness.
+				StringEncoding.GetEncodedStringBytes(pair.Key, out _, out ReadOnlyMemory<byte> msgpackEncodedName);
+				this.msgpackEncodedNameByValue.TryAdd(pair.Value, msgpackEncodedName);
 			}
 
 			if (nonUniqueNameDetected)
 			{
 				// Enumerate values and ensure we have all the names indexed so we can deserialize them.
-#if NET
-				foreach (string name in Enum.GetNames<TEnum>())
+				foreach (KeyValuePair<string, TUnderlyingType> pair in members)
 				{
-					this.valueByName.TryAdd(name, Enum.Parse<TEnum>(name));
+					this.valueByName.TryAdd(pair.Key, pair.Value);
 				}
-#else
-				foreach (string name in Enum.GetNames(typeof(TEnum)))
-				{
-					Assumes.True(Enum.TryParse(name, out TEnum value));
-					this.valueByName.TryAdd(name, value);
-				}
-#endif
 			}
 
 			return true;
@@ -102,7 +86,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 		if (reader.NextMessagePackType == MessagePackType.String)
 		{
 			string stringValue;
-			TEnum value;
+			TUnderlyingType value;
 
 			// Try to avoid any allocations by reading the string as a span.
 			// This only works for case sensitive matches, so be prepared to fallback to string comparisons.
@@ -110,7 +94,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 			{
 				if (this.valueByUtf8Name.TryGetValue(span, out value))
 				{
-					return value;
+					return (TEnum)(object)value; // The JIT will optimize the boxing away.
 				}
 
 				stringValue = StringEncoding.UTF8.GetString(span);
@@ -122,7 +106,7 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 
 			if (this.valueByName.TryGetValue(stringValue, out value))
 			{
-				return value;
+				return (TEnum)(object)value; // The JIT will optimize the boxing away.
 			}
 			else
 			{
@@ -138,13 +122,14 @@ internal class EnumAsStringConverter<TEnum, TUnderlyingType> : MessagePackConver
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TEnum value, SerializationContext context)
 	{
-		if (this.msgpackEncodedNameByValue.TryGetValue(value, out ReadOnlyMemory<byte> name))
+		TUnderlyingType typedValue = (TUnderlyingType)(object)value;
+		if (this.msgpackEncodedNameByValue.TryGetValue(typedValue, out ReadOnlyMemory<byte> name))
 		{
 			writer.WriteRaw(name.Span);
 		}
 		else
 		{
-			this.primitiveConverter.Write(ref writer, (TUnderlyingType)(object)value, context);
+			this.primitiveConverter.Write(ref writer, typedValue, context);
 		}
 	}
 

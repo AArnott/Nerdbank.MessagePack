@@ -26,6 +26,19 @@ partial class ChangingPropertyNames
     #endregion
 }
 
+partial class ChangingEnumValueNames
+{
+    #region ChangingEnumNames
+    enum MyEnum
+    {
+        [EnumMemberShape(Name = "1st")] // serialize this enum value as "1st"
+        One,
+        [EnumMemberShape(Name = "2nd")] // serialize this enum value as "2nd"
+        Two,
+    }
+    #endregion
+}
+
 partial class ApplyNamePolicy
 {
     class MyType

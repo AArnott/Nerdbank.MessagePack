@@ -25,11 +25,22 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		Four = 4,
 	}
 
+	/// <summary>
+	/// This enum has two members with the same value but different names.
+	/// </summary>
 	public enum EnumWithNonUniqueNames
 	{
 		One = 1,
 		AnotherOne = 1,
 		Two = 2,
+	}
+
+	public enum EnumWithRenamedValues
+	{
+		[EnumMemberShape(Name = "1st")]
+		First,
+		[EnumMemberShape(Name = "2nd")]
+		Second,
 	}
 
 	public MessagePackType ExpectedType { get; set; }
@@ -90,7 +101,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		return seq;
 	}
 
-	private void AssertEnum<T, TWitness>(T value)
+	private ReadOnlySequence<byte> AssertEnum<T, TWitness>(T value)
 		where T : struct, Enum
 #if NET
 		where TWitness : IShapeable<T>
@@ -99,6 +110,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<T, TWitness>(value);
 		this.AssertType(msgpack, this.ExpectedType);
 		this.Logger.WriteLine(value.ToString());
+		return msgpack;
 	}
 
 	private void AssertType(ReadOnlySequence<byte> msgpack, MessagePackType expectedType)
@@ -134,6 +146,15 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), TestContext.Current.CancellationToken));
 			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), TestContext.Current.CancellationToken));
 		}
+
+		[Fact]
+		public void RenamedEnumValues()
+		{
+			ReadOnlySequence<byte> msgpack = this.AssertEnum<EnumWithRenamedValues, Witness>(EnumWithRenamedValues.First);
+			MessagePackReader reader = new(msgpack);
+			string? actual = reader.ReadString();
+			Assert.Equal("1st", actual);
+		}
 	}
 
 	public class EnumAsOrdinalTests : EnumTests
@@ -149,5 +170,6 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 	[GenerateShape<CaseInsensitiveCollisions>]
 	[GenerateShape<FlagsEnum>]
 	[GenerateShape<EnumWithNonUniqueNames>]
+	[GenerateShape<EnumWithRenamedValues>]
 	private partial class Witness;
 }

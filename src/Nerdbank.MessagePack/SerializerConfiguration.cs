@@ -129,6 +129,7 @@ internal record SerializerConfiguration
 	/// <summary>
 	/// Gets a value indicating whether enum values will be serialized by name rather than by their numeric value.
 	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
 	/// <remarks>
 	/// <para>
 	/// Serializing by name is a best effort.
