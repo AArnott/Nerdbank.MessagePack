@@ -49,6 +49,16 @@ You can use any of the naming policies provided with the @Nerdbank.MessagePack.M
 
 When using a deserializing constructor, the parameter names on the constructor should match the C# property name -- *not* the serialized name specified by @PolyType.PropertyShapeAttribute.Name or some @Nerdbank.MessagePack.MessagePackNamingPolicy.
 
+## Changing an enum value name
+
+The serialized name for an enum value may be changed from its declared C# name by applying @PolyType.EnumMemberShapeAttribute and setting its @PolyType.EnumMemberShapeAttribute.Name property.
+
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#ChangingEnumNames)]
+
+> [!NOTE]
+> Enum values are serialized by their ordinal values by default as this leads to optimal performance.
+> To serialize using their value names instead, set <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName?displayProperty=nameWithType> to `true`.
+
 ## Deserializing constructors
 
 The simplest deserialization is into a type with a default constructor and mutable fields and properties.
