@@ -3,7 +3,6 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -204,12 +203,14 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 /// <param name="getEnumerable"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='getEnumerable']"/></param>
 /// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
 /// <param name="addElement">The delegate that adds an element to the enumerable.</param>
-/// <param name="ctor">The default constructor for the enumerable type.</param>
+/// <param name="ctor">The constructor for the enumerable type.</param>
+/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
 internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	Setter<TEnumerable, TElement> addElement,
-	Func<TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
+	MutableCollectionConstructor<TElement, TEnumerable> ctor,
+	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
@@ -220,7 +221,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			return default;
 		}
 
-		TEnumerable result = ctor();
+		TEnumerable result = ctor(collectionConstructionOptions);
 		this.DeserializeInto(ref reader, ref result, context);
 		return result;
 	}
@@ -300,10 +301,12 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 /// <param name="getEnumerable"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='getEnumerable']"/></param>
 /// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
 /// <param name="ctor">A enumerable initializer that constructs from a span of elements.</param>
+/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
 internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
-	SpanConstructor<TElement, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
+	SpanCollectionConstructor<TElement, TElement, TEnumerable> ctor,
+	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
 	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
@@ -323,7 +326,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 				elements[i] = this.ReadElement(ref reader, context);
 			}
 
-			return ctor(elements.AsSpan(0, count));
+			return ctor(elements.AsSpan(0, count), collectionConstructionOptions);
 		}
 		finally
 		{
@@ -391,10 +394,12 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 /// <param name="getEnumerable"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='getEnumerable']"/></param>
 /// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
 /// <param name="ctor">A enumerable initializer that constructs from an enumerable of elements.</param>
+/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
 internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
-	Func<IEnumerable<TElement>, TEnumerable> ctor) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
+	EnumerableCollectionConstructor<TElement, TElement, TEnumerable> ctor,
+	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
 	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
@@ -415,7 +420,7 @@ internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
 			elements[i] = this.ReadElement(ref reader, context);
 		}
 
-		return ctor(elements);
+		return ctor(elements, collectionConstructionOptions);
 	}
 
 	/// <inheritdoc/>

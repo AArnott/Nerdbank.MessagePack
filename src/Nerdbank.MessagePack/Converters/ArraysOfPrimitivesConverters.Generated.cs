@@ -33,7 +33,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <returns>A value indicating whether a converter is available.</returns>
 	internal static bool TryGetConverter<TEnumerable, TElement>(
 		Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-		SpanConstructor<TElement, TEnumerable> spanConstructor,
+		SpanCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor,
 		[NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
 	{
 		// T[], Memory<T>, ReadOnlyMemory<T>, and possibly more types are all satisfiable by T[].
@@ -45,7 +45,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new SByteArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<SByte>>)getEnumerable,
-				(SpanConstructor<SByte, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<SByte, SByte, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -53,7 +53,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new Int16ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Int16>>)getEnumerable,
-				(SpanConstructor<Int16, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<Int16, Int16, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -61,7 +61,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new Int32ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Int32>>)getEnumerable,
-				(SpanConstructor<Int32, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<Int32, Int32, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -69,7 +69,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new Int64ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Int64>>)getEnumerable,
-				(SpanConstructor<Int64, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<Int64, Int64, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -77,7 +77,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new UInt16ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<UInt16>>)getEnumerable,
-				(SpanConstructor<UInt16, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<UInt16, UInt16, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -85,7 +85,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new UInt32ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<UInt32>>)getEnumerable,
-				(SpanConstructor<UInt32, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<UInt32, UInt32, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -93,7 +93,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new UInt64ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<UInt64>>)getEnumerable,
-				(SpanConstructor<UInt64, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<UInt64, UInt64, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -101,7 +101,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new SingleArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Single>>)getEnumerable,
-				(SpanConstructor<Single, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<Single, Single, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -109,7 +109,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new DoubleArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Double>>)getEnumerable,
-				(SpanConstructor<Double, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<Double, Double, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -117,7 +117,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new BooleanArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<Boolean>>)getEnumerable,
-				(SpanConstructor<Boolean, TEnumerable>?)spanConstructorToUse);
+				(SpanCollectionConstructor<Boolean, Boolean, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -131,7 +131,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class SByteArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<SByte>> getEnumerable,
-		SpanConstructor<SByte, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, SByte>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<SByte, SByte, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, SByte>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override SByte Read(ref MessagePackReader reader) => reader.ReadSByte();
@@ -157,7 +157,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class Int16ArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<Int16>> getEnumerable,
-		SpanConstructor<Int16, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int16>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<Int16, Int16, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int16>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override Int16 Read(ref MessagePackReader reader) => reader.ReadInt16();
@@ -183,7 +183,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class Int32ArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<Int32>> getEnumerable,
-		SpanConstructor<Int32, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int32>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<Int32, Int32, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int32>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override Int32 Read(ref MessagePackReader reader) => reader.ReadInt32();
@@ -209,7 +209,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class Int64ArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<Int64>> getEnumerable,
-		SpanConstructor<Int64, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int64>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<Int64, Int64, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Int64>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override Int64 Read(ref MessagePackReader reader) => reader.ReadInt64();
@@ -235,7 +235,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class UInt16ArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<UInt16>> getEnumerable,
-		SpanConstructor<UInt16, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt16>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<UInt16, UInt16, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt16>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override UInt16 Read(ref MessagePackReader reader) => reader.ReadUInt16();
@@ -261,7 +261,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class UInt32ArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<UInt32>> getEnumerable,
-		SpanConstructor<UInt32, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt32>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<UInt32, UInt32, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt32>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override UInt32 Read(ref MessagePackReader reader) => reader.ReadUInt32();
@@ -287,7 +287,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class UInt64ArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<UInt64>> getEnumerable,
-		SpanConstructor<UInt64, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt64>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<UInt64, UInt64, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, UInt64>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override UInt64 Read(ref MessagePackReader reader) => reader.ReadUInt64();
@@ -313,7 +313,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class SingleArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<Single>> getEnumerable,
-		SpanConstructor<Single, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Single>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<Single, Single, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Single>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override Single Read(ref MessagePackReader reader) => reader.ReadSingle();
@@ -339,7 +339,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class DoubleArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<Double>> getEnumerable,
-		SpanConstructor<Double, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Double>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<Double, Double, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Double>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override Double Read(ref MessagePackReader reader) => reader.ReadDouble();
@@ -365,7 +365,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class BooleanArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<Boolean>> getEnumerable,
-		SpanConstructor<Boolean, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Boolean>(getEnumerable, spanConstructor)
+		SpanCollectionConstructor<Boolean, Boolean, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, Boolean>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override Boolean Read(ref MessagePackReader reader) => reader.ReadBoolean();
