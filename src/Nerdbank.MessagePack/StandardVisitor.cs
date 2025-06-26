@@ -753,10 +753,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	private CollectionConstructionOptions<TKey> GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape)
 		where TKey : notnull
-		=> this.GetCollectionOptions(dictionaryShape.KeyType, dictionaryShape.SupportedComparers);
+		=> this.GetCollectionOptions(dictionaryShape.KeyType, dictionaryShape.SupportedComparer);
 
 	private CollectionConstructionOptions<TElement> GetCollectionOptions<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape)
-		=> this.GetCollectionOptions(enumerableShape.ElementType, enumerableShape.SupportedComparers);
+		=> this.GetCollectionOptions(enumerableShape.ElementType, enumerableShape.SupportedComparer);
 
 	private CollectionConstructionOptions<TKey> GetCollectionOptions<TKey>(ITypeShape<TKey> keyShape, CollectionComparerOptions requiredComparer)
 	{
