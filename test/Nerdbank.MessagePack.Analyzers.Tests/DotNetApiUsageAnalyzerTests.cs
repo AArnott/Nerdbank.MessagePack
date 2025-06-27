@@ -17,7 +17,7 @@ public class DotNetApiUsageAnalyzerTests
 
 			class MyType { }
 
-			[GenerateShape<MyType>]
+			[GenerateShapeFor<MyType>]
 			partial class Witness;
 
 			class Foo
@@ -40,7 +40,7 @@ public class DotNetApiUsageAnalyzerTests
 			[GenerateShape]
 			partial class MyType { }
 
-			[GenerateShape<MyType>]
+			[GenerateShapeFor<MyType>]
 			partial class Witness;
 
 			class Foo

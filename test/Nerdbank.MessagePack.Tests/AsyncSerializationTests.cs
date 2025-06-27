@@ -110,8 +110,8 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		Assert.Equal("a"u8, readResult.Buffer.ToArray());
 	}
 
-	[GenerateShape<string>]
-	[GenerateShape<int>]
+	[GenerateShapeFor<string>]
+	[GenerateShapeFor<int>]
 	private partial class Witness;
 
 	[GenerateShape]

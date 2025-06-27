@@ -208,6 +208,6 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		return new MessagePackReader(seq);
 	}
 
-	[GenerateShape<IReadOnlyDictionary<MessagePackValue, object>>]
+	[GenerateShapeFor<IReadOnlyDictionary<MessagePackValue, object>>]
 	private partial class Witness;
 }

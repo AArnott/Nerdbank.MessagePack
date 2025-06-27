@@ -382,7 +382,7 @@ public partial record MessagePackSerializer
 	/// <param name="provider">
 	/// The shape provider of <typeparamref name="T"/>.
 	/// This will typically be obtained by calling the <c>ShapeProvider</c> static property on a witness class
-	/// (a class on which <see cref="GenerateShapeAttribute{T}"/> has been applied).
+	/// (a class on which <see cref="GenerateShapeForAttribute{T}"/> has been applied).
 	/// </param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>

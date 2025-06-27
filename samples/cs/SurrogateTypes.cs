@@ -107,7 +107,7 @@ partial class CompleteSample
 
 #if NET
     #region ClosedGenericViaWitnessNET
-    [GenerateShape<OpenGenericDataType<int>>]
+    [GenerateShapeFor<OpenGenericDataType<int>>]
     internal partial class Witness;
 
     void SerializeByWitness(OpenGenericDataType<int> value) => Serializer.Serialize<OpenGenericDataType<int>, Witness>(value);
@@ -116,7 +116,7 @@ partial class CompleteSample
     #endregion
 #else
     #region ClosedGenericViaWitnessNETFX
-    [GenerateShape<OpenGenericDataType<int>>]
+    [GenerateShapeFor<OpenGenericDataType<int>>]
     internal partial class Witness;
 
     void SerializeByWitness(OpenGenericDataType<int> value) => Serializer.Serialize(value, Witness.ShapeProvider);

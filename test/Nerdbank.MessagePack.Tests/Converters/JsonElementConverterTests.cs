@@ -49,6 +49,6 @@ public partial class JsonElementConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(Json, converted);
 	}
 
-	[GenerateShape<JsonElement>]
+	[GenerateShapeFor<JsonElement>]
 	private partial class Witness;
 }

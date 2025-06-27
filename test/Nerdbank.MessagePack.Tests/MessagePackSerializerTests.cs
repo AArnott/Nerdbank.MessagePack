@@ -669,14 +669,14 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		public override int GetHashCode() => this.Member;
 	}
 
-	[GenerateShape<UnannotatedPoco>]
-	[GenerateShape<object>]
-	[GenerateShape<string>]
-	[GenerateShape<byte[]>]
-	[GenerateShape<Memory<byte>>]
-	[GenerateShape<ReadOnlyMemory<byte>>]
-	[GenerateShape<Tuple<int, bool>>]
-	[GenerateShape<(int, bool)>]
+	[GenerateShapeFor<UnannotatedPoco>]
+	[GenerateShapeFor<object>]
+	[GenerateShapeFor<string>]
+	[GenerateShapeFor<byte[]>]
+	[GenerateShapeFor<Memory<byte>>]
+	[GenerateShapeFor<ReadOnlyMemory<byte>>]
+	[GenerateShapeFor<Tuple<int, bool>>]
+	[GenerateShapeFor<(int, bool)>]
 	internal partial class Witness;
 
 	private class CustomStringConverter : MessagePackConverter<string>

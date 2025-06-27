@@ -52,7 +52,7 @@ internal static partial class MessagePackSerializerPolyfill
 	internal static JsonObject GetJsonSchema<T>(this MessagePackSerializer serializer)
 		=> serializer.GetJsonSchema<T>(MessagePackSerializerTestBase.GetShapeProvider<Witness>());
 
-	[GenerateShape<MessagePackValue>]
+	[GenerateShapeFor<MessagePackValue>]
 	internal partial class Witness;
 }
 

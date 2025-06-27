@@ -83,7 +83,7 @@ public class MigrationAnalyzerTests
 			{
 				public string? Name { get; set; }
 
-				[GenerateShape<string>]
+				[GenerateShapeFor<string>]
 				private partial class MyTypeFormatter : MessagePackConverter<MyType>
 				{
 					public override MyType? Read(ref Nerdbank.MessagePack.MessagePackReader reader, SerializationContext context)

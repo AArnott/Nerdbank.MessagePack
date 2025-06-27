@@ -188,8 +188,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[GenerateShape]
 	internal partial class MyDerivedB : MyBase;
 
-	[GenerateShape<MyBase>]
-	[GenerateShape<MyDerivedA>]
-	[GenerateShape<MyDerivedB>]
+	[GenerateShapeFor<MyBase>]
+	[GenerateShapeFor<MyDerivedA>]
+	[GenerateShapeFor<MyDerivedB>]
 	private partial class Witness;
 }

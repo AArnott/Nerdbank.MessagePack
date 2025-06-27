@@ -789,7 +789,7 @@ internal class CharConverter : MessagePackConverter<char>
 /// <summary>
 /// Serializes <see cref="byte"/> array values.
 /// </summary>
-[GenerateShape<byte>]
+[GenerateShapeFor<byte>]
 internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 {
 	/// <summary>

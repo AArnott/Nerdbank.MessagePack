@@ -467,7 +467,7 @@ public class MigrationCodeFix : CodeFixProvider
 				if (this.requiredWitnesses.Count > 0 && result is ClassDeclarationSyntax classDecl)
 				{
 					AttributeListSyntax[] attributeLists = this.requiredWitnesses.Values.Select(
-						type => AttributeList().AddAttributes(Attribute(QualifiedName(IdentifierName("PolyType"), GenericName("GenerateShape").AddTypeArgumentListArguments(type))))).ToArray();
+						type => AttributeList().AddAttributes(Attribute(QualifiedName(IdentifierName("PolyType"), GenericName("GenerateShapeFor").AddTypeArgumentListArguments(type))))).ToArray();
 					classDecl = classDecl.AddAttributeLists(attributeLists);
 
 					if (!classDecl.Modifiers.Any(SyntaxKind.PartialKeyword))

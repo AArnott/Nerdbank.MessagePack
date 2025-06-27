@@ -138,17 +138,17 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, 100, 10_000];
 #endif
 
-	[GenerateShape<bool[]>]
-	[GenerateShape<Memory<bool>>]
-	[GenerateShape<Memory<sbyte>>]
-	[GenerateShape<Memory<short>>]
-	[GenerateShape<Memory<int>>]
-	[GenerateShape<Memory<long>>]
-	[GenerateShape<Memory<byte>>]
-	[GenerateShape<Memory<ushort>>]
-	[GenerateShape<Memory<uint>>]
-	[GenerateShape<Memory<ulong>>]
-	[GenerateShape<Memory<float>>]
-	[GenerateShape<Memory<double>>]
+	[GenerateShapeFor<bool[]>]
+	[GenerateShapeFor<Memory<bool>>]
+	[GenerateShapeFor<Memory<sbyte>>]
+	[GenerateShapeFor<Memory<short>>]
+	[GenerateShapeFor<Memory<int>>]
+	[GenerateShapeFor<Memory<long>>]
+	[GenerateShapeFor<Memory<byte>>]
+	[GenerateShapeFor<Memory<ushort>>]
+	[GenerateShapeFor<Memory<uint>>]
+	[GenerateShapeFor<Memory<ulong>>]
+	[GenerateShapeFor<Memory<float>>]
+	[GenerateShapeFor<Memory<double>>]
 	private partial class Witness;
 }

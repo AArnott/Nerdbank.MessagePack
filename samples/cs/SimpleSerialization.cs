@@ -31,7 +31,7 @@ namespace Samples
             return serializer.DeserializeObject(ref reader, shape)!;
         }
 
-        [GenerateShape<Fruit>]
+        [GenerateShapeFor<Fruit>]
         partial class Witness;
 
         [GenerateShape]

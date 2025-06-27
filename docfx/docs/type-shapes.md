@@ -10,7 +10,7 @@ PolyType is trim-safe and NativeAOT ready, particularly when used in its recomme
 
 ## Witness classes
 
-If you need to directly serialize a type that isn't declared in your project and is not annotated with `[GenerateShape]`, you can define another class in your own project to provide that shape.
+If you need to directly serialize a type that isn't declared in your project and is not annotated with <xref:PolyType.GenerateShapeAttribute>, you can define another class in your own project to provide that shape.
 Doing so leads to default serialization rules being applied to the type (e.g. only public members are serialized).
 
 For this example, suppose you consume a `FamilyTree` type from a library that you don't control and did not annotate their type for serialization.
@@ -28,7 +28,7 @@ In your own project, you can define this witness type and use it to serialize an
 
 Note the only special bit is providing the `Witness` class as a type argument to the `Serialize` method.
 The _name_ of the witness class is completely inconsequential.
-A witness class may have any number of `GenerateShapeAttribute<T>` attributes on it.
+A witness class may have any number of <xref:PolyType.GenerateShapeForAttribute`1> attributes on it.
 It is typical (but not required) for an assembly to have at most one witness class, with all the external types listed on it that you need to serialize as top-level objects.
 
 You do _not_ need a witness class for an external type to reference that type from a graph that is already rooted in a type that _is_ attributed.

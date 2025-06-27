@@ -42,7 +42,7 @@ partial class SimpleUsage
         ARecord? deserialized = serializer.Deserialize<ARecord>(msgpack, Witness.ShapeProvider);
     }
 
-    [GenerateShape<ARecord>]
+    [GenerateShapeFor<ARecord>]
     internal partial class Witness;
     #endregion
 #endif

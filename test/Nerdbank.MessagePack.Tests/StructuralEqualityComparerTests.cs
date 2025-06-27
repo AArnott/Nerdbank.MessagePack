@@ -197,9 +197,9 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 			=> StructuralEqualityComparer.GetHashCollisionResistant(shape);
 	}
 
-	[GenerateShape<bool>]
-	[GenerateShape<BigInteger>]
-	[GenerateShape<CustomHasher>]
+	[GenerateShapeFor<bool>]
+	[GenerateShapeFor<BigInteger>]
+	[GenerateShapeFor<CustomHasher>]
 	internal partial class Witness;
 
 	[GenerateShape]

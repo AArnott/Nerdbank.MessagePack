@@ -6,7 +6,7 @@ using System.IO.Pipelines;
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkDotNet.Configs.BenchmarkLogicalGroupRule.ByCategory)]
 [CategoriesColumn]
-[GenerateShape<PocoMapInit[]>]
+[GenerateShapeFor<PocoMapInit[]>]
 public partial class SyncVsAsyncArrays
 {
 	private readonly MessagePackSerializer serializer = new();

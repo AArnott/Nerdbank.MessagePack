@@ -61,5 +61,5 @@ Security is a complex subject.
 
 [^1]: Nerdbank.MessagePack's approach is more likely to be correct by default and more flexible to fixing when it is not.
 [^2]: Although MessagePack-CSharp does not support .NET 8 flavor NativeAOT, it has long-supported Unity's il2cpp runtime, but it requires careful avoidance of dynamic features.
-[^3]: Particular steps are currently required, and limitations apply. See our [unity doc](unity.md) for more information.
+[^3]: See our [unity doc](unity.md) for instructions.
 [^4]: MessagePack-CSharp is limited to derived types that can be attributed on the base type, whereas Nerdbank.MessagePack allows for dynamically identifying derived types at runtime.

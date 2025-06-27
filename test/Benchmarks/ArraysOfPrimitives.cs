@@ -99,8 +99,8 @@ public partial class ArraysOfPrimitives
 		return values;
 	}
 
-	[GenerateShape<bool[]>]
-	[GenerateShape<float[]>]
-	[GenerateShape<double[]>]
+	[GenerateShapeFor<bool[]>]
+	[GenerateShapeFor<float[]>]
+	[GenerateShapeFor<double[]>]
 	private partial class Witness;
 }

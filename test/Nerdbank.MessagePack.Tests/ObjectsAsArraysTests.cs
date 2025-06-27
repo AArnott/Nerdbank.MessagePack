@@ -389,7 +389,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		=> GetShape<T, Witness>();
 #endif
 
-	[GenerateShape<int>]
+	[GenerateShapeFor<int>]
 	private partial class Witness;
 
 	[GenerateShape]

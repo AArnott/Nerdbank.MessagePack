@@ -97,7 +97,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape<OriginalType[]>]
-	[GenerateShape<OpenGenericDataType<int>>]
+	[GenerateShapeFor<OriginalType[]>]
+	[GenerateShapeFor<OpenGenericDataType<int>>]
 	private partial class Witness;
 }
