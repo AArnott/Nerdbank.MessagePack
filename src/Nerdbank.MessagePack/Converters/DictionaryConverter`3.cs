@@ -196,9 +196,11 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			return default;
 		}
 
-		TDictionary result = ctor(collectionConstructionOptions);
-		this.DeserializeInto(ref reader, ref result, context);
-		return result;
+		return this.DeserializeInto(
+			ref reader,
+			static (s, size) => s.ctor(s.options.WithCapacity(size)),
+			(ctor, options: collectionConstructionOptions),
+			context);
 	}
 #pragma warning restore NBMsgPack03
 
@@ -218,28 +220,40 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			return default;
 		}
 
-		TDictionary result = ctor();
-		await this.DeserializeIntoAsync(reader, result, context).ConfigureAwait(false);
-		return result;
+		return await this.DeserializeIntoAsync(
+			reader,
+			static (s, size) => s.ctor(s.options.WithCapacity(size)),
+			(ctor, options: collectionConstructionOptions),
+			context).ConfigureAwait(false);
 	}
 
 	/// <inheritdoc/>
 	public void DeserializeInto(ref MessagePackReader reader, ref TDictionary collection, SerializationContext context)
+		=> collection = this.DeserializeInto(ref reader, static (s, _) => s, collection, context);
+
+	/// <inheritdoc/>
+	public ValueTask<TDictionary> DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context)
+		=> this.DeserializeIntoAsync(reader, static (s, _) => s, collection, context);
+
+	private TDictionary DeserializeInto<TState>(ref MessagePackReader reader, Func<TState, int, TDictionary> getCollection, TState state, SerializationContext context)
 	{
 		context.DepthStep();
 		int count = reader.ReadMapHeader();
+		TDictionary collection = getCollection(state, count);
 		for (int i = 0; i < count; i++)
 		{
 			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
 			addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
 		}
+
+		return collection;
 	}
 
-	/// <inheritdoc/>
-	public async ValueTask<TDictionary> DeserializeIntoAsync(MessagePackAsyncReader reader, TDictionary collection, SerializationContext context)
+	private async ValueTask<TDictionary> DeserializeIntoAsync<TState>(MessagePackAsyncReader reader, Func<TState, int, TDictionary> getCollection, TState state, SerializationContext context)
 	{
 		context.DepthStep();
 
+		TDictionary collection;
 		if (this.ElementPrefersAsyncSerialization)
 		{
 			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -249,6 +263,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
+			collection = getCollection(state, count);
 			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
@@ -260,6 +275,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadMapHeader();
+			collection = getCollection(state, count);
 			for (int i = 0; i < count; i++)
 			{
 				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);

@@ -221,9 +221,11 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			return default;
 		}
 
-		TEnumerable result = ctor(collectionConstructionOptions);
-		this.DeserializeInto(ref reader, ref result, context);
-		return result;
+		return this.DeserializeInto(
+			ref reader,
+			static (s, size) => s.ctor(s.options.WithCapacity(size)),
+			(ctor, options: collectionConstructionOptions),
+			context);
 	}
 #pragma warning restore NBMsgPack031
 
@@ -243,25 +245,39 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			return default;
 		}
 
-		return await this.DeserializeIntoAsync(reader, ctor(), context).ConfigureAwait(false);
+		return await this.DeserializeIntoAsync(
+			reader,
+			static (s, size) => s.ctor(s.options.WithCapacity(size)),
+			(ctor, options: collectionConstructionOptions),
+			context).ConfigureAwait(false);
 	}
 
 	/// <inheritdoc/>
 	public void DeserializeInto(ref MessagePackReader reader, ref TEnumerable collection, SerializationContext context)
+		=> collection = this.DeserializeInto(ref reader, static (s, _) => s, collection, context);
+
+	/// <inheritdoc/>
+	public ValueTask<TEnumerable> DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context)
+		=> this.DeserializeIntoAsync(reader, static (s, _) => s, collection, context);
+
+	private TEnumerable DeserializeInto<TState>(ref MessagePackReader reader, Func<TState, int, TEnumerable> getCollection, TState state, SerializationContext context)
 	{
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
+		TEnumerable collection = getCollection(state, count);
 		for (int i = 0; i < count; i++)
 		{
 			addElement(ref collection, this.ReadElement(ref reader, context));
 		}
+
+		return collection;
 	}
 
-	/// <inheritdoc/>
-	public async ValueTask<TEnumerable> DeserializeIntoAsync(MessagePackAsyncReader reader, TEnumerable collection, SerializationContext context)
+	private async ValueTask<TEnumerable> DeserializeIntoAsync<TState>(MessagePackAsyncReader reader, Func<TState, int, TEnumerable> getCollection, TState state, SerializationContext context)
 	{
 		context.DepthStep();
 
+		TEnumerable collection;
 		if (this.ElementPrefersAsyncSerialization)
 		{
 			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -272,6 +288,8 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			}
 
 			reader.ReturnReader(ref streamingReader);
+
+			collection = getCollection(state, count);
 			for (int i = 0; i < count; i++)
 			{
 				addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));
@@ -282,6 +300,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadArrayHeader();
+			collection = getCollection(state, count);
 			for (int i = 0; i < count; i++)
 			{
 				addElement(ref collection, this.ReadElement(ref syncReader, context));
