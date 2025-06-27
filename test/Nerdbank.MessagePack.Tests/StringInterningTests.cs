@@ -54,7 +54,7 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		Assert.Equal("abc", deserialized);
 	}
 
-	[GenerateShape<string>]
-	[GenerateShape<string[]>]
+	[GenerateShapeFor<string>]
+	[GenerateShapeFor<string[]>]
 	private partial class Witness;
 }

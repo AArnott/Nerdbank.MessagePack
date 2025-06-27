@@ -63,7 +63,7 @@ namespace PrimitiveDeserialization
                 }
             }
 
-            [GenerateShape<ExpandoObject>]
+            [GenerateShapeFor<ExpandoObject>]
             partial class Witness;
             #endregion
         }
@@ -86,7 +86,7 @@ namespace PrimitiveDeserialization
                 }
             }
 
-            [GenerateShape<ExpandoObject>]
+            [GenerateShapeFor<ExpandoObject>]
             partial class Witness;
             #endregion
         }

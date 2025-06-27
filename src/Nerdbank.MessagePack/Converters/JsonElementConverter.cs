@@ -12,7 +12,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <remarks>
 /// This converter only writes these objects. It throws <see cref="NotSupportedException"/> when reading them.
 /// </remarks>
-[GenerateShape<JsonNode>]
+[GenerateShapeFor<JsonNode>]
 internal partial class JsonElementConverter : MessagePackConverter<JsonElement>
 {
 	/// <inheritdoc/>

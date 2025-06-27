@@ -164,8 +164,8 @@ namespace RuntimeSubTypes
     [GenerateShape]
     partial record Cow(string Name) : Animal(Name);
 
-    [GenerateShape<Horse>]
-    [GenerateShape<Cow>]
+    [GenerateShapeFor<Horse>]
+    [GenerateShapeFor<Cow>]
     partial class Witness;
 
     class SerializationConfigurator

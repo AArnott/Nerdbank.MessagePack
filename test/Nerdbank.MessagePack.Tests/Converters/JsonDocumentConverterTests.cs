@@ -46,6 +46,6 @@ public partial class JsonDocumentConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(Json, converted);
 	}
 
-	[GenerateShape<JsonDocument>]
+	[GenerateShapeFor<JsonDocument>]
 	private partial class Witness;
 }

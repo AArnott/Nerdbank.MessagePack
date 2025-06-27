@@ -27,5 +27,5 @@ Or in a multitargeting project, use the preferred API only where it's available:
 
 [!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack051.cs#MultiTargetingFix)]
 
-Remember that in a multi-targeting project, simply reducing the severity of the diagnostic from Warning to something lesser
-may be a better option than creating `#if`/`#else`/`#endif` regions in many places.
+> [!TIP]
+> In a multi-targeting project, simply reducing the severity of the diagnostic from Warning to something lesser may be a better option than creating `#if`/`#else`/`#endif` regions in many places.

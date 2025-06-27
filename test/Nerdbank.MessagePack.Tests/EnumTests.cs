@@ -166,10 +166,10 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape<Simple>]
-	[GenerateShape<CaseInsensitiveCollisions>]
-	[GenerateShape<FlagsEnum>]
-	[GenerateShape<EnumWithNonUniqueNames>]
-	[GenerateShape<EnumWithRenamedValues>]
+	[GenerateShapeFor<Simple>]
+	[GenerateShapeFor<CaseInsensitiveCollisions>]
+	[GenerateShapeFor<FlagsEnum>]
+	[GenerateShapeFor<EnumWithNonUniqueNames>]
+	[GenerateShapeFor<EnumWithRenamedValues>]
 	private partial class Witness;
 }

@@ -46,7 +46,7 @@ public partial class ExpandoObjectConverterTests : MessagePackSerializerTestBase
 		Assert.Null(this.Roundtrip<ExpandoObject, Witness>(null));
 	}
 
-	[GenerateShape<int>]
-	[GenerateShape<ExpandoObject>]
+	[GenerateShapeFor<int>]
+	[GenerateShapeFor<ExpandoObject>]
 	private partial class Witness;
 }

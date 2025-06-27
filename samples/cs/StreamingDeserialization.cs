@@ -36,7 +36,7 @@ namespace StreamingDeserialization
 
         internal record Person(int Age);
 
-        [GenerateShape<Person>]
+        [GenerateShapeFor<Person>]
         partial class Witness;
         #endregion
 #endif
@@ -79,7 +79,7 @@ namespace StreamingDeserialization
 
         internal record Person(int Age);
 
-        [GenerateShape<Family>]
+        [GenerateShapeFor<Family>]
         partial class Witness;
         #endregion
 #endif

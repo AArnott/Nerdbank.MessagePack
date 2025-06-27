@@ -27,6 +27,6 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 		Assert.Null(deserialized["f"]);
 	}
 
-	[GenerateShape<JsonNode>]
+	[GenerateShapeFor<JsonNode>]
 	private partial class Witness;
 }

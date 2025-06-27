@@ -15,7 +15,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
         #region Defective
         class MyType { }
 
-        [GenerateShape<MyType>]
+        [GenerateShapeFor<MyType>]
         partial class Witness;
 
         class Foo
@@ -56,7 +56,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
         [GenerateShape]
         partial class MyType { }
 
-        [GenerateShape<MyType>]
+        [GenerateShapeFor<MyType>]
         partial class Witness;
 
         class Foo

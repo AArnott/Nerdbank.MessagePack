@@ -156,7 +156,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 
 		public override string ToString() => this.InternalProperty ?? "(null)";
 
-		[GenerateShape<string>]
+		[GenerateShapeFor<string>]
 		internal partial class CustomTypeConverter : MessagePackConverter<CustomType>
 		{
 			public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -333,7 +333,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape<string>]
+	[GenerateShapeFor<string>]
 	private partial class CustomTypeConverterNonGenericTypeShapeProvider : MessagePackConverter<CustomType>
 	{
 		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -348,7 +348,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape<string>]
+	[GenerateShapeFor<string>]
 	private partial class CustomTypeConverterNonGenericTypeShape : MessagePackConverter<CustomType>
 	{
 		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -402,7 +402,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape<GenericData<string>>]
-	[GenerateShape<GenericData<int>>]
+	[GenerateShapeFor<GenericData<string>>]
+	[GenerateShapeFor<GenericData<int>>]
 	private partial class Witness;
 }

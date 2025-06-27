@@ -51,7 +51,7 @@ partial class Security
         // to include them in the hash and equality checks as part of the dictionary keys.
     }
 
-    [GenerateShape<CustomType>]
+    [GenerateShapeFor<CustomType>]
     internal partial class Witness;
     #endregion
 #endif

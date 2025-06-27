@@ -584,7 +584,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	public partial record CustomTypeWrapper(CustomType Value);
 
-	[GenerateShape<string>]
+	[GenerateShapeFor<string>]
 	internal partial class CustomTypeConverter : MessagePackConverter<CustomType>
 	{
 		public override CustomType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -623,8 +623,8 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		internal string? Message { get; set; }
 	}
 
-	[GenerateShape<string>]
-	[GenerateShape<CustomType2[]>]
+	[GenerateShapeFor<string>]
+	[GenerateShapeFor<CustomType2[]>]
 	internal partial class CustomType2Converter : MessagePackConverter<CustomType2>
 	{
 		public override CustomType2? Read(ref MessagePackReader reader, SerializationContext context)
@@ -657,10 +657,10 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape<CustomTypeWrapper[]>]
-	[GenerateShape<CustomType[]>]
-	[GenerateShape<string[]>]
-	[GenerateShape<BaseRecord[]>]
-	[GenerateShape<Dictionary<string, int>[]>]
+	[GenerateShapeFor<CustomTypeWrapper[]>]
+	[GenerateShapeFor<CustomType[]>]
+	[GenerateShapeFor<string[]>]
+	[GenerateShapeFor<BaseRecord[]>]
+	[GenerateShapeFor<Dictionary<string, int>[]>]
 	private partial class Witness;
 }

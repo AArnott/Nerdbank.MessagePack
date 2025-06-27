@@ -111,7 +111,7 @@ public partial class MessagePackStringTests
 		return seq;
 	}
 
-	[GenerateShape<string>]
-	[GenerateShape<int>]
+	[GenerateShapeFor<string>]
+	[GenerateShapeFor<int>]
 	private partial class Witness;
 }

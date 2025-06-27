@@ -213,7 +213,7 @@ namespace SubValuesWithWitness
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
-    [GenerateShape<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
+    [GenerateShapeFor<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
     partial class FooConverter : MessagePackConverter<Foo?>
     {
         public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
@@ -236,7 +236,7 @@ namespace SubValuesWithWitness
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
-    [GenerateShape<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
+    [GenerateShapeFor<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
     partial class FooConverter : MessagePackConverter<Foo?>
     {
         public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
@@ -268,7 +268,7 @@ namespace WitnessForArray
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
-    [GenerateShape<SomeOtherType[]>]
+    [GenerateShapeFor<SomeOtherType[]>]
     partial class FooConverter : MessagePackConverter<Foo?>
     {
         public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
@@ -282,7 +282,7 @@ namespace WitnessForArray
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
-    [GenerateShape<SomeOtherType[]>]
+    [GenerateShapeFor<SomeOtherType[]>]
     partial class FooConverter : MessagePackConverter<Foo?>
     {
         public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
@@ -568,7 +568,7 @@ namespace Stateful
     [MessagePackConverter(typeof(StatefulConverter))]
     public partial record struct SpecialType(int Value);
 
-    [GenerateShape<SpecialType>]
+    [GenerateShapeFor<SpecialType>]
     partial class Witness;
     #endregion
 #endif

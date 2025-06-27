@@ -192,8 +192,8 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	public partial record HasDateTimeOffset(DateTimeOffset Value);
 
-	[GenerateShape<Guid>]
-	[GenerateShape<Point>]
-	[GenerateShape<Color>]
+	[GenerateShapeFor<Guid>]
+	[GenerateShapeFor<Point>]
+	[GenerateShapeFor<Color>]
 	private partial class Witness;
 }

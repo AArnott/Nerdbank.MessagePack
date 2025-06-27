@@ -23,7 +23,7 @@ partial class WitnessGenerated
     }
 
     // Within your own assembly, define a 'witness' class with one or more shapes generated for external types.
-    [GenerateShape<FamilyTree>]
+    [GenerateShapeFor<FamilyTree>]
     partial class Witness;
 
     void Serialize()
@@ -43,7 +43,7 @@ partial class WitnessGenerated
     }
 
     // Within your own assembly, define a 'witness' class with one or more shapes generated for external types.
-    [GenerateShape<FamilyTree>]
+    [GenerateShapeFor<FamilyTree>]
     partial class Witness;
 
     void Serialize()

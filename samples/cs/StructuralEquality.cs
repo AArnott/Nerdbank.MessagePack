@@ -64,7 +64,7 @@ internal partial class StructuralEquality
         public int C { get; set; }
     }
 
-    [GenerateShape<MyData>]
+    [GenerateShapeFor<MyData>]
     partial class Witness;
     #endregion
 #endif

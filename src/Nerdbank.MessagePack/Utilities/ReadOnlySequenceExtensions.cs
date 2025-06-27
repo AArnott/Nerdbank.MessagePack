@@ -101,6 +101,6 @@ internal static partial class ReadOnlySequenceExtensions
 		}
 	}
 
-	[GenerateShape<ReadOnlySequence<byte>>]
+	[GenerateShapeFor<ReadOnlySequence<byte>>]
 	private partial class Witness;
 }

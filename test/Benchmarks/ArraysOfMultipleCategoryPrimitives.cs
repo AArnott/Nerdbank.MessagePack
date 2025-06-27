@@ -311,12 +311,12 @@ public partial class ArraysOfMultipleCategoryPrimitives
 		return random;
 	}
 
-	[GenerateShape<sbyte[]>]
-	[GenerateShape<short[]>]
-	[GenerateShape<int[]>]
-	[GenerateShape<long[]>]
-	[GenerateShape<ushort[]>]
-	[GenerateShape<uint[]>]
-	[GenerateShape<ulong[]>]
+	[GenerateShapeFor<sbyte[]>]
+	[GenerateShapeFor<short[]>]
+	[GenerateShapeFor<int[]>]
+	[GenerateShapeFor<long[]>]
+	[GenerateShapeFor<ushort[]>]
+	[GenerateShapeFor<uint[]>]
+	[GenerateShapeFor<ulong[]>]
 	private partial class Witness;
 }

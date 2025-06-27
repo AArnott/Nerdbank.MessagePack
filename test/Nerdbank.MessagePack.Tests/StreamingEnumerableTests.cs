@@ -502,9 +502,9 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 	public record struct CustomKey(int Key);
 
-	[GenerateShape<string>]
-	[GenerateShape<int>]
-	[GenerateShape<SimpleStreamingContainerKeyed[]>]
+	[GenerateShapeFor<string>]
+	[GenerateShapeFor<int>]
+	[GenerateShapeFor<SimpleStreamingContainerKeyed[]>]
 	private partial class Witness;
 
 	[GenerateShape]

@@ -166,6 +166,6 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[GenerateShape<A[]>]
+	[GenerateShapeFor<A[]>]
 	private partial class Witness;
 }

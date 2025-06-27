@@ -185,6 +185,6 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	public partial record NestingObject(NestingObject? Nested = null, NestingObject[]? Array = null, string? Value = null);
 
-	[GenerateShape<Primitives>]
+	[GenerateShapeFor<Primitives>]
 	private partial class Witness;
 }

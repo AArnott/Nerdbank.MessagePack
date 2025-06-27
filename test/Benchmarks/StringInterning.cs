@@ -14,6 +14,6 @@ public partial class StringInterning
 	[Benchmark]
 	public void Interning_StringArray() => Interning.Deserialize<string[], Witness>(StringArrayMsgPack);
 
-	[GenerateShape<string[]>]
+	[GenerateShapeFor<string[]>]
 	private partial class Witness;
 }

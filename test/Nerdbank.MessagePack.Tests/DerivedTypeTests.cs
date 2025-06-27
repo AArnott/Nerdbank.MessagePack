@@ -275,7 +275,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[GenerateShape<DerivedGeneric<int>>]
+	[GenerateShapeFor<DerivedGeneric<int>>]
 	internal partial class Witness;
 
 	[GenerateShape]
