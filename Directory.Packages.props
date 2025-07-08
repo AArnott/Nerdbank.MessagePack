@@ -37,7 +37,7 @@
          dependency than they were expecting or needlessly bring in a 9.0 assembly to an 8.0 runtime. -->
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.6" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
     <PackageVersion Update="System.Collections.Immutable" Version="8.0.0" />
