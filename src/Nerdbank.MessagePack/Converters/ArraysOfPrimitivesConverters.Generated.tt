@@ -37,7 +37,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <returns>A value indicating whether a converter is available.</returns>
 	internal static bool TryGetConverter<TEnumerable, TElement>(
 		Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-		SpanCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor,
+		ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor,
 		[NotNullWhen(true)] out MessagePackConverter<TEnumerable>? converter)
 	{
 		// T[], Memory<T>, ReadOnlyMemory<T>, and possibly more types are all satisfiable by T[].
@@ -53,7 +53,7 @@ internal static partial class ArraysOfPrimitivesConverters
 		{
 			converter = (MessagePackConverter<TEnumerable>)(object)new <#=primitive#>ArrayConverter<TEnumerable>(
 				(Func<TEnumerable, IEnumerable<<#=primitive#>>>)getEnumerable,
-				(SpanCollectionConstructor<<#=primitive#>, <#=primitive#>, TEnumerable>?)spanConstructorToUse);
+				(ParameterizedCollectionConstructor<<#=primitive#>, <#=primitive#>, TEnumerable>?)spanConstructorToUse);
 			return true;
 		}
 
@@ -88,7 +88,7 @@ internal static partial class ArraysOfPrimitivesConverters
 	/// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 	private class <#=primitive#>ArrayConverter<TEnumerable>(
 		Func<TEnumerable, IEnumerable<<#=primitive#>>> getEnumerable,
-		SpanCollectionConstructor<<#=primitive#>, <#=primitive#>, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, <#=primitive#>>(getEnumerable, spanConstructor)
+		ParameterizedCollectionConstructor<<#=primitive#>, <#=primitive#>, TEnumerable>? spanConstructor) : PrimitiveArrayConverter<TEnumerable, <#=primitive#>>(getEnumerable, spanConstructor)
 	{
 		/// <inheritdoc/>
 		protected override <#=primitive#> Read(ref MessagePackReader reader) => reader.Read<#=primitive#>();

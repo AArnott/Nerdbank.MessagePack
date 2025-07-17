@@ -302,7 +302,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
-	SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> ctor,
+	ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> ctor,
 	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 	where TKey : notnull
 {
@@ -326,51 +326,6 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 			}
 
 			return ctor(entries.AsSpan(0, count), collectionConstructionOptions);
-		}
-		finally
-		{
-			ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Return(entries);
-		}
-	}
-}
-
-/// <summary>
-/// Serializes and deserializes a dictionary that initializes from an enumerable of entries.
-/// </summary>
-/// <inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}"/>
-/// <param name="getReadable"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='getReadable']"/></param>
-/// <param name="keyConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='keyConverter']"/></param>
-/// <param name="valueConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='valueConverter']"/></param>
-/// <param name="ctor">A dictionary initializer that constructs from an enumerable of entries.</param>
-/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
-internal class EnumerableDictionaryConverter<TDictionary, TKey, TValue>(
-	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
-	MessagePackConverter<TKey> keyConverter,
-	MessagePackConverter<TValue> valueConverter,
-	EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> ctor,
-	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
-	where TKey : notnull
-{
-	/// <inheritdoc/>
-	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
-	{
-		if (reader.TryReadNil())
-		{
-			return default;
-		}
-
-		context.DepthStep();
-		int count = reader.ReadMapHeader();
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
-		try
-		{
-			for (int i = 0; i < count; i++)
-			{
-				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-				entries[i] = new(key, value);
-			}
-
-			return ctor(entries.Take(count), collectionConstructionOptions);
 		}
 		finally
 		{
