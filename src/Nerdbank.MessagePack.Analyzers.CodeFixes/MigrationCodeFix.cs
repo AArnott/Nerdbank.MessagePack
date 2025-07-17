@@ -143,6 +143,15 @@ public class MigrationCodeFix : CodeFixProvider
 
 	private static NameSyntax NameInNamespace(SimpleNameSyntax name, NameSyntax @namespace) => QualifiedName(@namespace, name).WithAdditionalAnnotations(Simplifier.AddImportsAnnotation, Simplifier.Annotation);
 
+	private static async Task<Document> AddImportAndSimplifyAsync(Document document, CancellationToken cancellationToken)
+	{
+		Document modifiedDocument = document;
+		modifiedDocument = await ImportAdder.AddImportsAsync(modifiedDocument, Simplifier.AddImportsAnnotation, cancellationToken: cancellationToken);
+		modifiedDocument = await Simplifier.ReduceAsync(modifiedDocument, cancellationToken: cancellationToken);
+		modifiedDocument = await Formatter.FormatAsync(modifiedDocument, Formatter.Annotation, cancellationToken: cancellationToken);
+		return modifiedDocument;
+	}
+
 	private async Task<Document> MigrateToMessagePackConverterAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
 	{
 		Compilation? compilation = await document.Project.GetCompilationAsync(cancellationToken);
@@ -179,7 +188,7 @@ public class MigrationCodeFix : CodeFixProvider
 					: null,
 		})!;
 
-		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+		return await AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private async Task<Document> MigrateToMessagePackConverterAttributeAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
@@ -196,7 +205,7 @@ public class MigrationCodeFix : CodeFixProvider
 			attribute,
 			attribute.WithName(NameInNamespace(IdentifierName("MessagePackConverter"))));
 
-		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+		return await AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private async Task<Document> RemoveMessagePackObjectAttributeAsync(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
@@ -260,7 +269,7 @@ public class MigrationCodeFix : CodeFixProvider
 			}
 		}
 
-		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+		return await AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private async Task<bool> IsTypeUsedInSerializerCallAsync(MessagePackCSharpReferenceSymbols oldLibSymbols, INamedTypeSymbol dataTypeSymbol, Solution solution, CancellationToken cancellationToken)
@@ -311,7 +320,7 @@ public class MigrationCodeFix : CodeFixProvider
 
 		root = root.ReplaceNode(attribute, newAttribute);
 
-		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+		return await AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private async Task<Document> ReplaceIgnoreMemberAttribute(Document document, AttributeSyntax attribute, bool remove, CancellationToken cancellationToken)
@@ -337,7 +346,7 @@ public class MigrationCodeFix : CodeFixProvider
 			return document;
 		}
 
-		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+		return await AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private async Task<Document> ImplementSerializationCallbacksAsync(Document document, Diagnostic diagnostic, CancellationToken cancellationToken)
@@ -409,7 +418,7 @@ public class MigrationCodeFix : CodeFixProvider
 			}
 		}
 
-		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
+		return await AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private async Task<Document> ReplaceSerializationConstructorAttribute(Document document, TextSpan sourceSpan, CancellationToken cancellationToken)
@@ -429,16 +438,7 @@ public class MigrationCodeFix : CodeFixProvider
 			originalAttribute,
 			ConstructorShapeAttribute);
 
-		return await this.AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
-	}
-
-	private async Task<Document> AddImportAndSimplifyAsync(Document document, CancellationToken cancellationToken)
-	{
-		Document modifiedDocument = document;
-		modifiedDocument = await ImportAdder.AddImportsAsync(document, cancellationToken: cancellationToken);
-		modifiedDocument = await Simplifier.ReduceAsync(modifiedDocument, cancellationToken: cancellationToken);
-		modifiedDocument = await Formatter.FormatAsync(modifiedDocument, cancellationToken: cancellationToken);
-		return modifiedDocument;
+		return await AddImportAndSimplifyAsync(document.WithSyntaxRoot(root), cancellationToken);
 	}
 
 	private class FormatterMigrationVisitor(SemanticModel? semanticModel, MessagePackCSharpReferenceSymbols oldLibrarySymbols, CancellationToken cancellationToken) : CSharpSyntaxRewriter
@@ -467,7 +467,8 @@ public class MigrationCodeFix : CodeFixProvider
 				if (this.requiredWitnesses.Count > 0 && result is ClassDeclarationSyntax classDecl)
 				{
 					AttributeListSyntax[] attributeLists = this.requiredWitnesses.Values.Select(
-						type => AttributeList().AddAttributes(Attribute(QualifiedName(IdentifierName("PolyType"), GenericName("GenerateShapeFor").AddTypeArgumentListArguments(type))))).ToArray();
+						type => AttributeList().AddAttributes(Attribute(QualifiedName(IdentifierName("PolyType"), GenericName("GenerateShapeFor").AddTypeArgumentListArguments(type))))
+							.WithAdditionalAnnotations(Simplifier.AddImportsAnnotation)).ToArray();
 					classDecl = classDecl.AddAttributeLists(attributeLists);
 
 					if (!classDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
