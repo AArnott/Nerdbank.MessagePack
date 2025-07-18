@@ -324,7 +324,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
-	SpanCollectionConstructor<TElement, TElement, TEnumerable> ctor,
+	ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> ctor,
 	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
@@ -394,91 +394,6 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 			{
 				ArrayPool<TElement>.Shared.Return(elements);
 			}
-		}
-		else
-		{
-			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
-			MessagePackReader syncReader = reader.CreateBufferedReader();
-			TEnumerable? result = this.Read(ref syncReader, context);
-			reader.ReturnReader(ref syncReader);
-			return result;
-		}
-	}
-}
-
-/// <summary>
-/// Serializes and deserializes an enumerable that initializes from an enumerable of elements.
-/// </summary>
-/// <inheritdoc cref="EnumerableConverter{TEnumerable, TElement}"/>
-/// <param name="getEnumerable"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='getEnumerable']"/></param>
-/// <param name="elementConverter"><inheritdoc cref="EnumerableConverter{TEnumerable, TElement}" path="/param[@name='elementConverter']"/></param>
-/// <param name="ctor">A enumerable initializer that constructs from an enumerable of elements.</param>
-/// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
-internal class EnumerableEnumerableConverter<TEnumerable, TElement>(
-	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
-	MessagePackConverter<TElement> elementConverter,
-	EnumerableCollectionConstructor<TElement, TElement, TEnumerable> ctor,
-	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
-{
-	/// <inheritdoc/>
-	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
-	{
-		if (reader.TryReadNil())
-		{
-			return default;
-		}
-
-		context.DepthStep();
-		int count = reader.ReadArrayHeader();
-
-		// Avoid ArrayPool, which provides only approximate sizes that requires .Take(int) to be used later,
-		// which is an allocation and requires much more native code gen for value types.
-		var elements = new TElement[count];
-		for (int i = 0; i < count; i++)
-		{
-			elements[i] = this.ReadElement(ref reader, context);
-		}
-
-		return ctor(elements, collectionConstructionOptions);
-	}
-
-	/// <inheritdoc/>
-	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
-	{
-		if (this.ElementPrefersAsyncSerialization)
-		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
-			bool isNil;
-			while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
-			if (isNil)
-			{
-				reader.ReturnReader(ref streamingReader);
-				return default;
-			}
-
-			context.DepthStep();
-
-			int count;
-			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
-			reader.ReturnReader(ref streamingReader);
-
-			// Avoid ArrayPool, which provides only approximate sizes that requires .Take(int) to be used later,
-			// which is an allocation and requires much more native code gen for value types.
-			var elements = new TElement[count];
-			for (int i = 0; i < count; i++)
-			{
-				elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
-			}
-
-			return ctor(elements);
 		}
 		else
 		{
