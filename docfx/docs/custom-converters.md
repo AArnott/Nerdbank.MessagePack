@@ -261,3 +261,7 @@ Remember to [register](#register-your-custom-converter) any of these user-define
 ### <xref:System.BinaryData?displayProperty=fullName>
 
 [!code-csharp[](../../samples/cs/Converters/BinaryDataConverter.cs#Converter)]
+
+### OneOf discriminated unions
+
+[!code-csharp[](../../samples/cs/Converters/OneOfConverter.cs#Converter)]
