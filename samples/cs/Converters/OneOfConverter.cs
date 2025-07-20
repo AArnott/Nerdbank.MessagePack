@@ -1,7 +1,6 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Nerdbank.MessagePack;
 using OneOf;
 
 namespace Samples.Converters;
@@ -32,18 +31,19 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
     {
         context.DepthStep();
         writer.WriteArrayHeader(2);
-        
-        value.Switch(
-            value0 =>
-            {
-                writer.Write(0);
-                context.GetConverter<T0>().Write(ref writer, value0, context);
-            },
-            value1 =>
-            {
-                writer.Write(1);
-                context.GetConverter<T1>().Write(ref writer, value1, context);
-            });
+        writer.Write(value.Index);
+
+        switch (value.Index)
+        {
+            case 0:
+                context.GetConverter<T0>(null).Write(ref writer, value.AsT0, context);
+                break;
+            case 1:
+                context.GetConverter<T1>(null).Write(ref writer, value.AsT1, context);
+                break;
+            default:
+                throw new MessagePackSerializationException($"Invalid OneOf type index: {value.Index}. Expected 0 or 1.");
+        }
     }
 
     public override OneOf<T0, T1> Read(ref MessagePackReader reader, SerializationContext context)
@@ -58,9 +58,9 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
         int typeIndex = reader.ReadInt32();
         return typeIndex switch
         {
-            0 => OneOf<T0, T1>.FromT0(context.GetConverter<T0>().Read(ref reader, context)),
-            1 => OneOf<T0, T1>.FromT1(context.GetConverter<T1>().Read(ref reader, context)),
-            _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0 or 1.")
+            0 => context.GetConverter<T0>(null).Read(ref reader, context)!,
+            1 => context.GetConverter<T1>(null).Read(ref reader, context)!,
+            _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0 or 1."),
         };
     }
 }
@@ -81,23 +81,22 @@ internal class OneOfConverter<T0, T1, T2> : MessagePackConverter<OneOf<T0, T1, T
     {
         context.DepthStep();
         writer.WriteArrayHeader(2);
-        
-        value.Switch(
-            value0 =>
-            {
-                writer.Write(0);
-                context.GetConverter<T0>().Write(ref writer, value0, context);
-            },
-            value1 =>
-            {
-                writer.Write(1);
-                context.GetConverter<T1>().Write(ref writer, value1, context);
-            },
-            value2 =>
-            {
-                writer.Write(2);
-                context.GetConverter<T2>().Write(ref writer, value2, context);
-            });
+        writer.Write(value.Index);
+
+        switch (value.Index)
+        {
+            case 0:
+                context.GetConverter<T0>(null).Write(ref writer, value.AsT0, context);
+                break;
+            case 1:
+                context.GetConverter<T1>(null).Write(ref writer, value.AsT1, context);
+                break;
+            case 2:
+                context.GetConverter<T2>(null).Write(ref writer, value.AsT2, context);
+                break;
+            default:
+                throw new MessagePackSerializationException($"Invalid OneOf type index: {value.Index}. Expected 0, 1, or 2.");
+        }
     }
 
     public override OneOf<T0, T1, T2> Read(ref MessagePackReader reader, SerializationContext context)
@@ -112,10 +111,10 @@ internal class OneOfConverter<T0, T1, T2> : MessagePackConverter<OneOf<T0, T1, T
         int typeIndex = reader.ReadInt32();
         return typeIndex switch
         {
-            0 => OneOf<T0, T1, T2>.FromT0(context.GetConverter<T0>().Read(ref reader, context)),
-            1 => OneOf<T0, T1, T2>.FromT1(context.GetConverter<T1>().Read(ref reader, context)),
-            2 => OneOf<T0, T1, T2>.FromT2(context.GetConverter<T2>().Read(ref reader, context)),
-            _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0, 1, or 2.")
+            0 => context.GetConverter<T0>(null).Read(ref reader, context)!,
+            1 => context.GetConverter<T1>(null).Read(ref reader, context)!,
+            2 => context.GetConverter<T2>(null).Read(ref reader, context)!,
+            _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0, 1, or 2."),
         };
     }
 }
