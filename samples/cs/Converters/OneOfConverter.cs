@@ -1,9 +1,9 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Reflection;
 using Nerdbank.MessagePack;
 using OneOf;
-using System.Reflection;
 
 namespace Samples.Converters;
 
@@ -41,20 +41,47 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
         if (value.IsT0)
         {
             writer.Write(0);
-#if NET
-            context.GetConverter<T0>().Write(ref writer, value.AsT0, context);
-#else
-            context.GetConverter<T0>(context.TypeShapeProvider).Write(ref writer, value.AsT0, context);
-#endif
+            // For this sample, we'll handle common primitive types directly
+            // For a production implementation, you'd want a more sophisticated type dispatch
+            WriteValue(ref writer, value.AsT0, context);
         }
         else
         {
             writer.Write(1);
-#if NET
-            context.GetConverter<T1>().Write(ref writer, value.AsT1, context);
-#else
-            context.GetConverter<T1>(context.TypeShapeProvider).Write(ref writer, value.AsT1, context);
-#endif
+            WriteValue(ref writer, value.AsT1, context);
+        }
+    }
+
+    private static void WriteValue<T>(ref MessagePackWriter writer, T value, SerializationContext context)
+    {
+        // Handle common primitive types directly
+        switch (value)
+        {
+            case string s:
+                writer.Write(s);
+                break;
+            case int i:
+                writer.Write(i);
+                break;
+            case bool b:
+                writer.Write(b);
+                break;
+            case double d:
+                writer.Write(d);
+                break;
+            case float f:
+                writer.Write(f);
+                break;
+            case long l:
+                writer.Write(l);
+                break;
+            case null:
+                writer.WriteNil();
+                break;
+            default:
+                // For complex types, you would need to get a converter
+                // This is a simplified sample implementation
+                throw new NotSupportedException($"Type {typeof(T)} is not supported in this sample converter. For complex types, implement a more sophisticated converter that can handle type shapes.");
         }
     }
 
@@ -70,15 +97,45 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
         int typeIndex = reader.ReadInt32();
         return typeIndex switch
         {
-#if NET
-            0 => OneOf<T0, T1>.FromT0(context.GetConverter<T0>().Read(ref reader, context)),
-            1 => OneOf<T0, T1>.FromT1(context.GetConverter<T1>().Read(ref reader, context)),
-#else
-            0 => OneOf<T0, T1>.FromT0(context.GetConverter<T0>(context.TypeShapeProvider).Read(ref reader, context)),
-            1 => OneOf<T0, T1>.FromT1(context.GetConverter<T1>(context.TypeShapeProvider).Read(ref reader, context)),
-#endif
+            0 => OneOf<T0, T1>.FromT0(ReadValue<T0>(ref reader, context)),
+            1 => OneOf<T0, T1>.FromT1(ReadValue<T1>(ref reader, context)),
             _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0 or 1.")
         };
+    }
+
+    private static T ReadValue<T>(ref MessagePackReader reader, SerializationContext context)
+    {
+        // Handle common primitive types directly
+        if (typeof(T) == typeof(string))
+        {
+            return (T)(object)reader.ReadString()!;
+        }
+        else if (typeof(T) == typeof(int))
+        {
+            return (T)(object)reader.ReadInt32();
+        }
+        else if (typeof(T) == typeof(bool))
+        {
+            return (T)(object)reader.ReadBoolean();
+        }
+        else if (typeof(T) == typeof(double))
+        {
+            return (T)(object)reader.ReadDouble();
+        }
+        else if (typeof(T) == typeof(float))
+        {
+            return (T)(object)reader.ReadSingle();
+        }
+        else if (typeof(T) == typeof(long))
+        {
+            return (T)(object)reader.ReadInt64();
+        }
+        else
+        {
+            // For complex types, you would need to get a converter
+            // This is a simplified sample implementation
+            throw new NotSupportedException($"Type {typeof(T)} is not supported in this sample converter. For complex types, implement a more sophisticated converter that can handle type shapes.");
+        }
     }
 }
 
@@ -106,29 +163,17 @@ internal class OneOfConverter<T0, T1, T2> : MessagePackConverter<OneOf<T0, T1, T
         if (value.IsT0)
         {
             writer.Write(0);
-#if NET
-            context.GetConverter<T0>().Write(ref writer, value.AsT0, context);
-#else
-            context.GetConverter<T0>(context.TypeShapeProvider).Write(ref writer, value.AsT0, context);
-#endif
+            WriteValue(ref writer, value.AsT0, context);
         }
         else if (value.IsT1)
         {
             writer.Write(1);
-#if NET
-            context.GetConverter<T1>().Write(ref writer, value.AsT1, context);
-#else
-            context.GetConverter<T1>(context.TypeShapeProvider).Write(ref writer, value.AsT1, context);
-#endif
+            WriteValue(ref writer, value.AsT1, context);
         }
         else
         {
             writer.Write(2);
-#if NET
-            context.GetConverter<T2>().Write(ref writer, value.AsT2, context);
-#else
-            context.GetConverter<T2>(context.TypeShapeProvider).Write(ref writer, value.AsT2, context);
-#endif
+            WriteValue(ref writer, value.AsT2, context);
         }
     }
 
@@ -144,17 +189,79 @@ internal class OneOfConverter<T0, T1, T2> : MessagePackConverter<OneOf<T0, T1, T
         int typeIndex = reader.ReadInt32();
         return typeIndex switch
         {
-#if NET
-            0 => OneOf<T0, T1, T2>.FromT0(context.GetConverter<T0>().Read(ref reader, context)),
-            1 => OneOf<T0, T1, T2>.FromT1(context.GetConverter<T1>().Read(ref reader, context)),
-            2 => OneOf<T0, T1, T2>.FromT2(context.GetConverter<T2>().Read(ref reader, context)),
-#else
-            0 => OneOf<T0, T1, T2>.FromT0(context.GetConverter<T0>(context.TypeShapeProvider).Read(ref reader, context)),
-            1 => OneOf<T0, T1, T2>.FromT1(context.GetConverter<T1>(context.TypeShapeProvider).Read(ref reader, context)),
-            2 => OneOf<T0, T1, T2>.FromT2(context.GetConverter<T2>(context.TypeShapeProvider).Read(ref reader, context)),
-#endif
+            0 => OneOf<T0, T1, T2>.FromT0(ReadValue<T0>(ref reader, context)),
+            1 => OneOf<T0, T1, T2>.FromT1(ReadValue<T1>(ref reader, context)),
+            2 => OneOf<T0, T1, T2>.FromT2(ReadValue<T2>(ref reader, context)),
             _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0, 1, or 2.")
         };
+    }
+
+    private static void WriteValue<T>(ref MessagePackWriter writer, T value, SerializationContext context)
+    {
+        // Handle common primitive types directly
+        switch (value)
+        {
+            case string s:
+                writer.Write(s);
+                break;
+            case int i:
+                writer.Write(i);
+                break;
+            case bool b:
+                writer.Write(b);
+                break;
+            case double d:
+                writer.Write(d);
+                break;
+            case float f:
+                writer.Write(f);
+                break;
+            case long l:
+                writer.Write(l);
+                break;
+            case null:
+                writer.WriteNil();
+                break;
+            default:
+                // For complex types, you would need to get a converter
+                // This is a simplified sample implementation
+                throw new NotSupportedException($"Type {typeof(T)} is not supported in this sample converter. For complex types, implement a more sophisticated converter that can handle type shapes.");
+        }
+    }
+
+    private static T ReadValue<T>(ref MessagePackReader reader, SerializationContext context)
+    {
+        // Handle common primitive types directly
+        if (typeof(T) == typeof(string))
+        {
+            return (T)(object)reader.ReadString()!;
+        }
+        else if (typeof(T) == typeof(int))
+        {
+            return (T)(object)reader.ReadInt32();
+        }
+        else if (typeof(T) == typeof(bool))
+        {
+            return (T)(object)reader.ReadBoolean();
+        }
+        else if (typeof(T) == typeof(double))
+        {
+            return (T)(object)reader.ReadDouble();
+        }
+        else if (typeof(T) == typeof(float))
+        {
+            return (T)(object)reader.ReadSingle();
+        }
+        else if (typeof(T) == typeof(long))
+        {
+            return (T)(object)reader.ReadInt64();
+        }
+        else
+        {
+            // For complex types, you would need to get a converter
+            // This is a simplified sample implementation
+            throw new NotSupportedException($"Type {typeof(T)} is not supported in this sample converter. For complex types, implement a more sophisticated converter that can handle type shapes.");
+        }
     }
 }
 
