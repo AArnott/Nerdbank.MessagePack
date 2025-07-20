@@ -1,6 +1,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text.Json.Nodes;
 using OneOf;
 
 namespace Samples.Converters;
@@ -63,5 +64,29 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
             _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0 or 1."),
         };
     }
+
+    public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
+    {
+        ["type"] = "array",
+        ["minItems"] = 2,
+        ["maxItems"] = 2,
+        ["items"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["type"] = "integer",
+                    ["description"] = "Type index: 0 for T0, 1 for T1",
+                },
+                new JsonObject
+                {
+                    ["oneOf"] = new JsonArray
+                    {
+                        context.GetJsonSchema(typeShape.Provider.Resolve<T0>()),
+                        context.GetJsonSchema(typeShape.Provider.Resolve<T1>()),
+                    },
+                },
+            },
+        ["description"] = "OneOf<T0, T1> serialized as [typeIndex, value]",
+    };
 }
 #endregion
