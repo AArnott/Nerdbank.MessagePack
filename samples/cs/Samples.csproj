@@ -20,6 +20,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" />
     <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="OneOf" />
     <PackageReference Include="System.Memory.Data" />
   </ItemGroup>
 
