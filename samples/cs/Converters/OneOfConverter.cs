@@ -3,6 +3,7 @@
 
 using Nerdbank.MessagePack;
 using OneOf;
+using System.Reflection;
 
 namespace Samples.Converters;
 
@@ -26,24 +27,35 @@ namespace Samples.Converters;
 /// </remarks>
 /// <typeparam name="T0">The first possible type.</typeparam>
 /// <typeparam name="T1">The second possible type.</typeparam>
+#if NET
 internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
+#else
+internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
+#endif
 {
     public override void Write(ref MessagePackWriter writer, in OneOf<T0, T1> value, SerializationContext context)
     {
         context.DepthStep();
         writer.WriteArrayHeader(2);
         
-        value.Switch(
-            value0 =>
-            {
-                writer.Write(0);
-                context.GetConverter<T0>().Write(ref writer, value0, context);
-            },
-            value1 =>
-            {
-                writer.Write(1);
-                context.GetConverter<T1>().Write(ref writer, value1, context);
-            });
+        if (value.IsT0)
+        {
+            writer.Write(0);
+#if NET
+            context.GetConverter<T0>().Write(ref writer, value.AsT0, context);
+#else
+            context.GetConverter<T0>(context.TypeShapeProvider).Write(ref writer, value.AsT0, context);
+#endif
+        }
+        else
+        {
+            writer.Write(1);
+#if NET
+            context.GetConverter<T1>().Write(ref writer, value.AsT1, context);
+#else
+            context.GetConverter<T1>(context.TypeShapeProvider).Write(ref writer, value.AsT1, context);
+#endif
+        }
     }
 
     public override OneOf<T0, T1> Read(ref MessagePackReader reader, SerializationContext context)
@@ -58,8 +70,13 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
         int typeIndex = reader.ReadInt32();
         return typeIndex switch
         {
+#if NET
             0 => OneOf<T0, T1>.FromT0(context.GetConverter<T0>().Read(ref reader, context)),
             1 => OneOf<T0, T1>.FromT1(context.GetConverter<T1>().Read(ref reader, context)),
+#else
+            0 => OneOf<T0, T1>.FromT0(context.GetConverter<T0>(context.TypeShapeProvider).Read(ref reader, context)),
+            1 => OneOf<T0, T1>.FromT1(context.GetConverter<T1>(context.TypeShapeProvider).Read(ref reader, context)),
+#endif
             _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0 or 1.")
         };
     }
@@ -75,29 +92,44 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
 /// <typeparam name="T0">The first possible type.</typeparam>
 /// <typeparam name="T1">The second possible type.</typeparam>
 /// <typeparam name="T2">The third possible type.</typeparam>
+#if NET
 internal class OneOfConverter<T0, T1, T2> : MessagePackConverter<OneOf<T0, T1, T2>>
+#else
+internal class OneOfConverter<T0, T1, T2> : MessagePackConverter<OneOf<T0, T1, T2>>
+#endif
 {
     public override void Write(ref MessagePackWriter writer, in OneOf<T0, T1, T2> value, SerializationContext context)
     {
         context.DepthStep();
         writer.WriteArrayHeader(2);
         
-        value.Switch(
-            value0 =>
-            {
-                writer.Write(0);
-                context.GetConverter<T0>().Write(ref writer, value0, context);
-            },
-            value1 =>
-            {
-                writer.Write(1);
-                context.GetConverter<T1>().Write(ref writer, value1, context);
-            },
-            value2 =>
-            {
-                writer.Write(2);
-                context.GetConverter<T2>().Write(ref writer, value2, context);
-            });
+        if (value.IsT0)
+        {
+            writer.Write(0);
+#if NET
+            context.GetConverter<T0>().Write(ref writer, value.AsT0, context);
+#else
+            context.GetConverter<T0>(context.TypeShapeProvider).Write(ref writer, value.AsT0, context);
+#endif
+        }
+        else if (value.IsT1)
+        {
+            writer.Write(1);
+#if NET
+            context.GetConverter<T1>().Write(ref writer, value.AsT1, context);
+#else
+            context.GetConverter<T1>(context.TypeShapeProvider).Write(ref writer, value.AsT1, context);
+#endif
+        }
+        else
+        {
+            writer.Write(2);
+#if NET
+            context.GetConverter<T2>().Write(ref writer, value.AsT2, context);
+#else
+            context.GetConverter<T2>(context.TypeShapeProvider).Write(ref writer, value.AsT2, context);
+#endif
+        }
     }
 
     public override OneOf<T0, T1, T2> Read(ref MessagePackReader reader, SerializationContext context)
@@ -112,11 +144,52 @@ internal class OneOfConverter<T0, T1, T2> : MessagePackConverter<OneOf<T0, T1, T
         int typeIndex = reader.ReadInt32();
         return typeIndex switch
         {
+#if NET
             0 => OneOf<T0, T1, T2>.FromT0(context.GetConverter<T0>().Read(ref reader, context)),
             1 => OneOf<T0, T1, T2>.FromT1(context.GetConverter<T1>().Read(ref reader, context)),
             2 => OneOf<T0, T1, T2>.FromT2(context.GetConverter<T2>().Read(ref reader, context)),
+#else
+            0 => OneOf<T0, T1, T2>.FromT0(context.GetConverter<T0>(context.TypeShapeProvider).Read(ref reader, context)),
+            1 => OneOf<T0, T1, T2>.FromT1(context.GetConverter<T1>(context.TypeShapeProvider).Read(ref reader, context)),
+            2 => OneOf<T0, T1, T2>.FromT2(context.GetConverter<T2>(context.TypeShapeProvider).Read(ref reader, context)),
+#endif
             _ => throw new MessagePackSerializationException($"Invalid OneOf type index: {typeIndex}. Expected 0, 1, or 2.")
         };
+    }
+}
+
+/// <summary>
+/// Converter factory that creates OneOf converters for OneOf types.
+/// </summary>
+internal class OneOfConverterFactory : IMessagePackConverterFactory
+{
+    public MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape)
+    {
+        Type type = typeof(T);
+        
+        // Check if it's a OneOf type
+        if (type.IsGenericType)
+        {
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
+            
+            // Handle OneOf<T0, T1>
+            if (genericTypeDefinition == typeof(OneOf<,>))
+            {
+                Type[] typeArgs = type.GetGenericArguments();
+                Type converterType = typeof(OneOfConverter<,>).MakeGenericType(typeArgs);
+                return (MessagePackConverter<T>?)Activator.CreateInstance(converterType);
+            }
+            
+            // Handle OneOf<T0, T1, T2>
+            if (genericTypeDefinition == typeof(OneOf<,,>))
+            {
+                Type[] typeArgs = type.GetGenericArguments();
+                Type converterType = typeof(OneOfConverter<,,>).MakeGenericType(typeArgs);
+                return (MessagePackConverter<T>?)Activator.CreateInstance(converterType);
+            }
+        }
+        
+        return null;
     }
 }
 #endregion
