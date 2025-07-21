@@ -67,25 +67,39 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
 
     public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
     {
-        ["type"] = "array",
-        ["minItems"] = 2,
-        ["maxItems"] = 2,
-        ["items"] = new JsonArray
+        ["oneOf"] = new JsonArray
+        {
+            new JsonObject
             {
-                new JsonObject
-                {
-                    ["type"] = "integer",
-                    ["description"] = "Type index: 0 for T0, 1 for T1",
-                },
-                new JsonObject
-                {
-                    ["oneOf"] = new JsonArray
+                ["type"] = "array",
+                ["minItems"] = 2,
+                ["maxItems"] = 2,
+                ["items"] = new JsonArray
                     {
+                        new JsonObject
+                        {
+                            ["type"] = "integer",
+                            ["enum"] = new JsonArray(0),
+                        },
                         context.GetJsonSchema(typeShape.Provider.Resolve<T0>()),
+                    },
+            },
+            new JsonObject
+            {
+                ["type"] = "array",
+                ["minItems"] = 2,
+                ["maxItems"] = 2,
+                ["items"] = new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            ["type"] = "integer",
+                            ["enum"] = new JsonArray(1),
+                        },
                         context.GetJsonSchema(typeShape.Provider.Resolve<T1>()),
                     },
-                },
             },
+        },
         ["description"] = "OneOf<T0, T1> serialized as [typeIndex, value]",
     };
 }
