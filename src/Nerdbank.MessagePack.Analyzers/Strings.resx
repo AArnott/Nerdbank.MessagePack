@@ -255,6 +255,30 @@
   <data name="NBMsgPack062_Title" xml:space="preserve">
     <value>UnusedDataPacket properties should be private</value>
   </data>
+  <data name="NBMsgPack070_MessageFormat" xml:space="preserve">
+    <value>The type '{0}' specified in UseComparerAttribute must not be an open generic type</value>
+  </data>
+  <data name="NBMsgPack070_Title" xml:space="preserve">
+    <value>UseComparerAttribute type must not be an open generic</value>
+  </data>
+  <data name="NBMsgPack071_MessageFormat" xml:space="preserve">
+    <value>The member '{0}' on type '{1}' must be a public property accessible from the specified type</value>
+  </data>
+  <data name="NBMsgPack071_Title" xml:space="preserve">
+    <value>UseComparerAttribute member name must point to a valid property</value>
+  </data>
+  <data name="NBMsgPack072_MessageFormat" xml:space="preserve">
+    <value>The type or member must implement IComparer&lt;T&gt; or IEqualityComparer&lt;T&gt; appropriate for the decorated collection</value>
+  </data>
+  <data name="NBMsgPack072_Title" xml:space="preserve">
+    <value>UseComparerAttribute must specify a compatible comparer</value>
+  </data>
+  <data name="NBMsgPack073_MessageFormat" xml:space="preserve">
+    <value>The type '{0}' specified in UseComparerAttribute is abstract and requires a static member to be specified</value>
+  </data>
+  <data name="NBMsgPack073_Title" xml:space="preserve">
+    <value>UseComparerAttribute type must not be abstract unless using static member</value>
+  </data>
   <data name="NBMsgPack100_MessageFormat" xml:space="preserve">
     <value>This is a formatter for the MessagePack-CSharp library. You may want to migrate this to a converter for the newer Nerdbank.MessagePack library.</value>
   </data>

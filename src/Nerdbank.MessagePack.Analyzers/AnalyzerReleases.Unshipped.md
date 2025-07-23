@@ -23,6 +23,10 @@ NBMsgPack051 | Usage | Warning | Prefer modern .NET APIs
 NBMsgPack060 | Usage | Error | `UnusedDataPacket` member should have a property shape
 NBMsgPack061 | Usage | Error | `UnusedDataPacket` member should not have a KeyAttribute
 NBMsgPack062 | Usage | Warning | `UnusedDataPacket` properties should be private
+NBMsgPack070 | Usage | Error | UseComparerAttribute type must not be an open generic
+NBMsgPack071 | Usage | Error | UseComparerAttribute member name must point to a valid property
+NBMsgPack072 | Usage | Error | UseComparerAttribute must specify a compatible comparer
+NBMsgPack073 | Usage | Error | UseComparerAttribute type must not be abstract unless using static member
 NBMsgPack100 | Migration | Info | Migrate MessagePack-CSharp formatter
 NBMsgPack101 | Migration | Info | Migrate to MessagePackConverterAttribute
 NBMsgPack102 | Migration | Info | Remove use of MessagePackObjectAttribute

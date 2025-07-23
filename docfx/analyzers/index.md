@@ -28,6 +28,10 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack060](NBMsgPack060.md) | Usage | Error | @Nerdbank.MessagePack.UnusedDataPacket member should have a property shape
 [NBMsgPack061](NBMsgPack061.md) | Usage | Error | @Nerdbank.MessagePack.UnusedDataPacket member should not have a KeyAttribute
 [NBMsgPack062](NBMsgPack062.md) | Usage | Warning | @Nerdbank.MessagePack.UnusedDataPacket properties should be private
+[NBMsgPack070](NBMsgPack070.md) | Usage | Error | UseComparerAttribute type must not be an open generic
+[NBMsgPack071](NBMsgPack071.md) | Usage | Error | UseComparerAttribute member name must point to a valid property
+[NBMsgPack072](NBMsgPack072.md) | Usage | Error | UseComparerAttribute must specify a compatible comparer
+[NBMsgPack073](NBMsgPack073.md) | Usage | Error | UseComparerAttribute type must not be abstract unless using static member
 [NBMsgPack100](NBMsgPack100.md) | Migration | Info | Migrate MessagePack-CSharp formatter
 [NBMsgPack101](NBMsgPack101.md) | Migration | Info | Migrate to @Nerdbank.MessagePack.MessagePackConverterAttribute
 [NBMsgPack102](NBMsgPack102.md) | Migration | Info | Remove use of MessagePackObjectAttribute
