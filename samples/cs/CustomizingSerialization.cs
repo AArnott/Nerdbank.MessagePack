@@ -127,3 +127,32 @@ namespace VersionSafeObject
     }
     #endregion
 }
+
+namespace CustomComparerOnMemberViaAttribute
+{
+    #region CustomComparerOnMemberViaAttribute
+    public class Person
+    {
+        [UseComparer(typeof(StringComparer), nameof(StringComparer.OrdinalIgnoreCase))]
+        public Dictionary<string, Person> ChildrenByName { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+    #endregion
+}
+
+namespace CustomComparerOnMemberViaInitializer
+{
+    #region CustomComparerOnMemberViaInitializer
+    public class Person
+    {
+        public Dictionary<string, Person> ChildrenByName { get; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+    #endregion
+}
+
+namespace CustomComparerOnParameter
+{
+    #region CustomComparerOnParameter
+    public record Person(
+        [UseComparer(typeof(StringComparer), nameof(StringComparer.OrdinalIgnoreCase))] Dictionary<string, Person> ChildrenByName);
+    #endregion
+}

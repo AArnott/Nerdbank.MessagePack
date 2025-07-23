@@ -18,7 +18,8 @@ public record ReferenceSymbols(
 	INamedTypeSymbol DerivedTypeShapeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
 	INamedTypeSymbol PropertyShapeAttribute,
-	INamedTypeSymbol ConstructorShapeAttribute)
+	INamedTypeSymbol ConstructorShapeAttribute,
+	INamedTypeSymbol UseComparerAttribute)
 {
 	public INamedTypeSymbol MessagePackConverterUnbound { get; } = MessagePackConverter.ConstructUnboundGenericType();
 
@@ -103,6 +104,13 @@ public record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? useComparerAttribute = libraryAssembly.GetTypeByMetadataName("Nerdbank.MessagePack.UseComparerAttribute");
+		if (useComparerAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		if (compilation.ExternalReferences.FirstOrDefault(r => string.Equals(Path.GetFileName(r.Display), "PolyType.dll", StringComparison.OrdinalIgnoreCase)) is not MetadataReference polytypeReference ||
 			compilation.GetAssemblyOrModuleSymbol(polytypeReference) is not IAssemblySymbol polytypeAssembly)
 		{
@@ -151,7 +159,8 @@ public record ReferenceSymbols(
 			derivedTypeShapeAttribute,
 			generateShapeAttribute,
 			propertyShapeAttribute,
-			constructorShapeAttribute);
+			constructorShapeAttribute,
+			useComparerAttribute);
 		return true;
 	}
 }

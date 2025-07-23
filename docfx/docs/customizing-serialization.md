@@ -59,6 +59,39 @@ The serialized name for an enum value may be changed from its declared C# name b
 > Enum values are serialized by their ordinal values by default as this leads to optimal performance.
 > To serialize using their value names instead, set <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumValuesByName?displayProperty=nameWithType> to `true`.
 
+## Specifying the comparer for keyed collections
+
+When a property stores a keyed collection (e.g. <xref:System.Collections.Generic.Dictionary`2> or <xref:System.Collections.Generic.HashSet`1>), a [default key comparer](security.md#hash-collisions) is provided.
+
+To specify a custom comparer to use (e.g. to consider strings as case insensitive) for a particular collection, you have two options as described in the following sub-sections:
+
+### Use a property initializer and remove the `set`/`init` accessor
+
+By removing the `set` or `init` accessor from a property, you force the deserializer to use whatever collection is already initialized on the property.
+You can initialize this property in your constructor or in a property initializer.
+Initializing the collection yourself gives you the opportunity to specify the comparer to use.
+
+In the following code snippet, a property initializer syntax is used:
+
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#CustomComparerOnMemberViaInitializer)]
+
+### Apply the <xref:Nerdbank.MessagePack.UseComparerAttribute>
+
+This approach arranges for the collection itself to still be instantiated by the deserializer and set on the property.
+This might be useful so the deserializer can initialize the collection with a particular capacity.
+
+Apply the <xref:Nerdbank.MessagePack.UseComparerAttribute> to the property (or constructor parameter).
+With this attribute, you can specify an implementation of <xref:System.Collections.Generic.IEqualityComparer`1> or <xref:System.Collections.Generic.IComparer`1> as required by the collection.
+This comparer can be provided directly on a type, or returned from a property declared on the type.
+
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#CustomComparerOnMemberViaAttribute)]
+
+Notice how the comparer is specified both by attribute (which influences deserialized instances) and in the property initializer (which influences new instantiations created by user code).
+
+This approach is particularly useful when the collection is passed in as a constructor parameter, such that it *must* be initialized by the deserializer:
+
+[!code-csharp[](../../samples/cs/CustomizingSerialization.cs#CustomComparerOnParameter)]
+
 ## Deserializing constructors
 
 The simplest deserialization is into a type with a default constructor and mutable fields and properties.
