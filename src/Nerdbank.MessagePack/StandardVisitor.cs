@@ -4,6 +4,7 @@
 #pragma warning disable NBMsgPackAsync
 
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -303,7 +304,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		MessagePackConverter<TPropertyType> converter =
 			this.GetCustomConverter(propertyShape.PropertyType, propertyShape.AttributeProvider) ??
-			this.GetConverter(propertyShape.PropertyType);
+			this.GetConverter(propertyShape.PropertyType, propertyShape.AttributeProvider);
 
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
@@ -502,7 +503,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
 		IPropertyAssignmentTrackingManager assignmentTrackingManager = (IPropertyAssignmentTrackingManager)state!;
-		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType);
+		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType, parameterShape.AttributeProvider);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 
@@ -548,6 +549,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 	{
+		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
+
 		// Serialization functions.
 		MessagePackConverter<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);
 		MessagePackConverter<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
@@ -557,8 +560,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return dictionaryShape.ConstructionStrategy switch
 		{
 			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter),
-			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetMutableConstructor(), this.GetCollectionOptions(dictionaryShape)),
-			CollectionConstructionStrategy.Parameterized => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape)),
+			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetMutableConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
+			CollectionConstructionStrategy.Parameterized => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
 			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
 		};
 	}
@@ -566,6 +569,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
 	{
+		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
+
+		// Serialization functions.
 		MessagePackConverter<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
 
 		if (enumerableShape.Type.IsArray)
@@ -607,12 +613,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return enumerableShape.ConstructionStrategy switch
 		{
 			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
-			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetMutableConstructor(), this.GetCollectionOptions(enumerableShape)),
+			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAddElement(), enumerableShape.GetMutableConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
 #if NET
 			CollectionConstructionStrategy.Parameterized when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
 #endif
 			CollectionConstructionStrategy.Parameterized when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetParameterizedConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
-			CollectionConstructionStrategy.Parameterized => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape)),
+			CollectionConstructionStrategy.Parameterized => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
 			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
 		};
 	}
@@ -625,17 +631,40 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
-		=> new SurrogateConverter<T, TSurrogate>(surrogateShape, this.GetConverter(surrogateShape.SurrogateType, state));
+		=> new SurrogateConverter<T, TSurrogate>(surrogateShape, this.GetConverter(surrogateShape.SurrogateType, state: state));
 
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
 	/// </summary>
 	/// <typeparam name="T">The data type to make convertible.</typeparam>
 	/// <param name="shape">The type shape.</param>
+	/// <param name="memberAttributes">The attribute provider on the member that requires this converter.</param>
 	/// <param name="state">An optional state object to pass to the converter.</param>
 	/// <returns>The converter.</returns>
-	protected MessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape, object? state = null)
+	protected MessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape, ICustomAttributeProvider? memberAttributes = null, object? state = null)
 	{
+		if (memberAttributes is not null)
+		{
+			if (state is not null)
+			{
+				throw new ArgumentException("Providing both attributes and state are not supported because we reuse the state parameter for attribute influence.");
+			}
+
+			if (memberAttributes.GetCustomAttribute<UseComparerAttribute>() is { } attribute)
+			{
+				MemberConverterInfluence memberInfluence = new()
+				{
+					ComparerSource = attribute.ComparerType,
+					ComparerSourceMemberName = attribute.MemberName,
+				};
+
+				// PERF: Ideally, we can store and retrieve member influenced converters
+				// just like we do for non-member influenced ones.
+				// We'd probably use a separate dictionary dedicated to member-influenced converters.
+				return (MessagePackConverter<T>)shape.Invoke(this, memberInfluence)!;
+			}
+		}
+
 		return (MessagePackConverter<T>)this.context.GetOrAdd(shape, state)!;
 	}
 
@@ -749,14 +778,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
 	}
 
-	private CollectionConstructionOptions<TKey> GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape)
+	private CollectionConstructionOptions<TKey> GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, MemberConverterInfluence? memberInfluence)
 		where TKey : notnull
-		=> this.GetCollectionOptions(dictionaryShape.KeyType, dictionaryShape.SupportedComparer);
+		=> this.GetCollectionOptions(dictionaryShape.KeyType, dictionaryShape.SupportedComparer, memberInfluence);
 
-	private CollectionConstructionOptions<TElement> GetCollectionOptions<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape)
-		=> this.GetCollectionOptions(enumerableShape.ElementType, enumerableShape.SupportedComparer);
+	private CollectionConstructionOptions<TElement> GetCollectionOptions<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, MemberConverterInfluence? memberInfluence)
+		=> this.GetCollectionOptions(enumerableShape.ElementType, enumerableShape.SupportedComparer, memberInfluence);
 
-	private CollectionConstructionOptions<TKey> GetCollectionOptions<TKey>(ITypeShape<TKey> keyShape, CollectionComparerOptions requiredComparer)
+	private CollectionConstructionOptions<TKey> GetCollectionOptions<TKey>(ITypeShape<TKey> keyShape, CollectionComparerOptions requiredComparer, MemberConverterInfluence? memberInfluence)
 	{
 		if (this.owner.ComparerProvider is null)
 		{
@@ -766,8 +795,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return requiredComparer switch
 		{
 			CollectionComparerOptions.None => default,
-			CollectionComparerOptions.Comparer => new() { Comparer = this.owner.ComparerProvider.GetComparer(keyShape) },
-			CollectionComparerOptions.EqualityComparer => new() { EqualityComparer = this.owner.ComparerProvider.GetEqualityComparer(keyShape) },
+			CollectionComparerOptions.Comparer => new() { Comparer = memberInfluence?.GetComparer<TKey>() ?? this.owner.ComparerProvider.GetComparer(keyShape) },
+			CollectionComparerOptions.EqualityComparer => new() { EqualityComparer = memberInfluence?.GetEqualityComparer<TKey>() ?? this.owner.ComparerProvider.GetEqualityComparer(keyShape) },
 			_ => throw new NotSupportedException(),
 		};
 	}
@@ -793,6 +822,73 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				x.IsAssignableFrom(y) ? 1 :
 				y.IsAssignableFrom(x) ? -1 :
 				0;
+		}
+	}
+
+	/// <summary>
+	/// Captures the influence of a member on a converter.
+	/// </summary>
+	/// <remarks>
+	/// This must be hashable/equatable so that we can cache converters based on this influence.
+	/// </remarks>
+	private record MemberConverterInfluence
+	{
+		/// <summary>
+		/// Gets the type that provides the comparer, if specified by the member.
+		/// </summary>
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		public Type? ComparerSource { get; init; }
+
+		/// <summary>
+		/// Gets the name of the property on <see cref="ComparerSource"/> that provides the comparer, if specified by the member.
+		/// </summary>
+		public string? ComparerSourceMemberName { get; init; }
+
+		/// <summary>
+		/// Gets the equality comparer for the specified type, if a comparer source is specified.
+		/// </summary>
+		/// <typeparam name="T">The type to be compared.</typeparam>
+		/// <returns>The equality comparer, if available.</returns>
+		public IEqualityComparer<T>? GetEqualityComparer<T>() => this.ComparerSource is null ? null : (IEqualityComparer<T>)this.ActivateComparer();
+
+		/// <summary>
+		/// Gets the comparer for the specified type, if a comparer source is specified.
+		/// </summary>
+		/// <typeparam name="T">The type to be compared.</typeparam>
+		/// <returns>The comparer, if available.</returns>
+		public IComparer<T>? GetComparer<T>() => this.ComparerSource is null ? null : (IComparer<T>)this.ActivateComparer();
+
+		/// <summary>
+		/// Gets the comparer from the specified type and member.
+		/// </summary>
+		/// <returns>The comparer.</returns>
+		/// <exception cref="InvalidOperationException">Thrown if something goes wrong in obtaining the comparer from the given type and member.</exception>
+		private object ActivateComparer()
+		{
+			Verify.Operation(this.ComparerSource is not null, "Comparer source is not specified.");
+
+			MethodInfo? propertyGetter = null;
+			if (this.ComparerSourceMemberName is not null)
+			{
+				PropertyInfo? property = this.ComparerSource.GetProperty(this.ComparerSourceMemberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+				if (property is not { GetMethod: { } getter })
+				{
+					throw new InvalidOperationException($"Unable to find public property '{this.ComparerSourceMemberName}' on type '{this.ComparerSource.FullName}' with getter.");
+				}
+
+				if (getter.IsStatic)
+				{
+					return getter.Invoke(null, null) ?? throw CreateNullPropertyValueError();
+				}
+
+				propertyGetter = getter;
+			}
+
+			object? instance = Activator.CreateInstance(this.ComparerSource) ?? throw new InvalidOperationException($"Unable to activate {this.ComparerSource}.");
+
+			return propertyGetter is null ? instance : propertyGetter.Invoke(instance, null) ?? CreateNullPropertyValueError();
+
+			InvalidOperationException CreateNullPropertyValueError() => new InvalidOperationException($"{this.ComparerSource.FullName}.{this.ComparerSourceMemberName} produced a null value.");
 		}
 	}
 }
