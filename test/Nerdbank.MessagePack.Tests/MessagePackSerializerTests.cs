@@ -352,53 +352,12 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void ComparerProvider_CanBeOverridden()
+	public void IImmutableList()
 	{
-		this.Serializer = this.Serializer with { ComparerProvider = null };
-
-		KeyedCollections testData = new()
-		{
-			StringSet = ["a", "b"],
-			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
-			FruitSet = [new Fruit { Seeds = 3 }],
-			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
-		};
-		KeyedCollections? deserializedData = this.Roundtrip(testData);
-		Assert.NotNull(deserializedData);
-
-		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
-
-		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
-		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
-		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
-		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
-	}
-
-	[Fact]
-	public void ComparerProvider_CollisionResistantDefault()
-	{
-		KeyedCollections testData = new()
-		{
-			StringSet = ["a", "b"],
-			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
-			FruitSet = [new Fruit { Seeds = 3 }],
-			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
-		};
-		KeyedCollections? deserializedData = this.Roundtrip(testData);
-		Assert.NotNull(deserializedData);
-
-		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
-
-		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
-		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
-		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
-		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
+		IImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+		IImmutableList<int>? deserialized = this.Roundtrip<IImmutableList<int>, Witness>(list);
+		Assert.NotNull(deserialized);
+		Assert.Equal(list, deserialized);
 	}
 
 	/// <summary>
@@ -675,6 +634,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<Memory<byte>>]
 	[GenerateShapeFor<ReadOnlyMemory<byte>>]
+	[GenerateShapeFor<IImmutableList<int>>]
 	[GenerateShapeFor<Tuple<int, bool>>]
 	[GenerateShapeFor<(int, bool)>]
 	internal partial class Witness;

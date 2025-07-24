@@ -179,7 +179,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
-	Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry,
+	DictionaryInserter<TDictionary, TKey, TValue> addEntry,
 	MutableCollectionConstructor<TKey, TDictionary> ctor,
 	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 	where TKey : notnull
@@ -243,7 +243,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		for (int i = 0; i < count; i++)
 		{
 			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
-			addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
+			addEntry(ref collection, key, value);
 		}
 
 		return collection;
@@ -267,7 +267,8 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
-				addEntry(ref collection, await this.ReadEntryAsync(reader, context).ConfigureAwait(false));
+				KeyValuePair<TKey, TValue> keyValuePair = await this.ReadEntryAsync(reader, context).ConfigureAwait(false);
+				addEntry(ref collection, keyValuePair.Key, keyValuePair.Value);
 			}
 		}
 		else
@@ -279,7 +280,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			for (int i = 0; i < count; i++)
 			{
 				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
-				addEntry(ref collection, new KeyValuePair<TKey, TValue>(key, value));
+				addEntry(ref collection, key, value);
 			}
 
 			reader.ReturnReader(ref syncReader);

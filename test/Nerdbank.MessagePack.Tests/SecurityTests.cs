@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Buffers;
+using static MessagePackSerializerTests;
 
 public partial class SecurityTests : MessagePackSerializerTestBase
 {
@@ -71,12 +71,76 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		});
 	}
 
+	[Fact]
+	public void ComparerProvider_CanBeOverridden()
+	{
+		this.Serializer = this.Serializer with { ComparerProvider = null };
+
+		KeyedCollections testData = new()
+		{
+			StringSet = ["a", "b"],
+			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
+			FruitSet = [new Fruit { Seeds = 3 }],
+			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
+		};
+		KeyedCollections? deserializedData = this.Roundtrip(testData);
+		Assert.NotNull(deserializedData);
+
+		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+
+		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
+		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
+		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
+		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
+	}
+
 	/// <summary>
 	/// Verifies that the dictionaries created by the deserializer use collision resistant key hashes.
 	/// </summary>
-	[Fact(Skip = "Not yet implemented.")]
-	public void CollisionResistantHashMaps()
+	[Fact]
+	public void ComparerProvider_CollisionResistantDefault()
 	{
+		KeyedCollections testData = new()
+		{
+			StringSet = ["a", "b"],
+			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
+			FruitSet = [new Fruit { Seeds = 3 }],
+			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
+		};
+		KeyedCollections? deserializedData = this.Roundtrip(testData);
+		Assert.NotNull(deserializedData);
+
+		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+
+		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
+		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
+		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
+		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
+	}
+
+	[Fact]
+	public void DeserializerThrowsOnKeyCollisions()
+	{
+		// This test is designed to ensure that the deserializer throws an exception when it encounters a key collision.
+		// It does not test for hash collision resistance directly, but rather that the deserializer can handle such cases gracefully.
+		// Prepare a MsgPack map with two entries that would collide if the hash function were not resistant.
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(2);
+		writer.Write("key1");
+		writer.Write("value1");
+		writer.Write("key1"); // an equality match with the first key.
+		writer.Write("value2");
+		writer.Flush();
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<Dictionary<string, string>>(seq, Witness.ShapeProvider, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.GetBaseException().Message);
 	}
 
 	private Nested ConstructDeepObjectGraph(int depth)
@@ -130,4 +194,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 			StructuralEquality.Equal(this.Dictionary, other?.Dictionary) &&
 			StructuralEquality.Equal(this.HashSet, other?.HashSet);
 	}
+
+	[GenerateShapeFor<Dictionary<string, string>>]
+	public partial class Witness;
 }
