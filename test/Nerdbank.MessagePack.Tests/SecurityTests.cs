@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Buffers;
-
 public partial class SecurityTests : MessagePackSerializerTestBase
 {
 	/// <summary>
@@ -79,6 +77,25 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 	{
 	}
 
+	[Fact]
+	public void DeserializerThrowsOnKeyCollisions()
+	{
+		// This test is designed to ensure that the deserializer throws an exception when it encounters a key collision.
+		// It does not test for hash collision resistance directly, but rather that the deserializer can handle such cases gracefully.
+		// Prepare a MsgPack map with two entries that would collide if the hash function were not resistant.
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(2);
+		writer.Write("key1");
+		writer.Write("value1");
+		writer.Write("key1"); // an equality match with the first key.
+		writer.Write("value2");
+		writer.Flush();
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<Dictionary<string, string>>(seq, Witness.ShapeProvider, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.GetBaseException().Message);
+	}
+
 	private Nested ConstructDeepObjectGraph(int depth)
 	{
 		Nested outer = new();
@@ -130,4 +147,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 			StructuralEquality.Equal(this.Dictionary, other?.Dictionary) &&
 			StructuralEquality.Equal(this.HashSet, other?.HashSet);
 	}
+
+	[GenerateShapeFor<Dictionary<string, string>>]
+	public partial class Witness;
 }
