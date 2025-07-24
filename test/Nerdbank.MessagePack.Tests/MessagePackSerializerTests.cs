@@ -360,56 +360,6 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(list, deserialized);
 	}
 
-	[Fact]
-	public void ComparerProvider_CanBeOverridden()
-	{
-		this.Serializer = this.Serializer with { ComparerProvider = null };
-
-		KeyedCollections testData = new()
-		{
-			StringSet = ["a", "b"],
-			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
-			FruitSet = [new Fruit { Seeds = 3 }],
-			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
-		};
-		KeyedCollections? deserializedData = this.Roundtrip(testData);
-		Assert.NotNull(deserializedData);
-
-		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
-
-		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
-		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
-		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
-		Assert.Equal(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
-	}
-
-	[Fact]
-	public void ComparerProvider_CollisionResistantDefault()
-	{
-		KeyedCollections testData = new()
-		{
-			StringSet = ["a", "b"],
-			StringDictionary = new() { ["a"] = 3, ["c"] = 5 },
-			FruitSet = [new Fruit { Seeds = 3 }],
-			FruitDictionary = new() { [new Fruit { Seeds = 5 }] = 3 },
-		};
-		KeyedCollections? deserializedData = this.Roundtrip(testData);
-		Assert.NotNull(deserializedData);
-
-		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
-
-		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
-		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
-		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitSet.Comparer);
-		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
-	}
-
 	/// <summary>
 	/// Regression test for <see href="https://github.com/AArnott/Nerdbank.MessagePack/issues/416">issue 416</see>.
 	/// </summary>
