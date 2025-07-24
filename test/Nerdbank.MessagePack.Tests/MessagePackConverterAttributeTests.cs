@@ -3,6 +3,14 @@
 
 public partial class MessagePackConverterAttributeTests : MessagePackSerializerTestBase
 {
+	[MessagePackConverter(typeof(MyEnumConverter))]
+	public enum MyEnum
+	{
+		None = 0,
+		Value1 = 1,
+		Value2 = 2,
+	}
+
 	[Fact]
 	public void CustomTypeWithConverter()
 	{
@@ -36,7 +44,44 @@ public partial class MessagePackConverterAttributeTests : MessagePackSerializerT
 		this.AssertRoundtrip(new Container() { Value = new(42) });
 	}
 
+	[Fact]
+	public void EnumWithCustomConverter()
+	{
+		MyEnum value = MyEnum.Value2;
+		byte[] msgpack = this.Serializer.Serialize(value, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		MyEnum deserializedValue = this.Serializer.Deserialize<MyEnum>(msgpack, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(value, deserializedValue);
+
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal("V2", reader.ReadString());
+	}
+
 	public record struct GenericData<T>(int Value);
+
+	public class MyEnumConverter : MessagePackConverter<MyEnum>
+	{
+		public override MyEnum Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			return reader.ReadString() switch
+			{
+				"N" => MyEnum.None,
+				"V1" => MyEnum.Value1,
+				"V2" => MyEnum.Value2,
+				_ => throw new NotImplementedException($"Unknown enum value."),
+			};
+		}
+
+		public override void Write(ref MessagePackWriter writer, in MyEnum value, SerializationContext context)
+		{
+			writer.Write(value switch
+			{
+				MyEnum.None => "N",
+				MyEnum.Value1 => "V1",
+				MyEnum.Value2 => "V2",
+				_ => throw new NotImplementedException(),
+			});
+		}
+	}
 
 	[GenerateShape]
 	public partial record TypeWithCustomMembers
@@ -101,4 +146,7 @@ public partial class MessagePackConverterAttributeTests : MessagePackSerializerT
 
 		public override void Write(ref MessagePackWriter writer, in GenericData<T> value, SerializationContext context) => writer.Write(value.Value);
 	}
+
+	[GenerateShapeFor<MyEnum>]
+	private partial class Witness;
 }
