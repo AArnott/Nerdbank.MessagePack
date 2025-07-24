@@ -208,7 +208,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
-	Setter<TEnumerable, TElement> addElement,
+	EnumerableAppender<TEnumerable, TElement> addElement,
 	MutableCollectionConstructor<TElement, TEnumerable> ctor,
 	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {

@@ -352,6 +352,15 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void IImmutableList()
+	{
+		IImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+		IImmutableList<int>? deserialized = this.Roundtrip<IImmutableList<int>, Witness>(list);
+		Assert.NotNull(deserialized);
+		Assert.Equal(list, deserialized);
+	}
+
+	[Fact]
 	public void ComparerProvider_CanBeOverridden()
 	{
 		this.Serializer = this.Serializer with { ComparerProvider = null };
@@ -675,6 +684,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<Memory<byte>>]
 	[GenerateShapeFor<ReadOnlyMemory<byte>>]
+	[GenerateShapeFor<IImmutableList<int>>]
 	[GenerateShapeFor<Tuple<int, bool>>]
 	[GenerateShapeFor<(int, bool)>]
 	internal partial class Witness;
