@@ -625,9 +625,16 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
-		=> this.owner.SerializeEnumValuesByName
+	{
+		if (this.GetCustomConverter(enumShape, enumShape.AttributeProvider) is MessagePackConverter<TEnum> customConverter)
+		{
+			return customConverter;
+		}
+
+		return this.owner.SerializeEnumValuesByName
 			? new EnumAsStringConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType), enumShape.Members)
 			: new EnumAsOrdinalConverter<TEnum, TUnderlying>(this.GetConverter(enumShape.UnderlyingType));
+	}
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
