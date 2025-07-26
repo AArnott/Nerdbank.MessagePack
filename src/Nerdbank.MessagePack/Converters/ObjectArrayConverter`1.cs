@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
@@ -17,13 +16,13 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="properties">The properties to be serialized.</param>
 /// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="constructor">The constructor for the deserialized type.</param>
-/// <param name="assignmentTrackingManager">A property assignment tracking system to track which properties are set.</param>
+/// <param name="propertyShapes">Gets the list of property shapes from the containing object.</param>
 /// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 internal class ObjectArrayConverter<T>(
 	ReadOnlyMemory<PropertyAccessors<T>?> properties,
 	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
-	PropertyAssignmentTrackingManager<T> assignmentTrackingManager,
+	IReadOnlyList<IPropertyShape> propertyShapes,
 	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
@@ -33,11 +32,6 @@ internal class ObjectArrayConverter<T>(
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
 	/// </summary>
 	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
-
-	/// <summary>
-	/// Gets the property assignment tracking manager.
-	/// </summary>
-	protected PropertyAssignmentTrackingManager<T> AssignmentTrackingManager => assignmentTrackingManager;
 
 	/// <inheritdoc/>
 	public override T? Read(ref MessagePackReader reader, SerializationContext context)
@@ -66,16 +60,16 @@ internal class ObjectArrayConverter<T>(
 
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
-			PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
+			PropertyCollisionDetection collisionDetection = new(propertyShapes);
 
 			// The indexes we have are the keys in the map rather than indexes into the array.
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
 				int index = reader.ReadInt32();
-				if (properties.Length > index && properties.Span[index] is { MsgPackReaders: var (deserialize, _), AssignmentTrackingIndex: int assignmentTrackingIndex })
+				if (properties.Length > index && properties.Span[index] is { MsgPackReaders: var (deserialize, _), Shape.Position: int propertyShapePosition })
 				{
-					assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
+					collisionDetection.MarkAsRead(propertyShapePosition);
 					deserialize(ref value, ref reader, context);
 				}
 				else if (unusedDataProperty?.Setter is not null)
@@ -88,8 +82,6 @@ internal class ObjectArrayConverter<T>(
 					reader.Skip(context);
 				}
 			}
-
-			assignmentTracker.ReportDeserializationComplete();
 		}
 		else
 		{
@@ -457,7 +449,7 @@ internal class ObjectArrayConverter<T>(
 
 		if (peekType == MessagePackType.Map)
 		{
-			PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
+			PropertyCollisionDetection collisionDetection = new(propertyShapes);
 
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -477,9 +469,9 @@ internal class ObjectArrayConverter<T>(
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					int propertyIndex = syncReader.ReadInt32();
-					if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { MsgPackReaders: { Deserialize: { } deserialize }, AssignmentTrackingIndex: int assignmentTrackingIndex })
+					if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { MsgPackReaders: { Deserialize: { } deserialize }, Shape.Position: int shapePosition })
 					{
-						assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
+						collisionDetection.MarkAsRead(shapePosition);
 						deserialize(ref value, ref syncReader, context);
 					}
 					else if (unusedDataProperty?.Setter is not null)
@@ -503,9 +495,9 @@ internal class ObjectArrayConverter<T>(
 					{
 						// The property name has already been buffered.
 						int propertyIndex = syncReader.ReadInt32();
-						if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader, AssignmentTrackingIndex: int assignmentTrackingIndex })
+						if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader, Shape.Position: int shapePosition })
 						{
-							assignmentTracker.ReportPropertyAssignment(assignmentTrackingIndex);
+							collisionDetection.MarkAsRead(shapePosition);
 
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
 							reader.ReturnReader(ref syncReader);
@@ -528,8 +520,6 @@ internal class ObjectArrayConverter<T>(
 
 				reader.ReturnReader(ref syncReader);
 			}
-
-			assignmentTracker.ReportDeserializationComplete();
 		}
 		else
 		{

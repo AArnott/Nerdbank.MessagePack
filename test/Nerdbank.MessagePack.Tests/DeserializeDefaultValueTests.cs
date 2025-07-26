@@ -56,7 +56,8 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 
 		MessagePackSerializationException ex = await this.ExpectDeserializationThrowsAsync<SharedTestTypes.RecordWith66RequiredProperties>(seq, async: false, MessagePackSerializationException.ErrorCode.MissingRequiredProperty);
 		Assert.Contains("P4, P6", ex.Message);
-		Assert.Contains("P64, P66", ex.Message);
+		Assert.Contains("P54, P56", ex.Message);
+		Assert.Contains("P64, P65, P66", ex.Message);
 	}
 
 	[Theory, PairwiseData]

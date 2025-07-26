@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -16,16 +14,19 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Tools for deserializing individual property values.</param>
-/// <param name="assignmentTrackingManager">A property assignment tracking system to track which properties are set.</param>
-/// <param name="defaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
+/// <param name="parameterShapes">The parameter shapes.</param>
+/// <param name="serializeDefaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
+/// <param name="deserializeDefaultValuesPolicy">The policy to apply when deserializing properties.</param>
 internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	MapSerializableProperties<TDeclaringType> serializable,
 	Func<TArgumentState> argStateCtor,
 	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty,
 	Constructor<TArgumentState, TDeclaringType> ctor,
 	MapDeserializableProperties<TArgumentState> parameters,
-	PropertyAssignmentTrackingManager<TDeclaringType> assignmentTrackingManager,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, unusedDataProperty, null, assignmentTrackingManager, defaultValuesPolicy)
+	IReadOnlyList<IParameterShape> parameterShapes,
+	SerializeDefaultValuesPolicy serializeDefaultValuesPolicy,
+	DeserializeDefaultValuesPolicy deserializeDefaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, unusedDataProperty, null, [], serializeDefaultValuesPolicy)
+	where TArgumentState : IArgumentState
 {
 	/// <inheritdoc/>
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
@@ -37,7 +38,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
-		PropertyAssignmentTrackingManager<TDeclaringType>.Tracker assignmentTracker = this.AssignmentTrackingManager.CreateTracker();
 		UnusedDataPacket.Map? unused = null;
 
 		if (parameters.Readers is not null)
@@ -48,7 +48,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
 				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
 				{
-					assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 					propertyReader.Read(ref argState, ref reader, context);
 				}
 				else if (this.UnusedDataProperty?.Setter is not null)
@@ -68,7 +67,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.Skip(context);
 		}
 
-		assignmentTracker.ReportDeserializationComplete();
+		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
@@ -102,7 +101,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
-		PropertyAssignmentTrackingManager<TDeclaringType>.Tracker assignmentTracker = this.AssignmentTrackingManager.CreateTracker();
 		UnusedDataPacket.Map? unused = null;
 
 		if (parameters.Readers is not null)
@@ -127,7 +125,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
 					{
-						assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 						propertyReader.Read(ref argState, ref syncReader, context);
 					}
 					else if (this.UnusedDataProperty?.Setter is not null)
@@ -153,7 +150,6 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
 						{
-							assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
 							if (propertyReader.PreferAsyncSerialization)
 							{
 								// The next property value is async, so turn in our sync reader and read it asynchronously.
@@ -222,7 +218,7 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 			reader.ReturnReader(ref streamingReader);
 		}
 
-		assignmentTracker.ReportDeserializationComplete();
+		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
