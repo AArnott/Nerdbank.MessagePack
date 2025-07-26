@@ -123,14 +123,14 @@ internal class MapDeserializableProperties<TDeclaringType>(SpanDictionary<byte, 
 /// <param name="read">A delegate that synchronously initializes the value of the property with a value deserialized from msgpack.</param>
 /// <param name="readAsync">A delegate that asynchronously initializes the value of the property with a value deserialized from msgpack.</param>
 /// <param name="converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
-/// <param name="assignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
+/// <param name="shapePosition">The value of <see cref="IPropertyShape.Position"/> or <see cref="IParameterShape.Position"/>.</param>
 internal class DeserializableProperty<TDeclaringType>(
 	string name,
 	ReadOnlyMemory<byte> propertyNameUtf8,
 	DeserializeProperty<TDeclaringType> read,
 	DeserializePropertyAsync<TDeclaringType> readAsync,
 	MessagePackConverter converter,
-	int assignmentTrackingIndex)
+	int shapePosition)
 {
 	/// <summary>Gets the property name.</summary>
 	public string Name => name;
@@ -147,8 +147,10 @@ internal class DeserializableProperty<TDeclaringType>(
 	/// <summary>Gets the converter backing this property.</summary>
 	public MessagePackConverter Converter => converter;
 
-	/// <summary>Gets the unique position of the property within the declaring type for property assignment tracking.</summary>
-	public int AssignmentTrackingIndex => assignmentTrackingIndex;
+	/// <summary>
+	/// Gets the value of <see cref="IPropertyShape.Position"/> or <see cref="IParameterShape.Position"/>.
+	/// </summary>
+	public int ShapePosition => shapePosition;
 
 	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
 	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
@@ -163,14 +165,12 @@ internal class DeserializableProperty<TDeclaringType>(
 /// <param name="converter">The converter backing this property. Only intended for retrieving the <see cref="PreferAsyncSerialization"/> value.</param>
 /// <param name="shouldSerialize">An optional func that determines whether a property should be serialized. When <see langword="null"/> the property should always be serialized.</param>
 /// <param name="shape">The property shape, for use with generating schema.</param>
-/// <param name="assignmentTrackingIndex">A unique position of the property within the declaring type for property assignment tracking.</param>
 internal class PropertyAccessors<TDeclaringType>(
 	(SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? msgPackWriters,
 	(DeserializeProperty<TDeclaringType> Deserialize, DeserializePropertyAsync<TDeclaringType> DeserializeAsync)? msgPackReaders,
 	MessagePackConverter converter,
 	Func<TDeclaringType, bool>? shouldSerialize,
-	IPropertyShape shape,
-	int assignmentTrackingIndex)
+	IPropertyShape shape)
 {
 	/// <summary>Gets the delegates that can serialize the value of a property.</summary>
 	public (SerializeProperty<TDeclaringType> Serialize, SerializePropertyAsync<TDeclaringType> SerializeAsync)? MsgPackWriters => msgPackWriters;
@@ -186,9 +186,6 @@ internal class PropertyAccessors<TDeclaringType>(
 
 	/// <summary>Gets the property shape, for use with generating schema.</summary>
 	public IPropertyShape Shape => shape;
-
-	/// <summary>Gets the unique position of the property within the declaring type for property assignment tracking.</summary>
-	public int AssignmentTrackingIndex => assignmentTrackingIndex;
 
 	/// <inheritdoc cref="MessagePackConverter.PreferAsyncSerialization"/>
 	public bool PreferAsyncSerialization => this.Converter.PreferAsyncSerialization;
@@ -221,13 +218,11 @@ internal class DirectPropertyAccess<TDeclaringType, TValue>(
 /// <param name="deserializers">Deserializable properties on the data type.</param>
 /// <param name="parametersByName">A collection of constructor parameters, with any conflicting names removed.</param>
 /// <param name="unusedDataProperty">The special unused data property, if present.</param>
-/// <param name="assignmentTrackingManager">The parameter assignment tracking manager.</param>
 internal class MapConstructorVisitorInputs<TDeclaringType>(
 	MapSerializableProperties<TDeclaringType> serializers,
 	MapDeserializableProperties<TDeclaringType> deserializers,
 	Dictionary<string, IParameterShape> parametersByName,
-	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty,
-	PropertyAssignmentTrackingManager<TDeclaringType> assignmentTrackingManager)
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty)
 {
 	/// <summary>Gets the serializable properties on the data type.</summary>
 	public MapSerializableProperties<TDeclaringType> Serializers => serializers;
@@ -240,9 +235,6 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 
 	/// <summary>Gets the special unused data property, if present.</summary>
 	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
-
-	/// <summary>Gets the parameter assignment tracking manager.</summary>
-	public PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager => assignmentTrackingManager;
 }
 
 /// <summary>
@@ -252,20 +244,15 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
 /// <param name="properties">The accessors to use for accessing each array element.</param>
 /// <param name="unusedDataProperty">The special unused data property, if present.</param>
-/// <param name="assignmentTrackingManager">The parameter assignment tracking manager.</param>
 internal class ArrayConstructorVisitorInputs<TDeclaringType>(
 	List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> properties,
-	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty,
-	PropertyAssignmentTrackingManager<TDeclaringType> assignmentTrackingManager)
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty)
 {
 	/// <summary>Gets the accessors to use for accessing each array element.</summary>
 	public List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties => properties;
 
 	/// <summary>Gets the special unused data property, if present.</summary>
 	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
-
-	/// <summary>Gets the parameter assignment tracking manager.</summary>
-	public PropertyAssignmentTrackingManager<TDeclaringType> AssignmentTrackingManager => assignmentTrackingManager;
 
 	/// <summary>
 	/// Constructs an array of just the property accessors (without property names).

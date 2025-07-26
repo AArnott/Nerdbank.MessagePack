@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
@@ -16,14 +15,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="deserializable">Tools for deserializing individual property values. May be omitted if the type will never be deserialized (i.e. there is no deserializing constructor).</param>
 /// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="constructor">The default constructor, if present.</param>
-/// <param name="assignmentTrackingManager">A property assignment tracking system to track which properties are set.</param>
+/// <param name="propertyShapes">The property shapes.</param>
 /// <param name="defaultValuesPolicy">The policy for whether to serialize properties. When not <see cref="SerializeDefaultValuesPolicy.Always"/>, the <see cref="SerializableProperty{TDeclaringType}.ShouldSerialize"/> property will be consulted prior to serialization.</param>
 internal class ObjectMapConverter<T>(
 	MapSerializableProperties<T> serializable,
 	MapDeserializableProperties<T>? deserializable,
 	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
-	PropertyAssignmentTrackingManager<T> assignmentTrackingManager,
+	IReadOnlyList<IPropertyShape> propertyShapes,
 	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
 	/// <inheritdoc/>
@@ -33,11 +32,6 @@ internal class ObjectMapConverter<T>(
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
 	/// </summary>
 	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
-
-	/// <summary>
-	/// Gets the property assignment tracking manager.
-	/// </summary>
-	protected PropertyAssignmentTrackingManager<T> AssignmentTrackingManager => assignmentTrackingManager;
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
@@ -181,7 +175,7 @@ internal class ObjectMapConverter<T>(
 		T value = constructor();
 		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
 		callbacks?.OnBeforeDeserialize();
-		PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
+		PropertyCollisionDetection collisionDetection = new(propertyShapes);
 		UnusedDataPacket.Map? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -197,7 +191,7 @@ internal class ObjectMapConverter<T>(
 				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
 				if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 				{
-					assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
+					collisionDetection.MarkAsRead(propertyReader.ShapePosition);
 					propertyReader.Read(ref value, ref reader, context);
 				}
 				else if (unusedDataProperty?.Setter is not null)
@@ -216,8 +210,6 @@ internal class ObjectMapConverter<T>(
 			// We have nothing to read into, so just skip any data in the object.
 			reader.Skip(context);
 		}
-
-		assignmentTracker.ReportDeserializationComplete();
 
 		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
 		{
@@ -254,7 +246,7 @@ internal class ObjectMapConverter<T>(
 		T value = constructor();
 		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
 		callbacks?.OnBeforeDeserialize();
-		PropertyAssignmentTrackingManager<T>.Tracker assignmentTracker = assignmentTrackingManager.CreateTracker();
+		PropertyCollisionDetection collisionDetection = new(propertyShapes);
 		UnusedDataPacket.Map? unused = null;
 
 		if (!typeof(T).IsValueType)
@@ -284,7 +276,7 @@ internal class ObjectMapConverter<T>(
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 					if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 					{
-						assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
+						collisionDetection.MarkAsRead(propertyReader.ShapePosition);
 						propertyReader.Read(ref value, ref syncReader, context);
 					}
 					else if (unusedDataProperty?.Setter is not null)
@@ -310,7 +302,7 @@ internal class ObjectMapConverter<T>(
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 						if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 						{
-							assignmentTracker.ReportPropertyAssignment(propertyReader.AssignmentTrackingIndex);
+							collisionDetection.MarkAsRead(propertyReader.ShapePosition);
 							if (propertyReader.PreferAsyncSerialization)
 							{
 								// The next property value is async, so turn in our sync reader and read it asynchronously.
@@ -379,8 +371,6 @@ internal class ObjectMapConverter<T>(
 
 			reader.ReturnReader(ref streamingReader);
 		}
-
-		assignmentTracker.ReportDeserializationComplete();
 
 		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
 		{

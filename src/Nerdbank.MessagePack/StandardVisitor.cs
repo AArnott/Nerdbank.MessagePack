@@ -97,7 +97,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		PropertyAssignmentTrackingManager<T> assignmentTrackingManager = new(objectShape, verifyRequiredPropertiesSet: !this.owner.DeserializeDefaultValues.HasFlag(DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties));
 		List<SerializableProperty<T>>? serializable = null;
 		List<DeserializableProperty<T>>? deserializable = null;
 		List<(string Name, PropertyAccessors<T> Accessors)?>? propertyAccessors = null;
@@ -125,7 +124,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			IParameterShape? matchingConstructorParameter = null;
 			ctorParametersByName?.TryGetValue(property.Name, out matchingConstructorParameter);
 
-			if (property.Accept(this, (matchingConstructorParameter, (IPropertyAssignmentTrackingManager)assignmentTrackingManager)) is PropertyAccessors<T> accessors)
+			if (property.Accept(this, matchingConstructorParameter) is PropertyAccessors<T> accessors)
 			{
 				KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
 				if (keyAttribute is not null || this.owner.PerfOverSchemaStability || objectShape.IsTupleType)
@@ -152,7 +151,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 					if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
 					{
-						deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter, assignmentTrackingManager.GetPropertyAssignmentIndex(property)));
+						deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter, property.Position));
 					}
 				}
 			}
@@ -203,10 +202,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 			}
 
-			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors, unusedDataPropertyAccess, assignmentTrackingManager);
+			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors, unusedDataPropertyAccess);
 			converter = ctorShape is not null
 				? (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!
-				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), unusedDataPropertyAccess, null, assignmentTrackingManager, this.owner.SerializeDefaultValues);
+				: new ObjectArrayConverter<T>(inputs.GetJustAccessors(), unusedDataPropertyAccess, null, objectShape.Properties, this.owner.SerializeDefaultValues);
 		}
 		else
 		{
@@ -219,7 +218,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 			if (ctorShape is not null)
 			{
-				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!, unusedDataPropertyAccess, assignmentTrackingManager);
+				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!, unusedDataPropertyAccess);
 				converter = (MessagePackConverter<T>)ctorShape.Accept(this, inputs)!;
 			}
 			else
@@ -230,7 +229,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					deserializableMap,
 					unusedDataPropertyAccess,
 					ctor,
-					assignmentTrackingManager,
+					objectShape.Properties,
 					this.owner.SerializeDefaultValues);
 			}
 		}
@@ -300,7 +299,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
 	{
-		(IParameterShape? constructorParameterShape, IPropertyAssignmentTrackingManager assignmentTrackingManager) = ((IParameterShape?, IPropertyAssignmentTrackingManager))state!;
+		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
 		MessagePackConverter<TPropertyType> converter =
 			this.GetCustomConverter(propertyShape.PropertyType, propertyShape.AttributeProvider) ??
@@ -409,7 +408,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return suppressIfNoConstructorParameter && constructorParameterShape is null
 			? null
-			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter, shouldSerialize, propertyShape, assignmentTrackingManager.GetPropertyAssignmentIndex(propertyShape));
+			: new PropertyAccessors<TDeclaringType>(msgpackWriters, msgpackReaders, converter, shouldSerialize, propertyShape);
 	}
 
 	/// <inheritdoc/>
@@ -426,7 +425,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							inputs.Deserializers,
 							inputs.UnusedDataProperty,
 							constructorShape.GetDefaultConstructor(),
-							inputs.AssignmentTrackingManager,
+							constructorShape.DeclaringType.Properties,
 							this.owner.SerializeDefaultValues);
 					}
 
@@ -437,7 +436,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
 					{
 						ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
-						var prop = (DeserializableProperty<TArgumentState>)p.Value.Accept(this, inputs.AssignmentTrackingManager)!;
+						var prop = (DeserializableProperty<TArgumentState>)p.Value.Accept(this)!;
 						string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
 						spanDictContent[i++] = new(Encoding.UTF8.GetBytes(name), prop);
 					}
@@ -452,15 +451,16 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						inputs.UnusedDataProperty,
 						constructorShape.GetParameterizedConstructor(),
 						new MapDeserializableProperties<TArgumentState>(parameters),
-						inputs.AssignmentTrackingManager,
-						this.owner.SerializeDefaultValues);
+						constructorShape.Parameters,
+						this.owner.SerializeDefaultValues,
+						this.owner.DeserializeDefaultValues);
 				}
 
 			case ArrayConstructorVisitorInputs<TDeclaringType> inputs:
 				{
 					if (constructorShape.Parameters.Count == 0)
 					{
-						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), inputs.UnusedDataProperty, constructorShape.GetDefaultConstructor(), inputs.AssignmentTrackingManager, this.owner.SerializeDefaultValues);
+						return new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), inputs.UnusedDataProperty, constructorShape.GetDefaultConstructor(), constructorShape.DeclaringType.Properties, this.owner.SerializeDefaultValues);
 					}
 
 					Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
@@ -481,7 +481,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						}
 
 						int index = propertyIndexesByName[parameter.Name];
-						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this, inputs.AssignmentTrackingManager)!;
+						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this)!;
 					}
 
 					return new ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
@@ -490,8 +490,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						constructorShape.GetArgumentStateConstructor(),
 						constructorShape.GetParameterizedConstructor(),
 						parameters,
-						inputs.AssignmentTrackingManager,
-						this.owner.SerializeDefaultValues);
+						constructorShape.Parameters,
+						this.owner.SerializeDefaultValues,
+						this.owner.DeserializeDefaultValues);
 				}
 
 			default:
@@ -502,7 +503,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
-		IPropertyAssignmentTrackingManager assignmentTrackingManager = (IPropertyAssignmentTrackingManager)state!;
 		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType, parameterShape.AttributeProvider);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
@@ -516,18 +516,28 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (throwOnNull)
 		{
 			static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter {parameter.Name} is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
-			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+			{
+				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+				setter(ref state, converter.Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+			};
 			readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
+				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
 				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
 				return state;
 			};
 		}
 		else
 		{
-			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) => setter(ref state, converter.Read(ref reader, context)!);
+			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+			{
+				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+				setter(ref state, converter.Read(ref reader, context)!);
+			};
 			readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
+				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
 				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
 				return state;
 			};
@@ -539,7 +549,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			read,
 			readAsync,
 			converter,
-			assignmentTrackingManager.GetParameterAssignmentIndex(parameterShape));
+			parameterShape.Position);
 	}
 
 	/// <inheritdoc/>
@@ -685,6 +695,22 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		ITypeShapeFunc self = this;
 		return (IMessagePackConverterInternal)shape.Invoke(this, state)!;
+	}
+
+	private static void ThrowIfAlreadyAssigned<TArgumentState>(in TArgumentState argumentState, int position, string name)
+		where TArgumentState : IArgumentState
+	{
+		if (argumentState.IsArgumentSet(position))
+		{
+			Throw(name);
+
+			[DoesNotReturn]
+			static void Throw(string name)
+				=> throw new MessagePackSerializationException($"The parameter '{name}' has already been assigned a value.")
+				{
+					Code = MessagePackSerializationException.ErrorCode.DoublePropertyAssignment,
+				};
+		}
 	}
 
 	/// <summary>

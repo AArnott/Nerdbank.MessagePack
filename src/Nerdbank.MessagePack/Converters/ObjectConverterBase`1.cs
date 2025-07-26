@@ -88,8 +88,43 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	}
 
 	/// <summary>
-	/// Throws a <see cref="MessagePackSerializationException"/> that indicates required properties are missing during deserialization.
+	/// Throws a <see cref="MessagePackSerializationException"/> if required properties are missing during deserialization.
 	/// </summary>
-	[DoesNotReturn]
-	protected static void ThrowMissingRequiredProperties() => throw new MessagePackSerializationException("Missing required properties.");
+	/// <typeparam name="TArgumentState">The argument state type.</typeparam>
+	/// <param name="argumentState">The argument state.</param>
+	/// <param name="parameters">The parameter shapes.</param>
+	/// <param name="defaultValuesPolicy">The policy applied to this deserialization.</param>
+	protected static void ThrowIfMissingRequiredProperties<TArgumentState>(in TArgumentState argumentState, IReadOnlyList<IParameterShape> parameters, DeserializeDefaultValuesPolicy defaultValuesPolicy)
+		where TArgumentState : IArgumentState
+	{
+		if ((defaultValuesPolicy & DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties) == DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties)
+		{
+			// The policy is to not enforce required properties.
+			return;
+		}
+
+		if (argumentState.AreRequiredArgumentsSet)
+		{
+			// No missing required properties.
+			return;
+		}
+
+		List<string> missingRequiredParams = [];
+		foreach (IParameterShape parameter in parameters)
+		{
+			if (parameter.IsRequired && !argumentState.IsArgumentSet(parameter.Position))
+			{
+				missingRequiredParams.Add(parameter.Name);
+			}
+		}
+
+		Throw($"Missing required properties: {string.Join(", ", missingRequiredParams)}");
+
+		[DoesNotReturn]
+		static void Throw(string message)
+			=> throw new MessagePackSerializationException(message)
+			{
+				Code = MessagePackSerializationException.ErrorCode.MissingRequiredProperty,
+			};
+	}
 }
