@@ -39,3 +39,25 @@ Resolve it by taking the following steps:
    1. Repeat the prior step, this time selecting to add a reference to the Nerdbank.MessagePack.dll.
    ![](../images/ReferencePolyTypeInAssemblyDefinition.png)
    1. Scroll down as necessary in the Inspector and click Apply.
+
+### The type or namespace name 'GenerateShapeAttribute' could not be found
+
+In projects with disabled auto references, you will need to add an assembly reference to PolyType.dll and Nerdbank.MessagePack.dll to your project manually.
+
+### Visual Studio complains that the Witness class has no ShapeProvider property
+
+The [witness class](type-shapes.md) that your unity project requires for serialization should be attributed with <xref:PolyType.GenerateShapeForAttribute> and be declared as a `partial class`, after which the PolyType source generator should add a `ShapeProvider` property.
+Some configurations of Visual Studio will not re-run the source generator until you save your code file with these changes.
+If you see an error (or a lack of `ShapeProvider` in the completion list for your witness class), verify that you have the attribute and `partial` modifier as required, and save your code file.
+
+Right-clicking the source file and asking Unity to "Reimport" that file is also reported to fixing this transient issue.
+
+### MissingMethodException: Unsafe.IsNullRef
+
+When running your Unity project, you might see the following error:
+
+> MissingMethodException: Method not found: bool System.Runtime.CompilerServices.Unsafe.IsNullRef<!0>(!!0&)
+
+This means your project is using an old version of `System.Runtime.CompilerServices.Unsafe.dll`.
+
+To resolve the error, use NuGetForUnity to update this dependency to the latest.
