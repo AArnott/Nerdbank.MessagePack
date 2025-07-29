@@ -837,7 +837,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 		catch (NotSupportedException ex) when (typeof(TKey) == typeof(object))
 		{
-			throw new NotSupportedException("Serializing dictionaries with System.Object keys is not supported. Consider using a strong-typed key with properties, or using a custom MessagePackSerializer.ComparerProvider.", ex);
+			throw new NotSupportedException("Serializing dictionaries or hash sets with System.Object keys is not supported. Consider using a strong-typed key with properties, or using a custom MessagePackSerializer.ComparerProvider.", ex);
 		}
 	}
 

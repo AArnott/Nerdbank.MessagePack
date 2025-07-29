@@ -378,16 +378,21 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	/// Manual verification of the logged output should confirm that the exception message is helpful.
 	/// </remarks>
 	[Fact]
-	public void DictionaryWithObjectKey()
+	public void ObjectKeyedCollections()
 	{
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<System.Collections.IDictionary>(new Dictionary<string, object>(), Witness.ShapeProvider, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.ToString());
 		NotSupportedException innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
 		this.Logger.WriteLine(innerException.Message);
 
 		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<IDictionary<object, string>>(new Dictionary<object, string>(), Witness.ShapeProvider, TestContext.Current.CancellationToken));
 		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
 		this.Logger.WriteLine(innerException.Message);
+
+		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(new HashSet<object>(), Witness.ShapeProvider, TestContext.Current.CancellationToken));
+		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
+		this.Logger.WriteLine(innerException.Message);
+
+		this.Logger.WriteLine(ex.ToString());
 	}
 
 	/// <summary>
@@ -659,6 +664,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<(int, bool)>]
 	[GenerateShapeFor<System.Collections.IDictionary>]
 	[GenerateShapeFor<IDictionary<object, string>>]
+	[GenerateShapeFor<HashSet<object>>]
 	internal partial class Witness;
 
 	private class CustomStringConverter : MessagePackConverter<string>
