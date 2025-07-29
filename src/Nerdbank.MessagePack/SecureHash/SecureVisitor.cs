@@ -1,10 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Text;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack.SecureHash;
@@ -15,47 +12,11 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// </summary>
 internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
-	/// <summary>
-	/// A dictionary of primitive types and their corresponding hash-resistant equality comparers.
-	/// </summary>
-	internal static readonly FrozenDictionary<Type, object> HashCollisionResistantPrimitiveEqualityComparers = new Dictionary<Type, object>()
-	{
-		{ typeof(char), new CollisionResistantHasherUnmanaged<char>() },
-		{ typeof(byte), new CollisionResistantHasherUnmanaged<byte>() },
-		{ typeof(ushort), new CollisionResistantHasherUnmanaged<ushort>() },
-		{ typeof(uint), new CollisionResistantHasherUnmanaged<uint>() },
-		{ typeof(ulong), new CollisionResistantHasherUnmanaged<ulong>() },
-		{ typeof(sbyte), new CollisionResistantHasherUnmanaged<sbyte>() },
-		{ typeof(short), new CollisionResistantHasherUnmanaged<short>() },
-		{ typeof(int), new CollisionResistantHasherUnmanaged<int>() },
-		{ typeof(long), new CollisionResistantHasherUnmanaged<long>() },
-		{ typeof(BigInteger), new HashCollisionResistantPrimitives.BigIntegerEqualityComparer() },
-		{ typeof(string), new HashCollisionResistantPrimitives.StringEqualityComparer() },
-		{ typeof(bool), new HashCollisionResistantPrimitives.BooleanEqualityComparer() },
-		{ typeof(Version), new HashCollisionResistantPrimitives.VersionEqualityComparer() },
-		{ typeof(Uri), new HashCollisionResistantPrimitives.AlreadySecureEqualityComparer<Uri>() },
-		{ typeof(float), new HashCollisionResistantPrimitives.SingleEqualityComparer() },
-		{ typeof(double), new HashCollisionResistantPrimitives.DoubleEqualityComparer() },
-		{ typeof(decimal), new HashCollisionResistantPrimitives.DecimalEqualityComparer() },
-		{ typeof(DateTime), new HashCollisionResistantPrimitives.DateTimeEqualityComparer() },
-		{ typeof(DateTimeOffset), new HashCollisionResistantPrimitives.DateTimeOffsetEqualityComparer() },
-		{ typeof(TimeSpan), new CollisionResistantHasherUnmanaged<TimeSpan>() },
-		{ typeof(Guid), new CollisionResistantHasherUnmanaged<Guid>() },
-#if NET
-		{ typeof(Int128), new CollisionResistantHasherUnmanaged<Int128>() },
-		{ typeof(UInt128), new CollisionResistantHasherUnmanaged<UInt128>() },
-		{ typeof(Rune), new CollisionResistantHasherUnmanaged<Rune>() },
-		{ typeof(Half), new HashCollisionResistantPrimitives.HalfEqualityComparer() },
-		{ typeof(TimeOnly), new CollisionResistantHasherUnmanaged<TimeOnly>() },
-		{ typeof(DateOnly), new CollisionResistantHasherUnmanaged<DateOnly>() },
-#endif
-	}.ToFrozenDictionary();
-
 	/// <inheritdoc/>
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
 	{
 		// Check if the type has a built-in converter.
-		if (HashCollisionResistantPrimitiveEqualityComparers.TryGetValue(typeof(T), out object? defaultComparer))
+		if (CollisionResistantHasherLookup.TryGetPrimitiveHasher(out SecureEqualityComparer<T>? defaultComparer))
 		{
 			return defaultComparer;
 		}
@@ -67,7 +28,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (HashCollisionResistantPrimitiveEqualityComparers.TryGetValue(objectShape.Type, out object? primitiveEqualityComparer))
+		if (CollisionResistantHasherLookup.TryGetPrimitiveHasher(out SecureEqualityComparer<T>? primitiveEqualityComparer))
 		{
 			return primitiveEqualityComparer;
 		}

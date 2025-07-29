@@ -48,8 +48,8 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("Version", "VersionConverter", IsRefType: true),
 	new ConverterInfo("Uri", "UriConverter", IsRefType: true),
 	new ConverterInfo("byte[]", "ByteArrayConverter", IsRefType: true),
-    new ConverterInfo("Nerdbank.MessagePack.RawMessagePack", "RawMessagePackConverter"),
-    new ConverterInfo("Nerdbank.MessagePack.MessagePackValue", "MessagePackValueConverter"),
+	new ConverterInfo("Nerdbank.MessagePack.RawMessagePack", "RawMessagePackConverter"),
+	new ConverterInfo("Nerdbank.MessagePack.MessagePackValue", "MessagePackValueConverter"),
 };
 #>
 /// <summary>
@@ -93,8 +93,8 @@ internal static class PrimitiveConverterLookup
 #if <#=converterGroup.Key#>
 <#   }
 	 foreach (var converter in converterGroup) {
-        string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty;
-        #>
+		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty;
+		#>
 		if (typeof(T) == typeof(<#=converter.TypeName#>)<#=featureCondition#>)
 		{
 <#

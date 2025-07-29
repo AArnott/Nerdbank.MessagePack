@@ -17,7 +17,7 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (SecureVisitor.HashCollisionResistantPrimitiveEqualityComparers.ContainsKey(objectShape.Type))
+		if (CollisionResistantHasherLookup.TryGetPrimitiveHasher<T>(out _))
 		{
 			// The type is a primitive, so we can rely on by-value equality being implemented by the default equality comparer.
 			return EqualityComparer<T>.Default;

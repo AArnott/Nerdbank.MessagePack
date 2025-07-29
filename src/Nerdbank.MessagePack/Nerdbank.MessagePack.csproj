@@ -56,6 +56,10 @@ Also features an automatic structural equality API.</PackageDescription>
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>MessagePackStreamingReader.Integers.cs</LastGenOutput>
     </None>
+    <None Update="SecureHash\CollisionResistantHasherLookup.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CollisionResistantHasherLookup.cs</LastGenOutput>
+    </None>
     <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +108,11 @@ Also features an automatic structural equality API.</PackageDescription>
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>MessagePackStreamingReader.Integers.tt</DependentUpon>
+    </Compile>
+    <Compile Update="SecureHash\CollisionResistantHasherLookup.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CollisionResistantHasherLookup.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
