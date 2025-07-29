@@ -371,6 +371,26 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	/// <summary>
+	/// Verifies that an object-keyed dictionary is not supported.
+	/// </summary>
+	/// <remarks>
+	/// Object-keys are not supported both because they leave nothing to be serialized and because they cannot be securely hashed.
+	/// Manual verification of the logged output should confirm that the exception message is helpful.
+	/// </remarks>
+	[Fact]
+	public void DictionaryWithObjectKey()
+	{
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<System.Collections.IDictionary>(new Dictionary<string, object>(), Witness.ShapeProvider, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.ToString());
+		NotSupportedException innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
+		this.Logger.WriteLine(innerException.Message);
+
+		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<IDictionary<object, string>>(new Dictionary<object, string>(), Witness.ShapeProvider, TestContext.Current.CancellationToken));
+		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
+		this.Logger.WriteLine(innerException.Message);
+	}
+
+	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
 	private static Sequence<byte> GetByteArrayAsActualMsgPackArray()
@@ -637,6 +657,8 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<IImmutableList<int>>]
 	[GenerateShapeFor<Tuple<int, bool>>]
 	[GenerateShapeFor<(int, bool)>]
+	[GenerateShapeFor<System.Collections.IDictionary>]
+	[GenerateShapeFor<IDictionary<object, string>>]
 	internal partial class Witness;
 
 	private class CustomStringConverter : MessagePackConverter<string>
