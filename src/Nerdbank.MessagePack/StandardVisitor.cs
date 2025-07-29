@@ -825,13 +825,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return default;
 		}
 
-		return requiredComparer switch
+		try
 		{
-			CollectionComparerOptions.None => default,
-			CollectionComparerOptions.Comparer => new() { Comparer = memberInfluence?.GetComparer<TKey>() ?? this.owner.ComparerProvider.GetComparer(keyShape) },
-			CollectionComparerOptions.EqualityComparer => new() { EqualityComparer = memberInfluence?.GetEqualityComparer<TKey>() ?? this.owner.ComparerProvider.GetEqualityComparer(keyShape) },
-			_ => throw new NotSupportedException(),
-		};
+			return requiredComparer switch
+			{
+				CollectionComparerOptions.None => default,
+				CollectionComparerOptions.Comparer => new() { Comparer = memberInfluence?.GetComparer<TKey>() ?? this.owner.ComparerProvider.GetComparer(keyShape) },
+				CollectionComparerOptions.EqualityComparer => new() { EqualityComparer = memberInfluence?.GetEqualityComparer<TKey>() ?? this.owner.ComparerProvider.GetEqualityComparer(keyShape) },
+				_ => throw new NotSupportedException(),
+			};
+		}
+		catch (NotSupportedException ex) when (typeof(TKey) == typeof(object))
+		{
+			throw new NotSupportedException("Serializing dictionaries with System.Object keys is not supported. Consider using a strong-typed key with properties, or using a custom MessagePackSerializer.ComparerProvider.", ex);
+		}
 	}
 
 	/// <summary>
