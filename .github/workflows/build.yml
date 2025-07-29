@@ -75,7 +75,7 @@ jobs:
         } elseif ($IsMacOS) {
           $ExpectedSize = 7.8
         } else {
-          $ExpectedSize = 6.8
+          $ExpectedSize = 6.7
         }
         $AllowedVariance = 0.3
         if ([math]::Abs($ActualSize - $ExpectedSize) -gt $AllowedVariance) {

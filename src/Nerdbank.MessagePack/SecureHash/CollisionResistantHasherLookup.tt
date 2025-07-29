@@ -1,0 +1,111 @@
+<#@ assembly name="System.Core" #>
+<#@ Import Namespace="System.Collections.Generic" #>
+<#@ Import Namespace="System.Linq" #>
+// Copyright (c) Andrew Arnott. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+/* THIS (.cs) FILE IS GENERATED. DO NOT CHANGE IT.
+ * CHANGE THE .tt FILE INSTEAD. */
+
+#pragma warning disable SA1306 // Field names should begin with lower-case letter
+#pragma warning disable SA1309 // Field names should not begin with underscore
+
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Nerdbank.MessagePack.SecureHash;
+
+<#
+var convertersByType = new List<ConverterInfo>
+{
+	new ConverterInfo("char", "CollisionResistantHasherUnmanaged<char>"),
+	new ConverterInfo("byte", "CollisionResistantHasherUnmanaged<byte>"),
+	new ConverterInfo("ushort", "CollisionResistantHasherUnmanaged<ushort>"),
+	new ConverterInfo("uint", "CollisionResistantHasherUnmanaged<uint>"),
+	new ConverterInfo("ulong", "CollisionResistantHasherUnmanaged<ulong>"),
+	new ConverterInfo("sbyte", "CollisionResistantHasherUnmanaged<sbyte>"),
+	new ConverterInfo("short", "CollisionResistantHasherUnmanaged<short>"),
+	new ConverterInfo("int", "CollisionResistantHasherUnmanaged<int>"),
+	new ConverterInfo("long", "CollisionResistantHasherUnmanaged<long>"),
+	new ConverterInfo("System.Numerics.BigInteger", "HashCollisionResistantPrimitives.BigIntegerEqualityComparer"),
+	new ConverterInfo("string", "HashCollisionResistantPrimitives.StringEqualityComparer"),
+	new ConverterInfo("bool", "HashCollisionResistantPrimitives.BooleanEqualityComparer"),
+	new ConverterInfo("Version", "HashCollisionResistantPrimitives.VersionEqualityComparer"),
+	new ConverterInfo("Uri", "HashCollisionResistantPrimitives.AlreadySecureEqualityComparer<Uri>"),
+	new ConverterInfo("float", "HashCollisionResistantPrimitives.SingleEqualityComparer"),
+	new ConverterInfo("double", "HashCollisionResistantPrimitives.DoubleEqualityComparer"),
+	new ConverterInfo("decimal", "HashCollisionResistantPrimitives.DecimalEqualityComparer"),
+	new ConverterInfo("DateTime", "HashCollisionResistantPrimitives.DateTimeEqualityComparer"),
+	new ConverterInfo("DateTimeOffset", "HashCollisionResistantPrimitives.DateTimeOffsetEqualityComparer"),
+	new ConverterInfo("TimeSpan", "CollisionResistantHasherUnmanaged<TimeSpan>"),
+	new ConverterInfo("Guid", "CollisionResistantHasherUnmanaged<Guid>"),
+
+	new ConverterInfo("Int128", "CollisionResistantHasherUnmanaged<Int128>", "NET"),
+	new ConverterInfo("UInt128", "CollisionResistantHasherUnmanaged<UInt128>", "NET"),
+	new ConverterInfo("System.Text.Rune", "CollisionResistantHasherUnmanaged<System.Text.Rune>", "NET"),
+	new ConverterInfo("Half", "HashCollisionResistantPrimitives.HalfEqualityComparer", "NET"),
+	new ConverterInfo("TimeOnly", "CollisionResistantHasherUnmanaged<TimeOnly>", "NET"),
+	new ConverterInfo("DateOnly", "CollisionResistantHasherUnmanaged<DateOnly>", "NET"),
+
+};
+#>
+/// <summary>
+/// Provides access to built-in secure hash functions for primitive types.
+/// </summary>
+/// <remarks>
+/// This class is carefully crafted to help trimming be effective by avoiding type references
+/// to types that are not used in the application.
+/// Although the retrieval method references all the the fact that it is generic gives the
+/// JIT/AOT compiler the opportunity to only reference types that match the type argument
+/// (at least for the value types).
+/// </remarks>
+internal static class CollisionResistantHasherLookup
+{
+<# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
+	 if (converterGroup.Key is not null) { #>
+#if <#=converterGroup.Key#>
+<#   }
+	 foreach (var converter in converterGroup) { #>
+	private static IEqualityComparer? <#=converter.FieldName#>;
+<#	 }
+	 if (converterGroup.Key is not null) { #>
+#endif
+<#   }
+} #>
+
+	/// <summary>
+	/// Gets a built-in equality comparer for the given type, if one is available.
+	/// </summary>
+	/// <typeparam name="T">The type to get a converter for.</typeparam>
+	/// <param name="converter">Receives the converter, if one is available.</param>
+	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
+	internal static bool TryGetPrimitiveHasher<T>([NotNullWhen(true)] out SecureEqualityComparer<T>? converter)
+	{
+<# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
+	 if (converterGroup.Key is not null) { #>
+#if <#=converterGroup.Key#>
+<#   }
+	 foreach (var converter in converterGroup) {
+		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty;
+		#>
+		if (typeof(T) == typeof(<#=converter.TypeName#>)<#=featureCondition#>)
+		{
+			converter = (SecureEqualityComparer<T>)(<#=converter.FieldName#> ??= new <#=converter.ConverterName#>());
+			return true;
+		}
+
+<#   }
+	 if (converterGroup.Key is not null) { #>
+#endif
+<#   }
+} #>
+		converter = null;
+		return false;
+	}
+}
+<#+
+record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, string Feature = null)
+{
+	internal string FieldName => $"_{ConverterName.Replace('<', '_').Replace('>', '_').Replace('.', '_')}";
+}
+#>
