@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Samples/">
     <Project Path="samples/cs/Samples.csproj" />
+    <Project Path="samples/SignalR/SignalR.csproj" />
     <Project Path="samples/fs/FSharpSamples.fsproj" />
   </Folder>
   <Folder Name="/Solution Items/">

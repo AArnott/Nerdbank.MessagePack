@@ -7,6 +7,12 @@
 					"files": [
 						"**/*.csproj"
 					]
+				},
+				{
+					"src": "../src/Nerdbank.MessagePack.SignalR",
+					"files": [
+						"**/*.csproj"
+					]
 				}
 			],
 			"dest": "api"
@@ -32,7 +38,7 @@
 		],
 		"xref": [
 			"https://eiriktsarpalis.github.io/PolyType/xrefmap.yml",
-			"https://learn.microsoft.com/en-us/dotnet/.xrefmap.json"
+			"https://learn.microsoft.com/dotnet/.xrefmap.json"
 		],
 		"output": "_site",
 		"template": [
