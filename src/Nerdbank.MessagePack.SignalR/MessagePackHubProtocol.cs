@@ -1,376 +1,137 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Buffers;
-using System.IO;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Protocol;
-using PolyType;
 
 namespace Nerdbank.MessagePack.SignalR;
 
 /// <summary>
 /// Implements the SignalR Hub Protocol using Nerdbank.MessagePack serialization.
 /// </summary>
-public class MessagePackHubProtocol : IHubProtocol
+/// <remarks>
+/// This implementation is designed to conform with <see href="https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/docs/specs/HubProtocol.md#messagepack-msgpack-encoding">this SignalR spec</see>
+/// and more particularly to be compatible with <see href="https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/common/Protocols.MessagePack/src/Protocol/MessagePackHubProtocolWorker.cs">this implementation</see>.
+/// </remarks>
+internal partial class MessagePackHubProtocol : IHubProtocol
 {
-    private readonly MessagePackSerializer serializer;
+	private const int ErrorResult = 1;
+	private const int VoidResult = 2;
+	private const int NonVoidResult = 3;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MessagePackHubProtocol"/> class.
-    /// </summary>
-    public MessagePackHubProtocol()
-        : this(new MessagePackSerializer())
-    {
-    }
+	private static readonly MessagePackSerializer EnvelopeSerializer = new();
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MessagePackHubProtocol"/> class.
-    /// </summary>
-    /// <param name="serializer">The MessagePack serializer to use.</param>
-    public MessagePackHubProtocol(MessagePackSerializer serializer)
-    {
-        this.serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
-    }
+	private readonly MessagePackSerializer userSerializer;
+	private readonly ITypeShapeProvider userTypeShapeProvider;
 
-    /// <inheritdoc />
-    public string Name => "messagepack";
+	/// <inheritdoc cref="MessagePackHubProtocol(ITypeShapeProvider, MessagePackSerializer)"/>
+	public MessagePackHubProtocol(ITypeShapeProvider typeShapeProvider)
+		: this(typeShapeProvider, null)
+	{
+	}
 
-    /// <inheritdoc />
-    public int Version => 1;
+	/// <summary>
+	/// Initializes a new instance of the <see cref="MessagePackHubProtocol"/> class.
+	/// </summary>
+	/// <param name="typeShapeProvider">The type shape provider for the parameter and return types used by invokable APIs.</param>
+	/// <param name="serializer">The MessagePack serializer to use.</param>
+	public MessagePackHubProtocol(ITypeShapeProvider typeShapeProvider, MessagePackSerializer? serializer = null)
+	{
+		this.userTypeShapeProvider = typeShapeProvider ?? throw new ArgumentNullException(nameof(typeShapeProvider));
+		this.userSerializer = serializer ?? new();
+	}
 
-    /// <inheritdoc />
-    public TransferFormat TransferFormat => TransferFormat.Binary;
+	/// <inheritdoc />
+	public string Name => "messagepack";
 
-    /// <inheritdoc />
-    public bool IsVersionSupported(int version) => version == this.Version;
+	/// <inheritdoc />
+	public int Version => 2;
 
-    /// <inheritdoc />
-    public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, out HubMessage? message)
-    {
-        message = null;
-        
-        try
-        {
-            if (input.IsEmpty)
-            {
-                return false;
-            }
+	/// <inheritdoc />
+	public TransferFormat TransferFormat => TransferFormat.Binary;
 
-            // First, determine the message type by deserializing as base DTO
-            var baseDto = this.serializer.Deserialize<MessageDto>(input, Witness.ShapeProvider);
-            if (baseDto == null)
-            {
-                return false;
-            }
+	/// <inheritdoc />
+	public bool IsVersionSupported(int version) => version <= this.Version;
 
-            // Parse message based on type
-            message = baseDto.Type switch
-            {
-                HubProtocolConstants.InvocationMessageType => this.ParseInvocationMessage(input, binder),
-                HubProtocolConstants.StreamInvocationMessageType => this.ParseStreamInvocationMessage(input, binder),
-                HubProtocolConstants.CompletionMessageType => this.ParseCompletionMessage(input, binder),
-                HubProtocolConstants.StreamItemMessageType => this.ParseStreamItemMessage(input, binder),
-                HubProtocolConstants.CancelInvocationMessageType => this.ParseCancelInvocationMessage(input),
-                HubProtocolConstants.PingMessageType => PingMessage.Instance,
-                HubProtocolConstants.CloseMessageType => this.ParseCloseMessage(input),
-                _ => throw new InvalidDataException($"Unknown message type: {baseDto.Type}")
-            };
+	/// <inheritdoc />
+	public bool TryParseMessage(ref ReadOnlySequence<byte> input, IInvocationBinder binder, [NotNullWhen(true)] out HubMessage? message)
+	{
+		if (!BinaryMessageFormatter.TryParseMessage(ref input, out ReadOnlySequence<byte> payload))
+		{
+			message = null;
+			return false;
+		}
 
-            // Mark the entire input as consumed
-            input = default;
-            return true;
-        }
-        catch (Exception ex) when (!(ex is InvalidDataException))
-        {
-            throw new InvalidDataException("Invalid MessagePack data", ex);
-        }
-    }
+		try
+		{
+			MessagePackReader reader = new(payload);
+			message = this.ParseMessage(ref reader, binder);
+			return message is not null;
+		}
+		catch (Exception ex) when (ex is not InvalidDataException)
+		{
+			throw new InvalidDataException("Invalid MessagePack data", ex);
+		}
+	}
 
-    /// <inheritdoc />
-    public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
-    {
-        var messageDto = this.GetMessageDto(message);
-        var writer = new MessagePackWriter(output);
-        this.SerializeMessageDto(ref writer, messageDto);
-        writer.Flush();
-    }
+	/// <inheritdoc />
+	public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
+	{
+		Requires.NotNull(message);
+		Requires.NotNull(output);
 
-    /// <inheritdoc />
-    public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
-    {
-        var messageDto = this.GetMessageDto(message);
-        return this.SerializeMessageDtoToBytes(messageDto);
-    }
+		using SequencePool<byte>.Rental sequenceRental = SequencePool<byte>.Shared.Rent();
 
-    private MessageDto GetMessageDto(HubMessage message)
-    {
-        return message switch
-        {
-            InvocationMessage invocation => new InvocationMessageDto
-            {
-                Headers = invocation.Headers?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                InvocationId = invocation.InvocationId,
-                Target = invocation.Target,
-                Arguments = invocation.Arguments,
-                StreamIds = invocation.StreamIds,
-            },
-            
-            StreamInvocationMessage streamInvocation => new StreamInvocationMessageDto
-            {
-                Headers = streamInvocation.Headers?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                InvocationId = streamInvocation.InvocationId,
-                Target = streamInvocation.Target,
-                Arguments = streamInvocation.Arguments,
-                StreamIds = streamInvocation.StreamIds,
-            },
-            
-            CompletionMessage completion => new CompletionMessageDto
-            {
-                Headers = completion.Headers?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                InvocationId = completion.InvocationId,
-                Error = completion.Error,
-                Result = completion.Result,
-                HasResult = completion.HasResult,
-            },
-            
-            StreamItemMessage streamItem => new StreamItemMessageDto
-            {
-                Headers = streamItem.Headers?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                InvocationId = streamItem.InvocationId,
-                Item = streamItem.Item,
-            },
-            
-            CancelInvocationMessage cancel => new CancelInvocationMessageDto
-            {
-                Headers = cancel.Headers?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                InvocationId = cancel.InvocationId,
-            },
-            
-            PingMessage => new PingMessageDto(),
-            
-            CloseMessage close => new CloseMessageDto
-            {
-                Error = close.Error,
-                AllowReconnect = close.AllowReconnect,
-            },
-            
-            _ => throw new InvalidOperationException($"Unsupported message type: {message.GetType().Name}")
-        };
-    }
+		try
+		{
+			// Write message to a buffer so we can get its length
+			this.WriteMessageCore(sequenceRental.Value, message);
 
-    private InvocationMessage ParseInvocationMessage(ReadOnlySequence<byte> input, IInvocationBinder binder)
-    {
-        var dto = this.serializer.Deserialize<InvocationMessageDto>(input, Witness.ShapeProvider);
-        
-        var arguments = this.ConvertArguments(dto.Arguments, binder, dto.Target);
-        
-        return new InvocationMessage(dto.InvocationId, dto.Target, arguments, dto.StreamIds)
-        {
-            Headers = dto.Headers != null ? new Dictionary<string, string>(dto.Headers) : null
-        };
-    }
+			// Write length then message to output
+			BinaryMessageFormatter.WriteLengthPrefix(sequenceRental.Value.Length, output);
+			output.Write(sequenceRental.Value);
+		}
+		catch (Exception ex) when (ex is not InvalidDataException)
+		{
+			throw new InvalidDataException("Failed to serialize the message.", ex);
+		}
+	}
 
-    private StreamInvocationMessage ParseStreamInvocationMessage(ReadOnlySequence<byte> input, IInvocationBinder binder)
-    {
-        var dto = this.serializer.Deserialize<StreamInvocationMessageDto>(input, Witness.ShapeProvider);
-        
-        var arguments = this.ConvertArguments(dto.Arguments, binder, dto.Target);
-        
-        return new StreamInvocationMessage(dto.InvocationId, dto.Target, arguments, dto.StreamIds)
-        {
-            Headers = dto.Headers != null ? new Dictionary<string, string>(dto.Headers) : null
-        };
-    }
+	/// <inheritdoc />
+	public ReadOnlyMemory<byte> GetMessageBytes(HubMessage message)
+	{
+		Requires.NotNull(message);
 
-    private CompletionMessage ParseCompletionMessage(ReadOnlySequence<byte> input, IInvocationBinder binder)
-    {
-        var dto = this.serializer.Deserialize<CompletionMessageDto>(input, Witness.ShapeProvider);
-        
-        CompletionMessage message;
-        if (dto.Error != null)
-        {
-            message = CompletionMessage.WithError(dto.InvocationId, dto.Error);
-        }
-        else if (dto.HasResult)
-        {
-            message = CompletionMessage.WithResult(dto.InvocationId, dto.Result);
-        }
-        else
-        {
-            message = CompletionMessage.Empty(dto.InvocationId);
-        }
+		using SequencePool<byte>.Rental sequenceRental = SequencePool<byte>.Shared.Rent();
 
-        if (dto.Headers != null)
-        {
-            foreach (var header in dto.Headers)
-            {
-                message.Headers[header.Key] = header.Value;
-            }
-        }
+		try
+		{
+			// Write message to a buffer so we can get its length
+			this.WriteMessageCore(sequenceRental.Value, message);
 
-        return message;
-    }
+			// Write length then message to output
+			int prefixLength = BinaryMessageFormatter.LengthPrefixLength(sequenceRental.Value.Length);
 
-    private StreamItemMessage ParseStreamItemMessage(ReadOnlySequence<byte> input, IInvocationBinder binder)
-    {
-        var dto = this.serializer.Deserialize<StreamItemMessageDto>(input, Witness.ShapeProvider);
-        
-        return new StreamItemMessage(dto.InvocationId, dto.Item)
-        {
-            Headers = dto.Headers != null ? new Dictionary<string, string>(dto.Headers) : null
-        };
-    }
+			byte[] array = new byte[sequenceRental.Value.Length + prefixLength];
+			Span<byte> span = array.AsSpan();
 
-    private CancelInvocationMessage ParseCancelInvocationMessage(ReadOnlySequence<byte> input)
-    {
-        var dto = this.serializer.Deserialize<CancelInvocationMessageDto>(input, Witness.ShapeProvider);
-        
-        return new CancelInvocationMessage(dto.InvocationId)
-        {
-            Headers = dto.Headers != null ? new Dictionary<string, string>(dto.Headers) : null
-        };
-    }
+			// Write length then message to output
+			int written = BinaryMessageFormatter.WriteLengthPrefix(sequenceRental.Value.Length, span);
+			Debug.Assert(written == prefixLength, "LengthPrefixLength lied to us.");
+			sequenceRental.Value.AsReadOnlySequence.CopyTo(span.Slice(prefixLength));
 
-    private CloseMessage ParseCloseMessage(ReadOnlySequence<byte> input)
-    {
-        var dto = this.serializer.Deserialize<CloseMessageDto>(input, Witness.ShapeProvider);
-        
-        return new CloseMessage(dto.Error, dto.AllowReconnect);
-    }
+			return array;
+		}
+		catch (Exception ex) when (ex is not InvalidDataException)
+		{
+			throw new InvalidDataException("Failed to serialize the message.", ex);
+		}
+	}
 
-    private object?[] ConvertArguments(object?[]? arguments, IInvocationBinder binder, string target)
-    {
-        if (arguments == null)
-        {
-            return Array.Empty<object>();
-        }
-
-        var parameterTypes = binder.GetParameterTypes(target);
-        
-        if (arguments.Length != parameterTypes.Count)
-        {
-            throw new InvalidDataException($"Argument count mismatch. Expected {parameterTypes.Count}, got {arguments.Length}");
-        }
-
-        var result = new object?[arguments.Length];
-        for (int i = 0; i < arguments.Length; i++)
-        {
-            if (arguments[i] != null && i < parameterTypes.Count)
-            {
-                var targetType = parameterTypes[i];
-                if (targetType != typeof(object) && !targetType.IsAssignableFrom(arguments[i]!.GetType()))
-                {
-                    // Need to convert the type - this is complex with the current approach
-                    // For now, just use the original value if it's assignable
-                    if (targetType.IsAssignableFrom(arguments[i]!.GetType()))
-                    {
-                        result[i] = arguments[i];
-                    }
-                    else
-                    {
-                        // For type conversion, we'd need more sophisticated handling
-                        // This is a limitation we can improve later
-                        result[i] = arguments[i];
-                    }
-                }
-                else
-                {
-                    result[i] = arguments[i];
-                }
-            }
-            else
-            {
-                result[i] = arguments[i];
-            }
-        }
-        return result;
-    }
-
-    private void SerializeMessageDto(ref MessagePackWriter writer, MessageDto dto)
-    {
-        switch (dto)
-        {
-            case PingMessageDto ping:
-                this.serializer.Serialize(ref writer, ping, Witness.ShapeProvider, default);
-                break;
-            case CloseMessageDto close:
-                this.serializer.Serialize(ref writer, close, Witness.ShapeProvider, default);
-                break;
-            case InvocationMessageDto invocation:
-                this.serializer.Serialize(ref writer, invocation, Witness.ShapeProvider, default);
-                break;
-            case StreamInvocationMessageDto streamInvocation:
-                this.serializer.Serialize(ref writer, streamInvocation, Witness.ShapeProvider, default);
-                break;
-            case CompletionMessageDto completion:
-                this.serializer.Serialize(ref writer, completion, Witness.ShapeProvider, default);
-                break;
-            case StreamItemMessageDto streamItem:
-                this.serializer.Serialize(ref writer, streamItem, Witness.ShapeProvider, default);
-                break;
-            case CancelInvocationMessageDto cancel:
-                this.serializer.Serialize(ref writer, cancel, Witness.ShapeProvider, default);
-                break;
-            default:
-                throw new InvalidOperationException($"Unknown DTO type: {dto.GetType().Name}");
-        }
-    }
-
-    private ReadOnlyMemory<byte> SerializeMessageDtoToBytes(MessageDto dto)
-    {
-        return dto switch
-        {
-            PingMessageDto ping => this.serializer.Serialize(ping, Witness.ShapeProvider, default),
-            CloseMessageDto close => this.serializer.Serialize(close, Witness.ShapeProvider, default),
-            InvocationMessageDto invocation => this.serializer.Serialize(invocation, Witness.ShapeProvider, default),
-            StreamInvocationMessageDto streamInvocation => this.serializer.Serialize(streamInvocation, Witness.ShapeProvider, default),
-            CompletionMessageDto completion => this.serializer.Serialize(completion, Witness.ShapeProvider, default),
-            StreamItemMessageDto streamItem => this.serializer.Serialize(streamItem, Witness.ShapeProvider, default),
-            CancelInvocationMessageDto cancel => this.serializer.Serialize(cancel, Witness.ShapeProvider, default),
-            _ => throw new InvalidOperationException($"Unknown DTO type: {dto.GetType().Name}"),
-        };
-    }
-
-    private ReadOnlyMemory<byte> SerializeObjectToBytes(object value)
-    {
-        // For simple types, we can handle them directly
-        return value switch
-        {
-            string str => this.serializer.Serialize(str, Witness.ShapeProvider, default),
-            int i => this.serializer.Serialize(i, Witness.ShapeProvider, default),
-            bool b => this.serializer.Serialize(b, Witness.ShapeProvider, default),
-            double d => this.serializer.Serialize(d, Witness.ShapeProvider, default),
-            float f => this.serializer.Serialize(f, Witness.ShapeProvider, default),
-            long l => this.serializer.Serialize(l, Witness.ShapeProvider, default),
-            // For complex objects, we might need to use object arrays or dictionaries
-            // This is a limitation of the current approach
-            _ => throw new NotSupportedException($"Type {value.GetType().Name} is not supported for argument conversion"),
-        };
-    }
+	[GenerateShapeFor<IDictionary<string, string>>]
+	[GenerateShapeFor<string[]>]
+	private partial class Witness;
 }
-
-/// <summary>
-/// Witness class for shape providers.
-/// </summary>
-[GenerateShapeFor<MessageDto>]
-[GenerateShapeFor<PingMessageDto>]
-[GenerateShapeFor<CloseMessageDto>]
-[GenerateShapeFor<InvocationMessageDto>]
-[GenerateShapeFor<StreamInvocationMessageDto>]
-[GenerateShapeFor<CompletionMessageDto>]
-[GenerateShapeFor<StreamItemMessageDto>]
-[GenerateShapeFor<CancelInvocationMessageDto>]
-[GenerateShapeFor<string>]
-[GenerateShapeFor<int>]
-[GenerateShapeFor<bool>]
-[GenerateShapeFor<double>]
-[GenerateShapeFor<float>]
-[GenerateShapeFor<long>]
-[GenerateShapeFor<object>]
-[GenerateShapeFor<object[]>]
-[GenerateShapeFor<Dictionary<string, string>>]
-[GenerateShapeFor<string[]>]
-internal partial class Witness;
