@@ -25,7 +25,7 @@
 			"allowedVersions": "!/-g[a-f0-9]+$/"
 		},
 		{
-			"matchPackageNames": ["System.Collections.Immutable", "System.Text.Json", "System.IO.Pipelines", "System.Memory.Data"],
+			"matchPackageNames": [ "System.Collections.Immutable", "System.Text.Json", "System.IO.Pipelines", "System.Memory.Data", "Microsoft.Extensions.*", "Microsoft.AspNetCore.*" ],
 			"allowedVersions": "<9.0",
 			"groupName": "Included in .NET runtime, or ships as a package from the same team with dependencies on the runtime packages."
 		},

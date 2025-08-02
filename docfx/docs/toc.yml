@@ -3,6 +3,8 @@ items:
   href: features.md
 - name: Getting Started
   href: getting-started.md
+- name: SignalR Hub Protocol
+  href: signalr.md
 - name: Unions
   href: unions.md
 - href: streaming-deserialization.md
