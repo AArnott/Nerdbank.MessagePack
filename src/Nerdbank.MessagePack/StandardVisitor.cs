@@ -566,12 +566,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		MessagePackConverter<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
 		Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
 
-		// Deserialization functions.
+		bool throwOnNullKeys =
+			(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties
+			&& dictionaryShape.KeyType.IsNonNullable // https://github.com/eiriktsarpalis/PolyType/issues/217
+			&& !dictionaryShape.KeyType.Type.IsValueType;
+		bool throwOnNullValues =
+			(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties
+			&& dictionaryShape.ValueType.IsNonNullable // https://github.com/eiriktsarpalis/PolyType/issues/217
+			&& !dictionaryShape.ValueType.Type.IsValueType;
 		return dictionaryShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter),
-			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
-			CollectionConstructionStrategy.Parameterized => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
+			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, throwOnNullKeys, throwOnNullValues),
+			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence), throwOnNullKeys, throwOnNullValues),
+			CollectionConstructionStrategy.Parameterized => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence), throwOnNullKeys, throwOnNullValues),
 			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
 		};
 	}
@@ -615,7 +622,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 			else
 			{
-				return new ArrayConverter<TElement>(elementConverter);
+				bool throwOnNull =
+					(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties
+					&& enumerableShape.ElementType.IsNonNullable // https://github.com/eiriktsarpalis/PolyType/issues/217
+					&& !enumerableShape.ElementType.Type.IsValueType;
+				return new ArrayConverter<TElement>(elementConverter, throwOnNull);
 			}
 		}
 

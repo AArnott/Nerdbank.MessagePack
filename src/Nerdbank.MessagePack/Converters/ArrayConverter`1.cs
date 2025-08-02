@@ -10,7 +10,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// Serializes and deserializes a 1-rank array.
 /// </summary>
 /// <typeparam name="TElement">The element type.</typeparam>
-internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TElement[]>
+internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementConverter, bool disallowNulls) : MessagePackConverter<TElement[]>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -28,10 +28,22 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		TElement[] array = new TElement[count];
 		for (int i = 0; i < count; i++)
 		{
-			array[i] = elementConverter.Read(ref reader, context)!;
+			TElement element = elementConverter.Read(ref reader, context)!;
+			if (element is null && disallowNulls)
+			{
+				ThrowDisallowedNullValue(i);
+			}
+
+			array[i] = element;
 		}
 
 		return array;
+
+		[DoesNotReturn]
+		static void ThrowDisallowedNullValue(int index)
+		{
+			throw new MessagePackSerializationException($"Element at array index {index} has a disallowed null value.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
+		}
 	}
 
 	/// <inheritdoc/>

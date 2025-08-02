@@ -3,6 +3,7 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -17,13 +18,25 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="getReadable">A delegate which converts the opaque dictionary type to a readable form.</param>
 /// <param name="keyConverter">A converter for keys.</param>
 /// <param name="valueConverter">A converter for values.</param>
-internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter) : MessagePackConverter<TDictionary>
+/// <param name="disallowNullKeys">If <see langword="true"/>, deserialization should throw if a <see langword="null"/> key is encountered.</param>
+/// <param name="disallowNullValues">If <see langword="true"/>, deserialization should throw if a <see langword="null"/> value is encountered.</param>
+internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter, bool disallowNullKeys, bool disallowNullValues) : MessagePackConverter<TDictionary>
 	where TKey : notnull
 {
 	/// <summary>
 	/// Gets a value indicating whether the key or value converters prefer async serialization.
 	/// </summary>
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
+
+	/// <summary>
+	/// Gets a value indicating whether deserialization should throw if a <see langword="null"/> key is encountered.
+	/// </summary>
+	protected bool DisallowNullKeys => disallowNullKeys;
+
+	/// <summary>
+	/// Gets a value indicating whether deserialization should throw if a <see langword="null"/> value is encountered.
+	/// </summary>
+	protected bool DisallowNullValues => disallowNullValues;
 
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
@@ -148,7 +161,23 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey key, out TValue value)
 	{
 		key = keyConverter.Read(ref reader, context)!;
+		if (key is null && disallowNullKeys)
+		{
+			ThrowDisallowedNullValue(true);
+		}
+
 		value = valueConverter.Read(ref reader, context)!;
+		if (value is null && disallowNullValues)
+		{
+			ThrowDisallowedNullValue(false);
+		}
+
+		[DoesNotReturn]
+		static void ThrowDisallowedNullValue(bool key)
+		{
+			string message = key ? "A disallowed null key was encountered in the dictionary." : "A disallowed null value was encountered in the dictionary.";
+			throw new MessagePackSerializationException(message) { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
+		}
 	}
 
 	/// <summary>
@@ -175,13 +204,17 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 /// <param name="addEntry">The delegate that adds an entry to the dictionary.</param>
 /// <param name="ctor">The constructor for the dictionary type.</param>
 /// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
+/// <param name="disallowNullKeys"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='disallowNullKeys']"/></param>
+/// <param name="disallowNullValues"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='disallowNullValues']"/></param>
 internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	DictionaryInserter<TDictionary, TKey, TValue> addEntry,
 	MutableCollectionConstructor<TKey, TDictionary> ctor,
-	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
+	CollectionConstructionOptions<TKey> collectionConstructionOptions,
+	bool disallowNullKeys,
+	bool disallowNullValues) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, disallowNullKeys, disallowNullValues), IDeserializeInto<TDictionary>
 	where TKey : notnull
 {
 	/// <inheritdoc/>
@@ -299,12 +332,16 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 /// <param name="valueConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='valueConverter']"/></param>
 /// <param name="ctor">A dictionary initializer that constructs from a span of entries.</param>
 /// <param name="collectionConstructionOptions">A template for options to pass to the <paramref name="ctor"/>.</param>
+/// <param name="disallowNullKeys"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='disallowNullKeys']"/></param>
+/// <param name="disallowNullValues"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='disallowNullValues']"/></param>
 internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable,
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> ctor,
-	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	CollectionConstructionOptions<TKey> collectionConstructionOptions,
+	bool disallowNullKeys,
+	bool disallowNullValues) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, disallowNullKeys, disallowNullValues)
 	where TKey : notnull
 {
 	/// <inheritdoc/>

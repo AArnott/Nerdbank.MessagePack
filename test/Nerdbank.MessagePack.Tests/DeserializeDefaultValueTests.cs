@@ -3,6 +3,8 @@
 
 public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBase
 {
+	private static readonly ReadOnlySequence<byte> NullValueInMap = CreateNullValueInMap();
+	private static readonly ReadOnlySequence<byte> NullValueInArray = CreateNullValueInArray();
 	private static readonly ReadOnlySequence<byte> NullMessageMsgPackMap = CreateNullMessageObject();
 	private static readonly ReadOnlySequence<byte> EmptyMsgPackMap = CreateEmptyMap();
 
@@ -10,6 +12,18 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 	public async Task NullValueRejectedForNonNullableRequiredProperty(bool async)
 	{
 		await this.ExpectDeserializationThrowsAsync<RequiredNonNullProperty>(NullMessageMsgPackMap, async, MessagePackSerializationException.ErrorCode.DisallowedNullValue);
+	}
+
+	[Theory, PairwiseData]
+	public async Task NullValueRejectedForNonNullableArrayElement(bool async)
+	{
+		await this.ExpectDeserializationThrowsAsync<NonNullableArrayElement>(NullValueInArray, async, MessagePackSerializationException.ErrorCode.DisallowedNullValue);
+	}
+
+	[Theory, PairwiseData]
+	public async Task NullValueRejectedForNonNullableDictionaryValue(bool async)
+	{
+		await this.ExpectDeserializationThrowsAsync<NonNullableValueDictionary>(NullValueInMap, async, MessagePackSerializationException.ErrorCode.DisallowedNullValue);
 	}
 
 	[Theory, PairwiseData]
@@ -97,6 +111,31 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 		return seq;
 	}
 
+	private static ReadOnlySequence<byte> CreateNullValueInArray()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write("Items");
+		writer.WriteArrayHeader(1);
+		writer.WriteNil();
+		writer.Flush();
+		return seq;
+	}
+
+	private static ReadOnlySequence<byte> CreateNullValueInMap()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write("Items");
+		writer.WriteMapHeader(1);
+		writer.Write("Items");
+		writer.WriteNil();
+		writer.Flush();
+		return seq;
+	}
+
 	private async ValueTask<T?> DeserializeMaybeAsync<T>(ReadOnlySequence<byte> msgpack, bool async)
 #if NET
 		where T : IShapeable<T>
@@ -125,6 +164,18 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 
 	[GenerateShape]
 	public partial record RequiredNonNullProperty(string Message);
+
+	[GenerateShape]
+	public partial class NonNullableValueDictionary
+	{
+		public Dictionary<string, string> Items { get; init; } = new();
+	}
+
+	[GenerateShape]
+	public partial class NonNullableArrayElement
+	{
+		public string[] Items { get; init; } = [];
+	}
 
 	[GenerateShape]
 	public partial record OptionalNonNullProperty(string Message = "");
