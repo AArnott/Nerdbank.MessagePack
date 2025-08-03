@@ -4,6 +4,7 @@
     <ProjectReference Include="Nerdbank.MessagePack.Tests\Nerdbank.MessagePack.Tests.csproj" Publish="false" />
     <ProjectReference Include="Nerdbank.MessagePack.Analyzers.Tests\Nerdbank.MessagePack.Analyzers.Tests.csproj" Publish="false" />
     <ProjectReference Include="Nerdbank.MessagePack.SignalR.Tests\Nerdbank.MessagePack.SignalR.Tests.csproj" Publish="false" />
+    <ProjectReference Include="Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests\Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests.csproj" Publish="false" />
 
     <MultiRIDProjectReference Include="AotCompatibilityTest\AotCompatibilityTest.csproj" />
     <MultiRIDProjectReference Include="AotNativeConsole\AotNativeConsole.csproj" />

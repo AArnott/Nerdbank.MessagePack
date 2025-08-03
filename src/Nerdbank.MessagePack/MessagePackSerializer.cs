@@ -436,6 +436,27 @@ public partial record MessagePackSerializer
 		}
 	}
 
+	/// <inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/>
+	public async ValueTask SerializeObjectAsync(PipeWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
+	{
+		Requires.NotNull(writer);
+		Requires.NotNull(shape);
+
+		try
+		{
+#pragma warning disable NBMsgPackAsync
+			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+			MessagePackAsyncWriter asyncWriter = new(writer);
+			await this.ConverterCache.GetOrAddConverter(shape).WriteObjectAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			asyncWriter.Flush();
+#pragma warning restore NBMsgPackAsync
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
+	}
+
 	/// <summary>
 	/// Serializes a value using the given <see cref="PipeWriter"/>.
 	/// </summary>
@@ -482,6 +503,10 @@ public partial record MessagePackSerializer
 #endif
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.ConverterCache.GetOrAddConverter(shape), cancellationToken);
+
+	/// <inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>
+	public ValueTask<object?> DeserializeObjectAsync(PipeReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
+		=> this.DeserializeObjectAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.ConverterCache.GetOrAddConverter(shape), cancellationToken);
 
 	/// <summary>
 	/// Deserializes a value from a <see cref="PipeReader"/>.
@@ -948,8 +973,47 @@ public partial record MessagePackSerializer
 		}
 	}
 
+	private async ValueTask<object?> DeserializeObjectAsync(PipeReader reader, ITypeShapeProvider provider, MessagePackConverter converter, CancellationToken cancellationToken = default)
+	{
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+
+			// Buffer up to some threshold before starting deserialization.
+			// Only engage with the async code path (which is slower) if we reach our threshold
+			// and more bytes are still to come.
+			if (this.MaxAsyncBuffer > 0)
+			{
+				ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
+				if (readResult.IsCompleted)
+				{
+					MessagePackReader msgpackReader = new(readResult.Buffer);
+					object? result = converter.ReadObject(ref msgpackReader, context.Value);
+					reader.AdvanceTo(msgpackReader.Position);
+					return result;
+				}
+				else
+				{
+					reader.AdvanceTo(readResult.Buffer.Start);
+				}
+			}
+
+#pragma warning disable NBMsgPackAsync
+			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+			await asyncReader.ReadAsync().ConfigureAwait(false);
+			object? result2 = await converter.ReadObjectAsync(asyncReader, context.Value).ConfigureAwait(false);
+			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
+			return result2;
+#pragma warning restore NBMsgPackAsync
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
+	}
+
 	/// <summary>
-	/// Determines whether an exception thrown during (de)serializattion should be wrapped.
+	/// Determines whether an exception thrown during (de)serialization should be wrapped.
 	/// </summary>
 	/// <param name="ex">The thrown exception.</param>
 	/// <param name="cancellationToken">The cancellation token.</param>
