@@ -3,15 +3,11 @@
 		{
 			"src": [
 				{
-					"src": "../src/Nerdbank.MessagePack",
+					"src": "../src",
 					"files": [
-						"**/*.csproj"
-					]
-				},
-				{
-					"src": "../src/Nerdbank.MessagePack.SignalR",
-					"files": [
-						"**/*.csproj"
+						"Nerdbank.MessagePack/*.csproj",
+						"Nerdbank.MessagePack.AspNetCoreMvcFormatter/*.csproj",
+						"Nerdbank.MessagePack.SignalR/*.csproj"
 					]
 				}
 			],
