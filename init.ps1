@@ -63,7 +63,7 @@ if (!$NoPrerequisites) {
         & "$PSScriptRoot\tools\Install-NuGetCredProvider.ps1" -AccessToken $AccessToken -Force:$UpgradePrerequisites
     }
 
-    & "$PSScriptRoot\tools\Install-DotNetSdk.ps1" -InstallLocality $InstallLocality
+    & "$PSScriptRoot\tools\Install-DotNetSdk.ps1" -InstallLocality $InstallLocality -IncludeAspNetCore
     if ($LASTEXITCODE -eq 3010) {
         Exit 3010
     }

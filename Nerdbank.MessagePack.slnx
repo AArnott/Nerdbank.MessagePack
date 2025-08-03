@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Samples/">
     <Project Path="samples/cs/Samples.csproj" />
+    <Project Path="samples/SignalR/SignalR.csproj" />
     <Project Path="samples/fs/FSharpSamples.fsproj" />
   </Folder>
   <Folder Name="/Solution Items/">
@@ -31,6 +32,7 @@
     <Project Path="src/Nerdbank.MessagePack.Analyzers.CodeFixes/Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
     <Project Path="src/Nerdbank.MessagePack.Analyzers/Nerdbank.MessagePack.Analyzers.csproj" />
     <Project Path="src/Nerdbank.MessagePack/Nerdbank.MessagePack.csproj" />
+    <Project Path="src/Nerdbank.MessagePack.SignalR/Nerdbank.MessagePack.SignalR.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/AotCompatibilityTest/AotCompatibilityTest.csproj" />
@@ -38,5 +40,6 @@
     <Project Path="test/Benchmarks/Benchmarks.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Analyzers.Tests/Nerdbank.MessagePack.Analyzers.Tests.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj" />
+    <Project Path="test/Nerdbank.MessagePack.SignalR.Tests/Nerdbank.MessagePack.SignalR.Tests.csproj" />
   </Folder>
 </Solution>
