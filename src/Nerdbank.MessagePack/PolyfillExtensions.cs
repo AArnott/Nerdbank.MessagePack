@@ -55,6 +55,9 @@ namespace Nerdbank.MessagePack
 	/// </content>
 	internal static partial class PolyfillExtensions
 	{
+		internal static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> pair, out TKey key, out TValue value)
+			=> (key, value) = (pair.Key, pair.Value);
+
 		internal static bool HasAnySet(this BitArray bitArray)
 		{
 			for (int i = 0; i < bitArray.Count; i++)

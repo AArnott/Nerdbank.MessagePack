@@ -11,6 +11,32 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	public async Task RoundtripPocoWithDefaultCtor() => await this.AssertRoundtripAsync(new PocoWithDefaultCtor { X = 1, Y = 2 });
 
 	[Fact]
+	public async Task PocoDictionary()
+	{
+		DictionaryOfPocos value = new(new Dictionary<string, Poco>
+		{
+			["one"] = new Poco(1, 1),
+			["two"] = new Poco(2, 2),
+		}.ToImmutableDictionary());
+
+		this.Serializer = this.Serializer with { Converters = [new AsyncDictionaryOfPocosConverter()] };
+		await this.AssertRoundtripAsync(value);
+	}
+
+	[Fact]
+	public async Task PrimitivesDictionary()
+	{
+		DictionaryOfPrimitives value = new(new Dictionary<string, int>
+		{
+			["one"] = 1,
+			["two"] = 2,
+		}.ToImmutableDictionary());
+
+		this.Serializer = this.Serializer with { Converters = [new AsyncDictionaryOfPrimitivesConverter()] };
+		await this.AssertRoundtripAsync(value);
+	}
+
+	[Fact]
 	public async Task LargeArray() => await this.AssertRoundtripAsync(new ArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToArray()));
 
 	[Fact]
@@ -126,6 +152,22 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	}
 
 	[GenerateShape]
+	public partial class DictionaryOfPrimitives(ImmutableDictionary<string, int>? pocos) : IEquatable<DictionaryOfPrimitives>
+	{
+		public ImmutableDictionary<string, int>? Pocos => pocos;
+
+		public bool Equals(DictionaryOfPrimitives? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
+	}
+
+	[GenerateShape]
+	public partial class DictionaryOfPocos(ImmutableDictionary<string, Poco>? pocos) : IEquatable<DictionaryOfPocos>
+	{
+		public ImmutableDictionary<string, Poco>? Pocos => pocos;
+
+		public bool Equals(DictionaryOfPocos? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
+	}
+
+	[GenerateShape]
 	public partial class ArrayOfPocos(Poco[]? pocos) : IEquatable<ArrayOfPocos>
 	{
 		public Poco[]? Pocos => pocos;
@@ -196,5 +238,35 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 			return base.ReadAsync(reader, context);
 		}
 #pragma warning restore NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+	}
+
+	private class AsyncDictionaryOfPrimitivesConverter : MessagePackConverter<DictionaryOfPrimitives>
+	{
+		public override bool PreferAsyncSerialization => true;
+
+		public override DictionaryOfPrimitives? Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+		public override void Write(ref MessagePackWriter writer, in DictionaryOfPrimitives? value, SerializationContext context) => throw new NotImplementedException();
+
+		public override async ValueTask<DictionaryOfPrimitives?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+			=> new DictionaryOfPrimitives(await context.GetConverter<ImmutableDictionary<string, int>>(context.TypeShapeProvider).ReadAsync(reader, context));
+
+		public override ValueTask WriteAsync(MessagePackAsyncWriter writer, DictionaryOfPrimitives? value, SerializationContext context)
+			=> context.GetConverter<ImmutableDictionary<string, int>>(context.TypeShapeProvider).WriteAsync(writer, value?.Pocos, context);
+	}
+
+	private class AsyncDictionaryOfPocosConverter : MessagePackConverter<DictionaryOfPocos>
+	{
+		public override bool PreferAsyncSerialization => true;
+
+		public override DictionaryOfPocos? Read(ref MessagePackReader reader, SerializationContext context) => throw new NotImplementedException();
+
+		public override void Write(ref MessagePackWriter writer, in DictionaryOfPocos? value, SerializationContext context) => throw new NotImplementedException();
+
+		public override async ValueTask<DictionaryOfPocos?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+			=> new DictionaryOfPocos(await context.GetConverter<ImmutableDictionary<string, Poco>>(context.TypeShapeProvider).ReadAsync(reader, context));
+
+		public override ValueTask WriteAsync(MessagePackAsyncWriter writer, DictionaryOfPocos? value, SerializationContext context)
+			=> context.GetConverter<ImmutableDictionary<string, Poco>>(context.TypeShapeProvider).WriteAsync(writer, value?.Pocos, context);
 	}
 }

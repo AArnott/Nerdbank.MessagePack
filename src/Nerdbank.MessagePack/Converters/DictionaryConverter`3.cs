@@ -20,6 +20,9 @@ namespace Nerdbank.MessagePack.Converters;
 internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable, MessagePackConverter<TKey> keyConverter, MessagePackConverter<TValue> valueConverter) : MessagePackConverter<TDictionary>
 	where TKey : notnull
 {
+	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization => this.ElementPrefersAsyncSerialization;
+
 	/// <summary>
 	/// Gets a value indicating whether the key or value converters prefer async serialization.
 	/// </summary>
@@ -55,6 +58,49 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 
 			keyConverter.Write(ref writer, entryKey, context);
 			valueConverter.Write(ref writer, entryValue, context);
+		}
+	}
+
+	/// <inheritdoc/>
+	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TDictionary? value, SerializationContext context)
+	{
+		if (value is null)
+		{
+			writer.WriteNil();
+			return;
+		}
+
+		context.DepthStep();
+		IReadOnlyDictionary<TKey, TValue> dictionary = getReadable(value);
+
+		if (this.ElementPrefersAsyncSerialization)
+		{
+			writer.WriteMapHeader(dictionary.Count);
+			foreach ((TKey entryKey, TValue entryValue) in dictionary)
+			{
+				await keyConverter.WriteAsync(writer, entryKey, context).ConfigureAwait(false);
+				await valueConverter.WriteAsync(writer, entryValue, context).ConfigureAwait(false);
+			}
+		}
+		else
+		{
+			MessagePackWriter syncWriter = writer.CreateWriter();
+			syncWriter.WriteMapHeader(dictionary.Count);
+
+			foreach ((TKey entryKey, TValue entryValue) in dictionary)
+			{
+				keyConverter.Write(ref syncWriter, entryKey, context);
+				valueConverter.Write(ref syncWriter, entryValue, context);
+
+				if (writer.IsTimeToFlush(context, syncWriter))
+				{
+					writer.ReturnWriter(ref syncWriter);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+					syncWriter = writer.CreateWriter();
+				}
+			}
+
+			writer.ReturnWriter(ref syncWriter);
 		}
 	}
 
@@ -184,9 +230,6 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 	where TKey : notnull
 {
-	/// <inheritdoc/>
-	public override bool PreferAsyncSerialization => this.ElementPrefersAsyncSerialization;
-
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
@@ -324,6 +367,53 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 			{
 				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
 				entries[i] = new(key, value);
+			}
+
+			return ctor(entries.AsSpan(0, count), collectionConstructionOptions);
+		}
+		finally
+		{
+			ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Return(entries);
+		}
+	}
+
+	/// <inheritdoc/>
+	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		if (!this.PreferAsyncSerialization)
+		{
+			return await base.ReadAsync(reader, context).ConfigureAwait(false);
+		}
+
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (isNil)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return default;
+		}
+
+		context.DepthStep();
+
+		int count;
+		while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		reader.ReturnReader(ref streamingReader);
+
+		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
+		try
+		{
+			for (int i = 0; i < count; i++)
+			{
+				entries[i] = await this.ReadEntryAsync(reader, context).ConfigureAwait(false);
 			}
 
 			return ctor(entries.AsSpan(0, count), collectionConstructionOptions);
