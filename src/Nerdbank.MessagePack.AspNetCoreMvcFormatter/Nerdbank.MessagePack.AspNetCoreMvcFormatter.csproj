@@ -6,6 +6,7 @@
     <PackageDescription>ASP.NET Core MVC Input/Output MessagePack formatter using Nerdbank.MessagePack for fast and efficient binary serialization.</PackageDescription>
     <PackageIcon>icon.png</PackageIcon>
     <PackageTags>MsgPack MessagePack Serialization SignalR HubProtocol</PackageTags>
+    <PackageProjectUrl>https://aarnott.github.io/Nerdbank.MessagePack/docs/aspnetmvc.html</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\Nerdbank.MessagePack\icon.png" Pack="true" PackagePath="" />

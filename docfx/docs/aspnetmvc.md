@@ -19,7 +19,7 @@ Install the NuGet package:
 <PackageReference Include="Nerdbank.MessagePack.AspNetCoreMvcFormatter" Version="x.x.x" />
 ```
 
-Add <xref:Nerdbank.MessagePack.AspNetCoreMvcFormatter.MessagePackInputFormatter> and/or <xref:Nerdbank.MessagePack.AspNetCoreMvcFormatter.MessagePackOutputFormatter> to your input and/or output formatter collecionts respectively, as demonstrated in the configuration sample below:
+Add <xref:Nerdbank.MessagePack.AspNetCoreMvcFormatter.MessagePackInputFormatter> and/or <xref:Nerdbank.MessagePack.AspNetCoreMvcFormatter.MessagePackOutputFormatter> to your input and/or output formatter collections respectively, as demonstrated in the configuration sample below:
 
 [!code-csharp[](../../samples/AspNetMvc/Program.cs#Configuration)]
 
