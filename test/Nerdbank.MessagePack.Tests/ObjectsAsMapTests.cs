@@ -73,6 +73,25 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		Assert.Equal(1, person?.Age);
 	}
 
+	[Fact]
+	public void DeserializeLongerPropertyNameThanDeclared()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write("VeryLongPropertyName");
+		writer.Write(42);
+		writer.Flush();
+		OptionalPropertyWithShortName? obj = this.Serializer.Deserialize<OptionalPropertyWithShortName>(seq, TestContext.Current.CancellationToken);
+		Assert.NotNull(obj);
+	}
+
+	[GenerateShape]
+	public partial class OptionalPropertyWithShortName
+	{
+		public int Age { get; set; }
+	}
+
 	[GenerateShape]
 	public partial record Person
 	{

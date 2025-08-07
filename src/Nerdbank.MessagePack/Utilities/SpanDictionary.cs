@@ -162,6 +162,13 @@ internal sealed class SpanDictionary<TKey, TValue>
 	{
 		if (this.entryByLength is not null)
 		{
+			if (this.entryByLength.Length <= key.Length)
+			{
+				// No entries of this length.
+				value = default;
+				return false;
+			}
+
 			ref (EntryType Type, Entry Entry) slot = ref this.entryByLength[key.Length];
 			switch (slot.Type)
 			{
