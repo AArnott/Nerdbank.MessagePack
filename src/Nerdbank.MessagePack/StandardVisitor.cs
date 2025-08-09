@@ -293,7 +293,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
 		var caseConverter = (MessagePackConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
-		return new UnionCaseConverter<TUnionCase, TUnion>(caseConverter);
+		return new UnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
 	}
 
 	/// <inheritdoc/>

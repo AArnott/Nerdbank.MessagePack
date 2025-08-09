@@ -24,7 +24,7 @@ namespace OnlyOriginalType
 namespace FocusOnAddedTypes
 {
     [GenerateShape]
-    [TypeShape(Marshaller = typeof(MyTypeMarshaller))]
+    [TypeShape(Marshaler = typeof(MyTypeMarshaler))]
     public partial class OriginalType
     {
         private int a;
@@ -43,12 +43,12 @@ namespace FocusOnAddedTypes
         #endregion
 
         #region Marshaler
-        internal class MyTypeMarshaller : IMarshaller<OriginalType, MarshaledType?>
+        internal class MyTypeMarshaler : IMarshaler<OriginalType, MarshaledType?>
         {
-            public MarshaledType? ToSurrogate(OriginalType? value)
+            public MarshaledType? Marshal(OriginalType? value)
                 => value is null ? null : new(value.a, value.b);
 
-            public OriginalType? FromSurrogate(MarshaledType? surrogate)
+            public OriginalType? Unmarshal(MarshaledType? surrogate)
                 => surrogate.HasValue ? new(surrogate.Value.A, surrogate.Value.B) : null;
         }
         #endregion
@@ -59,7 +59,7 @@ partial class CompleteSample
 {
     #region CompleteSample
     [GenerateShape]
-    [TypeShape(Marshaller = typeof(MyTypeMarshaller))]
+    [TypeShape(Marshaler = typeof(MyTypeMarshaler))]
     public partial class OriginalType
     {
         private int a;
@@ -75,31 +75,31 @@ partial class CompleteSample
 
         internal record struct MarshaledType(int A, int B);
 
-        internal class MyTypeMarshaller : IMarshaller<OriginalType, MarshaledType?>
+        internal class MyTypeMarshaler : IMarshaler<OriginalType, MarshaledType?>
         {
-            public MarshaledType? ToSurrogate(OriginalType? value)
+            public MarshaledType? Marshal(OriginalType? value)
                 => value is null ? null : new(value.a, value.b);
 
-            public OriginalType? FromSurrogate(MarshaledType? surrogate)
+            public OriginalType? Unmarshal(MarshaledType? surrogate)
                 => surrogate.HasValue ? new(surrogate.Value.A, surrogate.Value.B) : null;
         }
     }
     #endregion
 
     #region OpenGeneric
-    [TypeShape(Marshaller = typeof(OpenGenericDataType<>.Marshaller))]
+    [TypeShape(Marshaler = typeof(OpenGenericDataType<>.Marshaler))]
     internal class OpenGenericDataType<T>
     {
         public T? Value { get; set; }
 
         internal record struct MarshaledType(T? Value);
 
-        internal class Marshaller : IMarshaller<OpenGenericDataType<T>, MarshaledType?>
+        internal class Marshaler : IMarshaler<OpenGenericDataType<T>, MarshaledType?>
         {
-            public OpenGenericDataType<T>? FromSurrogate(MarshaledType? surrogate)
+            public OpenGenericDataType<T>? Unmarshal(MarshaledType? surrogate)
                 => surrogate.HasValue ? new() { Value = surrogate.Value.Value } : null;
 
-            public MarshaledType? ToSurrogate(OpenGenericDataType<T>? value)
+            public MarshaledType? Marshal(OpenGenericDataType<T>? value)
                 => value is null ? null : new(value.Value);
         }
     }
