@@ -28,7 +28,7 @@ The surrogate must have at least `internal` visibility.
 ## Write a marshaler
 
 Now we need to define a simple marshaler that can copy the data from the non-serializable type to its surrogate, and back again.
-The marshaler implements @PolyType.IMarshaller`2.
+The marshaler implements <xref:PolyType.IMarshaler`2>.
 
 > [!IMPORTANT]
 > When the original type is a reference type and the surrogate type is a value type, make sure to specify a _nullable_ surrogate type so that your marshaler can retain the `null` identity properly.
@@ -39,7 +39,7 @@ When this marshaler is _nested_ within the original type, C# gives it access to 
 
 The marshaler must have at least `internal` visibility.
 
-This marshaler must be referenced via @PolyType.TypeShapeAttribute.Marshaller?displayProperty=nameWithType on an attribute applied to the original type.
+This marshaler must be referenced via <xref:PolyType.TypeShapeAttribute.Marshaler?displayProperty=nameWithType> on an attribute applied to the original type.
 
 ## Sample
 
@@ -52,7 +52,7 @@ Taken together with the added @PolyType.TypeShapeAttribute that refers to the ma
 When the unserializable type is declared in an assembly you don't control, such that you cannot add a <xref:PolyType.TypeShapeExtensionAttribute> to the type declaration, you can use a type shape *extension* to achieve the same end:
 
 ```cs
-[assembly: TypeShapeExtension(typeof(SomeExternalType), Marshaller = typeof(MyMarshallerForSomeExternalType))]
+[assembly: TypeShapeExtension(typeof(SomeExternalType), Marshaler = typeof(MyMarshalerForSomeExternalType))]
 ```
 
 ### Open generic data type

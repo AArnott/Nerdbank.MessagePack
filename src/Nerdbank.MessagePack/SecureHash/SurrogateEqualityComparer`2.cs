@@ -15,16 +15,16 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// </summary>
 /// <typeparam name="T">The type of value to be compared.</typeparam>
 /// <typeparam name="TSurrogate">The type of surrogate to use instead of the value directly.</typeparam>
-/// <param name="marshaller">The means to convert between a value and its surrogate.</param>
+/// <param name="marshaler">The means to convert between a value and its surrogate.</param>
 /// <param name="surrogateComparer">The comparer that operates directly on the surrogate.</param>
-internal class SurrogateEqualityComparer<T, TSurrogate>(IMarshaller<T, TSurrogate> marshaller, IEqualityComparer<TSurrogate> surrogateComparer)
+internal class SurrogateEqualityComparer<T, TSurrogate>(IMarshaler<T, TSurrogate> marshaler, IEqualityComparer<TSurrogate> surrogateComparer)
 	: IEqualityComparer<T>
 {
 	/// <inheritdoc/>
 	public bool Equals(T? x, T? y)
-		=> surrogateComparer.Equals(marshaller.ToSurrogate(x), marshaller.ToSurrogate(y));
+		=> surrogateComparer.Equals(marshaler.Marshal(x), marshaler.Marshal(y));
 
 	/// <inheritdoc/>
 	public int GetHashCode([DisallowNull] T obj)
-		=> marshaller.ToSurrogate(obj) is TSurrogate surrogate ? surrogateComparer.GetHashCode(surrogate) : 0;
+		=> marshaler.Marshal(obj) is TSurrogate surrogate ? surrogateComparer.GetHashCode(surrogate) : 0;
 }

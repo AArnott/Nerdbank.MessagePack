@@ -46,7 +46,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void GenericMarshaller()
+	public void GenericMarshaler()
 	{
 		OpenGenericDataType<int>? deserialized = this.Roundtrip<OpenGenericDataType<int>, Witness>(new OpenGenericDataType<int> { Value = 42 });
 		Assert.NotNull(deserialized);
@@ -54,7 +54,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 	}
 
 	[GenerateShape]
-	[TypeShape(Marshaller = typeof(Marshaller))]
+	[TypeShape(Marshaler = typeof(Marshaler))]
 	internal partial class OriginalType
 	{
 		private int a;
@@ -70,29 +70,29 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 
 		internal record struct MarshaledType(int A, int B);
 
-		internal class Marshaller : IMarshaller<OriginalType, MarshaledType?>
+		internal class Marshaler : IMarshaler<OriginalType, MarshaledType?>
 		{
-			public OriginalType? FromSurrogate(MarshaledType? surrogate)
+			public OriginalType? Unmarshal(MarshaledType? surrogate)
 				=> surrogate.HasValue ? new(surrogate.Value.A, surrogate.Value.B) : null;
 
-			public MarshaledType? ToSurrogate(OriginalType? value)
+			public MarshaledType? Marshal(OriginalType? value)
 				=> value is null ? null : new(value.a, value.b);
 		}
 	}
 
-	[TypeShape(Marshaller = typeof(OpenGenericDataType<>.Marshaller))]
+	[TypeShape(Marshaler = typeof(OpenGenericDataType<>.Marshaler))]
 	internal class OpenGenericDataType<T>
 	{
 		public T? Value { get; set; }
 
 		internal record struct MarshaledType(T? Value);
 
-		internal class Marshaller : IMarshaller<OpenGenericDataType<T>, MarshaledType?>
+		internal class Marshaler : IMarshaler<OpenGenericDataType<T>, MarshaledType?>
 		{
-			public OpenGenericDataType<T>? FromSurrogate(MarshaledType? surrogate)
+			public OpenGenericDataType<T>? Unmarshal(MarshaledType? surrogate)
 				=> surrogate.HasValue ? new() { Value = surrogate.Value.Value } : null;
 
-			public MarshaledType? ToSurrogate(OpenGenericDataType<T>? value)
+			public MarshaledType? Marshal(OpenGenericDataType<T>? value)
 				=> value is null ? null : new(value.Value);
 		}
 	}

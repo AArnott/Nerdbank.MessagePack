@@ -72,7 +72,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
 		var caseComparer = (SecureEqualityComparer<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
-		return new SecureUnionCaseEqualityComparer<TUnionCase, TUnion>(caseComparer);
+		return new SecureUnionCaseEqualityComparer<TUnionCase, TUnion>(caseComparer, unionCaseShape.Marshaler);
 	}
 
 	/// <inheritdoc/>
@@ -105,7 +105,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
-		=> new SurrogateSecureEqualityComparer<T, TSurrogate>(surrogateShape.Marshaller, this.GetEqualityComparer(surrogateShape.SurrogateType, state));
+		=> new SurrogateSecureEqualityComparer<T, TSurrogate>(surrogateShape.Marshaler, this.GetEqualityComparer(surrogateShape.SurrogateType, state));
 
 	/// <summary>
 	/// Gets or creates an equality comparer for the given type shape.
