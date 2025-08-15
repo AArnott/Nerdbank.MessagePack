@@ -203,6 +203,11 @@ public static class AnalyzerUtilities
 			return false;
 		}
 
+		if (member is IFieldSymbol { IsConst: true })
+		{
+			return false;
+		}
+
 		AttributeData? propertyShapeAttribute = member.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
 		bool? ignored = propertyShapeAttribute?.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.IgnoreProperty).Value.Value as bool?;
 		return ignored is not true &&

@@ -15,11 +15,16 @@ public class KeyAttributeUseAnalyzerTests
 			[GenerateShape]
 			public partial class MyType
 			{
+				public const int SomeConstant = 42;
+
 				[Key(0)]
 				public int MyProperty1 { get; set; }
 
 				[Key(1)]
 				public int MyProperty2 { get; set; }
+
+				[PropertyShape(Ignore = true)]
+				public int IgnoredProperty { get; set; }
 
 				[Key(2), PropertyShape]
 				internal int MyProperty3 { get; set; }
