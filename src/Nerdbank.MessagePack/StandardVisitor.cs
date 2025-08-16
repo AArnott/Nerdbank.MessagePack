@@ -480,7 +480,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							continue;
 						}
 
-						int index = propertyIndexesByName[parameter.Name];
+						if (!propertyIndexesByName.TryGetValue(parameter.Name, out int index))
+						{
+							throw new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type.");
+						}
+
 						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this)!;
 					}
 
