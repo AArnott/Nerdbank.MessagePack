@@ -168,7 +168,7 @@ internal class ObjectMapConverter<T>(
 
 		if (constructor is null || deserializable is null)
 		{
-			throw new NotSupportedException($"The {typeof(T).Name} type cannot be deserialized.");
+			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
 		}
 
 		context.DepthStep();
@@ -239,7 +239,7 @@ internal class ObjectMapConverter<T>(
 
 		if (constructor is null || deserializable is null)
 		{
-			throw new NotSupportedException($"The {typeof(T).Name} type cannot be deserialized.");
+			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
 		}
 
 		context.DepthStep();

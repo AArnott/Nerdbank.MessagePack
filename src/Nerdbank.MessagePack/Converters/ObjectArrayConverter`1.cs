@@ -43,7 +43,7 @@ internal class ObjectArrayConverter<T>(
 
 		if (constructor is null)
 		{
-			throw new NotSupportedException($"The {typeof(T).Name} type cannot be deserialized.");
+			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
 		}
 
 		context.DepthStep();
@@ -427,7 +427,7 @@ internal class ObjectArrayConverter<T>(
 
 		if (constructor is null)
 		{
-			throw new NotSupportedException($"The {typeof(T).Name} type cannot be deserialized.");
+			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
 		}
 
 		context.DepthStep();
