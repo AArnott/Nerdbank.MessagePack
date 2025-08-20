@@ -47,7 +47,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 		category: "Usage",
 		defaultSeverity: DiagnosticSeverity.Info,
 		isEnabledByDefault: true,
-		helpLinkUri: AnalyzerUtilities.GetHelpLink(CallbackToTopLevelSerializerDiagnosticId));
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(OverrideGetJsonSchemaDiagnosticId));
 
 	public static readonly DiagnosticDescriptor AsyncConverterShouldReturnWriterDescriptor = new(
 		AsyncConverterShouldReturnWriterDiagnosticId,
