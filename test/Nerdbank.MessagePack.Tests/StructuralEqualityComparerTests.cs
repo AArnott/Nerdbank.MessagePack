@@ -51,6 +51,18 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		[new HaveReadOnlyMemoryOfByte(new byte[] { 1, 2 }), new HaveReadOnlyMemoryOfByte(new byte[] { 1, 2 })],
 		[new HaveReadOnlyMemoryOfByte(new byte[] { 1, 3 }), new HaveReadOnlyMemoryOfByte(new byte[] { 1, 2, 3 })]);
 
+	[Fact]
+	public void DerivedTypeEquality()
+	{
+		SomeBaseType.Derived1 derived1A = new(42);
+		SomeBaseType.Derived1 derived1B = new(42);
+		SomeBaseType.Derived1 derived1C = new(43);
+		SomeBaseType.Derived2 derived2A = new(42);
+		SomeBaseType.Derived3 derived3 = new();
+
+		this.AssertEqualityComparerBehavior<SomeBaseType>([derived1A, derived1B], [derived1C, derived2A, derived3]);
+	}
+
 	[Theory]
 	[MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
 #if NET
@@ -146,6 +158,8 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		where T : notnull
 	{
 		IEqualityComparer<T> eq = this.GetEqualityComparer<T, TProvider>();
+
+		logger.WriteLine("Testing values that are expected to be equal:");
 		foreach (T valueA in equivalent)
 		{
 			int valueAHashCode = eq.GetHashCode(valueA);
@@ -160,6 +174,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 			}
 		}
 
+		logger.WriteLine("Testing values that are expected to be different:");
 		T baseline = equivalent[0];
 		int baselineHashCode = eq.GetHashCode(baseline);
 		foreach (T differentValue in different)
@@ -242,5 +257,18 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		public long GetSecureHashCode() => this.SpecialCode * 2;
 
 		public override int GetHashCode() => this.SpecialCode;
+	}
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(Derived1))]
+	[DerivedTypeShape(typeof(Derived2))]
+	[DerivedTypeShape(typeof(Derived3))]
+	internal abstract partial record SomeBaseType
+	{
+		internal record Derived1(int Value) : SomeBaseType;
+
+		internal record Derived2(int Value) : SomeBaseType;
+
+		internal record Derived3 : SomeBaseType;
 	}
 }

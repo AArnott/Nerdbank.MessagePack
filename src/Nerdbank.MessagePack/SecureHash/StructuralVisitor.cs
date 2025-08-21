@@ -11,8 +11,10 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// </summary>
 internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
+	private static readonly object IsUnionSentinel = new();
+
 	/// <inheritdoc/>
-	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => typeShape.Accept(this);
+	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => typeShape.Accept(this, state);
 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
@@ -38,7 +40,7 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 			   where property.HasGetter
 			   select (IEqualityComparer<T>)property.Accept(this, null)!]);
 
-		if (aggregatingEqualityComparer.IsEmpty)
+		if (aggregatingEqualityComparer.IsEmpty && state != IsUnionSentinel)
 		{
 			throw new NotSupportedException($"The type {objectShape.Type} has no properties to compare by value.");
 		}
@@ -50,18 +52,18 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 	public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
 	{
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-		IEqualityComparer<TUnion> baseComparer = (IEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this)!;
+		IEqualityComparer<TUnion> baseComparer = (IEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this, IsUnionSentinel)!;
 		IEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
-			unionCase => (IEqualityComparer<TUnion>)unionCase.Accept(this)!)];
+			unionCase => (IEqualityComparer<TUnion>)unionCase.Accept(this, IsUnionSentinel)!)];
 		return new StructuralUnionEqualityComparer<TUnion>(
-			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? comparers[idx] : baseComparer);
+			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseComparer = (IEqualityComparer<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
+		var caseComparer = (IEqualityComparer<TUnionCase>)unionCaseShape.Type.Invoke(this, IsUnionSentinel)!;
 		return new StructuralUnionCaseEqualityComparer<TUnionCase, TUnion>(caseComparer, unionCaseShape.Marshaler);
 	}
 
