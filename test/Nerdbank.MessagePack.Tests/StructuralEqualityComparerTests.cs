@@ -59,8 +59,11 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		SomeBaseType.Derived1 derived1C = new(43);
 		SomeBaseType.Derived2 derived2A = new(42);
 		SomeBaseType.Derived3 derived3 = new();
+		SomeBaseType.Derived4 derived4 = new();
 
-		this.AssertEqualityComparerBehavior<SomeBaseType>([derived1A, derived1B], [derived1C, derived2A, derived3]);
+		this.AssertEqualityComparerBehavior<SomeBaseType>(
+			[derived1A, derived1B],
+			[derived1C, derived2A, derived3, derived4]);
 	}
 
 	[Theory]
@@ -263,6 +266,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	[DerivedTypeShape(typeof(Derived1))]
 	[DerivedTypeShape(typeof(Derived2))]
 	[DerivedTypeShape(typeof(Derived3))]
+	[DerivedTypeShape(typeof(Derived4))]
 	internal abstract partial record SomeBaseType
 	{
 		internal record Derived1(int Value) : SomeBaseType;
@@ -270,5 +274,18 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		internal record Derived2(int Value) : SomeBaseType;
 
 		internal record Derived3 : SomeBaseType;
+
+		[TypeShape(Marshaler = typeof(Marshaler))]
+		internal record Derived4 : SomeBaseType
+		{
+			internal class Marshaler : IMarshaler<Derived4, Marshaler.Surrogate?>
+			{
+				public Surrogate? Marshal(Derived4? value) => value is null ? null : default(Surrogate);
+
+				public Derived4? Unmarshal(Surrogate? value) => value is null ? null : new Derived4();
+
+				internal struct Surrogate;
+			}
+		}
 	}
 }
