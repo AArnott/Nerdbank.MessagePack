@@ -45,6 +45,8 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 			return SecureCustomEqualityComparer<T>.Default;
 		}
 
+		// Do NOT blindly propagate state to the properties, because we don't want the Union sentinel
+		// to be applied from this object (which may be a union case) to its properties.
 		SecureAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
 			.. from property in objectShape.Properties
 			   where property.HasGetter
@@ -103,7 +105,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 
 	/// <inheritdoc/>
 	public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
-		=> new SecureOptionalEqualityComparer<TOptional, TElement>(this.GetEqualityComparer(optionalShape.ElementType), optionalShape.GetDeconstructor());
+		=> new SecureOptionalEqualityComparer<TOptional, TElement>(this.GetEqualityComparer(optionalShape.ElementType, state), optionalShape.GetDeconstructor());
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
