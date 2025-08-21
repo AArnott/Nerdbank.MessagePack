@@ -6,6 +6,24 @@ namespace Nerdbank.MessagePack;
 /// <summary>
 /// An enumeration of the modes supported for preserving references in serialized object graphs.
 /// </summary>
+/// <remarks>
+/// When using <see cref="RejectCycles"/> or <see cref="AllowCycles"/>, the following considerations apply:
+/// <list type="bullet">
+/// <item>
+/// Custom converters should be implemented to delegate to sub-converters consistently in <see cref="MessagePackConverter{T}.Read"/>
+/// and <see cref="MessagePackConverter{T}.Write"/>.
+/// For example, using a converter in <see cref="MessagePackConverter{T}.Read"/> to serialize a particular sub-value
+/// but using <see cref="MessagePackWriter"/> directly in your <see cref="MessagePackConverter{T}.Write"/> method to write that same sub-value
+/// may confuse the reference tracker, leading to malfunctions that may manifest as false reports about reference cycles or assigning the
+/// wrong references to your deserialized object graph.
+/// </item>
+/// <item>
+/// Custom <see cref="MessagePackConverter{T}.Write"/> methods should avoid calling <see cref="MessagePackWriter.WriteNil"/> for a non-null reference value
+/// where <see cref="MessagePackConverter{T}.Read"/> methods would deserialize that msgpack Nil token as a non-null value.
+/// This is because when the reference tracker sees a MessagePack Nil token, it skips the converter and simply returns a <see langword="null"/> reference.
+/// </item>
+/// </list>
+/// </remarks>
 public enum ReferencePreservationMode
 {
 	/// <summary>
