@@ -64,7 +64,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		SecureEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
 			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this)!)];
 		return new SecureUnionEqualityComparer<TUnion>(
-			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? comparers[idx] : baseComparer);
+			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}
 
 	/// <inheritdoc/>

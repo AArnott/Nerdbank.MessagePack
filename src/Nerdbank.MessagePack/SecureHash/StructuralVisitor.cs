@@ -54,7 +54,7 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 		IEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
 			unionCase => (IEqualityComparer<TUnion>)unionCase.Accept(this)!)];
 		return new StructuralUnionEqualityComparer<TUnion>(
-			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? comparers[idx] : baseComparer);
+			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}
 
 	/// <inheritdoc/>

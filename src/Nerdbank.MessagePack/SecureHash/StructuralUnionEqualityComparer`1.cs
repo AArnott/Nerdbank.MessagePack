@@ -15,9 +15,9 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// with the appropriate derived type comparer.
 /// </summary>
 /// <typeparam name="TUnion">The base type.</typeparam>
-/// <param name="getComparer">A function to acquire the appropriate comparer given the runtime type.</param>
+/// <param name="getComparerAndIndex">A function to acquire the appropriate comparer given the runtime type and its union case index.</param>
 internal class StructuralUnionEqualityComparer<TUnion>(
-	Getter<TUnion, IEqualityComparer<TUnion>> getComparer) : IEqualityComparer<TUnion>
+	Getter<TUnion, (IEqualityComparer<TUnion> Comparer, int? Index)> getComparerAndIndex) : IEqualityComparer<TUnion>
 {
 	/// <inheritdoc/>
 	public bool Equals(TUnion? x, TUnion? y)
@@ -27,8 +27,8 @@ internal class StructuralUnionEqualityComparer<TUnion>(
 			return x is null && y is null;
 		}
 
-		IEqualityComparer<TUnion> xComparer = getComparer(ref x);
-		IEqualityComparer<TUnion> yComparer = getComparer(ref y);
+		(IEqualityComparer<TUnion> xComparer, _) = getComparerAndIndex(ref x);
+		(IEqualityComparer<TUnion> yComparer, _) = getComparerAndIndex(ref y);
 		if (xComparer != yComparer)
 		{
 			// x and y are different types.
@@ -39,5 +39,9 @@ internal class StructuralUnionEqualityComparer<TUnion>(
 	}
 
 	/// <inheritdoc/>
-	public int GetHashCode([DisallowNull] TUnion obj) => getComparer(ref obj).GetHashCode(obj!);
+	public int GetHashCode([DisallowNull] TUnion obj)
+	{
+		(IEqualityComparer<TUnion> comparer, int? index) = getComparerAndIndex(ref obj);
+		return HashCode.Combine(index, comparer.GetHashCode(obj!));
+	}
 }
