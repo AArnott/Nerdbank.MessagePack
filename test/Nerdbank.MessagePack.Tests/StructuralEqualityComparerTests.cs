@@ -58,8 +58,9 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		SomeBaseType.Derived1 derived1B = new(42);
 		SomeBaseType.Derived1 derived1C = new(43);
 		SomeBaseType.Derived2 derived2A = new(42);
+		SomeBaseType.Derived3 derived3 = new();
 
-		this.AssertEqualityComparerBehavior<SomeBaseType>([derived1A, derived1B], [derived1C, derived2A]);
+		this.AssertEqualityComparerBehavior<SomeBaseType>([derived1A, derived1B], [derived1C, derived2A, derived3]);
 	}
 
 	[Theory]
@@ -261,12 +262,13 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	[GenerateShape]
 	[DerivedTypeShape(typeof(Derived1))]
 	[DerivedTypeShape(typeof(Derived2))]
+	[DerivedTypeShape(typeof(Derived3))]
 	internal abstract partial record SomeBaseType
 	{
-		public int BaseValue { get; set; }
-
 		internal record Derived1(int Value) : SomeBaseType;
 
 		internal record Derived2(int Value) : SomeBaseType;
+
+		internal record Derived3 : SomeBaseType;
 	}
 }
