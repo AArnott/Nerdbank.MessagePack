@@ -11,7 +11,6 @@ on:
 
 permissions:
   packages: write
-  security-events: write
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -117,6 +116,8 @@ jobs:
   codeql:
     name: 🔍 CodeQL Security Analysis
     runs-on: ubuntu-22.04
+    permissions:
+      security-events: write
     
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
