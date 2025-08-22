@@ -18,7 +18,7 @@ namespace Nerdbank.MessagePack;
 /// Instance members are not thread-safe.
 /// </remarks>
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-internal class Sequence<T> : IBufferWriter<T>, IDisposable
+internal sealed class Sequence<T> : IBufferWriter<T>, IDisposable
 {
 	private const int MaximumAutoGrowSize = 32 * 1024;
 
