@@ -660,7 +660,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 	public override void Write(ref MessagePackWriter writer, in DateTimeOffset value, SerializationContext context)
 	{
 		writer.WriteArrayHeader(2);
-		writer.Write(new DateTime(value.Ticks, DateTimeKind.Utc));
+		writer.Write(new DateTime(value.UtcTicks, DateTimeKind.Utc));
 		writer.Write((short)value.Offset.TotalMinutes);
 	}
 
