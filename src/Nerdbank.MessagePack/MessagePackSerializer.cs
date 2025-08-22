@@ -540,7 +540,7 @@ public partial record MessagePackSerializer
 	/// </remarks>
 	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack, JsonOptions? options = null)
 	{
-		StringWriter jsonWriter = new();
+		using StringWriter jsonWriter = new();
 		MessagePackReader reader = new(msgpack);
 		while (!reader.End)
 		{
