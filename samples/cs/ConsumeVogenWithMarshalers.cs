@@ -8,7 +8,7 @@ namespace ConsumeVogenWithMarshalers
 {
     #region DataTypes
     [ValueObject<int>]
-    [TypeShape(Marshaler = typeof(Marshaler))]
+    [TypeShape(Marshaler = typeof(Marshaler), Kind = TypeShapeKind.None)]
     public partial struct CustomerId
     {
         [EditorBrowsable(EditorBrowsableState.Never)]
