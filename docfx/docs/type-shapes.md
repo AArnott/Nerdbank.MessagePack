@@ -35,6 +35,17 @@ You do _not_ need a witness class for an external type to reference that type fr
 
 ## Fallback configuration
 
-In the unlikely event that you have a need to serialize a type that does _not_ have a shape source-generated for it, you can use the conventional reflection approach of serialization with Nerdbank.MessagePack if you do not need to run in a trimmed app.
+In the unlikely event that you have a need to serialize a type that does _not_ have a shape source-generated for it, you can use the conventional reflection approach of serialization with Nerdbank.MessagePack, if you do not need to run in a trimmed app.
 
 [!code-csharp[](../../samples/cs/TypeShapePatterns.cs#SerializeUnshapedType)]
+
+### Source generated data models
+
+If your data models are themselves declared by a source generator, the PolyType source generator will be unable to emit type shapes for your data models in the same compilation.
+Using the <xref:PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default?displayProperty=nameWithType> is one way you can workaround this, at the cost of somewhat slower serialization (especially the first time due to reflection), but this does not always work in a trimmed application.
+And it adds some limitations to what types can be serialized in a NativeAOT application where dynamic code cannot run.
+
+Instead of falling back to reflection, you can still use the PolyType source generator by declaring your data types in another assembly that your serialization code then references.
+For example, if assembly "A" declares your data types via a source generator (e.g. Vogen), assembly "B" can reference "A", and then use a Witness type (described above) to source generate the type shapes for all your data types.
+
+Still another option to get your source generated data type to be serializable may be to [define a marshaler to a surrogate type](./surrogate-types.md).

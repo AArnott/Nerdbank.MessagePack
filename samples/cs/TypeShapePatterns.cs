@@ -67,11 +67,9 @@ class ReflectionShapeProvider
     {
         Person person = new("Andrew", "Arnott");
 
-        ITypeShape<Person> shape = ReflectionTypeShapeProvider.Default.GetShape<Person>();
         MessagePackSerializer serializer = new();
-
-        byte[] msgpack = serializer.Serialize(person, shape);
-        Person? deserialized = serializer.Deserialize(msgpack, shape);
+        byte[] msgpack = serializer.Serialize(person, ReflectionTypeShapeProvider.Default);
+        Person? deserialized = serializer.Deserialize<Person>(msgpack, ReflectionTypeShapeProvider.Default);
     }
 
     record Person(string FirstName, string LastName);
