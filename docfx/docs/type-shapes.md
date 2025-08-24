@@ -49,3 +49,52 @@ Instead of falling back to reflection, you can still use the PolyType source gen
 For example, if assembly "A" declares your data types via a source generator (e.g. Vogen), assembly "B" can reference "A", and then use a Witness type (described above) to source generate the type shapes for all your data types.
 
 Still another option to get your source generated data type to be serializable may be to [define a marshaler to a surrogate type](./surrogate-types.md).
+
+## Working with Vogen
+
+Vogen is a source generator that wraps primitive types in custom structs that can add validation and another level of type safety to your data models.
+
+If you take the approach described above where your Vogen data models are declared in another project, your serialization of these data models might look like this:
+
+[!code-csharp[](../../samples/cs/ConsumeVogenWithAssemblyIsolation.cs#Sample)]
+
+While the above approach is simple, the outcome will be less efficient msgpack output, given each of these strongly typed wrappers will serialize as a compound value with only one property instead of just serializing the property value itself.
+For example, if we render the serialized msgpack as JSON, we'll see this:
+
+```json
+{
+    "Id": {
+        "Value": 123
+    },
+    "Name": "Some Person"
+}
+```
+
+Obviously that is not ideal.
+We would instead prefer to see this:
+
+```json
+{
+    "Id": 123,
+    "Name": "Some Person"
+}
+```
+
+We can achieve this, and without requiring that the data types be moved to another project, by [using marshalers](./surrogate-types.md).
+First, define the data model like this:
+
+[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#DataTypes)]
+
+Note the <xref:PolyType.TypeShapeAttribute.Marshaler?displayProperty=nameWithType> that we apply to the `CustomerId` struct, and the simple marshaler that we define.
+
+We can then serialize the data model and get the desired output schema, using code like this:
+
+# [.NET](#tab/net)
+
+[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#SerializeVogenNET)]
+
+# [.NET Standard](#tab/netfx)
+
+[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#SerializeVogenNETFX)]
+
+---
