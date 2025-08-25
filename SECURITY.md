@@ -13,5 +13,5 @@ Servicing of older stable versions is available by request with a support agreem
 
 ## Reporting a Vulnerability
 
-Please use the security tab on this repo to privately and securely report vulnerabilities.
+Please [the security tab on this repo](https://github.com/AArnott/Nerdbank.MessagePack/security) to privately and securely report vulnerabilities.
 This gives us a chance to review the report, author a fix and publish a patched version before the vulnerability is made public.
