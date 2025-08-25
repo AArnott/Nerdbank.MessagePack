@@ -9,9 +9,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  packages: write
-
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   BUILDCONFIGURATION: Release
@@ -23,6 +20,8 @@ jobs:
     name: 🏭 Build
 
     runs-on: ${{ matrix.os }}
+    permissions:
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -118,7 +117,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       security-events: write
-    
+
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       with:

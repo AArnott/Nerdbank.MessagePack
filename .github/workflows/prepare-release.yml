@@ -3,12 +3,11 @@ name: 🏭 Prepare release
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   prepare-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       PUBLICRELEASE: true
     steps:
