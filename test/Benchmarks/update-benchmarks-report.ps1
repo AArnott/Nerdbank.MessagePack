@@ -15,7 +15,7 @@ Param(
     [Parameter()]
     [string]$CsvReportPath = "$PSScriptRoot\BenchmarkDotNet.Artifacts\results\SimplePoco-report.csv",
     [Parameter()]
-    [string]$OutputMarkdownPath = "$PSScriptRoot\..\..\docfx\docs\perf.md"
+    [string]$OutputMarkdownPath = "$PSScriptRoot\..\..\docfx\includes\perf.md"
 )
 
 # Load the CSV report
@@ -98,16 +98,7 @@ Function Trim-Units {
     }
 }
 
-$content = '# Performance comparisons
-
-Perf isn''t everything, but it can be important in some scenarios.
-Nerdbank.MessagePack is very fast, but not quite as fast as MessagePack-CSharp v3 with source generation turned on.
-
-Features and ease of use are also important.
-Nerdbank.MessagePack is much simpler to use, and comes [loaded with features](migrating.md#feature-comparison) that MessagePack-CSharp does not have.
-Nerdbank.MessagePack also reliably works in AOT environments, while MessagePack-CSharp does not.
-
-In the perf comparisons below, the following legend applies
+$content = 'In the perf comparisons below, the following legend applies
 
 Library alias | Full name
 --- | ---
@@ -116,7 +107,7 @@ MsgPack-CS | MessagePack-CSharp
 Newtonsoft | Newtonsoft.Json
 STJ | System.Text.Json
 
-## Object serialization comparisons
+### Object serialization comparisons
 
 Each stacked bar shows the time taken to serialize and deserialize an object.
 The two times added together represent round-trip time.

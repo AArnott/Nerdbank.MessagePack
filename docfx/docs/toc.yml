@@ -12,8 +12,7 @@ items:
 - name: Customizing serialization
   href: customizing-serialization.md
 - href: surrogate-types.md
-- name: Performance
-  href: performance.md
+- href: performance.md
 - name: Security
   href: security.md
 - href: structural-equality.md
@@ -21,7 +20,6 @@ items:
 - name: Type shapes
   href: type-shapes.md
 - href: fsharp.md
-- href: perf.md
 - href: signalr.md
 - href: aspnetmvc.md
 - name: Migrating

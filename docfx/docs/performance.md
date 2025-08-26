@@ -33,8 +33,16 @@ For this reason, it can be a good idea to leverage the automatic converters for 
 
 ## Comparison to MessagePack-CSharp
 
+Perf isn't everything, but it can be important in some scenarios.
+Nerdbank.MessagePack is very fast, but not quite as fast as MessagePack-CSharp v3 with source generation turned on.
+
+Features and ease of use are also important.
+Nerdbank.MessagePack is much simpler to use, and comes [loaded with features](features.md#feature-comparison) that MessagePack-CSharp does not have.
+Nerdbank.MessagePack also reliably works in AOT environments, while MessagePack-CSharp does not.
+
 This library has superior startup performance compared to MessagePack-CSharp due to not relying on reflection and Ref.Emit.
 Throughput performance is on par with MessagePack-CSharp.
 
 When using AOT source generation from MessagePack-CSharp and objects serialized with maps (as opposed to arrays), MessagePack-CSharp is slightly faster at *de*serialization.
-We may close this gap in the future by adding AOT source generation to *this* library as well.
+
+[!include[](../includes/perf.md)]
