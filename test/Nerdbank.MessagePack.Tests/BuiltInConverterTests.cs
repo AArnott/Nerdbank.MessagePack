@@ -128,7 +128,13 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void DateTimeOffset() => this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now));
+	public void DateTimeOffset()
+	{
+		this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now));
+
+		// Try specific offset values because CI/PR builds run on agents that run on the UTC time zone.
+		this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now.ToOffset(TimeSpan.FromHours(4))));
+	}
 
 	private (Guid Before, Guid After) RoundtripModifiedGuid(Func<string, string> modifier, MessagePackSerializer? serializer = null, MessagePackSerializer? deserializer = null)
 	{

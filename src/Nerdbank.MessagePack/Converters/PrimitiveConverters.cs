@@ -653,15 +653,20 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 
 		DateTime utcDateTime = reader.ReadDateTime();
 		short offsetMinutes = reader.ReadInt16();
-		return new DateTimeOffset(utcDateTime.Ticks, TimeSpan.FromMinutes(offsetMinutes));
+
+		// We construct the offset very carefully so that it knows it's being initialized with UTC time
+		// *and* that we want the time expressed in the offset specified.
+		// Passing the offset to the DateTimeOffset constructor would cause it to misinterpret the UTC time
+		// as if it had an offset.
+		return new DateTimeOffset(utcDateTime).ToOffset(TimeSpan.FromMinutes(offsetMinutes));
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in DateTimeOffset value, SerializationContext context)
 	{
 		writer.WriteArrayHeader(2);
-		writer.Write(new DateTime(value.UtcTicks, DateTimeKind.Utc));
-		writer.Write((short)value.Offset.TotalMinutes);
+		writer.Write(value.UtcDateTime);
+		writer.Write(checked((short)value.Offset.TotalMinutes));
 	}
 
 	/// <inheritdoc/>
