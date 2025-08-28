@@ -13,6 +13,14 @@ public enum DeserializeDefaultValuesPolicy
 	/// Deserialization will fail if any required properties have no specified values in the data stream,
 	/// or when <see langword="null" /> values are encountered for non-nullable properties.
 	/// </summary>
+	/// <remarks>
+	/// The non-nullability enforcement by the deserializer is limited to parameters, properties and fields
+	/// that are <em>not</em> typed as generic type parameters.
+	/// Collection elements (e.g. arrays, lists, or dictionary elements) that would not allow <see langword="null" /> values
+	/// based on nullable ref annotations are not covered by this guarantee.
+	/// After deserializing an object graph, you should be cautious that (for example) a <c>List&lt;string&gt;</c>
+	/// may contain <see langword="null" /> elements even though the type argument is not <c>string?</c>.
+	/// </remarks>
 	Default = 0x0,
 
 	/// <summary>
