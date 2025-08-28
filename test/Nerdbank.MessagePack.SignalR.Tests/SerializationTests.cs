@@ -10,15 +10,17 @@ using Xunit;
 
 public partial class SerializationTests
 {
+	protected MessagePackSerializer Serializer { get; } = new();
+
 	[Fact]
 	public void PingMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 		PingMessage pingMessage = PingMessage.Instance;
 		ReadOnlyMemory<byte> bytes = protocol.GetMessageBytes(pingMessage);
 
 		ReadOnlySequence<byte> serializedSequence = new(bytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, new MockInvocationBinder(), out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -28,12 +30,12 @@ public partial class SerializationTests
 	[Fact]
 	public void CloseMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 		CloseMessage closeMessage = new("test error", true);
 		ReadOnlyMemory<byte> bytes = protocol.GetMessageBytes(closeMessage);
 
 		ReadOnlySequence<byte> serializedSequence = new(bytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, new MockInvocationBinder(), out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -45,7 +47,7 @@ public partial class SerializationTests
 	[Fact]
 	public void InvocationMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		InvocationMessage invocationMessage = new("123", "TestMethod", new object[] { "hello", 42 });
 		ReadOnlyMemory<byte> invocationBytes = protocol.GetMessageBytes(invocationMessage);
@@ -59,7 +61,7 @@ public partial class SerializationTests
 			},
 		};
 		ReadOnlySequence<byte> serializedSequence = new(invocationBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -74,7 +76,7 @@ public partial class SerializationTests
 	[Fact]
 	public void StreamInvocationMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		StreamInvocationMessage streamInvocationMessage = new("456", "StreamMethod", new object[] { "param1", 123 });
 		ReadOnlyMemory<byte> streamInvocationBytes = protocol.GetMessageBytes(streamInvocationMessage);
@@ -88,7 +90,7 @@ public partial class SerializationTests
 			},
 		};
 		ReadOnlySequence<byte> serializedSequence = new(streamInvocationBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -103,7 +105,7 @@ public partial class SerializationTests
 	[Fact]
 	public void StreamItemMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		StreamItemMessage streamItemMessage = new("789", "stream item data");
 		ReadOnlyMemory<byte> streamItemBytes = protocol.GetMessageBytes(streamItemMessage);
@@ -117,7 +119,7 @@ public partial class SerializationTests
 			},
 		};
 		ReadOnlySequence<byte> serializedSequence = new(streamItemBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -129,7 +131,7 @@ public partial class SerializationTests
 	[Fact]
 	public void CompletionMessage_WithResult_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		CompletionMessage completionMessage = CompletionMessage.WithResult("101", "completion result");
 		ReadOnlyMemory<byte> completionBytes = protocol.GetMessageBytes(completionMessage);
@@ -143,7 +145,7 @@ public partial class SerializationTests
 			},
 		};
 		ReadOnlySequence<byte> serializedSequence = new(completionBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -157,7 +159,7 @@ public partial class SerializationTests
 	[Fact]
 	public void CompletionMessage_WithError_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		CompletionMessage completionMessage = CompletionMessage.WithError("102", "Something went wrong");
 		ReadOnlyMemory<byte> completionBytes = protocol.GetMessageBytes(completionMessage);
@@ -165,7 +167,7 @@ public partial class SerializationTests
 
 		MockInvocationBinder binder = new();
 		ReadOnlySequence<byte> serializedSequence = new(completionBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -179,7 +181,7 @@ public partial class SerializationTests
 	[Fact]
 	public void CompletionMessage_Empty_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		CompletionMessage completionMessage = CompletionMessage.Empty("103");
 		ReadOnlyMemory<byte> completionBytes = protocol.GetMessageBytes(completionMessage);
@@ -187,7 +189,7 @@ public partial class SerializationTests
 
 		MockInvocationBinder binder = new();
 		ReadOnlySequence<byte> serializedSequence = new(completionBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -201,7 +203,7 @@ public partial class SerializationTests
 	[Fact]
 	public void CancelInvocationMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		CancelInvocationMessage cancelInvocationMessage = new("201");
 		ReadOnlyMemory<byte> cancelInvocationBytes = protocol.GetMessageBytes(cancelInvocationMessage);
@@ -209,7 +211,7 @@ public partial class SerializationTests
 
 		MockInvocationBinder binder = new();
 		ReadOnlySequence<byte> serializedSequence = new(cancelInvocationBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -220,7 +222,7 @@ public partial class SerializationTests
 	[Fact]
 	public void AckMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		AckMessage ackMessage = new(42);
 		ReadOnlyMemory<byte> ackBytes = protocol.GetMessageBytes(ackMessage);
@@ -228,7 +230,7 @@ public partial class SerializationTests
 
 		MockInvocationBinder binder = new();
 		ReadOnlySequence<byte> serializedSequence = new(ackBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -239,7 +241,7 @@ public partial class SerializationTests
 	[Fact]
 	public void SequenceMessage_Serialization()
 	{
-		IHubProtocol protocol = CreateProtocol();
+		IHubProtocol protocol = this.CreateProtocol();
 
 		SequenceMessage sequenceMessage = new(99);
 		ReadOnlyMemory<byte> sequenceBytes = protocol.GetMessageBytes(sequenceMessage);
@@ -247,7 +249,7 @@ public partial class SerializationTests
 
 		MockInvocationBinder binder = new();
 		ReadOnlySequence<byte> serializedSequence = new(sequenceBytes);
-		LogMsgPack(serializedSequence);
+		this.LogMsgPack(serializedSequence);
 		Assert.True(protocol.TryParseMessage(ref serializedSequence, binder, out HubMessage? message));
 		Assert.True(serializedSequence.IsEmpty);
 
@@ -255,14 +257,14 @@ public partial class SerializationTests
 		Assert.Equal(99, sequence.SequenceId);
 	}
 
-	private static void LogMsgPack(ReadOnlySequence<byte> payload)
+	private void LogMsgPack(ReadOnlySequence<byte> payload)
 	{
 		Assumes.True(BinaryMessageFormatter.TryParseMessage(ref payload, out ReadOnlySequence<byte> msgpack));
-		TestContext.Current.TestOutputHelper?.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+		TestContext.Current.TestOutputHelper?.WriteLine(this.Serializer.ConvertToJson(msgpack));
 	}
 
-	private static IHubProtocol CreateProtocol(MessagePackSerializer? serializer = null)
-		=> TestUtilities.CreateHubProtocol(Witness.ShapeProvider, serializer);
+	private IHubProtocol CreateProtocol()
+		=> TestUtilities.CreateHubProtocol(Witness.ShapeProvider, this.Serializer);
 
 	[GenerateShapeFor<string>]
 	[GenerateShapeFor<int>]

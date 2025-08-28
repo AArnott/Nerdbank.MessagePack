@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
-
 public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 {
 	[Fact]
@@ -21,7 +19,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	/// Verifies the behavior of the simpler method that takes a buffer and returns a string.
 	/// </summary>
 	[Fact]
-	public void Sequence() => Assert.Equal("null", MessagePackSerializer.ConvertToJson(new([0xc0])));
+	public void Sequence() => Assert.Equal("null", this.Serializer.ConvertToJson(new([0xc0])));
 
 	[Fact]
 	public void Indented_Object_Tabs()
@@ -172,7 +170,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 #endif
 		using StringWriter jsonWriter = new();
 		MessagePackReader reader = new(sequence);
-		MessagePackSerializer.ConvertToJson(ref reader, jsonWriter, options);
+		this.Serializer.ConvertToJson(ref reader, jsonWriter, options);
 		return jsonWriter.ToString();
 	}
 

@@ -139,7 +139,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	{
 		RecordWithReadOnlyProperties_NoConstructor obj = new(1, 2);
 		byte[] msgpack = this.Serializer.Serialize(obj, TestContext.Current.CancellationToken);
-		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+		this.Logger.WriteLine(this.Serializer.ConvertToJson(msgpack));
 		MessagePackReader reader = new(msgpack);
 
 		// The Sum field should not be serialized.

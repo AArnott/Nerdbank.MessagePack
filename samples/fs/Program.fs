@@ -21,7 +21,7 @@ let msgpack =
     let refableValue = farm // need to pass by reference
     serializer.Serialize(&refableValue, ReflectionTypeShapeProvider.Default)
 
-MessagePackSerializer.ConvertToJson(msgpack) |> printfn "Farm as JSON: %s"
+serializer.ConvertToJson(msgpack) |> printfn "Farm as JSON: %s"
 
 let newFarm = serializer.Deserialize<Farm>(msgpack, ReflectionTypeShapeProvider.Default)
 

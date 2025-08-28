@@ -45,7 +45,7 @@ public partial class JsonElementConverterTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<JsonElement, Witness>(el, TestContext.Current.CancellationToken);
 		this.LogMsgPack(msgpack);
 
-		string converted = MessagePackSerializer.ConvertToJson(msgpack);
+		string converted = this.Serializer.ConvertToJson(msgpack);
 		Assert.Equal(Json, converted);
 	}
 
