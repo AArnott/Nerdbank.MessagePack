@@ -524,7 +524,7 @@ public partial record MessagePackSerializer
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.ConverterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte}, JsonOptions?)"/>
-	public static string ConvertToJson(ReadOnlyMemory<byte> msgpack, JsonOptions? options = null) => ConvertToJson(new ReadOnlySequence<byte>(msgpack), options);
+	public string ConvertToJson(ReadOnlyMemory<byte> msgpack, JsonOptions? options = null) => this.ConvertToJson(new ReadOnlySequence<byte>(msgpack), options);
 
 	/// <summary>
 	/// Converts a msgpack sequence into equivalent JSON.
@@ -538,13 +538,13 @@ public partial record MessagePackSerializer
 	/// As such, this method is intended for debugging purposes rather than for production use.
 	/// </para>
 	/// </remarks>
-	public static string ConvertToJson(in ReadOnlySequence<byte> msgpack, JsonOptions? options = null)
+	public string ConvertToJson(in ReadOnlySequence<byte> msgpack, JsonOptions? options = null)
 	{
 		using StringWriter jsonWriter = new();
 		MessagePackReader reader = new(msgpack);
 		while (!reader.End)
 		{
-			ConvertToJson(ref reader, jsonWriter, options);
+			this.ConvertToJson(ref reader, jsonWriter, options);
 		}
 
 		return jsonWriter.ToString();
@@ -556,7 +556,7 @@ public partial record MessagePackSerializer
 	/// <param name="reader">A reader of the msgpack stream.</param>
 	/// <param name="jsonWriter">The writer that will receive JSON text.</param>
 	/// <param name="options">Options to customize how the JSON is written.</param>
-	public static void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions? options = null)
+	public void ConvertToJson(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions? options = null)
 	{
 		Requires.NotNull(jsonWriter);
 

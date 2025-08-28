@@ -42,7 +42,7 @@ public partial class JsonDocumentConverterTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<JsonDocument, Witness>(el, TestContext.Current.CancellationToken);
 		this.LogMsgPack(msgpack);
 
-		string converted = MessagePackSerializer.ConvertToJson(msgpack);
+		string converted = this.Serializer.ConvertToJson(msgpack);
 		Assert.Equal(Json, converted);
 	}
 

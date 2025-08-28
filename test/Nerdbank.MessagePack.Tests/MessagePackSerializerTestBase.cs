@@ -241,7 +241,7 @@ public abstract class MessagePackSerializerTestBase
 		JsonObject schema = this.Serializer.GetJsonSchema(shape);
 		string schemaString = SchemaToString(schema);
 		JSchema parsedSchema = JSchema.Parse(schemaString);
-		string json = MessagePackSerializer.ConvertToJson(msgpack);
+		string json = this.Serializer.ConvertToJson(msgpack);
 		var parsed = JsonNode.Parse(json);
 		try
 		{
@@ -259,6 +259,6 @@ public abstract class MessagePackSerializerTestBase
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
 	{
-		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgPack));
+		this.Logger.WriteLine(this.Serializer.ConvertToJson(msgPack));
 	}
 }

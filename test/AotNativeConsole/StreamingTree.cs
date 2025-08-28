@@ -18,7 +18,7 @@ internal static class StreamingTree
 
 		byte[] bytes = serializer.Serialize(tree);
 
-		Console.WriteLine(MessagePackSerializer.ConvertToJson(bytes));
+		Console.WriteLine(serializer.ConvertToJson(bytes));
 
 		// synchronous deserialization
 		Tree deserializedTree = serializer.Deserialize<Tree>(bytes)!;

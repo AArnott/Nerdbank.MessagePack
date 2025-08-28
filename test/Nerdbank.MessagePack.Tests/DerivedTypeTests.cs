@@ -92,7 +92,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		// and the class cannot be deserialized because the constructor doesn't take a collection.
 		EnumerableDerived value = new(3) { BaseClassProperty = 5 };
 		byte[] msgpack = this.Serializer.Serialize<BaseClass>(value, TestContext.Current.CancellationToken);
-		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+		this.Logger.WriteLine(this.Serializer.ConvertToJson(msgpack));
 	}
 
 	[Fact]

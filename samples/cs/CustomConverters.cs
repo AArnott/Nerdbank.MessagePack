@@ -501,7 +501,7 @@ namespace Stateful
             SpecialType original = new(5);
             Console.WriteLine($"Original value: {original}");
             byte[] msgpack = serializer.Serialize(original);
-            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            Console.WriteLine(serializer.ConvertToJson(msgpack));
             SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack);
             Console.WriteLine($"Deserialized value: {deserialized}");
         }
@@ -543,7 +543,7 @@ namespace Stateful
             SpecialType original = new(5);
             Console.WriteLine($"Original value: {original}");
             byte[] msgpack = serializer.Serialize(original, Witness.ShapeProvider);
-            Console.WriteLine(MessagePackSerializer.ConvertToJson(msgpack));
+            Console.WriteLine(serializer.ConvertToJson(msgpack));
             SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack, Witness.ShapeProvider);
             Console.WriteLine($"Deserialized value: {deserialized}");
         }

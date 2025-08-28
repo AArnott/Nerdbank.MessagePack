@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections;
-using Microsoft.CSharp.RuntimeBinder;
 
 public partial class PrimitivesDerializationTests : MessagePackSerializerTestBase
 {
@@ -204,7 +203,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 
 		writer.Flush();
 
-		this.Logger.WriteLine(MessagePackSerializer.ConvertToJson(seq));
+		this.Logger.WriteLine(this.Serializer.ConvertToJson(seq));
 		return new MessagePackReader(seq);
 	}
 

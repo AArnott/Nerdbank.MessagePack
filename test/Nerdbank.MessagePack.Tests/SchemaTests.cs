@@ -15,7 +15,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using DiffPlex;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
@@ -300,7 +299,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			foreach (T? item in sampleData)
 			{
 				byte[] msgpack = this.Serializer.Serialize(item);
-				string json = MessagePackSerializer.ConvertToJson(msgpack);
+				string json = this.Serializer.ConvertToJson(msgpack);
 				this.Logger.WriteLine($"Sample data {++sampleCounter}:");
 				var parsed = JsonNode.Parse(json);
 				this.Logger.WriteLine(parsed is null ? "null" : parsed.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
