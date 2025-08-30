@@ -283,7 +283,13 @@ public static class ReservedMessagePackExtensionTypeCode
 /// to avoid conflicting with those defined by the application or another library.
 /// </summary>
 /// <remarks>
+/// <para>
 /// All values must be non-negative to avoid conflicting with the official extension type codes as described in <see cref="ReservedMessagePackExtensionTypeCode"/>.
+/// </para>
+/// <para>
+/// A <see langword="null"/> value will disable the use of that extension type code,
+/// leading the library to either prefer a msgpack standardized encoding for the data type or fail when that data type is used.
+/// </para>
 /// </remarks>
 public record LibraryReservedMessagePackExtensionTypeCode
 {
@@ -296,7 +302,7 @@ public record LibraryReservedMessagePackExtensionTypeCode
 	/// Gets the extension type code for a reference to an object that has already been serialized in the same stream.
 	/// </summary>
 	/// <value>The default value is 1.</value>
-	public sbyte ObjectReference { get; init; } = 1;
+	public sbyte? ObjectReference { get; init; } = 1;
 }
 
 internal static class MessagePackRange
