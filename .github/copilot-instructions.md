@@ -24,12 +24,9 @@ dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release
 **NEVER CANCEL**: Build takes 7-76 seconds (fast with cache, slower on first build). Always use timeouts of 120+ minutes for build commands to avoid premature cancellation.
 
 ### Testing
-**Run tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 60+ minutes):
+**Run tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 5-10 minutes):
 ```bash
 dotnet test --no-build -c Release --filter "TestCategory!=FailsInCloudTest"
-```
-
-**NEVER CANCEL**: Test suite takes approximately 25 seconds but can vary. Always skip unstable tests with the filter shown above.
 
 ### Code Quality
 **Verify code formatting** (takes ~71 seconds - NEVER CANCEL, set timeout to 90+ minutes):
