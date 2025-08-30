@@ -279,6 +279,29 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 	}
 
 	/// <summary>
+	/// Determines if a thrown exception should be wrapped with contextual information.
+	/// </summary>
+	/// <param name="ex">The thrown exception.</param>
+	/// <param name="cancellationToken">The cancellation token.</param>
+	/// <returns><see langword="true" /> if the exception should be wrapped; <see langword="false" /> otherwise.</returns>
+	/// <remarks>
+	/// We wrap all exceptions <em>except</em> <see cref="OperationCanceledException"/> if the cancellation token is cancelled.
+	/// In other words, the only time we allow any exception to escape is when the operation was cancelled, because
+	/// that is the intended behavior of cancellation tokens.
+	/// </remarks>
+	private protected static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
+		=> ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
+
+	/// <summary>
+	/// Creates a type-specific error message for serialization failures.
+	/// </summary>
+	/// <param name="operation">The operation that failed (e.g., "serializing", "deserializing").</param>
+	/// <param name="objectType">The type of object involved in the operation.</param>
+	/// <returns>A formatted error message.</returns>
+	private protected static string CreateTypeErrorMessage(string operation, Type objectType)
+		=> $"An error occurred while {operation} object of type '{objectType.FullName}'.";
+
+	/// <summary>
 	/// Wraps a boxed primitive as a <see cref="JsonValue"/>.
 	/// </summary>
 	/// <param name="value">The boxed primitive to wrap as a <see cref="JsonValue"/>. Only certain primitives are supported (roughly those supported by non-generic overloads of <c>JsonValue.Create</c>.</param>

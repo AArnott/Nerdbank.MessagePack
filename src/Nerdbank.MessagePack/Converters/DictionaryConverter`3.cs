@@ -56,8 +56,18 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			TKey? entryKey = pair.Key;
 			TValue? entryValue = pair.Value;
 
+			// Write the key first - if this fails, we don't wrap it since there's no meaningful context to provide
 			keyConverter.Write(ref writer, entryKey, context);
-			valueConverter.Write(ref writer, entryValue, context);
+
+			// Write the value - if this fails, we wrap it with key context for better debugging
+			try
+			{
+				valueConverter.Write(ref writer, entryValue, context);
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException($"An error occurred while serializing dictionary value for key '{entryKey}' of type '{typeof(TValue).FullName}'.", ex);
+			}
 		}
 	}
 
@@ -78,8 +88,18 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			writer.WriteMapHeader(dictionary.Count);
 			foreach ((TKey entryKey, TValue entryValue) in dictionary)
 			{
+				// Write the key first - if this fails, we don't wrap it since there's no meaningful context to provide
 				await keyConverter.WriteAsync(writer, entryKey, context).ConfigureAwait(false);
-				await valueConverter.WriteAsync(writer, entryValue, context).ConfigureAwait(false);
+
+				// Write the value - if this fails, we wrap it with key context for better debugging
+				try
+				{
+					await valueConverter.WriteAsync(writer, entryValue, context).ConfigureAwait(false);
+				}
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException($"An error occurred while serializing dictionary value for key '{entryKey}' of type '{typeof(TValue).FullName}' asynchronously.", ex);
+				}
 			}
 		}
 		else
@@ -89,8 +109,18 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 
 			foreach ((TKey entryKey, TValue entryValue) in dictionary)
 			{
+				// Write the key first - if this fails, we don't wrap it since there's no meaningful context to provide
 				keyConverter.Write(ref syncWriter, entryKey, context);
-				valueConverter.Write(ref syncWriter, entryValue, context);
+
+				// Write the value - if this fails, we wrap it with key context for better debugging
+				try
+				{
+					valueConverter.Write(ref syncWriter, entryValue, context);
+				}
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException($"An error occurred while serializing dictionary value for key '{entryKey}' of type '{typeof(TValue).FullName}'.", ex);
+				}
 
 				if (writer.IsTimeToFlush(context, syncWriter))
 				{

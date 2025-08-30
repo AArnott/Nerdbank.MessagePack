@@ -67,7 +67,14 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			writer.WriteArrayHeader(elements.Count);
 			for (int i = 0; i < elements.Count; i++)
 			{
-				await elementConverter.WriteAsync(writer, elements[i], context).ConfigureAwait(false);
+				try
+				{
+					await elementConverter.WriteAsync(writer, elements[i], context).ConfigureAwait(false);
+				}
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException($"An error occurred while serializing enumerable element at index {i} of type '{typeof(TElement).FullName}' asynchronously.", ex);
+				}
 			}
 		}
 		else
@@ -76,7 +83,14 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			syncWriter.WriteArrayHeader(elements.Count);
 			for (int i = 0; i < elements.Count; i++)
 			{
-				elementConverter.Write(ref syncWriter, elements[i], context);
+				try
+				{
+					elementConverter.Write(ref syncWriter, elements[i], context);
+				}
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException($"An error occurred while serializing enumerable element at index {i} of type '{typeof(TElement).FullName}'.", ex);
+				}
 
 				if (writer.IsTimeToFlush(context, syncWriter))
 				{
@@ -109,19 +123,49 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
 		{
 			writer.WriteArrayHeader(count);
-			foreach (TElement element in enumerable)
+			int? index = null;
+			try
 			{
-				elementConverter.Write(ref writer, element, context);
+				int currentIndex = 0;
+				foreach (TElement element in enumerable)
+				{
+					index = currentIndex;
+					elementConverter.Write(ref writer, element, context);
+					currentIndex++;
+				}
+				index = null;
 			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				string message = index.HasValue
+					? $"An error occurred while serializing enumerable element at index {index.Value} of type '{typeof(TElement).FullName}'."
+					: CreateTypeErrorMessage("serializing", typeof(TEnumerable));
+				throw new MessagePackSerializationException(message, ex);
+			}
+
 		}
 		else
 		{
 			TElement[] array = enumerable.ToArray();
 			writer.WriteArrayHeader(array.Length);
-			for (int i = 0; i < array.Length; i++)
+			int? i = null;
+			try
 			{
-				elementConverter.Write(ref writer, array[i], context);
+				for (int index = 0; index < array.Length; index++)
+				{
+					i = index;
+					elementConverter.Write(ref writer, array[i.Value], context);
+				}
+				i = null;
 			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				string message = i.HasValue
+					? $"An error occurred while serializing enumerable element at index {i.Value} of type '{typeof(TElement).FullName}'."
+					: CreateTypeErrorMessage("serializing", typeof(TEnumerable));
+				throw new MessagePackSerializationException(message, ex);
+			}
+
 		}
 	}
 
