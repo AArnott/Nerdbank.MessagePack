@@ -4,6 +4,7 @@
     <Project Path="samples/cs/Samples.csproj" />
     <Project Path="samples/fs/FSharpSamples.fsproj" />
     <Project Path="samples/SignalR/SignalR.csproj" />
+    <Project Path="samples/VogenDataTypes/VogenDataTypes.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
