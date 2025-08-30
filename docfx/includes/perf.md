@@ -19,10 +19,10 @@ Some libraries are absent from some comparisons because they don't support a par
 ```mermaid
 xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS", "STJ", "Newtonsoft"]
-     y-axis "Time (ns)" 0 --> 1100
+     y-axis "Time (ns)" 0 --> 1000
      title "object as map"
-     bar "Serialize+Deserialize" [288.68,235.88,564.09,1072.37]
-     bar "Serialize" [91.84,86.31,107.03,405.12]
+     bar "Serialize+Deserialize" [282.96,247.46,576.95,919.38]
+     bar "Serialize" [90.76,84.57,105.17,342.99]
  ```
  ```mermaid
 xychart-beta
@@ -37,8 +37,8 @@ xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS"]
      y-axis "Time (ns)" 0 --> 300
      title "object as array"
-     bar "Serialize+Deserialize" [222.75,200.18]
-     bar "Serialize" [103.15,79.75]
+     bar "Serialize+Deserialize" [210.69,203.24]
+     bar "Serialize" [88.55,90.09]
  ```
  ```mermaid
 xychart-beta

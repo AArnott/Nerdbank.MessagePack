@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -26,9 +25,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		TElement[] array = new TElement[count];
-		for (int i = 0; i < count; i++)
+		int i = 0;
+		try
 		{
-			array[i] = elementConverter.Read(ref reader, context)!;
+			for (; i < count; i++)
+			{
+				array[i] = elementConverter.Read(ref reader, context)!;
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 		}
 
 		return array;
@@ -45,9 +52,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 		context.DepthStep();
 		writer.WriteArrayHeader(value.Length);
-		for (int i = 0; i < value.Length; i++)
+		int i = 0;
+		try
 		{
-			elementConverter.Write(ref writer, value[i], context);
+			for (; i < value.Length; i++)
+			{
+				elementConverter.Write(ref writer, value[i], context);
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 		}
 	}
 
@@ -64,10 +79,18 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		if (elementConverter.PreferAsyncSerialization)
 		{
 			writer.WriteArrayHeader(value.Length);
-			for (int i = 0; i < value.Length; i++)
+			int i = 0;
+			try
 			{
-				await elementConverter.WriteAsync(writer, value[i], context).ConfigureAwait(false);
-				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				for (; i < value.Length; i++)
+				{
+					await elementConverter.WriteAsync(writer, value[i], context).ConfigureAwait(false);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
 		}
 		else
@@ -77,10 +100,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			{
 				MessagePackWriter syncWriter = writer.CreateWriter();
 				syncWriter.WriteArrayHeader(value.Length);
-				for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
+				try
 				{
-					elementConverter.Write(ref syncWriter, value[progress], context);
-					context.CancellationToken.ThrowIfCancellationRequested();
+					for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
+					{
+						elementConverter.Write(ref syncWriter, value[progress], context);
+						context.CancellationToken.ThrowIfCancellationRequested();
+					}
+				}
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), progress), ex);
 				}
 
 				writer.ReturnWriter(ref syncWriter);
@@ -118,9 +148,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 			reader.ReturnReader(ref streamingReader);
 			TElement[] array = new TElement[count];
-			for (int i = 0; i < count; i++)
+			int i = 0;
+			try
 			{
-				array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
+				for (; i < count; i++)
+				{
+					array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
+				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
 
 			return array;
@@ -133,9 +171,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 			int count = syncReader.ReadArrayHeader();
 			TElement[] array = new TElement[count];
-			for (int i = 0; i < count; i++)
+			int i = 0;
+			try
 			{
-				array[i] = elementConverter.Read(ref syncReader, context)!;
+				for (; i < count; i++)
+				{
+					array[i] = elementConverter.Read(ref syncReader, context)!;
+				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
 
 			reader.ReturnReader(ref syncReader);
