@@ -519,7 +519,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			&& !typeof(TParameterType).IsValueType;
 		if (throwOnNull)
 		{
-			static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter {parameter.Name} is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
+			static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter '{parameter.Name}' is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
 			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
 			{
 				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
