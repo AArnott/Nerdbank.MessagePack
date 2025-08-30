@@ -16,12 +16,9 @@ export NBGV_GitEngine=Disabled
 ./init.ps1 -UpgradePrerequisites -NoNuGetCredProvider
 ```
 
-**Build the repository** (takes 7-76 seconds depending on cache - NEVER CANCEL, set timeout to 120+ minutes):
+**Build the repository** (takes 7-76 seconds depending on cache - do not cancel unless it exceeds 10-15 minutes, set timeout to 10-15 minutes):
 ```bash
 dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release
-```
-
-**NEVER CANCEL**: Build takes 7-76 seconds (fast with cache, slower on first build). Always use timeouts of 120+ minutes for build commands to avoid premature cancellation.
 
 ### Testing
 **Run tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 5-10 minutes):
