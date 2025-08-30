@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -26,22 +25,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		TElement[] array = new TElement[count];
-		int? i = null;
+		int i = 0;
 		try
 		{
-			for (int index = 0; index < count; index++)
+			for (; i < count; i++)
 			{
-				i = index;
-				array[i.Value] = elementConverter.Read(ref reader, context)!;
+				array[i] = elementConverter.Read(ref reader, context)!;
 			}
-			i = null;
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 		{
-			string message = i.HasValue
-				? $"An error occurred while deserializing array element at index {i.Value} of type '{typeof(TElement).FullName}'."
-				: CreateTypeErrorMessage("deserializing", typeof(TElement[]));
-			throw new MessagePackSerializationException(message, ex);
+			throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 		}
 
 		return array;
@@ -58,22 +52,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 		context.DepthStep();
 		writer.WriteArrayHeader(value.Length);
-		int? i = null;
+		int i = 0;
 		try
 		{
-			for (int index = 0; index < value.Length; index++)
+			for (; i < value.Length; i++)
 			{
-				i = index;
-				elementConverter.Write(ref writer, value[i.Value], context);
+				elementConverter.Write(ref writer, value[i], context);
 			}
-			i = null;
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 		{
-			string message = i.HasValue
-				? $"An error occurred while serializing array element at index {i.Value} of type '{typeof(TElement).FullName}'."
-				: CreateTypeErrorMessage("serializing", typeof(TElement[]));
-			throw new MessagePackSerializationException(message, ex);
+			throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 		}
 	}
 
@@ -90,23 +79,18 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		if (elementConverter.PreferAsyncSerialization)
 		{
 			writer.WriteArrayHeader(value.Length);
-			int? i = null;
+			int i = 0;
 			try
 			{
-				for (int index = 0; index < value.Length; index++)
+				for (; i < value.Length; i++)
 				{
-					i = index;
-					await elementConverter.WriteAsync(writer, value[i.Value], context).ConfigureAwait(false);
+					await elementConverter.WriteAsync(writer, value[i], context).ConfigureAwait(false);
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
-				i = null;
 			}
 			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 			{
-				string message = i.HasValue 
-					? $"An error occurred while serializing array element at index {i.Value} of type '{typeof(TElement).FullName}'."
-					: CreateTypeErrorMessage("serializing", typeof(TElement[]));
-				throw new MessagePackSerializationException(message, ex);
+				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
 		}
 		else
@@ -116,23 +100,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			{
 				MessagePackWriter syncWriter = writer.CreateWriter();
 				syncWriter.WriteArrayHeader(value.Length);
-				int? i = null;
 				try
 				{
 					for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
 					{
-						i = progress;
-						elementConverter.Write(ref syncWriter, value[i.Value], context);
+						elementConverter.Write(ref syncWriter, value[progress], context);
 						context.CancellationToken.ThrowIfCancellationRequested();
 					}
-					i = null;
 				}
 				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 				{
-					string message = i.HasValue
-						? $"An error occurred while serializing array element at index {i.Value} of type '{typeof(TElement).FullName}'."
-						: CreateTypeErrorMessage("serializing", typeof(TElement[]));
-					throw new MessagePackSerializationException(message, ex);
+					throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), progress), ex);
 				}
 
 				writer.ReturnWriter(ref syncWriter);
@@ -170,9 +148,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 			reader.ReturnReader(ref streamingReader);
 			TElement[] array = new TElement[count];
-			for (int i = 0; i < count; i++)
+			int i = 0;
+			try
 			{
-				array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
+				for (; i < count; i++)
+				{
+					array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
+				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
 
 			return array;
@@ -185,9 +171,17 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 			int count = syncReader.ReadArrayHeader();
 			TElement[] array = new TElement[count];
-			for (int i = 0; i < count; i++)
+			int i = 0;
+			try
 			{
-				array[i] = elementConverter.Read(ref syncReader, context)!;
+				for (; i < count; i++)
+				{
+					array[i] = elementConverter.Read(ref syncReader, context)!;
+				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
 
 			reader.ReturnReader(ref syncReader);
@@ -204,5 +198,4 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			["items"] = context.GetJsonSchema(((IEnumerableTypeShape<TElement[], TElement>)typeShape).ElementType),
 		};
 	}
-
 }

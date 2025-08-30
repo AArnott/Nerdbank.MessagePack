@@ -305,6 +305,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			this.GetCustomConverter(propertyShape.PropertyType, propertyShape.AttributeProvider) ??
 			this.GetConverter(propertyShape.PropertyType, propertyShape.AttributeProvider);
 
+		static string CreateReadFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to deserialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
+		static string CreateWriteFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
+
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
 		if (propertyShape.HasGetter)
@@ -347,10 +350,26 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
 				// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
 				TPropertyType? value = getter(ref Unsafe.AsRef(in container));
-				converter.Write(ref writer, value, context);
+				try
+				{
+					converter.Write(ref writer, value, context);
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+				}
 			};
-			SerializePropertyAsync<TDeclaringType> serializeAsync = (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context)
-				=> converter.WriteAsync(writer, getter(ref container), context);
+			SerializePropertyAsync<TDeclaringType> serializeAsync = async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
+			{
+				try
+				{
+					await converter.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+				}
+			};
 			msgpackWriters = (serialize, serializeAsync);
 		}
 
@@ -359,11 +378,28 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (propertyShape.HasSetter)
 		{
 			Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) => setter(ref container, converter.Read(ref reader, context)!);
+			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+			{
+				try
+				{
+					setter(ref container, converter.Read(ref reader, context)!);
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+				}
+			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
-				setter(ref container, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
-				return container;
+				try
+				{
+					setter(ref container, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
+					return container;
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+				}
 			};
 			msgpackReaders = (deserialize, deserializeAsync);
 			suppressIfNoConstructorParameter = false;
@@ -383,8 +419,15 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					return;
 				}
 
-				TPropertyType collection = getter(ref container);
-				inflater.DeserializeInto(ref reader, ref collection, context);
+				try
+				{
+					TPropertyType collection = getter(ref container);
+					inflater.DeserializeInto(ref reader, ref collection, context);
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+				}
 			};
 			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
@@ -397,8 +440,15 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 				if (!isNil)
 				{
-					TPropertyType collection = propertyShape.GetGetter()(ref container);
-					await inflater.DeserializeIntoAsync(reader, collection, context).ConfigureAwait(false);
+					try
+					{
+						TPropertyType collection = propertyShape.GetGetter()(ref container);
+						await inflater.DeserializeIntoAsync(reader, collection, context).ConfigureAwait(false);
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+					}
 				}
 
 				return container;
@@ -436,7 +486,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
 					{
 						ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
-						var prop = (DeserializableProperty<TArgumentState>)p.Value.Accept(this)!;
+						var prop = (DeserializableProperty<TArgumentState>)p.Value.Accept(this, constructorShape)!;
 						string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
 						spanDictContent[i++] = new(Encoding.UTF8.GetBytes(name), prop);
 					}
@@ -485,7 +535,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							throw new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type.");
 						}
 
-						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this)!;
+						parameters[index] = (DeserializableProperty<TArgumentState>)parameter.Accept(this, constructorShape)!;
 					}
 
 					return new ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
@@ -507,9 +557,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
+		IConstructorShape constructorShape = (IConstructorShape)(state ?? throw new ArgumentNullException(nameof(state)));
 		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType, parameterShape.AttributeProvider);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
+
+		static string CreateReadFailMessage(IParameterShape<TArgumentState, TParameterType> parameterShape, IConstructorShape constructorShape) => $"Failed to deserialize value for '{parameterShape.Name}' parameter on {constructorShape.DeclaringType.Type.FullName}.";
 
 		DeserializeProperty<TArgumentState> read;
 		DeserializePropertyAsync<TArgumentState> readAsync;
@@ -522,28 +575,56 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter '{parameter.Name}' is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
 			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
 			{
-				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-				setter(ref state, converter.Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+				try
+				{
+					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+					setter(ref state, converter.Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+				}
 			};
 			readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
-				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
-				return state;
+				try
+				{
+					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+					setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+					return state;
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+				}
 			};
 		}
 		else
 		{
 			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
 			{
-				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-				setter(ref state, converter.Read(ref reader, context)!);
+				try
+				{
+					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+					setter(ref state, converter.Read(ref reader, context)!);
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+				}
 			};
 			readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
 			{
-				ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-				setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
-				return state;
+				try
+				{
+					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+					setter(ref state, (await converter.ReadAsync(reader, context).ConfigureAwait(false))!);
+					return state;
+				}
+				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+				}
 			};
 		}
 

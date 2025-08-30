@@ -31,57 +31,32 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	/// <inheritdoc/>
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		try
+		if (reader.TryReadNil())
 		{
-			if (reader.TryReadNil())
-			{
-				return default;
-			}
+			return default;
+		}
 
-			context.DepthStep();
-			TArgumentState argState = argStateCtor();
-			UnusedDataPacket.Array? unused = null;
+		context.DepthStep();
+		TArgumentState argState = argStateCtor();
+		UnusedDataPacket.Array? unused = null;
 
-			if (reader.NextMessagePackType == MessagePackType.Map)
+		if (reader.NextMessagePackType == MessagePackType.Map)
+		{
+			// The indexes we have are the keys in the map rather than indexes into the array.
+			int count = reader.ReadMapHeader();
+			for (int i = 0; i < count; i++)
 			{
-				// The indexes we have are the keys in the map rather than indexes into the array.
-				int count = reader.ReadMapHeader();
-				for (int i = 0; i < count; i++)
+				int index = reader.ReadInt32();
+				if (properties.Length > index && parameters[index] is { } deserialize)
 				{
-					int index = reader.ReadInt32();
-					if (properties.Length > index && parameters[index] is { } deserialize)
-					{
-						deserialize.Read(ref argState, ref reader, context);
-					}
-					else
-					{
-						if (this.UnusedDataProperty?.Setter is not null)
-						{
-							unused ??= new();
-							unused.Add(index, reader.ReadRaw(context));
-						}
-						else
-						{
-							reader.Skip(context);
-						}
-					}
+					deserialize.Read(ref argState, ref reader, context);
 				}
-
-				ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
-			}
-			else
-			{
-				int count = reader.ReadArrayHeader();
-				for (int i = 0; i < count; i++)
+				else
 				{
-					if (parameters.Length > i && parameters[i] is { } deserialize)
-					{
-						deserialize.Read(ref argState, ref reader, context);
-					}
-					else if (this.UnusedDataProperty?.Setter is not null)
+					if (this.UnusedDataProperty?.Setter is not null)
 					{
 						unused ??= new();
-						unused.Add(i, reader.ReadRaw(context));
+						unused.Add(index, reader.ReadRaw(context));
 					}
 					else
 					{
@@ -90,31 +65,47 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				}
 			}
 
-			TDeclaringType value = ctor(ref argState);
-			if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
-			{
-				this.UnusedDataProperty.Setter(ref value, unused);
-			}
-
-			if (value is IMessagePackSerializationCallbacks callbacks)
-			{
-				callbacks.OnAfterDeserialize();
-			}
-
-			return value;
+			ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		else
 		{
-			throw new MessagePackSerializationException(CreateTypeErrorMessage("deserializing", typeof(TDeclaringType)), ex);
+			int count = reader.ReadArrayHeader();
+			for (int i = 0; i < count; i++)
+			{
+				if (parameters.Length > i && parameters[i] is { } deserialize)
+				{
+					deserialize.Read(ref argState, ref reader, context);
+				}
+				else if (this.UnusedDataProperty?.Setter is not null)
+				{
+					unused ??= new();
+					unused.Add(i, reader.ReadRaw(context));
+				}
+				else
+				{
+					reader.Skip(context);
+				}
+			}
 		}
+
+		TDeclaringType value = ctor(ref argState);
+		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
+		{
+			this.UnusedDataProperty.Setter(ref value, unused);
+		}
+
+		if (value is IMessagePackSerializationCallbacks callbacks)
+		{
+			callbacks.OnAfterDeserialize();
+		}
+
+		return value;
 	}
 
 	/// <inheritdoc/>
 	public override async ValueTask<TDeclaringType?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		try
-		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
@@ -290,10 +281,5 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		return value;
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
-		{
-			throw new MessagePackSerializationException(CreateTypeErrorMessage("deserializing", typeof(TDeclaringType)), ex);
-		}
 	}
 }

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack;
@@ -77,6 +76,38 @@ public abstract class MessagePackConverter
 	/// to skip to the starting position of a sequence that should be asynchronously enumerated.
 	/// </remarks>
 	public abstract ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context);
+
+	/// <summary>
+	/// Determines if a thrown exception should be wrapped with contextual information.
+	/// </summary>
+	/// <param name="ex">The thrown exception.</param>
+	/// <param name="cancellationToken">The cancellation token.</param>
+	/// <returns><see langword="true" /> if the exception should be wrapped; <see langword="false" /> otherwise.</returns>
+	/// <remarks>
+	/// We wrap all exceptions <em>except</em> <see cref="OperationCanceledException"/> if the cancellation token is cancelled.
+	/// In other words, the only time we allow any exception to escape is when the operation was cancelled, because
+	/// that is the intended behavior of cancellation tokens.
+	/// </remarks>
+	internal static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
+		=> ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
+
+	/// <summary>
+	/// Creates a type-specific error message for deserialization failures.
+	/// </summary>
+	/// <param name="objectType">The type of object being deserialized.</param>
+	/// <param name="index">The index within an array of the element being processed.</param>
+	/// <returns>A formatted error message.</returns>
+	internal static string CreateFailReadingValueAtIndex(Type objectType, int index)
+		=> $"Failed to deserialize a '{objectType.FullName}' at index {index}.";
+
+	/// <summary>
+	/// Creates a type-specific error message for serialization failures.
+	/// </summary>
+	/// <param name="objectType">The type of object being serialized.</param>
+	/// <param name="index">The index within an array of the element being processed.</param>
+	/// <returns>A formatted error message.</returns>
+	internal static string CreateFailWritingValueAtIndex(Type objectType, int index)
+		=> $"Failed to serialize a '{objectType.FullName}' at index {index}.";
 
 	/// <summary>
 	/// Just insurance that no external assembly can derive a concrete type from this type, except through the generic <see cref="MessagePackConverter{T}"/>.

@@ -38,42 +38,35 @@ internal class ObjectMapConverter<T>(
 	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
 #pragma warning restore NBMsgPack031
 	{
-		try
+		if (value is null)
 		{
-			if (value is null)
-			{
-				writer.WriteNil();
-				return;
-			}
-
-			IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
-			callbacks?.OnBeforeSerialize();
-
-			context.DepthStep();
-
-			if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
-			{
-				SerializableProperty<T>[] include = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
-				try
-				{
-					WriteProperties(ref writer, value, this.GetPropertiesToSerialize(value, include.AsMemory()).Span, unusedDataProperty, context);
-				}
-				finally
-				{
-					ArrayPool<SerializableProperty<T>>.Shared.Return(include);
-				}
-			}
-			else
-			{
-				WriteProperties(ref writer, value, serializable.Properties.Span, unusedDataProperty, context);
-			}
-
-			callbacks?.OnAfterSerialize();
+			writer.WriteNil();
+			return;
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeSerialize();
+
+		context.DepthStep();
+
+		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
 		{
-			throw new MessagePackSerializationException(CreateTypeErrorMessage("serializing", typeof(T)), ex);
+			SerializableProperty<T>[] include = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
+			try
+			{
+				WriteProperties(ref writer, value, this.GetPropertiesToSerialize(value, include.AsMemory()).Span, unusedDataProperty, context);
+			}
+			finally
+			{
+				ArrayPool<SerializableProperty<T>>.Shared.Return(include);
+			}
 		}
+		else
+		{
+			WriteProperties(ref writer, value, serializable.Properties.Span, unusedDataProperty, context);
+		}
+
+		callbacks?.OnAfterSerialize();
 
 		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty, SerializationContext context)
 		{
@@ -92,322 +85,301 @@ internal class ObjectMapConverter<T>(
 	/// <inheritdoc/>
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
 	{
+		if (value is null)
+		{
+			writer.WriteNil();
+			return;
+		}
+
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeSerialize();
+
+		context.DepthStep();
+		UnusedDataPacket.Map? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
+		ReadOnlyMemory<SerializableProperty<T>> propertiesToSerialize;
+		SerializableProperty<T>[]? borrowedArray = null;
 		try
 		{
-			if (value is null)
+			if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
 			{
-				writer.WriteNil();
-				return;
+				borrowedArray = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
+				propertiesToSerialize = this.GetPropertiesToSerialize(value, borrowedArray.AsMemory());
+			}
+			else
+			{
+				propertiesToSerialize = serializable.Properties;
 			}
 
-			IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
-			callbacks?.OnBeforeSerialize();
-
-			context.DepthStep();
-			UnusedDataPacket.Map? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
-			ReadOnlyMemory<SerializableProperty<T>> propertiesToSerialize;
-			SerializableProperty<T>[]? borrowedArray = null;
-			try
+			MessagePackWriter syncWriter = writer.CreateWriter();
+			syncWriter.WriteMapHeader(propertiesToSerialize.Length + (unused?.Count ?? 0));
+			for (int i = 0; i < propertiesToSerialize.Length; i++)
 			{
-				if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && serializable.Properties.Length > 0)
+				SerializableProperty<T> property = propertiesToSerialize.Span[i];
+
+				syncWriter.WriteRaw(property.RawPropertyNameString.Span);
+				if (property.PreferAsyncSerialization)
 				{
-					borrowedArray = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
-					propertiesToSerialize = this.GetPropertiesToSerialize(value, borrowedArray.AsMemory());
+					writer.ReturnWriter(ref syncWriter);
+					await property.WriteAsync(value, writer, context).ConfigureAwait(false);
+					syncWriter = writer.CreateWriter();
 				}
 				else
 				{
-					propertiesToSerialize = serializable.Properties;
+					property.Write(value, ref syncWriter, context);
 				}
 
-				MessagePackWriter syncWriter = writer.CreateWriter();
-				syncWriter.WriteMapHeader(propertiesToSerialize.Length + (unused?.Count ?? 0));
-				for (int i = 0; i < propertiesToSerialize.Length; i++)
+				if (writer.IsTimeToFlush(context, syncWriter))
 				{
-					SerializableProperty<T> property = propertiesToSerialize.Span[i];
-
-					syncWriter.WriteRaw(property.RawPropertyNameString.Span);
-					if (property.PreferAsyncSerialization)
-					{
-						writer.ReturnWriter(ref syncWriter);
-						await property.WriteAsync(value, writer, context).ConfigureAwait(false);
-						syncWriter = writer.CreateWriter();
-					}
-					else
-					{
-						property.Write(value, ref syncWriter, context);
-					}
-
-					if (writer.IsTimeToFlush(context, syncWriter))
-					{
-						writer.ReturnWriter(ref syncWriter);
-						await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
-						syncWriter = writer.CreateWriter();
-					}
-				}
-
-				if (unused is not null)
-				{
-					unused?.WriteTo(ref syncWriter);
 					writer.ReturnWriter(ref syncWriter);
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
-				}
-				else
-				{
-					writer.ReturnWriter(ref syncWriter);
-				}
-			}
-			finally
-			{
-				if (borrowedArray is not null)
-				{
-					ArrayPool<SerializableProperty<T>>.Shared.Return(borrowedArray);
+					syncWriter = writer.CreateWriter();
 				}
 			}
 
-			callbacks?.OnAfterSerialize();
+			if (unused is not null)
+			{
+				unused?.WriteTo(ref syncWriter);
+				writer.ReturnWriter(ref syncWriter);
+				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+			}
+			else
+			{
+				writer.ReturnWriter(ref syncWriter);
+			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		finally
 		{
-			throw new MessagePackSerializationException(CreateTypeErrorMessage("serializing", typeof(T)), ex);
+			if (borrowedArray is not null)
+			{
+				ArrayPool<SerializableProperty<T>>.Shared.Return(borrowedArray);
+			}
 		}
+
+		callbacks?.OnAfterSerialize();
 	}
 
 	/// <inheritdoc/>
 	public override T? Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		try
+		if (reader.TryReadNil())
 		{
-			if (reader.TryReadNil())
-			{
-				return default;
-			}
+			return default;
+		}
 
-			if (constructor is null || deserializable is null)
-			{
-				throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
-			}
+		if (constructor is null || deserializable is null)
+		{
+			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
+		}
 
-			context.DepthStep();
-			T value = constructor();
-			IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
-			callbacks?.OnBeforeDeserialize();
-			PropertyCollisionDetection collisionDetection = new(propertyShapes);
-			UnusedDataPacket.Map? unused = null;
+		context.DepthStep();
+		T value = constructor();
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeDeserialize();
+		PropertyCollisionDetection collisionDetection = new(propertyShapes);
+		UnusedDataPacket.Map? unused = null;
 
-			if (!typeof(T).IsValueType)
-			{
-				context.ReportObjectConstructed(value);
-			}
+		if (!typeof(T).IsValueType)
+		{
+			context.ReportObjectConstructed(value);
+		}
 
-			if (deserializable.Readers is not null)
+		if (deserializable.Readers is not null)
+		{
+			int count = reader.ReadMapHeader();
+			for (int i = 0; i < count; i++)
 			{
-				int count = reader.ReadMapHeader();
-				for (int i = 0; i < count; i++)
+				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
+				if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 				{
-					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
-					if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
-					{
-						collisionDetection.MarkAsRead(propertyReader.ShapePosition);
-						propertyReader.Read(ref value, ref reader, context);
-					}
-					else if (unusedDataProperty?.Setter is not null)
-					{
-						unused ??= new();
-						unused.Add(propertyName, reader.ReadRaw(context));
-					}
-					else
-					{
-						reader.Skip(context);
-					}
+					collisionDetection.MarkAsRead(propertyReader.ShapePosition);
+					propertyReader.Read(ref value, ref reader, context);
+				}
+				else if (unusedDataProperty?.Setter is not null)
+				{
+					unused ??= new();
+					unused.Add(propertyName, reader.ReadRaw(context));
+				}
+				else
+				{
+					reader.Skip(context);
 				}
 			}
-			else
-			{
-				// We have nothing to read into, so just skip any data in the object.
-				reader.Skip(context);
-			}
-
-			if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
-			{
-				unusedDataProperty.Setter(ref value, unused);
-			}
-
-			callbacks?.OnAfterDeserialize();
-
-			return value;
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		else
 		{
-			throw new MessagePackSerializationException(CreateTypeErrorMessage("deserializing", typeof(T)), ex);
+			// We have nothing to read into, so just skip any data in the object.
+			reader.Skip(context);
 		}
+
+		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
+		{
+			unusedDataProperty.Setter(ref value, unused);
+		}
+
+		callbacks?.OnAfterDeserialize();
+
+		return value;
 	}
 
 	/// <inheritdoc/>
 	public override async ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		try
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool success;
+		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
-			bool success;
-			while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (success)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return default;
+		}
+
+		if (constructor is null || deserializable is null)
+		{
+			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
+		}
+
+		context.DepthStep();
+		T value = constructor();
+		IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
+		callbacks?.OnBeforeDeserialize();
+		PropertyCollisionDetection collisionDetection = new(propertyShapes);
+		UnusedDataPacket.Map? unused = null;
+
+		if (!typeof(T).IsValueType)
+		{
+			context.ReportObjectConstructed(value);
+		}
+
+		if (deserializable.Readers is not null)
+		{
+			int mapEntries;
+			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			if (success)
+			// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
+			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
+			reader.ReturnReader(ref streamingReader);
+			int remainingEntries = mapEntries;
+			while (remainingEntries > 0)
 			{
-				reader.ReturnReader(ref streamingReader);
-				return default;
-			}
-
-			if (constructor is null || deserializable is null)
-			{
-				throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
-			}
-
-			context.DepthStep();
-			T value = constructor();
-			IMessagePackSerializationCallbacks? callbacks = value as IMessagePackSerializationCallbacks;
-			callbacks?.OnBeforeDeserialize();
-			PropertyCollisionDetection collisionDetection = new(propertyShapes);
-			UnusedDataPacket.Map? unused = null;
-
-			if (!typeof(T).IsValueType)
-			{
-				context.ReportObjectConstructed(value);
-			}
-
-			if (deserializable.Readers is not null)
-			{
-				int mapEntries;
-				while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
+				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
+				MessagePackReader syncReader = reader.CreateBufferedReader();
+				int bufferedEntries = bufferedStructures / 2;
+				for (int i = 0; i < bufferedEntries; i++)
 				{
-					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
+					if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
+					{
+						collisionDetection.MarkAsRead(propertyReader.ShapePosition);
+						propertyReader.Read(ref value, ref syncReader, context);
+					}
+					else if (unusedDataProperty?.Setter is not null)
+					{
+						unused ??= new();
+						unused.Add(propertyName, syncReader.ReadRaw(context));
+					}
+					else
+					{
+						syncReader.Skip(context);
+					}
+
+					remainingEntries--;
 				}
 
-				// We're going to read in bursts. Anything we happen to get in one buffer, we'll ready synchronously regardless of whether the property is async.
-				// But when we run out of buffer, if the next thing to read is async, we'll read it async.
-				reader.ReturnReader(ref streamingReader);
-				int remainingEntries = mapEntries;
-				while (remainingEntries > 0)
+				if (remainingEntries > 0)
 				{
-					int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-					MessagePackReader syncReader = reader.CreateBufferedReader();
-					int bufferedEntries = bufferedStructures / 2;
-					for (int i = 0; i < bufferedEntries; i++)
+					// To know whether the next property is async, we need to know its name.
+					// If its name isn't in the buffer, we'll just loop around and get it in the next buffer.
+					if (bufferedStructures % 2 == 1)
 					{
+						// The property name has already been buffered.
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 						if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
 						{
 							collisionDetection.MarkAsRead(propertyReader.ShapePosition);
-							propertyReader.Read(ref value, ref syncReader, context);
-						}
-						else if (unusedDataProperty?.Setter is not null)
-						{
-							unused ??= new();
-							unused.Add(propertyName, syncReader.ReadRaw(context));
-						}
-						else
-						{
-							syncReader.Skip(context);
-						}
-
-						remainingEntries--;
-					}
-
-					if (remainingEntries > 0)
-					{
-						// To know whether the next property is async, we need to know its name.
-						// If its name isn't in the buffer, we'll just loop around and get it in the next buffer.
-						if (bufferedStructures % 2 == 1)
-						{
-							// The property name has already been buffered.
-							ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-							if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
+							if (propertyReader.PreferAsyncSerialization)
 							{
-								collisionDetection.MarkAsRead(propertyReader.ShapePosition);
-								if (propertyReader.PreferAsyncSerialization)
-								{
-									// The next property value is async, so turn in our sync reader and read it asynchronously.
-									reader.ReturnReader(ref syncReader);
-									value = await propertyReader.ReadAsync(value, reader, context).ConfigureAwait(false);
-									remainingEntries--;
-									continue;
-								}
-								else
-								{
-									// Deserialize the value synchronously.
-									reader.ReturnReader(ref syncReader);
-									await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
-									syncReader = reader.CreateBufferedReader();
-									propertyReader.Read(ref value, ref syncReader, context);
-									reader.ReturnReader(ref syncReader);
-									remainingEntries--;
-									continue;
-								}
+								// The next property value is async, so turn in our sync reader and read it asynchronously.
+								reader.ReturnReader(ref syncReader);
+								value = await propertyReader.ReadAsync(value, reader, context).ConfigureAwait(false);
+								remainingEntries--;
+								continue;
 							}
 							else
 							{
-								// We don't recognize the property name, so skip the value.
+								// Deserialize the value synchronously.
 								reader.ReturnReader(ref syncReader);
-
-								streamingReader = reader.CreateStreamingReader();
-
-								if (unusedDataProperty?.Setter is not null)
-								{
-									unused ??= new();
-									RawMessagePack msgpack;
-									ReadOnlyMemory<byte> propertyNameMemory = UnusedDataPacket.Map.GetPropertyNameMemory(propertyName);
-									while (streamingReader.TryReadRaw(ref context, out msgpack).NeedsMoreBytes())
-									{
-										streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-									}
-
-									unused.Add(propertyNameMemory, msgpack);
-								}
-								else
-								{
-									while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
-									{
-										streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-									}
-								}
-
-								reader.ReturnReader(ref streamingReader);
-
+								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+								syncReader = reader.CreateBufferedReader();
+								propertyReader.Read(ref value, ref syncReader, context);
+								reader.ReturnReader(ref syncReader);
 								remainingEntries--;
 								continue;
 							}
 						}
+						else
+						{
+							// We don't recognize the property name, so skip the value.
+							reader.ReturnReader(ref syncReader);
+
+							streamingReader = reader.CreateStreamingReader();
+
+							if (unusedDataProperty?.Setter is not null)
+							{
+								unused ??= new();
+								RawMessagePack msgpack;
+								ReadOnlyMemory<byte> propertyNameMemory = UnusedDataPacket.Map.GetPropertyNameMemory(propertyName);
+								while (streamingReader.TryReadRaw(ref context, out msgpack).NeedsMoreBytes())
+								{
+									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								}
+
+								unused.Add(propertyNameMemory, msgpack);
+							}
+							else
+							{
+								while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+								{
+									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+								}
+							}
+
+							reader.ReturnReader(ref streamingReader);
+
+							remainingEntries--;
+							continue;
+						}
 					}
-
-					reader.ReturnReader(ref syncReader);
-				}
-			}
-			else
-			{
-				// We have nothing to read into, so just skip any data in the object.
-				while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
-				{
-					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 				}
 
-				reader.ReturnReader(ref streamingReader);
+				reader.ReturnReader(ref syncReader);
 			}
-
-			if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
-			{
-				unusedDataProperty.Setter(ref value, unused);
-			}
-
-			callbacks?.OnAfterDeserialize();
-
-			return value;
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		else
 		{
-			throw new MessagePackSerializationException(CreateTypeErrorMessage("deserializing", typeof(T)), ex);
+			// We have nothing to read into, so just skip any data in the object.
+			while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			reader.ReturnReader(ref streamingReader);
 		}
+
+		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
+		{
+			unusedDataProperty.Setter(ref value, unused);
+		}
+
+		callbacks?.OnAfterDeserialize();
+
+		return value;
 	}
 
 	/// <inheritdoc/>

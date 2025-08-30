@@ -51,23 +51,23 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 		context.DepthStep();
 		IReadOnlyDictionary<TKey, TValue> dictionary = getReadable(value);
 		writer.WriteMapHeader(dictionary.Count);
-		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+		TKey? entryKey = default;
+		bool writingKey = true;
+		try
 		{
-			TKey? entryKey = pair.Key;
-			TValue? entryValue = pair.Value;
-
-			// Write the key first - if this fails, we don't wrap it since there's no meaningful context to provide
-			keyConverter.Write(ref writer, entryKey, context);
-
-			// Write the value - if this fails, we wrap it with key context for better debugging
-			try
+			foreach (KeyValuePair<TKey, TValue> pair in dictionary)
 			{
-				valueConverter.Write(ref writer, entryValue, context);
+				entryKey = pair.Key;
+				writingKey = true;
+				keyConverter.Write(ref writer, entryKey, context);
+
+				writingKey = false;
+				valueConverter.Write(ref writer, pair.Value, context);
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
-			{
-				throw new MessagePackSerializationException($"An error occurred while serializing dictionary value for key '{entryKey}' of type '{typeof(TValue).FullName}'.", ex);
-			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(writingKey ? CreateWriteKeyFailMessage(entryKey) : CreateWriteValueFailMessage(entryKey), ex);
 		}
 	}
 
@@ -88,17 +88,22 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			writer.WriteMapHeader(dictionary.Count);
 			foreach ((TKey entryKey, TValue entryValue) in dictionary)
 			{
-				// Write the key first - if this fails, we don't wrap it since there's no meaningful context to provide
-				await keyConverter.WriteAsync(writer, entryKey, context).ConfigureAwait(false);
+				try
+				{
+					await keyConverter.WriteAsync(writer, entryKey, context).ConfigureAwait(false);
+				}
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateWriteKeyFailMessage(entryKey), ex);
+				}
 
-				// Write the value - if this fails, we wrap it with key context for better debugging
 				try
 				{
 					await valueConverter.WriteAsync(writer, entryValue, context).ConfigureAwait(false);
 				}
 				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 				{
-					throw new MessagePackSerializationException($"An error occurred while serializing dictionary value for key '{entryKey}' of type '{typeof(TValue).FullName}' asynchronously.", ex);
+					throw new MessagePackSerializationException(CreateWriteValueFailMessage(entryKey), ex);
 				}
 			}
 		}
@@ -107,27 +112,30 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			MessagePackWriter syncWriter = writer.CreateWriter();
 			syncWriter.WriteMapHeader(dictionary.Count);
 
-			foreach ((TKey entryKey, TValue entryValue) in dictionary)
+			TKey? entryKey = default;
+			bool writingKey = true;
+			try
 			{
-				// Write the key first - if this fails, we don't wrap it since there's no meaningful context to provide
-				keyConverter.Write(ref syncWriter, entryKey, context);
+				foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+				{
+					entryKey = pair.Key;
+					writingKey = true;
+					keyConverter.Write(ref syncWriter, entryKey, context);
 
-				// Write the value - if this fails, we wrap it with key context for better debugging
-				try
-				{
-					valueConverter.Write(ref syncWriter, entryValue, context);
-				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException($"An error occurred while serializing dictionary value for key '{entryKey}' of type '{typeof(TValue).FullName}'.", ex);
-				}
+					writingKey = false;
+					valueConverter.Write(ref syncWriter, pair.Value, context);
 
-				if (writer.IsTimeToFlush(context, syncWriter))
-				{
-					writer.ReturnWriter(ref syncWriter);
-					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
-					syncWriter = writer.CreateWriter();
+					if (writer.IsTimeToFlush(context, syncWriter))
+					{
+						writer.ReturnWriter(ref syncWriter);
+						await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+						syncWriter = writer.CreateWriter();
+					}
 				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(writingKey ? CreateWriteKeyFailMessage(entryKey) : CreateWriteValueFailMessage(entryKey), ex);
 			}
 
 			writer.ReturnWriter(ref syncWriter);
@@ -223,8 +231,18 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <param name="value">Receives the value.</param>
 	protected void ReadEntry(ref MessagePackReader reader, SerializationContext context, out TKey key, out TValue value)
 	{
-		key = keyConverter.Read(ref reader, context)!;
-		value = valueConverter.Read(ref reader, context)!;
+		key = default!;
+		bool readingKey = true;
+		try
+		{
+			key = keyConverter.Read(ref reader, context)!;
+			readingKey = false;
+			value = valueConverter.Read(ref reader, context)!;
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(readingKey ? CreateReadKeyFailMessage() : CreateReadValueFailMessage(key), ex);
+		}
 	}
 
 	/// <summary>
@@ -235,10 +253,51 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <returns>The key=value pair.</returns>
 	protected async ValueTask<KeyValuePair<TKey, TValue>> ReadEntryAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		TKey? key = await keyConverter.ReadAsync(reader, context).ConfigureAwait(false);
-		TValue? value = await valueConverter.ReadAsync(reader, context).ConfigureAwait(false);
-		return new(key!, value!);
+		TKey? key = default;
+		bool readingKey = true;
+		try
+		{
+			key = await keyConverter.ReadAsync(reader, context).ConfigureAwait(false);
+			readingKey = false;
+			TValue? value = await valueConverter.ReadAsync(reader, context).ConfigureAwait(false);
+			return new(key!, value!);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(readingKey ? CreateReadKeyFailMessage() : CreateReadValueFailMessage(key), ex);
+		}
 	}
+
+	/// <summary>
+	/// Creates a message indicating a failure to serialize the specified key.
+	/// </summary>
+	/// <param name="key">The key being written.</param>
+	/// <returns>The exception message.</returns>
+	private protected static string CreateWriteKeyFailMessage(in TKey? key)
+		=> $"An error occurred while serializing key '{key}' for {typeof(TDictionary).FullName}.";
+
+	/// <summary>
+	/// Creates a message indicating a failure to serialize some value for the specified key.
+	/// </summary>
+	/// <param name="key">The key whose value is being written.</param>
+	/// <returns>The exception message.</returns>
+	private protected static string CreateWriteValueFailMessage(in TKey? key)
+		=> $"An error occurred while serializing value for key '{key}' for {typeof(TDictionary).FullName}.";
+
+	/// <summary>
+	/// Creates a message indicating a failure to deserialize some value for the specified key.
+	/// </summary>
+	/// <returns>The exception message.</returns>
+	private protected static string CreateReadKeyFailMessage()
+		=> $"An error occurred while deserializing key for {typeof(TDictionary).FullName}.";
+
+	/// <summary>
+	/// Creates a message indicating a failure to deserialize some value for the specified key.
+	/// </summary>
+	/// <param name="key">The key whose value is being read.</param>
+	/// <returns>The exception message.</returns>
+	private protected static string CreateReadValueFailMessage(in TKey? key)
+		=> $"An error occurred while deserializing value for key '{key}' for {typeof(TDictionary).FullName}.";
 }
 
 /// <summary>

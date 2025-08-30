@@ -65,31 +65,29 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		if (elementConverter.PreferAsyncSerialization)
 		{
 			writer.WriteArrayHeader(elements.Count);
-			for (int i = 0; i < elements.Count; i++)
+			int i = 0;
+			try
 			{
-				try
+				for (; i < elements.Count; i++)
 				{
 					await elementConverter.WriteAsync(writer, elements[i], context).ConfigureAwait(false);
 				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException($"An error occurred while serializing enumerable element at index {i} of type '{typeof(TElement).FullName}' asynchronously.", ex);
-				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
 		}
 		else
 		{
 			MessagePackWriter syncWriter = writer.CreateWriter();
 			syncWriter.WriteArrayHeader(elements.Count);
-			for (int i = 0; i < elements.Count; i++)
+			int i = 0;
+			try
 			{
-				try
+				for (; i < elements.Count; i++)
 				{
 					elementConverter.Write(ref syncWriter, elements[i], context);
-				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException($"An error occurred while serializing enumerable element at index {i} of type '{typeof(TElement).FullName}'.", ex);
 				}
 
 				if (writer.IsTimeToFlush(context, syncWriter))
@@ -98,6 +96,10 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 					syncWriter = writer.CreateWriter();
 				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
 
 			writer.ReturnWriter(ref syncWriter);
@@ -123,49 +125,36 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
 		{
 			writer.WriteArrayHeader(count);
-			int? index = null;
+			int index = 0;
 			try
 			{
-				int currentIndex = 0;
 				foreach (TElement element in enumerable)
 				{
-					index = currentIndex;
 					elementConverter.Write(ref writer, element, context);
-					currentIndex++;
+					index++;
 				}
-				index = null;
 			}
 			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 			{
-				string message = index.HasValue
-					? $"An error occurred while serializing enumerable element at index {index.Value} of type '{typeof(TElement).FullName}'."
-					: CreateTypeErrorMessage("serializing", typeof(TEnumerable));
-				throw new MessagePackSerializationException(message, ex);
+				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), index), ex);
 			}
-
 		}
 		else
 		{
 			TElement[] array = enumerable.ToArray();
 			writer.WriteArrayHeader(array.Length);
-			int? i = null;
+			int i = 0;
 			try
 			{
-				for (int index = 0; index < array.Length; index++)
+				for (; i < array.Length; i++)
 				{
-					i = index;
-					elementConverter.Write(ref writer, array[i.Value], context);
+					elementConverter.Write(ref writer, array[i], context);
 				}
-				i = null;
 			}
 			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 			{
-				string message = i.HasValue
-					? $"An error occurred while serializing enumerable element at index {i.Value} of type '{typeof(TElement).FullName}'."
-					: CreateTypeErrorMessage("serializing", typeof(TEnumerable));
-				throw new MessagePackSerializationException(message, ex);
+				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
-
 		}
 	}
 
@@ -309,9 +298,17 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		TEnumerable collection = getCollection(state, count);
-		for (int i = 0; i < count; i++)
+		int i = 0;
+		try
 		{
-			addElement(ref collection, this.ReadElement(ref reader, context));
+			for (; i < count; i++)
+			{
+				addElement(ref collection, this.ReadElement(ref reader, context));
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 		}
 
 		return collection;
@@ -334,9 +331,17 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			reader.ReturnReader(ref streamingReader);
 
 			collection = getCollection(state, count);
-			for (int i = 0; i < count; i++)
+			int i = 0;
+			try
 			{
-				addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));
+				for (; i < count; i++)
+				{
+					addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));
+				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
 		}
 		else
@@ -345,9 +350,17 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadArrayHeader();
 			collection = getCollection(state, count);
-			for (int i = 0; i < count; i++)
+			int i = 0;
+			try
 			{
-				addElement(ref collection, this.ReadElement(ref syncReader, context));
+				for (; i < count; i++)
+				{
+					addElement(ref collection, this.ReadElement(ref syncReader, context));
+				}
+			}
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
 
 			reader.ReturnReader(ref syncReader);
@@ -382,14 +395,20 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
 		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
+		int? i = 0;
 		try
 		{
-			for (int i = 0; i < count; i++)
+			for (; i < count; i++)
 			{
-				elements[i] = this.ReadElement(ref reader, context);
+				elements[i.Value] = this.ReadElement(ref reader, context);
 			}
 
+			i = null;
 			return ctor(elements.AsSpan(0, count), collectionConstructionOptions);
+		}
+		catch (Exception ex) when (i is not null && ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i.Value), ex);
 		}
 		finally
 		{
@@ -425,14 +444,20 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 
 			reader.ReturnReader(ref streamingReader);
 			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
+			int? i = 0;
 			try
 			{
-				for (int i = 0; i < count; i++)
+				for (; i < count; i++)
 				{
-					elements[i] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
+					elements[i.Value] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
 				}
 
+				i = null;
 				return ctor(elements.AsSpan(0, count));
+			}
+			catch (Exception ex) when (i is not null && ShouldWrapSerializationException(ex, context.CancellationToken))
+			{
+				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i.Value), ex);
 			}
 			finally
 			{
