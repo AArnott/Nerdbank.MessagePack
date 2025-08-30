@@ -22,6 +22,18 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	public void Sequence() => Assert.Equal("null", this.Serializer.ConvertToJson(new([0xc0])));
 
 	[Fact]
+	public void Guid_LittleEndian()
+	{
+		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.LittleEndian);
+		Guid guid = Guid.NewGuid();
+		this.AssertConvertToJson(
+			$$"""
+			{"Value":"{{guid:D}}"}
+			""",
+			new GuidWrapper(guid));
+	}
+
+	[Fact]
 	public void Indented_Object_Tabs()
 	{
 		this.AssertConvertToJson(
@@ -179,6 +191,9 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 
 	[GenerateShape]
 	public partial record ArrayWrapper(params int[] IntArray);
+
+	[GenerateShape]
+	public partial record GuidWrapper(Guid Value);
 
 	[GenerateShape]
 	public partial record NestingObject(NestingObject? Nested = null, NestingObject[]? Array = null, string? Value = null);

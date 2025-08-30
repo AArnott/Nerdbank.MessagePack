@@ -303,6 +303,17 @@ public record LibraryReservedMessagePackExtensionTypeCode
 	/// </summary>
 	/// <value>The default value is 1.</value>
 	public sbyte? ObjectReference { get; init; } = 1;
+
+	/// <summary>
+	/// Gets the extension type code for a <see cref="Guid" /> value.
+	/// </summary>
+	/// <value>The default value is 2.</value>
+	/// <remarks>
+	/// Encoded in a little endian binary format.
+	/// </remarks>
+	public sbyte? GuidLittleEndian { get; init; } = 2;
+
+	internal static sbyte ToByte(sbyte? value) => value ?? throw new InvalidOperationException("This extension type code is disabled.");
 }
 
 internal static class MessagePackRange

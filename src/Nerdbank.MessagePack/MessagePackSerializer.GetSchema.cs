@@ -55,16 +55,16 @@ public partial record MessagePackSerializer
 			throw new NotSupportedException($"Schema generation is not supported when {nameof(this.PreserveReferences)} is enabled.");
 		}
 
-		return new JsonSchemaGenerator(this.ConverterCache).GenerateSchema(typeShape);
+		return new JsonSchemaGenerator(this.ConverterCache, this.LibraryExtensionTypeCodes).GenerateSchema(typeShape);
 	}
 
 	private sealed class JsonSchemaGenerator : ITypeShapeFunc
 	{
 		private readonly JsonSchemaContext context;
 
-		internal JsonSchemaGenerator(ConverterCache cache)
+		internal JsonSchemaGenerator(ConverterCache cache, LibraryReservedMessagePackExtensionTypeCode extensionTypeCodes)
 		{
-			this.context = new JsonSchemaContext(cache);
+			this.context = new JsonSchemaContext(cache, extensionTypeCodes);
 		}
 
 		object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => this.context.GetJsonSchema(typeShape);

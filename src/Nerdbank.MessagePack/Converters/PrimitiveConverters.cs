@@ -871,6 +871,9 @@ internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemo
 /// <summary>
 /// Serializes a <see cref="Guid"/> value as a 16 byte binary blob, using little endian integer encoding.
 /// </summary>
+/// <remarks>
+/// This converter makes use of <see cref="LibraryReservedMessagePackExtensionTypeCode.GuidLittleEndian"/>.
+/// </remarks>
 internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 {
 	/// <summary>
@@ -883,7 +886,8 @@ internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 	/// <inheritdoc/>
 	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Guid>();
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.GuidLittleEndian);
+		ReadOnlySequence<byte> bytes = reader.ReadExtension(typeCode);
 
 		if (bytes.IsSingleSegment)
 		{
@@ -908,14 +912,16 @@ internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Guid value, SerializationContext context)
 	{
-		writer.WriteBinHeader(GuidLength);
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.GuidLittleEndian);
+		ExtensionHeader header = new(typeCode, GuidLength);
+		writer.Write(header);
 		Assumes.True(value.TryWriteBytes(writer.GetSpan(GuidLength)));
 		writer.Advance(GuidLength);
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema("The binary representation of the GUID.");
+		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.GuidLittleEndian));
 }
 
 /// <summary>

@@ -69,6 +69,17 @@ public class MessagePackSerializationException : Exception
 		/// Deserialization failed because the data specified multiple values for a single property.
 		/// </summary>
 		DoublePropertyAssignment,
+
+		/// <summary>
+		/// Deserialization failed because the data contained a token that was not expected at this time.
+		/// </summary>
+		UnexpectedToken,
+
+		/// <summary>
+		/// Deserialization failed because a <see cref="ExtensionHeader.TypeCode"/> was encountered
+		/// that the deserializer was not expecting.
+		/// </summary>
+		UnexpectedExtensionTypeCode,
 	}
 
 	/// <summary>

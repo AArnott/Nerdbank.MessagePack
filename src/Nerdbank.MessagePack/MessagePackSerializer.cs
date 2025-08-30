@@ -560,9 +560,9 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(jsonWriter);
 
-		WriteOneElement(ref reader, jsonWriter, options ?? new(), 0);
+		WriteOneElement(ref reader, jsonWriter, options ?? new(), this.LibraryExtensionTypeCodes, 0);
 
-		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, int indentationLevel)
+		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, LibraryReservedMessagePackExtensionTypeCode extensionTypeCodes, int indentationLevel)
 		{
 			switch (reader.NextMessagePackType)
 			{
@@ -615,7 +615,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -642,7 +642,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
 							if (options.Indentation is null)
 							{
 								jsonWriter.Write(':');
@@ -652,7 +652,7 @@ public partial record MessagePackSerializer
 								jsonWriter.Write(": ");
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -671,10 +671,22 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Extension:
-					Extension extension = reader.ReadExtension();
-					jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
-					jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
-					jsonWriter.Write('\"');
+					MessagePackReader peek = reader.CreatePeekReader();
+					ExtensionHeader extensionHeader = peek.ReadExtensionHeader();
+					if (extensionHeader.TypeCode == extensionTypeCodes.GuidLittleEndian)
+					{
+						jsonWriter.Write('\"');
+						jsonWriter.Write(GuidAsLittleEndianBinaryConverter.Instance.Read(ref reader, new SerializationContext { ExtensionTypeCodes = extensionTypeCodes }).ToString("D"));
+						jsonWriter.Write('\"');
+					}
+					else
+					{
+						Extension extension = reader.ReadExtension();
+						jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
+						jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
+						jsonWriter.Write('\"');
+					}
+
 					break;
 				case MessagePackType.Unknown:
 					throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented.");
