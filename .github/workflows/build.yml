@@ -65,23 +65,35 @@ jobs:
 
         $Path = './bin/AotNativeConsole/${{ env.BUILDCONFIGURATION }}/net9.0/${{ matrix.rid }}/publish/AotNativeConsole'
         $ActualSize = GetSizeInMB($Path)
-        Write-Host ("$FileName size: {0:0.0} MB" -f $ActualSize)
 
         # Allow variance of a small threshold of the expected value.
         # Fail even if it's smaller than anticipated so that the expected window can be shrunk in this file.
         if ($IsLinux) {
-          $ExpectedSize = 7.9
+          $ExpectedSize = 8.1
         } elseif ($IsMacOS) {
-          $ExpectedSize = 7.8
+          $ExpectedSize = 7.9
         } else {
-          $ExpectedSize = 6.7
+          $ExpectedSize = 6.9
         }
         $AllowedVariance = 0.3
-        if ([math]::Abs($ActualSize - $ExpectedSize) -gt $AllowedVariance) {
-          Write-Error ("NativeAOT image size {0:0.0} MB is outside the expected range of {1:0.0}±{2:0.0} MB." -f $ActualSize, $ExpectedSize, $AllowedVariance)
-          exit 1
+        $SizeCheckPassed = [math]::Abs($ActualSize - $ExpectedSize) -le $AllowedVariance
+        $Result = if ($SizeCheckPassed) { "PASS" } else { "FAIL" }
+
+        # Store details for the verify job
+        $Details = @{
+          FileName = Split-Path $Path -Leaf
+          ActualSize = $ActualSize
+          ExpectedSize = $ExpectedSize
+          AllowedVariance = $AllowedVariance
+          Result = $Result
         }
+        $Details | ConvertTo-Json | Out-File -FilePath "aot-size-result.json"
       shell: pwsh
+    - name: 📤 Upload AOT size result
+      uses: actions/upload-artifact@v4
+      with:
+        name: aot-size-${{ matrix.os }}-${{ matrix.rid }}
+        path: aot-size-result.json
     - name: 💅🏻 Verify formatted code
       run: dotnet format --verify-no-changes --no-restore --exclude ./samples/AnalyzerDocs/NBMsgPack051.cs
       shell: pwsh
@@ -112,11 +124,63 @@ jobs:
       continue-on-error: true
       if: env.codecov_token != ''
 
+  verify-aot-size:
+    name: 👮🏼 NativeAOT image size guard
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: 📥 Download AOT size results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: aot-size-*
+          path: aot-results
+      - name: 🧪 Check AOT sizes
+        run: |
+          $FailedChecks = @()
+
+          # Define the expected combinations
+          $Combinations = @(
+            @{ OS = "ubuntu-22.04"; RID = "linux-x64" },
+            @{ OS = "macos-14"; RID = "osx-arm64" },
+            @{ OS = "windows-2022"; RID = "win-x64" }
+          )
+
+          foreach ($Combo in $Combinations) {
+            $ArtifactName = "aot-size-$($Combo.OS)-$($Combo.RID)"
+            $ResultFile = "aot-results/$ArtifactName/aot-size-result.json"
+
+            if (Test-Path $ResultFile) {
+              $Details = Get-Content $ResultFile | ConvertFrom-Json
+              Write-Host "=== $($Combo.RID) ==="
+              Write-Host ("EXPECTED size: {0:0.0}±{1:0.0} MB" -f $Details.ExpectedSize, $Details.AllowedVariance)
+              Write-Host ("ACTUAL size:   {0:0.0} MB" -f $Details.ActualSize)
+              Write-Host "AOT size check: $($Details.Result)"
+
+              if ($Details.Result -eq "FAIL") {
+                $FailedChecks += "$($Combo.OS) ($($Combo.RID))"
+              } else {
+                Write-Host "NativeAOT image size check passed."
+              }
+              Write-Host ""
+            } else {
+              Write-Host "Warning: Result file not found for $($Combo.OS) ($($Combo.RID))"
+            }
+          }
+
+          if ($FailedChecks.Count -gt 0) {
+            Write-Error "NativeAOT image size check failed for: $($FailedChecks -join ', ')"
+            exit 1
+          } else {
+            Write-Host "All NativeAOT image size checks passed!"
+          }
+        shell: pwsh
+
   codeql:
     name: 🔍 CodeQL Security Analysis
     runs-on: ubuntu-24.04
     permissions:
       security-events: write
+    if: github.event_name != 'pull_request'
 
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5

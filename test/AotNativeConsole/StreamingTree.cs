@@ -18,7 +18,9 @@ internal static class StreamingTree
 
 		byte[] bytes = serializer.Serialize(tree);
 
-		Console.WriteLine(serializer.ConvertToJson(bytes));
+		// While nice to print, ConvertToJson brings in more native code, swelling the NativeAOT size.
+		// And it doesn't represent what a typical real app would use.
+		////Console.WriteLine(serializer.ConvertToJson(bytes));
 
 		// synchronous deserialization
 		Tree deserializedTree = serializer.Deserialize<Tree>(bytes)!;
