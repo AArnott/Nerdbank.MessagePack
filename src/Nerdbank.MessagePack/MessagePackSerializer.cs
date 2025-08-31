@@ -674,27 +674,33 @@ public partial record MessagePackSerializer
 					SerializationContext context = new() { ExtensionTypeCodes = extensionTypeCodes };
 					MessagePackReader peek = reader.CreatePeekReader();
 					ExtensionHeader extensionHeader = peek.ReadExtensionHeader();
-					if (extensionHeader.TypeCode == extensionTypeCodes.GuidLittleEndian)
+					if (!options.IgnoreKnownExtensions)
 					{
-						jsonWriter.Write('\"');
-						jsonWriter.Write(GuidAsLittleEndianBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
-						jsonWriter.Write('\"');
+						if (extensionHeader.TypeCode == extensionTypeCodes.GuidLittleEndian)
+						{
+							jsonWriter.Write('\"');
+							jsonWriter.Write(GuidAsLittleEndianBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
+							jsonWriter.Write('\"');
+							break;
+						}
+
+						if (extensionHeader.TypeCode == extensionTypeCodes.BigInteger)
+						{
+							jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
+							break;
+						}
+
+						if (extensionHeader.TypeCode == extensionTypeCodes.Decimal)
+						{
+							jsonWriter.Write(MessagePack.Converters.DecimalConverter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
+							break;
+						}
 					}
-					else if (extensionHeader.TypeCode == extensionTypeCodes.BigInteger)
-					{
-						jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
-					}
-					else if (extensionHeader.TypeCode == extensionTypeCodes.Decimal)
-					{
-						jsonWriter.Write(MessagePack.Converters.DecimalConverter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
-					}
-					else
-					{
-						Extension extension = reader.ReadExtension();
-						jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
-						jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
-						jsonWriter.Write('\"');
-					}
+
+					Extension extension = reader.ReadExtension();
+					jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
+					jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
+					jsonWriter.Write('\"');
 
 					break;
 				case MessagePackType.Unknown:
@@ -1103,6 +1109,13 @@ public partial record MessagePackSerializer
 		/// </para>
 		/// </remarks>
 		public bool TrailingCommas { get; set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating whether to <em>not</em> interpret known msgpack extension types
+		/// (e.g. <see cref="Guid"/>, <see cref="System.Numerics.BigInteger"/>, <see cref="decimal"/>)
+		/// into JSON-friendly representations.
+		/// </summary>
+		public bool IgnoreKnownExtensions { get; set; }
 	}
 
 	/// <summary>

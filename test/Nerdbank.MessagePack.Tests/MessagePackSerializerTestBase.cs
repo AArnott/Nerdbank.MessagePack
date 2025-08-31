@@ -241,7 +241,11 @@ public abstract class MessagePackSerializerTestBase
 		JsonObject schema = this.Serializer.GetJsonSchema(shape);
 		string schemaString = SchemaToString(schema);
 		JSchema parsedSchema = JSchema.Parse(schemaString);
-		string json = this.Serializer.ConvertToJson(msgpack);
+
+		// We ignore known extensions while writing to JSON because that's what will lead the emitted JSON
+		// to match the JSON schema, which really describes the msgpack schema.
+		string json = this.Serializer.ConvertToJson(msgpack, new() { IgnoreKnownExtensions = true });
+
 		var parsed = JsonNode.Parse(json);
 		try
 		{
