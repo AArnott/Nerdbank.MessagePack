@@ -69,13 +69,13 @@ jobs:
         # Allow variance of a small threshold of the expected value.
         # Fail even if it's smaller than anticipated so that the expected window can be shrunk in this file.
         if ($IsLinux) {
-          $ExpectedSize = 8.1
+          $ExpectedSize = 8.07
         } elseif ($IsMacOS) {
-          $ExpectedSize = 7.9
+          $ExpectedSize = 7.94
         } else {
-          $ExpectedSize = 6.9
+          $ExpectedSize = 6.88
         }
-        $AllowedVariance = 0.3
+        $AllowedVariance = 0.2
         $SizeCheckPassed = [math]::Abs($ActualSize - $ExpectedSize) -le $AllowedVariance
         $Result = if ($SizeCheckPassed) { "PASS" } else { "FAIL" }
 
@@ -154,10 +154,11 @@ jobs:
 
             if (Test-Path $ResultFile) {
               $Details = Get-Content $ResultFile | ConvertFrom-Json
-              " $($Combo.OS) | {0:0.0} MB | {1:0.0}±{2:0.0} MB | $($Details.Result)" -f $Details.ActualSize, $Details.ExpectedSize, $Details.AllowedVariance >> $env:GITHUB_STEP_SUMMARY
+              $Emoji = if ($Details.Result -eq 'PASS') { "✅" } else { "❌" }
+              " $($Combo.OS) | {0:0.00} MB | {1:0.00}±{2:0.0} MB | $Emoji" -f $Details.ActualSize, $Details.ExpectedSize, $Details.AllowedVariance >> $env:GITHUB_STEP_SUMMARY
               Write-Host "=== $($Combo.RID) ==="
-              Write-Host ("EXPECTED size: {0:0.0}±{1:0.0} MB" -f $Details.ExpectedSize, $Details.AllowedVariance)
-              Write-Host ("ACTUAL size:   {0:0.0} MB" -f $Details.ActualSize)
+              Write-Host ("EXPECTED size: {0:0.00}±{1:0.0} MB" -f $Details.ExpectedSize, $Details.AllowedVariance)
+              Write-Host ("ACTUAL size:   {0:0.00} MB" -f $Details.ActualSize)
               Write-Host "AOT size check: $($Details.Result)"
 
               if ($Details.Result -eq "FAIL") {
