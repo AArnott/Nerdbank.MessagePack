@@ -684,6 +684,10 @@ public partial record MessagePackSerializer
 					{
 						jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
 					}
+					else if (extensionHeader.TypeCode == extensionTypeCodes.Decimal)
+					{
+						jsonWriter.Write(MessagePack.Converters.DecimalConverter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
+					}
 					else
 					{
 						Extension extension = reader.ReadExtension();

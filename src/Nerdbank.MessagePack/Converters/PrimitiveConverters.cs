@@ -6,6 +6,7 @@
 
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -297,96 +298,64 @@ internal class DoubleConverter : MessagePackConverter<double>
 /// </summary>
 internal class DecimalConverter : MessagePackConverter<decimal>
 {
+	/// <summary>
+	/// A shared instance.
+	/// </summary>
+	internal static readonly DecimalConverter Instance = new();
+
+	private const int DecimalLength = sizeof(int) * 4;
+
 	/// <inheritdoc/>
 	public override decimal Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		if (!(reader.ReadStringSequence() is ReadOnlySequence<byte> sequence))
+		if (!BitConverter.IsLittleEndian)
 		{
-			throw new MessagePackSerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", MessagePackCode.Nil, MessagePackCode.ToFormatName(MessagePackCode.Nil)));
+			throw new NotSupportedException();
 		}
 
-		if (sequence.IsSingleSegment)
+		ReadOnlySequence<byte> bytes = reader.ReadExtension(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
+		if (bytes.Length != DecimalLength)
 		{
-			ReadOnlySpan<byte> span = sequence.First.Span;
-			if (System.Buffers.Text.Utf8Parser.TryParse(span, out decimal result, out var bytesConsumed))
-			{
-				if (span.Length != bytesConsumed)
-				{
-					throw new MessagePackSerializationException("Unexpected length of string.");
-				}
-
-				return result;
-			}
-		}
-		else
-		{
-			// sequence.Length is not free
-			var seqLen = (int)sequence.Length;
-			if (seqLen < 128)
-			{
-				Span<byte> span = stackalloc byte[seqLen];
-				sequence.CopyTo(span);
-				if (System.Buffers.Text.Utf8Parser.TryParse(span, out decimal result, out var bytesConsumed))
-				{
-					if (seqLen != bytesConsumed)
-					{
-						throw new MessagePackSerializationException("Unexpected length of string.");
-					}
-
-					return result;
-				}
-			}
-			else
-			{
-				var rentArray = ArrayPool<byte>.Shared.Rent(seqLen);
-				try
-				{
-					sequence.CopyTo(rentArray);
-					if (System.Buffers.Text.Utf8Parser.TryParse(rentArray.AsSpan(0, seqLen), out decimal result, out var bytesConsumed))
-					{
-						if (seqLen != bytesConsumed)
-						{
-							throw new MessagePackSerializationException("Unexpected length of string.");
-						}
-
-						return result;
-					}
-				}
-				finally
-				{
-					ArrayPool<byte>.Shared.Return(rentArray);
-				}
-			}
+			throw new MessagePackSerializationException($"Expected {DecimalLength} bytes but got {bytes.Length}.");
 		}
 
-		throw new MessagePackSerializationException("Can't parse to decimal, input string was not in a correct format.");
+		Span<int> ints = stackalloc int[4];
+		bytes.CopyTo(MemoryMarshal.Cast<int, byte>(ints));
+
+#if NET
+		return new decimal(ints);
+#else
+		bool isNegative = unchecked((ints[3] & 0x80000000) != 0);
+		byte scale = unchecked((byte)((ints[3] & 0xff0000) >> 16));
+		return new decimal(ints[0], ints[1], ints[2], isNegative, scale);
+#endif
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in decimal value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
-		if (System.Buffers.Text.Utf8Formatter.TryFormat(value, dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written))
+		if (!BitConverter.IsLittleEndian)
 		{
-			// write header
-			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
-			writer.Advance(written + 1);
+			throw new NotSupportedException();
 		}
-		else
-		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
-		}
+
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal);
+#pragma warning disable NBMsgPack031 // only write one structure
+		writer.Write(new ExtensionHeader(typeCode, DecimalLength));
+
+#if NET
+		Span<int> span = stackalloc int[4];
+		Assumes.True(decimal.TryGetBits(value, span, out int valuesWritten) && valuesWritten == 4);
+#else
+		Span<int> span = decimal.GetBits(value);
+#endif
+		writer.WriteRaw(MemoryMarshal.Cast<int, byte>(span));
+#pragma warning restore NBMsgPack031 // only write one structure
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
-		{
-			["type"] = "string",
-			["pattern"] = @"^-?\d+(\.\d+)?$",
-		};
+		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
 }
 
 #if NET

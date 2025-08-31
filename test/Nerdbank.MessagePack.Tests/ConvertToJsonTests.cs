@@ -47,6 +47,17 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void Decimal()
+	{
+		decimal value = new decimal(ulong.MaxValue) * 3;
+		this.AssertConvertToJson(
+			$$"""
+			{"Value":{{value}}}
+			""",
+			new DecimalWrapper(value));
+	}
+
+	[Fact]
 	public void Indented_Object_Tabs()
 	{
 		this.AssertConvertToJson(
@@ -210,6 +221,9 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 
 	[GenerateShape]
 	public partial record BigIntegerWrapper(BigInteger Value);
+
+	[GenerateShape]
+	public partial record DecimalWrapper(decimal Value);
 
 	[GenerateShape]
 	public partial record NestingObject(NestingObject? Nested = null, NestingObject[]? Array = null, string? Value = null);

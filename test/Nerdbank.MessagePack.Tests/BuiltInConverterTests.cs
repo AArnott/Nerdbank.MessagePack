@@ -44,7 +44,12 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 #endif
 
 	[Fact]
-	public void Decimal() => this.AssertRoundtrip(new HasDecimal(1.2m));
+	public void Decimal()
+	{
+		this.AssertRoundtrip(new HasDecimal(1.2m));
+		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * 1000));
+		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * -1000));
+	}
 
 	[Fact]
 	public void BigInteger()
