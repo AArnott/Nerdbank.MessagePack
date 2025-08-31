@@ -173,9 +173,11 @@ jobs:
 
           if ($FailedChecks.Count -gt 0) {
             Write-Error "NativeAOT image size check failed for: $($FailedChecks -join ', ')"
+            "NativeAOT image size check failed for: $($FailedChecks -join ', ')" > $GITHUB_STEP_SUMMARY
             exit 1
           } else {
             Write-Host "All NativeAOT image size checks passed!"
+            "All NativeAOT image size checks passed!" > $GITHUB_STEP_SUMMARY
           }
         shell: pwsh
 
