@@ -340,6 +340,40 @@ public record LibraryReservedMessagePackExtensionTypeCode
 	/// </remarks>
 	public sbyte? Decimal { get; init; } = 4;
 
+#if NET
+	/// <summary>
+	/// Gets the extension type code for a <see cref="Int128" /> value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit signed integer.
+	/// </remarks>
+#else
+	/// <summary>
+	/// Gets the extension type code for a Int128 value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit signed integer.
+	/// </remarks>
+#endif
+	public sbyte? Int128 { get; init; } = 5;
+
+#if NET
+	/// <summary>
+	/// Gets the extension type code for a <see cref="UInt128" /> value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit unsigned integer.
+	/// </remarks>
+#else
+	/// <summary>
+	/// Gets the extension type code for a UInt128 value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit unsigned integer.
+	/// </remarks>
+#endif
+	public sbyte? UInt128 { get; init; } = 6;
+
 	internal static sbyte ToByte(sbyte? value) => value ?? throw new InvalidOperationException("This extension type code is disabled.");
 }
 

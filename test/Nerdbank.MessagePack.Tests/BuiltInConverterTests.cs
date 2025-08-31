@@ -29,10 +29,42 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 #if NET
 
 	[Fact]
-	public void Int128() => this.AssertRoundtrip(new HasInt128(new Int128(1, 2)));
+	public void Int128()
+	{
+		this.AssertRoundtrip(new HasInt128(0));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(long.MaxValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(long.MinValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(new Int128(1, 2)));
+		this.AssertType(MessagePackType.Extension);
+
+		this.AssertRoundtrip(new HasInt128(System.Int128.MaxValue));
+		this.AssertType(MessagePackType.Extension);
+
+		this.AssertRoundtrip(new HasInt128(System.Int128.MinValue));
+		this.AssertType(MessagePackType.Extension);
+	}
 
 	[Fact]
-	public void UInt128() => this.AssertRoundtrip(new HasUInt128(new UInt128(1, 2)));
+	public void UInt128()
+	{
+		this.AssertRoundtrip(new HasUInt128(0));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(ulong.MaxValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasUInt128(new UInt128(1, 2)));
+		this.AssertType(MessagePackType.Extension);
+
+		this.AssertRoundtrip(new HasUInt128(System.UInt128.MaxValue));
+		this.AssertType(MessagePackType.Extension);
+	}
 
 #endif
 
@@ -55,30 +87,22 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public void BigInteger()
 	{
 		this.AssertRoundtrip(new HasBigInteger(1));
-		AssertType(MessagePackType.Integer);
+		this.AssertType(MessagePackType.Integer);
 
 		this.AssertRoundtrip(new HasBigInteger(ulong.MaxValue));
-		AssertType(MessagePackType.Integer);
+		this.AssertType(MessagePackType.Integer);
 
 		this.AssertRoundtrip(new HasBigInteger(ulong.MinValue));
-		AssertType(MessagePackType.Integer);
+		this.AssertType(MessagePackType.Integer);
 
 		this.AssertRoundtrip(new HasBigInteger(long.MaxValue));
-		AssertType(MessagePackType.Integer);
+		this.AssertType(MessagePackType.Integer);
 
 		this.AssertRoundtrip(new HasBigInteger(long.MinValue));
-		AssertType(MessagePackType.Integer);
+		this.AssertType(MessagePackType.Integer);
 
 		this.AssertRoundtrip(new HasBigInteger(new BigInteger(ulong.MaxValue) * 3));
-		AssertType(MessagePackType.Extension);
-
-		void AssertType(MessagePackType expectedType)
-		{
-			MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
-			reader.ReadMapHeader();
-			reader.ReadString();
-			Assert.Equal(expectedType, reader.NextMessagePackType);
-		}
+		this.AssertType(MessagePackType.Extension);
 	}
 
 	[Theory, PairwiseData]
@@ -183,6 +207,14 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.LogMsgPack(msgpack);
 		Guid deserialized = deserializer.Deserialize<Guid>(msgpack, Witness.ShapeProvider, TestContext.Current.CancellationToken);
 		return (original, deserialized);
+	}
+
+	private void AssertType(MessagePackType expectedType)
+	{
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		reader.ReadMapHeader();
+		reader.ReadString();
+		Assert.Equal(expectedType, reader.NextMessagePackType);
 	}
 
 	[GenerateShape]

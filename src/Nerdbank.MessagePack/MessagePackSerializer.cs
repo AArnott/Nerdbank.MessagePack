@@ -695,6 +695,20 @@ public partial record MessagePackSerializer
 							jsonWriter.Write(MessagePack.Converters.DecimalConverter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
 							break;
 						}
+
+#if NET
+						if (extensionHeader.TypeCode == extensionTypeCodes.Int128)
+						{
+							jsonWriter.Write(MessagePack.Converters.Int128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
+							break;
+						}
+
+						if (extensionHeader.TypeCode == extensionTypeCodes.UInt128)
+						{
+							jsonWriter.Write(MessagePack.Converters.UInt128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
+							break;
+						}
+#endif
 					}
 
 					Extension extension = reader.ReadExtension();
