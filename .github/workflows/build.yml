@@ -146,7 +146,7 @@ jobs:
           )
 
           "Target | Actual size | Expected size | Verdict
-          --|--|--|--" >> $GITHUB_STEP_SUMMARY
+          --|--|--|--" >> $env:GITHUB_STEP_SUMMARY
 
           foreach ($Combo in $Combinations) {
             $ArtifactName = "aot-size-$($Combo.OS)-$($Combo.RID)"
@@ -154,7 +154,7 @@ jobs:
 
             if (Test-Path $ResultFile) {
               $Details = Get-Content $ResultFile | ConvertFrom-Json
-              " $($Combo.OS) | {0:0.0} MB | {1:0.0}±{2:0.0} MB | $($Details.Result)" -f $Details.ActualSize, $Details.ExpectedSize, $Details.AllowedVariance >> $GITHUB_STEP_SUMMARY
+              " $($Combo.OS) | {0:0.0} MB | {1:0.0}±{2:0.0} MB | $($Details.Result)" -f $Details.ActualSize, $Details.ExpectedSize, $Details.AllowedVariance >> $env:GITHUB_STEP_SUMMARY
               Write-Host "=== $($Combo.RID) ==="
               Write-Host ("EXPECTED size: {0:0.0}±{1:0.0} MB" -f $Details.ExpectedSize, $Details.AllowedVariance)
               Write-Host ("ACTUAL size:   {0:0.0} MB" -f $Details.ActualSize)
@@ -173,11 +173,9 @@ jobs:
 
           if ($FailedChecks.Count -gt 0) {
             Write-Error "NativeAOT image size check failed for: $($FailedChecks -join ', ')"
-            "NativeAOT image size check failed for: $($FailedChecks -join ', ')" > $GITHUB_STEP_SUMMARY
             exit 1
           } else {
             Write-Host "All NativeAOT image size checks passed!"
-            "All NativeAOT image size checks passed!" > $GITHUB_STEP_SUMMARY
           }
         shell: pwsh
 
