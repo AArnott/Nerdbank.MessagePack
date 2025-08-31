@@ -145,12 +145,16 @@ jobs:
             @{ OS = "windows-2022"; RID = "win-x64" }
           )
 
+          "Target | Actual size | Expected size | Verdict
+          --|--|--|--" >> $env:GITHUB_STEP_SUMMARY
+
           foreach ($Combo in $Combinations) {
             $ArtifactName = "aot-size-$($Combo.OS)-$($Combo.RID)"
             $ResultFile = "aot-results/$ArtifactName/aot-size-result.json"
 
             if (Test-Path $ResultFile) {
               $Details = Get-Content $ResultFile | ConvertFrom-Json
+              " $($Combo.OS) | {0:0.0} MB | {1:0.0}±{2:0.0} MB | $($Details.Result)" -f $Details.ActualSize, $Details.ExpectedSize, $Details.AllowedVariance >> $env:GITHUB_STEP_SUMMARY
               Write-Host "=== $($Combo.RID) ==="
               Write-Host ("EXPECTED size: {0:0.0}±{1:0.0} MB" -f $Details.ExpectedSize, $Details.AllowedVariance)
               Write-Host ("ACTUAL size:   {0:0.0} MB" -f $Details.ActualSize)
