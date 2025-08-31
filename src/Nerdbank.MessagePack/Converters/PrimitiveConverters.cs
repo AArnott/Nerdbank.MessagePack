@@ -514,7 +514,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	{
 		// Fail fast if the user hasn't reserved a type code these values,
 		// even if this particular value might fit in a native integer type.
-		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigIntegerLittleEndian);
 
 		if (reader.NextMessagePackType == MessagePackType.Integer)
 		{
@@ -550,7 +550,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	{
 		// Fail fast if the user hasn't reserved a type code these values,
 		// even if this particular value might fit in a native integer type.
-		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigIntegerLittleEndian);
 
 		// Prefer to write out BigInteger values as integers if they fit.
 		if (value >= long.MinValue && value <= long.MaxValue)
@@ -579,7 +579,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
 	{
 		["oneOf"] = new JsonArray(
-			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger)),
+			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigIntegerLittleEndian)),
 			new JsonObject() { ["type"] = "integer" }),
 		["description"] = "A BigInteger",
 	};
