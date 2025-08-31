@@ -47,7 +47,34 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public void Decimal() => this.AssertRoundtrip(new HasDecimal(1.2m));
 
 	[Fact]
-	public void BigInteger() => this.AssertRoundtrip(new HasBigInteger(1));
+	public void BigInteger()
+	{
+		this.AssertRoundtrip(new HasBigInteger(1));
+		AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(ulong.MaxValue));
+		AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(ulong.MinValue));
+		AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(long.MaxValue));
+		AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(long.MinValue));
+		AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(new BigInteger(ulong.MaxValue) * 3));
+		AssertType(MessagePackType.Extension);
+
+		void AssertType(MessagePackType expectedType)
+		{
+			MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+			reader.ReadMapHeader();
+			reader.ReadString();
+			Assert.Equal(expectedType, reader.NextMessagePackType);
+		}
+	}
 
 	[Theory, PairwiseData]
 	public void Guid(OptionalConverters.GuidFormat format)

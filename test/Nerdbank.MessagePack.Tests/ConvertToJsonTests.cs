@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Numerics;
+
 public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 {
 	[Fact]
@@ -31,6 +33,17 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			{"Value":"{{guid:D}}"}
 			""",
 			new GuidWrapper(guid));
+	}
+
+	[Fact]
+	public void BigInteger()
+	{
+		BigInteger value = new BigInteger(ulong.MaxValue) * 3;
+		this.AssertConvertToJson(
+			$$"""
+			{"Value":{{value}}}
+			""",
+			new BigIntegerWrapper(value));
 	}
 
 	[Fact]
@@ -194,6 +207,9 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 
 	[GenerateShape]
 	public partial record GuidWrapper(Guid Value);
+
+	[GenerateShape]
+	public partial record BigIntegerWrapper(BigInteger Value);
 
 	[GenerateShape]
 	public partial record NestingObject(NestingObject? Nested = null, NestingObject[]? Array = null, string? Value = null);

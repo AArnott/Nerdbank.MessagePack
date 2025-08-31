@@ -554,21 +554,31 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 /// </summary>
 internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 {
+	/// <summary>
+	/// A shareable instance of this converter.
+	/// </summary>
+	internal static readonly BigIntegerConverter Instance = new();
+
 	/// <inheritdoc/>
 	public override BigInteger Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
+		// Fail fast if the user hasn't reserved a type code for BigInteger values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
+
+		if (reader.NextMessagePackType == MessagePackType.Integer)
+		{
+			return MessagePackCode.IsSignedInteger(reader.NextCode) ? (BigInteger)reader.ReadInt64() : (BigInteger)reader.ReadUInt64();
+		}
+
+		ReadOnlySequence<byte> bytes = reader.ReadExtension(typeCode);
+#if NET
 		if (bytes.IsSingleSegment)
 		{
-#if NET
 			return new BigInteger(bytes.First.Span);
-#else
-			return new BigInteger(bytes.First.ToArray());
-#endif
 		}
 		else
 		{
-#if NET
 			byte[] bytesArray = ArrayPool<byte>.Shared.Rent((int)bytes.Length);
 			try
 			{
@@ -579,29 +589,50 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			{
 				ArrayPool<byte>.Shared.Return(bytesArray);
 			}
-#else
-			return new BigInteger(bytes.ToArray());
-#endif
 		}
+#else
+		return new BigInteger(bytes.ToArray());
+#endif
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in BigInteger value, SerializationContext context)
 	{
+		// Fail fast if the user hasn't reserved a type code for BigInteger values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
+
+		// Prefer to write out BigInteger values as integers if they fit.
+		if (value >= long.MinValue && value <= long.MaxValue)
+		{
+			writer.Write((long)value);
+		}
+		else if (value.Sign >= 0 && value <= ulong.MaxValue)
+		{
+			writer.Write((ulong)value);
+		}
+		else
+		{
 #if NET
-		int byteCount = value.GetByteCount();
-		writer.WriteBinHeader(byteCount);
-		Span<byte> span = writer.GetSpan(byteCount);
-		Assumes.True(value.TryWriteBytes(span, out int written));
-		writer.Advance(written);
+			int byteCount = value.GetByteCount();
+			writer.Write(new ExtensionHeader(typeCode, unchecked((uint)byteCount)));
+			Span<byte> span = writer.GetSpan(byteCount);
+			Assumes.True(value.TryWriteBytes(span, out int written));
+			writer.Advance(written);
 #else
-		writer.Write(value.ToByteArray());
+			writer.Write(new Extension(typeCode, value.ToByteArray()));
 #endif
+		}
 	}
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema("The binary representation of a BigInteger.");
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
+	{
+		["oneOf"] = new JsonArray(
+			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger)),
+			new JsonObject() { ["type"] = "integer" }),
+		["description"] = "A BigInteger",
+	};
 }
 
 /// <summary>

@@ -671,13 +671,18 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Extension:
+					SerializationContext context = new() { ExtensionTypeCodes = extensionTypeCodes };
 					MessagePackReader peek = reader.CreatePeekReader();
 					ExtensionHeader extensionHeader = peek.ReadExtensionHeader();
 					if (extensionHeader.TypeCode == extensionTypeCodes.GuidLittleEndian)
 					{
 						jsonWriter.Write('\"');
-						jsonWriter.Write(GuidAsLittleEndianBinaryConverter.Instance.Read(ref reader, new SerializationContext { ExtensionTypeCodes = extensionTypeCodes }).ToString("D"));
+						jsonWriter.Write(GuidAsLittleEndianBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
 						jsonWriter.Write('\"');
+					}
+					else if (extensionHeader.TypeCode == extensionTypeCodes.BigInteger)
+					{
+						jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
 					}
 					else
 					{

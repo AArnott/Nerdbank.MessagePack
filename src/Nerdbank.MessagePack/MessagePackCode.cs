@@ -313,6 +313,16 @@ public record LibraryReservedMessagePackExtensionTypeCode
 	/// </remarks>
 	public sbyte? GuidLittleEndian { get; init; } = 2;
 
+	/// <summary>
+	/// Gets the extension type code for a <see cref="System.Numerics.BigInteger" /> value.
+	/// </summary>
+	/// <value>The default value is 3.</value>
+	/// <remarks>
+	/// The value is encoded as little-endian twos-complement bytes, using the fewest number of bytes possible.
+	/// If the value is zero, outputs one byte whose element is 0x00.
+	/// </remarks>
+	public sbyte? BigInteger { get; init; } = 3;
+
 	internal static sbyte ToByte(sbyte? value) => value ?? throw new InvalidOperationException("This extension type code is disabled.");
 }
 
