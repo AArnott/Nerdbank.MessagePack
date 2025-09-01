@@ -947,7 +947,8 @@ internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
 	{
 		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.GuidLittleEndian);
-		ReadOnlySequence<byte> bytes = reader.ReadExtension(typeCode);
+		ReadOnlySequence<byte> bytes = reader.NextMessagePackType == MessagePackType.Binary
+			? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
 
 		if (bytes.IsSingleSegment)
 		{

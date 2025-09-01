@@ -210,6 +210,27 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(BadGuidFormatErrorMessage, ex.GetBaseException().Message);
 	}
 
+	/// <summary>
+	/// Verifies that we can read <see cref="Guid"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	[Fact]
+	public void Guid_FromBin()
+	{
+		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
+		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.LittleEndian);
+
+		Span<Guid> valueSpan = [System.Guid.NewGuid()];
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasGuid.Value));
+
+		writer.Write(MemoryMarshal.Cast<Guid, byte>(valueSpan));
+		writer.Flush();
+
+		Assert.Equal(valueSpan[0], this.Serializer.Deserialize<HasGuid>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
+
 	[Fact]
 	public void DateTime() => this.AssertRoundtrip(new HasDateTime(System.DateTime.UtcNow));
 

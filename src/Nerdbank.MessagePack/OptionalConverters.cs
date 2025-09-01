@@ -101,7 +101,10 @@ public static class OptionalConverters
 	/// Adds a converter for <see cref="Guid"/> to the specified serializer.
 	/// </summary>
 	/// <param name="serializer">The serializer to add converters to.</param>
-	/// <param name="format">The format in which the <see cref="Guid"/> should be written.</param>
+	/// <param name="format">
+	/// The format in which the <see cref="Guid"/> should be written.
+	/// All string-based formats can <em>read</em> all other string-based formats.
+	/// </param>
 	/// <returns>The modified serializer.</returns>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="format"/> is not one of the allowed values.</exception>
 	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="Guid"/> has already been added.</exception>
