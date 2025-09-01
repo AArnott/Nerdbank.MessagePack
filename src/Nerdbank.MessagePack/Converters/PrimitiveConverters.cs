@@ -5,6 +5,8 @@
 #pragma warning disable SA1402 // File may only contain a single class
 
 using System.Buffers.Binary;
+using System.Buffers.Text;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -310,10 +312,20 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	/// </summary>
 	internal static readonly DecimalConverter Instance = new();
 
+	private const int MaxDecimalStringLength = 31; // -79228162514264337593543950335. // any decimals would trade sigfigs for length
+
 	/// <inheritdoc/>
 	public override decimal Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning restore NBMsgPack031 // only read one structure
 	{
-		ReadOnlySequence<byte> bytes = reader.ReadExtension(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
+		if (reader.NextMessagePackType == MessagePackType.String)
+		{
+			return this.ReadString(ref reader, context);
+		}
+
+		ReadOnlySequence<byte> bytes = reader.NextMessagePackType == MessagePackType.Binary
+			? reader.ReadBytes()!.Value
+			: reader.ReadExtension(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
 		if (bytes.Length != sizeof(decimal))
 		{
 			throw new MessagePackSerializationException($"Expected {sizeof(decimal)} bytes but got {bytes.Length}.");
@@ -357,6 +369,43 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
+
+	private decimal ReadString(ref MessagePackReader reader, SerializationContext context)
+	{
+		Debug.Assert(reader.NextMessagePackType == MessagePackType.String, "Our caller should have guaranteed this.");
+		ReadOnlySequence<byte> sequence = reader.ReadStringSequence()!.Value;
+
+		int seqLen = (int)sequence.Length;
+		if (seqLen > MaxDecimalStringLength)
+		{
+			throw new MessagePackSerializationException($"String is {seqLen} long, which exceeds the max allowed of {MaxDecimalStringLength} for decimals.");
+		}
+
+		if (sequence.IsSingleSegment)
+		{
+			ReadOnlySpan<byte> span = sequence.First.Span;
+			if (Utf8Parser.TryParse(span, out decimal result, out int bytesConsumed))
+			{
+				if (span.Length != bytesConsumed)
+				{
+					throw new MessagePackSerializationException("Unexpected length of string.");
+				}
+
+				return result;
+			}
+		}
+		else
+		{
+			Span<byte> span = stackalloc byte[seqLen];
+			sequence.CopyTo(span);
+			if (Utf8Parser.TryParse(span, out decimal result, out int bytesConsumed))
+			{
+				return result;
+			}
+		}
+
+		throw new MessagePackSerializationException("Can't parse to decimal, input string was not in a correct format.");
+	}
 
 	/// <summary>
 	/// A struct with the same field layout as <see cref="decimal"/> and

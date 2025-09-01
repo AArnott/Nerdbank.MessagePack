@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Drawing;
+using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 {
@@ -81,6 +83,40 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip(new HasDecimal(1.2m));
 		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * 1000));
 		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * -1000));
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="decimal"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	[Fact]
+	public void Decimal_FromBin()
+	{
+		Span<decimal> value = [1.2m];
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasDecimal.Value));
+		writer.Write(MemoryMarshal.Cast<decimal, byte>(value));
+		writer.Flush();
+
+		Assert.Equal(value[0], this.Serializer.Deserialize<HasDecimal>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="decimal"/> values that use the UTF-8 encoding, which is what MessagePack-CSharp's default formatter uses.
+	/// </summary>
+	[Fact]
+	public void Decimal_FromString()
+	{
+		decimal value = 1.2m;
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasDecimal.Value));
+		writer.Write(value.ToString(CultureInfo.InvariantCulture));
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasDecimal>(seq, TestContext.Current.CancellationToken)!.Value);
 	}
 
 	[Fact]
