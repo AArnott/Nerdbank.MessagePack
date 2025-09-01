@@ -315,6 +315,7 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	private const int MaxDecimalStringLength = 31; // -79228162514264337593543950335. // any decimals would trade sigfigs for length
 
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // only read one structure
 	public override decimal Read(ref MessagePackReader reader, SerializationContext context)
 #pragma warning restore NBMsgPack031 // only read one structure
 	{
@@ -448,16 +449,23 @@ internal class Int128Converter : MessagePackConverter<Int128>
 	/// </summary>
 	internal static readonly Int128Converter Instance = new();
 
+	private const int Size = 128 / 8;
+
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // only read one structure
 	public override Int128 Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning restore NBMsgPack031 // only read one structure
 	{
 		// Fail fast if the user hasn't reserved a type code these values,
 		// even if this particular value might fit in a native integer type.
 		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Int128);
 
-		if (reader.NextMessagePackType == MessagePackType.Integer)
+		switch (reader.NextMessagePackType)
 		{
-			return MessagePackCode.IsSignedInteger(reader.NextCode) ? (Int128)reader.ReadInt64() : (Int128)reader.ReadUInt64();
+			case MessagePackType.Binary:
+				return this.ReadBin(ref reader, context);
+			case MessagePackType.Integer:
+				return MessagePackCode.IsSignedInteger(reader.NextCode) ? (Int128)reader.ReadInt64() : (Int128)reader.ReadUInt64();
 		}
 
 		ReadOnlySequence<byte> sequence = reader.ReadExtension(typeCode);
@@ -508,6 +516,33 @@ internal class Int128Converter : MessagePackConverter<Int128>
 			new JsonObject() { ["type"] = "integer" }),
 		["description"] = "A 128-bit signed integer",
 	};
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool TryReadLittleEndian<T>(ReadOnlySpan<byte> source, out T value)
+		where T : IBinaryInteger<T> => T.TryReadLittleEndian(source, isUnsigned: false, out value);
+
+	private Int128 ReadBin(ref MessagePackReader reader, SerializationContext context)
+	{
+		Debug.Assert(reader.NextMessagePackType == MessagePackType.Binary, "Our caller should have guaranteed this.");
+		ReadOnlySequence<byte> sequence = reader.ReadBytes()!.Value;
+		if (sequence.Length != Size)
+		{
+			throw new MessagePackSerializationException("Invalid Int128 data.");
+		}
+
+		if (sequence.IsSingleSegment)
+		{
+			TryReadLittleEndian(sequence.FirstSpan, out Int128 value);
+			return value;
+		}
+		else
+		{
+			Span<byte> bytes = stackalloc byte[Size];
+			sequence.CopyTo(bytes);
+			TryReadLittleEndian(bytes, out Int128 value);
+			return value;
+		}
+	}
 }
 
 /// <summary>
@@ -520,16 +555,23 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 	/// </summary>
 	internal static readonly UInt128Converter Instance = new();
 
+	private const int Size = 128 / 8;
+
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // only read one structure
 	public override UInt128 Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning restore NBMsgPack031 // only read one structure
 	{
 		// Fail fast if the user hasn't reserved a type code these values,
 		// even if this particular value might fit in a native integer type.
 		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.UInt128);
 
-		if (reader.NextMessagePackType == MessagePackType.Integer)
+		switch (reader.NextMessagePackType)
 		{
-			return (UInt128)reader.ReadUInt64();
+			case MessagePackType.Binary:
+				return this.ReadBin(ref reader, context);
+			case MessagePackType.Integer:
+				return (UInt128)reader.ReadUInt64();
 		}
 
 		ReadOnlySequence<byte> sequence = reader.ReadExtension(typeCode);
@@ -573,6 +615,33 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 			new JsonObject() { ["type"] = "integer" }),
 		["description"] = "A 128-bit unsigned integer",
 	};
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool TryReadLittleEndian<T>(ReadOnlySpan<byte> source, out T value)
+		where T : IBinaryInteger<T> => T.TryReadLittleEndian(source, isUnsigned: true, out value);
+
+	private UInt128 ReadBin(ref MessagePackReader reader, SerializationContext context)
+	{
+		Debug.Assert(reader.NextMessagePackType == MessagePackType.Binary, "Our caller should have guaranteed this.");
+		ReadOnlySequence<byte> sequence = reader.ReadBytes()!.Value;
+		if (sequence.Length != Size)
+		{
+			throw new MessagePackSerializationException("Invalid UInt128 data.");
+		}
+
+		if (sequence.IsSingleSegment)
+		{
+			TryReadLittleEndian(sequence.FirstSpan, out UInt128 value);
+			return value;
+		}
+		else
+		{
+			Span<byte> bytes = stackalloc byte[Size];
+			sequence.CopyTo(bytes);
+			TryReadLittleEndian(bytes, out UInt128 value);
+			return value;
+		}
+	}
 }
 
 #endif

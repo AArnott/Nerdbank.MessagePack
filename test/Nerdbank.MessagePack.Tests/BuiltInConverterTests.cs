@@ -52,6 +52,30 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.AssertType(MessagePackType.Extension);
 	}
 
+	/// <summary>
+	/// Verifies that we can read <see cref="Int128"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	/// <remarks>
+	/// Note that while our <see cref="LibraryReservedMessagePackExtensionTypeCode.Int128"/> mandates big endian encoding to match msgpack conventions,
+	/// The Bin encoding used by MessagePack-CSharp uses little-endian encoding.
+	/// </remarks>
+	[Fact]
+	public void Int128_FromBin()
+	{
+		Int128 value = new(1, 2);
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasInt128.Value));
+		writer.WriteBinHeader(128 / 8);
+		Span<byte> byteSpan = writer.GetSpan(128 / 8);
+		Assert.True(((IBinaryInteger<Int128>)value).TryWriteLittleEndian(byteSpan, out int written));
+		writer.Advance(written);
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasInt128>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
+
 	[Fact]
 	public void UInt128()
 	{
@@ -66,6 +90,30 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 
 		this.AssertRoundtrip(new HasUInt128(System.UInt128.MaxValue));
 		this.AssertType(MessagePackType.Extension);
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="UInt128"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	/// <remarks>
+	/// Note that while our <see cref="LibraryReservedMessagePackExtensionTypeCode.UInt128"/> mandates big endian encoding to match msgpack conventions,
+	/// The Bin encoding used by MessagePack-CSharp uses little-endian encoding.
+	/// </remarks>
+	[Fact]
+	public void UInt128_FromBin()
+	{
+		UInt128 value = new(1, 2);
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasUInt128.Value));
+		writer.WriteBinHeader(128 / 8);
+		Span<byte> byteSpan = writer.GetSpan(128 / 8);
+		Assert.True(((IBinaryInteger<UInt128>)value).TryWriteLittleEndian(byteSpan, out int written));
+		writer.Advance(written);
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasUInt128>(seq, TestContext.Current.CancellationToken)!.Value);
 	}
 
 #endif
