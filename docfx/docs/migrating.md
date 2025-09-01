@@ -193,3 +193,88 @@ MessagePack-CSharp | Nerdbank.MessagePack
 `MessagePackWriter.WriteExtensionFormat` | @Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.Extension)?displayProperty=nameWithType
 `MessagePackWriter.WriteExtensionFormatHeader` | @Nerdbank.MessagePack.MessagePackWriter.Write(Nerdbank.MessagePack.ExtensionHeader)?displayProperty=nameWithType
 `IMessagePackSerializationCallbackReceiver` | @Nerdbank.MessagePack.IMessagePackSerializationCallbacks
+
+## Encoding compatibility
+
+MessagePack-CSharp and Nerdbank.MessagePack both follow standard msgpack encodings [as specified here](https://github.com/msgpack/msgpack/blob/master/spec.md).
+
+Data types that are *not* expressly specified in that spec may vary in their encodings, as described below:
+
+### .NET primitives without a specified encoding
+
+The .NET "primitives" <xref:System.Guid>, <xref:System.Int128>, <xref:System.UInt128>, <xref:System.Decimal>, <xref:System.Numerics.BigInteger> have no specified encoding in msgpack.
+
+Nerdbank.MessagePack can *read* all these types as MessagePack-CSharp has written them, but it will default to writing with msgpack extensions for better interoperability.
+
+MessagePack-CSharp writes these values either as strings or as "native" binary using the msgpack Bin header.
+
+Nerdbank.MessagePack uses msgpack extensions with [reassignable type codes](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode) for these primitive data types because of the enhanced type information extensions provide.
+
+The following table describes the encodings used by each library.
+LE and BE refer to Little Endian and Big Endian, respectively.
+
+Data type | MessagePack-CSharp | Nerdbank.MessagePack
+--|--|--
+<xref:System.Guid> | 16-byte bin LE or string | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.GuidLittleEndian) LE or string
+<xref:System.Int128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Int128) BE
+<xref:System.UInt128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.UInt128) BE
+<xref:System.Decimal> | 16-byte bin LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d) | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Decimal) LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d)
+<xref:System.Numerics.BigInteger> | Bin LE with twos-complement bytes, using the fewest number of bytes possible | int format if it fits, otherwise [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.BigIntegerLittleEndian) LE with twos-complement bytes, using the fewest number of bytes possible
+
+### .NET classes and structs with members
+
+Nerdbank.MessagePack can read MessagePack-CSharp serialized objects, but MessagePack-CSharp cannot read some of the objects serialized by Nerdbank.MessagePack.
+
+MessagePack-CSharp and Nerdbank.MessagePack can represent complex types (i.e. classes and structs with fields and/or properties) as either msgpack maps (with property names and values) or msgpack arrays (with values in array indexes assigned by attribute).
+
+Consider the following user-defined type:
+
+```cs
+[MessagePackObject(true)] // only required by MessagePack-CSharp
+public class Foo
+{
+    public string Bar { get; }
+}
+```
+
+Both libraries would serialize this as a map, which would look like this if rendered in JSON:
+
+```json
+{ "Bar": "some value" }
+```
+
+Now consider the following variant of that class:
+
+```cs
+[MessagePackObject] // only required by MessagePack-CSharp
+public class Foo
+{
+    [Key(0)]
+    public string Bar { get; }
+}
+```
+
+Both libraries would serialize this as a array, which would look like this if rendered in JSON:
+
+```json
+["some value"]
+```
+
+Nerdbank.MessagePack can automatically assign indexes for all properties when <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability> is set to `true`, causing the more compact and performant array encoding to be used instead, without the overhead of maintaining <xref:Nerdbank.MessagePack.KeyAttribute> on all serialized members.
+
+Nerdbank.MessagePack has the unique ability to optimize the array representation for space when the arrays would have many 'holes' in them by using maps where the array indexes are used as keys in the map, which might look something like this:
+
+```json
+{
+    0: "some value",
+    5: "another value"
+}
+```
+
+Note that while an integer key is illegal in JSON, it is perfectly legal and efficient in msgpack.
+
+For the same object, MessagePack-CSharp would have emitted the larger:
+
+```json
+["some value",null,null,null,null,"another value"]
+```
