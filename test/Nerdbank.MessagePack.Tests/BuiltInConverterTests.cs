@@ -141,6 +141,23 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.AssertType(MessagePackType.Extension);
 	}
 
+	/// <summary>
+	/// Verifies that we can read <see cref="decimal"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	[Fact]
+	public void BigInteger_FromBin()
+	{
+		BigInteger value = new BigInteger(ulong.MaxValue) * 3;
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasBigInteger.Value));
+		writer.Write(value.ToByteArray());
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasBigInteger>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
+
 	[Theory, PairwiseData]
 	public void Guid(OptionalConverters.GuidFormat format)
 	{

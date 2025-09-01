@@ -599,7 +599,8 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			return MessagePackCode.IsSignedInteger(reader.NextCode) ? (BigInteger)reader.ReadInt64() : (BigInteger)reader.ReadUInt64();
 		}
 
-		ReadOnlySequence<byte> bytes = reader.ReadExtension(typeCode);
+		ReadOnlySequence<byte> bytes = reader.NextMessagePackType == MessagePackType.Binary
+			? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
 #if NET
 		if (bytes.IsSingleSegment)
 		{
