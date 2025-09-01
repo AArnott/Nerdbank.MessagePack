@@ -328,15 +328,8 @@ public record LibraryReservedMessagePackExtensionTypeCode
 	/// </summary>
 	/// <value>The default value is 4.</value>
 	/// <remarks>
-	/// The encoding is an integer array with four elements (encoded as 16 bytes with little endian encoding).
-	/// Elements 0, 1, and 2 contain the low,
-	/// middle, and high 32 bits of the 96-bit integer part of the Decimal.
-	/// Element 3 contains the scale factor and sign of the Decimal: bits 0-15
-	/// (the lower word) are unused; bits 16-23 contain a value between 0 and
-	/// 28, indicating the power of 10 to divide the 96-bit integer part by to
-	/// produce the Decimal value; bits 24-30 are unused; and finally bit 31
-	/// indicates the sign of the Decimal value, 0 meaning positive and 1
-	/// meaning negative.
+	/// The encoding matches <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d">the MS-OAUT 2.2.26 DECIMAL specification</see>,
+	/// constrained to always use little-endian byte order.
 	/// </remarks>
 	public sbyte? Decimal { get; init; } = 4;
 

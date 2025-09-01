@@ -6,6 +6,7 @@
 
 using System.Buffers.Binary;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -296,6 +297,12 @@ internal class DoubleConverter : MessagePackConverter<double>
 /// <summary>
 /// Serializes a <see cref="decimal"/>.
 /// </summary>
+/// <remarks>
+/// The encoding matches <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d">the MS-OAUT 2.2.26 DECIMAL specification</see>,
+/// constrained to always use little-endian byte order.
+/// The fields on the .NET <see cref="decimal" /> type are laid out deliberately to match this format, so we can just do a memcpy
+/// provided we're on a little-endian architecture.
+/// </remarks>
 internal class DecimalConverter : MessagePackConverter<decimal>
 {
 	/// <summary>
@@ -303,59 +310,81 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	/// </summary>
 	internal static readonly DecimalConverter Instance = new();
 
-	private const int DecimalLength = sizeof(int) * 4;
-
 	/// <inheritdoc/>
 	public override decimal Read(ref MessagePackReader reader, SerializationContext context)
 	{
+		ReadOnlySequence<byte> bytes = reader.ReadExtension(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
+		if (bytes.Length != sizeof(decimal))
+		{
+			throw new MessagePackSerializationException($"Expected {sizeof(decimal)} bytes but got {bytes.Length}.");
+		}
+
+		Span<byte> decimalBytes = stackalloc byte[sizeof(decimal)];
+		bytes.CopyTo(decimalBytes);
+		decimal result = MemoryMarshal.Read<decimal>(decimalBytes);
 		if (!BitConverter.IsLittleEndian)
 		{
-			throw new NotSupportedException();
+			result = DECIMAL.ReverseEndianness(result);
 		}
 
-		ReadOnlySequence<byte> bytes = reader.ReadExtension(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
-		if (bytes.Length != DecimalLength)
-		{
-			throw new MessagePackSerializationException($"Expected {DecimalLength} bytes but got {bytes.Length}.");
-		}
-
-		Span<int> ints = stackalloc int[4];
-		bytes.CopyTo(MemoryMarshal.Cast<int, byte>(ints));
-
-#if NET
-		return new decimal(ints);
-#else
-		bool isNegative = unchecked((ints[3] & 0x80000000) != 0);
-		byte scale = unchecked((byte)((ints[3] & 0xff0000) >> 16));
-		return new decimal(ints[0], ints[1], ints[2], isNegative, scale);
-#endif
+		return result;
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in decimal value, SerializationContext context)
 	{
-		if (!BitConverter.IsLittleEndian)
-		{
-			throw new NotSupportedException();
-		}
-
-		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal);
 #pragma warning disable NBMsgPack031 // only write one structure
-		writer.Write(new ExtensionHeader(typeCode, DecimalLength));
+		writer.Write(new ExtensionHeader(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal), sizeof(decimal)));
 
+		Span<byte> span = writer.GetSpan(sizeof(decimal));
 #if NET
-		Span<int> span = stackalloc int[4];
-		Assumes.True(decimal.TryGetBits(value, span, out int valuesWritten) && valuesWritten == 4);
+		MemoryMarshal.Write<decimal>(span, BitConverter.IsLittleEndian ? value : DECIMAL.ReverseEndianness(value));
 #else
-		Span<int> span = decimal.GetBits(value);
+		if (BitConverter.IsLittleEndian)
+		{
+			MemoryMarshal.Write(span, ref Unsafe.AsRef(value));
+		}
+		else
+		{
+			decimal v = DECIMAL.ReverseEndianness(value);
+			MemoryMarshal.Write(span, ref v);
+		}
 #endif
-		writer.WriteRaw(MemoryMarshal.Cast<int, byte>(span));
+		writer.Advance(sizeof(decimal));
 #pragma warning restore NBMsgPack031 // only write one structure
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
+
+	/// <summary>
+	/// A struct with the same field layout as <see cref="decimal"/> and
+	/// <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d">the MS-OAUT 2.2.26 DECIMAL specification</see>.
+	/// </summary>
+	private readonly struct DECIMAL
+	{
+		private readonly ushort wReserved;
+		private readonly byte scale;
+		private readonly byte sign;
+		private readonly uint hi32;
+		private readonly ulong lo64;
+
+		internal DECIMAL(byte scale, byte sign, uint hi32, ulong lo64)
+		{
+			this.wReserved = 0;
+			this.scale = scale;
+			this.sign = sign;
+			this.hi32 = hi32;
+			this.lo64 = lo64;
+		}
+
+		public static unsafe implicit operator DECIMAL(decimal value) => *(DECIMAL*)&value;
+
+		public static unsafe implicit operator decimal(DECIMAL value) => *(decimal*)&value;
+
+		internal static DECIMAL ReverseEndianness(in DECIMAL value) => new DECIMAL(value.scale, value.sign, BinaryPrimitives.ReverseEndianness(value.hi32), BinaryPrimitives.ReverseEndianness(value.lo64));
+	}
 }
 
 #if NET
