@@ -131,6 +131,14 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip(new HasDecimal(1.2m));
 		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * 1000));
 		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * -1000));
+
+		// Verify the actual encoding for one of these to lock it in.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		reader.Skip(default); // property name
+		Extension decimalEncoding = reader.ReadExtension();
+		Assert.Equal(this.Serializer.LibraryExtensionTypeCodes.Decimal, decimalEncoding.Header.TypeCode);
+		Assert.Equal("00-00-00-80-E7-03-00-00-18-FC-FF-FF-FF-FF-FF-FF", BitConverter.ToString(decimalEncoding.Data.ToArray()));
 	}
 
 	/// <summary>
@@ -139,7 +147,8 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Decimal_FromBin()
 	{
-		Span<decimal> value = [1.2m];
+		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
+		Span<decimal> value = [new decimal(ulong.MaxValue) * -1000];
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
 		writer.WriteMapHeader(1);

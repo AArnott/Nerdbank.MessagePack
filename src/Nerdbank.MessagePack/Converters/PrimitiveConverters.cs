@@ -332,9 +332,18 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 			throw new MessagePackSerializationException($"Expected {sizeof(decimal)} bytes but got {bytes.Length}.");
 		}
 
-		Span<byte> decimalBytes = stackalloc byte[sizeof(decimal)];
-		bytes.CopyTo(decimalBytes);
-		decimal result = MemoryMarshal.Read<decimal>(decimalBytes);
+		decimal result;
+		if (bytes.IsSingleSegment)
+		{
+			result = MemoryMarshal.Read<decimal>(bytes.First.Span);
+		}
+		else
+		{
+			Span<byte> decimalBytes = stackalloc byte[sizeof(decimal)];
+			bytes.CopyTo(decimalBytes);
+			result = MemoryMarshal.Read<decimal>(decimalBytes);
+		}
+
 		if (!BitConverter.IsLittleEndian)
 		{
 			result = DECIMAL.ReverseEndianness(result);
@@ -474,10 +483,16 @@ internal class Int128Converter : MessagePackConverter<Int128>
 			throw new MessagePackSerializationException($"Expected {sizeof(ulong) * 2} bytes but got {sequence.Length}.");
 		}
 
-		Span<byte> bytesSpan = stackalloc byte[sizeof(ulong) * 2];
-		sequence.CopyTo(bytesSpan);
-		Int128 value = MemoryMarshal.Cast<byte, Int128>(bytesSpan)[0];
-		return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value;
+		if (sequence.IsSingleSegment)
+		{
+			return BinaryPrimitives.ReadInt128BigEndian(sequence.FirstSpan);
+		}
+		else
+		{
+			Span<byte> bytesSpan = stackalloc byte[sizeof(ulong) * 2];
+			sequence.CopyTo(bytesSpan);
+			return BinaryPrimitives.ReadInt128BigEndian(bytesSpan);
+		}
 	}
 
 	/// <inheritdoc/>
@@ -501,10 +516,11 @@ internal class Int128Converter : MessagePackConverter<Int128>
 			return;
 		}
 
-		ReadOnlySpan<Int128> valueAsSpan = BitConverter.IsLittleEndian ? [BinaryPrimitives.ReverseEndianness(value)] : [value];
 #pragma warning disable NBMsgPack031 // only write one structure
 		writer.Write(new ExtensionHeader(typeCode, sizeof(ulong) * 2));
-		writer.WriteRaw(MemoryMarshal.Cast<Int128, byte>(valueAsSpan));
+		Span<byte> span = writer.GetSpan(sizeof(ulong) * 2);
+		BinaryPrimitives.WriteInt128BigEndian(span, value);
+		writer.Advance(span.Length);
 #pragma warning restore NBMsgPack031 // only write one structure
 	}
 
