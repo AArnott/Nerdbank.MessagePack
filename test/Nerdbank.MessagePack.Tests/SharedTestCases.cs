@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft;
 using Microsoft.FSharp.Reflection;
 using PolyType.Tests;
 using Xunit.Sdk;
@@ -31,17 +32,20 @@ public class SharedTestCases : MessagePackSerializerTestBase
 		{
 			ITypeShape<T> shape = testCase.DefaultShape;
 			byte[] msgpack;
-			if (testCase.DefaultShape is IEnumerableTypeShape { IsAsyncEnumerable: true })
+			switch (testCase.DefaultShape)
 			{
-				// Async enumerables requires async serialization.
-				Exception ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken));
-				this.Logger.WriteLine(ex.GetBaseException().Message);
-				Assert.IsType<NotSupportedException>(ex.GetBaseException());
-				return;
-			}
-			else
-			{
-				msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+				case IEnumerableTypeShape { IsAsyncEnumerable: true }:
+					// Async enumerables requires async serialization.
+					Exception ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken));
+					this.Logger.WriteLine(ex.GetBaseException().Message);
+					Assert.IsType<NotSupportedException>(ex.GetBaseException());
+					return;
+				case IFunctionTypeShape:
+					Assert.Skip("Delegates cannot be serialized.");
+					throw Assumes.NotReachable();
+				default:
+					msgpack = this.Serializer.Serialize(testCase.Value, shape, TestContext.Current.CancellationToken);
+					break;
 			}
 
 			this.LogMsgPack(msgpack);
@@ -74,8 +78,17 @@ public class SharedTestCases : MessagePackSerializerTestBase
 		}
 		catch (MessagePackSerializationException ex)
 		{
-			Assert.IsType<PlatformNotSupportedException>(ex.InnerException);
-			throw SkipException.ForSkip(ex.Message);
+			Exception baseException = ex.GetBaseException();
+			if (baseException.Message == "Delegate types cannot be serialized.")
+			{
+				Assert.IsType<NotSupportedException>(baseException);
+			}
+			else
+			{
+				Assert.IsType<PlatformNotSupportedException>(baseException);
+			}
+
+			throw SkipException.ForSkip(baseException.Message);
 		}
 	}
 

@@ -735,6 +735,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
 		=> new SurrogateConverter<T, TSurrogate>(surrogateShape, this.GetConverter(surrogateShape.SurrogateType, state: state));
 
+	/// <inheritdoc/>
+	public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+		=> throw new NotSupportedException("Delegate types cannot be serialized.");
+
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
 	/// </summary>
