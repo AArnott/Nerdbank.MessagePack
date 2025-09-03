@@ -111,6 +111,10 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
 		=> new SurrogateSecureEqualityComparer<T, TSurrogate>(surrogateShape.Marshaler, this.GetEqualityComparer(surrogateShape.SurrogateType, state));
 
+	/// <inheritdoc/>
+	public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+		=> throw new NotSupportedException("Delegate typed properties cannot be compared.");
+
 	/// <summary>
 	/// Gets or creates an equality comparer for the given type shape.
 	/// </summary>
