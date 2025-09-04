@@ -478,9 +478,9 @@ internal class Int128Converter : MessagePackConverter<Int128>
 		}
 
 		ReadOnlySequence<byte> sequence = reader.ReadExtension(typeCode);
-		if (sequence.Length != sizeof(ulong) * 2)
+		if (sequence.Length != Size)
 		{
-			throw new MessagePackSerializationException($"Expected {sizeof(ulong) * 2} bytes but got {sequence.Length}.");
+			throw new MessagePackSerializationException($"Expected {Size} bytes but got {sequence.Length}.");
 		}
 
 		if (sequence.IsSingleSegment)
@@ -489,7 +489,7 @@ internal class Int128Converter : MessagePackConverter<Int128>
 		}
 		else
 		{
-			Span<byte> bytesSpan = stackalloc byte[sizeof(ulong) * 2];
+			Span<byte> bytesSpan = stackalloc byte[Size];
 			sequence.CopyTo(bytesSpan);
 			return BinaryPrimitives.ReadInt128BigEndian(bytesSpan);
 		}
@@ -517,10 +517,9 @@ internal class Int128Converter : MessagePackConverter<Int128>
 		}
 
 #pragma warning disable NBMsgPack031 // only write one structure
-		writer.Write(new ExtensionHeader(typeCode, sizeof(ulong) * 2));
-		Span<byte> span = writer.GetSpan(sizeof(ulong) * 2);
-		BinaryPrimitives.WriteInt128BigEndian(span, value);
-		writer.Advance(span.Length);
+		writer.Write(new ExtensionHeader(typeCode, Size));
+		BinaryPrimitives.WriteInt128BigEndian(writer.GetSpan(Size), value);
+		writer.Advance(Size);
 #pragma warning restore NBMsgPack031 // only write one structure
 	}
 
@@ -591,12 +590,12 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 		}
 
 		ReadOnlySequence<byte> sequence = reader.ReadExtension(typeCode);
-		if (sequence.Length != sizeof(ulong) * 2)
+		if (sequence.Length != Size)
 		{
-			throw new MessagePackSerializationException($"Expected {sizeof(ulong) * 2} bytes but got {sequence.Length}.");
+			throw new MessagePackSerializationException($"Expected {Size} bytes but got {sequence.Length}.");
 		}
 
-		Span<byte> bytesSpan = stackalloc byte[sizeof(ulong) * 2];
+		Span<byte> bytesSpan = stackalloc byte[Size];
 		sequence.CopyTo(bytesSpan);
 		UInt128 value = MemoryMarshal.Cast<byte, UInt128>(bytesSpan)[0];
 		return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value;
@@ -618,7 +617,7 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 
 		ReadOnlySpan<UInt128> valueAsSpan = BitConverter.IsLittleEndian ? [BinaryPrimitives.ReverseEndianness(value)] : [value];
 #pragma warning disable NBMsgPack031 // only write one structure
-		writer.Write(new ExtensionHeader(typeCode, sizeof(ulong) * 2));
+		writer.Write(new ExtensionHeader(typeCode, Size));
 		writer.WriteRaw(MemoryMarshal.Cast<UInt128, byte>(valueAsSpan));
 #pragma warning restore NBMsgPack031 // only write one structure
 	}
