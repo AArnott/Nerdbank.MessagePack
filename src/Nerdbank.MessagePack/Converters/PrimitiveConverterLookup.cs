@@ -44,6 +44,7 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _SystemDrawingPointConverter;
 	private static IMessagePackConverterInternal? _MemoryOfByteConverter;
 	private static IMessagePackConverterInternal? _ReadOnlyMemoryOfByteConverter;
+	private static IMessagePackConverterInternal? _GuidAsBinaryConverter;
 	private static IMessagePackConverterInternal? _StringConverter;
 	private static IMessagePackConverterInternal? _StringConverterReferencePreserving;
 	private static IMessagePackConverterInternal? _VersionConverter;
@@ -195,6 +196,12 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(ReadOnlyMemory<byte>))
 		{
 			converter = (MessagePackConverter<T>)(_ReadOnlyMemoryOfByteConverter ??= new ReadOnlyMemoryOfByteConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(Guid))
+		{
+			converter = (MessagePackConverter<T>)(_GuidAsBinaryConverter ??= new GuidAsBinaryConverter());
 			return true;
 		}
 

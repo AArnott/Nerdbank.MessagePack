@@ -27,7 +27,6 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Guid_LittleEndian()
 	{
-		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.Binary);
 		Guid guid = Guid.NewGuid();
 		this.AssertConvertToJson(
 			$$"""

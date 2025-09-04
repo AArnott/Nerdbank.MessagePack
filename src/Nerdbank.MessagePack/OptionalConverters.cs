@@ -20,9 +20,14 @@ namespace Nerdbank.MessagePack;
 public static class OptionalConverters
 {
 	/// <summary>
-	/// The msgpack format used to store <see cref="Guid"/> values.
+	/// The msgpack format used to store <see cref="Guid"/> values as strings.
 	/// </summary>
-	public enum GuidFormat
+	/// <remarks>
+	/// By default, <see cref="Guid"/> values are serialized as binary.
+	/// This enum can be used with <see cref="WithGuidConverter(MessagePackSerializer, GuidStringFormat)"/>
+	/// to serialize them as strings instead.
+	/// </remarks>
+	public enum GuidStringFormat
 	{
 		/// <summary>
 		/// The <see cref="Guid"/> will be stored as a string in the msgpack stream using the "N" format.
@@ -64,14 +69,6 @@ public static class OptionalConverters
 		/// An example of this format is "{0x69b94234,0x2c9e,0x468b,{0x9b,0xae,0x77,0xdf,0x7a,0x28,0x8e,0x45}}".
 		/// </remarks>
 		StringX,
-
-		/// <summary>
-		/// The <see cref="Guid"/> will be stored in a compact 16 byte binary representation.
-		/// </summary>
-		/// <remarks>
-		/// This is encoded as a messagepack extension using the type code specified in <see cref="LibraryReservedMessagePackExtensionTypeCode.Guid"/>.
-		/// </remarks>
-		Binary,
 	}
 
 	/// <summary>
@@ -98,20 +95,22 @@ public static class OptionalConverters
 	}
 
 	/// <summary>
-	/// Adds a converter for <see cref="Guid"/> to the specified serializer.
+	/// Adds a converter for <see cref="Guid"/> to the specified serializer that serializes GUIDs as strings.
 	/// </summary>
 	/// <param name="serializer">The serializer to add converters to.</param>
 	/// <param name="format">
-	/// The format in which the <see cref="Guid"/> should be written.
+	/// The string format in which the <see cref="Guid"/> should be written.
 	/// All string-based formats can <em>read</em> all other string-based formats.
 	/// </param>
 	/// <returns>The modified serializer.</returns>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="format"/> is not one of the allowed values.</exception>
 	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="Guid"/> has already been added.</exception>
 	/// <remarks>
+	/// By default, <see cref="Guid"/> values are serialized in a compact binary format.
+	/// This method allows you to override that behavior to serialize them as strings instead.
 	/// The <see cref="Guid"/> converter is optimized to avoid allocating strings during the conversion.
 	/// </remarks>
-	public static MessagePackSerializer WithGuidConverter(this MessagePackSerializer serializer, GuidFormat format = GuidFormat.Binary)
+	public static MessagePackSerializer WithGuidConverter(this MessagePackSerializer serializer, GuidStringFormat format)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		return serializer with
@@ -119,12 +118,11 @@ public static class OptionalConverters
 			Converters = [
 				..serializer.Converters,
 				format switch {
-					GuidFormat.StringN => new GuidAsStringConverter { Format = 'N' },
-					GuidFormat.StringD => new GuidAsStringConverter { Format = 'D' },
-					GuidFormat.StringB => new GuidAsStringConverter { Format = 'B' },
-					GuidFormat.StringP => new GuidAsStringConverter { Format = 'P' },
-					GuidFormat.StringX => new GuidAsStringConverter { Format = 'X' },
-					GuidFormat.Binary => GuidAsBinaryConverter.Instance,
+					GuidStringFormat.StringN => new GuidAsStringConverter { Format = 'N' },
+					GuidStringFormat.StringD => new GuidAsStringConverter { Format = 'D' },
+					GuidStringFormat.StringB => new GuidAsStringConverter { Format = 'B' },
+					GuidStringFormat.StringP => new GuidAsStringConverter { Format = 'P' },
+					GuidStringFormat.StringX => new GuidAsStringConverter { Format = 'X' },
 					_ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
 				},
 			],

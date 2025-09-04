@@ -10,15 +10,6 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 {
 	private const string BadGuidFormatErrorMessage = "Not a recognized GUID format.";
 
-	public static OptionalConverters.GuidFormat[] GuidStringFormats =>
-	[
-		OptionalConverters.GuidFormat.StringD,
-		OptionalConverters.GuidFormat.StringN,
-		OptionalConverters.GuidFormat.StringB,
-		OptionalConverters.GuidFormat.StringP,
-		OptionalConverters.GuidFormat.StringX,
-	];
-
 	[Fact]
 	public void SystemDrawingColor() => this.AssertRoundtrip<Color, Witness>(Color.FromArgb(1, 2, 3, 4));
 
@@ -215,8 +206,18 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(value, this.Serializer.Deserialize<HasBigInteger>(seq, TestContext.Current.CancellationToken)!.Value);
 	}
 
+	[Fact]
+	public void Guid()
+	{
+		// Test that Guid serialization works by default (using binary format)
+		Guid value = System.Guid.NewGuid();
+		this.Logger.WriteLine($"Randomly generated guid: {value}");
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
+		Assert.True(this.DataMatchesSchema(msgpack, Witness.ShapeProvider.Resolve<HasGuid>()));
+	}
+
 	[Theory, PairwiseData]
-	public void Guid(OptionalConverters.GuidFormat format)
+	public void Guid_StringFormats(OptionalConverters.GuidStringFormat format)
 	{
 		this.Serializer = this.Serializer.WithGuidConverter(format);
 		Guid value = System.Guid.NewGuid();
@@ -226,20 +227,20 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Theory, PairwiseData]
-	public void Guid_ParseAnyStringFormat([CombinatorialMemberData(nameof(GuidStringFormats))] OptionalConverters.GuidFormat format, bool uppercase)
+	public void Guid_ParseAnyStringFormat(OptionalConverters.GuidStringFormat format, bool uppercase)
 	{
 		// Serialize the original with the specified format.
 		// Deserialize with any format besides the one we were expecting.
 		(Guid before, Guid after) = this.RoundtripModifiedGuid(
 			s => uppercase ? s.ToUpperInvariant() : s,
 			this.Serializer.WithGuidConverter(format),
-			this.Serializer.WithGuidConverter(format == OptionalConverters.GuidFormat.StringD ? OptionalConverters.GuidFormat.StringN : OptionalConverters.GuidFormat.StringD));
+			this.Serializer.WithGuidConverter(format == OptionalConverters.GuidStringFormat.StringD ? OptionalConverters.GuidStringFormat.StringN : OptionalConverters.GuidStringFormat.StringD));
 
 		Assert.Equal(before, after);
 	}
 
 	[Theory, PairwiseData]
-	public void Guid_TruncatedInputs([CombinatorialMemberData(nameof(GuidStringFormats))] OptionalConverters.GuidFormat format)
+	public void Guid_TruncatedInputs(OptionalConverters.GuidStringFormat format)
 	{
 		this.Serializer = this.Serializer.WithGuidConverter(format);
 
@@ -257,7 +258,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Theory, PairwiseData]
-	public void Guid_MissingHexCharacter([CombinatorialMemberData(nameof(GuidStringFormats))] OptionalConverters.GuidFormat format)
+	public void Guid_MissingHexCharacter(OptionalConverters.GuidStringFormat format)
 	{
 		this.Serializer = this.Serializer.WithGuidConverter(format);
 
@@ -269,12 +270,12 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 
 	/// <summary>
 	/// Verifies that we can read <see cref="Guid"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// This tests interoperability with the default binary format.
 	/// </summary>
 	[Fact]
 	public void Guid_FromBin()
 	{
 		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
-		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.Binary);
 
 		Span<Guid> valueSpan = [System.Guid.NewGuid()];
 		Sequence<byte> seq = new();

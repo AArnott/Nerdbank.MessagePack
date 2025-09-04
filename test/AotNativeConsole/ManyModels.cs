@@ -53,7 +53,7 @@ internal static class ManyModels
 
 	private static MessagePackSerializer CreateSerializer()
 	{
-		MessagePackSerializer serializer = new MessagePackSerializer().WithGuidConverter();
+		MessagePackSerializer serializer = new MessagePackSerializer();
 		return serializer with
 		{
 			Converters = [
