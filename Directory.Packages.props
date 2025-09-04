@@ -30,7 +30,7 @@
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15" />
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.13.22" />
     <PackageVersion Include="Moq" Version="4.20.72" />
-    <PackageVersion Include="Nerdbank.Streams" Version="2.12.90" />
+    <PackageVersion Include="Nerdbank.Streams" Version="2.13.16" />
     <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Newtonsoft.Json.Schema" Version="4.0.1" />
