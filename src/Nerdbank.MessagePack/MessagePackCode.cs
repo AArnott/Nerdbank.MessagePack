@@ -305,13 +305,13 @@ public record LibraryReservedMessagePackExtensionTypeCode
 	public sbyte? ObjectReference { get; init; } = 1;
 
 	/// <summary>
-	/// Gets the extension type code for a <see cref="Guid" /> value.
+	/// Gets the extension type code for a <see cref="System.Guid" /> value.
 	/// </summary>
 	/// <value>The default value is 2.</value>
 	/// <remarks>
-	/// Encoded in a little endian binary format.
+	/// Encoded in a big endian binary format.
 	/// </remarks>
-	public sbyte? GuidLittleEndian { get; init; } = 2;
+	public sbyte? Guid { get; init; } = 2;
 
 	/// <summary>
 	/// Gets the extension type code for a <see cref="System.Numerics.BigInteger" /> value.

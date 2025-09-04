@@ -274,7 +274,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public void Guid_FromBin()
 	{
 		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
-		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.LittleEndian);
+		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.Binary);
 
 		Span<Guid> valueSpan = [System.Guid.NewGuid()];
 		Sequence<byte> seq = new();

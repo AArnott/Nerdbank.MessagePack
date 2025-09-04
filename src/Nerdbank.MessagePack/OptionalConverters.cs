@@ -66,12 +66,12 @@ public static class OptionalConverters
 		StringX,
 
 		/// <summary>
-		/// The <see cref="Guid"/> will be stored in a compact 16 byte binary representation, in little endian order.
+		/// The <see cref="Guid"/> will be stored in a compact 16 byte binary representation.
 		/// </summary>
 		/// <remarks>
-		/// This is encoded as a messagepack extension using the type code specified in <see cref="LibraryReservedMessagePackExtensionTypeCode.GuidLittleEndian"/>.
+		/// This is encoded as a messagepack extension using the type code specified in <see cref="LibraryReservedMessagePackExtensionTypeCode.Guid"/>.
 		/// </remarks>
-		LittleEndian,
+		Binary,
 	}
 
 	/// <summary>
@@ -111,7 +111,7 @@ public static class OptionalConverters
 	/// <remarks>
 	/// The <see cref="Guid"/> converter is optimized to avoid allocating strings during the conversion.
 	/// </remarks>
-	public static MessagePackSerializer WithGuidConverter(this MessagePackSerializer serializer, GuidFormat format = GuidFormat.LittleEndian)
+	public static MessagePackSerializer WithGuidConverter(this MessagePackSerializer serializer, GuidFormat format = GuidFormat.Binary)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		return serializer with
@@ -124,7 +124,7 @@ public static class OptionalConverters
 					GuidFormat.StringB => new GuidAsStringConverter { Format = 'B' },
 					GuidFormat.StringP => new GuidAsStringConverter { Format = 'P' },
 					GuidFormat.StringX => new GuidAsStringConverter { Format = 'X' },
-					GuidFormat.LittleEndian => GuidAsLittleEndianBinaryConverter.Instance,
+					GuidFormat.Binary => GuidAsBinaryConverter.Instance,
 					_ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
 				},
 			],

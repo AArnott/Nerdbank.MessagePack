@@ -215,7 +215,7 @@ LE and BE refer to Little Endian and Big Endian, respectively.
 
 Data type | MessagePack-CSharp | Nerdbank.MessagePack
 --|--|--
-<xref:System.Guid> | 16-byte bin LE or string | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.GuidLittleEndian) LE or string
+<xref:System.Guid> | 16-byte bin LE or string | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Guid) BE or string
 <xref:System.Int128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Int128) BE
 <xref:System.UInt128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.UInt128) BE
 <xref:System.Decimal> | 16-byte bin LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d) | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Decimal) LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d)

@@ -1027,33 +1027,33 @@ internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemo
 }
 
 /// <summary>
-/// Serializes a <see cref="Guid"/> value as a 16 byte binary blob, using little endian integer encoding.
+/// Serializes a <see cref="Guid"/> value as a 16 byte binary blob.
 /// </summary>
 /// <remarks>
-/// This converter makes use of <see cref="LibraryReservedMessagePackExtensionTypeCode.GuidLittleEndian"/>.
+/// This converter makes use of the <see cref="LibraryReservedMessagePackExtensionTypeCode.Guid"/> extension type code.
 /// </remarks>
-internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
+internal class GuidAsBinaryConverter : MessagePackConverter<Guid>
 {
 	/// <summary>
 	/// A shared instance.
 	/// </summary>
-	internal static readonly GuidAsLittleEndianBinaryConverter Instance = new();
+	internal static readonly GuidAsBinaryConverter Instance = new();
 
 	private const int GuidLength = 16;
 
 	/// <inheritdoc/>
 	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.GuidLittleEndian);
-		ReadOnlySequence<byte> bytes = reader.NextMessagePackType == MessagePackType.Binary
-			? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Guid);
+		bool fromBin = reader.NextMessagePackType == MessagePackType.Binary;
+		ReadOnlySequence<byte> bytes = fromBin ? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
 
 		if (bytes.IsSingleSegment)
 		{
 #if NET
-			return new Guid(bytes.FirstSpan);
+			return new Guid(bytes.FirstSpan, bigEndian: !fromBin);
 #else
-			return PolyfillExtensions.ParseGuidFromLittleEndianBytes(bytes.First.Span);
+			return PolyfillExtensions.ParseGuidFromBytes(bytes.First.Span, bigEndian: !fromBin);
 #endif
 		}
 		else
@@ -1061,9 +1061,9 @@ internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 			Span<byte> guidValue = stackalloc byte[GuidLength];
 			bytes.CopyTo(guidValue);
 #if NET
-			return new Guid(guidValue);
+			return new Guid(guidValue, bigEndian: !fromBin);
 #else
-			return PolyfillExtensions.ParseGuidFromLittleEndianBytes(guidValue);
+			return PolyfillExtensions.ParseGuidFromBytes(guidValue, bigEndian: !fromBin);
 #endif
 		}
 	}
@@ -1071,16 +1071,16 @@ internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Guid value, SerializationContext context)
 	{
-		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.GuidLittleEndian);
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Guid);
 		ExtensionHeader header = new(typeCode, GuidLength);
 		writer.Write(header);
-		Assumes.True(value.TryWriteBytes(writer.GetSpan(GuidLength)));
+		Assumes.True(value.TryWriteBytes(writer.GetSpan(GuidLength), bigEndian: true, out _));
 		writer.Advance(GuidLength);
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.GuidLittleEndian));
+		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Guid));
 }
 
 /// <summary>

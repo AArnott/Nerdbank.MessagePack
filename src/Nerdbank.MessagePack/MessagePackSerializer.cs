@@ -676,10 +676,10 @@ public partial record MessagePackSerializer
 					ExtensionHeader extensionHeader = peek.ReadExtensionHeader();
 					if (!options.IgnoreKnownExtensions)
 					{
-						if (extensionHeader.TypeCode == extensionTypeCodes.GuidLittleEndian)
+						if (extensionHeader.TypeCode == extensionTypeCodes.Guid)
 						{
 							jsonWriter.Write('\"');
-							jsonWriter.Write(GuidAsLittleEndianBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
+							jsonWriter.Write(GuidAsBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
 							jsonWriter.Write('\"');
 							break;
 						}
