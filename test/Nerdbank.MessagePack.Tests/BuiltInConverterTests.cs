@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Drawing;
+using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 {
@@ -29,10 +31,90 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 #if NET
 
 	[Fact]
-	public void Int128() => this.AssertRoundtrip(new HasInt128(new Int128(1, 2)));
+	public void Int128()
+	{
+		this.AssertRoundtrip(new HasInt128(0));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(long.MaxValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(long.MinValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(new Int128(1, 2)));
+		this.AssertType(MessagePackType.Extension);
+
+		this.AssertRoundtrip(new HasInt128(System.Int128.MaxValue));
+		this.AssertType(MessagePackType.Extension);
+
+		this.AssertRoundtrip(new HasInt128(System.Int128.MinValue));
+		this.AssertType(MessagePackType.Extension);
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="Int128"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	/// <remarks>
+	/// Note that while our <see cref="LibraryReservedMessagePackExtensionTypeCode.Int128"/> mandates big endian encoding to match msgpack conventions,
+	/// The Bin encoding used by MessagePack-CSharp uses little-endian encoding.
+	/// </remarks>
+	[Fact]
+	public void Int128_FromBin()
+	{
+		Int128 value = new(1, 2);
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasInt128.Value));
+		writer.WriteBinHeader(128 / 8);
+		Span<byte> byteSpan = writer.GetSpan(128 / 8);
+		Assert.True(((IBinaryInteger<Int128>)value).TryWriteLittleEndian(byteSpan, out int written));
+		writer.Advance(written);
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasInt128>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
 
 	[Fact]
-	public void UInt128() => this.AssertRoundtrip(new HasUInt128(new UInt128(1, 2)));
+	public void UInt128()
+	{
+		this.AssertRoundtrip(new HasUInt128(0));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasInt128(ulong.MaxValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasUInt128(new UInt128(1, 2)));
+		this.AssertType(MessagePackType.Extension);
+
+		this.AssertRoundtrip(new HasUInt128(System.UInt128.MaxValue));
+		this.AssertType(MessagePackType.Extension);
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="UInt128"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	/// <remarks>
+	/// Note that while our <see cref="LibraryReservedMessagePackExtensionTypeCode.UInt128"/> mandates big endian encoding to match msgpack conventions,
+	/// The Bin encoding used by MessagePack-CSharp uses little-endian encoding.
+	/// </remarks>
+	[Fact]
+	public void UInt128_FromBin()
+	{
+		UInt128 value = new(1, 2);
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasUInt128.Value));
+		writer.WriteBinHeader(128 / 8);
+		Span<byte> byteSpan = writer.GetSpan(128 / 8);
+		Assert.True(((IBinaryInteger<UInt128>)value).TryWriteLittleEndian(byteSpan, out int written));
+		writer.Advance(written);
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasUInt128>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
 
 #endif
 
@@ -44,10 +126,94 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 #endif
 
 	[Fact]
-	public void Decimal() => this.AssertRoundtrip(new HasDecimal(1.2m));
+	public void Decimal()
+	{
+		this.AssertRoundtrip(new HasDecimal(1.2m));
+		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * 1000));
+		this.AssertRoundtrip(new HasDecimal(new decimal(ulong.MaxValue) * -1000));
+
+		// Verify the actual encoding for one of these to lock it in.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		reader.Skip(default); // property name
+		Extension decimalEncoding = reader.ReadExtension();
+		Assert.Equal(this.Serializer.LibraryExtensionTypeCodes.Decimal, decimalEncoding.Header.TypeCode);
+		Assert.Equal("00-00-00-80-E7-03-00-00-18-FC-FF-FF-FF-FF-FF-FF", BitConverter.ToString(decimalEncoding.Data.ToArray()));
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="decimal"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	[Fact]
+	public void Decimal_FromBin()
+	{
+		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
+		Span<decimal> value = [new decimal(ulong.MaxValue) * -1000];
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasDecimal.Value));
+		writer.Write(MemoryMarshal.Cast<decimal, byte>(value));
+		writer.Flush();
+
+		Assert.Equal(value[0], this.Serializer.Deserialize<HasDecimal>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="decimal"/> values that use the UTF-8 encoding, which is what MessagePack-CSharp's default formatter uses.
+	/// </summary>
+	[Fact]
+	public void Decimal_FromString()
+	{
+		decimal value = 1.2m;
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasDecimal.Value));
+		writer.Write(value.ToString(CultureInfo.InvariantCulture));
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasDecimal>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
 
 	[Fact]
-	public void BigInteger() => this.AssertRoundtrip(new HasBigInteger(1));
+	public void BigInteger()
+	{
+		this.AssertRoundtrip(new HasBigInteger(1));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(ulong.MaxValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(ulong.MinValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(long.MaxValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(long.MinValue));
+		this.AssertType(MessagePackType.Integer);
+
+		this.AssertRoundtrip(new HasBigInteger(new BigInteger(ulong.MaxValue) * 3));
+		this.AssertType(MessagePackType.Extension);
+	}
+
+	/// <summary>
+	/// Verifies that we can read <see cref="decimal"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	[Fact]
+	public void BigInteger_FromBin()
+	{
+		BigInteger value = new BigInteger(ulong.MaxValue) * 3;
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasBigInteger.Value));
+		writer.Write(value.ToByteArray()); // Always in LE order even on BE machines.
+		writer.Flush();
+
+		Assert.Equal(value, this.Serializer.Deserialize<HasBigInteger>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
 
 	[Theory, PairwiseData]
 	public void Guid(OptionalConverters.GuidFormat format)
@@ -101,6 +267,27 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(BadGuidFormatErrorMessage, ex.GetBaseException().Message);
 	}
 
+	/// <summary>
+	/// Verifies that we can read <see cref="Guid"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
+	/// </summary>
+	[Fact]
+	public void Guid_FromBin()
+	{
+		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
+		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.Binary);
+
+		Span<Guid> valueSpan = [System.Guid.NewGuid()];
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasGuid.Value));
+
+		writer.Write(MemoryMarshal.Cast<Guid, byte>(valueSpan));
+		writer.Flush();
+
+		Assert.Equal(valueSpan[0], this.Serializer.Deserialize<HasGuid>(seq, TestContext.Current.CancellationToken)!.Value);
+	}
+
 	[Fact]
 	public void DateTime() => this.AssertRoundtrip(new HasDateTime(System.DateTime.UtcNow));
 
@@ -151,6 +338,14 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.LogMsgPack(msgpack);
 		Guid deserialized = deserializer.Deserialize<Guid>(msgpack, Witness.ShapeProvider, TestContext.Current.CancellationToken);
 		return (original, deserialized);
+	}
+
+	private void AssertType(MessagePackType expectedType)
+	{
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		reader.ReadMapHeader();
+		reader.ReadString();
+		Assert.Equal(expectedType, reader.NextMessagePackType);
 	}
 
 	[GenerateShape]

@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
+using System.Numerics;
+
 public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 {
 	[Fact]
@@ -20,6 +23,68 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	/// </summary>
 	[Fact]
 	public void Sequence() => Assert.Equal("null", this.Serializer.ConvertToJson(new([0xc0])));
+
+	[Fact]
+	public void Guid_LittleEndian()
+	{
+		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.Binary);
+		Guid guid = Guid.NewGuid();
+		this.AssertConvertToJson(
+			$$"""
+			{"Value":"{{guid:D}}"}
+			""",
+			new GuidWrapper(guid));
+	}
+
+	[Fact]
+	public void BigInteger()
+	{
+		BigInteger value = new BigInteger(ulong.MaxValue) * 3;
+		this.AssertConvertToJson(
+			$$"""
+			{"Value":{{value}}}
+			""",
+			new BigIntegerWrapper(value));
+	}
+
+	[Fact]
+	public void Decimal()
+	{
+		decimal value = new decimal(ulong.MaxValue) * 3;
+		this.AssertConvertToJson(
+			$$"""
+			{"Value":{{value}}}
+			""",
+			new DecimalWrapper(value));
+	}
+
+#if NET
+	[Fact]
+	public void Int128()
+	{
+		foreach (Int128 value in new[] { System.Int128.MinValue, 0, System.Int128.MaxValue })
+		{
+			this.AssertConvertToJson(
+				$$"""
+			{"Value":{{value.ToString(CultureInfo.InvariantCulture)}}}
+			""",
+				new Int128Wrapper(value));
+		}
+	}
+
+	[Fact]
+	public void UInt128()
+	{
+		foreach (UInt128 value in new[] { System.UInt128.MinValue, System.UInt128.MaxValue })
+		{
+			this.AssertConvertToJson(
+				$$"""
+			{"Value":{{value.ToString(CultureInfo.InvariantCulture)}}}
+			""",
+				new UInt128Wrapper(value));
+		}
+	}
+#endif
 
 	[Fact]
 	public void Indented_Object_Tabs()
@@ -179,6 +244,23 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 
 	[GenerateShape]
 	public partial record ArrayWrapper(params int[] IntArray);
+
+	[GenerateShape]
+	public partial record GuidWrapper(Guid Value);
+
+	[GenerateShape]
+	public partial record BigIntegerWrapper(BigInteger Value);
+
+	[GenerateShape]
+	public partial record DecimalWrapper(decimal Value);
+
+#if NET
+	[GenerateShape]
+	public partial record Int128Wrapper(Int128 Value);
+
+	[GenerateShape]
+	public partial record UInt128Wrapper(UInt128 Value);
+#endif
 
 	[GenerateShape]
 	public partial record NestingObject(NestingObject? Nested = null, NestingObject[]? Array = null, string? Value = null);

@@ -23,6 +23,7 @@ namespace Nerdbank.MessagePack;
 public record struct SerializationContext
 {
 	private ImmutableDictionary<object, object?> specialState = ImmutableDictionary<object, object?>.Empty;
+	private LibraryReservedMessagePackExtensionTypeCode? extensionTypeCodes;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SerializationContext"/> struct.
@@ -61,6 +62,15 @@ public record struct SerializationContext
 	/// Gets the type shape provider that applies to the serialization operation.
 	/// </summary>
 	public ITypeShapeProvider? TypeShapeProvider { get; internal init; }
+
+	/// <summary>
+	/// Gets the extension type codes to use for library-reserved extension types.
+	/// </summary>
+	internal LibraryReservedMessagePackExtensionTypeCode ExtensionTypeCodes
+	{
+		get => this.extensionTypeCodes ?? throw new InvalidOperationException();
+		init => this.extensionTypeCodes = value;
+	}
 
 	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
@@ -248,6 +258,7 @@ public record struct SerializationContext
 		return this with
 		{
 			Cache = cache,
+			ExtensionTypeCodes = owner.LibraryExtensionTypeCodes,
 			ReferenceEqualityTracker = cache.PreserveReferences != ReferencePreservationMode.Off ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
 			TypeShapeProvider = provider,
 			CancellationToken = cancellationToken,

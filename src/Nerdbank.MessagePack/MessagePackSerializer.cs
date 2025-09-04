@@ -560,9 +560,9 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(jsonWriter);
 
-		WriteOneElement(ref reader, jsonWriter, options ?? new(), 0);
+		WriteOneElement(ref reader, jsonWriter, options ?? new(), this.LibraryExtensionTypeCodes, 0);
 
-		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, int indentationLevel)
+		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, LibraryReservedMessagePackExtensionTypeCode extensionTypeCodes, int indentationLevel)
 		{
 			switch (reader.NextMessagePackType)
 			{
@@ -615,7 +615,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -642,7 +642,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
 							if (options.Indentation is null)
 							{
 								jsonWriter.Write(':');
@@ -652,7 +652,7 @@ public partial record MessagePackSerializer
 								jsonWriter.Write(": ");
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -671,10 +671,51 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Extension:
+					SerializationContext context = new() { ExtensionTypeCodes = extensionTypeCodes };
+					MessagePackReader peek = reader.CreatePeekReader();
+					ExtensionHeader extensionHeader = peek.ReadExtensionHeader();
+					if (!options.IgnoreKnownExtensions)
+					{
+						if (extensionHeader.TypeCode == extensionTypeCodes.Guid)
+						{
+							jsonWriter.Write('\"');
+							jsonWriter.Write(GuidAsBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
+							jsonWriter.Write('\"');
+							break;
+						}
+
+						if (extensionHeader.TypeCode == extensionTypeCodes.BigInteger)
+						{
+							jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
+							break;
+						}
+
+						if (extensionHeader.TypeCode == extensionTypeCodes.Decimal)
+						{
+							jsonWriter.Write(MessagePack.Converters.DecimalConverter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
+							break;
+						}
+
+#if NET
+						if (extensionHeader.TypeCode == extensionTypeCodes.Int128)
+						{
+							jsonWriter.Write(MessagePack.Converters.Int128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
+							break;
+						}
+
+						if (extensionHeader.TypeCode == extensionTypeCodes.UInt128)
+						{
+							jsonWriter.Write(MessagePack.Converters.UInt128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
+							break;
+						}
+#endif
+					}
+
 					Extension extension = reader.ReadExtension();
 					jsonWriter.Write($"\"msgpack extension {extension.Header.TypeCode} as base64: ");
 					jsonWriter.Write(Convert.ToBase64String(extension.Data.ToArray()));
 					jsonWriter.Write('\"');
+
 					break;
 				case MessagePackType.Unknown:
 					throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented.");
@@ -1082,6 +1123,13 @@ public partial record MessagePackSerializer
 		/// </para>
 		/// </remarks>
 		public bool TrailingCommas { get; set; }
+
+		/// <summary>
+		/// Gets or sets a value indicating whether to <em>not</em> interpret known msgpack extension types
+		/// (e.g. <see cref="Guid"/>, <see cref="System.Numerics.BigInteger"/>, <see cref="decimal"/>)
+		/// into JSON-friendly representations.
+		/// </summary>
+		public bool IgnoreKnownExtensions { get; set; }
 	}
 
 	/// <summary>

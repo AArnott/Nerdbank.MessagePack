@@ -4,8 +4,12 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single class
 
-using System.Globalization;
+using System.Buffers.Binary;
+using System.Buffers.Text;
+using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -295,20 +299,102 @@ internal class DoubleConverter : MessagePackConverter<double>
 /// <summary>
 /// Serializes a <see cref="decimal"/>.
 /// </summary>
+/// <remarks>
+/// The encoding matches <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d">the MS-OAUT 2.2.26 DECIMAL specification</see>,
+/// constrained to always use little-endian byte order.
+/// The fields on the .NET <see cref="decimal" /> type are laid out deliberately to match this format, so we can just do a memcpy
+/// provided we're on a little-endian architecture.
+/// </remarks>
 internal class DecimalConverter : MessagePackConverter<decimal>
 {
+	/// <summary>
+	/// A shared instance.
+	/// </summary>
+	internal static readonly DecimalConverter Instance = new();
+
+	private const int MaxDecimalStringLength = 31; // -79228162514264337593543950335. // any decimals would trade sigfigs for length
+
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // only read one structure
 	public override decimal Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning restore NBMsgPack031 // only read one structure
 	{
-		if (!(reader.ReadStringSequence() is ReadOnlySequence<byte> sequence))
+		if (reader.NextMessagePackType == MessagePackType.String)
 		{
-			throw new MessagePackSerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", MessagePackCode.Nil, MessagePackCode.ToFormatName(MessagePackCode.Nil)));
+			return this.ReadString(ref reader, context);
+		}
+
+		ReadOnlySequence<byte> bytes = reader.NextMessagePackType == MessagePackType.Binary
+			? reader.ReadBytes()!.Value
+			: reader.ReadExtension(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
+		if (bytes.Length != sizeof(decimal))
+		{
+			throw new MessagePackSerializationException($"Expected {sizeof(decimal)} bytes but got {bytes.Length}.");
+		}
+
+		decimal result;
+		if (bytes.IsSingleSegment)
+		{
+			result = MemoryMarshal.Read<decimal>(bytes.First.Span);
+		}
+		else
+		{
+			Span<byte> decimalBytes = stackalloc byte[sizeof(decimal)];
+			bytes.CopyTo(decimalBytes);
+			result = MemoryMarshal.Read<decimal>(decimalBytes);
+		}
+
+		if (!BitConverter.IsLittleEndian)
+		{
+			result = DECIMAL.ReverseEndianness(result);
+		}
+
+		return result;
+	}
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in decimal value, SerializationContext context)
+	{
+#pragma warning disable NBMsgPack031 // only write one structure
+		writer.Write(new ExtensionHeader(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal), sizeof(decimal)));
+
+		Span<byte> span = writer.GetSpan(sizeof(decimal));
+#if NET
+		MemoryMarshal.Write<decimal>(span, BitConverter.IsLittleEndian ? value : DECIMAL.ReverseEndianness(value));
+#else
+		if (BitConverter.IsLittleEndian)
+		{
+			MemoryMarshal.Write(span, ref Unsafe.AsRef(value));
+		}
+		else
+		{
+			decimal v = DECIMAL.ReverseEndianness(value);
+			MemoryMarshal.Write(span, ref v);
+		}
+#endif
+		writer.Advance(sizeof(decimal));
+#pragma warning restore NBMsgPack031 // only write one structure
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Decimal));
+
+	private decimal ReadString(ref MessagePackReader reader, SerializationContext context)
+	{
+		Debug.Assert(reader.NextMessagePackType == MessagePackType.String, "Our caller should have guaranteed this.");
+		ReadOnlySequence<byte> sequence = reader.ReadStringSequence()!.Value;
+
+		int seqLen = (int)sequence.Length;
+		if (seqLen > MaxDecimalStringLength)
+		{
+			throw new MessagePackSerializationException($"String is {seqLen} long, which exceeds the max allowed of {MaxDecimalStringLength} for decimals.");
 		}
 
 		if (sequence.IsSingleSegment)
 		{
 			ReadOnlySpan<byte> span = sequence.First.Span;
-			if (System.Buffers.Text.Utf8Parser.TryParse(span, out decimal result, out var bytesConsumed))
+			if (Utf8Parser.TryParse(span, out decimal result, out int bytesConsumed))
 			{
 				if (span.Length != bytesConsumed)
 				{
@@ -320,73 +406,44 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 		}
 		else
 		{
-			// sequence.Length is not free
-			var seqLen = (int)sequence.Length;
-			if (seqLen < 128)
+			Span<byte> span = stackalloc byte[seqLen];
+			sequence.CopyTo(span);
+			if (Utf8Parser.TryParse(span, out decimal result, out int bytesConsumed))
 			{
-				Span<byte> span = stackalloc byte[seqLen];
-				sequence.CopyTo(span);
-				if (System.Buffers.Text.Utf8Parser.TryParse(span, out decimal result, out var bytesConsumed))
-				{
-					if (seqLen != bytesConsumed)
-					{
-						throw new MessagePackSerializationException("Unexpected length of string.");
-					}
-
-					return result;
-				}
-			}
-			else
-			{
-				var rentArray = ArrayPool<byte>.Shared.Rent(seqLen);
-				try
-				{
-					sequence.CopyTo(rentArray);
-					if (System.Buffers.Text.Utf8Parser.TryParse(rentArray.AsSpan(0, seqLen), out decimal result, out var bytesConsumed))
-					{
-						if (seqLen != bytesConsumed)
-						{
-							throw new MessagePackSerializationException("Unexpected length of string.");
-						}
-
-						return result;
-					}
-				}
-				finally
-				{
-					ArrayPool<byte>.Shared.Return(rentArray);
-				}
+				return result;
 			}
 		}
 
 		throw new MessagePackSerializationException("Can't parse to decimal, input string was not in a correct format.");
 	}
 
-	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in decimal value, SerializationContext context)
+	/// <summary>
+	/// A struct with the same field layout as <see cref="decimal"/> and
+	/// <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d">the MS-OAUT 2.2.26 DECIMAL specification</see>.
+	/// </summary>
+	private readonly struct DECIMAL
 	{
-		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
-		if (System.Buffers.Text.Utf8Formatter.TryFormat(value, dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written))
-		{
-			// write header
-			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
-			writer.Advance(written + 1);
-		}
-		else
-		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
-		}
-	}
+		private readonly ushort wReserved;
+		private readonly byte scale;
+		private readonly byte sign;
+		private readonly uint hi32;
+		private readonly ulong lo64;
 
-	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
+		internal DECIMAL(byte scale, byte sign, uint hi32, ulong lo64)
 		{
-			["type"] = "string",
-			["pattern"] = @"^-?\d+(\.\d+)?$",
-		};
+			this.wReserved = 0;
+			this.scale = scale;
+			this.sign = sign;
+			this.hi32 = hi32;
+			this.lo64 = lo64;
+		}
+
+		public static unsafe implicit operator DECIMAL(decimal value) => *(DECIMAL*)&value;
+
+		public static unsafe implicit operator decimal(DECIMAL value) => *(decimal*)&value;
+
+		internal static DECIMAL ReverseEndianness(in DECIMAL value) => new DECIMAL(value.scale, value.sign, BinaryPrimitives.ReverseEndianness(value.hi32), BinaryPrimitives.ReverseEndianness(value.lo64));
+	}
 }
 
 #if NET
@@ -396,77 +453,111 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 /// </summary>
 internal class Int128Converter : MessagePackConverter<Int128>
 {
+	/// <summary>
+	/// A shareable instance.
+	/// </summary>
+	internal static readonly Int128Converter Instance = new();
+
+	private const int Size = 128 / 8;
+
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // only read one structure
 	public override Int128 Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning restore NBMsgPack031 // only read one structure
 	{
-		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Int128>();
+		// Fail fast if the user hasn't reserved a type code these values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Int128);
+
+		switch (reader.NextMessagePackType)
+		{
+			case MessagePackType.Binary:
+				return this.ReadBin(ref reader, context);
+			case MessagePackType.Integer:
+				return MessagePackCode.IsSignedInteger(reader.NextCode) ? (Int128)reader.ReadInt64() : (Int128)reader.ReadUInt64();
+		}
+
+		ReadOnlySequence<byte> sequence = reader.ReadExtension(typeCode);
+		if (sequence.Length != Size)
+		{
+			throw new MessagePackSerializationException($"Expected {Size} bytes but got {sequence.Length}.");
+		}
+
 		if (sequence.IsSingleSegment)
 		{
-			ReadOnlySpan<byte> span = sequence.First.Span;
-			if (Int128.TryParse(span, CultureInfo.InvariantCulture, out Int128 result))
-			{
-				return result;
-			}
+			return BinaryPrimitives.ReadInt128BigEndian(sequence.FirstSpan);
 		}
 		else
 		{
-			// sequence.Length is not free
-			var seqLen = (int)sequence.Length;
-			if (seqLen < 128)
-			{
-				Span<byte> span = stackalloc byte[seqLen];
-				sequence.CopyTo(span);
-				if (Int128.TryParse(span, CultureInfo.InvariantCulture, out Int128 result))
-				{
-					return result;
-				}
-			}
-			else
-			{
-				var rentArray = ArrayPool<byte>.Shared.Rent(seqLen);
-				try
-				{
-					sequence.CopyTo(rentArray);
-					if (Int128.TryParse(rentArray.AsSpan(0, seqLen), CultureInfo.InvariantCulture, out Int128 result))
-					{
-						return result;
-					}
-				}
-				finally
-				{
-					ArrayPool<byte>.Shared.Return(rentArray);
-				}
-			}
+			Span<byte> bytesSpan = stackalloc byte[Size];
+			sequence.CopyTo(bytesSpan);
+			return BinaryPrimitives.ReadInt128BigEndian(bytesSpan);
 		}
-
-		throw new MessagePackSerializationException("Can't parse to Int128, input string was not in a correct format.");
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Int128 value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
-		if (value.TryFormat(dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written, provider: CultureInfo.InvariantCulture))
+		// Fail fast if the user hasn't reserved a type code these values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Int128);
+
+		if (value >= 0 && value <= ulong.MaxValue)
 		{
-			// write header
-			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
-			writer.Advance(written + 1);
+			// Prefer to write out small positive Int128 values as UInt64.
+			writer.Write((ulong)value);
+			return;
 		}
-		else
+
+		if (value < 0 && value >= long.MinValue)
 		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
+			// Prefer to write out small negative Int128 values as Int64.
+			writer.Write((long)value);
+			return;
 		}
+
+#pragma warning disable NBMsgPack031 // only write one structure
+		writer.Write(new ExtensionHeader(typeCode, Size));
+		BinaryPrimitives.WriteInt128BigEndian(writer.GetSpan(Size), value);
+		writer.Advance(Size);
+#pragma warning restore NBMsgPack031 // only write one structure
 	}
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
+	{
+		["oneOf"] = new JsonArray(
+			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Int128)),
+			new JsonObject() { ["type"] = "integer" }),
+		["description"] = "A 128-bit signed integer",
+	};
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool TryReadLittleEndian<T>(ReadOnlySpan<byte> source, out T value)
+		where T : IBinaryInteger<T> => T.TryReadLittleEndian(source, isUnsigned: false, out value);
+
+	private Int128 ReadBin(ref MessagePackReader reader, SerializationContext context)
+	{
+		Debug.Assert(reader.NextMessagePackType == MessagePackType.Binary, "Our caller should have guaranteed this.");
+		ReadOnlySequence<byte> sequence = reader.ReadBytes()!.Value;
+		if (sequence.Length != Size)
 		{
-			["type"] = "string",
-			["pattern"] = @"^-?\d+$",
-		};
+			throw new MessagePackSerializationException("Invalid Int128 data.");
+		}
+
+		if (sequence.IsSingleSegment)
+		{
+			TryReadLittleEndian(sequence.FirstSpan, out Int128 value);
+			return value;
+		}
+		else
+		{
+			Span<byte> bytes = stackalloc byte[Size];
+			sequence.CopyTo(bytes);
+			TryReadLittleEndian(bytes, out Int128 value);
+			return value;
+		}
+	}
 }
 
 /// <summary>
@@ -474,77 +565,98 @@ internal class Int128Converter : MessagePackConverter<Int128>
 /// </summary>
 internal class UInt128Converter : MessagePackConverter<UInt128>
 {
+	/// <summary>
+	/// A shareable instance.
+	/// </summary>
+	internal static readonly UInt128Converter Instance = new();
+
+	private const int Size = 128 / 8;
+
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // only read one structure
 	public override UInt128 Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning restore NBMsgPack031 // only read one structure
 	{
-		ReadOnlySequence<byte> sequence = reader.ReadStringSequence() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<UInt128>();
-		if (sequence.IsSingleSegment)
+		// Fail fast if the user hasn't reserved a type code these values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.UInt128);
+
+		switch (reader.NextMessagePackType)
 		{
-			ReadOnlySpan<byte> span = sequence.First.Span;
-			if (UInt128.TryParse(span, CultureInfo.InvariantCulture, out UInt128 result))
-			{
-				return result;
-			}
-		}
-		else
-		{
-			// sequence.Length is not free
-			var seqLen = (int)sequence.Length;
-			if (seqLen < 128)
-			{
-				Span<byte> span = stackalloc byte[seqLen];
-				sequence.CopyTo(span);
-				if (UInt128.TryParse(span, CultureInfo.InvariantCulture, out UInt128 result))
-				{
-					return result;
-				}
-			}
-			else
-			{
-				var rentArray = ArrayPool<byte>.Shared.Rent(seqLen);
-				try
-				{
-					sequence.CopyTo(rentArray);
-					if (UInt128.TryParse(rentArray.AsSpan(0, seqLen), CultureInfo.InvariantCulture, out UInt128 result))
-					{
-						return result;
-					}
-				}
-				finally
-				{
-					ArrayPool<byte>.Shared.Return(rentArray);
-				}
-			}
+			case MessagePackType.Binary:
+				return this.ReadBin(ref reader, context);
+			case MessagePackType.Integer:
+				return (UInt128)reader.ReadUInt64();
 		}
 
-		throw new MessagePackSerializationException("Can't parse to Int123, input string was not in a correct format.");
+		ReadOnlySequence<byte> sequence = reader.ReadExtension(typeCode);
+		if (sequence.Length != Size)
+		{
+			throw new MessagePackSerializationException($"Expected {Size} bytes but got {sequence.Length}.");
+		}
+
+		Span<byte> bytesSpan = stackalloc byte[Size];
+		sequence.CopyTo(bytesSpan);
+		UInt128 value = MemoryMarshal.Cast<byte, UInt128>(bytesSpan)[0];
+		return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value;
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in UInt128 value, SerializationContext context)
 	{
-		Span<byte> dest = writer.GetSpan(1 + MessagePackRange.MaxFixStringLength);
-		if (value.TryFormat(dest.Slice(1, MessagePackRange.MaxFixStringLength), out var written, provider: CultureInfo.InvariantCulture))
+		// Fail fast if the user hasn't reserved a type code these values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.UInt128);
+
+		if (value <= ulong.MaxValue)
 		{
-			// write header
-			dest[0] = (byte)(MessagePackCode.MinFixStr | written);
-			writer.Advance(written + 1);
+			// Prefer to write out small UInt128 values as UInt64.
+			writer.Write((ulong)value);
+			return;
 		}
-		else
-		{
-			// reset writer's span previously acquired that does not use
-			writer.Advance(0);
-			writer.Write(value.ToString(CultureInfo.InvariantCulture));
-		}
+
+		ReadOnlySpan<UInt128> valueAsSpan = BitConverter.IsLittleEndian ? [BinaryPrimitives.ReverseEndianness(value)] : [value];
+#pragma warning disable NBMsgPack031 // only write one structure
+		writer.Write(new ExtensionHeader(typeCode, Size));
+		writer.WriteRaw(MemoryMarshal.Cast<UInt128, byte>(valueAsSpan));
+#pragma warning restore NBMsgPack031 // only write one structure
 	}
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
+	{
+		["oneOf"] = new JsonArray(
+			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.UInt128)),
+			new JsonObject() { ["type"] = "integer" }),
+		["description"] = "A 128-bit unsigned integer",
+	};
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static bool TryReadLittleEndian<T>(ReadOnlySpan<byte> source, out T value)
+		where T : IBinaryInteger<T> => T.TryReadLittleEndian(source, isUnsigned: true, out value);
+
+	private UInt128 ReadBin(ref MessagePackReader reader, SerializationContext context)
+	{
+		Debug.Assert(reader.NextMessagePackType == MessagePackType.Binary, "Our caller should have guaranteed this.");
+		ReadOnlySequence<byte> sequence = reader.ReadBytes()!.Value;
+		if (sequence.Length != Size)
 		{
-			["type"] = "string",
-			["pattern"] = @"^\d+$",
-		};
+			throw new MessagePackSerializationException("Invalid UInt128 data.");
+		}
+
+		if (sequence.IsSingleSegment)
+		{
+			TryReadLittleEndian(sequence.FirstSpan, out UInt128 value);
+			return value;
+		}
+		else
+		{
+			Span<byte> bytes = stackalloc byte[Size];
+			sequence.CopyTo(bytes);
+			TryReadLittleEndian(bytes, out UInt128 value);
+			return value;
+		}
+	}
 }
 
 #endif
@@ -554,54 +666,100 @@ internal class UInt128Converter : MessagePackConverter<UInt128>
 /// </summary>
 internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 {
+	/// <summary>
+	/// A shareable instance of this converter.
+	/// </summary>
+	internal static readonly BigIntegerConverter Instance = new();
+
 	/// <inheritdoc/>
 	public override BigInteger Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<BigInteger>();
+		// Fail fast if the user hasn't reserved a type code these values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
+
+		if (reader.NextMessagePackType == MessagePackType.Integer)
+		{
+			return MessagePackCode.IsSignedInteger(reader.NextCode) ? (BigInteger)reader.ReadInt64() : (BigInteger)reader.ReadUInt64();
+		}
+
+		bool fromBin = reader.NextMessagePackType == MessagePackType.Binary;
+		ReadOnlySequence<byte> bytes = fromBin ? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
+#if NET
 		if (bytes.IsSingleSegment)
 		{
-#if NET
-			return new BigInteger(bytes.First.Span);
-#else
-			return new BigInteger(bytes.First.ToArray());
-#endif
+			return new BigInteger(bytes.First.Span, isBigEndian: !fromBin);
 		}
 		else
 		{
-#if NET
 			byte[] bytesArray = ArrayPool<byte>.Shared.Rent((int)bytes.Length);
 			try
 			{
 				bytes.CopyTo(bytesArray);
-				return new BigInteger(bytesArray.AsSpan(0, (int)bytes.Length));
+				return new BigInteger(bytesArray.AsSpan(0, (int)bytes.Length), isBigEndian: !fromBin);
 			}
 			finally
 			{
 				ArrayPool<byte>.Shared.Return(bytesArray);
 			}
-#else
-			return new BigInteger(bytes.ToArray());
-#endif
 		}
+#else
+		byte[] array = bytes.ToArray();
+
+		// The ext format is always BE and the bin format is always LE.
+		if ((!fromBin && BitConverter.IsLittleEndian) || (fromBin && !BitConverter.IsLittleEndian))
+		{
+			Array.Reverse(array);
+		}
+
+		return new BigInteger(array);
+#endif
 	}
 
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in BigInteger value, SerializationContext context)
 	{
+		// Fail fast if the user hasn't reserved a type code these values,
+		// even if this particular value might fit in a native integer type.
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
+
+		// Prefer to write out BigInteger values as integers if they fit.
+		if (value >= long.MinValue && value <= long.MaxValue)
+		{
+			writer.Write((long)value);
+		}
+		else if (value.Sign >= 0 && value <= ulong.MaxValue)
+		{
+			writer.Write((ulong)value);
+		}
+		else
+		{
 #if NET
-		int byteCount = value.GetByteCount();
-		writer.WriteBinHeader(byteCount);
-		Span<byte> span = writer.GetSpan(byteCount);
-		Assumes.True(value.TryWriteBytes(span, out int written));
-		writer.Advance(written);
+			int byteCount = value.GetByteCount();
+			writer.Write(new ExtensionHeader(typeCode, unchecked((uint)byteCount)));
+			Span<byte> span = writer.GetSpan(byteCount);
+			Assumes.True(value.TryWriteBytes(span, out int written, isBigEndian: true));
+			writer.Advance(written);
 #else
-		writer.Write(value.ToByteArray());
+			byte[] array = value.ToByteArray();
+			if (BitConverter.IsLittleEndian)
+			{
+				Array.Reverse(array);
+			}
+
+			writer.Write(new Extension(typeCode, array));
 #endif
+		}
 	}
 
 	/// <inheritdoc/>
-	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema("The binary representation of a BigInteger.");
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
+	{
+		["oneOf"] = new JsonArray(
+			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger)),
+			new JsonObject() { ["type"] = "integer" }),
+		["description"] = "A BigInteger",
+	};
 }
 
 /// <summary>
@@ -869,28 +1027,33 @@ internal class ReadOnlyMemoryOfByteConverter : MessagePackConverter<ReadOnlyMemo
 }
 
 /// <summary>
-/// Serializes a <see cref="Guid"/> value as a 16 byte binary blob, using little endian integer encoding.
+/// Serializes a <see cref="Guid"/> value as a 16 byte binary blob.
 /// </summary>
-internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
+/// <remarks>
+/// This converter makes use of the <see cref="LibraryReservedMessagePackExtensionTypeCode.Guid"/> extension type code.
+/// </remarks>
+internal class GuidAsBinaryConverter : MessagePackConverter<Guid>
 {
 	/// <summary>
 	/// A shared instance.
 	/// </summary>
-	internal static readonly GuidAsLittleEndianBinaryConverter Instance = new();
+	internal static readonly GuidAsBinaryConverter Instance = new();
 
 	private const int GuidLength = 16;
 
 	/// <inheritdoc/>
 	public override Guid Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		ReadOnlySequence<byte> bytes = reader.ReadBytes() ?? throw MessagePackSerializationException.ThrowUnexpectedNilWhileDeserializing<Guid>();
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Guid);
+		bool fromBin = reader.NextMessagePackType == MessagePackType.Binary;
+		ReadOnlySequence<byte> bytes = fromBin ? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
 
 		if (bytes.IsSingleSegment)
 		{
 #if NET
-			return new Guid(bytes.FirstSpan);
+			return new Guid(bytes.FirstSpan, bigEndian: !fromBin);
 #else
-			return PolyfillExtensions.ParseGuidFromLittleEndianBytes(bytes.First.Span);
+			return PolyfillExtensions.ParseGuidFromBytes(bytes.First.Span, bigEndian: !fromBin);
 #endif
 		}
 		else
@@ -898,9 +1061,9 @@ internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 			Span<byte> guidValue = stackalloc byte[GuidLength];
 			bytes.CopyTo(guidValue);
 #if NET
-			return new Guid(guidValue);
+			return new Guid(guidValue, bigEndian: !fromBin);
 #else
-			return PolyfillExtensions.ParseGuidFromLittleEndianBytes(guidValue);
+			return PolyfillExtensions.ParseGuidFromBytes(guidValue, bigEndian: !fromBin);
 #endif
 		}
 	}
@@ -908,14 +1071,16 @@ internal class GuidAsLittleEndianBinaryConverter : MessagePackConverter<Guid>
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in Guid value, SerializationContext context)
 	{
-		writer.WriteBinHeader(GuidLength);
-		Assumes.True(value.TryWriteBytes(writer.GetSpan(GuidLength)));
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Guid);
+		ExtensionHeader header = new(typeCode, GuidLength);
+		writer.Write(header);
+		Assumes.True(value.TryWriteBytes(writer.GetSpan(GuidLength), bigEndian: true, out _));
 		writer.Advance(GuidLength);
 	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> CreateMsgPackBinarySchema("The binary representation of the GUID.");
+		=> CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.Guid));
 }
 
 /// <summary>

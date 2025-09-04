@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -722,7 +721,30 @@ public ref partial struct MessagePackReader
 	[DoesNotReturn]
 	internal static Exception ThrowInvalidCode(byte code)
 	{
-		throw new MessagePackSerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, MessagePackCode.ToFormatName(code)));
+		throw new MessagePackSerializationException(string.Format("Unexpected msgpack code {0} ({1}) encountered.", code, MessagePackCode.ToFormatName(code)))
+		{
+			Code = MessagePackSerializationException.ErrorCode.UnexpectedToken,
+		};
+	}
+
+	/// <summary>
+	/// Reads an extension, asserting that it bears a particular type code.
+	/// </summary>
+	/// <param name="expectedTypeCode">The expected value of the <see cref="ExtensionHeader.TypeCode"/>.</param>
+	/// <returns>The body of the extension, if the type code matches.</returns>
+	/// <exception cref="MessagePackSerializationException">If the reader is not positioned at an extension with the expected type code.</exception>
+	internal ReadOnlySequence<byte> ReadExtension(sbyte expectedTypeCode)
+	{
+		Extension ext = this.ReadExtension();
+		if (ext.TypeCode != expectedTypeCode)
+		{
+			throw new MessagePackSerializationException(string.Format("Unexpected extension type code {0} encountered. Expected {1}.", ext.TypeCode, expectedTypeCode))
+			{
+				Code = MessagePackSerializationException.ErrorCode.UnexpectedExtensionTypeCode,
+			};
+		}
+
+		return ext.Data;
 	}
 
 	/// <summary>

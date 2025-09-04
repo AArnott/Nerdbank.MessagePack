@@ -283,7 +283,13 @@ public static class ReservedMessagePackExtensionTypeCode
 /// to avoid conflicting with those defined by the application or another library.
 /// </summary>
 /// <remarks>
+/// <para>
 /// All values must be non-negative to avoid conflicting with the official extension type codes as described in <see cref="ReservedMessagePackExtensionTypeCode"/>.
+/// </para>
+/// <para>
+/// A <see langword="null"/> value will disable the use of that extension type code,
+/// leading the library to either prefer a msgpack standardized encoding for the data type or fail when that data type is used.
+/// </para>
 /// </remarks>
 public record LibraryReservedMessagePackExtensionTypeCode
 {
@@ -296,7 +302,72 @@ public record LibraryReservedMessagePackExtensionTypeCode
 	/// Gets the extension type code for a reference to an object that has already been serialized in the same stream.
 	/// </summary>
 	/// <value>The default value is 1.</value>
-	public sbyte ObjectReference { get; init; } = 1;
+	public sbyte? ObjectReference { get; init; } = 1;
+
+	/// <summary>
+	/// Gets the extension type code for a <see cref="System.Guid" /> value.
+	/// </summary>
+	/// <value>The default value is 2.</value>
+	/// <remarks>
+	/// Encoded in a big endian binary format.
+	/// </remarks>
+	public sbyte? Guid { get; init; } = 2;
+
+	/// <summary>
+	/// Gets the extension type code for a <see cref="System.Numerics.BigInteger" /> value.
+	/// </summary>
+	/// <value>The default value is 3.</value>
+	/// <remarks>
+	/// The value is encoded as big-endian twos-complement bytes, using the fewest number of bytes possible.
+	/// If the value is zero, outputs one byte whose element is 0x00.
+	/// </remarks>
+	public sbyte? BigInteger { get; init; } = 3;
+
+	/// <summary>
+	/// Gets the extension type code for a <see cref="decimal" /> value.
+	/// </summary>
+	/// <value>The default value is 4.</value>
+	/// <remarks>
+	/// The encoding matches <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d">the MS-OAUT 2.2.26 DECIMAL specification</see>,
+	/// constrained to always use little-endian byte order.
+	/// </remarks>
+	public sbyte? Decimal { get; init; } = 4;
+
+#if NET
+	/// <summary>
+	/// Gets the extension type code for a <see cref="Int128" /> value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit signed integer.
+	/// </remarks>
+#else
+	/// <summary>
+	/// Gets the extension type code for a Int128 value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit signed integer.
+	/// </remarks>
+#endif
+	public sbyte? Int128 { get; init; } = 5;
+
+#if NET
+	/// <summary>
+	/// Gets the extension type code for a <see cref="UInt128" /> value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit unsigned integer.
+	/// </remarks>
+#else
+	/// <summary>
+	/// Gets the extension type code for a UInt128 value.
+	/// </summary>
+	/// <remarks>
+	/// The encoding is a big endian 128-bit unsigned integer.
+	/// </remarks>
+#endif
+	public sbyte? UInt128 { get; init; } = 6;
+
+	internal static sbyte ToByte(sbyte? value) => value ?? throw new InvalidOperationException("This extension type code is disabled.");
 }
 
 internal static class MessagePackRange

@@ -21,15 +21,22 @@ public class JsonSchemaContext
 	/// Initializes a new instance of the <see cref="JsonSchemaContext"/> class.
 	/// </summary>
 	/// <param name="cache">The <see cref="ConverterCache"/> object from which the JSON schema is being retrieved.</param>
-	internal JsonSchemaContext(ConverterCache cache)
+	/// <param name="extensionTypeCodes">The extension type codes to use for library-reserved extension types.</param>
+	internal JsonSchemaContext(ConverterCache cache, LibraryReservedMessagePackExtensionTypeCode extensionTypeCodes)
 	{
 		this.cache = cache;
+		this.ExtensionTypeCodes = extensionTypeCodes;
 	}
 
 	/// <summary>
 	/// Gets the referenceable schema definitions that should be included in the top-level schema.
 	/// </summary>
 	internal IReadOnlyDictionary<string, JsonObject> SchemaDefinitions => this.schemaDefinitions;
+
+	/// <summary>
+	/// Gets the extension type codes to use for library-reserved extension types.
+	/// </summary>
+	internal LibraryReservedMessagePackExtensionTypeCode ExtensionTypeCodes { get; }
 
 	/// <summary>
 	/// Obtains the JSON schema for a given type.

@@ -15,10 +15,25 @@ internal class ReferenceEqualityTracker : IPoolableObject
 {
 	private readonly Dictionary<object, (int, bool)> serializedObjects = new(ReferenceEqualityComparer.Instance);
 	private readonly List<object?> deserializedObjects = new();
+	private MessagePackSerializer? owner;
 	private int serializingObjectCounter;
+	private sbyte objectReferenceTypeCode;
 
 	/// <inheritdoc/>
-	public MessagePackSerializer? Owner { get; set; }
+	public MessagePackSerializer? Owner
+	{
+		get => this.owner;
+		set
+		{
+			if (value is { LibraryExtensionTypeCodes.ObjectReference: null })
+			{
+				throw new NotSupportedException("This serializer is not configured with a library extension type code for object references.");
+			}
+
+			this.owner = value;
+			this.objectReferenceTypeCode = value?.LibraryExtensionTypeCodes.ObjectReference ?? 0;
+		}
+	}
 
 	/// <summary>
 	/// Gets the active preservation mode.
@@ -55,7 +70,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		{
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
-			writer.Write(new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
+			writer.Write(new ExtensionHeader(this.objectReferenceTypeCode, packLength));
 			writer.Write(referenceId);
 		}
 		else
@@ -91,7 +106,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 			// This object has already been written. Skip it this time.
 			uint packLength = (uint)MessagePackWriter.GetEncodedLength(referenceId);
 			MessagePackWriter syncWriter = writer.CreateWriter();
-			syncWriter.Write(new ExtensionHeader(this.Owner.LibraryExtensionTypeCodes.ObjectReference, packLength));
+			syncWriter.Write(new ExtensionHeader(this.objectReferenceTypeCode, packLength));
 			syncWriter.Write(referenceId);
 			writer.ReturnWriter(ref syncWriter);
 			await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
@@ -122,7 +137,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		{
 			MessagePackReader provisionaryReader = reader.CreatePeekReader();
 			ExtensionHeader extensionHeader = provisionaryReader.ReadExtensionHeader();
-			if (extensionHeader.TypeCode == this.Owner.LibraryExtensionTypeCodes.ObjectReference)
+			if (extensionHeader.TypeCode == this.objectReferenceTypeCode)
 			{
 				int id = provisionaryReader.ReadInt32();
 				reader = provisionaryReader;
@@ -179,7 +194,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			MessagePackReader provisionaryReader = syncReader.CreatePeekReader();
 			ExtensionHeader extensionHeader = provisionaryReader.ReadExtensionHeader();
-			if (extensionHeader.TypeCode == this.Owner.LibraryExtensionTypeCodes.ObjectReference)
+			if (extensionHeader.TypeCode == this.objectReferenceTypeCode)
 			{
 				int id = provisionaryReader.ReadInt32();
 				syncReader = provisionaryReader;

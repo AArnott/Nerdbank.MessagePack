@@ -5,6 +5,7 @@
 #pragma warning disable SA1402 // multiple types
 #pragma warning disable SA1403 // multiple namespaces
 
+using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
@@ -386,8 +387,31 @@ namespace Nerdbank.MessagePack
 		/// Parse a <see cref="Guid"/> from a little-endian binary representation.
 		/// </summary>
 		/// <param name="bytes">The span of exactly 16 byes.</param>
+		/// <param name="bigEndian">Whether the bytes are in big-endian order.</param>
 		/// <returns>The parsed guid.</returns>
-		internal static Guid ParseGuidFromLittleEndianBytes(ReadOnlySpan<byte> bytes) => new GuidBits(bytes, bigEndian: false);
+		internal static Guid ParseGuidFromBytes(ReadOnlySpan<byte> bytes, bool bigEndian) => new GuidBits(bytes, bigEndian);
+
+		internal static bool TryWriteBytes(this in Guid value, Span<byte> destination, bool bigEndian, out int bytesWritten)
+		{
+			bytesWritten = 16;
+			if (!value.TryWriteBytes(destination))
+			{
+				return false;
+			}
+
+			if (bigEndian == BitConverter.IsLittleEndian)
+			{
+				// Reverse the multi-byte fields: uint, ushort, ushort.
+				ref uint a = ref MemoryMarshal.Cast<byte, uint>(destination[0..4])[0];
+				ref ushort b = ref MemoryMarshal.Cast<byte, ushort>(destination[4..6])[0];
+				ref ushort c = ref MemoryMarshal.Cast<byte, ushort>(destination[6..8])[0];
+				a = BinaryPrimitives.ReverseEndianness(a);
+				b = BinaryPrimitives.ReverseEndianness(b);
+				c = BinaryPrimitives.ReverseEndianness(c);
+			}
+
+			return true;
+		}
 
 		internal static bool IsAssignableTo(this Type left, Type right) => right.IsAssignableFrom(left);
 

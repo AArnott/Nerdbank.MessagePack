@@ -66,9 +66,12 @@ public static class OptionalConverters
 		StringX,
 
 		/// <summary>
-		/// The <see cref="Guid"/> will be stored in a compact 16 byte binary representation, in little endian order.
+		/// The <see cref="Guid"/> will be stored in a compact 16 byte binary representation.
 		/// </summary>
-		BinaryLittleEndian,
+		/// <remarks>
+		/// This is encoded as a messagepack extension using the type code specified in <see cref="LibraryReservedMessagePackExtensionTypeCode.Guid"/>.
+		/// </remarks>
+		Binary,
 	}
 
 	/// <summary>
@@ -98,14 +101,17 @@ public static class OptionalConverters
 	/// Adds a converter for <see cref="Guid"/> to the specified serializer.
 	/// </summary>
 	/// <param name="serializer">The serializer to add converters to.</param>
-	/// <param name="format">The format in which the <see cref="Guid"/> should be written.</param>
+	/// <param name="format">
+	/// The format in which the <see cref="Guid"/> should be written.
+	/// All string-based formats can <em>read</em> all other string-based formats.
+	/// </param>
 	/// <returns>The modified serializer.</returns>
 	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="format"/> is not one of the allowed values.</exception>
 	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="Guid"/> has already been added.</exception>
 	/// <remarks>
 	/// The <see cref="Guid"/> converter is optimized to avoid allocating strings during the conversion.
 	/// </remarks>
-	public static MessagePackSerializer WithGuidConverter(this MessagePackSerializer serializer, GuidFormat format = GuidFormat.BinaryLittleEndian)
+	public static MessagePackSerializer WithGuidConverter(this MessagePackSerializer serializer, GuidFormat format = GuidFormat.Binary)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		return serializer with
@@ -118,7 +124,7 @@ public static class OptionalConverters
 					GuidFormat.StringB => new GuidAsStringConverter { Format = 'B' },
 					GuidFormat.StringP => new GuidAsStringConverter { Format = 'P' },
 					GuidFormat.StringX => new GuidAsStringConverter { Format = 'X' },
-					GuidFormat.BinaryLittleEndian => GuidAsLittleEndianBinaryConverter.Instance,
+					GuidFormat.Binary => GuidAsBinaryConverter.Instance,
 					_ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
 				},
 			],
