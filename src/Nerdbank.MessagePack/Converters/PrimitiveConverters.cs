@@ -676,19 +676,19 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	{
 		// Fail fast if the user hasn't reserved a type code these values,
 		// even if this particular value might fit in a native integer type.
-		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigIntegerLittleEndian);
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
 
 		if (reader.NextMessagePackType == MessagePackType.Integer)
 		{
 			return MessagePackCode.IsSignedInteger(reader.NextCode) ? (BigInteger)reader.ReadInt64() : (BigInteger)reader.ReadUInt64();
 		}
 
-		ReadOnlySequence<byte> bytes = reader.NextMessagePackType == MessagePackType.Binary
-			? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
+		bool fromBin = reader.NextMessagePackType == MessagePackType.Binary;
+		ReadOnlySequence<byte> bytes = fromBin ? reader.ReadBytes()!.Value : reader.ReadExtension(typeCode);
 #if NET
 		if (bytes.IsSingleSegment)
 		{
-			return new BigInteger(bytes.First.Span);
+			return new BigInteger(bytes.First.Span, isBigEndian: !fromBin);
 		}
 		else
 		{
@@ -696,7 +696,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			try
 			{
 				bytes.CopyTo(bytesArray);
-				return new BigInteger(bytesArray.AsSpan(0, (int)bytes.Length));
+				return new BigInteger(bytesArray.AsSpan(0, (int)bytes.Length), isBigEndian: !fromBin);
 			}
 			finally
 			{
@@ -704,7 +704,15 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			}
 		}
 #else
-		return new BigInteger(bytes.ToArray());
+		byte[] array = bytes.ToArray();
+
+		// The ext format is always BE and the bin format is always LE.
+		if ((!fromBin && BitConverter.IsLittleEndian) || (fromBin && !BitConverter.IsLittleEndian))
+		{
+			Array.Reverse(array);
+		}
+
+		return new BigInteger(array);
 #endif
 	}
 
@@ -713,7 +721,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	{
 		// Fail fast if the user hasn't reserved a type code these values,
 		// even if this particular value might fit in a native integer type.
-		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigIntegerLittleEndian);
+		sbyte typeCode = LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger);
 
 		// Prefer to write out BigInteger values as integers if they fit.
 		if (value >= long.MinValue && value <= long.MaxValue)
@@ -730,10 +738,16 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 			int byteCount = value.GetByteCount();
 			writer.Write(new ExtensionHeader(typeCode, unchecked((uint)byteCount)));
 			Span<byte> span = writer.GetSpan(byteCount);
-			Assumes.True(value.TryWriteBytes(span, out int written));
+			Assumes.True(value.TryWriteBytes(span, out int written, isBigEndian: true));
 			writer.Advance(written);
 #else
-			writer.Write(new Extension(typeCode, value.ToByteArray()));
+			byte[] array = value.ToByteArray();
+			if (BitConverter.IsLittleEndian)
+			{
+				Array.Reverse(array);
+			}
+
+			writer.Write(new Extension(typeCode, array));
 #endif
 		}
 	}
@@ -742,7 +756,7 @@ internal class BigIntegerConverter : MessagePackConverter<BigInteger>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
 	{
 		["oneOf"] = new JsonArray(
-			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigIntegerLittleEndian)),
+			CreateMsgPackExtensionSchema(LibraryReservedMessagePackExtensionTypeCode.ToByte(context.ExtensionTypeCodes.BigInteger)),
 			new JsonObject() { ["type"] = "integer" }),
 		["description"] = "A BigInteger",
 	};

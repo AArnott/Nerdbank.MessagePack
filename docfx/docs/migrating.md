@@ -219,7 +219,7 @@ Data type | MessagePack-CSharp | Nerdbank.MessagePack
 <xref:System.Int128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Int128) BE
 <xref:System.UInt128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.UInt128) BE
 <xref:System.Decimal> | 16-byte bin LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d) | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Decimal) LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d)
-<xref:System.Numerics.BigInteger> | Bin LE with twos-complement bytes, using the fewest number of bytes possible | int format if it fits, otherwise [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.BigIntegerLittleEndian) LE with twos-complement bytes, using the fewest number of bytes possible
+<xref:System.Numerics.BigInteger> | Bin LE with twos-complement bytes, using the fewest number of bytes possible | int format if it fits, otherwise [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.BigInteger) BE with twos-complement bytes, using the fewest number of bytes possible
 
 ### .NET classes and structs with members
 

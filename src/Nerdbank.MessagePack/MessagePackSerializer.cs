@@ -684,7 +684,7 @@ public partial record MessagePackSerializer
 							break;
 						}
 
-						if (extensionHeader.TypeCode == extensionTypeCodes.BigIntegerLittleEndian)
+						if (extensionHeader.TypeCode == extensionTypeCodes.BigInteger)
 						{
 							jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
 							break;

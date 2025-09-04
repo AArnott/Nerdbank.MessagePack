@@ -209,7 +209,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		MessagePackWriter writer = new(seq);
 		writer.WriteMapHeader(1);
 		writer.Write(nameof(HasBigInteger.Value));
-		writer.Write(value.ToByteArray());
+		writer.Write(value.ToByteArray()); // Always in LE order even on BE machines.
 		writer.Flush();
 
 		Assert.Equal(value, this.Serializer.Deserialize<HasBigInteger>(seq, TestContext.Current.CancellationToken)!.Value);
