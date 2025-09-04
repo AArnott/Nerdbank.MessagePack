@@ -285,8 +285,8 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public void Guid_FromBin()
 	{
 		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
-		// No need to call WithGuidConverter since binary is now the default
 
+		// No need to call WithGuidConverter since binary is now the default
 		Span<Guid> valueSpan = [System.Guid.NewGuid()];
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
