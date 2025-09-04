@@ -64,13 +64,13 @@ Data type | API to enable
 @System.Text.Json.JsonElement | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 @System.Text.Json.JsonDocument | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 
-### String-based Guid serialization
-
-By default, @System.Guid values are serialized in a compact binary format for maximum efficiency.
-If you prefer to serialize GUIDs as strings (for human readability or compatibility), you can use <xref:Nerdbank.MessagePack.OptionalConverters.WithGuidConverter*> to specify the string format.
-
 For example, use this code to create a msgpack serializer that can convert System.Text.Json DOM types:
 
 [!code-csharp[](../../samples/cs/BuiltInConverters.cs#STJOptionalConverters)]
 
 Then use the serializer stored in that field to serialize and deserialize such objects.
+
+### String-based Guid serialization
+
+By default, @System.Guid values are serialized in a compact binary format for maximum efficiency.
+If you prefer to serialize GUIDs as strings (for human readability or compatibility), you can use <xref:Nerdbank.MessagePack.OptionalConverters.WithGuidConverter*> to specify the string format.
