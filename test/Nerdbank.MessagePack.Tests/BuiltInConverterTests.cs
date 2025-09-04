@@ -226,6 +226,48 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.True(this.DataMatchesSchema(msgpack, Witness.ShapeProvider.Resolve<HasGuid>()));
 	}
 
+	[Theory, PairwiseData]
+	public void Guid_ParseAnyStringFormat(OptionalConverters.GuidStringFormat format, bool uppercase)
+	{
+		// Serialize the original with the specified format.
+		// Deserialize with any format besides the one we were expecting.
+		(Guid before, Guid after) = this.RoundtripModifiedGuid(
+			s => uppercase ? s.ToUpperInvariant() : s,
+			this.Serializer.WithGuidConverter(format),
+			this.Serializer.WithGuidConverter(format == OptionalConverters.GuidStringFormat.StringD ? OptionalConverters.GuidStringFormat.StringN : OptionalConverters.GuidStringFormat.StringD));
+
+		Assert.Equal(before, after);
+	}
+
+	[Theory, PairwiseData]
+	public void Guid_TruncatedInputs(OptionalConverters.GuidStringFormat format)
+	{
+		this.Serializer = this.Serializer.WithGuidConverter(format);
+
+		bool empty = false;
+		int trimCount = 1;
+		while (!empty)
+		{
+			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.RoundtripModifiedGuid(s =>
+			{
+				empty = s.Length == trimCount;
+				return s[..^trimCount++];
+			}));
+			Assert.Equal(BadGuidFormatErrorMessage, ex.GetBaseException().Message);
+		}
+	}
+
+	[Theory, PairwiseData]
+	public void Guid_MissingHexCharacter(OptionalConverters.GuidStringFormat format)
+	{
+		this.Serializer = this.Serializer.WithGuidConverter(format);
+
+		// Remove a character that will be a hex character in any format.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.RoundtripModifiedGuid(s => s.Remove(6, 1)));
+		this.Logger.WriteLine(ex.GetBaseException().Message);
+		Assert.Equal(BadGuidFormatErrorMessage, ex.GetBaseException().Message);
+	}
+
 	/// <summary>
 	/// Verifies that we can read <see cref="Guid"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
 	/// This tests interoperability with the default binary format.
