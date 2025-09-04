@@ -44,6 +44,7 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("System.Drawing.Point", "SystemDrawingPointConverter"),
 	new ConverterInfo("Memory<byte>", "MemoryOfByteConverter"),
 	new ConverterInfo("ReadOnlyMemory<byte>", "ReadOnlyMemoryOfByteConverter"),
+	new ConverterInfo("Guid", "GuidAsBinaryConverter"),
 	new ConverterInfo("string", "StringConverter", IsRefType: true),
 	new ConverterInfo("Version", "VersionConverter", IsRefType: true),
 	new ConverterInfo("Uri", "UriConverter", IsRefType: true),

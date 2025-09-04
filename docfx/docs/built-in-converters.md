@@ -44,6 +44,7 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 ## Other
 
 - @System.Boolean
+- @System.Guid
 - @System.Nullable`1
 - @System.Drawing.Color
 - @System.Version
@@ -57,12 +58,16 @@ You can activate these converters in code when you need them using the extension
 
 Data type | API to enable
 --|--
-@System.Guid | <xref:Nerdbank.MessagePack.OptionalConverters.WithGuidConverter*>
 @System.Dynamic.ExpandoObject | <xref:Nerdbank.MessagePack.OptionalConverters.WithExpandoObjectConverter*>
 @System.Object | <xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*> or <xref:Nerdbank.MessagePack.OptionalConverters.WithDynamicObjectConverter*>
 @System.Text.Json.Nodes.JsonNode | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 @System.Text.Json.JsonElement | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
 @System.Text.Json.JsonDocument | <xref:Nerdbank.MessagePack.OptionalConverters.WithSystemTextJsonConverters*>
+
+### String-based Guid serialization
+
+By default, @System.Guid values are serialized in a compact binary format for maximum efficiency.
+If you prefer to serialize GUIDs as strings (for human readability or compatibility), you can use <xref:Nerdbank.MessagePack.OptionalConverters.WithGuidConverter*> to specify the string format.
 
 For example, use this code to create a msgpack serializer that can convert System.Text.Json DOM types:
 

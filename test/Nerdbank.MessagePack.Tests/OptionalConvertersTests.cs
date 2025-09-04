@@ -7,14 +7,14 @@ public class OptionalConvertersTests : MessagePackSerializerTestBase
 	public void NullCheck()
 	{
 		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithSystemTextJsonConverters(null!));
-		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithGuidConverter(null!, OptionalConverters.GuidFormat.Binary));
+		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithGuidConverter(null!, OptionalConverters.GuidStringFormat.StringN));
 	}
 
 	[Fact]
 	public void DoubleAddThrows()
 	{
-		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.Binary);
-		Assert.Throws<ArgumentException>(() => this.Serializer.WithGuidConverter(OptionalConverters.GuidFormat.StringN));
+		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidStringFormat.StringD);
+		Assert.Throws<ArgumentException>(() => this.Serializer.WithGuidConverter(OptionalConverters.GuidStringFormat.StringN));
 	}
 
 	[Fact]
