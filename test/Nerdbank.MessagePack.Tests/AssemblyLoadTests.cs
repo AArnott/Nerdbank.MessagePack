@@ -5,13 +5,20 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using PolyType.ReflectionProvider;
 
 public partial class AssemblyLoadTests
 {
-	[Fact]
+	[Fact(Skip = "Known to fail due to https://github.com/eiriktsarpalis/PolyType/issues/252")]
 	public void SystemNumericsNotLoaded()
 	{
 		Helper(driver => driver.SerializeSomethingSimple(), "System.Numerics");
+	}
+
+	[Fact]
+	public void PrimitiveConverterDoesNotLoadOtherAssemblies()
+	{
+		Helper(driver => driver.SerializeRoundtripWithReflectionProvider(true), "System.Numerics", "System.Drawing");
 	}
 
 	private static void Helper(Action<AppDomainTestDriver> action, params string[] disallowedAssemblies)
@@ -83,6 +90,16 @@ public partial class AssemblyLoadTests
 		{
 			MessagePackSerializer serializer = new();
 			serializer.Serialize(new SomeObject(42));
+		}
+
+		internal T SerializeRoundtripWithReflectionProvider<T>(T value)
+		{
+			MessagePackSerializer serializer = new();
+
+			// Use ReflectionTypeShapeProvider to avoid https://github.com/eiriktsarpalis/PolyType/issues/252
+			ITypeShapeProvider typeProvider = ReflectionTypeShapeProvider.Default;
+			byte[] buffer = serializer.Serialize(value, typeProvider);
+			return serializer.Deserialize<T>(buffer, typeProvider)!;
 		}
 
 #pragma warning restore CA1822 // Mark members as static
