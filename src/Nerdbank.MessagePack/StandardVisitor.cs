@@ -60,7 +60,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Check if the type has a built-in converter.
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? defaultConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(typeof(T), this.owner.PreserveReferences, out MessagePackConverter? defaultConverter))
 		{
 			return defaultConverter;
 		}

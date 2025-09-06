@@ -8,6 +8,7 @@
 #pragma warning disable SA1309 // Field names should not begin with underscore
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -67,246 +68,248 @@ internal static class PrimitiveConverterLookup
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
 	/// </summary>
-	/// <typeparam name="T">The type to get a converter for.</typeparam>
+	/// <param name="primitiveType">The type to get a converter for.</param>
 	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
 	/// <param name="converter">Receives the converter, if one is available.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
-	internal static bool TryGetPrimitiveConverter<T>(ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	internal static bool TryGetPrimitiveConverter(Type primitiveType, ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter? converter)
 	{
-		if (typeof(T) == typeof(char))
+		string? primitiveTypeName = primitiveType.FullName;
+
+		if (primitiveType == typeof(char))
 		{
-			converter = (MessagePackConverter<T>)(_CharConverter ??= new CharConverter());
+			converter = (MessagePackConverter)(_CharConverter ??= new CharConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(byte))
+		if (primitiveType == typeof(byte))
 		{
-			converter = (MessagePackConverter<T>)(_ByteConverter ??= new ByteConverter());
+			converter = (MessagePackConverter)(_ByteConverter ??= new ByteConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(sbyte))
+		if (primitiveType == typeof(sbyte))
 		{
-			converter = (MessagePackConverter<T>)(_SByteConverter ??= new SByteConverter());
+			converter = (MessagePackConverter)(_SByteConverter ??= new SByteConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(short))
+		if (primitiveType == typeof(short))
 		{
-			converter = (MessagePackConverter<T>)(_Int16Converter ??= new Int16Converter());
+			converter = (MessagePackConverter)(_Int16Converter ??= new Int16Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(ushort))
+		if (primitiveType == typeof(ushort))
 		{
-			converter = (MessagePackConverter<T>)(_UInt16Converter ??= new UInt16Converter());
+			converter = (MessagePackConverter)(_UInt16Converter ??= new UInt16Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(int))
+		if (primitiveType == typeof(int))
 		{
-			converter = (MessagePackConverter<T>)(_Int32Converter ??= new Int32Converter());
+			converter = (MessagePackConverter)(_Int32Converter ??= new Int32Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(uint))
+		if (primitiveType == typeof(uint))
 		{
-			converter = (MessagePackConverter<T>)(_UInt32Converter ??= new UInt32Converter());
+			converter = (MessagePackConverter)(_UInt32Converter ??= new UInt32Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(long))
+		if (primitiveType == typeof(long))
 		{
-			converter = (MessagePackConverter<T>)(_Int64Converter ??= new Int64Converter());
+			converter = (MessagePackConverter)(_Int64Converter ??= new Int64Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(ulong))
+		if (primitiveType == typeof(ulong))
 		{
-			converter = (MessagePackConverter<T>)(_UInt64Converter ??= new UInt64Converter());
+			converter = (MessagePackConverter)(_UInt64Converter ??= new UInt64Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(System.Numerics.BigInteger))
+		if (primitiveTypeName == "System.Numerics.BigInteger")
 		{
-			converter = (MessagePackConverter<T>)(_BigIntegerConverter ??= new BigIntegerConverter());
+			converter = (MessagePackConverter)(_BigIntegerConverter ??= CreateBigIntegerConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(bool))
+		if (primitiveType == typeof(bool))
 		{
-			converter = (MessagePackConverter<T>)(_BooleanConverter ??= new BooleanConverter());
+			converter = (MessagePackConverter)(_BooleanConverter ??= new BooleanConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(float))
+		if (primitiveType == typeof(float))
 		{
-			converter = (MessagePackConverter<T>)(_SingleConverter ??= new SingleConverter());
+			converter = (MessagePackConverter)(_SingleConverter ??= new SingleConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(double))
+		if (primitiveType == typeof(double))
 		{
-			converter = (MessagePackConverter<T>)(_DoubleConverter ??= new DoubleConverter());
+			converter = (MessagePackConverter)(_DoubleConverter ??= new DoubleConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(decimal))
+		if (primitiveType == typeof(decimal))
 		{
-			converter = (MessagePackConverter<T>)(_DecimalConverter ??= new DecimalConverter());
+			converter = (MessagePackConverter)(_DecimalConverter ??= new DecimalConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(DateTime))
+		if (primitiveType == typeof(DateTime))
 		{
-			converter = (MessagePackConverter<T>)(_DateTimeConverter ??= new DateTimeConverter());
+			converter = (MessagePackConverter)(_DateTimeConverter ??= new DateTimeConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(DateTimeOffset))
+		if (primitiveType == typeof(DateTimeOffset))
 		{
-			converter = (MessagePackConverter<T>)(_DateTimeOffsetConverter ??= new DateTimeOffsetConverter());
+			converter = (MessagePackConverter)(_DateTimeOffsetConverter ??= new DateTimeOffsetConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(TimeSpan))
+		if (primitiveType == typeof(TimeSpan))
 		{
-			converter = (MessagePackConverter<T>)(_TimeSpanConverter ??= new TimeSpanConverter());
+			converter = (MessagePackConverter)(_TimeSpanConverter ??= new TimeSpanConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(System.Drawing.Color))
+		if (primitiveTypeName == "System.Drawing.Color")
 		{
-			converter = (MessagePackConverter<T>)(_SystemDrawingColorConverter ??= new SystemDrawingColorConverter());
+			converter = (MessagePackConverter)(_SystemDrawingColorConverter ??= CreateSystemDrawingColorConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(System.Drawing.Point))
+		if (primitiveTypeName == "System.Drawing.Point")
 		{
-			converter = (MessagePackConverter<T>)(_SystemDrawingPointConverter ??= new SystemDrawingPointConverter());
+			converter = (MessagePackConverter)(_SystemDrawingPointConverter ??= CreateSystemDrawingPointConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(Memory<byte>))
+		if (primitiveType == typeof(Memory<byte>))
 		{
-			converter = (MessagePackConverter<T>)(_MemoryOfByteConverter ??= new MemoryOfByteConverter());
+			converter = (MessagePackConverter)(_MemoryOfByteConverter ??= new MemoryOfByteConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(ReadOnlyMemory<byte>))
+		if (primitiveType == typeof(ReadOnlyMemory<byte>))
 		{
-			converter = (MessagePackConverter<T>)(_ReadOnlyMemoryOfByteConverter ??= new ReadOnlyMemoryOfByteConverter());
+			converter = (MessagePackConverter)(_ReadOnlyMemoryOfByteConverter ??= new ReadOnlyMemoryOfByteConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(Guid))
+		if (primitiveType == typeof(Guid))
 		{
-			converter = (MessagePackConverter<T>)(_GuidAsBinaryConverter ??= new GuidAsBinaryConverter());
+			converter = (MessagePackConverter)(_GuidAsBinaryConverter ??= new GuidAsBinaryConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(string))
+		if (primitiveType == typeof(string))
 		{
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
-				converter = (MessagePackConverter<T>)(_StringConverterReferencePreserving ??= new StringConverter().WrapWithReferencePreservation());
+				converter = (MessagePackConverter)(_StringConverterReferencePreserving ??= new StringConverter().WrapWithReferencePreservation());
 			}
 			else
 			{
-				converter = (MessagePackConverter<T>)(_StringConverter ??= new StringConverter());
+				converter = (MessagePackConverter)(_StringConverter ??= new StringConverter());
 			}
 
 			return true;
 		}
 
-		if (typeof(T) == typeof(Version))
+		if (primitiveType == typeof(Version))
 		{
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
-				converter = (MessagePackConverter<T>)(_VersionConverterReferencePreserving ??= new VersionConverter().WrapWithReferencePreservation());
+				converter = (MessagePackConverter)(_VersionConverterReferencePreserving ??= new VersionConverter().WrapWithReferencePreservation());
 			}
 			else
 			{
-				converter = (MessagePackConverter<T>)(_VersionConverter ??= new VersionConverter());
+				converter = (MessagePackConverter)(_VersionConverter ??= new VersionConverter());
 			}
 
 			return true;
 		}
 
-		if (typeof(T) == typeof(Uri))
+		if (primitiveType == typeof(Uri))
 		{
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
-				converter = (MessagePackConverter<T>)(_UriConverterReferencePreserving ??= new UriConverter().WrapWithReferencePreservation());
+				converter = (MessagePackConverter)(_UriConverterReferencePreserving ??= new UriConverter().WrapWithReferencePreservation());
 			}
 			else
 			{
-				converter = (MessagePackConverter<T>)(_UriConverter ??= new UriConverter());
+				converter = (MessagePackConverter)(_UriConverter ??= new UriConverter());
 			}
 
 			return true;
 		}
 
-		if (typeof(T) == typeof(byte[]))
+		if (primitiveType == typeof(byte[]))
 		{
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
-				converter = (MessagePackConverter<T>)(_ByteArrayConverterReferencePreserving ??= new ByteArrayConverter().WrapWithReferencePreservation());
+				converter = (MessagePackConverter)(_ByteArrayConverterReferencePreserving ??= new ByteArrayConverter().WrapWithReferencePreservation());
 			}
 			else
 			{
-				converter = (MessagePackConverter<T>)(_ByteArrayConverter ??= new ByteArrayConverter());
+				converter = (MessagePackConverter)(_ByteArrayConverter ??= new ByteArrayConverter());
 			}
 
 			return true;
 		}
 
-		if (typeof(T) == typeof(Nerdbank.MessagePack.RawMessagePack))
+		if (primitiveType == typeof(Nerdbank.MessagePack.RawMessagePack))
 		{
-			converter = (MessagePackConverter<T>)(_RawMessagePackConverter ??= new RawMessagePackConverter());
+			converter = (MessagePackConverter)(_RawMessagePackConverter ??= new RawMessagePackConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(Nerdbank.MessagePack.MessagePackValue))
+		if (primitiveType == typeof(Nerdbank.MessagePack.MessagePackValue))
 		{
-			converter = (MessagePackConverter<T>)(_MessagePackValueConverter ??= new MessagePackValueConverter());
+			converter = (MessagePackConverter)(_MessagePackValueConverter ??= new MessagePackValueConverter());
 			return true;
 		}
 
 #if NET
-		if (typeof(T) == typeof(System.Text.Rune))
+		if (primitiveType == typeof(System.Text.Rune))
 		{
-			converter = (MessagePackConverter<T>)(_RuneConverter ??= new RuneConverter());
+			converter = (MessagePackConverter)(_RuneConverter ??= new RuneConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(Int128))
+		if (primitiveType == typeof(Int128))
 		{
-			converter = (MessagePackConverter<T>)(_Int128Converter ??= new Int128Converter());
+			converter = (MessagePackConverter)(_Int128Converter ??= new Int128Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(UInt128))
+		if (primitiveType == typeof(UInt128))
 		{
-			converter = (MessagePackConverter<T>)(_UInt128Converter ??= new UInt128Converter());
+			converter = (MessagePackConverter)(_UInt128Converter ??= new UInt128Converter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(Half))
+		if (primitiveType == typeof(Half))
 		{
-			converter = (MessagePackConverter<T>)(_HalfConverter ??= new HalfConverter());
+			converter = (MessagePackConverter)(_HalfConverter ??= new HalfConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(TimeOnly))
+		if (primitiveType == typeof(TimeOnly))
 		{
-			converter = (MessagePackConverter<T>)(_TimeOnlyConverter ??= new TimeOnlyConverter());
+			converter = (MessagePackConverter)(_TimeOnlyConverter ??= new TimeOnlyConverter());
 			return true;
 		}
 
-		if (typeof(T) == typeof(DateOnly))
+		if (primitiveType == typeof(DateOnly))
 		{
-			converter = (MessagePackConverter<T>)(_DateOnlyConverter ??= new DateOnlyConverter());
+			converter = (MessagePackConverter)(_DateOnlyConverter ??= new DateOnlyConverter());
 			return true;
 		}
 
@@ -314,4 +317,13 @@ internal static class PrimitiveConverterLookup
 		converter = null;
 		return false;
 	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static IMessagePackConverterInternal CreateBigIntegerConverter() => new BigIntegerConverter();
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static IMessagePackConverterInternal CreateSystemDrawingColorConverter() => new SystemDrawingColorConverter();
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static IMessagePackConverterInternal CreateSystemDrawingPointConverter() => new SystemDrawingPointConverter();
 }

@@ -150,7 +150,7 @@ public static class OptionalConverters
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		Requires.Argument(kind is DateTimeKind.Utc or DateTimeKind.Local, nameof(kind), "Only UTC and Local DateTimeKind values are supported.");
-		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter<DateTime>(ReferencePreservationMode.Off, out MessagePackConverter<DateTime>? builtin));
+		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter(typeof(DateTime), ReferencePreservationMode.Off, out MessagePackConverter? builtin));
 		return serializer with
 		{
 			Converters = [
