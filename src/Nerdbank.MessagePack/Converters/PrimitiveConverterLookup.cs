@@ -8,6 +8,7 @@
 #pragma warning disable SA1309 // Field names should not begin with underscore
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -127,12 +128,6 @@ internal static class PrimitiveConverterLookup
 			return true;
 		}
 
-		if (typeof(T) == typeof(System.Numerics.BigInteger))
-		{
-			converter = (MessagePackConverter<T>)(_BigIntegerConverter ??= new BigIntegerConverter());
-			return true;
-		}
-
 		if (typeof(T) == typeof(bool))
 		{
 			converter = (MessagePackConverter<T>)(_BooleanConverter ??= new BooleanConverter());
@@ -172,18 +167,6 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(TimeSpan))
 		{
 			converter = (MessagePackConverter<T>)(_TimeSpanConverter ??= new TimeSpanConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(System.Drawing.Color))
-		{
-			converter = (MessagePackConverter<T>)(_SystemDrawingColorConverter ??= new SystemDrawingColorConverter());
-			return true;
-		}
-
-		if (typeof(T) == typeof(System.Drawing.Point))
-		{
-			converter = (MessagePackConverter<T>)(_SystemDrawingPointConverter ??= new SystemDrawingPointConverter());
 			return true;
 		}
 
@@ -311,7 +294,38 @@ internal static class PrimitiveConverterLookup
 		}
 
 #endif
+
+		string primitiveTypeName = typeof(T).Name;
+		string? primitiveTypeNamespace = null;
+
+		if (primitiveTypeName == "BigInteger" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "System.Numerics")
+		{
+			converter = (MessagePackConverter<T>?)(_BigIntegerConverter ??= CreateBigIntegerConverter<T>());
+			return converter is not null;
+		}
+
+		if (primitiveTypeName == "Color" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "System.Drawing")
+		{
+			converter = (MessagePackConverter<T>?)(_SystemDrawingColorConverter ??= CreateSystemDrawingColorConverter<T>());
+			return converter is not null;
+		}
+
+		if (primitiveTypeName == "Point" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "System.Drawing")
+		{
+			converter = (MessagePackConverter<T>?)(_SystemDrawingPointConverter ??= CreateSystemDrawingPointConverter<T>());
+			return converter is not null;
+		}
+
 		converter = null;
 		return false;
 	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static IMessagePackConverterInternal? CreateBigIntegerConverter<T>() => typeof(T) == typeof(System.Numerics.BigInteger) ? new BigIntegerConverter() : null;
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static IMessagePackConverterInternal? CreateSystemDrawingColorConverter<T>() => typeof(T) == typeof(System.Drawing.Color) ? new SystemDrawingColorConverter() : null;
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static IMessagePackConverterInternal? CreateSystemDrawingPointConverter<T>() => typeof(T) == typeof(System.Drawing.Point) ? new SystemDrawingPointConverter() : null;
 }

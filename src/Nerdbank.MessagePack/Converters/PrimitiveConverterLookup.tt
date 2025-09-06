@@ -11,6 +11,7 @@
 #pragma warning disable SA1309 // Field names should not begin with underscore
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -26,7 +27,7 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("uint", "UInt32Converter"),
 	new ConverterInfo("long", "Int64Converter"),
 	new ConverterInfo("ulong", "UInt64Converter"),
-	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerConverter"),
+	new ConverterInfo("System.Numerics.BigInteger", "BigIntegerConverter") { LazyLoad = true },
 	new ConverterInfo("bool", "BooleanConverter"),
 	new ConverterInfo("float", "SingleConverter"),
 	new ConverterInfo("double", "DoubleConverter"),
@@ -40,8 +41,8 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("Half", "HalfConverter", "NET"),
 	new ConverterInfo("TimeOnly", "TimeOnlyConverter", "NET"),
 	new ConverterInfo("DateOnly", "DateOnlyConverter", "NET"),
-	new ConverterInfo("System.Drawing.Color", "SystemDrawingColorConverter"),
-	new ConverterInfo("System.Drawing.Point", "SystemDrawingPointConverter"),
+	new ConverterInfo("System.Drawing.Color", "SystemDrawingColorConverter") { LazyLoad = true },
+	new ConverterInfo("System.Drawing.Point", "SystemDrawingPointConverter") { LazyLoad = true },
 	new ConverterInfo("Memory<byte>", "MemoryOfByteConverter"),
 	new ConverterInfo("ReadOnlyMemory<byte>", "ReadOnlyMemoryOfByteConverter"),
 	new ConverterInfo("Guid", "GuidAsBinaryConverter"),
@@ -89,13 +90,12 @@ internal static class PrimitiveConverterLookup
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
 	internal static bool TryGetPrimitiveConverter<T>(ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
-<# foreach (var converterGroup in convertersByType.GroupBy(c => c.PreprocessorCondition)) {
+<# foreach (var converterGroup in convertersByType.Where(c => !c.LazyLoad).GroupBy(c => c.PreprocessorCondition)) {
 	 if (converterGroup.Key is not null) { #>
 #if <#=converterGroup.Key#>
 <#   }
 	 foreach (var converter in converterGroup) {
-		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty;
-		#>
+		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty; #>
 		if (typeof(T) == typeof(<#=converter.TypeName#>)<#=featureCondition#>)
 		{
 <#
@@ -103,17 +103,58 @@ internal static class PrimitiveConverterLookup
 #>
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
-				converter = (MessagePackConverter<T>)(<#=converter.ReferencePreservingFieldName#> ??= new <#=converter.ConverterName#>().WrapWithReferencePreservation());
+				converter = (MessagePackConverter<T>)(<#=converter.ReferencePreservingFieldName#> ??= new <#= converter.ConverterName #>().WrapWithReferencePreservation());
 			}
 			else
 			{
-				converter = (MessagePackConverter<T>)(<#=converter.FieldName#> ??= new <#=converter.ConverterName#>());
+				converter = (MessagePackConverter<T>)(<#=converter.FieldName#> ??= new <#= converter.ConverterName #>());
 			}
 
 <# } else { #>
-			converter = (MessagePackConverter<T>)(<#=converter.FieldName#> ??= new <#=converter.ConverterName#>());
+			converter = (MessagePackConverter<T>)(<#=converter.FieldName#> ??= new <#= converter.ConverterName #>());
 <# } #>
 			return true;
+		}
+
+<#   }
+	 if (converterGroup.Key is not null) { #>
+#endif
+<#   }
+} #>
+
+		string primitiveTypeName = typeof(T).Name;
+		string? primitiveTypeNamespace = null;
+
+<# foreach (var converterGroup in convertersByType.Where(c => c.LazyLoad).GroupBy(c => c.PreprocessorCondition)) {
+	 if (converterGroup.Key is not null) { #>
+#if <#=converterGroup.Key#>
+<#   }
+	 foreach (var converter in converterGroup) {
+		// Type.Name is cheap, but not free.
+		// Type.Namespace is more expensive.
+		// Type.FullName is the most expensive.
+		// Therefore, we only obtain these properties when we must.
+		string leafName = converter.TypeName.Substring(converter.TypeName.LastIndexOf('.') + 1);
+		string ns = converter.TypeName.Substring(0, converter.TypeName.LastIndexOf('.'));
+		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty; #>
+		if (primitiveTypeName == "<#=leafName#>" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "<#=ns#>"<#=featureCondition#>)
+		{
+<#
+	if (converter.IsRefType) {
+#>
+			if (referencePreserving != ReferencePreservationMode.Off)
+			{
+				converter = (MessagePackConverter<T>?)(<#=converter.ReferencePreservingFieldName#> ??= Create<#=converter.ConverterName#><T>().WrapWithReferencePreservation());
+			}
+			else
+			{
+				converter = (MessagePackConverter<T>?)(<#=converter.FieldName#> ??= Create<#=converter.ConverterName#><T>());
+			}
+
+<# } else { #>
+			converter = (MessagePackConverter<T>?)(<#=converter.FieldName#> ??= Create<#=converter.ConverterName#><T>());
+<# } #>
+			return converter is not null;
 		}
 
 <#   }
@@ -124,11 +165,21 @@ internal static class PrimitiveConverterLookup
 		converter = null;
 		return false;
 	}
+<# foreach (var converter in convertersByType.Where(c => c.LazyLoad)) { 
+    // The runtime type check serves both to ensure type identity beyond string comparison
+    // and (perhaps more importantly) to preserve trimming of unused types, since the trimmer
+    // does not trim based on string comparisons.
+#>
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#><T>() => typeof(T) == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>() : null;
+<# } #>
 }
 <#+
 record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false, string Feature = null)
 {
 	internal string FieldName => $"_{ConverterName}";
 	internal string ReferencePreservingFieldName => $"{FieldName}ReferencePreserving";
+	internal bool LazyLoad { get; set; }
 }
 #>
