@@ -10,9 +10,21 @@ using PolyType.ReflectionProvider;
 public partial class AssemblyLoadTests
 {
 	[Fact(Skip = "Known to fail due to https://github.com/eiriktsarpalis/PolyType/issues/252")]
-	public void SystemNumericsNotLoaded()
+	public void SerializeCustomTypeUsingWitnessType()
 	{
 		Helper(driver => driver.SerializeSomethingSimple(), "System.Numerics");
+	}
+
+	[Fact]
+	public void SerializeCustomTypeUsingDirectTypeShape()
+	{
+		Helper(driver => driver.SerializeSomethingSimpleUsingTypeShape(), "System.Numerics");
+	}
+
+	[Fact]
+	public void PrimitiveConverterDoesNotLoadOtherAssemblies_SourceGenTypeShape()
+	{
+		Helper(driver => driver.SerializeRoundtripWithTypeShape(true), "System.Numerics", "System.Drawing");
 	}
 
 	[Fact]
@@ -90,6 +102,21 @@ public partial class AssemblyLoadTests
 		{
 			MessagePackSerializer serializer = new();
 			serializer.Serialize(new SomeObject(42));
+		}
+
+		internal void SerializeSomethingSimpleUsingTypeShape()
+		{
+			MessagePackSerializer serializer = new();
+			serializer.Serialize(new SomeObject(42), PolyType.SourceGenerator.ShapeProvider_Nerdbank_MessagePack_Tests.Default.SomeObject);
+		}
+
+		internal bool SerializeRoundtripWithTypeShape(bool value)
+		{
+			MessagePackSerializer serializer = new();
+
+			ITypeShape<bool> typeShape = PolyType.SourceGenerator.ShapeProvider_Nerdbank_MessagePack_Tests.Default.Boolean;
+			byte[] buffer = serializer.Serialize(value, typeShape);
+			return serializer.Deserialize(buffer, typeShape);
 		}
 
 		internal T SerializeRoundtripWithReflectionProvider<T>(T value)
