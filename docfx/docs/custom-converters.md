@@ -1,6 +1,6 @@
 # Custom converters
 
-While using the @PolyType.GenerateShapeAttribute is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
+While using the <xref:PolyType.GenerateShapeAttribute> is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
 In such cases, you can define and register your own custom converter for the incompatible type.
 
 Before writing your own converter for a custom type, consider writing a [surrogate type](surrogate-types.md) instead.
@@ -90,7 +90,7 @@ The @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nam
 
 ---
 
-The above assumes that `SomeOtherType` is a type that you declare and can have @PolyType.GenerateShapeAttribute`1 applied to it.
+The above assumes that `SomeOtherType` is a type that you declare and can have <xref:PolyType.GenerateShapeAttribute> applied to it.
 If this is not the case, you may provide your own type shape and reference that.
 For convenience, you may want to apply it directly to your custom converter:
 
@@ -104,10 +104,10 @@ For convenience, you may want to apply it directly to your custom converter:
 
 ---
 
-The @PolyType.GenerateShapeAttribute`1 is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
+The <xref:PolyType.GenerateShapeForAttribute`1> is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
 
 Arrays of a type require a shape of their own.
-So even if you define your type `MyType` with @PolyType.GenerateShapeAttribute`1, serializing `MyType[]` would require a witness type and attribute. For example:
+So even if you define your type `MyType` with <xref:PolyType.GenerateShapeAttribute>, serializing `MyType[]` would require a witness type and attribute. For example:
 
 # [.NET](#tab/net)
 
@@ -211,7 +211,7 @@ The built-in converters, including those that serialize your custom data types b
 
 There are two ways to get the serializer to use your custom converter.
 
-Note that if your custom type is used as the top-level data type to be serialized, it must still have @PolyType.GenerateShapeAttribute applied as usual.
+Note that if your custom type is used as the top-level data type to be serialized, it must still have <xref:PolyType.GenerateShapeAttribute> applied as usual.
 
 ### Attribute approach
 

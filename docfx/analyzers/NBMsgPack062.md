@@ -16,7 +16,7 @@ public class Person
 ## Resolution
 
 Change the `public` accessibility modifier to `private`.
-In doing so, remember to also add a @PolyType.PropertyShapeAttribute to avoid introducing [NBMsgPack060](NBMsgPack060.md).
+In doing so, remember to also add a <xref:PolyType.PropertyShapeAttribute> to avoid introducing [NBMsgPack060](NBMsgPack060.md).
 
 ```cs
 public class Person

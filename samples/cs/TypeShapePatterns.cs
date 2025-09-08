@@ -52,7 +52,7 @@ partial class WitnessGenerated
         var serializer = new MessagePackSerializer();
 
         // Serialize the FamilyTree instance using the shape generated from your witness class.
-        byte[] msgpack = serializer.Serialize<FamilyTree>(familyTree, Witness.ShapeProvider);
+        byte[] msgpack = serializer.Serialize<FamilyTree>(familyTree, Witness.GeneratedTypeShapeProvider);
     }
     #endregion
 #endif

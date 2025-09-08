@@ -75,7 +75,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseComparer = (SecureEqualityComparer<TUnionCase>)unionCaseShape.Type.Invoke(this, IsUnionSentinel)!;
+		var caseComparer = (SecureEqualityComparer<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this, IsUnionSentinel)!;
 		return new SecureUnionCaseEqualityComparer<TUnionCase, TUnion>(caseComparer, unionCaseShape.Marshaler);
 	}
 

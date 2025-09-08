@@ -9,7 +9,7 @@ The following snippet shows serializing a farm with various animals, converting 
 
 ## AOT readiness
 
-The above snippet uses the @PolyType.ReflectionProvider.ReflectionTypeShapeProvider which allows a single F# project to work out of the box.
+The above snippet uses the <xref:PolyType.ReflectionProvider.ReflectionTypeShapeProvider> which allows a single F# project to work out of the box.
 
 Reflection can be avoided, and an F# program can be AOT-safe by:
 

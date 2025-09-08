@@ -28,7 +28,7 @@ namespace StreamingDeserialization
 
         async Task ReadListAsync(PipeReader reader)
         {
-            await foreach (Person? item in Serializer.DeserializeEnumerableAsync<Person>(reader, Witness.ShapeProvider))
+            await foreach (Person? item in Serializer.DeserializeEnumerableAsync<Person>(reader, Witness.GeneratedTypeShapeProvider))
             {
                 // Process item here.
             }
@@ -69,7 +69,7 @@ namespace StreamingDeserialization
         async Task ReadListAsync(PipeReader reader)
         {
             MessagePackSerializer.StreamingEnumerationOptions<Family, Person> options = new(f => f.Members);
-            await foreach (Person? item in Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options))
+            await foreach (Person? item in Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options))
             {
                 // Process item here.
             }

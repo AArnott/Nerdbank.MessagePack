@@ -12,9 +12,9 @@ void ConfigureServices(IServiceCollection services)
     services.AddMvc().AddMvcOptions(option =>
     {
         option.OutputFormatters.Clear();
-        option.OutputFormatters.Add(new MessagePackOutputFormatter(Witness.ShapeProvider));
+        option.OutputFormatters.Add(new MessagePackOutputFormatter(Witness.GeneratedTypeShapeProvider));
         option.InputFormatters.Clear();
-        option.InputFormatters.Add(new MessagePackInputFormatter(Witness.ShapeProvider));
+        option.InputFormatters.Add(new MessagePackInputFormatter(Witness.GeneratedTypeShapeProvider));
     });
 }
 

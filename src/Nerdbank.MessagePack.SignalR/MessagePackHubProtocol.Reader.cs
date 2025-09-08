@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using Microsoft.AspNetCore.SignalR;
-using PolyType.Abstractions;
 
 namespace Nerdbank.MessagePack.SignalR;
 
@@ -208,7 +207,7 @@ internal partial class MessagePackHubProtocol
 			return null;
 		}
 
-		return EnvelopeSerializer.Deserialize<IDictionary<string, string>>(ref reader, Witness.ShapeProvider);
+		return EnvelopeSerializer.Deserialize<IDictionary<string, string>>(ref reader, Witness.GeneratedTypeShapeProvider);
 	}
 
 	private static string[]? ReadStreamIds(ref MessagePackReader reader)
@@ -220,7 +219,7 @@ internal partial class MessagePackHubProtocol
 			return null;
 		}
 
-		return EnvelopeSerializer.Deserialize<string[]>(ref reader, Witness.ShapeProvider);
+		return EnvelopeSerializer.Deserialize<string[]>(ref reader, Witness.GeneratedTypeShapeProvider);
 	}
 
 	private static Type? TryGetReturnType(IInvocationBinder binder, string invocationId)

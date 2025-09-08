@@ -561,7 +561,7 @@ public class MigrationCodeFix : CodeFixProvider
 
 				{
 					// - options.Resolver.GetFormatterWithVerify<string>()
-					// + context.GetConverter<string>(ThisConverter.ShapeProvider)
+					// + context.GetConverter<string>(ThisConverter.GeneratedTypeShapeProvider)
 					if (methodSymbol is { IsGenericMethod: true } &&
 						(SymbolEqualityComparer.Default.Equals(methodSymbol.ConstructedFrom, oldLibrarySymbols.GetFormatterWithVerify) ||
 						 SymbolEqualityComparer.Default.Equals(methodSymbol.ConstructedFrom, oldLibrarySymbols.GetFormatterWithVerify.ReduceExtensionMethod(oldLibrarySymbols.IFormatterResolver))))
@@ -586,7 +586,7 @@ public class MigrationCodeFix : CodeFixProvider
 									Argument(MemberAccessExpression(
 										SyntaxKind.SimpleMemberAccessExpression,
 										IdentifierName(this.FormatterDeclaration.Identifier),
-										IdentifierName("ShapeProvider")))));
+										IdentifierName("GeneratedTypeShapeProvider")))));
 						}
 					}
 				}

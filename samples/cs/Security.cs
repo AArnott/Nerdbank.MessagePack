@@ -39,9 +39,9 @@ partial class Security
     [GenerateShape]
     public partial class HashCollisionResistance
     {
-        public Dictionary<CustomType, string> Dictionary { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
+        public Dictionary<CustomType, string> Dictionary { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.GeneratedTypeShapeProvider));
 
-        public HashSet<CustomType> HashSet { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.ShapeProvider));
+        public HashSet<CustomType> HashSet { get; } = new(StructuralEqualityComparer.GetHashCollisionResistant<CustomType>(Witness.GeneratedTypeShapeProvider));
     }
 
     [GenerateShape]

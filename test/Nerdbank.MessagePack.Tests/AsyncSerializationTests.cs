@@ -100,7 +100,7 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		string expected = new string('a', 100 * 1024);
 		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
 		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0), msgpack.GetPosition(1), msgpack.GetPosition(512), msgpack.GetPosition(6000), msgpack.GetPosition(32 * 1024));
-		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		Assert.Equal(expected, actual);
 	}
 
@@ -110,7 +110,7 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		string expected = string.Empty;
 		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
 		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0));
-		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		string? actual = await this.Serializer.DeserializeAsync<string>(pipeReader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		Assert.Equal(expected, actual);
 	}
 
@@ -127,7 +127,7 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(sequence);
 
 		// Deserialize a value. It should advance the reader exactly across the msgpack structure.
-		int number = await this.Serializer.DeserializeAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		int number = await this.Serializer.DeserializeAsync<int>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		Assert.Equal(42, number);
 
 		// Verify that the reader is now positioned at the next byte.

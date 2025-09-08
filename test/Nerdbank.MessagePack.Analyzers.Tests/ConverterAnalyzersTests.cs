@@ -18,7 +18,7 @@ public class ConverterAnalyzersTests
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -66,7 +66,7 @@ public class ConverterAnalyzersTests
 					writer.Write(3);
 				}
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -120,7 +120,7 @@ public class ConverterAnalyzersTests
 					writer.Write(3);
 				}
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -132,7 +132,6 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			public class MyType
@@ -187,7 +186,7 @@ public class ConverterAnalyzersTests
 			#endif
 				}
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -199,7 +198,6 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			public class MyType
@@ -246,7 +244,7 @@ public class ConverterAnalyzersTests
 					context.GetConverter(typeof(SomeOtherType), null).WriteObject(ref writer, value.SomeField, context);
 				}
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -259,7 +257,6 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using System;
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			internal class TimeSpanConverter : MessagePackConverter<TimeSpan>
@@ -268,7 +265,7 @@ public class ConverterAnalyzersTests
 
 				public override void Write(ref MessagePackWriter writer, in TimeSpan value, SerializationContext context) => writer.Write(value.Ticks);
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -281,7 +278,6 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using System;
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			internal class Int16Converter : MessagePackConverter<Int16>
@@ -290,7 +286,7 @@ public class ConverterAnalyzersTests
 
 				public override void Write(ref MessagePackWriter writer, in Int16 value, SerializationContext context) => writer.Write(value);
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -303,7 +299,6 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using System;
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			internal class VersionConverter : MessagePackConverter<Version>
@@ -312,7 +307,7 @@ public class ConverterAnalyzersTests
 
 				public override void Write(ref MessagePackWriter writer, in Version value, SerializationContext context) => writer.Write(value?.ToString());
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -325,7 +320,6 @@ public class ConverterAnalyzersTests
 		string source = /* lang=c#-test */ """
 			using System;
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			internal class VersionConverter : MessagePackConverter<Version>
@@ -339,7 +333,7 @@ public class ConverterAnalyzersTests
 					writer.Advance(3);
 				}
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -353,7 +347,6 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement> : MessagePackConverter<TArray>
@@ -365,7 +358,7 @@ public class ConverterAnalyzersTests
 				}
 
 				public override void Write(ref MessagePackWriter writer, in TArray value, SerializationContext context) => throw new NotImplementedException();
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -379,7 +372,6 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			internal class ArrayWithFlattenedDimensionsConverter : MessagePackConverter<int>
@@ -391,7 +383,7 @@ public class ConverterAnalyzersTests
 				}
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 
 			[AttributeUsage(AttributeTargets.Method)]
@@ -408,7 +400,6 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Diagnostics.CodeAnalysis;
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			internal class ArrayWithFlattenedDimensionsConverter(MessagePackConverter<int> primitiveConverter) : MessagePackConverter<int>
@@ -440,7 +431,7 @@ public class ConverterAnalyzersTests
 
 				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => throw new NotImplementedException();
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -479,7 +470,7 @@ public class ConverterAnalyzersTests
 			{
 				public override MyType Read(ref MessagePackReader reader, SerializationContext context) => throw new System.NotImplementedException();
 				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context) => throw new System.NotImplementedException();
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 
 			public class DerivedConverter : MyTypeConverter
@@ -495,7 +486,6 @@ public class ConverterAnalyzersTests
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
-			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
 			#if NET
@@ -523,7 +513,7 @@ public class ConverterAnalyzersTests
 						)|};
 					throw new System.NotImplementedException();
 				}
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -554,7 +544,7 @@ public class ConverterAnalyzersTests
 					{|NBMsgPack031:writer.Write(2)|};
 				}
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 
@@ -581,7 +571,7 @@ public class ConverterAnalyzersTests
 				{
 				}
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 
 				// Not an error to not write things here.
 				void Helper()
@@ -611,7 +601,7 @@ public class ConverterAnalyzersTests
 				public override void Write(ref MessagePackWriter writer, in string value, SerializationContext context)
 					=> writer.Write(value + "W");
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 		await VerifyCS.VerifyAnalyzerAsync(source);
@@ -632,7 +622,7 @@ public class ConverterAnalyzersTests
 				public override void Write(ref MessagePackWriter writer, in string value, SerializationContext context)
 					=> writer.Write(value);
 
-				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, PolyType.Abstractions.ITypeShape typeShape) => throw new System.NotImplementedException();
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
 			}
 			""";
 		await VerifyCS.VerifyAnalyzerAsync(source);
@@ -666,7 +656,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
-			using PolyType.Abstractions;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			class {|NBMsgPack037:MyConverter|} : MessagePackConverter<int>
@@ -695,7 +685,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
-			using PolyType.Abstractions;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			class MyConverter : MessagePackConverter<int>
@@ -753,7 +743,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
-			using PolyType.Abstractions;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			class MyConverter : MessagePackConverter<int>
@@ -811,7 +801,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
-			using PolyType.Abstractions;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			class MyConverter : MessagePackConverter<int>
@@ -865,7 +855,7 @@ public class ConverterAnalyzersTests
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
-			using PolyType.Abstractions;
+			using PolyType;
 			using Nerdbank.MessagePack;
 
 			class MyConverter : MessagePackConverter<int>

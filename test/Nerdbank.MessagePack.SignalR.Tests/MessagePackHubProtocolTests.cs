@@ -4,7 +4,6 @@
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Nerdbank.MessagePack;
-using Nerdbank.MessagePack.SignalR;
 using Nerdbank.Streams;
 using PolyType;
 using Xunit;
@@ -118,7 +117,7 @@ public partial class MessagePackHubProtocolTests
 	}
 
 	private static IHubProtocol CreateProtocol(MessagePackSerializer? serializer = null)
-		=> TestUtilities.CreateHubProtocol(Witness.ShapeProvider, serializer);
+		=> TestUtilities.CreateHubProtocol(Witness.GeneratedTypeShapeProvider, serializer);
 
 	[GenerateShapeFor<bool>]
 	private partial class Witness;

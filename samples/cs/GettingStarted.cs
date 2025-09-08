@@ -36,10 +36,10 @@ partial class SimpleUsage
         MessagePackSerializer serializer = new();
 
         // Serialize the value to the buffer.
-        byte[] msgpack = serializer.Serialize(value, Witness.ShapeProvider);
+        byte[] msgpack = serializer.Serialize(value, Witness.GeneratedTypeShapeProvider);
 
         // Deserialize it back.
-        ARecord? deserialized = serializer.Deserialize<ARecord>(msgpack, Witness.ShapeProvider);
+        ARecord? deserialized = serializer.Deserialize<ARecord>(msgpack, Witness.GeneratedTypeShapeProvider);
     }
 
     [GenerateShapeFor<ARecord>]

@@ -48,7 +48,7 @@ namespace ConsumeVogenWithMarshalers
 
         void Serialize(Customer customer)
         {
-            byte[] msgpack = serializer.Serialize(customer, Witness.ShapeProvider);
+            byte[] msgpack = serializer.Serialize(customer, Witness.GeneratedTypeShapeProvider);
         }
     }
 

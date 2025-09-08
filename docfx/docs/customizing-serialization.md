@@ -31,7 +31,7 @@ Individual members may override their required status through <xref:PolyType.Pro
 
 ## Changing property name
 
-The serialized name for a property may be changed from its declared C# name by applying @PolyType.PropertyShapeAttribute and settings its @PolyType.PropertyShapeAttribute.Name property.
+The serialized name for a property may be changed from its declared C# name by applying <xref:PolyType.PropertyShapeAttribute> and settings its <xref:PolyType.PropertyShapeAttribute.Name> property.
 
 [!code-csharp[](../../samples/cs/CustomizingSerialization.cs#ChangingPropertyNames)]
 
@@ -43,15 +43,15 @@ For example, you can apply a camelCase transformation with @Nerdbank.MessagePack
 
 At which point all serialization/deserialization done with that instance will use camelCase for property names.
 
-A property name set explicitly with @PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType will override the naming policy.
+A property name set explicitly with <xref:PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType> will override the naming policy.
 
 You can use any of the naming policies provided with the @Nerdbank.MessagePack.MessagePackNamingPolicy class, or you can provide your own implementation by deriving from the class yourself.
 
-When using a deserializing constructor, the parameter names on the constructor should match the C# property name -- *not* the serialized name specified by @PolyType.PropertyShapeAttribute.Name or some @Nerdbank.MessagePack.MessagePackNamingPolicy.
+When using a deserializing constructor, the parameter names on the constructor should match the C# property name -- *not* the serialized name specified by <xref:PolyType.PropertyShapeAttribute.Name> or some @Nerdbank.MessagePack.MessagePackNamingPolicy.
 
 ## Changing an enum value name
 
-The serialized name for an enum value may be changed from its declared C# name by applying @PolyType.EnumMemberShapeAttribute and setting its @PolyType.EnumMemberShapeAttribute.Name property.
+The serialized name for an enum value may be changed from its declared C# name by applying <xref:PolyType.EnumMemberShapeAttribute> and setting its <xref:PolyType.EnumMemberShapeAttribute.Name> property.
 
 [!code-csharp[](../../samples/cs/CustomizingSerialization.cs#ChangingEnumNames)]
 
@@ -118,7 +118,7 @@ Note that the constructor parameter name is _still_ a case-variant of the `Name`
 ### Constructor overload resolution
 
 When a type declares multiple constructors, the deserializer may need help to know which overload you intend for deserialization to use.
-To identify the intended constructor, apply the @PolyType.ConstructorShapeAttribute to it.
+To identify the intended constructor, apply the <xref:PolyType.ConstructorShapeAttribute> to it.
 
 ## Callbacks
 
@@ -294,7 +294,7 @@ sequenceDiagram
 
 To avoid dropping unrecognized data, `Person` can be declared with a special @Nerdbank.MessagePack.UnusedDataPacket property.
 Since there is no reason to access it except from the serializer, declaring this property as `private` is recommended.
-As a non-public member, it must have @PolyType.PropertyShapeAttribute applied to it to ensure it can be accessed from the serializer.
+As a non-public member, it must have <xref:PolyType.PropertyShapeAttribute> applied to it to ensure it can be accessed from the serializer.
 The name of this property is of no consequence at all.
 It may be declared as a field instead.
 

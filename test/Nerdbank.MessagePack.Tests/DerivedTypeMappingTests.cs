@@ -11,8 +11,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1));
 #else
-		mapping.Add<MyDerivedA>(1, Witness.ShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1, Witness.ShapeProvider));
+		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1, Witness.GeneratedTypeShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
 	}
@@ -25,8 +25,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A"));
 #else
-		mapping.Add<MyDerivedA>("A", Witness.ShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A", Witness.ShapeProvider));
+		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A", Witness.GeneratedTypeShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
 	}
@@ -39,8 +39,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
 #else
-		mapping.Add<MyDerivedA>(1, Witness.ShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.ShapeProvider));
+		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.GeneratedTypeShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
 	}
@@ -53,8 +53,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
 #else
-		mapping.Add<MyDerivedA>("A", Witness.ShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.ShapeProvider));
+		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.GeneratedTypeShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
 	}
@@ -67,8 +67,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1));
 #else
-		mapping.Add<MyDerivedA>(1, Witness.ShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1, Witness.ShapeProvider));
+		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
 	}
@@ -81,8 +81,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>("A");
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A"));
 #else
-		mapping.Add<MyDerivedA>("A", Witness.ShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A", Witness.ShapeProvider));
+		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider));
 #endif
 		logger.WriteLine(ex.Message);
 	}
@@ -90,7 +90,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void ObjectInitializerSyntax()
 	{
-		DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
 		{
 			{ 1, typeof(MyDerivedA) },
 			{ "B", typeof(MyDerivedB) },
@@ -103,7 +103,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void DictionaryInitializerSyntax()
 	{
-		DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
 		{
 			[1] = typeof(MyDerivedA),
 			["B"] = typeof(MyDerivedB),
@@ -118,7 +118,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	{
 		Assert.Throws<ArgumentException>(() =>
 		{
-			DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+			DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
 			{
 				{ 1, typeof(MyDerivedA) },
 				{ "A", typeof(MyDerivedA) },
@@ -131,7 +131,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	{
 		Assert.Throws<ArgumentException>(() =>
 		{
-			DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+			DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
 			{
 				{ 1, typeof(MyDerivedA) },
 				{ 1, typeof(MyDerivedB) },
@@ -144,7 +144,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	{
 		Assert.Throws<ArgumentException>(() =>
 		{
-			DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+			DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
 			{
 				[1] = typeof(MyDerivedA),
 				["B"] = typeof(MyDerivedA),
@@ -155,7 +155,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void DictionaryInitializerSyntax_AddTypeAgainAfterImplicitRemoval()
 	{
-		DerivedTypeMapping<MyBase> mapping = new(Witness.ShapeProvider)
+		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
 		{
 			[1] = typeof(MyDerivedA),   // adds MyDerivedA
 			[1] = typeof(MyDerivedB),   // implicitly removes MyDerivedA
@@ -174,7 +174,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		Assert.Equal(0, serializer.DerivedTypeMappings.Count);
 		Assert.Equal(serializer.DerivedTypeMappings.Count, serializer.DerivedTypeMappings.Count());
 
-		serializer = serializer with { DerivedTypeMappings = [new DerivedTypeMapping<MyBase>(Witness.ShapeProvider) { [1] = typeof(MyDerivedA) }] };
+		serializer = serializer with { DerivedTypeMappings = [new DerivedTypeMapping<MyBase>(Witness.GeneratedTypeShapeProvider) { [1] = typeof(MyDerivedA) }] };
 		Assert.Equal(1, serializer.DerivedTypeMappings.Count);
 		Assert.Equal(serializer.DerivedTypeMappings.Count, serializer.DerivedTypeMappings.Count());
 	}

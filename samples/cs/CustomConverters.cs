@@ -242,7 +242,7 @@ namespace SubValuesWithWitness
         public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
         {
             // ...
-            context.GetConverter<SomeOtherType>(ShapeProvider).Read(ref reader, context);
+            context.GetConverter<SomeOtherType>(GeneratedTypeShapeProvider).Read(ref reader, context);
             // ...
             #endregion
 
@@ -288,7 +288,7 @@ namespace WitnessForArray
         public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
         {
             // ...
-            context.GetConverter<SomeOtherType[]>(ShapeProvider).Read(ref reader, context);
+            context.GetConverter<SomeOtherType[]>(GeneratedTypeShapeProvider).Read(ref reader, context);
             // ...
             #endregion
 #endif
@@ -542,9 +542,9 @@ namespace Stateful
             };
             SpecialType original = new(5);
             Console.WriteLine($"Original value: {original}");
-            byte[] msgpack = serializer.Serialize(original, Witness.ShapeProvider);
+            byte[] msgpack = serializer.Serialize(original, Witness.GeneratedTypeShapeProvider);
             Console.WriteLine(serializer.ConvertToJson(msgpack));
-            SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack, Witness.ShapeProvider);
+            SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack, Witness.GeneratedTypeShapeProvider);
             Console.WriteLine($"Deserialized value: {deserialized}");
         }
     }

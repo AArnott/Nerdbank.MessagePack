@@ -25,7 +25,7 @@ internal partial class JsonDocumentConverter : MessagePackConverter<JsonDocument
 
 		Sequence<byte> seq = new();
 		Utf8JsonWriter writer = new(seq);
-		JsonNode? node = context.GetConverter<JsonNode>(ShapeProvider).Read(ref reader, context);
+		JsonNode? node = context.GetConverter<JsonNode>(GeneratedTypeShapeProvider).Read(ref reader, context);
 		if (node is null)
 		{
 			throw new NotSupportedException("Null value cannot be made into a JsonElement.");
@@ -46,7 +46,7 @@ internal partial class JsonDocumentConverter : MessagePackConverter<JsonDocument
 			return;
 		}
 
-		context.GetConverter<JsonElement>(ShapeProvider).Write(ref writer, value.RootElement, context);
+		context.GetConverter<JsonElement>(GeneratedTypeShapeProvider).Write(ref writer, value.RootElement, context);
 	}
 
 	/// <inheritdoc/>

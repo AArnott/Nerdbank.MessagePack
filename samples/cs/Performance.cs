@@ -14,14 +14,14 @@ partial class Performance
         #region LoadsJustRight
         this.serializer.Serialize(
             value: true,
-            PolyType.SourceGenerator.ShapeProvider_Samples.Default.Boolean);
+            PolyType.SourceGenerator.TypeShapeProvider_Samples.Default.Boolean);
         #endregion
     }
 
     #region LoadsTooMany
     void LoadsTooMany()
     {
-        this.serializer.Serialize(value: true, Witness.ShapeProvider);
+        this.serializer.Serialize(value: true, Witness.GeneratedTypeShapeProvider);
     }
 
     [GenerateShapeFor<bool>]

@@ -216,7 +216,7 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	[Theory, PairwiseData]
 	public async Task ProtocolInterop_NerdbankVsCSharp(bool nerdbankClient, bool nerdbankServer)
 	{
-		await using HostedSignalR hosted = await HostedSignalR.CreateAsync(IntegrationTestWitness.ShapeProvider, useNerdbankMessagePackForClient: nerdbankClient, useNerdbankMessagePackForServer: nerdbankServer);
+		await using HostedSignalR hosted = await HostedSignalR.CreateAsync(IntegrationTestWitness.GeneratedTypeShapeProvider, useNerdbankMessagePackForClient: nerdbankClient, useNerdbankMessagePackForServer: nerdbankServer);
 		string messagePackResult = await hosted.Client.InvokeAsync<string>("Echo", "test", cancellationToken: TestContext.Current.CancellationToken);
 
 		Assert.Equal("Echo: test", messagePackResult);
@@ -230,7 +230,7 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	{
 		// Set up the server and client, but register the event handler before starting
 		TaskCompletionSource<string> connectionIdSource = new();
-		await using HostedSignalR hosted = await HostedSignalR.CreateAsync(IntegrationTestWitness.ShapeProvider, onSetupConnection: (connection) =>
+		await using HostedSignalR hosted = await HostedSignalR.CreateAsync(IntegrationTestWitness.GeneratedTypeShapeProvider, onSetupConnection: (connection) =>
 		{
 			connection.On<string>("UserConnected", (id) =>
 			{

@@ -56,7 +56,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 #if NET
 	/// <inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" />
 	public void Add<TDerived>(DerivedTypeIdentifier alias)
-		where TDerived : TBase, IShapeable<TDerived> => this.Add(alias, TDerived.GetShape());
+		where TDerived : TBase, IShapeable<TDerived> => this.Add(alias, TDerived.GetTypeShape());
 
 	/// <inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" path="/summary" />
 	/// <inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" path="/exception" />
@@ -66,7 +66,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 	public void Add<TDerived, TProvider>(DerivedTypeIdentifier alias)
 		where TDerived : TBase
 		where TProvider : IShapeable<TDerived>
-		=> this.Add(alias, TProvider.GetShape());
+		=> this.Add(alias, TProvider.GetTypeShape());
 #endif
 
 	/// <inheritdoc/>

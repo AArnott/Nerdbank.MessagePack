@@ -1,6 +1,6 @@
 # Surrogate types
 
-While using the @PolyType.GenerateShapeAttribute is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
+While using the <xref:PolyType.GenerateShapeAttribute> is by far the simplest way to make an entire type graph serializable, some types may not be compatible with automatic serialization.
 In such cases, you can define a surrogate type that _is_ serializable and a marshaler that can convert between the two types.
 
 Surrogate types are an easier way to make an unserializable type serializable than writing [custom converters](custom-converters.md).
@@ -43,7 +43,7 @@ This marshaler must be referenced via <xref:PolyType.TypeShapeAttribute.Marshale
 
 ## Sample
 
-Taken together with the added @PolyType.TypeShapeAttribute that refers to the marshaler, we have the following complete sample:
+Taken together with the added <xref:PolyType.TypeShapeAttribute> that refers to the marshaler, we have the following complete sample:
 
 [!code-csharp[](../../samples/cs/SurrogateTypes.cs#CompleteSample)]
 
@@ -62,7 +62,7 @@ Just take care to use the generic type definition syntax (no type arguments spec
 
 [!code-csharp[](../../samples/cs/SurrogateTypes.cs#OpenGeneric)]
 
-While the @PolyType.GenerateShapeAttribute cannot be applied to an open generic data type,
+While the <xref:PolyType.GenerateShapeAttribute> cannot be applied to an open generic data type,
 this data type can be closed and used from another data structure.
 It can also be used as the top-level structure by closing the generic on a Witness class.
 

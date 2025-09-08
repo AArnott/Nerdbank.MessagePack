@@ -12,6 +12,7 @@
     <None Include="..\Nerdbank.MessagePack\icon.png" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Nerdbank.MessagePack\PolyTypeExtensions.cs" Link="PolyTypeExtensions.cs" />
     <Compile Include="..\Nerdbank.MessagePack\SequencePool`1.cs" Link="SequencePool`1.cs" />
   </ItemGroup>
   <ItemGroup>

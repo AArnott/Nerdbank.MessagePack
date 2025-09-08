@@ -28,7 +28,7 @@ public partial class SimpleValidationTest
 	public void ServiceRegistration_Works()
 	{
 		MockSignalRBuilder builder = new();
-		builder.AddMessagePackProtocol(Witness.ShapeProvider);
+		builder.AddMessagePackProtocol(Witness.GeneratedTypeShapeProvider);
 		ServiceProvider serviceProvider = builder.Services.BuildServiceProvider();
 		IEnumerable<IHubProtocol> registeredProtocols = serviceProvider.GetServices<IHubProtocol>();
 
@@ -36,7 +36,7 @@ public partial class SimpleValidationTest
 	}
 
 	private static IHubProtocol CreateProtocol(MessagePackSerializer? serializer = null)
-		=> TestUtilities.CreateHubProtocol(Witness.ShapeProvider, serializer);
+		=> TestUtilities.CreateHubProtocol(Witness.GeneratedTypeShapeProvider, serializer);
 
 	[GenerateShapeFor<bool>]
 	private partial class Witness;

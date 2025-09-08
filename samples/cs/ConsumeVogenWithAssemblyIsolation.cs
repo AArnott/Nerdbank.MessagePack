@@ -11,7 +11,7 @@ partial class VogenConsumer
 #pragma warning disable NBMsgPack051 // We cannot use the type constraint overload because Vogen requires that we use Witness types.
     void Serialize(Customer customer)
     {
-        byte[] msgpack = serializer.Serialize(customer, Witness.ShapeProvider);
+        byte[] msgpack = serializer.Serialize(customer, Witness.GeneratedTypeShapeProvider);
     }
 
     [GenerateShapeFor<Customer>]

@@ -311,7 +311,7 @@ public partial record MessagePackSerializer
 	/// </example>
 	public dynamic? DeserializeDynamicPrimitives(ref MessagePackReader reader, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.ShapeProvider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider, cancellationToken);
 		try
 		{
 			return PrimitivesAsDynamicConverter.Instance.Read(ref reader, context.Value);
@@ -337,7 +337,7 @@ public partial record MessagePackSerializer
 	/// </example>
 	public object? DeserializePrimitives(ref MessagePackReader reader, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.ShapeProvider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider, cancellationToken);
 		try
 		{
 			return PrimitivesAsObjectConverter.Instance.Read(ref reader, context.Value);

@@ -384,9 +384,9 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 
 	private static ITypeShape<T> GetShape<T>()
 #if NET
-		where T : IShapeable<T> => T.GetShape();
+		where T : IShapeable<T> => T.GetTypeShape();
 #else
-		=> GetShape<T, Witness>();
+		=> GetTypeShape<T, Witness>();
 #endif
 
 	[GenerateShapeFor<int>]
