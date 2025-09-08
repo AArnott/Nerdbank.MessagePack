@@ -107,14 +107,14 @@ public partial class AssemblyLoadTests
 		internal void SerializeSomethingSimpleUsingTypeShape()
 		{
 			MessagePackSerializer serializer = new();
-			serializer.Serialize(new SomeObject(42), PolyType.SourceGenerator.ShapeProvider_Nerdbank_MessagePack_Tests.Default.SomeObject);
+			serializer.Serialize(new SomeObject(42), PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default.SomeObject);
 		}
 
 		internal bool SerializeRoundtripWithTypeShape(bool value)
 		{
 			MessagePackSerializer serializer = new();
 
-			ITypeShape<bool> typeShape = PolyType.SourceGenerator.ShapeProvider_Nerdbank_MessagePack_Tests.Default.Boolean;
+			ITypeShape<bool> typeShape = PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default.Boolean;
 			byte[] buffer = serializer.Serialize(value, typeShape);
 			return serializer.Deserialize(buffer, typeShape);
 		}

@@ -16,7 +16,7 @@ class Program
 
         // Add SignalR with MessagePack protocol
         builder.Services.AddSignalR()
-            .AddMessagePackProtocol(Witness.ShapeProvider);
+            .AddMessagePackProtocol(Witness.GeneratedTypeShapeProvider);
 
         var app = builder.Build();
 
@@ -36,7 +36,7 @@ class Program
         };
 
         builder.Services.AddSignalR()
-            .AddMessagePackProtocol(Witness.ShapeProvider, customSerializer);
+            .AddMessagePackProtocol(Witness.GeneratedTypeShapeProvider, customSerializer);
         #endregion
     }
 }

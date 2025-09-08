@@ -268,7 +268,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
 					var caseConverter = (MessagePackConverter<TUnion>)unionCase.Accept(this, null)!;
 					deserializerByIntAlias.Add(unionCase.Tag, caseConverter);
-					serializers.Add((alias, caseConverter, unionCase.Type));
+					serializers.Add((alias, caseConverter, unionCase.UnionCaseType));
 
 					return new KeyValuePair<int, MessagePackConverter<TUnion>>(unionCase.Tag, caseConverter);
 				})
@@ -292,7 +292,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseConverter = (MessagePackConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
+		var caseConverter = (MessagePackConverter<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
 		return new UnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
 	}
 

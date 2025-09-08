@@ -24,7 +24,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
 
             internal void Serialize(IBufferWriter<byte> writer, MyType value)
             {
-                this.serializer.Serialize(writer, value, Witness.ShapeProvider); // NBMsgPack051: Use an overload that takes a constrained type instead.
+                this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider); // NBMsgPack051: Use an overload that takes a constrained type instead.
             }
         }
         #endregion
@@ -68,7 +68,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
 #if NET
                 this.serializer.Serialize(writer, value);
 #else
-                this.serializer.Serialize(writer, value, Witness.ShapeProvider);
+                this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider);
 #endif
             }
         }

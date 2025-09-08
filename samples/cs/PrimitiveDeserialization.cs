@@ -73,7 +73,7 @@ namespace PrimitiveDeserialization
             #region DeserializeExpandoObjectNETFX
             void DeserializeExpandoObject(MessagePackSerializer serializer, byte[] msgpack)
             {
-                dynamic? deserialized = serializer.Deserialize<ExpandoObject>(msgpack, Witness.ShapeProvider);
+                dynamic? deserialized = serializer.Deserialize<ExpandoObject>(msgpack, Witness.GeneratedTypeShapeProvider);
                 string prop1 = deserialized!.Prop1;
                 int prop2 = deserialized.Prop2;
                 bool deeperBool = deserialized.deeper.IsAdult;

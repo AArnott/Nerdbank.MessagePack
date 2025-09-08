@@ -48,8 +48,8 @@ public partial class MessagePackConverterAttributeTests : MessagePackSerializerT
 	public void EnumWithCustomConverter()
 	{
 		MyEnum value = MyEnum.Value2;
-		byte[] msgpack = this.Serializer.Serialize(value, Witness.ShapeProvider, TestContext.Current.CancellationToken);
-		MyEnum deserializedValue = this.Serializer.Deserialize<MyEnum>(msgpack, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize(value, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		MyEnum deserializedValue = this.Serializer.Deserialize<MyEnum>(msgpack, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		Assert.Equal(value, deserializedValue);
 
 		MessagePackReader reader = new(msgpack);

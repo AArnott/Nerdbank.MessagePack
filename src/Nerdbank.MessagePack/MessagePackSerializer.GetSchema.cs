@@ -15,7 +15,7 @@ public partial record MessagePackSerializer
 	/// <typeparam name="T">The self-describing type whose schema should be produced.</typeparam>
 	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
 	public JsonObject GetJsonSchema<T>()
-		where T : IShapeable<T> => this.GetJsonSchema(T.GetShape());
+		where T : IShapeable<T> => this.GetJsonSchema(T.GetTypeShape());
 
 	/// <summary>
 	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
@@ -24,7 +24,7 @@ public partial record MessagePackSerializer
 	/// <typeparam name="TProvider">The witness type that provides the shape for <typeparamref name="T"/>.</typeparam>
 	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
 	public JsonObject GetJsonSchema<T, TProvider>()
-		where TProvider : IShapeable<T> => this.GetJsonSchema(TProvider.GetShape());
+		where TProvider : IShapeable<T> => this.GetJsonSchema(TProvider.GetTypeShape());
 #endif
 
 	/// <summary>
@@ -36,7 +36,7 @@ public partial record MessagePackSerializer
 	public JsonObject GetJsonSchema<T>(ITypeShapeProvider provider)
 	{
 		Requires.NotNull(provider);
-		return this.GetJsonSchema(provider.GetShape(typeof(T)) ?? throw new ArgumentException($"This provider had no type shape for {typeof(T)}.", nameof(provider)));
+		return this.GetJsonSchema(provider.GetTypeShape(typeof(T)) ?? throw new ArgumentException($"This provider had no type shape for {typeof(T)}.", nameof(provider)));
 	}
 
 	/// <summary>

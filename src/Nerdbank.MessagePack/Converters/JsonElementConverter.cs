@@ -20,7 +20,7 @@ internal partial class JsonElementConverter : MessagePackConverter<JsonElement>
 	{
 		Sequence<byte> seq = new();
 		Utf8JsonWriter writer = new(seq);
-		JsonNode? node = context.GetConverter<JsonNode>(ShapeProvider).Read(ref reader, context);
+		JsonNode? node = context.GetConverter<JsonNode>(GeneratedTypeShapeProvider).Read(ref reader, context);
 		if (node is null)
 		{
 			throw new NotSupportedException("Null value cannot be made into a JsonElement.");

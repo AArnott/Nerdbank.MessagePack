@@ -4,7 +4,6 @@
 using System.IO.Pipelines;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using PolyType;
-using PolyType.Abstractions;
 using PolyType.ReflectionProvider;
 
 namespace Nerdbank.MessagePack.AspNetCoreMvcFormatter;
@@ -83,7 +82,7 @@ public class MessagePackOutputFormatter : OutputFormatter
 		}
 
 		Type objectType = context.ObjectType is null || context.ObjectType == typeof(object) ? context.Object.GetType() : context.ObjectType;
-		ITypeShape shape = this.typeShapeProvider.Resolve(objectType);
+		ITypeShape shape = this.typeShapeProvider.GetTypeShape(objectType, throwIfMissing: true)!;
 		bool writerOwned = false;
 
 #if NETSTANDARD2_0

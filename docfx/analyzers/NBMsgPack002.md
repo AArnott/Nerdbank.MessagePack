@@ -7,4 +7,4 @@
 There are two fixes for this condition:
 
 - Remove the attribute.
-- Serialize the member by applying the @PolyType.PropertyShapeAttribute, without setting @PolyType.PropertyShapeAttribute.Ignore to `true`.
+- Serialize the member by applying the <xref:PolyType.PropertyShapeAttribute>, without setting <xref:PolyType.PropertyShapeAttribute.Ignore> to `true`.

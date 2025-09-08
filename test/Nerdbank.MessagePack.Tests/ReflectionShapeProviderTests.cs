@@ -7,7 +7,7 @@ public class ReflectionShapeProviderTests : MessagePackSerializerTestBase
 	public void SerializeUnshapedType()
 	{
 		Person person = new("Andrew", "Arnott");
-		ITypeShape<Person> shape = PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default.GetShape<Person>();
+		ITypeShape<Person> shape = PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default.GetTypeShape<Person>();
 		byte[] msgpack = this.Serializer.Serialize(person, shape, TestContext.Current.CancellationToken);
 		this.LogMsgPack(msgpack);
 		Person? deserialized = this.Serializer.Deserialize(msgpack, shape, TestContext.Current.CancellationToken);

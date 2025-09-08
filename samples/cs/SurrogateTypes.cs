@@ -119,7 +119,7 @@ partial class CompleteSample
     [GenerateShapeFor<OpenGenericDataType<int>>]
     internal partial class Witness;
 
-    void SerializeByWitness(OpenGenericDataType<int> value) => Serializer.Serialize(value, Witness.ShapeProvider);
+    void SerializeByWitness(OpenGenericDataType<int> value) => Serializer.Serialize(value, Witness.GeneratedTypeShapeProvider);
 
     private static readonly MessagePackSerializer Serializer = new();
     #endregion

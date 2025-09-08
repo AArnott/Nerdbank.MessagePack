@@ -65,7 +65,7 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseComparer = (IEqualityComparer<TUnionCase>)unionCaseShape.Type.Invoke(this, IsUnionSentinel)!;
+		var caseComparer = (IEqualityComparer<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this, IsUnionSentinel)!;
 		return new StructuralUnionCaseEqualityComparer<TUnionCase, TUnion>(caseComparer, unionCaseShape.Marshaler);
 	}
 

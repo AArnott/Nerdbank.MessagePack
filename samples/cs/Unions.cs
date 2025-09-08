@@ -172,7 +172,7 @@ namespace RuntimeSubTypes
     {
         internal MessagePackSerializer ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
-            DerivedTypeMapping<Animal> mapping = new(Witness.ShapeProvider)
+            DerivedTypeMapping<Animal> mapping = new(Witness.GeneratedTypeShapeProvider)
             {
                 [1] = typeof(Horse),
                 [2] = typeof(Cow),

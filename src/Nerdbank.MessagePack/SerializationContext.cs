@@ -167,7 +167,7 @@ public record struct SerializationContext
 		where T : IShapeable<T>
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(T.GetShape());
+		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(T.GetTypeShape());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 
@@ -185,7 +185,7 @@ public record struct SerializationContext
 		where TProvider : IShapeable<T>
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(TProvider.GetShape());
+		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(TProvider.GetTypeShape());
 		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
 	}
 #endif

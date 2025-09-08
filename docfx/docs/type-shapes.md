@@ -4,7 +4,7 @@ This library leverages PolyType as a source generator that provides fast startup
 
 ## Recommended configuration
 
-PolyType is trim-safe and NativeAOT ready, particularly when used in its recommended configuration, where you apply @PolyType.GenerateShapeAttribute on the root type of your data model.
+PolyType is trim-safe and NativeAOT ready, particularly when used in its recommended configuration, where you apply <xref:PolyType.GenerateShapeAttribute> on the root type of your data model.
 
 [!code-csharp[](../../samples/cs/TypeShapePatterns.cs#NaturallyAttributed)]
 

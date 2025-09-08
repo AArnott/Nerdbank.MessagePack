@@ -11,12 +11,12 @@ namespace Samples
         #region NonGenericSerializeDeserialize
         // Possible implementations of ITypeShapeProvider instances.
         static readonly ITypeShapeProvider ReflectionBased = ReflectionTypeShapeProvider.Default;
-        static readonly ITypeShapeProvider SourceGenerated = Witness.ShapeProvider;
+        static readonly ITypeShapeProvider SourceGenerated = Witness.GeneratedTypeShapeProvider;
 
         object TypelessSerializeRoundtrip(object value, ITypeShapeProvider provider)
         {
             // Acquire the type's shape. For this sample, we'll use the runtime type of the object.
-            ITypeShape shape = provider.GetShape(value.GetType()) ?? throw new ArgumentException("No shape available for runtime type", nameof(provider));
+            ITypeShape shape = provider.GetTypeShape(value.GetType()) ?? throw new ArgumentException("No shape available for runtime type", nameof(provider));
 
             MessagePackSerializer serializer = new();
             Sequence<byte> sequence = new();

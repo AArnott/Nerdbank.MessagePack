@@ -264,7 +264,7 @@ public partial class SerializationTests
 	}
 
 	private IHubProtocol CreateProtocol()
-		=> TestUtilities.CreateHubProtocol(Witness.ShapeProvider, this.Serializer);
+		=> TestUtilities.CreateHubProtocol(Witness.GeneratedTypeShapeProvider, this.Serializer);
 
 	[GenerateShapeFor<string>]
 	[GenerateShapeFor<int>]

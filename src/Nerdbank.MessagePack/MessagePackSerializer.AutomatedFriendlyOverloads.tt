@@ -51,7 +51,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public <#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=firstParameter#>in T? value, CancellationToken cancellationToken = default)
-		where <#=typeConstraint#> => this.Serialize(<#=firstArg#>value, <#=shapeProviderName#>.GetShape(), cancellationToken);
+		where <#=typeConstraint#> => this.Serialize(<#=firstArg#>value, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
 <#
         }
 
@@ -70,7 +70,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public T? Deserialize<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
-		where <#=typeConstraint#> => this.Deserialize(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), cancellationToken);
+		where <#=typeConstraint#> => this.Deserialize(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
 <#
         }
 
@@ -90,21 +90,21 @@ public partial record MessagePackSerializer
 	[ExcludeFromCodeCoverage]
 	public ValueTask<T?> DeserializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.DeserializeAsync(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), cancellationToken);
+		where <#=typeConstraint#> => this.DeserializeAsync(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), cancellationToken);
+		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<<#=genericTypeParametersWithElement#>>(<#=firstParameter#>, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetShape(), options, cancellationToken);
+		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), options, cancellationToken);
 <#
         }
 
@@ -124,7 +124,7 @@ public partial record MessagePackSerializer
 	[ExcludeFromCodeCoverage]
 	public ValueTask SerializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, in T? value, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.SerializeAsync(<#=firstArg#>, value, <#=shapeProviderName#>.GetShape(), cancellationToken);
+		where <#=typeConstraint#> => this.SerializeAsync(<#=firstArg#>, value, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
 <#
         }
     }

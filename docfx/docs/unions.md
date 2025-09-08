@@ -25,7 +25,7 @@ Note the lack of any type information or properties defined on the derived types
 Deserializing this `Farm` will produce a bunch of `Animal` objects.
 If `Animal` were an `abstract` class, this would not be deserializable at all.
 
-You can preserve polymorphic type metadata across serialization using the @PolyType.DerivedTypeShapeAttribute, which you apply to the type that is used as the declared base type.
+You can preserve polymorphic type metadata across serialization using the <xref:PolyType.DerivedTypeShapeAttribute>, which you apply to the type that is used as the declared base type.
 Since `Animal` is used as the collection element type, we apply the attributes on the declaraiton of that type:
 
 [!code-csharp[](../../samples/cs/Unions.cs#RoundtrippingFarmAnimal)]
@@ -98,7 +98,7 @@ Now let's consider our original `Farm` class, which has a collection of `Animal`
 The `Animal` class as we defined it earlier only knows about `Horse` as a derived type.
 The `Animal` class itself has no designation for `QuarterHorse` or `Thoroughbred`.
 
-If the `Horse` class lacked any @PolyType.DerivedTypeShapeAttribute of its own, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects where the original object graph may have contained `QuarterHorse` or `Thoroughbred`.
+If the `Horse` class lacked any <xref:PolyType.DerivedTypeShapeAttribute> of its own, serializing your `Farm` would drop any details about horse breeds and deserializing would produce `Horse` objects where the original object graph may have contained `QuarterHorse` or `Thoroughbred`.
 But if the `Horse` class has attributes for each of its derived types, we end up with a multi-nested union schema for our farm:
 
 ```json
@@ -172,7 +172,7 @@ Note that while inferrence is the simplest syntax, it results in the serialized 
 
 ## Generic derived types
 
-@PolyType.DerivedTypeShapeAttribute may reference generic derived types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
+<xref:PolyType.DerivedTypeShapeAttribute> may reference generic derived types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
 You may close the generic type several times, but each one needs a unique type identifier so the inferred type name will not work.
 You will have to explicitly specify them.
 

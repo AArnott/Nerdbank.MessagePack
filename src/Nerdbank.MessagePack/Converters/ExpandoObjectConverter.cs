@@ -34,7 +34,7 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 		int count = reader.ReadMapHeader();
 		if (count > 0)
 		{
-			MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.ShapeProvider);
+			MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider);
 			IDictionary<string, object?> expandoAsDictionary = result;
 
 			context.DepthStep();
@@ -64,7 +64,7 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 		}
 
 		IDictionary<string, object?> expandoAsDictionary = value;
-		MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.ShapeProvider);
+		MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider);
 
 		writer.WriteMapHeader(expandoAsDictionary.Count);
 		foreach (KeyValuePair<string, object?> item in expandoAsDictionary)

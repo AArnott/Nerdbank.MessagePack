@@ -24,8 +24,8 @@ public partial class AspNetCoreMvcFormatterTest
 	private const string MsgPackContentType = "application/x-msgpack";
 
 	private readonly MessagePackSerializer serializer = new();
-	private readonly MessagePackOutputFormatter formatter = new(Witness.ShapeProvider);
-	private readonly MessagePackInputFormatter deformatter = new(Witness.ShapeProvider);
+	private readonly MessagePackOutputFormatter formatter = new(Witness.GeneratedTypeShapeProvider);
+	private readonly MessagePackInputFormatter deformatter = new(Witness.GeneratedTypeShapeProvider);
 
 	[Fact]
 	public async Task MessagePackFormatter()
@@ -38,7 +38,7 @@ public partial class AspNetCoreMvcFormatterTest
 			Description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
 		};
 
-		byte[] messagePackBinary = this.serializer.Serialize(person, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		byte[] messagePackBinary = this.serializer.Serialize(person, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 
 		// OutputFormatter
 		OutputFormatterWriteContext outputFormatterContext = GetOutputFormatterContext(person, typeof(User), MsgPackContentType);
@@ -73,7 +73,7 @@ public partial class AspNetCoreMvcFormatterTest
 		Assert.False(result.HasError);
 
 		User userModel = Assert.IsType<User>(result.Model);
-		Assert.Equal(userModel, person, StructuralEqualityComparer.GetDefault<User>(Witness.ShapeProvider));
+		Assert.Equal(userModel, person, StructuralEqualityComparer.GetDefault<User>(Witness.GeneratedTypeShapeProvider));
 	}
 
 	[Fact]

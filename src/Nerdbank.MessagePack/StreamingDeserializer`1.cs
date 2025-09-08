@@ -197,7 +197,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 
 			// Ask the converter to retrieve the element at the given index.
 			// We use a converter to do the actual skipping.
-			ITypeShape? typeShape = provider.GetShape(expression.Object.Type);
+			ITypeShape? typeShape = provider.GetTypeShape(expression.Object.Type);
 			Requires.Argument(typeShape is not null, nameof(expression), "The expression does not have a known type shape.");
 			MessagePackConverter converter = serializer.GetConverter(typeShape);
 
@@ -268,7 +268,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 			// Now navigate to the member.
 
 			// Find the matching property shape.
-			ITypeShape? typeShape = provider.GetShape(expression.Expression.Type);
+			ITypeShape? typeShape = provider.GetTypeShape(expression.Expression.Type);
 			Requires.Argument(typeShape is not null, nameof(expression), "The expression does not have a known type shape.");
 
 			IPropertyShape? propertyShape = typeShape switch

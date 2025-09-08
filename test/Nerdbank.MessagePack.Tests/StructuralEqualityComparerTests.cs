@@ -125,16 +125,16 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 
 	protected IEqualityComparer<T> GetEqualityComparer<T, TProvider>()
 #if NET
-		where TProvider : IShapeable<T> => this.GetEqualityComparer(TProvider.GetShape());
+		where TProvider : IShapeable<T> => this.GetEqualityComparer(TProvider.GetTypeShape());
 #else
-		=> this.GetEqualityComparer(MessagePackSerializerTestBase.GetShape<T, TProvider>());
+		=> this.GetEqualityComparer(MessagePackSerializerTestBase.GetTypeShape<T, TProvider>());
 #endif
 
 	protected IEqualityComparer<T> GetEqualityComparer<T>()
 #if NET
-		where T : IShapeable<T> => this.GetEqualityComparer<T>(T.GetShape());
+		where T : IShapeable<T> => this.GetEqualityComparer<T>(T.GetTypeShape());
 #else
-		=> this.GetEqualityComparer(MessagePackSerializerPolyfill.Witness.ShapeProvider.GetShape<T>());
+		=> this.GetEqualityComparer(MessagePackSerializerPolyfill.Witness.GeneratedTypeShapeProvider.GetTypeShape<T>());
 #endif
 
 	protected abstract IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape);

@@ -26,7 +26,7 @@ public class IntegrationTestFixture : IAsyncLifetime
 	/// </summary>
 	public async ValueTask InitializeAsync()
 	{
-		this.hosted = await HostedSignalR.CreateAsync(IntegrationTests.IntegrationTestWitness.ShapeProvider);
+		this.hosted = await HostedSignalR.CreateAsync(IntegrationTests.IntegrationTestWitness.GeneratedTypeShapeProvider);
 	}
 
 	/// <summary>

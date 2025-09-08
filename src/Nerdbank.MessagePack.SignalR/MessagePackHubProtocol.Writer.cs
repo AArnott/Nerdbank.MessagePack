@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Immutable;
-using PolyType.Abstractions;
 
 namespace Nerdbank.MessagePack.SignalR;
 
@@ -46,10 +45,10 @@ internal partial class MessagePackHubProtocol
 	}
 
 	private static void WriteHeaders(ref MessagePackWriter writer, IDictionary<string, string>? headers)
-	   => EnvelopeSerializer.Serialize(ref writer, headers ?? ImmutableDictionary<string, string>.Empty, Witness.ShapeProvider);
+	   => EnvelopeSerializer.Serialize(ref writer, headers ?? ImmutableDictionary<string, string>.Empty, Witness.GeneratedTypeShapeProvider);
 
 	private static void WriteStreamIds(ref MessagePackWriter writer, string[]? streamIds)
-		=> EnvelopeSerializer.Serialize(ref writer, streamIds ?? [], Witness.ShapeProvider);
+		=> EnvelopeSerializer.Serialize(ref writer, streamIds ?? [], Witness.GeneratedTypeShapeProvider);
 
 	private void WriteMessageCore(IBufferWriter<byte> output, HubMessage message)
 	{

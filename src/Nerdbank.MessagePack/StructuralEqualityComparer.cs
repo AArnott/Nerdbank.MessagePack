@@ -94,7 +94,7 @@ public static class StructuralEqualityComparer
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
 	public static IEqualityComparer<T> GetDefault<T>()
-		where T : IShapeable<T> => (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(T.GetShape())!;
+		where T : IShapeable<T> => (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(T.GetTypeShape())!;
 
 	/// <summary>
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, with hash collision resistance.
@@ -105,7 +105,7 @@ public static class StructuralEqualityComparer
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
 	public static IEqualityComparer<T> GetHashCollisionResistant<T>()
-		where T : IShapeable<T> => (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(T.GetShape())!;
+		where T : IShapeable<T> => (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(T.GetTypeShape())!;
 
 	/// <summary>
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, without hash collision resistance.
@@ -117,7 +117,7 @@ public static class StructuralEqualityComparer
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
 	public static IEqualityComparer<T> GetDefault<T, TProvider>()
-		where TProvider : IShapeable<T> => (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(TProvider.GetShape())!;
+		where TProvider : IShapeable<T> => (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(TProvider.GetTypeShape())!;
 
 	/// <summary>
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, with hash collision resistance.
@@ -129,7 +129,7 @@ public static class StructuralEqualityComparer
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
 	public static IEqualityComparer<T> GetHashCollisionResistant<T, TProvider>()
-		where TProvider : IShapeable<T> => (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TProvider.GetShape())!;
+		where TProvider : IShapeable<T> => (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TProvider.GetTypeShape())!;
 #endif
 
 	/// <summary>

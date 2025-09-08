@@ -5,7 +5,6 @@ using System.IO.Pipelines;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using PolyType;
-using PolyType.Abstractions;
 using PolyType.ReflectionProvider;
 
 namespace Nerdbank.MessagePack.AspNetCoreMvcFormatter;
@@ -74,7 +73,7 @@ public class MessagePackInputFormatter : InputFormatter
 		}
 
 		HttpRequest request = context.HttpContext.Request;
-		ITypeShape shape = this.typeShapeProvider.Resolve(context.ModelType);
+		ITypeShape shape = this.typeShapeProvider.GetTypeShape(context.ModelType, throwIfMissing: true)!;
 
 		var reader = PipeReader.Create(request.Body);
 		object? model = await this.serializer.DeserializeObjectAsync(reader, shape, context.HttpContext.RequestAborted);

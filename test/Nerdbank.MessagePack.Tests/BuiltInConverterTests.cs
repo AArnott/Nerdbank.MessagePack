@@ -213,7 +213,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Guid value = System.Guid.NewGuid();
 		this.Logger.WriteLine($"Randomly generated guid: {value}");
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
-		Assert.True(this.DataMatchesSchema(msgpack, Witness.ShapeProvider.Resolve<HasGuid>()));
+		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShape<HasGuid>(throwIfMissing: true)!));
 	}
 
 	[Theory, PairwiseData]
@@ -223,7 +223,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Guid value = System.Guid.NewGuid();
 		this.Logger.WriteLine($"Randomly generated guid: {value}");
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
-		Assert.True(this.DataMatchesSchema(msgpack, Witness.ShapeProvider.Resolve<HasGuid>()));
+		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShape<HasGuid>(throwIfMissing: true)!));
 	}
 
 	[Theory, PairwiseData]
@@ -331,13 +331,13 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 
 		Guid original = System.Guid.NewGuid();
 		this.Logger.WriteLine($"Randomly generated guid: {original}");
-		byte[] msgpack = serializer.Serialize(original, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		byte[] msgpack = serializer.Serialize(original, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		msgpack = this.Serializer.Serialize(
-			modifier(this.Serializer.Deserialize<string>(msgpack, Witness.ShapeProvider, TestContext.Current.CancellationToken)!),
-			Witness.ShapeProvider,
+			modifier(this.Serializer.Deserialize<string>(msgpack, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken)!),
+			Witness.GeneratedTypeShapeProvider,
 			TestContext.Current.CancellationToken);
 		this.LogMsgPack(msgpack);
-		Guid deserialized = deserializer.Deserialize<Guid>(msgpack, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+		Guid deserialized = deserializer.Deserialize<Guid>(msgpack, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		return (original, deserialized);
 	}
 

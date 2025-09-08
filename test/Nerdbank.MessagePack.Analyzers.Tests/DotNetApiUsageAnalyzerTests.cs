@@ -26,7 +26,7 @@ public class DotNetApiUsageAnalyzerTests
 
 				internal void Serialize(IBufferWriter<byte> writer, MyType value)
 				{
-					{|NBMsgPack051:this.serializer.Serialize(writer, value, Witness.ShapeProvider)|};
+					{|NBMsgPack051:this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider)|};
 				}
 			}
 			""";
@@ -49,7 +49,7 @@ public class DotNetApiUsageAnalyzerTests
 
 				internal void Serialize(IBufferWriter<byte> writer, MyType value)
 				{
-					this.serializer.Serialize(writer, value, Witness.ShapeProvider);
+					this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider);
 				}
 			}
 			""";

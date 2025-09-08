@@ -13,7 +13,7 @@ static partial class Client
         #region Basic
         var connection = new HubConnectionBuilder()
             .WithUrl("https://example.com/chatHub")
-            .AddMessagePackProtocol(Witness.ShapeProvider)
+            .AddMessagePackProtocol(Witness.GeneratedTypeShapeProvider)
             .Build();
 
         await connection.StartAsync();
@@ -30,7 +30,7 @@ static partial class Client
 
         var connection = new HubConnectionBuilder()
             .WithUrl("https://example.com/chatHub")
-            .AddMessagePackProtocol(Witness.ShapeProvider, serializer)
+            .AddMessagePackProtocol(Witness.GeneratedTypeShapeProvider, serializer)
             .Build();
         #endregion
 

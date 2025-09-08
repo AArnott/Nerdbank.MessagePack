@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
-
 [Trait("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
@@ -227,8 +225,8 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Fact]
 	public void KnownSubTypes_DynamicRegistration()
 	{
-		DerivedShapeMapping<BaseRecord> mapping = new();
-		mapping.Add<DerivedRecordB>(1, Witness.ShapeProvider);
+		DerivedShapeMapping<BaseRecord> mapping = new DerivedShapeMapping<BaseRecord>();
+		mapping.Add<DerivedRecordB>(1, Witness.GeneratedTypeShapeProvider);
 		this.Serializer = this.Serializer with { DerivedTypeMappings = [mapping] };
 
 		BaseRecord baseInstance = new BaseRecord();

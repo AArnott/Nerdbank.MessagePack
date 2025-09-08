@@ -21,7 +21,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		int readCount = 0;
 		PipeReader reader = PipeReader.Create(sequence);
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken))
 		{
 			readCount++;
 			this.Logger.WriteLine(current.ToString());
@@ -37,7 +37,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	public async Task DeserializeEnumerableAsync_TopLevel_Empty()
 	{
 		PipeReader reader = PipeReader.Create(new([]));
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken))
 		{
 			Assert.Fail("No items should have been read.");
 		}
@@ -60,7 +60,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		int readCount = 0;
 		MemoryStream reader = new(sequence.AsReadOnlySequence.ToArray());
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.ShapeProvider.Resolve<int>(), TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!, TestContext.Current.CancellationToken))
 		{
 			readCount++;
 			this.Logger.WriteLine(current.ToString());
@@ -86,7 +86,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		FragmentedPipeReader reader = new(sequence, breakPosition);
 		List<int> realizedList = [];
-		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider.Resolve<int>(), TestContext.Current.CancellationToken))
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!, TestContext.Current.CancellationToken))
 		{
 			this.Logger.WriteLine($"Received {value}");
 			realizedList.Add(value);
@@ -123,7 +123,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		FragmentedPipeReader reader = new(sequence, breakPosition1, breakPosition2);
 		List<int> realizedList = [];
-		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider.Resolve<int>(), TestContext.Current.CancellationToken))
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!, TestContext.Current.CancellationToken))
 		{
 			this.Logger.WriteLine($"Received {value}");
 			realizedList.Add(value);
@@ -161,7 +161,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		int readCount = 0;
 		PipeReader reader = PipeReader.Create(sequence);
 		MessagePackSerializer.StreamingEnumerationOptions<int[], int> options = new(a => a);
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			readCount++;
 			this.Logger.WriteLine(current.ToString());
@@ -180,7 +180,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
 		List<SimpleStreamingContainerKeyed?> actual = new();
-		await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			actual.Add(item);
 		}
@@ -202,7 +202,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		List<SimpleStreamingContainerKeyed?> actual = new();
 		NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async delegate
 		{
-			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 			{
 				actual.Add(item);
 			}
@@ -228,7 +228,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -238,7 +238,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -258,7 +258,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -268,7 +268,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -292,7 +292,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -302,7 +302,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -326,7 +326,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -336,7 +336,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -360,7 +360,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -370,7 +370,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -395,7 +395,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -405,7 +405,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.ShapeProvider, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string>(reader, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -425,7 +425,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}
@@ -455,7 +455,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}
@@ -485,7 +485,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.ShapeProvider, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider, options, TestContext.Current.CancellationToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}

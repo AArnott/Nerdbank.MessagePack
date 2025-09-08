@@ -28,7 +28,7 @@ In fact unless you use `[MessagePackObject(true)]`, you must also annotate every
 With Nerdbank.MessagePack, you can remove the `[MessagePackObject]` attribute from your types, as it is not required.
 Nerdbank.MessagePack supports something of a hybrid between MessagePack-CSharp's `[MessagePackObject]` and "contractless" modes, to achieve something much easier to use and yet flexible when you need to tweak it.
 
-Top-level classes and structs that you need to serialize (that is, the ones you pass directly to @Nerdbank.MessagePack.MessagePackSerializer.Serialize* or @"Nerdbank.MessagePack.MessagePackSerializer.Deserialize*") need only that you annotate the type with @PolyType.GenerateShapeAttribute.
+Top-level classes and structs that you need to serialize (that is, the ones you pass directly to @Nerdbank.MessagePack.MessagePackSerializer.Serialize* or @"Nerdbank.MessagePack.MessagePackSerializer.Deserialize*") need only that you annotate the type with <xref:PolyType.GenerateShapeAttribute>.
 Such annotated types *must* be declared with the `partial` modifier to enable source generation to add the necessary serialization code to the type.
 Learn more about this in our [Getting Started](getting-started.md) guide.
 
@@ -47,7 +47,7 @@ If your type implements `MessagePack.IMessagePackSerializationCallbackReceiver`,
 Nerdbank.MessagePack also supports @Nerdbank.MessagePack.KeyAttribute, which serves the same function as in MessagePack-CSharp: to change the serialized schema from that of a map of property name=value to an array of values.
 Thus, you may keep the `[Key(0)]`, `[Key(1)]`, etc., attributes on your types if you wish to maintain the schema of the serialized data, provided you change the namespace.
 
-If using `[Key("name")]` attributes as a means to change the serialized property names, this must be replaced with @PolyType.PropertyShapeAttribute with @PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType set to the serialized name.
+If using `[Key("name")]` attributes as a means to change the serialized property names, this must be replaced with <xref:PolyType.PropertyShapeAttribute> with <xref:PolyType.PropertyShapeAttribute.Name?displayProperty=nameWithType> set to the serialized name.
 
 ```diff
 -[Key("name")]
@@ -58,7 +58,7 @@ If using `[Key("name")]` attributes as a means to change the serialized property
 #### `IgnoreMemberAttribute`
 
 The `[IgnoreMemberAttribute]` that comes from MessagePack-CSharp can be removed from non-public members, which are never considered for serialization by default.
-For public members that should be ignored, replace this attribute with @PolyType.PropertyShapeAttribute with @PolyType.PropertyShapeAttribute.Ignore?displayProperty=nameWithType set to `true`.
+For public members that should be ignored, replace this attribute with <xref:PolyType.PropertyShapeAttribute> with <xref:PolyType.PropertyShapeAttribute.Ignore?displayProperty=nameWithType> set to `true`.
 
 ```diff
 -[IgnoreMember]
@@ -84,7 +84,7 @@ Nerdbank.MessagePack supports this same use case via its @Nerdbank.MessagePack.K
  }
 ```
 
-Any types referenced by the @Nerdbank.MessagePack.KnownSubTypeAttribute must be annotated with @PolyType.GenerateShapeAttribute as described above.
+Any types referenced by the @Nerdbank.MessagePack.KnownSubTypeAttribute must be annotated with <xref:PolyType.GenerateShapeAttribute> as described above.
 
 ### `IMessagePackFormatter<T>`
 

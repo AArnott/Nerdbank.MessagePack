@@ -15,7 +15,7 @@ public partial class ServiceCollectionExtensionsTests
 	{
 		MockSignalRBuilder builder = new();
 
-		builder.AddMessagePackProtocol(Witness.ShapeProvider);
+		builder.AddMessagePackProtocol(Witness.GeneratedTypeShapeProvider);
 
 		ServiceProvider serviceProvider = builder.Services.BuildServiceProvider();
 		IEnumerable<IHubProtocol> protocols = serviceProvider.GetServices<IHubProtocol>();
@@ -29,7 +29,7 @@ public partial class ServiceCollectionExtensionsTests
 		MockSignalRBuilder builder = new();
 		var serializer = new MessagePackSerializer();
 
-		builder.AddMessagePackProtocol(Witness.ShapeProvider, serializer);
+		builder.AddMessagePackProtocol(Witness.GeneratedTypeShapeProvider, serializer);
 
 		ServiceProvider serviceProvider = builder.Services.BuildServiceProvider();
 		IEnumerable<IHubProtocol> protocols = serviceProvider.GetServices<IHubProtocol>();
