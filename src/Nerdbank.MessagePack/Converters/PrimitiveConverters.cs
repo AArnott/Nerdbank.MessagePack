@@ -970,6 +970,8 @@ internal partial class ByteArrayConverter : MessagePackConverter<byte[]?>
 			case MessagePackType.Nil:
 				reader.ReadNil();
 				return null;
+			case MessagePackType.String: // support for the old spec
+				return reader.ReadBytes()?.ToArray();
 			case MessagePackType.Binary:
 				return reader.ReadBytes()?.ToArray();
 			default:

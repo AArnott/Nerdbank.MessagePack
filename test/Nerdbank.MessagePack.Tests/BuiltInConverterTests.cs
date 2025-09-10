@@ -324,6 +324,23 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now.ToOffset(TimeSpan.FromHours(4))));
 	}
 
+	[Fact]
+	public void ByteArrayWithOldSpec()
+	{
+		byte[] original = [1, 2, 3];
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq) { OldSpec = true };
+		this.Serializer.Serialize(ref writer, original, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		writer.Flush();
+
+		// Verify that the test is doing what we think it is.
+		MessagePackReader reader = new(seq);
+		Assert.Equal(MessagePackType.String, reader.NextMessagePackType);
+
+		byte[]? deserialized = this.Serializer.Deserialize<byte[]>(seq, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		Assert.Equal(original, deserialized);
+	}
+
 	private (Guid Before, Guid After) RoundtripModifiedGuid(Func<string, string> modifier, MessagePackSerializer? serializer = null, MessagePackSerializer? deserializer = null)
 	{
 		serializer ??= this.Serializer;
@@ -397,5 +414,6 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<Guid>]
 	[GenerateShapeFor<Point>]
 	[GenerateShapeFor<Color>]
+	[GenerateShapeFor<byte[]>]
 	private partial class Witness;
 }
