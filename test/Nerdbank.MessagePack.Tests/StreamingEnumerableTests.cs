@@ -60,7 +60,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		int readCount = 0;
 		MemoryStream reader = new(sequence.AsReadOnlySequence.ToArray());
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), TestContext.Current.CancellationToken))
 		{
 			readCount++;
 			this.Logger.WriteLine(current.ToString());
@@ -86,7 +86,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		FragmentedPipeReader reader = new(sequence, breakPosition);
 		List<int> realizedList = [];
-		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!, TestContext.Current.CancellationToken))
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), TestContext.Current.CancellationToken))
 		{
 			this.Logger.WriteLine($"Received {value}");
 			realizedList.Add(value);
@@ -123,7 +123,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		FragmentedPipeReader reader = new(sequence, breakPosition1, breakPosition2);
 		List<int> realizedList = [];
-		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!, TestContext.Current.CancellationToken))
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), TestContext.Current.CancellationToken))
 		{
 			this.Logger.WriteLine($"Received {value}");
 			realizedList.Add(value);

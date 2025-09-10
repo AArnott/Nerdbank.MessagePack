@@ -249,7 +249,7 @@ internal partial class MessagePackHubProtocol
 		{
 			if (i < result.Length)
 			{
-				result[i] = this.userSerializer.DeserializeObject(ref reader, this.userTypeShapeProvider.Resolve(parameterTypes[i]));
+				result[i] = this.userSerializer.DeserializeObject(ref reader, this.userTypeShapeProvider.GetTypeShapeOrThrow(parameterTypes[i]));
 			}
 			else
 			{
@@ -381,7 +381,7 @@ internal partial class MessagePackHubProtocol
 		try
 		{
 			Type itemType = binder.GetStreamItemType(invocationId);
-			value = this.userSerializer.DeserializeObject(ref reader, this.userTypeShapeProvider.Resolve(itemType));
+			value = this.userSerializer.DeserializeObject(ref reader, this.userTypeShapeProvider.GetTypeShapeOrThrow(itemType));
 		}
 		catch (Exception ex)
 		{
@@ -441,7 +441,7 @@ internal partial class MessagePackHubProtocol
 					{
 						try
 						{
-							result = this.userSerializer.DeserializeObject(ref reader, this.userTypeShapeProvider.Resolve(itemType));
+							result = this.userSerializer.DeserializeObject(ref reader, this.userTypeShapeProvider.GetTypeShapeOrThrow(itemType));
 						}
 						catch (Exception ex)
 						{

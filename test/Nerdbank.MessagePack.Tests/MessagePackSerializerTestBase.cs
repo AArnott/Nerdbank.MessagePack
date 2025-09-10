@@ -49,7 +49,7 @@ public abstract class MessagePackSerializerTestBase
 #if NET
 		return TProvider.GetTypeShape();
 #else
-		return (ITypeShape<T>)GetShapeProvider<TProvider>().GetTypeShape(typeof(T), throwIfMissing: true)!;
+		return (ITypeShape<T>)GetShapeProvider<TProvider>().GetTypeShapeOrThrow(typeof(T));
 #endif
 	}
 

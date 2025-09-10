@@ -50,7 +50,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 		where TDerived : TBase
 	{
 		Requires.NotNull(provider);
-		this.Add(alias, provider.Resolve<TDerived>());
+		this.Add(alias, provider.GetTypeShapeOrThrow<TDerived>());
 	}
 
 #if NET

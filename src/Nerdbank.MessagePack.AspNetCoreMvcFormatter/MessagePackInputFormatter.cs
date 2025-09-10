@@ -73,7 +73,7 @@ public class MessagePackInputFormatter : InputFormatter
 		}
 
 		HttpRequest request = context.HttpContext.Request;
-		ITypeShape shape = this.typeShapeProvider.GetTypeShape(context.ModelType, throwIfMissing: true)!;
+		ITypeShape shape = this.typeShapeProvider.GetTypeShapeOrThrow(context.ModelType);
 
 		var reader = PipeReader.Create(request.Body);
 		object? model = await this.serializer.DeserializeObjectAsync(reader, shape, context.HttpContext.RequestAborted);

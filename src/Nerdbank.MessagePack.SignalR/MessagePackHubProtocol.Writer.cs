@@ -177,7 +177,7 @@ internal partial class MessagePackHubProtocol
 				break;
 			default:
 				Type declaredArgumentType = argument.GetType(); // TODO: get SignalR to tell us the actual parameter type.
-				this.userSerializer.SerializeObject(ref writer, argument, this.userTypeShapeProvider.Resolve(declaredArgumentType));
+				this.userSerializer.SerializeObject(ref writer, argument, this.userTypeShapeProvider.GetTypeShapeOrThrow(declaredArgumentType));
 				break;
 		}
 	}

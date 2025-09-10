@@ -82,7 +82,7 @@ public class MessagePackOutputFormatter : OutputFormatter
 		}
 
 		Type objectType = context.ObjectType is null || context.ObjectType == typeof(object) ? context.Object.GetType() : context.ObjectType;
-		ITypeShape shape = this.typeShapeProvider.GetTypeShape(objectType, throwIfMissing: true)!;
+		ITypeShape shape = this.typeShapeProvider.GetTypeShapeOrThrow(objectType);
 		bool writerOwned = false;
 
 #if NETSTANDARD2_0

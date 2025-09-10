@@ -213,7 +213,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Guid value = System.Guid.NewGuid();
 		this.Logger.WriteLine($"Randomly generated guid: {value}");
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
-		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShape<HasGuid>(throwIfMissing: true)!));
+		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<HasGuid>()));
 	}
 
 	[Theory, PairwiseData]
@@ -223,7 +223,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Guid value = System.Guid.NewGuid();
 		this.Logger.WriteLine($"Randomly generated guid: {value}");
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
-		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShape<HasGuid>(throwIfMissing: true)!));
+		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<HasGuid>()));
 	}
 
 	[Theory, PairwiseData]
