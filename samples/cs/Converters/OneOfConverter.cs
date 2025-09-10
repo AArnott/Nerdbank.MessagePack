@@ -81,7 +81,7 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
                             ["type"] = "integer",
                             ["enum"] = new JsonArray(0),
                         },
-                        context.GetJsonSchema(typeShape.Provider.GetTypeShape<T0>(throwIfMissing: true)!),
+                        context.GetJsonSchema(typeShape.Provider.GetTypeShapeOrThrow<T0>()),
                     },
             },
             new JsonObject
@@ -96,7 +96,7 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
                             ["type"] = "integer",
                             ["enum"] = new JsonArray(1),
                         },
-                        context.GetJsonSchema(typeShape.Provider.GetTypeShape<T1>(throwIfMissing: true)!),
+                        context.GetJsonSchema(typeShape.Provider.GetTypeShapeOrThrow<T1>()),
                     },
             },
         },
