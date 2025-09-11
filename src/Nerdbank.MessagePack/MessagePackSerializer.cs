@@ -23,10 +23,22 @@ namespace Nerdbank.MessagePack;
 /// <para>
 /// Changes to properties on this object should be performed with the record syntax <see langword="with" /> keyword.
 /// </para>
+/// <para>
+/// When targeting .NET Standard 2.0 or .NET Framework, some important methods are available only as extension methods,
+/// so make sure to have a <c><![CDATA[using Nerdbank.MessagePack;]]></c> directive in your code file to see these.
+/// </para>
 /// </remarks>
 public partial record MessagePackSerializer
 {
 #if NET
+	/// <summary>
+	/// The message to use with <see cref="PreferDotNetAlternativeApiAttribute"/> for .NET Standard 2.0 compatible APIs.
+	/// </summary>
+	internal const string PreferTypeConstrainedInstanceOverloads = "Use a non-extension method that constrains the generic T : IShapeable<T>.";
+
+	/// <summary>
+	/// The message to use with <see cref="PreferDotNetAlternativeApiAttribute"/> for .NET Standard 2.0 compatible APIs.
+	/// </summary>
 	private const string PreferTypeConstrainedOverloads = "Use an overload that does not take an ITypeShape<T> or ITypeShapeProvider, instead constraining T : IShapeable<T>.";
 #endif
 
@@ -381,8 +393,10 @@ public partial record MessagePackSerializer
 	/// <param name="reader">The msgpack reader to deserialize from.</param>
 	/// <param name="provider">
 	/// The shape provider of <typeparamref name="T"/>.
-	/// This will typically be obtained by calling the <c>ShapeProvider</c> static property on a witness class
-	/// (a class on which <see cref="GenerateShapeForAttribute{T}"/> has been applied).
+	/// This might be <see cref="PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default"/> to use reflection-based shapes.
+	/// It might also be the value of the <c>GeneratedTypeShapeProvider</c> static property on a witness class
+	/// (a class on which <see cref="GenerateShapeForAttribute{T}"/> has been applied), although for source generated shapes,
+	/// overloads that do not take an <see cref="ITypeShapeProvider"/> offer better performance.
 	/// </param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>

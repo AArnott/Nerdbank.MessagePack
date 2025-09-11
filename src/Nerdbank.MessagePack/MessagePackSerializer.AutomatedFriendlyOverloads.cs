@@ -1,15 +1,19 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NET
-
+#pragma warning disable SA1402 // File may only contain a single type
+#pragma warning disable SA1601 // Partial elements should be documented
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 #pragma warning disable NBMsgPack051 // We deliberately forward the safe calls to the more general methods.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
+
+#if NET
 
 public partial record MessagePackSerializer
 {
@@ -188,3 +192,534 @@ public partial record MessagePackSerializer
 
 #endif
 
+public static partial class MessagePackSerializerExtensions
+{
+#if NET8_0
+	// C.f. https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751
+	private const string ResolveDynamicMessage =
+		"Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. " +
+		"It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.";
+#endif
+
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static byte[] Serialize<T>(this MessagePackSerializer self, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(IBufferWriter{byte}, in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static void Serialize<T>(this MessagePackSerializer self, IBufferWriter<byte> writer, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(writer, value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(Stream, in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static void Serialize<T>(this MessagePackSerializer self, Stream stream, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(stream, value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T>(this MessagePackSerializer self, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(bytes, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(in ReadOnlySequence{byte}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T>(this MessagePackSerializer self, scoped in ReadOnlySequence<byte> bytes, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(bytes, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(Stream, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T>(this MessagePackSerializer self, Stream stream, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(stream, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask<T?> DeserializeAsync<T>(this MessagePackSerializer self, PipeReader reader, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeAsync(reader, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(this MessagePackSerializer self, PipeReader reader, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(reader, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(this MessagePackSerializer self, PipeReader reader, MessagePackSerializer.StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(reader, TypeShapeResolver.ResolveDynamicOrThrow<T>(), options, cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeAsync{T}(Stream, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask<T?> DeserializeAsync<T>(this MessagePackSerializer self, Stream stream, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T}(Stream, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(this MessagePackSerializer self, Stream stream, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T, TElement}(Stream, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(this MessagePackSerializer self, Stream stream, MessagePackSerializer.StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T>(), options, cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeAsync<T>(this MessagePackSerializer self, PipeWriter writer, in T? value, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeAsync(writer, value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeAsync{T}(Stream, T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeAsync<T>(this MessagePackSerializer self, Stream stream, in T? value, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeAsync(stream, value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static byte[] Serialize<T, TProvider>(this MessagePackSerializer self, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(IBufferWriter{byte}, in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static void Serialize<T, TProvider>(this MessagePackSerializer self, IBufferWriter<byte> writer, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(writer, value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(Stream, in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static void Serialize<T, TProvider>(this MessagePackSerializer self, Stream stream, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(stream, value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T, TProvider>(this MessagePackSerializer self, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(bytes, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(in ReadOnlySequence{byte}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T, TProvider>(this MessagePackSerializer self, scoped in ReadOnlySequence<byte> bytes, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(bytes, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(Stream, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T, TProvider>(this MessagePackSerializer self, Stream stream, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(stream, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask<T?> DeserializeAsync<T, TProvider>(this MessagePackSerializer self, PipeReader reader, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeAsync(reader, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<T?> DeserializeEnumerableAsync<T, TProvider>(this MessagePackSerializer self, PipeReader reader, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(reader, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement, TProvider>(this MessagePackSerializer self, PipeReader reader, MessagePackSerializer.StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(reader, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), options, cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeAsync{T}(Stream, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask<T?> DeserializeAsync<T, TProvider>(this MessagePackSerializer self, Stream stream, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T}(Stream, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<T?> DeserializeEnumerableAsync<T, TProvider>(this MessagePackSerializer self, Stream stream, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializeEnumerableAsync{T, TElement}(Stream, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement, TProvider>(this MessagePackSerializer self, Stream stream, MessagePackSerializer.StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).DeserializeEnumerableAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), options, cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeAsync<T, TProvider>(this MessagePackSerializer self, PipeWriter writer, in T? value, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeAsync(writer, value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeAsync{T}(Stream, T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeAsync<T, TProvider>(this MessagePackSerializer self, Stream stream, in T? value, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeAsync(stream, value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+}
