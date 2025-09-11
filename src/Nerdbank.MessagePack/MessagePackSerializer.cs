@@ -4,7 +4,6 @@
 #pragma warning disable RS0026 // optional parameter on a method with overloads
 
 using System.Collections.Immutable;
-using System.ComponentModel;
 using System.Globalization;
 using System.IO.Pipelines;
 using System.Linq.Expressions;
@@ -229,10 +228,6 @@ public partial record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
@@ -256,10 +251,6 @@ public partial record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		try
@@ -368,10 +359,6 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
@@ -400,10 +387,6 @@ public partial record MessagePackSerializer
 	/// </param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		try
@@ -426,10 +409,6 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(writer);
@@ -480,10 +459,6 @@ public partial record MessagePackSerializer
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(writer);
@@ -511,10 +486,6 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.ConverterCache.GetOrAddConverter(shape), cancellationToken);
 
@@ -530,10 +501,6 @@ public partial record MessagePackSerializer
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeAsync(Requires.NotNull(reader), Requires.NotNull(provider), this.ConverterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
@@ -793,38 +760,22 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, this.ConverterCache.GetOrAddConverter(shape), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShapeProvider, MessagePackConverter{T}, CancellationToken)"/>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, this.ConverterCache.GetOrAddConverter<T>(provider), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), this.ConverterCache.GetOrAddConverter(shape.Provider.GetTypeShapeOrThrow<TElement>()), cancellationToken);
 
 	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
-#if NET
-	[PreferDotNetAlternativeApi(PreferTypeConstrainedOverloads)]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), this.ConverterCache.GetOrAddConverter<TElement>(provider), cancellationToken);
 

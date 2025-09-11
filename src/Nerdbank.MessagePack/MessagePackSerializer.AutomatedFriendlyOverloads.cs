@@ -4,7 +4,6 @@
 #pragma warning disable SA1402 // File may only contain a single type
 #pragma warning disable SA1601 // Partial elements should be documented
 #pragma warning disable RS0026 // optional parameter on a method with overloads
-#pragma warning disable NBMsgPack051 // We deliberately forward the safe calls to the more general methods.
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
