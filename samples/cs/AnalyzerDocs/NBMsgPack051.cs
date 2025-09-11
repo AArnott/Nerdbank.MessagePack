@@ -3,8 +3,6 @@
 
 #pragma warning disable NBMsgPackAsync
 
-using System.Buffers;
-
 namespace Samples.AnalyzerDocs.NBMsgPack051
 {
 #if NET
@@ -13,18 +11,22 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
     {
 #pragma warning disable NBMsgPack051
         #region Defective
-        class MyType { }
+        [GenerateShape]
+        partial class MyType { }
+
+        [GenerateShape]
+        partial class MyDerivedType : MyType { }
 
         [GenerateShapeFor<MyType>]
         partial class Witness;
 
         class Foo
         {
-            private readonly MessagePackSerializer serializer = new();
-
-            internal void Serialize(IBufferWriter<byte> writer, MyType value)
+            internal DerivedShapeMapping<MyType> ConstructUnionMapping()
             {
-                this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider); // NBMsgPack051: Use an overload that takes a constrained type instead.
+                DerivedShapeMapping<MyType> mapping = new();
+                mapping.AddSourceGenerated<MyDerivedType>(1);
+                return mapping;
             }
         }
         #endregion
@@ -37,13 +39,19 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
         [GenerateShape]
         partial class MyType { }
 
+        [GenerateShape]
+        partial class MyDerivedType : MyType { }
+
+        [GenerateShapeFor<MyType>]
+        partial class Witness;
+
         class Foo
         {
-            private readonly MessagePackSerializer serializer = new();
-
-            internal void Serialize(IBufferWriter<byte> writer, MyType value)
+            internal DerivedShapeMapping<MyType> ConstructUnionMapping()
             {
-                this.serializer.Serialize(writer, value);
+                DerivedShapeMapping<MyType> mapping = new();
+                mapping.Add<MyDerivedType>(1);
+                return mapping;
             }
         }
         #endregion
@@ -56,20 +64,23 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
         [GenerateShape]
         partial class MyType { }
 
+        [GenerateShape]
+        partial class MyDerivedType : MyType { }
+
         [GenerateShapeFor<MyType>]
         partial class Witness;
 
         class Foo
         {
-            private readonly MessagePackSerializer serializer = new();
-
-            internal void Serialize(IBufferWriter<byte> writer, MyType value)
+            internal DerivedShapeMapping<MyType> ConstructUnionMapping()
             {
+                DerivedShapeMapping<MyType> mapping = new();
 #if NET
-                this.serializer.Serialize(writer, value);
+                mapping.Add<MyDerivedType>(1);
 #else
-                this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider);
+                mapping.AddSourceGenerated<MyDerivedType>(1);
 #endif
+                return mapping;
             }
         }
         #endregion

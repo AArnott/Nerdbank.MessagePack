@@ -1,6 +1,6 @@
 # NBMsgPack051: Prefer modern .NET APIs
 
-Some APIs exist to support targeting .NET Standard or .NET Framework, while other APIs are available when targeting .NET that are far superior.
+Some APIs exist to support targeting .NET Standard or .NET Framework, while other APIs are available when targeting .NET that offer superior performance and reliability.
 This diagnostic is reported when code uses the lesser API while the preferred API is available.
 
 The diagnostic message will direct you to the preferred API.
@@ -9,8 +9,8 @@ In multi-targeting projects where switching to the preferred API is inadvisable 
 
 ## Example violation
 
-The following code serializes a value using a shape provider parameter.
-This method may fail at runtime if the shape provider fails to provide a shape for the type to be serialized.
+The following code constructs a union type mapping.
+This method may fail at runtime if the type arguments are not attributed with <xref:PolyType.GenerateShapeAttribute>.
 
 [!code-csharp[](../../samples/cs/AnalyzerDocs/NBMsgPack051.cs#Defective)]
 

@@ -194,13 +194,6 @@ public partial record MessagePackSerializer
 
 public static partial class MessagePackSerializerExtensions
 {
-#if NET8_0
-	// C.f. https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751
-	private const string ResolveDynamicMessage =
-		"Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. " +
-		"It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.";
-#endif
-
 	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>

@@ -15,18 +15,22 @@ public class DotNetApiUsageAnalyzerTests
 			using PolyType.Abstractions;
 			using Nerdbank.MessagePack;
 
-			class MyType { }
+			[GenerateShape]
+			partial class MyType { }
+
+			[GenerateShape]
+			partial class MyDerivedType : MyType { }
 
 			[GenerateShapeFor<MyType>]
 			partial class Witness;
 
 			class Foo
 			{
-				private readonly MessagePackSerializer serializer = new();
-
-				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				internal DerivedShapeMapping<MyType> ConstructUnionMapping()
 				{
-					{|NBMsgPack051:this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider)|};
+					DerivedShapeMapping<MyType> mapping = new();
+					{|NBMsgPack051:mapping.AddSourceGenerated<MyDerivedType>(1)|};
+					return mapping;
 				}
 			}
 			""";
@@ -40,16 +44,19 @@ public class DotNetApiUsageAnalyzerTests
 			[GenerateShape]
 			partial class MyType { }
 
+			[GenerateShape]
+			partial class MyDerivedType : MyType { }
+
 			[GenerateShapeFor<MyType>]
 			partial class Witness;
 
 			class Foo
 			{
-				private readonly MessagePackSerializer serializer = new();
-
-				internal void Serialize(IBufferWriter<byte> writer, MyType value)
+				internal DerivedShapeMapping<MyType> ConstructUnionMapping()
 				{
-					this.serializer.Serialize(writer, value, Witness.GeneratedTypeShapeProvider);
+					DerivedShapeMapping<MyType> mapping = new();
+					mapping.AddSourceGenerated<MyDerivedType>(1);
+					return mapping;
 				}
 			}
 			""";
