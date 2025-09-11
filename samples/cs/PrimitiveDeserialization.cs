@@ -44,10 +44,9 @@ namespace PrimitiveDeserialization
             #endregion
         }
 
-#if NET
-        partial class DeserializeExpandoObjectNET
+        partial class DeserializeExpandoObjectClass
         {
-            #region DeserializeExpandoObjectNET
+            #region DeserializeExpandoObject
             void DeserializeExpandoObject(MessagePackSerializer serializer, byte[] msgpack)
             {
                 dynamic? deserialized = serializer.Deserialize<ExpandoObject, Witness>(msgpack);
@@ -67,29 +66,5 @@ namespace PrimitiveDeserialization
             partial class Witness;
             #endregion
         }
-#else
-        partial class DeserializeExpandoObjectNETFX
-        {
-            #region DeserializeExpandoObjectNETFX
-            void DeserializeExpandoObject(MessagePackSerializer serializer, byte[] msgpack)
-            {
-                dynamic? deserialized = serializer.Deserialize<ExpandoObject>(msgpack, Witness.GeneratedTypeShapeProvider);
-                string prop1 = deserialized!.Prop1;
-                int prop2 = deserialized.Prop2;
-                bool deeperBool = deserialized.deeper.IsAdult;
-                int age = deserialized.People[3].Age;
-
-                // Did we miss anything? Dump out all the keys and their values.
-                foreach (object key in deserialized)
-                {
-                    Console.WriteLine($"{key}: {deserialized[key]}");
-                }
-            }
-
-            [GenerateShapeFor<ExpandoObject>]
-            partial class Witness;
-            #endregion
-        }
-#endif
     }
 }

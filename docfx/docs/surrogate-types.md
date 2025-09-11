@@ -66,12 +66,4 @@ While the <xref:PolyType.GenerateShapeAttribute> cannot be applied to an open ge
 this data type can be closed and used from another data structure.
 It can also be used as the top-level structure by closing the generic on a Witness class.
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/SurrogateTypes.cs#ClosedGenericViaWitnessNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/SurrogateTypes.cs#ClosedGenericViaWitnessNETFX)]
-
----
+[!code-csharp[](../../samples/cs/SurrogateTypes.cs#ClosedGenericViaWitness)]

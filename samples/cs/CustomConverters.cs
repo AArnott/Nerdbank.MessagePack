@@ -138,11 +138,7 @@ namespace SubValues
                 switch (key)
                 {
                     case "MyProperty":
-#if NET
                         property1 = context.GetConverter<SomeOtherType>().Read(ref reader, context);
-#else
-                        property1 = context.GetConverter<SomeOtherType>(context.TypeShapeProvider).Read(ref reader, context);
-#endif
                         break;
                     case "MyProperty2":
                         property2 = reader.ReadString();
@@ -157,8 +153,7 @@ namespace SubValues
             return new Foo(property1, property2);
         }
 
-#if NET
-        #region DelegateSubValuesNET
+        #region DelegateSubValues
         public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
         {
             if (value is null)
@@ -178,27 +173,6 @@ namespace SubValues
         }
 
         #endregion
-#else
-        #region DelegateSubValuesNETFX
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
-        {
-            if (value is null)
-            {
-                writer.WriteNil();
-                return;
-            }
-
-            context.DepthStep();
-            writer.WriteMapHeader(2);
-
-            writer.Write("MyProperty");
-            SomeOtherType? propertyValue = value.MyProperty1;
-            context.GetConverter<SomeOtherType>(context.TypeShapeProvider).Write(ref writer, propertyValue, context);
-            writer.Write("MyProperty2");
-            writer.Write(value.MyProperty2);
-        }
-        #endregion
-#endif
     }
 }
 
@@ -208,8 +182,7 @@ namespace SubValuesWithWitness
 
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 
-#if NET
-    #region WitnessOnFormatterNET
+    #region WitnessOnFormatter
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
@@ -231,30 +204,6 @@ namespace SubValuesWithWitness
             throw new NotImplementedException();
         }
     }
-#else
-    #region WitnessOnFormatterNETFX
-    // SomeOtherType is outside your assembly and not attributed.
-    public partial record SomeOtherType;
-
-    [GenerateShapeFor<SomeOtherType>] // allow FooConverter to provide the shape for SomeOtherType
-    partial class FooConverter : MessagePackConverter<Foo?>
-    {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
-        {
-            // ...
-            context.GetConverter<SomeOtherType>(GeneratedTypeShapeProvider).Read(ref reader, context);
-            // ...
-            #endregion
-
-            throw new NotImplementedException();
-        }
-
-        public override void Write(ref MessagePackWriter writer, in Foo? value, SerializationContext context)
-        {
-            throw new NotImplementedException();
-        }
-    }
-#endif
 }
 
 namespace WitnessForArray
@@ -263,8 +212,7 @@ namespace WitnessForArray
 
     public record Foo(SomeOtherType? MyProperty1, string? MyProperty2);
 
-#if NET
-    #region ArrayWitnessOnFormatterNET
+    #region ArrayWitnessOnFormatter
     // SomeOtherType is outside your assembly and not attributed.
     public partial record SomeOtherType;
 
@@ -277,21 +225,6 @@ namespace WitnessForArray
             context.GetConverter<SomeOtherType[], FooConverter>().Read(ref reader, context);
             // ...
             #endregion
-#else
-    #region ArrayWitnessOnFormatterNETFX
-    // SomeOtherType is outside your assembly and not attributed.
-    public partial record SomeOtherType;
-
-    [GenerateShapeFor<SomeOtherType[]>]
-    partial class FooConverter : MessagePackConverter<Foo?>
-    {
-        public override Foo? Read(ref MessagePackReader reader, SerializationContext context)
-        {
-            // ...
-            context.GetConverter<SomeOtherType[]>(GeneratedTypeShapeProvider).Read(ref reader, context);
-            // ...
-            #endregion
-#endif
             throw new NotImplementedException();
         }
 
@@ -485,8 +418,7 @@ namespace PerformanceConverters
 
 namespace Stateful
 {
-#if NET
-    #region StatefulNET
+    #region Stateful
     class Program
     {
         static void Main()
@@ -527,51 +459,6 @@ namespace Stateful
     [MessagePackConverter(typeof(StatefulConverter))]
     public partial record struct SpecialType(int Value);
     #endregion
-#else
-    #region StatefulNETFX
-    class Program
-    {
-        static void Main()
-        {
-            MessagePackSerializer serializer = new()
-            {
-                StartingContext = new SerializationContext
-                {
-                    ["ValueMultiplier"] = 3,
-                },
-            };
-            SpecialType original = new(5);
-            Console.WriteLine($"Original value: {original}");
-            byte[] msgpack = serializer.Serialize(original, Witness.GeneratedTypeShapeProvider);
-            Console.WriteLine(serializer.ConvertToJson(msgpack));
-            SpecialType deserialized = serializer.Deserialize<SpecialType>(msgpack, Witness.GeneratedTypeShapeProvider);
-            Console.WriteLine($"Deserialized value: {deserialized}");
-        }
-    }
-
-    public class StatefulConverter : MessagePackConverter<SpecialType>
-    {
-        public override SpecialType Read(ref MessagePackReader reader, SerializationContext context)
-        {
-            int multiplier = (int)context["ValueMultiplier"]!;
-            int serializedValue = reader.ReadInt32();
-            return new SpecialType(serializedValue / multiplier);
-        }
-
-        public override void Write(ref MessagePackWriter writer, in SpecialType value, SerializationContext context)
-        {
-            int multiplier = (int)context["ValueMultiplier"]!;
-            writer.Write(value.Value * multiplier);
-        }
-    }
-
-    [MessagePackConverter(typeof(StatefulConverter))]
-    public partial record struct SpecialType(int Value);
-
-    [GenerateShapeFor<SpecialType>]
-    partial class Witness;
-    #endregion
-#endif
 
     class ChangeExistingState
     {
