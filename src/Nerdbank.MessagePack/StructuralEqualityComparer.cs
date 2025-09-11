@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using Nerdbank.MessagePack.SecureHash;
 using PolyType.Utilities;
 
@@ -61,6 +59,12 @@ namespace Nerdbank.MessagePack;
 /// The values are compared by their declared types rather than polymorphism.
 /// If some type has a property of type Foo, and the actual value at runtime derives from Foo, only the properties on Foo will be considered.
 /// If between two object graphs being equality checked, their runtime types do not match, the equality check will return <see langword="false" />.
+/// </para>
+/// <para>
+/// When targeting .NET Standard 2.0 or .NET Framework, some important methods are available only as extension methods,
+/// so make sure to have a <c><![CDATA[using Nerdbank.MessagePack;]]></c> directive in your code file to see these,
+/// and set your C# language version to 14 or later.
+/// If C# 14 is not an option for you, find the extension methods on the <see cref="StructuralEqualityComparerExtensions"/> class directly.
 /// </para>
 /// </remarks>
 /// <example>
@@ -133,110 +137,6 @@ public static class StructuralEqualityComparer
 	public static IEqualityComparer<T> GetHashCollisionResistant<T, TProvider>()
 		where TProvider : IShapeable<T> => (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TProvider.GetTypeShape())!;
 #endif
-
-	/// <summary>
-	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, without hash collision resistance.
-	/// </summary>
-	/// <typeparam name="T">The type to be compared.</typeparam>
-	/// <returns>The equality comparer.</returns>
-	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
-	/// <remarks>
-	/// <para>
-	/// This overload should only be used when <typeparamref name="T"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetDefaultSourceGenerated{T, TProvider}"/> instead,
-	/// or use <see cref="GetDefault{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
-	/// </para>
-	/// <para>
-	/// See the remarks on the class for important notes about correctness of this implementation.
-	/// </para>
-	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
-#if NET
-	[PreferDotNetAlternativeApi($"Use {nameof(GetDefault)}<T> instead.")]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
-	public static IEqualityComparer<T> GetDefaultSourceGenerated<T>()
-		=> (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<T>())!;
-
-	/// <summary>
-	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, with hash collision resistance.
-	/// </summary>
-	/// <typeparam name="T">The type to be compared.</typeparam>
-	/// <returns>The equality comparer.</returns>
-	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
-	/// <remarks>
-	/// <para>
-	/// This overload should only be used when <typeparamref name="T"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetHashCollisionResistantSourceGenerated{T, TProvider}"/> instead,
-	/// or use <see cref="GetHashCollisionResistant{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
-	/// </para>
-	/// <para>
-	/// See the remarks on the class for important notes about correctness of this implementation.
-	/// </para>
-	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
-#if NET
-	[PreferDotNetAlternativeApi($"Use {nameof(GetHashCollisionResistant)}<T> instead.")]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
-	public static IEqualityComparer<T> GetHashCollisionResistantSourceGenerated<T>()
-		=> (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<T>())!;
-
-	/// <summary>
-	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, without hash collision resistance.
-	/// </summary>
-	/// <typeparam name="T">The type to be compared.</typeparam>
-	/// <typeparam name="TProvider">The witness type that provides the shape for <typeparamref name="T"/>.</typeparam>
-	/// <returns>An equality comparer.</returns>
-	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
-	/// <remarks>
-	/// <para>
-	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use <see cref="GetDefault{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
-	/// </para>
-	/// <para>
-	/// See the remarks on the class for important notes about correctness of this implementation.
-	/// </para>
-	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
-#if NET
-	[PreferDotNetAlternativeApi($"Use {nameof(GetDefault)}<T, TProvider> instead.")]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
-	public static IEqualityComparer<T> GetDefaultSourceGenerated<T, TProvider>()
-		=> (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<TProvider>())!;
-
-	/// <summary>
-	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, with hash collision resistance.
-	/// </summary>
-	/// <typeparam name="T">The type to be compared.</typeparam>
-	/// <typeparam name="TProvider">The witness type that provides the shape for <typeparamref name="T"/>.</typeparam>
-	/// <returns>An equality comparer.</returns>
-	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
-	/// <remarks>
-	/// <para>
-	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use <see cref="GetHashCollisionResistant{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
-	/// </para>
-	/// <para>
-	/// See the remarks on the class for important notes about correctness of this implementation.
-	/// </para>
-	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
-#if NET
-	[PreferDotNetAlternativeApi($"Use {nameof(GetHashCollisionResistant)}<T, TProvider> instead.")]
-	[EditorBrowsable(EditorBrowsableState.Never)]
-#endif
-	public static IEqualityComparer<T> GetHashCollisionResistantSourceGenerated<T, TProvider>()
-		=> (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<TProvider>())!;
 
 	/// <summary>
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, without hash collision resistance.

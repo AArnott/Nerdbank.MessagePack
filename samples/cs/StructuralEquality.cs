@@ -44,12 +44,12 @@ internal partial class StructuralEquality
         var data2 = new MyData { A = "foo", B = new MyDeeperData { C = 4 } };
         Console.WriteLine($"data1a == data1b? {data1a == data1b}"); // false
         Console.WriteLine($"data1a.Equals(data1b)? {data1a.Equals(data1b)}"); // false
-        bool equalByValue = StructuralEqualityComparer.GetDefaultSourceGenerated<MyData>().Equals(data1a, data1b);
+        bool equalByValue = StructuralEqualityComparer.GetDefault<MyData>().Equals(data1a, data1b);
         Console.WriteLine($"data1a equal to data1b by value? {equalByValue}"); // true
 
         Console.WriteLine($"data1a == data2? {data1a == data2}"); // false
         Console.WriteLine($"data1a.Equals(data2)? {data1a.Equals(data2)}"); // false
-        equalByValue = StructuralEqualityComparer.GetDefaultSourceGenerated<MyData>().Equals(data1a, data2);
+        equalByValue = StructuralEqualityComparer.GetDefault<MyData>().Equals(data1a, data2);
         Console.WriteLine($"data1a equal to data2 by value? {equalByValue}"); // false
     }
 

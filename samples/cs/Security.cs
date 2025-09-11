@@ -16,8 +16,7 @@ partial class Security
         #endregion
     }
 
-#if NET
-    #region SecureEqualityComparersNET
+    #region SecureEqualityComparers
     [GenerateShape]
     public partial class HashCollisionResistance
     {
@@ -33,22 +32,4 @@ partial class Security
         // to include them in the hash and equality checks as part of the dictionary keys.
     }
     #endregion
-#else
-    #region SecureEqualityComparersNETFX
-    [GenerateShape]
-    public partial class HashCollisionResistance
-    {
-        public Dictionary<CustomType, string> Dictionary { get; } = new(StructuralEqualityComparer.GetHashCollisionResistantSourceGenerated<CustomType>());
-
-        public HashSet<CustomType> HashSet { get; } = new(StructuralEqualityComparer.GetHashCollisionResistantSourceGenerated<CustomType>());
-    }
-
-    [GenerateShape]
-    public partial class CustomType
-    {
-        // Whatever members you want. Make them public or attribute with [PropertyShape]
-        // to include them in the hash and equality checks as part of the dictionary keys.
-    }
-    #endregion
-#endif
 }

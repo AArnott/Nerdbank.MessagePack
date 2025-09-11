@@ -34,10 +34,13 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols Condition=" '$(DebugType)' != 'embedded' ">true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- While we compile with a .NET SDK preview version... -->
+    <NoWarn>$(NoWarn);NETSDK1057</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
-    <LangVersion Condition="'$(MSBuildProjectExtension)'=='.csproj'">13</LangVersion>
+    <LangVersion Condition="'$(MSBuildProjectExtension)'=='.csproj'">14</LangVersion>
     <LangVersion Condition="'$(MSBuildProjectExtension)'=='.vbproj'">16.9</LangVersion>
   </PropertyGroup>
 
