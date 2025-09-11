@@ -2,18 +2,30 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NET
-
+#pragma warning disable SA1402 // File may only contain a single type
+#pragma warning disable SA1601 // Partial elements should be documented
 #pragma warning disable RS0026 // optional parameter on a method with overloads
-#pragma warning disable NBMsgPack051 // We deliberately forward the safe calls to the more general methods.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
+#if NET
+
 public partial record MessagePackSerializer
-{<#
+{<# WriteClass(targetNET: true); #>
+}
+
+#endif
+
+public static partial class MessagePackSerializerExtensions
+{<# WriteClass(targetNET: false); #>
+}
+<#
+void WriteClass(bool targetNET) {
     static void AssembleInputs(string firstParameterType, string firstParameterName, bool moreParameters, out string firstParameter, out string firstArg, out string firstParameterDocId)
     {
         firstParameter = firstParameterType.Length == 0 ? "" : $"{firstParameterType} {firstParameterName}";
@@ -26,13 +38,50 @@ public partial record MessagePackSerializer
             if (firstArg.Length > 0) firstArg += ", ";
         }
     }
-    
+
     foreach (ShapeSource shapeSource in Enum.GetValues(typeof(ShapeSource)))
     {
-        (string genericTypeParameters, string genericTypeParametersWithElement, string typeConstraint, string shapeProviderName) = shapeSource switch
+        (string genericTypeParameters, string genericTypeParametersWithElement, string typeConstraint, string getShape) = shapeSource switch
         {
-            ShapeSource.T => ("T","T, TElement", "T : IShapeable<T>","T"),
-            ShapeSource.TProvider => ("T, TProvider","T, TElement, TProvider","TProvider : IShapeable<T>","TProvider"),
+            ShapeSource.T => ("T","T, TElement", targetNET ? "T : IShapeable<T>" : null, targetNET ? "T.GetTypeShape()" : "TypeShapeResolver.ResolveDynamicOrThrow<T>()"),
+            ShapeSource.TProvider => ("T, TProvider","T, TElement, TProvider", targetNET ? "TProvider : IShapeable<T>" : null, targetNET ? "TProvider.GetTypeShape()" : "TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>()"),
+            _ => throw new NotSupportedException(),
+        };
+        typeConstraint = typeConstraint is null ? "" : $"where {typeConstraint} ";
+
+        string serializerClassQualifier = targetNET ? "" : "MessagePackSerializer.";
+        string thisParameter = targetNET ? "" : "this MessagePackSerializer self, ";
+        string thisKeyword = targetNET ? "this" : "Requires.NotNull(self)";
+        string staticModifier = targetNET ? "" : "static ";
+        string methodAttributes = targetNET ? "" : """
+        
+            #if NET8_0
+            	[RequiresDynamicCode(ResolveDynamicMessage)]
+            #endif
+            #if NET
+            	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+            	[EditorBrowsable(EditorBrowsableState.Never)]
+            #endif
+            """;
+        string sourceGenRequiredDocs = targetNET ? "" : shapeSource switch
+        {
+            ShapeSource.T => $$"""
+
+            	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+            	/// <remarks>
+            	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+            	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+            	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+            	/// </remarks>
+            """,
+            ShapeSource.TProvider => $$"""
+
+            	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+            	/// <remarks>
+            	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+            	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+            	/// </remarks>
+            """,
             _ => throw new NotSupportedException(),
         };
 
@@ -48,10 +97,10 @@ public partial record MessagePackSerializer
             AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T}, CancellationToken)" />
-	[ExcludeFromCodeCoverage]
-	public <#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=firstParameter#>in T? value, CancellationToken cancellationToken = default)
-		where <#=typeConstraint#> => this.Serialize(<#=firstArg#>value, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
+	/// <inheritdoc cref="<#=serializerClassQualifier#>Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #><#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>in T? value, CancellationToken cancellationToken = default)
+		<#=typeConstraint#>=> <#= thisKeyword #>.Serialize(<#=firstArg#>value, <#=getShape#>, cancellationToken);
 <#
         }
 
@@ -67,10 +116,10 @@ public partial record MessagePackSerializer
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
-	[ExcludeFromCodeCoverage]
-	public T? Deserialize<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
-		where <#=typeConstraint#> => this.Deserialize(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
+	/// <inheritdoc cref="<#=serializerClassQualifier#>Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #>T? Deserialize<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, CancellationToken cancellationToken = default)
+		<#=typeConstraint#>=> <#= thisKeyword #>.Deserialize(<#=firstArg#>, <#=getShape#>, cancellationToken);
 <#
         }
 
@@ -85,26 +134,26 @@ public partial record MessagePackSerializer
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
-	[ExcludeFromCodeCoverage]
-	public ValueTask<T?> DeserializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #>ValueTask<T?> DeserializeAsync<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.DeserializeAsync(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
+		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializeAsync(<#=firstArg#>, <#=getShape#>, cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" />
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeEnumerableAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
-	[ExcludeFromCodeCoverage]
-	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, CancellationToken cancellationToken = default)
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #>IAsyncEnumerable<T?> DeserializeEnumerableAsync<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
+		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializeEnumerableAsync(<#=firstArg#>, <#=getShape#>, cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" />
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, <#=serializerClassQualifier#>StreamingEnumerationOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
-	[ExcludeFromCodeCoverage]
-	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<<#=genericTypeParametersWithElement#>>(<#=firstParameter#>, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #>IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#>, <#=serializerClassQualifier#>StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.DeserializeEnumerableAsync(<#=firstArg#>, <#=shapeProviderName#>.GetTypeShape(), options, cancellationToken);
+		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializeEnumerableAsync(<#=firstArg#>, <#=getShape#>, options, cancellationToken);
 <#
         }
 
@@ -119,20 +168,17 @@ public partial record MessagePackSerializer
             AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" />
+	/// <inheritdoc cref="<#=serializerClassQualifier#>SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
-	[ExcludeFromCodeCoverage]
-	public ValueTask SerializeAsync<<#=genericTypeParameters#>>(<#=firstParameter#>, in T? value, CancellationToken cancellationToken = default)
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #>ValueTask SerializeAsync<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, in T? value, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		where <#=typeConstraint#> => this.SerializeAsync(<#=firstArg#>, value, <#=shapeProviderName#>.GetTypeShape(), cancellationToken);
+		<#=typeConstraint#>=> <#= thisKeyword #>.SerializeAsync(<#=firstArg#>, value, <#=getShape#>, cancellationToken);
 <#
         }
     }
-#>
 }
-
-#endif
-
+#>
 <#+
   enum SerializeTransport
   {

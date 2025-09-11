@@ -16,15 +16,7 @@ Doing so leads to default serialization rules being applied to the type (e.g. on
 For this example, suppose you consume a `FamilyTree` type from a library that you don't control and did not annotate their type for serialization.
 In your own project, you can define this witness type and use it to serialize an external type.
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/TypeShapePatterns.cs#WitnessNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/TypeShapePatterns.cs#WitnessNETFX)]
-
----
+[!code-csharp[](../../samples/cs/TypeShapePatterns.cs#Witness)]
 
 Note the only special bit is providing the `Witness` class as a type argument to the `Serialize` method.
 The _name_ of the witness class is completely inconsequential.
@@ -89,12 +81,4 @@ Note the <xref:PolyType.TypeShapeAttribute.Marshaler?displayProperty=nameWithTyp
 
 We can then serialize the data model and get the desired output schema, using code like this:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#SerializeVogenNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#SerializeVogenNETFX)]
-
----
+[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#SerializeVogen)]

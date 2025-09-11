@@ -28,8 +28,7 @@ namespace ConsumeVogenWithMarshalers
     }
     #endregion
 
-#if NET
-    #region SerializeVogenNET
+    #region SerializeVogen
     class VogenConsumer
     {
         static MessagePackSerializer serializer = new();
@@ -40,20 +39,4 @@ namespace ConsumeVogenWithMarshalers
         }
     }
     #endregion
-#else
-    #region SerializeVogenNETFX
-    class VogenConsumer
-    {
-        static MessagePackSerializer serializer = new();
-
-        void Serialize(Customer customer)
-        {
-            byte[] msgpack = serializer.Serialize(customer, Witness.GeneratedTypeShapeProvider);
-        }
-    }
-
-    [GenerateShapeFor<Customer>]
-    partial class Witness;
-    #endregion
-#endif
 }

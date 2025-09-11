@@ -164,19 +164,13 @@ namespace RuntimeSubTypes
     [GenerateShape]
     partial record Cow(string Name) : Animal(Name);
 
-    [GenerateShapeFor<Horse>]
-    [GenerateShapeFor<Cow>]
-    partial class Witness;
-
     class SerializationConfigurator
     {
         internal MessagePackSerializer ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
-            DerivedTypeMapping<Animal> mapping = new(Witness.GeneratedTypeShapeProvider)
-            {
-                [1] = typeof(Horse),
-                [2] = typeof(Cow),
-            };
+            DerivedShapeMapping<Animal> mapping = new();
+            mapping.AddSourceGenerated<Horse>(1);
+            mapping.AddSourceGenerated<Cow>(2);
 
             return serializer with { DerivedTypeMappings = [.. serializer.DerivedTypeMappings, mapping] };
         }

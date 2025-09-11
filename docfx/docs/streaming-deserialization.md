@@ -20,15 +20,7 @@ Two forms are supported:
 A sequence of msgpack structures without an array or any other data is said to have no envelope.
 To asynchronously enumerate each of these structures, we use the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods that take no @Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions`2 parameter, such as @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync``1(System.IO.Pipelines.PipeReader,System.Threading.CancellationToken).
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#TopLevelStreamingEnumerationNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#TopLevelStreamingEnumerationNETFX)]
-
----
+[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#TopLevelStreamingEnumeration)]
 
 ## Sequence within an envelope
 
@@ -38,15 +30,7 @@ After enumerating the sequence, the remainder of the envelope is parsed in order
 
 Navigating through the envelope is done by an expression provided to the @Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions`2 argument passed to any of the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods that accept that as a parameter.
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#StreamingEnumerationWithEnvelopeNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#StreamingEnumerationWithEnvelopeNETFX)]
-
----
+[!code-csharp[](../../samples/cs/StreamingDeserialization.cs#StreamingEnumerationWithEnvelope)]
 
 The paths from envelope to sequence may include stepping through properties, indexing into arrays or even dictionaries.
 However, not every valid C# expression will be accepted as a path.

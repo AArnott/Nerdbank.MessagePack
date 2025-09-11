@@ -80,44 +80,20 @@ Applications that have a legitimate need to exceed the default stack depth limit
 
 The @Nerdbank.MessagePack.SerializationContext.GetConverter*?displayProperty=nameWithType method may be used to obtain a converter to use for members of the type your converter is serializing or deserializing.
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#DelegateSubValuesNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#DelegateSubValuesNETFX)]
-
----
+[!code-csharp[](../../samples/cs/CustomConverters.cs#DelegateSubValues)]
 
 The above assumes that `SomeOtherType` is a type that you declare and can have <xref:PolyType.GenerateShapeAttribute> applied to it.
 If this is not the case, you may provide your own type shape and reference that.
 For convenience, you may want to apply it directly to your custom converter:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#WitnessOnFormatterNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#WitnessOnFormatterNETFX)]
-
----
+[!code-csharp[](../../samples/cs/CustomConverters.cs#WitnessOnFormatter)]
 
 The <xref:PolyType.GenerateShapeForAttribute`1> is what enables `FooConverter` to be a "provider" for the shape of `SomeOtherType`.
 
 Arrays of a type require a shape of their own.
 So even if you define your type `MyType` with <xref:PolyType.GenerateShapeAttribute>, serializing `MyType[]` would require a witness type and attribute. For example:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#ArrayWitnessOnFormatterNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#ArrayWitnessOnFormatterNETFX)]
-
----
+[!code-csharp[](../../samples/cs/CustomConverters.cs#ArrayWitnessOnFormatter)]
 
 ### Version compatibility
 
@@ -174,15 +150,7 @@ This can be achieved as follows:
 1. Apply that @Nerdbank.MessagePack.SerializationContext to a @Nerdbank.MessagePack.MessagePackSerializer by setting its @Nerdbank.MessagePack.MessagePackSerializer.StartingContext property.
 1. Your custom converter can then retrieve that state during serialization/deserialization via that same @Nerdbank.MessagePack.SerializationContext.Item(System.Object)?displayProperty=nameWithType indexer.
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#StatefulNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/CustomConverters.cs#StatefulNETFX)]
-
----
+[!code-csharp[](../../samples/cs/CustomConverters.cs#Stateful)]
 
 When the state object stored in the @Nerdbank.MessagePack.SerializationContext is a mutable reference type, the converters *may* mutate it such that they or others can observe those changes later.
 Consider the thread-safety implications of doing this if that same mutable state object is shared across multiple serializations that may happen on different threads in parallel.

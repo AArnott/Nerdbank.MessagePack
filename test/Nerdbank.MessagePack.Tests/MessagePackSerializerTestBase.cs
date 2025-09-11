@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
-public abstract class MessagePackSerializerTestBase
+public abstract partial class MessagePackSerializerTestBase
 {
 	protected ReadOnlySequence<byte> lastRoundtrippedMsgpack;
 
@@ -119,7 +119,7 @@ public abstract class MessagePackSerializerTestBase
 		where T : IShapeable<T>
 		=> this.AssertRoundtrip<T, T>(value);
 #else
-		=> this.AssertRoundtrip<T, MessagePackSerializerPolyfill.Witness>(value);
+		=> this.AssertRoundtrip<T, Witness>(value);
 #endif
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T, TProvider>(T? value)
@@ -152,7 +152,7 @@ public abstract class MessagePackSerializerTestBase
 #if NET
 		await this.AssertRoundtripAsync<T, T>(value);
 #else
-		await this.AssertRoundtripAsync<T, MessagePackSerializerPolyfill.Witness>(value);
+		await this.AssertRoundtripAsync<T, Witness>(value);
 #endif
 		return this.lastRoundtrippedMsgpack;
 	}
@@ -171,7 +171,7 @@ public abstract class MessagePackSerializerTestBase
 #if NET
 		where T : IShapeable<T> => this.Roundtrip(value, T.GetTypeShape());
 #else
-		=> this.Roundtrip(value, GetTypeShape<T, MessagePackSerializerPolyfill.Witness>());
+		=> this.Roundtrip(value, GetTypeShape<T, Witness>());
 #endif
 
 	protected T? Roundtrip<T, TProvider>(T? value)
@@ -196,7 +196,7 @@ public abstract class MessagePackSerializerTestBase
 		where T : IShapeable<T>
 		=> this.RoundtripAsync(value, T.GetTypeShape());
 #else
-		=> this.RoundtripAsync(value, GetTypeShape<T, MessagePackSerializerPolyfill.Witness>());
+		=> this.RoundtripAsync(value, GetTypeShape<T, Witness>());
 #endif
 
 	protected ValueTask<T?> RoundtripAsync<T, TProvider>(T? value)
@@ -265,4 +265,7 @@ public abstract class MessagePackSerializerTestBase
 	{
 		this.Logger.WriteLine(this.Serializer.ConvertToJson(msgPack));
 	}
+
+	[GenerateShapeFor<bool>]
+	private partial class Witness;
 }

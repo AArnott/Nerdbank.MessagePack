@@ -44,16 +44,17 @@ internal partial class StructuralEquality
         var data2 = new MyData { A = "foo", B = new MyDeeperData { C = 4 } };
         Console.WriteLine($"data1a == data1b? {data1a == data1b}"); // false
         Console.WriteLine($"data1a.Equals(data1b)? {data1a.Equals(data1b)}"); // false
-        bool equalByValue = StructuralEqualityComparer.GetDefault<MyData>(Witness.GeneratedTypeShapeProvider).Equals(data1a, data1b);
+        bool equalByValue = StructuralEqualityComparer.GetDefaultSourceGenerated<MyData>().Equals(data1a, data1b);
         Console.WriteLine($"data1a equal to data1b by value? {equalByValue}"); // true
 
         Console.WriteLine($"data1a == data2? {data1a == data2}"); // false
         Console.WriteLine($"data1a.Equals(data2)? {data1a.Equals(data2)}"); // false
-        equalByValue = StructuralEqualityComparer.GetDefault<MyData>(Witness.GeneratedTypeShapeProvider).Equals(data1a, data2);
+        equalByValue = StructuralEqualityComparer.GetDefaultSourceGenerated<MyData>().Equals(data1a, data2);
         Console.WriteLine($"data1a equal to data2 by value? {equalByValue}"); // false
     }
 
-    internal class MyData
+    [GenerateShape]
+    internal partial class MyData
     {
         public string? A { get; set; }
         public MyDeeperData? B { get; set; }
@@ -63,9 +64,6 @@ internal partial class StructuralEquality
     {
         public int C { get; set; }
     }
-
-    [GenerateShapeFor<MyData>]
-    partial class Witness;
     #endregion
 #endif
 }

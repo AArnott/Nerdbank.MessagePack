@@ -9,20 +9,11 @@ namespace Nerdbank.MessagePack;
 public partial record MessagePackSerializer
 {
 #if NET
-	/// <summary>
-	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
-	/// </summary>
-	/// <typeparam name="T">The self-describing type whose schema should be produced.</typeparam>
-	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
+	/// <inheritdoc cref="MessagePackSerializerExtensions.GetJsonSchema{T}(MessagePackSerializer)"/>
 	public JsonObject GetJsonSchema<T>()
 		where T : IShapeable<T> => this.GetJsonSchema(T.GetTypeShape());
 
-	/// <summary>
-	/// <inheritdoc cref="GetJsonSchema(ITypeShape)" path="/summary"/>
-	/// </summary>
-	/// <typeparam name="T">The type whose schema should be produced.</typeparam>
-	/// <typeparam name="TProvider">The witness type that provides the shape for <typeparamref name="T"/>.</typeparam>
-	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
+	/// <inheritdoc cref="MessagePackSerializerExtensions.GetJsonSchema{T, TProvider}(MessagePackSerializer)"/>
 	public JsonObject GetJsonSchema<T, TProvider>()
 		where TProvider : IShapeable<T> => this.GetJsonSchema(TProvider.GetTypeShape());
 #endif

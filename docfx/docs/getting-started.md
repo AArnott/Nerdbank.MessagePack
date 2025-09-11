@@ -38,15 +38,7 @@ This means that only the top-level types need to be declared with the `partial` 
 
 You can serialize and deserialize it like this:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecordRoundtripNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecordRoundtripNETFX)]
-
----
+[!code-csharp[](../../samples/cs/GettingStarted.cs#SimpleRecordRoundtrip)]
 
 If you need to directly serialize a type that isn't declared in your project and is not annotated with `[GenerateShape]`, you can define another class in your own project to provide that shape.
 Learn more about [witness classes](type-shapes.md#witness-classes).
@@ -96,12 +88,4 @@ A built-in @System.Dynamic.ExpandoObject converter is included in the library as
 It will deserialize any msgpack structure into primitives and simple structures.
 Serializing an `ExpandoObject` requires that serialization start with a shape provider that can describe every runtime type in the object graph.
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/PrimitiveDeserialization.cs#DeserializeExpandoObjectNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/PrimitiveDeserialization.cs#DeserializeExpandoObjectNETFX)]
-
----
+[!code-csharp[](../../samples/cs/PrimitiveDeserialization.cs#DeserializeExpandoObject)]

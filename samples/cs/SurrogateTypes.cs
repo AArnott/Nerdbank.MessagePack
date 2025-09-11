@@ -105,8 +105,7 @@ partial class CompleteSample
     }
     #endregion
 
-#if NET
-    #region ClosedGenericViaWitnessNET
+    #region ClosedGenericViaWitness
     [GenerateShapeFor<OpenGenericDataType<int>>]
     internal partial class Witness;
 
@@ -114,14 +113,4 @@ partial class CompleteSample
 
     private static readonly MessagePackSerializer Serializer = new();
     #endregion
-#else
-    #region ClosedGenericViaWitnessNETFX
-    [GenerateShapeFor<OpenGenericDataType<int>>]
-    internal partial class Witness;
-
-    void SerializeByWitness(OpenGenericDataType<int> value) => Serializer.Serialize(value, Witness.GeneratedTypeShapeProvider);
-
-    private static readonly MessagePackSerializer Serializer = new();
-    #endregion
-#endif
 }

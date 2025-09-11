@@ -3,6 +3,8 @@
 
 using System.Collections;
 using System.Collections.Frozen;
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -17,6 +19,10 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyValuePair<DerivedTypeIdentifier, ITypeShape>>
 {
+#if NET
+	private const string UseDotNetAlternativeMessage = "Use the Add method instead.";
+#endif
+
 	private readonly Dictionary<DerivedTypeIdentifier, ITypeShape> map = new();
 	private readonly HashSet<Type> addedTypes = new();
 
@@ -68,6 +74,44 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 		where TProvider : IShapeable<TDerived>
 		=> this.Add(alias, TProvider.GetTypeShape());
 #endif
+
+	/// <inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TDerived"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TDerived"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="AddSourceGenerated{TDerived, TProvider}(DerivedTypeIdentifier)"/> instead,
+	/// or use <see cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShapeProvider)"/> for an option that does not require source generation.
+	/// </remarks>
+#if NET8_0
+	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(UseDotNetAlternativeMessage)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public void AddSourceGenerated<TDerived>(DerivedTypeIdentifier alias)
+		where TDerived : TBase => this.Add(alias, TypeShapeResolver.ResolveDynamicOrThrow<TDerived>());
+
+	/// <inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" path="/summary" />
+	/// <inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" path="/exception" />
+	/// <param name="alias"><inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" path="/param[@name='alias']" /></param>
+	/// <typeparam name="TDerived"><inheritdoc cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})" path="/typeparam[@name='TDerived']"/></typeparam>
+	/// <typeparam name="TProvider">The witness class that provides a type shape for <typeparamref name="TDerived"/>.</typeparam>
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="TDerived"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use <see cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShapeProvider)"/> for an option that does not require source generation.
+	/// </remarks>
+#if NET8_0
+	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(UseDotNetAlternativeMessage)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public void AddSourceGenerated<TDerived, TProvider>(DerivedTypeIdentifier alias)
+		where TDerived : TBase
+		=> this.Add(alias, TypeShapeResolver.ResolveDynamicOrThrow<TDerived, TProvider>());
 
 	/// <inheritdoc/>
 	public IEnumerator<KeyValuePair<DerivedTypeIdentifier, ITypeShape>> GetEnumerator() => this.map.GetEnumerator();
