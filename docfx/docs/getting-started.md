@@ -45,6 +45,12 @@ Learn more about [witness classes](type-shapes.md#witness-classes).
 
 Learn more about serialization policies and how to customize them over at [Customizing Serialization](customizing-serialization.md).
 
+### Attribute sets
+
+When attributing types and members for serialization, using the PolyType `*ShapeAttribute` attributes (e.g. <xref:PolyType.PropertyShapeAttribute>) is recommended.
+
+PolyType also has [limited support for DataContract attributes](https://eiriktsarpalis.github.io/PolyType/shape-providers.html#datacontract-support), which means Nerdbank.MessagePack can probably serialize your <xref:System.Runtime.Serialization.DataContractSerializer>-annotated types too.
+
 ### Limitations
 
 Not all types are suitable for serialization.
