@@ -18,6 +18,12 @@ Unity is currently limited to .NET Framework or .NET Standard 2.1 libraries.
 Some of the preferred APIs in Nerdbank.MessagePack are exposed uniquely to .NET 8+ projects.
 As a result, when reviewing documentation and samples for this library, be sure to look at the samples in their ".NET Standard" form.
 
+Be sure to have this at the top of each code file that uses the serializer so that extension methods are available to you, which fills in most of the gaps for non-.NET targeting projects:
+
+```cs
+using Nerdbank.MessagePack;
+```
+
 ### PolyType name collisions
 
 If you encounter a compilation error such as the following:
@@ -44,11 +50,11 @@ Resolve it by taking the following steps:
 
 In projects with disabled auto references, you will need to add an assembly reference to PolyType.dll and Nerdbank.MessagePack.dll to your project manually.
 
-### Visual Studio complains that the Witness class has no ShapeProvider property
+### Visual Studio complains that the Witness class has no GeneratedTypeShapeProvider property
 
-The [witness class](type-shapes.md) that your unity project requires for serialization should be attributed with <xref:PolyType.GenerateShapeForAttribute> and be declared as a `partial class`, after which the PolyType source generator should add a `ShapeProvider` property.
+The [witness class](type-shapes.md) that your unity project requires for serialization should be attributed with <xref:PolyType.GenerateShapeForAttribute> and be declared as a `partial class` (with at least `internal` visibility), after which the PolyType source generator should add a `GeneratedTypeShapeProvider` property.
 Some configurations of Visual Studio will not re-run the source generator until you save your code file with these changes.
-If you see an error (or a lack of `ShapeProvider` in the completion list for your witness class), verify that you have the attribute and `partial` modifier as required, and save your code file.
+If you see an error (or a lack of `GeneratedTypeShapeProvider` in the completion list for your witness class), verify that you have the attribute and `partial` modifier as required, and save your code file.
 
 Right-clicking the source file and asking Unity to "Reimport" that file is also reported to fixing this transient issue.
 
