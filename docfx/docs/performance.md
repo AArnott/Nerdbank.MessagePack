@@ -7,6 +7,9 @@ These objects have a startup cost as they build runtime models for converters th
 The object is thread-safe.
 The object is entirely publicly immutable.
 
+> [!TIP]
+> You can get a quick performance boost by setting <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability> to `true`, if you do not need to be able to deserialize data written with a previous version of your application.
+
 ## Synchronous
 
 The synchronous (de)serialization APIs are the fastest.
