@@ -199,3 +199,8 @@ Consider the following example where a type hierarchy is registered without usin
 [!code-csharp[](../../samples/cs/Unions.cs#RuntimeSubTypesNETFX)]
 
 ---
+
+## Custom converters
+
+A custom converter applied to the base type in a union brings special considerations.
+[Learn about them in our custom converters doc](custom-converters.md#union-types).

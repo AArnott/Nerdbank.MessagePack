@@ -46,33 +46,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	internal TypeShapeVisitor OutwardVisitor { get; set; }
 
 	/// <inheritdoc/>
-	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
-	{
-		// Check if the type has a custom converter.
-		if (this.owner.TryGetUserDefinedConverter(typeShape, out MessagePackConverter<T>? userDefinedConverter))
-		{
-			return userDefinedConverter;
-		}
-
-		if (this.owner.InternStrings && typeof(T) == typeof(string))
-		{
-			return this.owner.PreserveReferences != ReferencePreservationMode.Off ? ReferencePreservingInterningStringConverter : InterningStringConverter;
-		}
-
-		// Check if the type has a built-in converter.
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? defaultConverter))
-		{
-			return defaultConverter;
-		}
-
-		// Otherwise, build a converter using the visitor.
-		return typeShape.Accept(this.OutwardVisitor, state);
-	}
+	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => typeShape.Accept(this.OutwardVisitor, state);
 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (this.GetCustomConverter(objectShape, objectShape.AttributeProvider) is MessagePackConverter<T> customConverter)
+		if (this.TryGetCustomOrPrimitiveConverter(objectShape, objectShape.AttributeProvider, out MessagePackConverter<T>? customConverter))
 		{
 			return customConverter;
 		}
@@ -301,9 +280,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
-		MessagePackConverter<TPropertyType> converter =
-			this.GetCustomConverter(propertyShape.PropertyType, propertyShape.AttributeProvider) ??
-			this.GetConverter(propertyShape.PropertyType, propertyShape.AttributeProvider);
+		MessagePackConverter<TPropertyType> converter = this.GetConverterForMemberOrParameter(propertyShape.PropertyType, propertyShape.AttributeProvider);
 
 		static string CreateReadFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to deserialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
 		static string CreateWriteFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
@@ -558,7 +535,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
 	{
 		IConstructorShape constructorShape = (IConstructorShape)(state ?? throw new ArgumentNullException(nameof(state)));
-		MessagePackConverter<TParameterType> converter = this.GetConverter(parameterShape.ParameterType, parameterShape.AttributeProvider);
+
+		MessagePackConverter<TParameterType> converter = this.GetConverterForMemberOrParameter(parameterShape.ParameterType, parameterShape.AttributeProvider);
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 
@@ -644,6 +622,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 	{
+		if (this.TryGetCustomOrPrimitiveConverter(dictionaryShape, dictionaryShape.AttributeProvider, out MessagePackConverter<TDictionary>? customConverter))
+		{
+			return customConverter;
+		}
+
 		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
 
 		// Serialization functions.
@@ -664,6 +647,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
 	{
+		if (this.TryGetCustomOrPrimitiveConverter(enumerableShape, enumerableShape.AttributeProvider, out MessagePackConverter<TEnumerable>? customConverter))
+		{
+			return customConverter;
+		}
+
 		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
 
 		// Serialization functions.
@@ -721,7 +709,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
 	{
-		if (this.GetCustomConverter(enumShape, enumShape.AttributeProvider) is MessagePackConverter<TEnum> customConverter)
+		if (this.TryGetCustomOrPrimitiveConverter(enumShape, enumShape.AttributeProvider, out MessagePackConverter<TEnum>? customConverter))
 		{
 			return customConverter;
 		}
@@ -744,9 +732,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// </summary>
 	/// <typeparam name="T">The data type to make convertible.</typeparam>
 	/// <param name="shape">The type shape.</param>
-	/// <param name="memberAttributes">The attribute provider on the member that requires this converter.</param>
+	/// <param name="memberAttributes">
+	/// The attribute provider on the member that requires this converter.
+	/// This is used to look for <see cref="UseComparerAttribute"/> which may customize the converter we return.
+	/// </param>
 	/// <param name="state">An optional state object to pass to the converter.</param>
 	/// <returns>The converter.</returns>
+	/// <remarks>
+	/// This is the main entry point for getting converters on behalf of other functions,
+	/// e.g. converting the key or value in a dictionary.
+	/// It does <em>not</em> take <see cref="MessagePackConverterAttribute"/> into account
+	/// if it were to appear in <paramref name="memberAttributes"/>.
+	/// Callers that want to respect that attribute must call <see cref="TryGetConverterFromAttribute"/> first.
+	/// </remarks>
 	protected MessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape, ICustomAttributeProvider? memberAttributes = null, object? state = null)
 	{
 		if (memberAttributes is not null)
@@ -873,23 +871,74 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		};
 	}
 
-	private MessagePackConverter<T>? GetCustomConverter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider)
+	/// <summary>
+	/// Retrieves a converter for the given type shape from runtime-supplied user sources, primitive converters, or attribute-specified converters.
+	/// </summary>
+	/// <typeparam name="T">The type for which a converter is required.</typeparam>
+	/// <param name="typeShape">The shape for the type to be converted.</param>
+	/// <param name="attributeProvider"><inheritdoc cref="TryGetConverterFromAttribute{T}" path="/param[@name='attributeProvider']"/></param>
+	/// <param name="converter">Receives the converter if one is found.</param>
+	/// <returns>A value indicating whether a match was found.</returns>
+	private bool TryGetCustomOrPrimitiveConverter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	{
+		// Check if the type has a custom converter.
+		if (this.owner.TryGetRuntimeProfferedConverter(typeShape, out converter))
+		{
+			return true;
+		}
+
+		if (this.owner.InternStrings && typeof(T) == typeof(string))
+		{
+			converter = (MessagePackConverter<T>)(object)(this.owner.PreserveReferences != ReferencePreservationMode.Off ? ReferencePreservingInterningStringConverter : InterningStringConverter);
+			return true;
+		}
+
+		// Check if the type has a built-in converter.
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out converter))
+		{
+			return true;
+		}
+
+		return this.TryGetConverterFromAttribute(typeShape, attributeProvider, out converter);
+	}
+
+	private MessagePackConverter<T> GetConverterForMemberOrParameter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider)
+	{
+		return this.TryGetConverterFromAttribute(typeShape, attributeProvider, out MessagePackConverter<T>? converter)
+			? converter
+			: this.GetConverter(typeShape, attributeProvider);
+	}
+
+	/// <summary>
+	/// Activates a converter for the given shape if a <see cref="MessagePackConverterAttribute"/> is present on the type or member.
+	/// </summary>
+	/// <typeparam name="T">The type of value to be serialized.</typeparam>
+	/// <param name="typeShape">The shape of the type to be serialized.</param>
+	/// <param name="attributeProvider">
+	/// The source of the attributes.
+	/// This will typically be the attributes on the type itself, but may be the attributes on the requesting property or parameter.
+	/// </param>
+	/// <param name="converter">Receives the converter, if applicable.</param>
+	/// <returns>A value indicating whether a converter was found.</returns>
+	/// <exception cref="MessagePackSerializationException">Thrown if the prescribed converter has no default constructor.</exception>
+	private bool TryGetConverterFromAttribute<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
 		if (attributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is not { } customConverterAttribute)
 		{
-			return null;
+			converter = null;
+			return false;
 		}
 
 		Type converterType = customConverterAttribute.ConverterType;
 		if ((typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> converterFactory)
 		{
-			MessagePackConverter<T> converter = (MessagePackConverter<T>)converterFactory();
+			converter = (MessagePackConverter<T>)converterFactory();
 			if (this.owner.PreserveReferences != ReferencePreservationMode.Off)
 			{
 				converter = converter.WrapWithReferencePreservation();
 			}
 
-			return converter;
+			return true;
 		}
 
 		if (converterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
@@ -897,7 +946,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			throw new MessagePackSerializationException($"{typeof(T).FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
 		}
 
-		return (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
+		converter = (MessagePackConverter<T>)ctor.Invoke(Array.Empty<object?>());
+		return true;
 	}
 
 	private CollectionConstructionOptions<TKey> GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, MemberConverterInfluence? memberInfluence)
