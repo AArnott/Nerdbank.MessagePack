@@ -200,6 +200,18 @@ Consider the following example where a type hierarchy is registered without usin
 
 ---
 
+### Duck typing
+
+Shape-based unions allow you to participate in a union based on the *shape* (the publicly serializable members) of a type rather than requiring a type header.
+This enables scenarios sometimes described as "duck typing": if the object "looks like" (matches the required members of) a known union case, it can be deserialized as that case.
+
+Use <xref:Nerdbank.MessagePack.MessagePackSerializer.CreateShapeBasedUnionConverter`1?displayProperty=nameWithType> to create a converter for a base type that should support shape-based union behavior.
+
+Unions employing the duck typing strategy will deserialize more slowly than typical unions because deserializing the value requires matching the schema of the data against a known union case, while typical unions can immediately identify the target type based on the type identifier.
+A good case for duck typing is when protocol compatibility is required, and a union header was not established in the original protocol but multiple types now need to be supported.
+
+Note that duck typing requires there to be enough unique properties between the cases to narrow the possibilities down to exactly one match for deserialization to succeed.
+
 ### Removing a union at runtime
 
 When a base type has <xref:PolyType.DerivedTypeShapeAttribute> or equivalent attributes on it such that its type shape is recognized as being part of a union, but union behavior is not what you want, you can disable it at runtime by creating an <xref:Nerdbank.MessagePack.DerivedShapeMapping`1> with its <xref:Nerdbank.MessagePack.DerivedTypeMapping.Disabled> property is set to `true`, and adding it to the serializer configuration.

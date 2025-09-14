@@ -3,104 +3,90 @@
 
 public partial class ShapeBasedUnionTests : MessagePackSerializerTestBase
 {
-    [Fact]
-    public void RequiredPropertyDistinction_BasicTest()
-    {
-        // Create some test types with distinguishing required properties
-        ITypeShape animalShape = Witness.GeneratedTypeShapeProvider.GetTypeShape<Animal>();
-        ITypeShape dogShape = Witness.GeneratedTypeShapeProvider.GetTypeShape<Dog>();
-        ITypeShape catShape = Witness.GeneratedTypeShapeProvider.GetTypeShape<Cat>();
+	[Fact]
+	public void CreateShapeBasedUnionConverter_ReturnsNull_WhenNoDistinguishingCharacteristics()
+	{
+		// Create types that are identical in structure
+		ITypeShape<IdenticalTypeBase> baseShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<IdenticalTypeBase>();
+		ITypeShape<IdenticalType1> shape1 = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<IdenticalType1>();
+		ITypeShape<IdenticalType2> shape2 = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<IdenticalType2>();
 
-        var typeShapes = new List<ITypeShape> { animalShape, dogShape, catShape };
+		MessagePackConverter<IdenticalTypeBase>? converter = this.Serializer.CreateShapeBasedUnionConverter(baseShape, shape1, shape2);
 
-        // Test the analyzer
-        ShapeBasedUnionAnalyzer.ShapeBasedUnionMapping? mapping = ShapeBasedUnionAnalyzer.AnalyzeShapes(typeShapes);
-        
-        Assert.NotNull(mapping);
-        Assert.NotEmpty(mapping.Steps);
-    }
+		Assert.Null(converter);
+	}
 
-    [Fact]
-    public void CreateShapeBasedUnionConverter_ReturnsNull_WhenNoDistinguishingCharacteristics()
-    {
-        // Create types that are identical in structure
-        ITypeShape shape1 = Witness.GeneratedTypeShapeProvider.GetTypeShape<IdenticalType1>();
-        ITypeShape shape2 = Witness.GeneratedTypeShapeProvider.GetTypeShape<IdenticalType2>();
+	[Fact]
+	public void RequiredPropertyDistinction_Roundtrip()
+	{
+		// Create a converter for types with distinguishing properties
+		ITypeShape<Animal> animalShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<Animal>();
+		ITypeShape dogShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<Dog>();
+		ITypeShape catShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<Cat>();
 
-        var typeShapes = new List<ITypeShape> { shape1, shape2 };
+		var typeShapes = new List<ITypeShape> { dogShape, catShape };
 
-        MessagePackConverter<object>? converter = this.Serializer.CreateShapeBasedUnionConverter<object>(typeShapes, Witness.GeneratedTypeShapeProvider);
-        
-        Assert.Null(converter);
-    }
+		MessagePackConverter<Animal>? converter = this.Serializer.CreateShapeBasedUnionConverter(animalShape, dogShape, catShape);
 
-    [Fact]
-    public void RequiredPropertyDistinction_Roundtrip()
-    {
-        // Create a converter for types with distinguishing properties
-        ITypeShape dogShape = Witness.GeneratedTypeShapeProvider.GetTypeShape<Dog>();
-        ITypeShape catShape = Witness.GeneratedTypeShapeProvider.GetTypeShape<Cat>();
+		Assert.NotNull(converter);
 
-        var typeShapes = new List<ITypeShape> { dogShape, catShape };
+		// Test serialization and deserialization with shape-based detection
+		this.Serializer = this.Serializer with { Converters = [converter] };
 
-        MessagePackConverter<Animal>? converter = this.Serializer.CreateShapeBasedUnionConverter<Animal>(typeShapes, Witness.GeneratedTypeShapeProvider);
-        
-        Assert.NotNull(converter);
+		Dog originalDog = new() { Name = "Buddy", BarkVolume = 5 };
+		Animal? deserializedAnimal = this.Roundtrip<Animal>(originalDog);
 
-        // Test serialization and deserialization with shape-based detection
-        this.Serializer = this.Serializer with { Converters = [converter] };
+		Assert.IsType<Dog>(deserializedAnimal);
+		Dog deserializedDog = (Dog)deserializedAnimal;
+		Assert.Equal("Buddy", deserializedDog.Name);
+		Assert.Equal(5, deserializedDog.BarkVolume);
 
-        Dog originalDog = new() { Name = "Buddy", BarkVolume = 5 };
-        Animal deserializedAnimal = this.Roundtrip<Animal>(originalDog);
-        
-        Assert.IsType<Dog>(deserializedAnimal);
-        Dog deserializedDog = (Dog)deserializedAnimal;
-        Assert.Equal("Buddy", deserializedDog.Name);
-        Assert.Equal(5, deserializedDog.BarkVolume);
+		Cat originalCat = new() { Name = "Whiskers", MeowPitch = 3 };
+		deserializedAnimal = this.Roundtrip<Animal>(originalCat);
 
-        Cat originalCat = new() { Name = "Whiskers", MeowPitch = 3 };
-        deserializedAnimal = this.Roundtrip<Animal>(originalCat);
-        
-        Assert.IsType<Cat>(deserializedAnimal);
-        Cat deserializedCat = (Cat)deserializedAnimal;
-        Assert.Equal("Whiskers", deserializedCat.Name);
-        Assert.Equal(3, deserializedCat.MeowPitch);
-    }
+		Assert.IsType<Cat>(deserializedAnimal);
+		Cat deserializedCat = (Cat)deserializedAnimal;
+		Assert.Equal("Whiskers", deserializedCat.Name);
+		Assert.Equal(3, deserializedCat.MeowPitch);
+	}
 
-    [GenerateShape]
-    public partial record Animal
-    {
-        public string Name { get; init; } = string.Empty;
-    }
+	[GenerateShape]
+	public partial record Animal
+	{
+		public string Name { get; init; } = string.Empty;
+	}
 
-    [GenerateShape]
-    public partial record Dog : Animal
-    {
-        public int BarkVolume { get; init; }
-    }
+	[GenerateShape]
+	public partial record Dog : Animal
+	{
+		public int BarkVolume { get; init; }
+	}
 
-    [GenerateShape]
-    public partial record Cat : Animal
-    {
-        public int MeowPitch { get; init; }
-    }
+	[GenerateShape]
+	public partial record Cat : Animal
+	{
+		public int MeowPitch { get; init; }
+	}
 
-    [GenerateShape]
-    public partial record IdenticalType1
-    {
-        public string CommonProperty { get; init; } = string.Empty;
-    }
+	[GenerateShape]
+	public partial record IdenticalTypeBase;
 
-    [GenerateShape]
-    public partial record IdenticalType2
-    {
-        public string CommonProperty { get; init; } = string.Empty;
-    }
+	[GenerateShape]
+	public partial record IdenticalType1 : IdenticalTypeBase
+	{
+		public string CommonProperty { get; init; } = string.Empty;
+	}
 
-    [GenerateShapeFor<Animal>]
-    [GenerateShapeFor<Dog>]
-    [GenerateShapeFor<Cat>]
-    [GenerateShapeFor<IdenticalType1>]
-    [GenerateShapeFor<IdenticalType2>]
-    private partial class Witness;
+	[GenerateShape]
+	public partial record IdenticalType2 : IdenticalTypeBase
+	{
+		public string CommonProperty { get; init; } = string.Empty;
+	}
+
+	[GenerateShapeFor<Animal>]
+	[GenerateShapeFor<Dog>]
+	[GenerateShapeFor<Cat>]
+	[GenerateShapeFor<IdenticalType1>]
+	[GenerateShapeFor<IdenticalType2>]
+	private partial class Witness;
 }
