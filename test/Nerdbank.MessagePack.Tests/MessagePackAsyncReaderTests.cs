@@ -49,14 +49,15 @@ public class MessagePackAsyncReaderTests
 
 		// Both readers should have access to the same data
 		await peekReader.ReadAsync();
+
+		// Test original reader first
 		MessagePackReader originalBuffered = originalReader.CreateBufferedReader();
-		MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
-
-		// Verify they can both read the same structure
 		Assert.Equal(MessagePackType.Array, originalBuffered.NextMessagePackType);
-		Assert.Equal(MessagePackType.Array, peekBuffered.NextMessagePackType);
-
 		originalReader.ReturnReader(ref originalBuffered);
+
+		// Test peek reader second
+		MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
+		Assert.Equal(MessagePackType.Array, peekBuffered.NextMessagePackType);
 		peekReader.ReturnReader(ref peekBuffered);
 	}
 
@@ -128,18 +129,18 @@ public class MessagePackAsyncReaderTests
 		await peekReader.BufferNextStructuresAsync(2, 2, context);
 
 		// Assert: Both readers should benefit from the expanded buffer
+		// Test original reader first
 		MessagePackReader originalBuffered = originalReader.CreateBufferedReader();
-		MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
-
-		// Both should be able to read without issues
 		string originalValue = originalBuffered.ReadString();
+		originalReader.ReturnReader(ref originalBuffered);
+
+		// Test peek reader second
+		MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
 		string peekValue = peekBuffered.ReadString();
+		peekReader.ReturnReader(ref peekBuffered);
 
 		Assert.Equal("small", originalValue);
 		Assert.Equal("small", peekValue);
-
-		originalReader.ReturnReader(ref originalBuffered);
-		peekReader.ReturnReader(ref peekBuffered);
 	}
 
 	[Fact]
