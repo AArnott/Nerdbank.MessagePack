@@ -25,6 +25,11 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	private MessagePackStreamingReader.BufferRefresh? refresh;
 	private bool readerReturned = true;
 
+	/// <summary>
+	/// Indicates whether this reader is a peek reader that should not advance the PipeReader on disposal.
+	/// </summary>
+	private bool isPeekReader;
+
 	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
 	private uint expectedRemainingStructures;
 
@@ -161,6 +166,41 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	}
 
 	/// <summary>
+	/// Creates a new <see cref="MessagePackAsyncReader"/> at this reader's current position.
+	/// The two readers may then be used independently without impacting each other,
+	/// while sharing the underlying buffer.
+	/// </summary>
+	/// <returns>A new <see cref="MessagePackAsyncReader"/>.</returns>
+	/// <remarks>
+	/// <para>
+	/// The original reader and the peek reader share the underlying buffer.
+	/// If the peek reader requests to increase the buffer size, the increased buffer
+	/// will be available to the original reader as well.
+	/// </para>
+	/// <para>
+	/// Reading from the peek reader will not advance the read position of the original reader.
+	/// The original reader's state will not be disrupted by operations on the peek reader.
+	/// </para>
+	/// <para>
+	/// The returned reader must be disposed when no longer needed.
+	/// </para>
+	/// </remarks>
+	public MessagePackAsyncReader CreatePeekReader()
+	{
+		this.ThrowIfReaderNotReturned();
+
+		// Create a new reader instance that shares the same PipeReader and current state
+		return new MessagePackAsyncReader(pipeReader)
+		{
+			CancellationToken = this.CancellationToken,
+			refresh = this.refresh, // Share the current buffer state
+			expectedRemainingStructures = this.expectedRemainingStructures,
+			readerReturned = true, // The peek reader starts in a returned state
+			isPeekReader = true, // Mark this as a peek reader
+		};
+	}
+
+	/// <summary>
 	/// Returns a previously obtained reader when the caller is done using it,
 	/// and applies the given reader's position to <em>this</em> reader so that
 	/// future reads move continuously forward in the msgpack stream.
@@ -199,7 +239,8 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 			throw new InvalidOperationException("A reader was not returned before disposing this object.");
 		}
 
-		if (this.refresh.HasValue)
+		// Only advance the PipeReader if this is not a peek reader
+		if (this.refresh.HasValue && !this.isPeekReader)
 		{
 			// Update the PipeReader so it knows where we left off.
 			pipeReader.AdvanceTo(this.refresh.Value.Buffer.Start);
