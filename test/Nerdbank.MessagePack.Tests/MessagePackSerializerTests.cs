@@ -1,6 +1,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections;
 using Xunit.Sdk;
 
 public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
@@ -395,6 +396,46 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		this.Logger.WriteLine(ex.ToString());
 	}
 
+	[Fact]
+	public void CustomDictionaryWithCustomConverter()
+	{
+		HasCustomDictionary original = new(new CustomDictionary<string, int> { { "a", 1 }, { "b", 2 } });
+		HasCustomDictionary? deserialized = this.Roundtrip(original);
+		Assert.Equal(original.Dict.Count, deserialized?.Dict.Count);
+
+		// Assert that the custom converter was used by verifying the serialized form.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(nameof(HasCustomDictionary.Dict), reader.ReadString());
+
+		// What makes our custom dictionary unique is that its custom converter uses arrays instead of maps.
+		Assert.Equal(2 * 2, reader.ReadArrayHeader());
+	}
+
+	[Fact]
+	public void CustomListWithCustomConverter()
+	{
+		HasCustomList original = new(new CustomList<string> { "hi" });
+		HasCustomList? deserialized = this.Roundtrip(original);
+		Assert.Equal(original.List.Count, deserialized?.List.Count);
+
+		// Assert that the custom converter was used by verifying the serialized form.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(nameof(HasCustomList.List), reader.ReadString());
+
+		// What makes our custom list unique is that its array is +1 too long.
+		Assert.Equal(2, reader.ReadArrayHeader());
+	}
+
+	[Fact]
+	public void CustomConverterOnParameter()
+	{
+		HasCustomConverterOnParameter original = new(10);
+		HasCustomConverterOnParameter? deserialized = this.Roundtrip(original);
+		Assert.Equal(original.Value / 2, deserialized?.Value);
+	}
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
@@ -521,6 +562,104 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 
 	[GenerateShape]
 	public partial record RecordWithNullableStruct(int? Value);
+
+	[GenerateShape]
+	public partial record HasCustomConverterOnParameter
+	{
+		public HasCustomConverterOnParameter([MessagePackConverter(typeof(IntDoublingConverter))] int value)
+		{
+			this.Value = value;
+		}
+
+		public int Value { get; }
+	}
+
+	[GenerateShape]
+	public partial record HasCustomDictionary(CustomDictionary<string, int> Dict);
+
+	[MessagePackConverter(typeof(CustomDictionaryConverter<,>))]
+	public class CustomDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+		where TKey : notnull
+	{
+		private readonly Dictionary<TKey, TValue> inner = new();
+
+		public ICollection<TKey> Keys => ((IDictionary<TKey, TValue>)this.inner).Keys;
+
+		public ICollection<TValue> Values => ((IDictionary<TKey, TValue>)this.inner).Values;
+
+		public int Count => ((ICollection<KeyValuePair<TKey, TValue>>)this.inner).Count;
+
+		public bool IsReadOnly => ((ICollection<KeyValuePair<TKey, TValue>>)this.inner).IsReadOnly;
+
+		public TValue this[TKey key]
+		{
+			get => ((IDictionary<TKey, TValue>)this.inner)[key];
+			set => ((IDictionary<TKey, TValue>)this.inner)[key] = value;
+		}
+
+		public void Add(TKey key, TValue value) => ((IDictionary<TKey, TValue>)this.inner).Add(key, value);
+
+		public void Add(KeyValuePair<TKey, TValue> item) => ((ICollection<KeyValuePair<TKey, TValue>>)this.inner).Add(item);
+
+		public void Clear() => ((ICollection<KeyValuePair<TKey, TValue>>)this.inner).Clear();
+
+		public bool Contains(KeyValuePair<TKey, TValue> item) => ((ICollection<KeyValuePair<TKey, TValue>>)this.inner).Contains(item);
+
+		public bool ContainsKey(TKey key) => ((IDictionary<TKey, TValue>)this.inner).ContainsKey(key);
+
+		public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => ((ICollection<KeyValuePair<TKey, TValue>>)this.inner).CopyTo(array, arrayIndex);
+
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this.inner).GetEnumerator();
+
+		public bool Remove(TKey key) => ((IDictionary<TKey, TValue>)this.inner).Remove(key);
+
+		public bool Remove(KeyValuePair<TKey, TValue> item) => ((ICollection<KeyValuePair<TKey, TValue>>)this.inner).Remove(item);
+
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+		public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => ((IDictionary<TKey, TValue>)this.inner).TryGetValue(key, out value);
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+
+		IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)this.inner).GetEnumerator();
+	}
+
+	[GenerateShape]
+	public partial record HasCustomList(CustomList<string> List);
+
+	[MessagePackConverter(typeof(CustomListConverter<>))]
+	public class CustomList<T> : IList<T>
+	{
+		private readonly List<T> inner = new();
+
+		public int Count => ((ICollection<T>)this.inner).Count;
+
+		public bool IsReadOnly => ((ICollection<T>)this.inner).IsReadOnly;
+
+		public T this[int index]
+		{
+			get => ((IList<T>)this.inner)[index];
+			set => ((IList<T>)this.inner)[index] = value;
+		}
+
+		public void Add(T item) => ((ICollection<T>)this.inner).Add(item);
+
+		public void Clear() => ((ICollection<T>)this.inner).Clear();
+
+		public bool Contains(T item) => ((ICollection<T>)this.inner).Contains(item);
+
+		public void CopyTo(T[] array, int arrayIndex) => ((ICollection<T>)this.inner).CopyTo(array, arrayIndex);
+
+		public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)this.inner).GetEnumerator();
+
+		public int IndexOf(T item) => ((IList<T>)this.inner).IndexOf(item);
+
+		public void Insert(int index, T item) => ((IList<T>)this.inner).Insert(index, item);
+
+		public bool Remove(T item) => ((ICollection<T>)this.inner).Remove(item);
+
+		public void RemoveAt(int index) => ((IList<T>)this.inner).RemoveAt(index);
+
+		IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)this.inner).GetEnumerator();
+	}
 
 	[GenerateShape]
 	public partial class ClassWithDictionary : IEquatable<ClassWithDictionary>
@@ -651,6 +790,113 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		public override bool Equals(object? obj) => obj is ClassWithIndexer other && this.Member == other.Member;
 
 		public override int GetHashCode() => this.Member;
+	}
+
+	internal class CustomDictionaryConverter<TKey, TValue> : MessagePackConverter<CustomDictionary<TKey, TValue>>
+		where TKey : notnull
+	{
+		public override CustomDictionary<TKey, TValue>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			CustomDictionary<TKey, TValue> dict = new();
+			int count = reader.ReadArrayHeader();
+
+			MessagePackConverter<TKey> keyConverter = context.GetConverter<TKey>(null);
+			MessagePackConverter<TValue> valueConverter = context.GetConverter<TValue>(null);
+
+			for (int i = 0; i < count; i += 2)
+			{
+				dict.Add(keyConverter.Read(ref reader, context)!, valueConverter.Read(ref reader, context)!);
+			}
+
+			return dict;
+		}
+
+		public override void Write(ref MessagePackWriter writer, in CustomDictionary<TKey, TValue>? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(value.Count * 2);
+
+			MessagePackConverter<TKey> keyConverter = context.GetConverter<TKey>(null);
+			MessagePackConverter<TValue> valueConverter = context.GetConverter<TValue>(null);
+
+			foreach (KeyValuePair<TKey, TValue> kvp in value)
+			{
+				keyConverter.Write(ref writer, kvp.Key, context);
+				valueConverter.Write(ref writer, kvp.Value, context);
+			}
+		}
+	}
+
+	internal class CustomListConverter<T> : MessagePackConverter<CustomList<T>>
+	{
+		public override CustomList<T>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int count = reader.ReadArrayHeader();
+			if (count < 1)
+			{
+				throw new MessagePackSerializationException("Expected at least one item in the array to distinguish this from a regular list.");
+			}
+
+			reader.ReadNil(); // something odd to distinguish this from a regular list
+
+			CustomList<T> list = new();
+			MessagePackConverter<T> itemConverter = context.GetConverter<T>(null);
+
+			for (int i = 1; i < count; i++)
+			{
+				list.Add(itemConverter.Read(ref reader, context)!);
+			}
+
+			return list;
+		}
+
+		public override void Write(ref MessagePackWriter writer, in CustomList<T>? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(value.Count + 1);
+			writer.WriteNil(); // something odd to distinguish this from a regular list
+
+			MessagePackConverter<T> itemConverter = context.GetConverter<T>(null);
+
+			foreach (T item in value)
+			{
+				itemConverter.Write(ref writer, item, context);
+			}
+		}
+	}
+
+	internal class IntDoublingConverter : MessagePackConverter<int>
+	{
+		public override int Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			int value = reader.ReadInt32();
+			return value / 2; // Halve the value when deserializing
+		}
+
+		public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context)
+		{
+			writer.Write(value * 2); // Double the value when serializing
+		}
 	}
 
 	[GenerateShapeFor<UnannotatedPoco>]

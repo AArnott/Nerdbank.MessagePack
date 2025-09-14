@@ -141,13 +141,25 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		=> (IMessagePackConverterInternal)this.CachedConverters.GetOrAddOrThrow(type, provider);
 
 	/// <summary>
-	/// Gets a user-defined converter for the specified type if one is available.
+	/// Gets a user-defined converter for the specified type if one is available from
+	/// converters the user has supplied <em>at runtime</em>.
 	/// </summary>
 	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
 	/// <param name="typeShape">The shape of the data type that requires a converter.</param>
 	/// <param name="converter">Receives the converter, if the user provided one.</param>
 	/// <returns>A value indicating whether a customer converter exists.</returns>
-	internal bool TryGetUserDefinedConverter<T>(ITypeShape<T> typeShape, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	/// <remarks>
+	/// <para>
+	/// This method only searches <see cref="SerializerConfiguration.Converters"/>,
+	/// <see cref="SerializerConfiguration.ConverterTypes"/> and <see cref="SerializerConfiguration.ConverterFactories"/>
+	/// for matches.
+	/// <see cref="MessagePackConverterAttribute"/> is <em>not</em> considered.
+	/// </para>
+	/// <para>
+	/// A converter returned from this method will be wrapped with reference-preservation logic when appropriate.
+	/// </para>
+	/// </remarks>
+	internal bool TryGetRuntimeProfferedConverter<T>(ITypeShape<T> typeShape, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
 	{
 		converter = null;
 		if (!configuration.Converters.TryGetConverter(out converter))

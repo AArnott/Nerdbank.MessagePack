@@ -171,7 +171,7 @@ The base class also declares `virtual` async alternatives to these methods (@Ner
 These default async implementations are correct, and essentially buffer the whole msgpack representation on that object while offloading the actual serialization work to the synchronous methods.
 
 For types that may represent a great deal of data (e.g. arrays and maps), overriding the async methods in order to read or flush msgpack in smaller portions may reduce memory pressure and/or improve performance.
-When a derived type overrides the async methods, it should also override @Nerdbank.MessagePack.MessagePackConverter`1.PreferAsyncSerialization to return `true` so that callers know that you have optimized async paths.
+When a derived type overrides the async methods, it should also override <xref:Nerdbank.MessagePack.MessagePackConverter`1.PreferAsyncSerialization> to return `true` so that callers know that you have optimized async paths.
 
 The built-in converters, including those that serialize your custom data types by default, already override the async methods with optimal implementations.
 
@@ -183,14 +183,14 @@ Note that if your custom type is used as the top-level data type to be serialize
 
 ### Attribute approach
 
-To get your converter to be automatically used wherever the data type that it formats needs to be serialized, apply a @Nerdbank.MessagePack.MessagePackConverterAttribute to your custom data type that points to your custom converter.
+To get your converter to be automatically used wherever the data type that it formats needs to be serialized, apply a <xref:Nerdbank.MessagePack.MessagePackConverterAttribute> to your custom data type that points to your custom converter.
 
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByAttribute)]
 
 When the converter is specified as an *open* generic, it must have exactly the same number of generic type parameters as the data type it supports.
 The generic converter will be constructed using the same list of generic type arguments that the data type to be serialized uses.
 
-You may also use your converter for a specific use of your data type by applying @Nerdbank.MessagePack.MessagePackConverterAttribute to a field or property.
+You may also use your converter for a specific use of your data type by applying <xref:Nerdbank.MessagePack.MessagePackConverterAttribute> to a field, property, or parameter.
 
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterByAttributeOnMember)]
 
@@ -198,7 +198,7 @@ When the converter is specified as an *open* generic, it must have exactly the s
 
 ### Runtime registration
 
-For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the @Nerdbank.MessagePack.MessagePackSerializer.Converters property.
+For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the <xref:Nerdbank.MessagePack.MessagePackSerializer.Converters> property.
 
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterRegisteredAtRuntime)]
 
@@ -233,3 +233,15 @@ Remember to [register](#register-your-custom-converter) any of these user-define
 ### OneOf discriminated unions
 
 [!code-csharp[](../../samples/cs/Converters/OneOfConverter.cs#Converter)]
+
+## Union types
+
+When a custom converter is applied to the base type of a union, a question arises as to whether the custom converter will be executed only for instances of that exact base type, within the msgpack union structure that identifies the type, or whether the custom converter 'owns' the responsibility of serializing all objects that belong to that union, including any type metadata.
+
+A custom converter specified for the base type (whether by <xref:Nerdbank.MessagePack.MessagePackConverterAttribute> on the type itself or at runtime via <xref:Nerdbank.MessagePack.MessagePackSerializer.Converters>, <xref:Nerdbank.MessagePack.MessagePackSerializer.ConverterFactories> or <xref:Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes>) will serialize and deserialize only instances of that particular type.
+The value it serializes will be enveloped in a union structure with the type metadata, so the custom converter needn't worry about derived types.
+A custom converter applied to an abstract or interface type will never run because objects can only be instances of concrete types.
+To control union serialization behavior yourself, apply a custom converter to the base type and do _not_ specify any <xref:PolyType.DerivedTypeShapeAttribute> to the base type.
+
+A custom converter specified via <xref:Nerdbank.MessagePack.MessagePackConverterAttribute> on a **member** or **parameter** will totally take over serialization of that value, and the custom converter will be responsible for dealing with any union type metadata itself.
+This is expected to be a highly unusual scenario since a self-described union type will typically be able to serialize on its own (either by default or via a custom serializer) such that members that are typed with that union type will not need to specify a converter themselves.

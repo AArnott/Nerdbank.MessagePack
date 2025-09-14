@@ -275,6 +275,41 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
+	[Fact]
+	public void CustomConverter_InvokedAsUnionCase_WhenSetAsRuntimeConverter()
+	{
+		this.Serializer = this.Serializer with { Converters = [new BaseClassCustomConverter()] };
+
+		this.AssertRoundtrip<BaseClass>(new() { BaseClassProperty = 5 });
+
+		// We expect the derived type data to be preserved because a runtime-specified custom converter
+		// on the base type is chosen only after exploring the visitor to discover that there is a union wrapper.
+		this.AssertRoundtrip<BaseTypeWithCustomConverterAttribute>(new BaseTypeWithCustomConverterAttributeDerived { BaseClassProperty = 8, DerivedAProperty = 10 });
+	}
+
+	[Fact]
+	public void CustomConverter_InvokedAsUnionCase_WhenSetViaConverterAttribute()
+	{
+		this.AssertRoundtrip<BaseTypeWithCustomConverterAttribute>(new() { BaseClassProperty = 5 });
+
+		// We expect the derived type data to be preserved because an attribute-specified custom converter
+		// on the base type is chosen only after exploring the visitor to discover that there is a union wrapper.
+		this.AssertRoundtrip<BaseTypeWithCustomConverterAttribute>(new BaseTypeWithCustomConverterAttributeDerived { BaseClassProperty = 8, DerivedAProperty = 10 });
+	}
+
+	[Fact]
+	public void CustomConverter_InvokedAsUnionCase_WhenSetViaConverterAttributeOnMember()
+	{
+		this.AssertRoundtrip<HasUnionMemberWithMemberAttribute>(new() { Value = new BaseClass { BaseClassProperty = 5 } });
+
+		// In the case of a MessagePackConverter attribute on a property,
+		// where DerivedTypeShapeAttribute cannot be seen, we expect that the most likely expectation
+		// for the user is that the converter apply all the time for all union cases,
+		// in which case, the custom converter we specify is in full control without the union wrapper.
+		HasUnionMemberWithMemberAttribute? deserialized = this.Roundtrip<HasUnionMemberWithMemberAttribute>(new() { Value = new DerivedA { BaseClassProperty = 8, DerivedAProperty = 10 } });
+		Assert.Equal(new HasUnionMemberWithMemberAttribute { Value = new BaseClass { BaseClassProperty = 8 } }, deserialized);
+	}
+
 	[GenerateShapeFor<DerivedGeneric<int>>]
 	internal partial class Witness;
 
@@ -356,4 +391,89 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	public partial record RecursiveDerived : RecursiveBase;
 
 	public record RecursiveDerivedDerived : RecursiveDerived;
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(BaseTypeWithCustomConverterAttributeDerived), Tag = 1)]
+	[MessagePackConverter(typeof(BaseClassWithAttributeCustomConverter))]
+	public partial record BaseTypeWithCustomConverterAttribute
+	{
+		public int BaseClassProperty { get; init; }
+	}
+
+	[GenerateShape]
+	public partial record BaseTypeWithCustomConverterAttributeDerived : BaseTypeWithCustomConverterAttribute
+	{
+		public int DerivedAProperty { get; init; }
+	}
+
+	[GenerateShape]
+	public partial record HasUnionMemberWithMemberAttribute
+	{
+		[MessagePackConverter(typeof(BaseClassCustomConverter))]
+		public BaseClass? Value { get; set; }
+	}
+
+	internal class BaseClassWithAttributeCustomConverter : MessagePackConverter<BaseTypeWithCustomConverterAttribute>
+	{
+		public override BaseTypeWithCustomConverterAttribute? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int arrayLength = reader.ReadArrayHeader();
+			if (arrayLength != 1)
+			{
+				throw new MessagePackSerializationException($"Expected array of length 1, but got {arrayLength}.");
+			}
+
+			int propertyValue = reader.ReadInt32();
+			return new BaseTypeWithCustomConverterAttribute { BaseClassProperty = propertyValue };
+		}
+
+		public override void Write(ref MessagePackWriter writer, in BaseTypeWithCustomConverterAttribute? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(1);
+			writer.Write(value.BaseClassProperty);
+		}
+	}
+
+	internal class BaseClassCustomConverter : MessagePackConverter<BaseClass>
+	{
+		public override BaseClass? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int arrayLength = reader.ReadArrayHeader();
+			if (arrayLength != 1)
+			{
+				throw new MessagePackSerializationException($"Expected array of length 1, but got {arrayLength}.");
+			}
+
+			int propertyValue = reader.ReadInt32();
+			return new BaseClass { BaseClassProperty = propertyValue };
+		}
+
+		public override void Write(ref MessagePackWriter writer, in BaseClass? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(1);
+			writer.Write(value.BaseClassProperty);
+		}
+	}
 }
