@@ -188,6 +188,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	public MessagePackAsyncReader CreatePeekReader()
 	{
 		this.ThrowIfReaderNotReturned();
+		this.readerReturned = false;
 
 		// Create a new reader instance that shares the same buffer state
 		return new MessagePackAsyncReader(pipeReader)
@@ -228,6 +229,12 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		// Clear the reader to prevent accidental reuse by the caller.
 		reader = default;
 
+		this.readerReturned = true;
+	}
+
+	/// <inheritdoc cref="ReturnReader(ref MessagePackStreamingReader)"/>
+	public void ReturnReader(MessagePackAsyncReader reader)
+	{
 		this.readerReturned = true;
 	}
 
