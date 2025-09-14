@@ -30,11 +30,7 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
         this.baseConverter = baseConverter;
         this.shapeMapping = shapeMapping;
         this.convertersByType = convertersByType;
-        this.PreferAsyncSerialization = baseConverter.PreferAsyncSerialization || convertersByType.Values.Any(c => c.PreferAsyncSerialization);
     }
-
-    /// <inheritdoc/>
-    public override bool PreferAsyncSerialization { get; }
 
     /// <inheritdoc/>
     public override TUnion? Read(ref MessagePackReader reader, SerializationContext context)
@@ -82,90 +78,6 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
     }
 
     /// <inheritdoc/>
-    public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
-    {
-        MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
-        
-        // Check for null
-        bool success;
-        while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
-        {
-            streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-        }
-
-        if (success)
-        {
-            reader.ReturnReader(ref streamingReader);
-            return default;
-        }
-
-        // For async scenarios, we need to buffer the entire value to perform shape analysis
-        // This is the performance trade-off mentioned in the issue
-        reader.ReturnReader(ref streamingReader);
-        
-        // Read the entire value into a buffer
-        ReadOnlySequence<byte> bufferedData = await this.BufferValueAsync(reader, context).ConfigureAwait(false);
-        MessagePackReader bufferedReader = new(bufferedData);
-        
-        // Now we can perform shape analysis on the buffered data
-        if (this.shapeMapping.TryIdentifyType(ref bufferedReader, context, out ITypeShape? identifiedShape))
-        {
-            if (this.convertersByType.TryGetValue(identifiedShape.Type, out MessagePackConverter? converter))
-            {
-                bufferedReader = new(bufferedData); // Reset reader position
-                return (TUnion?)converter.ReadObject(ref bufferedReader, context);
-            }
-        }
-
-        // Fall back to base converter
-        bufferedReader = new(bufferedData); // Reset reader position
-        return this.baseConverter.Read(ref bufferedReader, context);
-    }
-
-    /// <inheritdoc/>
-    public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context)
-    {
-        if (value is null)
-        {
-            writer.WriteNil();
-            return;
-        }
-
-        Type actualType = value.GetType();
-        
-        // Use specific converter if available
-        if (this.convertersByType.TryGetValue(actualType, out MessagePackConverter? converter))
-        {
-            if (converter.PreferAsyncSerialization)
-            {
-                await converter.WriteObjectAsync(writer, value, context).ConfigureAwait(false);
-            }
-            else
-            {
-                MessagePackWriter syncWriter = writer.CreateWriter();
-                converter.WriteObject(ref syncWriter, value, context);
-                writer.ReturnWriter(ref syncWriter);
-            }
-        }
-        else
-        {
-            // Fall back to base converter
-            if (this.baseConverter.PreferAsyncSerialization)
-            {
-                await this.baseConverter.WriteAsync(writer, value, context).ConfigureAwait(false);
-            }
-            else
-            {
-                MessagePackWriter syncWriter = writer.CreateWriter();
-                this.baseConverter.Write(ref syncWriter, value, context);
-                writer.ReturnWriter(ref syncWriter);
-            }
-        }
-
-        await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
-    }
-
-    /// <inheritdoc/>
     public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
     {
         // For shape-based unions, we create a oneOf schema without the array wrapper
@@ -189,22 +101,6 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
         {
             ["oneOf"] = oneOfArray,
         };
-    }
-
-    /// <summary>
-    /// Buffers an entire MessagePack value for analysis.
-    /// </summary>
-    /// <param name="reader">The async reader.</param>
-    /// <param name="context">The serialization context.</param>
-    /// <returns>The buffered data.</returns>
-    private async ValueTask<ReadOnlySequence<byte>> BufferValueAsync(MessagePackAsyncReader reader, SerializationContext context)
-    {
-        // For now, this is a placeholder implementation that doesn't actually implement async buffering.
-        // The async path would require complex buffering logic to collect the bytes while parsing.
-        // For this initial implementation, we'll throw NotImplementedException to indicate
-        // that sync-only shape analysis is supported.
-        await Task.CompletedTask.ConfigureAwait(false); // Suppress async warning
-        throw new NotImplementedException("Async buffering for shape-based unions is not yet implemented. Use sync deserialization for shape-based union analysis.");
     }
 
     private static JsonObject CreateUndocumentedSchema(Type converterType)
