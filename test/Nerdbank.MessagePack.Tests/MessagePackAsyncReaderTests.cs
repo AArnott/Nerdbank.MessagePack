@@ -20,7 +20,7 @@ public class MessagePackAsyncReaderTests
 		FragmentedPipeReader pipeReader = new(ros, ros.GetPosition(1));
 
 		SerializationContext context = new();
-		using MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = default };
+		using MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = TestContext.Current.CancellationToken };
 		await reader.BufferNextStructureAsync(context);
 	}
 
@@ -38,7 +38,7 @@ public class MessagePackAsyncReaderTests
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
 		PipeReader pipeReader = new TestPipeReader(ros);
 
-		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
+		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = TestContext.Current.CancellationToken };
 		await originalReader.ReadAsync();
 
 		// Act: Create a peek reader
@@ -75,7 +75,7 @@ public class MessagePackAsyncReaderTests
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
 		PipeReader pipeReader = new TestPipeReader(ros);
 
-		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
+		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = TestContext.Current.CancellationToken };
 		await originalReader.ReadAsync();
 
 		// Act: Create peek reader and advance it
@@ -118,15 +118,16 @@ public class MessagePackAsyncReaderTests
 		// Fragment the buffer to force growth during reading
 		FragmentedPipeReader pipeReader = new(ros, ros.GetPosition(1));
 
-		MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
+		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = TestContext.Current.CancellationToken };
 		await originalReader.ReadAsync();
 
 		// Act: Create peek reader
-		MessagePackAsyncReader peekReader = originalReader.CreatePeekReader();
-
-		// Force buffer growth by reading large structure
-		SerializationContext context = new();
-		await peekReader.BufferNextStructuresAsync(2, 2, context);
+		using (MessagePackAsyncReader peekReader = originalReader.CreatePeekReader())
+		{
+			// Force buffer growth by reading large structure
+			SerializationContext context = new();
+			await peekReader.BufferNextStructuresAsync(2, 2, context);
+		}
 
 		// Assert: Both readers should benefit from the expanded buffer
 		// Test original reader first
@@ -135,16 +136,15 @@ public class MessagePackAsyncReaderTests
 		originalReader.ReturnReader(ref originalBuffered);
 
 		// Test peek reader second
-		MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
-		string peekValue = peekBuffered.ReadString()!;
-		peekReader.ReturnReader(ref peekBuffered);
+		using (MessagePackAsyncReader peekReader = originalReader.CreatePeekReader())
+		{
+			MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
+			string peekValue = peekBuffered.ReadString()!;
+			peekReader.ReturnReader(ref peekBuffered);
 
-		Assert.Equal("small", originalValue);
-		Assert.Equal("small", peekValue);
-		
-		// Clean up properly
-		peekReader.Dispose();
-		originalReader.Dispose();
+			Assert.Equal("small", originalValue);
+			Assert.Equal("small", peekValue);
+		}
 	}
 
 	[Fact]
@@ -159,7 +159,7 @@ public class MessagePackAsyncReaderTests
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
 		PipeReader pipeReader = new TestPipeReader(ros);
 
-		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
+		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = TestContext.Current.CancellationToken };
 		await originalReader.ReadAsync();
 
 		// Act: Create peek reader and dispose it immediately
@@ -180,7 +180,7 @@ public class MessagePackAsyncReaderTests
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
 		PipeReader pipeReader = new TestPipeReader(ros);
 
-		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
+		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = TestContext.Current.CancellationToken };
 		await originalReader.ReadAsync();
 
 		// Act & Assert: Should be able to create, use, and dispose peek reader
@@ -201,7 +201,7 @@ public class MessagePackAsyncReaderTests
 	}
 
 	[Fact]
-	public void CreatePeekReader_RequiresReaderReturned()
+	public async Task CreatePeekReader_RequiresReaderReturned()
 	{
 		// Arrange
 		Sequence<byte> seq = new();
@@ -212,9 +212,10 @@ public class MessagePackAsyncReaderTests
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
 		PipeReader pipeReader = new TestPipeReader(ros);
 
-		MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = default };
+		MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = TestContext.Current.CancellationToken };
 
 		// Act: Try to create peek reader without returning previous reader
+		await reader.ReadAsync();
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 
 		// Assert: Should throw since reader not returned
