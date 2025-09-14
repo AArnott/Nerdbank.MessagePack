@@ -802,6 +802,63 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Creates a shape-based union converter that can distinguish between union member types
+	/// based on their structural characteristics rather than explicit aliases.
+	/// </summary>
+	/// <typeparam name="TBase">The base type of the union.</typeparam>
+	/// <param name="typeShapes">The type shapes representing the union member types.</param>
+	/// <param name="provider">The type shape provider used to obtain converters for the member types.</param>
+	/// <returns>A converter that can serialize/deserialize union types using shape-based detection, or null if no distinguishing characteristics were found.</returns>
+	/// <remarks>
+	/// <para>
+	/// This method analyzes the provided type shapes to identify distinguishing characteristics such as:
+	/// </para>
+	/// <list type="bullet">
+	/// <item>Required properties that appear only in specific member types</item>
+	/// <item>Properties with incompatible types across member types</item>
+	/// </list>
+	/// <para>
+	/// The resulting converter does not use explicit type aliases and instead inspects the MessagePack structure
+	/// during deserialization to determine the appropriate member type.
+	/// </para>
+	/// <para>
+	/// Note that this approach may be slower than alias-based unions, especially for async deserialization,
+	/// as it may require buffering the entire value for analysis.
+	/// </para>
+	/// </remarks>
+	public MessagePackConverter<TBase>? CreateShapeBasedUnionConverter<TBase>(IReadOnlyCollection<ITypeShape> typeShapes, ITypeShapeProvider provider)
+	{
+		Requires.NotNull(typeShapes);
+		Requires.NotNull(provider);
+
+		// Analyze the shapes to build a decision tree
+		ShapeBasedUnionAnalyzer.ShapeBasedUnionMapping? mapping = ShapeBasedUnionAnalyzer.AnalyzeShapes(typeShapes);
+		if (mapping == null)
+		{
+			return null; // No distinguishing characteristics found
+		}
+
+		// Create converters for each member type
+		var convertersByType = new Dictionary<Type, MessagePackConverter>();
+		using var context = this.CreateSerializationContext(provider);
+		
+		foreach (ITypeShape shape in typeShapes)
+		{
+			if (typeof(TBase).IsAssignableFrom(shape.Type))
+			{
+				MessagePackConverter converter = context.Value.GetConverter(shape);
+				convertersByType[shape.Type] = converter;
+			}
+		}
+
+		// Get the base converter
+		ITypeShape<TBase> baseShape = provider.GetTypeShapeOrThrow<TBase>();
+		MessagePackConverter<TBase> baseConverter = context.Value.GetConverter(baseShape);
+
+		return new Converters.ShapeBasedUnionConverter<TBase>(baseConverter, mapping, convertersByType);
+	}
+
+	/// <summary>
 	/// Deserializes a sequence of values such that each element is produced individually.
 	/// </summary>
 	/// <typeparam name="T">The type of value to be deserialized.</typeparam>
