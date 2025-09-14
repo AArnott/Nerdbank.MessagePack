@@ -277,6 +277,21 @@ internal class ArrayConstructorVisitorInputs<TDeclaringType>(
 /// <typeparam name="TUnion">The common base type.</typeparam>
 internal class SubTypes<TUnion>
 {
+	/// <summary>
+	/// A singleton instance that may be used to represent an expressly disabled union.
+	/// </summary>
+	internal static readonly SubTypes<TUnion> DisabledInstance = new()
+	{
+		Disabled = true,
+		DeserializersByIntAlias = FrozenDictionary<int, MessagePackConverter>.Empty,
+		DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>([], ByteSpanEqualityComparer.Ordinal),
+		Serializers = FrozenSet<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)>.Empty,
+		TryGetSerializer = (ref TUnion _) => default,
+	};
+
+	/// <inheritdoc cref="DerivedTypeMapping.Disabled"/>
+	public bool Disabled { get; init; }
+
 	/// <summary>Gets the converters to use to deserialize a subtype, keyed by its integer alias.</summary>
 	public required FrozenDictionary<int, MessagePackConverter> DeserializersByIntAlias { get; init; }
 

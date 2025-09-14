@@ -201,10 +201,11 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// </summary>
 	/// <param name="baseType">The base type.</param>
 	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
+	/// <param name="disabled">Receives a value expressing whether unions are explicitly disabled for the <paramref name="baseType"/>.</param>
 	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes)
+	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes, out bool disabled)
 	{
-		if (configuration.DerivedTypeMappings.TryGetDerivedTypeMapping(baseType, out FrozenDictionary<DerivedTypeIdentifier, ITypeShape>? mapping))
+		if (configuration.DerivedTypeMappings.TryGetDerivedTypeMapping(baseType, out FrozenDictionary<DerivedTypeIdentifier, ITypeShape>? mapping, out disabled))
 		{
 			subTypes = mapping;
 			return true;

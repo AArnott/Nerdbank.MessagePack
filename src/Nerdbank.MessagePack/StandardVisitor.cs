@@ -215,7 +215,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		// Test IsValueType before calling DiscoverUnionTypes so that the native compiler
 		// does not have to generate a SubTypes<T> for value types which will never be used.
-		return !typeof(T).IsValueType && this.DiscoverUnionTypes(objectShape, converter) is { } unionTypes
+		return !typeof(T).IsValueType && this.DiscoverUnionTypes(objectShape, converter) is { Disabled: false } unionTypes
 			? new UnionConverter<T>(converter, unionTypes)
 			: converter;
 	}
@@ -264,7 +264,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			};
 		}
 
-		return new UnionConverter<TUnion>(baseTypeConverter, subTypes);
+		return subTypes.Disabled ? baseTypeConverter : new UnionConverter<TUnion>(baseTypeConverter, subTypes);
 	}
 
 	/// <inheritdoc/>
@@ -810,9 +810,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private SubTypes<TBaseType>? DiscoverUnionTypes<TBaseType>(IObjectTypeShape<TBaseType> objectShape, MessagePackConverter<TBaseType> baseTypeConverter)
 	{
 		IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? mapping;
-		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping))
+		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping, out bool disabled))
 		{
-			return null;
+			return disabled ? SubTypes<TBaseType>.DisabledInstance : null;
 		}
 
 		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
@@ -848,6 +848,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return new SubTypes<TBaseType>
 		{
+			Disabled = disabled,
 			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
 			DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
 			Serializers = serializerData.Select(t => t.Value).ToFrozenSet(),

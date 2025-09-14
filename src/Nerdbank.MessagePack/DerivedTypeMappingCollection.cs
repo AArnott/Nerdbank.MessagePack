@@ -6,7 +6,6 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
@@ -23,7 +22,7 @@ public class DerivedTypeMappingCollection : IReadOnlyCollection<DerivedTypeMappi
 {
 	private readonly ImmutableArray<DerivedTypeMapping> derivedTypeMappings = [];
 
-	private DerivedTypeMappingCollection(FrozenDictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>> map, ImmutableArray<DerivedTypeMapping> mappings)
+	private DerivedTypeMappingCollection(FrozenDictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>?> map, ImmutableArray<DerivedTypeMapping> mappings)
 	{
 		this.Map = map;
 		this.derivedTypeMappings = mappings;
@@ -32,7 +31,7 @@ public class DerivedTypeMappingCollection : IReadOnlyCollection<DerivedTypeMappi
 	/// <inheritdoc/>
 	public int Count => this.Map.Count;
 
-	private FrozenDictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>> Map { get; }
+	private FrozenDictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>?> Map { get; }
 
 	/// <summary>
 	/// Constructs a new <see cref="DerivedTypeMappingCollection"/> from a collection of <see cref="DerivedShapeMapping{TBase}"/> objects.
@@ -41,11 +40,11 @@ public class DerivedTypeMappingCollection : IReadOnlyCollection<DerivedTypeMappi
 	/// <returns>A new instance of <see cref="DerivedTypeMappingCollection"/>.</returns>
 	public static DerivedTypeMappingCollection Create(ReadOnlySpan<DerivedTypeMapping> derivedTypeMappings)
 	{
-		Dictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>> map = [];
+		Dictionary<Type, FrozenDictionary<DerivedTypeIdentifier, ITypeShape>?> map = [];
 
 		foreach (DerivedTypeMapping mapping in derivedTypeMappings)
 		{
-			map.Add(mapping.BaseType, mapping.CreateDerivedTypesMapping());
+			map.Add(mapping.BaseType, mapping.Disabled ? null : mapping.CreateDerivedTypesMapping());
 		}
 
 		return new(map.ToFrozenDictionary(), derivedTypeMappings.ToImmutableArray());
@@ -65,6 +64,19 @@ public class DerivedTypeMappingCollection : IReadOnlyCollection<DerivedTypeMappi
 	/// </summary>
 	/// <param name="baseType">The base type.</param>
 	/// <param name="derivedTypes">Receives the mapping, if available.</param>
+	/// <param name="disabled">Receives a value expressing whether unions are explicitly disabled for the <paramref name="baseType"/>.</param>
 	/// <returns>A value indicating whether a mapping was found.</returns>
-	internal bool TryGetDerivedTypeMapping(Type baseType, [NotNullWhen(true)] out FrozenDictionary<DerivedTypeIdentifier, ITypeShape>? derivedTypes) => this.Map.TryGetValue(baseType, out derivedTypes);
+	internal bool TryGetDerivedTypeMapping(Type baseType, [NotNullWhen(true)] out FrozenDictionary<DerivedTypeIdentifier, ITypeShape>? derivedTypes, out bool disabled)
+	{
+		if (this.Map.TryGetValue(baseType, out derivedTypes))
+		{
+			disabled = derivedTypes is null;
+		}
+		else
+		{
+			disabled = false;
+		}
+
+		return derivedTypes is not null;
+	}
 }

@@ -167,6 +167,28 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	}
 
 	[Fact]
+	public void DerivedShapeMapping_DisabledTests()
+	{
+		DerivedShapeMapping<MyBase> mapping = new() { Disabled = true };
+		Assert.True(mapping.Disabled);
+		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider));
+		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<MyDerivedA>()));
+#if NET
+		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyDerivedA>(1));
+#else
+		Assert.Throws<InvalidOperationException>(() => mapping.AddSourceGenerated<MyDerivedA>(1));
+#endif
+	}
+
+	[Fact]
+	public void DerivedTypeMapping_DisabledTests()
+	{
+		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider) { Disabled = true };
+		Assert.True(mapping.Disabled);
+		Assert.Throws<InvalidOperationException>(() => mapping.Add(1, typeof(MyDerivedA)));
+	}
+
+	[Fact]
 	[SuppressMessage("Assertions", "xUnit2013:Do not use equality check to check for collection size.", Justification = "The whole point of this test is to ensure that the Count property matches what the enumerator would produce.")]
 	public void EnumerateMappings()
 	{
