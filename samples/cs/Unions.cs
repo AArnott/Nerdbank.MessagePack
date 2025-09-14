@@ -177,4 +177,17 @@ namespace RuntimeSubTypes
     }
     #endregion
 #endif
+
+    class RuntimeSubTypesDisabler
+    {
+        #region RuntimeSubTypesDisabled
+        MessagePackSerializer CreateSerializer()
+        {
+            return new MessagePackSerializer
+            {
+                DerivedTypeMappings = [new DerivedShapeMapping<Animal> { Disabled = true }],
+            };
+        }
+        #endregion
+    }
 }

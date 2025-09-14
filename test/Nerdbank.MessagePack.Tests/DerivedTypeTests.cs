@@ -310,6 +310,22 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(new HasUnionMemberWithMemberAttribute { Value = new BaseClass { BaseClassProperty = 8 } }, deserialized);
 	}
 
+	[Fact]
+	public void DisableAttributeUnionAtRuntime()
+	{
+		this.Serializer = this.Serializer with
+		{
+			DerivedTypeMappings = [new DerivedShapeMapping<BaseClass> { Disabled = true }],
+		};
+
+		this.AssertRoundtrip(new BaseClass { BaseClassProperty = 5 });
+
+		// Assert that no union wrapper was added.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
+	}
+
 	[GenerateShapeFor<DerivedGeneric<int>>]
 	internal partial class Witness;
 

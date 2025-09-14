@@ -120,7 +120,11 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 	IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
 	/// <inheritdoc />
-	internal override FrozenDictionary<DerivedTypeIdentifier, ITypeShape> CreateDerivedTypesMapping() => this.map.ToFrozenDictionary();
+	internal override FrozenDictionary<DerivedTypeIdentifier, ITypeShape> CreateDerivedTypesMapping()
+	{
+		Verify.Operation(!this.Disabled, "Union behavior is disabled on the base type.");
+		return this.map.ToFrozenDictionary();
+	}
 
 	/// <summary>
 	/// Adds a type shape to a mapping using a specified identifier, ensuring that the type has not been previously added.
@@ -134,6 +138,8 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 	protected void Add(DerivedTypeIdentifier alias, ITypeShape typeShape)
 	{
 		Requires.NotNull(typeShape);
+		Verify.Operation(!this.Disabled, "Union behavior is disabled on the base type.");
+
 		this.map.Add(alias, typeShape);
 		if (!this.addedTypes.Add(typeShape.Type))
 		{

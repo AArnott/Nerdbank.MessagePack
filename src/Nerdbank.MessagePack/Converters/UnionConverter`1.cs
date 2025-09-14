@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -12,10 +11,27 @@ namespace Nerdbank.MessagePack.Converters;
 /// A formatter for a type that may serve as an ancestor class for the actual runtime type of a value to be (de)serialized.
 /// </summary>
 /// <typeparam name="TUnion">The type that serves as the declared type or the ancestor type for any runtime value.</typeparam>
-internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter, SubTypes<TUnion> subTypes) : MessagePackConverter<TUnion>
+internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 {
+	private readonly MessagePackConverter<TUnion> baseConverter;
+	private readonly SubTypes<TUnion> subTypes;
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="UnionConverter{TUnion}"/> class.
+	/// </summary>
+	/// <param name="baseConverter">The converter to use for the base type.</param>
+	/// <param name="subTypes">The map of subtypes and their converters.</param>
+	public UnionConverter(MessagePackConverter<TUnion> baseConverter, SubTypes<TUnion> subTypes)
+	{
+		Requires.Argument(!subTypes.Disabled, nameof(subTypes), "This union is disabled.");
+
+		this.baseConverter = baseConverter;
+		this.subTypes = subTypes;
+		this.PreferAsyncSerialization = baseConverter.PreferAsyncSerialization || subTypes.Serializers.Any(t => t.Converter.PreferAsyncSerialization);
+	}
+
 	/// <inheritdoc/>
-	public override bool PreferAsyncSerialization { get; } = baseConverter.PreferAsyncSerialization || subTypes.Serializers.Any(t => t.Converter.PreferAsyncSerialization);
+	public override bool PreferAsyncSerialization { get; }
 
 	/// <inheritdoc/>
 	public override TUnion? Read(ref MessagePackReader reader, SerializationContext context)
@@ -34,14 +50,14 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		// The alias for the base type itself is simply nil.
 		if (reader.TryReadNil())
 		{
-			return baseConverter.Read(ref reader, context);
+			return this.baseConverter.Read(ref reader, context);
 		}
 
 		MessagePackConverter? converter;
 		if (reader.NextMessagePackType == MessagePackType.Integer)
 		{
 			int alias = reader.ReadInt32();
-			if (!subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
+			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
 				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
 			}
@@ -49,7 +65,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		else
 		{
 			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
-			if (!subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
 				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
@@ -70,7 +86,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		writer.WriteArrayHeader(2);
 
 		MessagePackConverter converter;
-		if (subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+		if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
 		{
 			writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
 			converter = subtype.Converter;
@@ -78,7 +94,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		else
 		{
 			writer.WriteNil();
-			converter = baseConverter;
+			converter = this.baseConverter;
 		}
 
 		converter.WriteObject(ref writer, value, context);
@@ -121,7 +137,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		if (isNil)
 		{
 			reader.ReturnReader(ref streamingReader);
-			TUnion? result = await baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
+			TUnion? result = await this.baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
 			return result;
 		}
 
@@ -140,7 +156,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			if (!subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
+			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
 				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
 			}
@@ -160,7 +176,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 				alias = utf8Sequence.ToArray();
 			}
 
-			if (!subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
 				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
@@ -183,7 +199,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		syncWriter.WriteArrayHeader(2);
 
 		MessagePackConverter converter;
-		if (subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+		if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
 		{
 			syncWriter.WriteRaw(subtype.Alias.MsgPackAlias.Span);
 			converter = subtype.Converter;
@@ -191,7 +207,7 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 		else
 		{
 			syncWriter.WriteNil();
-			converter = baseConverter;
+			converter = this.baseConverter;
 		}
 
 		if (converter.PreferAsyncSerialization)
@@ -212,9 +228,9 @@ internal class UnionConverter<TUnion>(MessagePackConverter<TUnion> baseConverter
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
 		var unionTypeShape = (IUnionTypeShape)typeShape;
-		JsonArray oneOfArray = new(CreateOneOfElement(null, baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(baseConverter.GetType())));
+		JsonArray oneOfArray = new(CreateOneOfElement(null, this.baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(this.baseConverter.GetType())));
 
-		foreach ((DerivedTypeIdentifier alias, _, ITypeShape shape) in subTypes.Serializers)
+		foreach ((DerivedTypeIdentifier alias, _, ITypeShape shape) in this.subTypes.Serializers)
 		{
 			oneOfArray.Add((JsonNode)CreateOneOfElement(alias, context.GetJsonSchema(shape)));
 		}
