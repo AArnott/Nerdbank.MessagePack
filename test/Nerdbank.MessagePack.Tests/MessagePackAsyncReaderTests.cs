@@ -83,13 +83,13 @@ public class MessagePackAsyncReaderTests
 		await peekReader.ReadAsync();
 
 		MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
-		string firstValue = peekBuffered.ReadString(); // Read "first"
-		string secondValue = peekBuffered.ReadString(); // Read "second"
+		string firstValue = peekBuffered.ReadString()!; // Read "first"
+		string secondValue = peekBuffered.ReadString()!; // Read "second"
 		peekReader.ReturnReader(ref peekBuffered);
 
 		// Verify original reader is still at the beginning
 		MessagePackReader originalBuffered = originalReader.CreateBufferedReader();
-		string originalFirst = originalBuffered.ReadString(); // Should still read "first"
+		string originalFirst = originalBuffered.ReadString()!; // Should still read "first"
 		originalReader.ReturnReader(ref originalBuffered);
 
 		// Assert: Peek reader advanced, original did not
@@ -118,11 +118,11 @@ public class MessagePackAsyncReaderTests
 		// Fragment the buffer to force growth during reading
 		FragmentedPipeReader pipeReader = new(ros, ros.GetPosition(1));
 
-		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
+		MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
 		await originalReader.ReadAsync();
 
 		// Act: Create peek reader
-		using MessagePackAsyncReader peekReader = originalReader.CreatePeekReader();
+		MessagePackAsyncReader peekReader = originalReader.CreatePeekReader();
 
 		// Force buffer growth by reading large structure
 		SerializationContext context = new();
@@ -131,16 +131,41 @@ public class MessagePackAsyncReaderTests
 		// Assert: Both readers should benefit from the expanded buffer
 		// Test original reader first
 		MessagePackReader originalBuffered = originalReader.CreateBufferedReader();
-		string originalValue = originalBuffered.ReadString();
+		string originalValue = originalBuffered.ReadString()!;
 		originalReader.ReturnReader(ref originalBuffered);
 
 		// Test peek reader second
 		MessagePackReader peekBuffered = peekReader.CreateBufferedReader();
-		string peekValue = peekBuffered.ReadString();
+		string peekValue = peekBuffered.ReadString()!;
 		peekReader.ReturnReader(ref peekBuffered);
 
 		Assert.Equal("small", originalValue);
 		Assert.Equal("small", peekValue);
+		
+		// Clean up properly
+		peekReader.Dispose();
+		originalReader.Dispose();
+	}
+
+	[Fact]
+	public async Task CreatePeekReader_SimpleDisposal()
+	{
+		// Arrange
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.Write("test");
+		writer.Flush();
+
+		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
+		PipeReader pipeReader = new TestPipeReader(ros);
+
+		using MessagePackAsyncReader originalReader = new(pipeReader) { CancellationToken = default };
+		await originalReader.ReadAsync();
+
+		// Act: Create peek reader and dispose it immediately
+		using MessagePackAsyncReader peekReader = originalReader.CreatePeekReader();
+
+		// No operations on peek reader, just dispose
 	}
 
 	[Fact]
@@ -163,14 +188,14 @@ public class MessagePackAsyncReaderTests
 		{
 			await peekReader.ReadAsync();
 			MessagePackReader buffered = peekReader.CreateBufferedReader();
-			string value = buffered.ReadString();
+			string value = buffered.ReadString()!;
 			Assert.Equal("test", value);
 			peekReader.ReturnReader(ref buffered);
 		}
 
 		// Original reader should still work after peek reader is disposed
 		MessagePackReader originalBuffered = originalReader.CreateBufferedReader();
-		string originalValue = originalBuffered.ReadString();
+		string originalValue = originalBuffered.ReadString()!;
 		Assert.Equal("test", originalValue);
 		originalReader.ReturnReader(ref originalBuffered);
 	}
@@ -187,7 +212,7 @@ public class MessagePackAsyncReaderTests
 		ReadOnlySequence<byte> ros = seq.AsReadOnlySequence;
 		PipeReader pipeReader = new TestPipeReader(ros);
 
-		using MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = default };
+		MessagePackAsyncReader reader = new(pipeReader) { CancellationToken = default };
 
 		// Act: Try to create peek reader without returning previous reader
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
@@ -197,6 +222,7 @@ public class MessagePackAsyncReaderTests
 
 		// Clean up - must return reader before disposal to avoid exception
 		reader.ReturnReader(ref streamingReader);
+		reader.Dispose();
 	}
 
 	/// <summary>

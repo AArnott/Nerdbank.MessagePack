@@ -190,14 +190,18 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		this.ThrowIfReaderNotReturned();
 
 		// Create a new reader instance that shares the same PipeReader and current state
-		return new MessagePackAsyncReader(pipeReader)
+		var peekReader = new MessagePackAsyncReader(pipeReader)
 		{
 			CancellationToken = this.CancellationToken,
-			refresh = this.refresh, // Share the current buffer state
-			expectedRemainingStructures = this.expectedRemainingStructures,
-			readerReturned = true, // The peek reader starts in a returned state
-			isPeekReader = true, // Mark this as a peek reader
 		};
+
+		// Share the current buffer state
+		peekReader.refresh = this.refresh;
+		peekReader.expectedRemainingStructures = this.expectedRemainingStructures;
+		peekReader.readerReturned = true; // The peek reader starts in a returned state
+		peekReader.isPeekReader = true; // Mark this as a peek reader
+
+		return peekReader;
 	}
 
 	/// <summary>
