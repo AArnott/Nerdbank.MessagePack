@@ -1,23 +1,82 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// Analyzes type shapes to determine distinguishing characteristics that can be used
-/// to identify union members without explicit aliases.
+/// A shape-based union that can distinguish between union cases
+/// based on their structural characteristics rather than explicit aliases.
 /// </summary>
-internal class ShapeBasedUnionAnalyzer
+/// <remarks>
+/// <para>
+/// This union strategy analyzes the provided type shapes to identify distinguishing characteristics such as:
+/// </para>
+/// <list type="bullet">
+/// <item>Required properties that appear only in specific union cases</item>
+/// <item>Properties with incompatible types across union cases</item>
+/// </list>
+/// <para>
+/// The resulting converter does not use explicit type aliases and instead inspects the MessagePack structure
+/// during deserialization to determine the appropriate union case to deserialize into.
+/// </para>
+/// <para>
+/// Note that this approach may be slower than alias-based unions
+/// as it may require buffering the entire value for analysis.
+/// </para>
+/// </remarks>
+public class DerivedTypeDuckTyping : DerivedTypeUnion
 {
+	private ITypeShape baseShape;
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="DerivedTypeDuckTyping"/> class.
+	/// </summary>
+	/// <param name="baseShape">The shape of the base type.</param>
+	/// <param name="derivedTypeShapes">The shapes of the derived types.</param>
+	public DerivedTypeDuckTyping(ITypeShape baseShape, params IReadOnlyList<ITypeShape> derivedTypeShapes)
+	{
+		Requires.NotNull(baseShape);
+		Requires.NotNull(derivedTypeShapes);
+		Requires.Argument(derivedTypeShapes is not [], nameof(derivedTypeShapes), "Non-empty list of union cases is required.");
+
+		this.baseShape = baseShape;
+		this.Rules = AnalyzeShapes(derivedTypeShapes) ?? throw new ArgumentException("The type shapes given do not include (enough) unique characteristics.");
+	}
+
+	/// <inheritdoc/>
+	public override Type BaseType => this.baseShape.Type;
+
+	/// <summary>
+	/// Gets the rules by which duck type testing is performed.
+	/// </summary>
+	private ShapeBasedUnionMapping Rules { get; }
+
+	/// <summary>
+	/// Looks up the shape for a given type if it is part of this union.
+	/// </summary>
+	/// <param name="type">The type whose shape is sought.</param>
+	/// <param name="shape">Receives the shape if one is found.</param>
+	/// <returns>A value indicating whether a shape could be found.</returns>
+	internal bool TryGetShape(Type type, [NotNullWhen(true)] out ITypeShape? shape) => this.Rules.TypeShapeMapping.TryGetValue(type, out shape);
+
+#pragma warning disable NBMsgPack050 // Use ref parameters for ref structs (this acts as a peek reader).
+	/// <inheritdoc cref="ShapeBasedUnionMapping.TryIdentifyType(ref MessagePackReader, SerializationContext, out ITypeShape?)"/>
+	internal bool TryIdentifyType(MessagePackReader reader, SerializationContext context, [NotNullWhen(true)] out ITypeShape? typeShape) => this.Rules.TryIdentifyType(ref reader, context, out typeShape);
+#pragma warning restore NBMsgPack050 // Use ref parameters for ref structs (this acts as a peek reader).
+
+	/// <inheritdoc/>
+	internal override void InternalDerivationsOnly() => throw new NotImplementedException();
+
 	/// <summary>
 	/// Analyzes a collection of type shapes to build a decision tree for distinguishing between them.
 	/// </summary>
 	/// <param name="typeShapes">The type shapes to analyze.</param>
 	/// <returns>A <see cref="ShapeBasedUnionMapping"/> that can distinguish between the shapes, or null if no distinguishing characteristics are found.</returns>
-	internal static ShapeBasedUnionMapping? AnalyzeShapes(IReadOnlyList<ITypeShape> typeShapes)
+	private static ShapeBasedUnionMapping? AnalyzeShapes(IReadOnlyList<ITypeShape> typeShapes)
 	{
 		if (typeShapes.Count < 2)
 		{
@@ -145,7 +204,7 @@ internal class ShapeBasedUnionAnalyzer
 	/// <summary>
 	/// Represents the analysis result for shape-based union distinction.
 	/// </summary>
-	internal class ShapeBasedUnionMapping
+	private class ShapeBasedUnionMapping
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="ShapeBasedUnionMapping"/> class.
@@ -175,9 +234,7 @@ internal class ShapeBasedUnionAnalyzer
 		/// <param name="context">The serialization context.</param>
 		/// <param name="typeShape">The identified type shape, if successful.</param>
 		/// <returns>True if exactly one matching type was identified; false otherwise.</returns>
-#pragma warning disable NBMsgPack050 // Use ref parameters for ref structs (this acts as a peek reader).
-		internal bool TryIdentifyType(MessagePackReader reader, SerializationContext context, [NotNullWhen(true)] out ITypeShape? typeShape)
-#pragma warning restore NBMsgPack050 // Use ref parameters for ref structs
+		internal bool TryIdentifyType(ref MessagePackReader reader, SerializationContext context, [NotNullWhen(true)] out ITypeShape? typeShape)
 		{
 			var candidateTypes = new HashSet<Type>(this.TypeShapeMapping.Keys);
 
@@ -205,7 +262,7 @@ internal class ShapeBasedUnionAnalyzer
 	/// <summary>
 	/// Represents a single step in the type identification process.
 	/// </summary>
-	internal abstract class DistinguishingStep
+	private abstract class DistinguishingStep
 	{
 		/// <summary>
 		/// Executes this step against the MessagePack data to narrow down candidate types.
@@ -220,7 +277,7 @@ internal class ShapeBasedUnionAnalyzer
 	/// <summary>
 	/// A step that checks for the presence or absence of required properties.
 	/// </summary>
-	internal class RequiredPropertyStep : DistinguishingStep
+	private class RequiredPropertyStep : DistinguishingStep
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="RequiredPropertyStep"/> class.
@@ -295,7 +352,7 @@ internal class ShapeBasedUnionAnalyzer
 	/// <summary>
 	/// A step that checks for incompatible types on properties with the same name.
 	/// </summary>
-	internal class IncompatibleTypeStep : DistinguishingStep
+	private class IncompatibleTypeStep : DistinguishingStep
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="IncompatibleTypeStep"/> class.

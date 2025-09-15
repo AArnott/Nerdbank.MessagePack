@@ -1,7 +1,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class ShapeBasedUnionTests : MessagePackSerializerTestBase
+public partial class DerivedTypeDuckTypingTests : MessagePackSerializerTestBase
 {
 	[Fact]
 	public void CreateShapeBasedUnionConverter_ReturnsNull_WhenNoDistinguishingCharacteristics()
@@ -11,9 +11,7 @@ public partial class ShapeBasedUnionTests : MessagePackSerializerTestBase
 		ITypeShape<IdenticalType1> shape1 = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<IdenticalType1>();
 		ITypeShape<IdenticalType2> shape2 = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<IdenticalType2>();
 
-		MessagePackConverter<IdenticalTypeBase>? converter = this.Serializer.CreateShapeBasedUnionConverter(baseShape, shape1, shape2);
-
-		Assert.Null(converter);
+		Assert.Throws<ArgumentException>(() => new DerivedTypeDuckTyping(baseShape, shape1, shape2));
 	}
 
 	[Fact]
@@ -24,14 +22,10 @@ public partial class ShapeBasedUnionTests : MessagePackSerializerTestBase
 		ITypeShape dogShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<Dog>();
 		ITypeShape catShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<Cat>();
 
-		var typeShapes = new List<ITypeShape> { dogShape, catShape };
-
-		MessagePackConverter<Animal>? converter = this.Serializer.CreateShapeBasedUnionConverter(animalShape, dogShape, catShape);
-
-		Assert.NotNull(converter);
+		DerivedTypeDuckTyping duckTyping = new(animalShape, dogShape, catShape);
 
 		// Test serialization and deserialization with shape-based detection
-		this.Serializer = this.Serializer with { Converters = [converter] };
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [duckTyping] };
 
 		Dog originalDog = new() { Name = "Buddy", BarkVolume = 5 };
 		Animal? deserializedAnimal = this.Roundtrip<Animal>(originalDog);
@@ -59,13 +53,13 @@ public partial class ShapeBasedUnionTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	public partial record Dog : Animal
 	{
-		public int BarkVolume { get; init; }
+		public required int BarkVolume { get; init; }
 	}
 
 	[GenerateShape]
 	public partial record Cat : Animal
 	{
-		public int MeowPitch { get; init; }
+		public required int MeowPitch { get; init; }
 	}
 
 	[GenerateShape]

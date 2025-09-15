@@ -13,7 +13,7 @@ namespace Nerdbank.MessagePack.Converters;
 internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 {
 	private readonly MessagePackConverter<TUnion> baseConverter;
-	private readonly ShapeBasedUnionAnalyzer.ShapeBasedUnionMapping shapeMapping;
+	private readonly DerivedTypeDuckTyping shapeMapping;
 	private readonly Dictionary<Type, MessagePackConverter> convertersByType;
 
 	/// <summary>
@@ -24,7 +24,7 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <param name="convertersByType">Converters for each member type.</param>
 	public ShapeBasedUnionConverter(
 		MessagePackConverter<TUnion> baseConverter,
-		ShapeBasedUnionAnalyzer.ShapeBasedUnionMapping shapeMapping,
+		DerivedTypeDuckTyping shapeMapping,
 		Dictionary<Type, MessagePackConverter> convertersByType)
 	{
 		this.baseConverter = baseConverter;
@@ -89,7 +89,7 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		// Add schemas for each member type
 		foreach ((Type? memberType, MessagePackConverter _) in this.convertersByType)
 		{
-			if (this.shapeMapping.TypeShapeMapping.TryGetValue(memberType, out ITypeShape? memberShape))
+			if (this.shapeMapping.TryGetShape(memberType, out ITypeShape? memberShape))
 			{
 				JsonObject memberSchema = context.GetJsonSchema(memberShape);
 				oneOfArray.Add((JsonNode)memberSchema);

@@ -814,6 +814,28 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return union is { Disabled: true } ? SubTypes<TBaseType>.DisabledInstance : null;
 		}
 
+		if (union is DerivedTypeDuckTyping duckTyping)
+		{
+			throw new NotImplementedException();
+			////// Create converters for each member type
+			////Dictionary<Type, MessagePackConverter> convertersByType = new(derivedTypeShapes.Count);
+			////foreach (ITypeShape shape in derivedTypeShapes)
+			////{
+			////	if (!typeof(TBase).IsAssignableFrom(shape.Type))
+			////	{
+			////		throw new ArgumentException($"Type '{shape.Type}' is not assignable to base type '{typeof(TBase)}'.", nameof(derivedTypeShapes));
+			////	}
+
+			////	MessagePackConverter converter = this.GetConverter(shape);
+			////	convertersByType[shape.Type] = converter;
+			////}
+
+			////// Provide a converter for the base type too.
+			////MessagePackConverter<TBase> baseConverter = (MessagePackConverter<TBase>)this.GetConverter(baseShape);
+
+			////return new ShapeBasedUnionConverter<TBase>(baseConverter, mapping, convertersByType);
+		}
+
 		if (union is not IDerivedTypeMapping mapping)
 		{
 			throw new NotSupportedException("Unexpected derived type union type.");
