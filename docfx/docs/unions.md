@@ -202,7 +202,7 @@ Consider the following example where a type hierarchy is registered without usin
 
 ### Removing a union at runtime
 
-When a base type has <xref:PolyType.DerivedTypeShapeAttribute> or equivalent attributes on it such that its type shape is recognized as being part of a union, but union behavior is not what you want, you can disable it at runtime by creating an <xref:Nerdbank.MessagePack.DerivedShapeMapping`1> with its <xref:Nerdbank.MessagePack.DerivedTypeMapping.Disabled> property is set to `true`, and adding it to the serializer configuration.
+When a base type has <xref:PolyType.DerivedTypeShapeAttribute> or equivalent attributes on it such that its type shape is recognized as being part of a union, but union behavior is not what you want, you can disable it at runtime by calling <xref:Nerdbank.MessagePack.DerivedTypeUnion.CreateDisabled(System.Type)> and adding it to the serializer configuration.
 
 Taking our farm animals example from earlier, here is how imperative code can disable the union behavior without removing the attributes:
 

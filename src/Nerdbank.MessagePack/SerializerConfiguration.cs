@@ -19,7 +19,7 @@ internal record SerializerConfiguration
 	private ConverterCollection converters = [];
 	private ConverterTypeCollection converterTypes = [];
 	private ImmutableArray<IMessagePackConverterFactory> converterFactories = [];
-	private DerivedTypeMappingCollection derivedTypeMappings = [];
+	private DerivedTypeUnionCollection derivedTypeUnions = [];
 	private bool perfOverSchemaStability;
 	private bool serializeEnumValuesByName;
 	private ReferencePreservationMode preserveReferences;
@@ -75,13 +75,13 @@ internal record SerializerConfiguration
 	}
 
 	/// <summary>
-	/// Gets an array of <see cref="DerivedShapeMapping{TBase}"/> objects that add runtime insight into what derived
+	/// Gets a collection of <see cref="DerivedTypeUnion"/> objects that add runtime insight into what derived
 	/// types may appear in the serialized data for a given base type.
 	/// </summary>
-	public DerivedTypeMappingCollection DerivedTypeMappings
+	public DerivedTypeUnionCollection DerivedTypeUnions
 	{
-		get => this.derivedTypeMappings;
-		init => this.ChangeSetting(ref this.derivedTypeMappings, value);
+		get => this.derivedTypeUnions;
+		init => this.ChangeSetting(ref this.derivedTypeUnions, value);
 	}
 
 	/// <summary>
