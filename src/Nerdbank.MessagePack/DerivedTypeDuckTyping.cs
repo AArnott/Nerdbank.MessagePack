@@ -42,7 +42,6 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 	public DerivedTypeDuckTyping(ITypeShape baseShape, params ReadOnlySpan<ITypeShape> derivedTypeShapes)
 	{
 		Requires.NotNull(baseShape);
-		Requires.Argument(derivedTypeShapes is not [], nameof(derivedTypeShapes), "Non-empty list of union cases is required.");
 
 		this.baseShape = baseShape;
 
@@ -59,6 +58,8 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 		{
 			this.typeToShapeMap.Add(derivedTypeShape.Type, derivedTypeShape);
 		}
+
+		Requires.Argument(this.typeToShapeMap.Count > 1, nameof(derivedTypeShapes), "At least two type shapes must be provided. The base shape only counts if it is a concrete type.");
 
 		this.steps = BuildMapping(derivedTypeShapes) ?? throw new ArgumentException("The type shapes given do not include (enough) unique characteristics.");
 	}
