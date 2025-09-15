@@ -30,7 +30,8 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 public class DerivedTypeDuckTyping : DerivedTypeUnion
 {
-	private ITypeShape baseShape;
+	private readonly ITypeShape baseShape;
+	private readonly IReadOnlyList<ITypeShape> derivedTypeShapes;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="DerivedTypeDuckTyping"/> class.
@@ -44,11 +45,25 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 		Requires.Argument(derivedTypeShapes is not [], nameof(derivedTypeShapes), "Non-empty list of union cases is required.");
 
 		this.baseShape = baseShape;
+
+		// TODO: make sure we have an immutable copy
+		this.derivedTypeShapes = derivedTypeShapes;
+
 		this.Rules = AnalyzeShapes(derivedTypeShapes) ?? throw new ArgumentException("The type shapes given do not include (enough) unique characteristics.");
 	}
 
 	/// <inheritdoc/>
 	public override Type BaseType => this.baseShape.Type;
+
+	/// <summary>
+	/// Gets the shape of the base type.
+	/// </summary>
+	internal ITypeShape BaseShape => this.baseShape;
+
+	/// <summary>
+	/// Gets a list of the derived type shapes.
+	/// </summary>
+	internal IReadOnlyList<ITypeShape> DerivedShapes => this.derivedTypeShapes;
 
 	/// <summary>
 	/// Gets the rules by which duck type testing is performed.

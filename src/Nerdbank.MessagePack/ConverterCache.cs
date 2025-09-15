@@ -196,7 +196,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	}
 
 	/// <inheritdoc cref="DerivedTypeUnionCollection.TryGetDerivedTypeUnion(Type, out DerivedTypeUnion?)"/>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out DerivedTypeUnion? union) => configuration.DerivedTypeUnions.TryGetDerivedTypeUnion(baseType, out union);
+	internal bool TryGetDynamicUnion(Type baseType, [NotNullWhen(true)] out DerivedTypeUnion? union) => configuration.DerivedTypeUnions.TryGetDerivedTypeUnion(baseType, out union);
 
 	/// <summary>
 	/// Gets the property name that should be used when serializing a property.

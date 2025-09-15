@@ -27,21 +27,8 @@ public partial class DerivedTypeDuckTypingTests : MessagePackSerializerTestBase
 		// Test serialization and deserialization with shape-based detection
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [duckTyping] };
 
-		Dog originalDog = new() { Name = "Buddy", BarkVolume = 5 };
-		Animal? deserializedAnimal = this.Roundtrip<Animal>(originalDog);
-
-		Assert.IsType<Dog>(deserializedAnimal);
-		Dog deserializedDog = (Dog)deserializedAnimal;
-		Assert.Equal("Buddy", deserializedDog.Name);
-		Assert.Equal(5, deserializedDog.BarkVolume);
-
-		Cat originalCat = new() { Name = "Whiskers", MeowPitch = 3 };
-		deserializedAnimal = this.Roundtrip<Animal>(originalCat);
-
-		Assert.IsType<Cat>(deserializedAnimal);
-		Cat deserializedCat = (Cat)deserializedAnimal;
-		Assert.Equal("Whiskers", deserializedCat.Name);
-		Assert.Equal(3, deserializedCat.MeowPitch);
+		this.AssertRoundtrip<Animal>(new Dog() { Name = "Buddy", BarkVolume = 5 });
+		this.AssertRoundtrip<Animal>(new Cat() { Name = "Whiskers", MeowPitch = 3 });
 	}
 
 	[GenerateShape]
