@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections;
-using System.Collections.Frozen;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
@@ -17,7 +16,7 @@ namespace Nerdbank.MessagePack;
 /// This class requires a type shape or type shape provider to be provided for each sub-type explicitly.
 /// Use <see cref="DerivedTypeMapping{TBase}"/> for a more convenient API that allows you to add sub-types by their type alone.
 /// </remarks>
-public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyValuePair<DerivedTypeIdentifier, ITypeShape>>
+public class DerivedShapeMapping<TBase> : DerivedTypeUnion, IDerivedTypeMapping, IEnumerable<KeyValuePair<DerivedTypeIdentifier, ITypeShape>>
 {
 #if NET
 	private const string UseDotNetAlternativeMessage = "Use the Add method instead.";
@@ -120,11 +119,14 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 	IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
 	/// <inheritdoc />
-	internal override FrozenDictionary<DerivedTypeIdentifier, ITypeShape> CreateDerivedTypesMapping()
+	IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape> IDerivedTypeMapping.GetDerivedTypesMapping()
 	{
-		Verify.Operation(!this.Disabled, "Union behavior is disabled on the base type.");
-		return this.map.ToFrozenDictionary();
+		Verify.Operation(this.IsFrozen, "This instance should have been frozen already.");
+		return this.map;
 	}
+
+	/// <inheritdoc/>
+	internal override void InternalDerivationsOnly() => throw new NotImplementedException();
 
 	/// <summary>
 	/// Adds a type shape to a mapping using a specified identifier, ensuring that the type has not been previously added.
@@ -138,7 +140,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 	protected void Add(DerivedTypeIdentifier alias, ITypeShape typeShape)
 	{
 		Requires.NotNull(typeShape);
-		Verify.Operation(!this.Disabled, "Union behavior is disabled on the base type.");
+		this.ThrowIfFrozen();
 
 		this.map.Add(alias, typeShape);
 		if (!this.addedTypes.Add(typeShape.Type))
@@ -159,6 +161,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeMapping, IEnumerable<KeyVal
 	protected void Set(DerivedTypeIdentifier alias, ITypeShape typeShape)
 	{
 		Requires.NotNull(typeShape);
+		this.ThrowIfFrozen();
 
 		if (this.addedTypes.Add(typeShape.Type))
 		{

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using PolyType.Utilities;
@@ -196,24 +195,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		return converter is not null;
 	}
 
-	/// <summary>
-	/// Gets the runtime registered sub-types for a given base type, if any.
-	/// </summary>
-	/// <param name="baseType">The base type.</param>
-	/// <param name="subTypes">If sub-types are registered, receives the mapping of those sub-types to their aliases.</param>
-	/// <param name="disabled">Receives a value expressing whether unions are explicitly disabled for the <paramref name="baseType"/>.</param>
-	/// <returns><see langword="true" /> if sub-types are registered; <see langword="false" /> otherwise.</returns>
-	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? subTypes, out bool disabled)
-	{
-		if (configuration.DerivedTypeMappings.TryGetDerivedTypeMapping(baseType, out FrozenDictionary<DerivedTypeIdentifier, ITypeShape>? mapping, out disabled))
-		{
-			subTypes = mapping;
-			return true;
-		}
-
-		subTypes = null;
-		return false;
-	}
+	/// <inheritdoc cref="DerivedTypeUnionCollection.TryGetDerivedTypeUnion(Type, out DerivedTypeUnion?)"/>
+	internal bool TryGetDynamicSubTypes(Type baseType, [NotNullWhen(true)] out DerivedTypeUnion? union) => configuration.DerivedTypeUnions.TryGetDerivedTypeUnion(baseType, out union);
 
 	/// <summary>
 	/// Gets the property name that should be used when serializing a property.
