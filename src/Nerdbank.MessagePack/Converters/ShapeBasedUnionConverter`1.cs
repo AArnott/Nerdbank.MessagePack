@@ -64,14 +64,13 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 
 		Type actualType = value.GetType();
 
-		// Use specific converter if available
+		// Use specific converter if available, otherwise fallback to base converter.
 		if (this.convertersByType.TryGetValue(actualType, out MessagePackConverter? converter))
 		{
 			converter.WriteObject(ref writer, value, context);
 		}
 		else
 		{
-			// Fall back to base converter
 			this.baseConverter.Write(ref writer, value, context);
 		}
 	}
@@ -83,17 +82,12 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		JsonArray oneOfArray = [];
 
 		// Add base type schema
-		JsonObject baseSchema = this.baseConverter.GetJsonSchema(context, typeShape) ?? CreateUndocumentedSchema(this.baseConverter.GetType());
-		oneOfArray.Add((JsonNode)baseSchema);
+		oneOfArray.Add((JsonNode?)this.baseConverter.GetJsonSchema(context, this.shapeMapping.BaseShape) ?? CreateUndocumentedSchema(this.baseConverter.GetType()));
 
-		// Add schemas for each member type
-		foreach ((Type? memberType, MessagePackConverter _) in this.convertersByType)
+		// Add schemas for each derived type.
+		foreach (ITypeShape shape in this.shapeMapping.DerivedShapes.Span)
 		{
-			if (this.shapeMapping.TryGetShape(memberType, out ITypeShape? memberShape))
-			{
-				JsonObject memberSchema = context.GetJsonSchema(memberShape);
-				oneOfArray.Add((JsonNode)memberSchema);
-			}
+			oneOfArray.Add((JsonNode)context.GetJsonSchema(shape));
 		}
 
 		return new JsonObject

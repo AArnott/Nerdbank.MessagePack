@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft;
 
@@ -31,25 +30,37 @@ namespace Nerdbank.MessagePack;
 public class DerivedTypeDuckTyping : DerivedTypeUnion
 {
 	private readonly ITypeShape baseShape;
-	private readonly IReadOnlyList<ITypeShape> derivedTypeShapes;
+	private readonly ReadOnlyMemory<ITypeShape> derivedTypeShapes;
+	private readonly Dictionary<Type, ITypeShape> typeToShapeMap;
+	private readonly List<DistinguishingStep> steps;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="DerivedTypeDuckTyping"/> class.
 	/// </summary>
 	/// <param name="baseShape">The shape of the base type.</param>
 	/// <param name="derivedTypeShapes">The shapes of the derived types.</param>
-	public DerivedTypeDuckTyping(ITypeShape baseShape, params IReadOnlyList<ITypeShape> derivedTypeShapes)
+	public DerivedTypeDuckTyping(ITypeShape baseShape, params ReadOnlySpan<ITypeShape> derivedTypeShapes)
 	{
 		Requires.NotNull(baseShape);
-		Requires.NotNull(derivedTypeShapes);
 		Requires.Argument(derivedTypeShapes is not [], nameof(derivedTypeShapes), "Non-empty list of union cases is required.");
 
 		this.baseShape = baseShape;
 
-		// TODO: make sure we have an immutable copy
-		this.derivedTypeShapes = derivedTypeShapes;
+		// Make sure we have an immutable copy
+		this.derivedTypeShapes = derivedTypeShapes.ToArray();
 
-		this.Rules = AnalyzeShapes(derivedTypeShapes) ?? throw new ArgumentException("The type shapes given do not include (enough) unique characteristics.");
+		this.typeToShapeMap = new(derivedTypeShapes.Length + 1);
+		if (baseShape.Type is { IsAbstract: false, IsInterface: false })
+		{
+			this.typeToShapeMap.Add(baseShape.Type, baseShape);
+		}
+
+		foreach (ITypeShape derivedTypeShape in derivedTypeShapes)
+		{
+			this.typeToShapeMap.Add(derivedTypeShape.Type, derivedTypeShape);
+		}
+
+		this.steps = BuildMapping(derivedTypeShapes) ?? throw new ArgumentException("The type shapes given do not include (enough) unique characteristics.");
 	}
 
 	/// <inheritdoc/>
@@ -63,214 +74,134 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 	/// <summary>
 	/// Gets a list of the derived type shapes.
 	/// </summary>
-	internal IReadOnlyList<ITypeShape> DerivedShapes => this.derivedTypeShapes;
+	internal ReadOnlyMemory<ITypeShape> DerivedShapes => this.derivedTypeShapes;
 
 	/// <summary>
-	/// Gets the rules by which duck type testing is performed.
+	/// Attempts to identify the runtime type based on MessagePack data.
 	/// </summary>
-	private ShapeBasedUnionMapping Rules { get; }
+	/// <param name="reader">A reader positioned at the start of the value to analyze.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="typeShape">The identified type shape, if successful.</param>
+	/// <returns>True if exactly one matching type was identified; false otherwise.</returns>
+#pragma warning disable NBMsgPack050 // Use ref parameters for ref structs -- acts as a peek reader
+	internal bool TryIdentifyType(MessagePackReader reader, SerializationContext context, [NotNullWhen(true)] out ITypeShape? typeShape)
+#pragma warning restore NBMsgPack050 // Use ref parameters for ref structs
+	{
+		HashSet<Type> candidateTypes = new(this.typeToShapeMap.Keys);
 
-	/// <summary>
-	/// Looks up the shape for a given type if it is part of this union.
-	/// </summary>
-	/// <param name="type">The type whose shape is sought.</param>
-	/// <param name="shape">Receives the shape if one is found.</param>
-	/// <returns>A value indicating whether a shape could be found.</returns>
-	internal bool TryGetShape(Type type, [NotNullWhen(true)] out ITypeShape? shape) => this.Rules.TypeShapeMapping.TryGetValue(type, out shape);
+		foreach (DistinguishingStep step in this.steps)
+		{
+			if (!step.Execute(ref reader, candidateTypes, context))
+			{
+				typeShape = null;
+				return false;
+			}
 
-#pragma warning disable NBMsgPack050 // Use ref parameters for ref structs (this acts as a peek reader).
-	/// <inheritdoc cref="ShapeBasedUnionMapping.TryIdentifyType(ref MessagePackReader, SerializationContext, out ITypeShape?)"/>
-	internal bool TryIdentifyType(MessagePackReader reader, SerializationContext context, [NotNullWhen(true)] out ITypeShape? typeShape) => this.Rules.TryIdentifyType(ref reader, context, out typeShape);
-#pragma warning restore NBMsgPack050 // Use ref parameters for ref structs (this acts as a peek reader).
+			if (candidateTypes.Count == 1)
+			{
+				typeShape = this.typeToShapeMap[candidateTypes.First()];
+				return true;
+			}
+		}
+
+		// Multiple candidates remain
+		typeShape = null;
+		return false;
+	}
 
 	/// <inheritdoc/>
 	internal override void InternalDerivationsOnly() => throw new NotImplementedException();
 
-	/// <summary>
-	/// Analyzes a collection of type shapes to build a decision tree for distinguishing between them.
-	/// </summary>
-	/// <param name="typeShapes">The type shapes to analyze.</param>
-	/// <returns>A <see cref="ShapeBasedUnionMapping"/> that can distinguish between the shapes, or null if no distinguishing characteristics are found.</returns>
-	private static ShapeBasedUnionMapping? AnalyzeShapes(IReadOnlyList<ITypeShape> typeShapes)
+	private static List<DistinguishingStep> BuildMapping(ReadOnlySpan<ITypeShape> typeShapes)
 	{
-		if (typeShapes.Count < 2)
-		{
-			return null;
-		}
+		List<DistinguishingStep> steps = [];
 
-		var builder = new ShapeAnalysisBuilder(typeShapes);
-		return builder.BuildMapping();
+		AnalyzeRequiredProperties(typeShapes, steps);
+		AnalyzeIncompatibleMemberTypes(typeShapes, steps);
+
+		return steps;
 	}
 
-	/// <summary>
-	/// Internal helper class for building shape analysis.
-	/// </summary>
-	private struct ShapeAnalysisBuilder
+	private static void AnalyzeRequiredProperties(ReadOnlySpan<ITypeShape> typeShapes, List<DistinguishingStep> steps)
 	{
-		private readonly IReadOnlyList<ITypeShape> typeShapes;
-		private readonly List<DistinguishingStep> steps = [];
+		Dictionary<string, (HashSet<Type> WithProperty, HashSet<Type> WithoutProperty)> propertyAnalysis = new(StringComparer.Ordinal);
 
-		internal ShapeAnalysisBuilder(IReadOnlyList<ITypeShape> typeShapes)
+		foreach (ITypeShape typeShape in typeShapes)
 		{
-			this.typeShapes = typeShapes;
-		}
-
-		internal ShapeBasedUnionMapping? BuildMapping()
-		{
-			// Analyze for required property differences
-			this.AnalyzeRequiredProperties();
-
-			// Analyze for incompatible member types
-			this.AnalyzeIncompatibleMemberTypes();
-
-			if (this.steps.Count == 0)
+			if (typeShape is IObjectTypeShape objectShape)
 			{
-				return null; // No distinguishing characteristics found
-			}
+				HashSet<string> propertiesInThisType = new(StringComparer.Ordinal);
 
-			var typeShapeMapping = this.typeShapes.ToFrozenDictionary(ts => ts.Type, ts => ts);
-			return new ShapeBasedUnionMapping(this.steps, typeShapeMapping);
-		}
-
-		private void AnalyzeRequiredProperties()
-		{
-			Dictionary<string, (HashSet<Type> WithProperty, HashSet<Type> WithoutProperty)> propertyAnalysis = new(StringComparer.Ordinal);
-
-			foreach (ITypeShape typeShape in this.typeShapes)
-			{
-				if (typeShape is IObjectTypeShape objectShape)
+				foreach (IPropertyShape property in objectShape.Properties)
 				{
-					HashSet<string> propertiesInThisType = new(StringComparer.Ordinal);
+					propertiesInThisType.Add(property.Name);
 
-					foreach (IPropertyShape property in objectShape.Properties)
+					if (!propertyAnalysis.TryGetValue(property.Name, out (HashSet<Type> WithProperty, HashSet<Type> WithoutProperty) analysis))
 					{
-						propertiesInThisType.Add(property.Name);
-
-						if (!propertyAnalysis.TryGetValue(property.Name, out (HashSet<Type> WithProperty, HashSet<Type> WithoutProperty) analysis))
-						{
-							analysis = ([], []);
-							propertyAnalysis[property.Name] = analysis;
-						}
-
-						analysis.WithProperty.Add(typeShape.Type);
+						analysis = ([], []);
+						propertyAnalysis[property.Name] = analysis;
 					}
 
-					// Add this type to the "without" set for properties it doesn't have
-					foreach ((string? propertyName, (HashSet<Type> WithProperty, HashSet<Type> WithoutProperty) analysis) in propertyAnalysis)
-					{
-						if (!propertiesInThisType.Contains(propertyName))
-						{
-							analysis.WithoutProperty.Add(typeShape.Type);
-						}
-					}
+					analysis.WithProperty.Add(typeShape.Type);
 				}
-			}
 
-			// Create steps for properties that can distinguish between types
-			foreach ((string? propertyName, (HashSet<Type>? withProperty, HashSet<Type>? withoutProperty)) in propertyAnalysis)
-			{
-				if (withProperty.Count > 0 && withoutProperty.Count > 0)
+				// Add this type to the "without" set for properties it doesn't have
+				foreach ((string? propertyName, (HashSet<Type> WithProperty, HashSet<Type> WithoutProperty) analysis) in propertyAnalysis)
 				{
-					this.steps.Add(new RequiredPropertyStep(propertyName, withProperty, withoutProperty));
+					if (!propertiesInThisType.Contains(propertyName))
+					{
+						analysis.WithoutProperty.Add(typeShape.Type);
+					}
 				}
 			}
 		}
 
-		private void AnalyzeIncompatibleMemberTypes()
+		// Create steps for properties that can distinguish between types
+		foreach ((string? propertyName, (HashSet<Type>? withProperty, HashSet<Type>? withoutProperty)) in propertyAnalysis)
 		{
-			var propertyTypeAnalysis = new Dictionary<string, Dictionary<Type, HashSet<Type>>>();
-
-			foreach (ITypeShape typeShape in this.typeShapes)
+			if (withProperty.Count > 0 && withoutProperty.Count > 0)
 			{
-				if (typeShape is IObjectTypeShape objectShape)
-				{
-					foreach (IPropertyShape property in objectShape.Properties)
-					{
-						if (!propertyTypeAnalysis.TryGetValue(property.Name, out Dictionary<Type, HashSet<Type>>? typeMapping))
-						{
-							typeMapping = [];
-							propertyTypeAnalysis[property.Name] = typeMapping;
-						}
-
-						Type propertyType = property.PropertyType.Type;
-						if (!typeMapping.TryGetValue(propertyType, out HashSet<Type>? typesWithThisPropertyType))
-						{
-							typesWithThisPropertyType = [];
-							typeMapping[propertyType] = typesWithThisPropertyType;
-						}
-
-						typesWithThisPropertyType.Add(typeShape.Type);
-					}
-				}
-			}
-
-			// Create steps for properties with incompatible types
-			foreach ((string? propertyName, Dictionary<Type, HashSet<Type>>? typeMapping) in propertyTypeAnalysis)
-			{
-				if (typeMapping.Keys.Count > 1)
-				{
-					// Multiple different types for same property name.
-					this.steps.Add(new IncompatibleTypeStep(propertyName, typeMapping));
-				}
+				steps.Add(new RequiredPropertyStep(propertyName, withProperty, withoutProperty));
 			}
 		}
 	}
 
-	/// <summary>
-	/// Represents the analysis result for shape-based union distinction.
-	/// </summary>
-	private class ShapeBasedUnionMapping
+	private static void AnalyzeIncompatibleMemberTypes(ReadOnlySpan<ITypeShape> typeShapes, List<DistinguishingStep> steps)
 	{
-		/// <summary>
-		/// Initializes a new instance of the <see cref="ShapeBasedUnionMapping"/> class.
-		/// </summary>
-		/// <param name="steps">The sequence of distinguishing steps to execute for type identification.</param>
-		/// <param name="typeShapeMapping">The mapping from types to their corresponding type shapes.</param>
-		internal ShapeBasedUnionMapping(IReadOnlyList<DistinguishingStep> steps, FrozenDictionary<Type, ITypeShape> typeShapeMapping)
+		var propertyTypeAnalysis = new Dictionary<string, Dictionary<Type, HashSet<Type>>>();
+
+		foreach (ITypeShape typeShape in typeShapes)
 		{
-			this.Steps = steps;
-			this.TypeShapeMapping = typeShapeMapping;
-		}
-
-		/// <summary>
-		/// Gets the sequence of steps to execute to distinguish between types.
-		/// </summary>
-		internal IReadOnlyList<DistinguishingStep> Steps { get; }
-
-		/// <summary>
-		/// Gets the mapping from types to their shapes.
-		/// </summary>
-		internal FrozenDictionary<Type, ITypeShape> TypeShapeMapping { get; }
-
-		/// <summary>
-		/// Attempts to identify the runtime type based on MessagePack data.
-		/// </summary>
-		/// <param name="reader">A reader positioned at the start of the value to analyze.</param>
-		/// <param name="context">The serialization context.</param>
-		/// <param name="typeShape">The identified type shape, if successful.</param>
-		/// <returns>True if exactly one matching type was identified; false otherwise.</returns>
-		internal bool TryIdentifyType(ref MessagePackReader reader, SerializationContext context, [NotNullWhen(true)] out ITypeShape? typeShape)
-		{
-			var candidateTypes = new HashSet<Type>(this.TypeShapeMapping.Keys);
-
-			foreach (DistinguishingStep step in this.Steps)
+			if (typeShape is IObjectTypeShape objectShape)
 			{
-				if (!step.Execute(ref reader, candidateTypes, context))
+				foreach (IPropertyShape property in objectShape.Properties)
 				{
-					typeShape = null;
-					return false;
-				}
+					if (!propertyTypeAnalysis.TryGetValue(property.Name, out Dictionary<Type, HashSet<Type>>? typeMapping))
+					{
+						typeMapping = [];
+						propertyTypeAnalysis[property.Name] = typeMapping;
+					}
 
-				if (candidateTypes.Count == 1)
-				{
-					typeShape = this.TypeShapeMapping[candidateTypes.First()];
-					return true;
+					Type propertyType = property.PropertyType.Type;
+					if (!typeMapping.TryGetValue(propertyType, out HashSet<Type>? typesWithThisPropertyType))
+					{
+						typesWithThisPropertyType = [];
+						typeMapping[propertyType] = typesWithThisPropertyType;
+					}
+
+					typesWithThisPropertyType.Add(typeShape.Type);
 				}
 			}
+		}
 
-			// Multiple candidates remain
-			typeShape = null;
-			return false;
+		// Create steps for properties with incompatible types
+		foreach ((string? propertyName, Dictionary<Type, HashSet<Type>>? typeMapping) in propertyTypeAnalysis)
+		{
+			if (typeMapping.Keys.Count > 1)
+			{
+				// Multiple different types for same property name.
+				steps.Add(new IncompatibleTypeStep(propertyName, typeMapping));
+			}
 		}
 	}
 

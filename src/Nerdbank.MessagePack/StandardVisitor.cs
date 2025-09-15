@@ -891,8 +891,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private ShapeBasedUnionConverter<TBase>? CreateDuckTypingUnionConverter<TBase>(DerivedTypeDuckTyping duckTyping, MessagePackConverter<TBase> baseTypeConverter)
 	{
 		// Create converters for each member type
-		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Count);
-		foreach (ITypeShape shape in duckTyping.DerivedShapes)
+		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length);
+		foreach (ITypeShape shape in duckTyping.DerivedShapes.Span)
 		{
 			if (!typeof(TBase).IsAssignableFrom(shape.Type))
 			{

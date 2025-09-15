@@ -31,6 +31,34 @@ public partial class DerivedTypeDuckTypingTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip<Animal>(new Cat() { Name = "Whiskers", MeowPitch = 3 });
 	}
 
+	[Fact]
+	public void OnlyRequiredPropertyPresent_Dog()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new MessagePackWriter(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(Dog.BarkVolume));
+		writer.Write(10);
+		writer.Flush();
+
+		Animal? animal = this.Serializer.Deserialize<Animal>(seq, TestContext.Current.CancellationToken);
+		Assert.Equal(new Dog { BarkVolume = 10 }, animal);
+	}
+
+	[Fact]
+	public void OnlyRequiredPropertyPresent_Cat()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new MessagePackWriter(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(Cat.MeowPitch));
+		writer.Write(10);
+		writer.Flush();
+
+		Animal? animal = this.Serializer.Deserialize<Animal>(seq, TestContext.Current.CancellationToken);
+		Assert.Equal(new Cat { MeowPitch = 10 }, animal);
+	}
+
 	[GenerateShape]
 	public partial record Animal
 	{
