@@ -150,7 +150,7 @@ namespace RuntimeSubTypes
             mapping.Add<Horse>(1);
             mapping.Add<Cow>(2);
 
-            return serializer with { DerivedTypeMappings = [.. serializer.DerivedTypeMappings, mapping] };
+            return serializer with { DerivedTypeUnions = [.. serializer.DerivedTypeUnions, mapping] };
         }
     }
     #endregion
@@ -172,7 +172,7 @@ namespace RuntimeSubTypes
             mapping.AddSourceGenerated<Horse>(1);
             mapping.AddSourceGenerated<Cow>(2);
 
-            return serializer with { DerivedTypeMappings = [.. serializer.DerivedTypeMappings, mapping] };
+            return serializer with { DerivedTypeUnions = [.. serializer.DerivedTypeUnions, mapping] };
         }
     }
     #endregion
@@ -185,7 +185,7 @@ namespace RuntimeSubTypes
         {
             return new MessagePackSerializer
             {
-                DerivedTypeMappings = [new DerivedShapeMapping<Animal> { Disabled = true }],
+                DerivedTypeUnions = [DerivedTypeUnion.CreateDisabled(typeof(Animal))],
             };
         }
         #endregion

@@ -141,11 +141,11 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { ConverterFactories = value };
 	}
 
-	/// <inheritdoc cref="SerializerConfiguration.DerivedTypeMappings"/>
-	public DerivedTypeMappingCollection DerivedTypeMappings
+	/// <inheritdoc cref="SerializerConfiguration.DerivedTypeUnions"/>
+	public DerivedTypeUnionCollection DerivedTypeUnions
 	{
-		get => this.configuration.DerivedTypeMappings;
-		init => this.configuration = this.configuration with { DerivedTypeMappings = value };
+		get => this.configuration.DerivedTypeUnions;
+		init => this.configuration = this.configuration with { DerivedTypeUnions = value };
 	}
 
 	/// <summary>

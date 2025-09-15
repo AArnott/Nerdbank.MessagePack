@@ -289,8 +289,8 @@ internal class SubTypes<TUnion>
 		TryGetSerializer = (ref TUnion _) => default,
 	};
 
-	/// <inheritdoc cref="DerivedTypeMapping.Disabled"/>
-	public bool Disabled { get; init; }
+	/// <inheritdoc cref="DerivedTypeUnion.Disabled"/>
+	public bool Disabled { get; private init; }
 
 	/// <summary>Gets the converters to use to deserialize a subtype, keyed by its integer alias.</summary>
 	public required FrozenDictionary<int, MessagePackConverter> DeserializersByIntAlias { get; init; }

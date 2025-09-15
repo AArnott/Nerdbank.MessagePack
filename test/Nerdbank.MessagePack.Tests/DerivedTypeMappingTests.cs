@@ -169,10 +169,39 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	[Fact]
 	public void DerivedShapeMapping_DisabledTests()
 	{
-		DerivedShapeMapping<MyBase> mapping = new() { Disabled = true };
-		Assert.True(mapping.Disabled);
-		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider));
-		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<MyDerivedA>()));
+		var union = DerivedTypeUnion.CreateDisabled(typeof(MyBase));
+		Assert.True(union.Disabled);
+		Assert.Same(typeof(MyBase), union.BaseType);
+	}
+
+	[Fact]
+	[SuppressMessage("Assertions", "xUnit2013:Do not use equality check to check for collection size.", Justification = "The whole point of this test is to ensure that the Count property matches what the enumerator would produce.")]
+	public void EnumerateMappings()
+	{
+		MessagePackSerializer serializer = new();
+		Assert.Equal(0, serializer.DerivedTypeUnions.Count);
+		Assert.Equal(serializer.DerivedTypeUnions.Count, serializer.DerivedTypeUnions.Count());
+
+		serializer = serializer with { DerivedTypeUnions = [new DerivedTypeMapping<MyBase>(Witness.GeneratedTypeShapeProvider) { [1] = typeof(MyDerivedA) }] };
+		Assert.Equal(1, serializer.DerivedTypeUnions.Count);
+		Assert.Equal(serializer.DerivedTypeUnions.Count, serializer.DerivedTypeUnions.Count());
+	}
+
+	[Fact]
+	public void ShapeMappingFrozenAfterAdding()
+	{
+		DerivedShapeMapping<MyBase> mapping = new();
+#if NET
+		mapping.Add<MyDerivedA>(1);
+#else
+		mapping.AddSourceGenerated<MyDerivedA>(1);
+#endif
+		MessagePackSerializer serializer = new()
+		{
+			DerivedTypeUnions = [mapping],
+		};
+
+		// Now that we've added the mapping to the serializer, it is frozen.
 #if NET
 		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyDerivedA>(1));
 #else
@@ -181,24 +210,20 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	}
 
 	[Fact]
-	public void DerivedTypeMapping_DisabledTests()
+	public void TypeMappingFrozenAfterAdding()
 	{
-		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider) { Disabled = true };
-		Assert.True(mapping.Disabled);
-		Assert.Throws<InvalidOperationException>(() => mapping.Add(1, typeof(MyDerivedA)));
-	}
+		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
+		{
+			{ 1, typeof(MyDerivedA) },
+		};
+		MessagePackSerializer serializer = new()
+		{
+			DerivedTypeUnions = [mapping],
+		};
 
-	[Fact]
-	[SuppressMessage("Assertions", "xUnit2013:Do not use equality check to check for collection size.", Justification = "The whole point of this test is to ensure that the Count property matches what the enumerator would produce.")]
-	public void EnumerateMappings()
-	{
-		MessagePackSerializer serializer = new();
-		Assert.Equal(0, serializer.DerivedTypeMappings.Count);
-		Assert.Equal(serializer.DerivedTypeMappings.Count, serializer.DerivedTypeMappings.Count());
-
-		serializer = serializer with { DerivedTypeMappings = [new DerivedTypeMapping<MyBase>(Witness.GeneratedTypeShapeProvider) { [1] = typeof(MyDerivedA) }] };
-		Assert.Equal(1, serializer.DerivedTypeMappings.Count);
-		Assert.Equal(serializer.DerivedTypeMappings.Count, serializer.DerivedTypeMappings.Count());
+		// Now that we've added the mapping to the serializer, it is frozen.
+		Assert.Throws<InvalidOperationException>(() => mapping.Add(2, typeof(MyDerivedB)));
+		Assert.Throws<InvalidOperationException>(() => mapping[2] = typeof(MyDerivedB));
 	}
 
 	[GenerateShape]

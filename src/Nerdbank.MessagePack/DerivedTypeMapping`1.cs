@@ -27,6 +27,8 @@ public class DerivedTypeMapping<TBase>(ITypeShapeProvider provider) : DerivedSha
 		set
 		{
 			Requires.Argument(typeof(TBase).IsAssignableFrom(value), nameof(value), $"Type must be assignable to {typeof(TBase).Name}.");
+			this.ThrowIfFrozen();
+
 			this.Set(alias, provider.GetTypeShapeOrThrow(value));
 		}
 	}
@@ -42,6 +44,8 @@ public class DerivedTypeMapping<TBase>(ITypeShapeProvider provider) : DerivedSha
 	public void Add(DerivedTypeIdentifier alias, Type type)
 	{
 		Requires.Argument(typeof(TBase).IsAssignableFrom(type), nameof(type), $"Type must be assignable to {typeof(TBase).Name}.");
+		this.ThrowIfFrozen();
+
 		this.Add(alias, provider.GetTypeShapeOrThrow(type));
 	}
 }

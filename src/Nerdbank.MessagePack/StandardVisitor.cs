@@ -809,16 +809,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="DerivedTypeShapeAttribute"/> that violates rules.</exception>
 	private SubTypes<TBaseType>? DiscoverUnionTypes<TBaseType>(IObjectTypeShape<TBaseType> objectShape, MessagePackConverter<TBaseType> baseTypeConverter)
 	{
-		IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape>? mapping;
-		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out mapping, out bool disabled))
+		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out DerivedTypeUnion? union) || union.Disabled)
 		{
-			return disabled ? SubTypes<TBaseType>.DisabledInstance : null;
+			return union is { Disabled: true } ? SubTypes<TBaseType>.DisabledInstance : null;
+		}
+
+		if (union is not IDerivedTypeMapping mapping)
+		{
+			throw new NotSupportedException("Unexpected derived type union type.");
 		}
 
 		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
 		Dictionary<ReadOnlyMemory<byte>, MessagePackConverter> deserializeByUtf8Data = new();
 		Dictionary<Type, (DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializerData = new();
-		foreach (KeyValuePair<DerivedTypeIdentifier, ITypeShape> pair in mapping)
+		foreach (KeyValuePair<DerivedTypeIdentifier, ITypeShape> pair in mapping.GetDerivedTypesMapping())
 		{
 			DerivedTypeIdentifier alias = pair.Key;
 			ITypeShape shape = pair.Value;
@@ -848,7 +852,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return new SubTypes<TBaseType>
 		{
-			Disabled = disabled,
 			DeserializersByIntAlias = deserializeByIntData.ToFrozenDictionary(),
 			DeserializersByStringAlias = new SpanDictionary<byte, MessagePackConverter>(deserializeByUtf8Data, ByteSpanEqualityComparer.Ordinal),
 			Serializers = serializerData.Select(t => t.Value).ToFrozenSet(),
