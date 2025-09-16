@@ -39,7 +39,7 @@ public class JsonSchemaContext
 	internal LibraryReservedMessagePackExtensionTypeCode ExtensionTypeCodes { get; }
 
 	/// <summary>
-	/// Obtains the JSON schema for a given type.
+	/// Obtains the JSON schema for a given type shape.
 	/// </summary>
 	/// <param name="typeShape">The shape for the type.</param>
 	/// <returns>The JSON schema.</returns>
