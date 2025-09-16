@@ -9,8 +9,6 @@ public class RefParametersForRefStructsAnalyzerTests
 	public async Task MethodWithRefParameters()
 	{
 		string testSource = /* lang=c#-test */ """
-			#pragma warning disable NBMsgPackAsync
-
 			using Nerdbank.MessagePack;
 
 			class Test
@@ -36,8 +34,6 @@ public class RefParametersForRefStructsAnalyzerTests
 	public async Task MethodWithParameters_MissingRef()
 	{
 		string testSource = /* lang=c#-test */ """
-			#pragma warning disable NBMsgPackAsync
-
 			using Nerdbank.MessagePack;
 
 			class Test

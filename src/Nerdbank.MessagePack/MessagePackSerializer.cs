@@ -416,12 +416,10 @@ public partial record MessagePackSerializer
 
 		try
 		{
-#pragma warning disable NBMsgPackAsync
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 			MessagePackAsyncWriter asyncWriter = new(writer);
 			await this.ConverterCache.GetOrAddConverter(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 			asyncWriter.Flush();
-#pragma warning restore NBMsgPackAsync
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -437,12 +435,10 @@ public partial record MessagePackSerializer
 
 		try
 		{
-#pragma warning disable NBMsgPackAsync
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 			MessagePackAsyncWriter asyncWriter = new(writer);
 			await this.ConverterCache.GetOrAddConverter(shape).WriteObjectAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 			asyncWriter.Flush();
-#pragma warning restore NBMsgPackAsync
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -465,12 +461,10 @@ public partial record MessagePackSerializer
 
 		try
 		{
-#pragma warning disable NBMsgPackAsync
 			using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 			MessagePackAsyncWriter asyncWriter = new(writer);
 			await this.ConverterCache.GetOrAddConverter<T>(provider).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 			asyncWriter.Flush();
-#pragma warning restore NBMsgPackAsync
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -828,7 +822,6 @@ public partial record MessagePackSerializer
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
-#pragma warning disable NBMsgPackAsync
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		bool readMore = false;
 		while (!await asyncReader.GetIsEndOfStreamAsync(readMore).ConfigureAwait(false))
@@ -866,8 +859,6 @@ public partial record MessagePackSerializer
 		}
 
 		asyncReader.Dispose(); // Only dispose in non-exceptional paths, since it may throw again if an exception is already in progress.
-#pragma warning restore NBMsgPackAsync
-
 		await reader.CompleteAsync().ConfigureAwait(false);
 	}
 
@@ -900,7 +891,6 @@ public partial record MessagePackSerializer
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
-#pragma warning disable NBMsgPackAsync
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 
@@ -909,7 +899,6 @@ public partial record MessagePackSerializer
 		{
 			yield return element;
 		}
-#pragma warning restore NBMsgPackAsync
 
 		asyncReader.Dispose(); // Only dispose in non-exceptional paths, since it may throw again if an exception is already in progress.
 		if (!options.LeaveOpen)
@@ -965,13 +954,11 @@ public partial record MessagePackSerializer
 				}
 			}
 
-#pragma warning disable NBMsgPackAsync
 			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 			await asyncReader.ReadAsync().ConfigureAwait(false);
 			T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
 			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
 			return result2;
-#pragma warning restore NBMsgPackAsync
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -1004,13 +991,11 @@ public partial record MessagePackSerializer
 				}
 			}
 
-#pragma warning disable NBMsgPackAsync
 			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 			await asyncReader.ReadAsync().ConfigureAwait(false);
 			object? result2 = await converter.ReadObjectAsync(asyncReader, context.Value).ConfigureAwait(false);
 			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
 			return result2;
-#pragma warning restore NBMsgPackAsync
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
