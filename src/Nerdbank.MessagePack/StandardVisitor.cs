@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable NBMsgPackAsync
+#pragma warning disable DuckTyping // Experimental API
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
@@ -222,6 +223,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				return union switch
 				{
 					IDerivedTypeMapping mapping => new UnionConverter<T>(converter, this.CreateSubTypes(objectShape.Type, converter, mapping)),
+					DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, converter),
 					_ => throw new NotSupportedException($"Unrecognized union type: {union.GetType().Name}"),
 				};
 			}
@@ -251,6 +253,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			{
 				{ Disabled: true } => baseTypeConverter,
 				IDerivedTypeMapping mapping => new UnionConverter<TUnion>(baseTypeConverter, this.CreateSubTypes(baseType, baseTypeConverter, mapping)),
+				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<TUnion>(duckTyping, baseTypeConverter),
 				_ => throw new NotSupportedException($"Unrecognized union type: {union.GetType().Name}"),
 			};
 		}
@@ -878,6 +881,30 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				return null;
 			},
 		};
+	}
+
+	/// <summary>
+	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
+	/// </summary>
+	/// <param name="duckTyping">Information about the base type and derived types that distinguish objects between each type.</param>
+	/// <param name="baseTypeConverter">The converter to use when serializing the base type itself.</param>
+	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
+	private ShapeBasedUnionConverter<TBase>? CreateDuckTypingUnionConverter<TBase>(DerivedTypeDuckTyping duckTyping, MessagePackConverter<TBase> baseTypeConverter)
+	{
+		// Create converters for each member type
+		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length);
+		foreach (ITypeShape shape in duckTyping.DerivedShapes.Span)
+		{
+			if (!typeof(TBase).IsAssignableFrom(shape.Type))
+			{
+				throw new ArgumentException($"Type '{shape.Type}' is not assignable to base type '{typeof(TBase)}'.", nameof(duckTyping));
+			}
+
+			MessagePackConverter converter = (MessagePackConverter)this.GetConverter(shape);
+			convertersByType[shape.Type] = converter;
+		}
+
+		return new ShapeBasedUnionConverter<TBase>(baseTypeConverter, duckTyping, convertersByType);
 	}
 
 	/// <summary>
