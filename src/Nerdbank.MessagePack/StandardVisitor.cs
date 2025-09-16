@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable NBMsgPackAsync
+#pragma warning disable DuckTyping // Experimental API
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
@@ -213,11 +214,22 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		// Test IsValueType before calling DiscoverUnionTypes so that the native compiler
+		// Test IsValueType before considering unions so that the native compiler
 		// does not have to generate a SubTypes<T> for value types which will never be used.
-		return !typeof(T).IsValueType && this.DiscoverUnionTypes(objectShape, converter) is { Disabled: false } unionTypes
-			? new UnionConverter<T>(converter, unionTypes)
-			: converter;
+		if (!typeof(T).IsValueType)
+		{
+			if (this.owner.TryGetDynamicUnion(objectShape.Type, out DerivedTypeUnion? union) && !union.Disabled)
+			{
+				return union switch
+				{
+					IDerivedTypeMapping mapping => new UnionConverter<T>(converter, this.CreateSubTypes(objectShape.Type, converter, mapping)),
+					DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, converter),
+					_ => throw new NotSupportedException($"Unrecognized union type: {union.GetType().Name}"),
+				};
+			}
+		}
+
+		return converter;
 	}
 
 	/// <inheritdoc/>
@@ -235,36 +247,44 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Runtime mapping overrides attributes.
-		if (!(unionShape.BaseType is IObjectTypeShape<TUnion> baseObjectShape && this.DiscoverUnionTypes(baseObjectShape, baseTypeConverter) is { } subTypes))
+		if (unionShape.BaseType is IObjectTypeShape<TUnion> { Type: Type baseType } && this.owner.TryGetDynamicUnion(baseType, out DerivedTypeUnion? union))
 		{
-			Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-			Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
-			List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
-			KeyValuePair<int, MessagePackConverter<TUnion>>[] unionCases = unionShape.UnionCases
-				.Select(unionCase =>
-				{
-					bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
-					DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
-					var caseConverter = (MessagePackConverter<TUnion>)unionCase.Accept(this, null)!;
-					deserializerByIntAlias.Add(unionCase.Tag, caseConverter);
-					serializers.Add((alias, caseConverter, unionCase.UnionCaseType));
-
-					return new KeyValuePair<int, MessagePackConverter<TUnion>>(unionCase.Tag, caseConverter);
-				})
-				.ToArray();
-			subTypes = new()
+			return union switch
 			{
-				DeserializersByIntAlias = deserializerByIntAlias.ToFrozenDictionary(),
-				DeserializersByStringAlias = serializers.Where(v => v.Alias.Type == DerivedTypeIdentifier.AliasType.String).ToSpanDictionary(
-					p => p.Alias.Utf8Alias,
-					p => p.Converter,
-					ByteSpanEqualityComparer.Ordinal),
-				Serializers = serializers.ToFrozenSet(),
-				TryGetSerializer = (ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (serializers[idx].Alias, serializers[idx].Converter) : null,
+				{ Disabled: true } => baseTypeConverter,
+				IDerivedTypeMapping mapping => new UnionConverter<TUnion>(baseTypeConverter, this.CreateSubTypes(baseType, baseTypeConverter, mapping)),
+				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<TUnion>(duckTyping, baseTypeConverter),
+				_ => throw new NotSupportedException($"Unrecognized union type: {union.GetType().Name}"),
 			};
 		}
 
-		return subTypes.Disabled ? baseTypeConverter : new UnionConverter<TUnion>(baseTypeConverter, subTypes);
+		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+		Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
+		List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
+		KeyValuePair<int, MessagePackConverter<TUnion>>[] unionCases = unionShape.UnionCases
+			.Select(unionCase =>
+			{
+				bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
+				DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
+				var caseConverter = (MessagePackConverter<TUnion>)unionCase.Accept(this, null)!;
+				deserializerByIntAlias.Add(unionCase.Tag, caseConverter);
+				serializers.Add((alias, caseConverter, unionCase.UnionCaseType));
+
+				return new KeyValuePair<int, MessagePackConverter<TUnion>>(unionCase.Tag, caseConverter);
+			})
+			.ToArray();
+		SubTypes<TUnion> subTypes = new()
+		{
+			DeserializersByIntAlias = deserializerByIntAlias.ToFrozenDictionary(),
+			DeserializersByStringAlias = serializers.Where(v => v.Alias.Type == DerivedTypeIdentifier.AliasType.String).ToSpanDictionary(
+				p => p.Alias.Utf8Alias,
+				p => p.Converter,
+				ByteSpanEqualityComparer.Ordinal),
+			Serializers = serializers.ToFrozenSet(),
+			TryGetSerializer = (ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (serializers[idx].Alias, serializers[idx].Converter) : null,
+		};
+
+		return new UnionConverter<TUnion>(baseTypeConverter, subTypes);
 	}
 
 	/// <inheritdoc/>
@@ -800,23 +820,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 	}
 
-	/// <summary>
-	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
-	/// </summary>
-	/// <param name="objectShape">The shape of the data type that may define derived types that are also allowed for serialization.</param>
-	/// <param name="baseTypeConverter">The converter to use when serializing the base type itself.</param>
-	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
-	/// <exception cref="InvalidOperationException">Thrown if <paramref name="objectShape"/> has any <see cref="DerivedTypeShapeAttribute"/> that violates rules.</exception>
-	private SubTypes<TBaseType>? DiscoverUnionTypes<TBaseType>(IObjectTypeShape<TBaseType> objectShape, MessagePackConverter<TBaseType> baseTypeConverter)
+	private SubTypes<TBaseType> CreateSubTypes<TBaseType>(Type baseType, MessagePackConverter<TBaseType> baseTypeConverter, IDerivedTypeMapping mapping)
 	{
-		if (!this.owner.TryGetDynamicSubTypes(objectShape.Type, out DerivedTypeUnion? union) || union.Disabled)
+		if (mapping is DerivedTypeUnion { Disabled: true })
 		{
-			return union is { Disabled: true } ? SubTypes<TBaseType>.DisabledInstance : null;
-		}
-
-		if (union is not IDerivedTypeMapping mapping)
-		{
-			throw new NotSupportedException("Unexpected derived type union type.");
+			return SubTypes<TBaseType>.DisabledInstance;
 		}
 
 		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
@@ -830,7 +838,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// We don't want a reference-preserving converter here because that layer has already run
 			// by the time our subtype converter is invoked.
 			// And doubling up on it means values get serialized incorrectly.
-			MessagePackConverter converter = shape.Type == objectShape.Type ? baseTypeConverter : this.GetConverter(shape).UnwrapReferencePreservation();
+			MessagePackConverter converter = shape.Type == baseType ? baseTypeConverter : this.GetConverter(shape).UnwrapReferencePreservation();
 			switch (alias.Type)
 			{
 				case DerivedTypeIdentifier.AliasType.Integer:
@@ -843,7 +851,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					throw new NotImplementedException("Unspecified alias type.");
 			}
 
-			Verify.Operation(serializerData.TryAdd(shape.Type, (alias, converter, shape)), $"The type {objectShape.Type.FullName} has more than one subtype with a duplicate alias: {alias}.");
+			Verify.Operation(serializerData.TryAdd(shape.Type, (alias, converter, shape)), $"The type {baseType.FullName} has more than one subtype with a duplicate alias: {alias}.");
 		}
 
 		// Our runtime type checks must be done in an order that will select the most derived matching type.
@@ -873,6 +881,30 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				return null;
 			},
 		};
+	}
+
+	/// <summary>
+	/// Returns a dictionary of <see cref="MessagePackConverter{T}"/> objects for each subtype, keyed by their alias.
+	/// </summary>
+	/// <param name="duckTyping">Information about the base type and derived types that distinguish objects between each type.</param>
+	/// <param name="baseTypeConverter">The converter to use when serializing the base type itself.</param>
+	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
+	private ShapeBasedUnionConverter<TBase>? CreateDuckTypingUnionConverter<TBase>(DerivedTypeDuckTyping duckTyping, MessagePackConverter<TBase> baseTypeConverter)
+	{
+		// Create converters for each member type
+		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length);
+		foreach (ITypeShape shape in duckTyping.DerivedShapes.Span)
+		{
+			if (!typeof(TBase).IsAssignableFrom(shape.Type))
+			{
+				throw new ArgumentException($"Type '{shape.Type}' is not assignable to base type '{typeof(TBase)}'.", nameof(duckTyping));
+			}
+
+			MessagePackConverter converter = (MessagePackConverter)this.GetConverter(shape);
+			convertersByType[shape.Type] = converter;
+		}
+
+		return new ShapeBasedUnionConverter<TBase>(baseTypeConverter, duckTyping, convertersByType);
 	}
 
 	/// <summary>

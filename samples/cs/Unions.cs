@@ -191,3 +191,32 @@ namespace RuntimeSubTypes
         #endregion
     }
 }
+
+namespace DuckTyping
+{
+    #region DuckTyping
+#pragma warning disable DuckTyping // Experimental API
+
+    [GenerateShape]
+    public abstract partial record Animal(string Name);
+
+    [GenerateShape]
+    public partial record Dog(string Name, int BarkVolume) : Animal(Name);
+
+    [GenerateShape]
+    public partial record Cat(string Name, int MeowPitch) : Animal(Name);
+
+    public class AnimalShelter
+    {
+        public MessagePackSerializer Serializer { get; } = new()
+        {
+            DerivedTypeUnions = [
+                new DerivedTypeDuckTyping(
+                    TypeShapeResolver.ResolveDynamicOrThrow<Animal>(),
+                    TypeShapeResolver.ResolveDynamicOrThrow<Dog>(),
+                    TypeShapeResolver.ResolveDynamicOrThrow<Cat>()),
+            ],
+        };
+    }
+    #endregion
+}

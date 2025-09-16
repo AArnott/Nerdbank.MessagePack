@@ -720,10 +720,10 @@ public partial record MessagePackSerializer
 		{
 			builder.Write('\"');
 
-			var len = value.Length;
+			int len = value.Length;
 			for (int i = 0; i < len; i++)
 			{
-				var c = value[i];
+				char c = value[i];
 				switch (c)
 				{
 					case '"':

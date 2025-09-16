@@ -29,6 +29,7 @@ Optimized for high performance | [✅](performance.md) | [✅](https://github.co
 Contractless data types   | [✅](getting-started.md)[^1] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) | ❌ |
 Attributed data types     | [✅](customizing-serialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#object-serialization) | [✅](https://serdedotnet.github.io/generator/options.html)
 Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] | [✅](https://serdedotnet.github.io/data-model.html)
+Duck-typed polymorphic serialization | [✅](unions.md#duck-typing) | ❌ | ❌ |
 F# union type support     | [✅](fsharp.md) | ❌ | ❌ |
 Typeless serialization    | [✅](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) | ❌ |
 `dynamic` serialization    | [✅](getting-started.md#untyped-deserialization) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md) | ❌ |
