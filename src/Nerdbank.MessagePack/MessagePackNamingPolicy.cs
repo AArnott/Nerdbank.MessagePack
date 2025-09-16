@@ -1,7 +1,17 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 namespace Nerdbank.MessagePack;
+
+/// <summary>
+/// A delegate that defines a transformation for property names from .NET to msgpack.
+/// </summary>
+/// <param name="propertyShape">The property shape containing information about the property, including its name and attributes.</param>
+/// <returns>The transformed property name to use in the msgpack output.</returns>
+public delegate string NamingConvention(IPropertyShape propertyShape);
 
 /// <summary>
 /// Defines a transformation for property names from .NET to msgpack.
