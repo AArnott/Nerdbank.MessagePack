@@ -10,6 +10,10 @@ The NativeAOT readiness of this library makes it an ideal library for IL2CPP in 
 1. Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity) into your project.
 1. Use the new "NuGet -> Manage NuGet Packages" command in the Unity Editor to install the `Nerdbank.MessagePack` package. You may need to set the option to show prerelease versions.
 
+## Sample Unity game
+
+A trivial Unity 'game' that demonstrates serializing and deserializing a custom type is available [here](https://github.com/AArnott/Nerdbank.MessagePack.UnitySandbox/commits/main/).
+
 ## Known issues
 
 ### .NET Standard APIs only
