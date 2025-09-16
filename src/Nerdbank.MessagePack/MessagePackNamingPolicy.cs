@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text;
+
 namespace Nerdbank.MessagePack;
 
 /// <summary>
@@ -25,55 +27,135 @@ public abstract class MessagePackNamingPolicy
 	/// <returns>The msgpack property name.</returns>
 	public abstract string ConvertName(string name);
 
-	private class CamelCaseNamingPolicy : MessagePackNamingPolicy
+	private static string ConvertName(string name, bool toCamelCase)
 	{
-		/// <summary>
-		/// Converts a PascalCase identifier to camelCase.
-		/// </summary>
-		/// <param name="name">The PascalCase identifier.</param>
-		/// <returns>The camelCase identifier. </returns>
-		public override string ConvertName(string name)
+		if (string.IsNullOrEmpty(name))
 		{
-			if (name.Length == 0 || !char.IsUpper(name[0]))
-			{
-				return name;
-			}
+			return name;
+		}
 
 #if NET
-			return string.Create(name.Length, name, static (span, name) =>
+		return string.Create(name.Length, (name, toCamelCase), static (span, state) =>
+		{
+			bool firstWord = true;
+			int i = 0;
+			int outputPosition = 0;
+			while (i < state.name.Length)
 			{
-				span[0] = char.ToLowerInvariant(name[0]);
-				name.AsSpan(1).CopyTo(span.Slice(1));
-			});
+				if (!char.IsLetterOrDigit(state.name[i]))
+				{
+					span[outputPosition++] = state.name[i++];
+					firstWord = true;
+					continue;
+				}
+
+				int wordLength = 1;
+				while (i + wordLength < state.name.Length && char.IsLower(state.name[i + wordLength]))
+				{
+					wordLength++;
+				}
+
+				if (wordLength == 1)
+				{
+					while (i + wordLength < state.name.Length && char.IsUpper(state.name[i + wordLength]) && (i + wordLength + 1 >= state.name.Length || !char.IsLower(state.name[i + wordLength + 1])))
+					{
+						wordLength++;
+					}
+				}
+
+				ReadOnlySpan<char> word = state.name.AsSpan(i, wordLength);
+				if (firstWord)
+				{
+					if (state.toCamelCase)
+					{
+						for (int j = 0; j < word.Length; j++)
+						{
+							span[outputPosition++] = char.ToLowerInvariant(word[j]);
+						}
+					}
+					else
+					{
+						span[outputPosition++] = char.ToUpperInvariant(word[0]);
+						word.Slice(1).CopyTo(span.Slice(outputPosition));
+						outputPosition += word.Length - 1;
+					}
+
+					firstWord = false;
+				}
+				else
+				{
+					span[outputPosition++] = char.ToUpperInvariant(word[0]);
+					word.Slice(1).CopyTo(span.Slice(outputPosition));
+					outputPosition += word.Length - 1;
+				}
+
+				i += wordLength;
+			}
+
+			span.Slice(outputPosition).Clear();
+		});
 #else
-			return char.ToLowerInvariant(name[0]) + name.Substring(1);
-#endif
+		StringBuilder sb = new StringBuilder(name.Length);
+		bool firstWord = true;
+		int i = 0;
+		while (i < name.Length)
+		{
+			if (!char.IsLetterOrDigit(name[i]))
+			{
+				sb.Append(name[i++]);
+				firstWord = true;
+				continue;
+			}
+
+			int wordLength = 1;
+			while (i + wordLength < name.Length && char.IsLower(name[i + wordLength]))
+			{
+				wordLength++;
+			}
+
+			if (wordLength == 1)
+			{
+				while (i + wordLength < name.Length && char.IsUpper(name[i + wordLength]) && (i + wordLength + 1 >= name.Length || !char.IsLower(name[i + wordLength + 1])))
+				{
+					wordLength++;
+				}
+			}
+
+			string word = name.Substring(i, wordLength);
+			if (firstWord)
+			{
+				if (toCamelCase)
+				{
+					sb.Append(word.ToLowerInvariant());
+				}
+				else
+				{
+					sb.Append(char.ToUpperInvariant(word[0]));
+					sb.Append(word.Substring(1));
+				}
+
+				firstWord = false;
+			}
+			else
+			{
+				sb.Append(char.ToUpperInvariant(word[0]));
+				sb.Append(word.Substring(1));
+			}
+
+			i += wordLength;
 		}
+
+		return sb.ToString();
+#endif
+	}
+
+	private class CamelCaseNamingPolicy : MessagePackNamingPolicy
+	{
+		public override string ConvertName(string name) => ConvertName(name, toCamelCase: true);
 	}
 
 	private class PascalCaseNamingPolicy : MessagePackNamingPolicy
 	{
-		/// <summary>
-		/// Converts a camelCase identifier to PascalCase.
-		/// </summary>
-		/// <param name="name">The camelCase identifier.</param>
-		/// <returns>The PascalCase identifier. </returns>
-		public override string ConvertName(string name)
-		{
-			if (name.Length == 0 || !char.IsLower(name[0]))
-			{
-				return name;
-			}
-
-#if NET
-			return string.Create(name.Length, name, static (span, name) =>
-			{
-				span[0] = char.ToUpperInvariant(name[0]);
-				name.AsSpan(1).CopyTo(span.Slice(1));
-			});
-#else
-			return char.ToUpperInvariant(name[0]) + name.Substring(1);
-#endif
-		}
+		public override string ConvertName(string name) => ConvertName(name, toCamelCase: false);
 	}
 }
