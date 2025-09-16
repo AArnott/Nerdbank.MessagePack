@@ -484,7 +484,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						IPropertyShape? matchingProperty = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name);
 						var prop = (DeserializableProperty<TArgumentState>)p.Value.Accept(this, constructorShape)!;
 						string name = matchingProperty is not null
-							? this.owner.GetSerializedPropertyName(matchingProperty)
+							? this.owner.GetSerializedPropertyName((IPropertyShape)matchingProperty)
 							: this.owner.GetSerializedPropertyName(p.Value.Name, null);
 						spanDictContent[i++] = new(Encoding.UTF8.GetBytes(name), prop);
 					}

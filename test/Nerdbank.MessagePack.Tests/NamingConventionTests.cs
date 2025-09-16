@@ -81,7 +81,7 @@ public partial class NamingConventionTests : MessagePackSerializerTestBase
 		// Set up serializer with naming convention
 		MessagePackSerializer originalSerializer = this.Serializer;
 		this.Serializer = this.Serializer with { PropertyNameConvention = NamingConventions.CamelCase };
-		
+
 		try
 		{
 			TestObject original = new() { SomeProperty = "test", AnotherProperty = 42 };

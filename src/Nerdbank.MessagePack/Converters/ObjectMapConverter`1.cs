@@ -403,7 +403,7 @@ internal class ObjectMapConverter<T>(
 				SerializableProperty<T> property = serializable.Properties.Span[i];
 
 				IParameterShape? associatedParameter = null;
-				ctorParams?.TryGetValue(property.Name, out associatedParameter);
+				ctorParams?.TryGetValue(property.Name, out (IParameterShape)associatedParameter);
 
 				JsonObject propertySchema = context.GetJsonSchema(property.Shape.PropertyType);
 				ApplyDescription(property.Shape.AttributeProvider, propertySchema);
