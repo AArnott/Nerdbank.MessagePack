@@ -300,13 +300,58 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
-		this.Serializer.SerializeObject(ref writer, value, Witness.GeneratedTypeShapeProvider.GetTypeShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
+		this.Serializer.SerializeObject(ref writer, value, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit)), TestContext.Current.CancellationToken);
 		writer.Flush();
 
 		this.LogMsgPack(seq);
 
 		MessagePackReader reader = new(seq);
-		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.GeneratedTypeShapeProvider.GetTypeShape(typeof(Fruit))!, TestContext.Current.CancellationToken);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit)), TestContext.Current.CancellationToken);
+		Assert.Equal(value, deserialized);
+	}
+
+	[Fact]
+	public void SerializeObject_ByteArray()
+	{
+		Fruit value = new() { Seeds = 5 };
+		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
+		byte[] serialized = this.Serializer.SerializeObject(value, shape, TestContext.Current.CancellationToken);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(serialized, shape, TestContext.Current.CancellationToken);
+		Assert.Equal(value, deserialized);
+	}
+
+	[Fact]
+	public void SerializeObject_IBufferWriter()
+	{
+		Fruit value = new() { Seeds = 5 };
+		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
+		var bufferWriter = new Sequence<byte>();
+		this.Serializer.SerializeObject(bufferWriter, value, shape, TestContext.Current.CancellationToken);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(bufferWriter.AsReadOnlySequence, shape, TestContext.Current.CancellationToken);
+		Assert.Equal(value, deserialized);
+	}
+
+	[Fact]
+	public void SerializeObject_Stream()
+	{
+		Fruit value = new() { Seeds = 5 };
+		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
+		var stream = new MemoryStream();
+		this.Serializer.SerializeObject(stream, value, shape, TestContext.Current.CancellationToken);
+		stream.Position = 0;
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(stream, shape, TestContext.Current.CancellationToken);
+		Assert.Equal(value, deserialized);
+	}
+
+	[Fact]
+	public async Task SerializeObjectAsync_Stream()
+	{
+		Fruit value = new() { Seeds = 5 };
+		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
+		var stream = new MemoryStream();
+		await this.Serializer.SerializeObjectAsync(stream, value, shape, TestContext.Current.CancellationToken);
+		stream.Position = 0;
+		Fruit? deserialized = (Fruit?)await this.Serializer.DeserializeObjectAsync(stream, shape, TestContext.Current.CancellationToken);
 		Assert.Equal(value, deserialized);
 	}
 
