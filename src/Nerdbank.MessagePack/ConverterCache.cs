@@ -207,6 +207,12 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <param name="name">The original property name as given by <see cref="IPropertyShape"/>.</param>
 	/// <param name="attributeProvider">The attribute provider for the property.</param>
 	/// <returns>The serialized property name to use.</returns>
+	/// <summary>
+	/// Gets the serialized property name for a property using the configured naming convention or policy.
+	/// </summary>
+	/// <param name="name">The property name as declared in .NET code.</param>
+	/// <param name="attributeProvider">The attribute provider for the property.</param>
+	/// <returns>The transformed property name to use in serialization.</returns>
 	internal string GetSerializedPropertyName(string name, ICustomAttributeProvider? attributeProvider)
 	{
 		// For backward compatibility, fall back to legacy naming policy when only name and attributes are available
@@ -224,6 +230,11 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		return this.PropertyNamingPolicy.ConvertName(name);
 	}
 
+	/// <summary>
+	/// Gets the serialized property name for a property using the configured naming convention or policy.
+	/// </summary>
+	/// <param name="property">The property shape providing metadata about the property.</param>
+	/// <returns>The transformed property name to use in serialization.</returns>
 	internal string GetSerializedPropertyName(IPropertyShape property)
 	{
 		// Use the new naming convention if available, otherwise fall back to the legacy naming policy
