@@ -231,13 +231,11 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 			writer.Write(value!.Property);
 		}
 
-#pragma warning disable NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 		public override ValueTask<SpecialRecord?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 		{
 			this.AsyncDeserializationCounter++;
 			return base.ReadAsync(reader, context);
 		}
-#pragma warning restore NBMsgPackAsync // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 	}
 
 	private class AsyncDictionaryOfPrimitivesConverter : MessagePackConverter<DictionaryOfPrimitives>

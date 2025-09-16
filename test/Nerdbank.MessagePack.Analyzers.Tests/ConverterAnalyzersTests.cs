@@ -651,8 +651,6 @@ public class ConverterAnalyzersTests
 	public async Task AsyncConverter_ShouldOverridePreferAsyncSerialization()
 	{
 		string source = /* lang=c#-test */ """
-			#pragma warning disable NBMsgPackAsync
-
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
@@ -680,8 +678,6 @@ public class ConverterAnalyzersTests
 	public async Task AsyncConverter_ReturnsReaderWriter()
 	{
 		string source = /* lang=c#-test */ """
-			#pragma warning disable NBMsgPackAsync
-
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
@@ -738,8 +734,6 @@ public class ConverterAnalyzersTests
 	public async Task AsyncConverter_UsesReaderWriterAfterReturn()
 	{
 		string source = /* lang=c#-test */ """
-			#pragma warning disable NBMsgPackAsync
-
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
@@ -796,8 +790,6 @@ public class ConverterAnalyzersTests
 	public async Task AsyncConverter_DoesNotReturnReaderWriter()
 	{
 		string source = /* lang=c#-test */ """
-			#pragma warning disable NBMsgPackAsync
-
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;
@@ -850,8 +842,6 @@ public class ConverterAnalyzersTests
 	public async Task AsyncConverter_UsesAsyncIOWhileRentalIsCurrent()
 	{
 		string source = /* lang=c#-test */ """
-			#pragma warning disable NBMsgPackAsync
-
 			using System;
 			using System.Text.Json.Nodes;
 			using System.Threading.Tasks;

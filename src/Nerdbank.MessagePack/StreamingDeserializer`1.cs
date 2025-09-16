@@ -7,8 +7,6 @@ using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
-#pragma warning disable NBMsgPackAsync
-
 /// <summary>
 /// Manages searching for a sequence within a MessagePack stream and deserializing its elements asynchronously, producing each element as it is deserialized.
 /// </summary>
