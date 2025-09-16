@@ -56,6 +56,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <inheritdoc cref="SerializerConfiguration.PropertyNamingPolicy"/>
 	internal MessagePackNamingPolicy? PropertyNamingPolicy => configuration.PropertyNamingPolicy;
 
+	/// <inheritdoc cref="SerializerConfiguration.PropertyNameConvention"/>
+	internal NamingConvention? PropertyNameConvention => configuration.PropertyNameConvention;
+
 	/// <inheritdoc cref="SerializerConfiguration.ComparerProvider"/>
 	internal IComparerProvider? ComparerProvider => configuration.ComparerProvider;
 
@@ -206,6 +209,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <returns>The serialized property name to use.</returns>
 	internal string GetSerializedPropertyName(string name, ICustomAttributeProvider? attributeProvider)
 	{
+		// For backward compatibility, fall back to legacy naming policy when only name and attributes are available
 		if (this.PropertyNamingPolicy is null)
 		{
 			return name;
@@ -218,5 +222,27 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		}
 
 		return this.PropertyNamingPolicy.ConvertName(name);
+	}
+
+	internal string GetSerializedPropertyName(IPropertyShape property)
+	{
+		// Use the new naming convention if available, otherwise fall back to the legacy naming policy
+		if (this.PropertyNameConvention is not null)
+		{
+			return this.PropertyNameConvention(property);
+		}
+
+		if (this.PropertyNamingPolicy is null)
+		{
+			return property.Name;
+		}
+
+		// If the property was decorated with [PropertyShape(Name = "...")], do *not* meddle with the property name.
+		if (property.AttributeProvider?.GetCustomAttributes(typeof(PropertyShapeAttribute), false).FirstOrDefault() is PropertyShapeAttribute { Name: not null })
+		{
+			return property.Name;
+		}
+
+		return this.PropertyNamingPolicy.ConvertName(property.Name);
 	}
 }

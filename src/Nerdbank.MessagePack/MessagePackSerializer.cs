@@ -62,6 +62,13 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { PropertyNamingPolicy = value };
 	}
 
+	/// <inheritdoc cref="SerializerConfiguration.PropertyNameConvention"/>
+	public NamingConvention? PropertyNameConvention
+	{
+		get => this.configuration.PropertyNameConvention;
+		init => this.configuration = this.configuration with { PropertyNameConvention = value };
+	}
+
 	/// <inheritdoc cref="SerializerConfiguration.ComparerProvider"/>
 	public IComparerProvider? ComparerProvider
 	{

@@ -24,6 +24,7 @@ internal record SerializerConfiguration
 	private bool serializeEnumValuesByName;
 	private ReferencePreservationMode preserveReferences;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
+	private NamingConvention? propertyNameConvention;
 	private bool internStrings;
 	private bool disableHardwareAcceleration;
 	private SerializeDefaultValuesPolicy serializeDefaultValues = SerializeDefaultValuesPolicy.Required;
@@ -173,6 +174,20 @@ internal record SerializerConfiguration
 	{
 		get => this.propertyNamingPolicy;
 		init => this.ChangeSetting(ref this.propertyNamingPolicy, value);
+	}
+
+	/// <summary>
+	/// Gets the naming convention function to apply to property names before serializing them.
+	/// </summary>
+	/// <value>
+	/// The default value is null, indicating that property names should be persisted exactly as they are declared in .NET.
+	/// This property provides a more extensible alternative to <see cref="PropertyNamingPolicy"/>.
+	/// When both properties are set, <see cref="PropertyNameConvention"/> takes precedence.
+	/// </value>
+	public NamingConvention? PropertyNameConvention
+	{
+		get => this.propertyNameConvention;
+		init => this.ChangeSetting(ref this.propertyNameConvention, value);
 	}
 
 	/// <summary>

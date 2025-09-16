@@ -98,7 +98,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 
 			propertyIndex++;
-			string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
+			string propertyName = this.owner.GetSerializedPropertyName(property);
 
 			IParameterShape? matchingConstructorParameter = null;
 			ctorParametersByName?.TryGetValue(property.Name, out matchingConstructorParameter);
@@ -481,9 +481,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					int i = 0;
 					foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
 					{
-						ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
+						IPropertyShape? correspondingProperty = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name);
 						var prop = (DeserializableProperty<TArgumentState>)p.Value.Accept(this, constructorShape)!;
-						string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
+						string name = correspondingProperty is not null
+							? this.owner.GetSerializedPropertyName(correspondingProperty)
+							: this.owner.GetSerializedPropertyName(p.Value.Name, null);
 						spanDictContent[i++] = new(Encoding.UTF8.GetBytes(name), prop);
 					}
 
