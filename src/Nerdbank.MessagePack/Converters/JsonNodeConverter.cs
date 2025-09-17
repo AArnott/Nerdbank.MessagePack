@@ -96,9 +96,17 @@ internal class JsonNodeConverter : MessagePackConverter<JsonNode>
 				{
 					writer.Write(unsigned);
 				}
+				else if (value.AsValue().TryGetValue<long>(out long signed))
+				{
+					writer.Write(signed);
+				}
+				else if (value.AsValue().TryGetValue<double>(out double floatingPoint))
+				{
+					writer.Write(floatingPoint);
+				}
 				else
 				{
-					writer.Write(value.GetValue<long>());
+					throw new NotSupportedException("Unsupported number.");
 				}
 
 				break;
