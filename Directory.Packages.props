@@ -39,7 +39,7 @@
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" />
     <PackageVersion Include="System.Memory.Data" Version="8.0.1" />
-    <PackageVersion Include="Vogen" Version="8.0.1" />
+    <PackageVersion Include="Vogen" Version="8.0.2" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
