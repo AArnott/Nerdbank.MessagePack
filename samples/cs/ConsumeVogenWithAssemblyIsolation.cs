@@ -14,6 +14,8 @@ partial class VogenConsumer
         byte[] msgpack = serializer.Serialize(customer, Witness.GeneratedTypeShapeProvider);
     }
 
+    // We have to generate the type shapes *here* so that PolyType's source generator
+    // can see the Vogen-generated code from the other project.
     [GenerateShapeFor<Customer>]
     partial class Witness;
 }

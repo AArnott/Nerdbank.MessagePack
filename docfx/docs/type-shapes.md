@@ -46,39 +46,32 @@ Still another option to get your source generated data type to be serializable m
 
 Vogen is a source generator that wraps primitive types in custom structs that can add validation and another level of type safety to your data models.
 
-If you take the approach described above where your Vogen data models are declared in another project, your serialization of these data models might look like this:
+> [!IMPORTANT]
+> Use Vogen 8.0.2 or later, which emits PolyType marshalers so that data types are serialized without extranneous wrappers.
+
+With Vogen, you have the two options described in the above section, to either declare your data models in a separate project or use the reflection type shape provider.
+Here is what those two worlds look like:
+
+### Data models in a separate project
+
+Consider the following data models in an auxiliary project:
+
+[!code-csharp[](../../samples/VogenDataTypes/Customer.cs)]
+
+Your serialization code in a referencing assembly then looks like this:
 
 [!code-csharp[](../../samples/cs/ConsumeVogenWithAssemblyIsolation.cs#Sample)]
 
-While the above approach is simple, the outcome will be less efficient msgpack output, given each of these strongly typed wrappers will serialize as a compound value with only one property instead of just serializing the property value itself.
-For example, if we render the serialized msgpack as JSON, we'll see this:
+### Data models in the same project
 
-```json
-{
-    "Id": {
-        "Value": 123
-    },
-    "Name": "Some Person"
-}
-```
+When your Vogen data models are in the same project, you must use the <xref:PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default?displayProperty=nameWithType>
 
-Obviously that is not ideal.
-We would instead prefer to see this:
-
-```json
-{
-    "Id": 123,
-    "Name": "Some Person"
-}
-```
-
-We can achieve this, and without requiring that the data types be moved to another project, by [using marshalers](./surrogate-types.md).
 First, define the data model like this:
 
-[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#DataTypes)]
+[!code-csharp[](../../samples/cs/ConsumeVogenWithReflectionProvider.cs#DataTypes)]
 
-Note the <xref:PolyType.TypeShapeAttribute.Marshaler?displayProperty=nameWithType> that we apply to the `CustomerId` struct, and the simple marshaler that we define.
+These data models are almost the same as the auxiliary assembly sample, except that `Customer` does not have to be `partial` nor carry the <xref:PolyType.GenerateShapeAttribute>.
 
-We can then serialize the data model and get the desired output schema, using code like this:
+Your serialization code in *the same* assembly then uses <xref:PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default?displayProperty=nameWithType> and looks like this:
 
-[!code-csharp[](../../samples/cs/ConsumeVogenWithMarshalers.cs#SerializeVogen)]
+[!code-csharp[](../../samples/cs/ConsumeVogenWithReflectionProvider.cs#SerializeVogen)]
