@@ -15,6 +15,10 @@ Also features an automatic structural equality API.</PackageDescription>
     <PackageTags>MsgPack MessagePack Serialization Serializer Unity structural-equality secure-hash</PackageTags>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Special dependency version restriction so that this library can be used in VS 2022. -->
+    <PackageVersion Include="System.Memory" Version="4.5.5" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.StringTools" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
