@@ -231,4 +231,75 @@ public class KeyAttributeUseAnalyzerTests
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
+
+	[Fact]
+	public async Task KeyOnReadOnlyCollectionProperty()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			using System.Collections.Generic;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				[Key(0)]
+				public int MyProperty1 { get; set; }
+
+				[Key(1)]
+				public Dictionary<string, string> Parameters { get; } = new Dictionary<string, string>();
+
+				[Key(2)]
+				public List<int> Numbers { get; } = new List<int>();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task KeyOnReadOnlyCollectionPropertyVariousTypes()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			using System.Collections.Generic;
+			using System.Collections.Concurrent;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				[Key(0)]
+				public int MyProperty1 { get; set; }
+
+				// Common mutable collections should be allowed
+				[Key(1)]
+				public Dictionary<string, string> Parameters { get; } = new();
+
+				[Key(2)]
+				public List<int> Numbers { get; } = new();
+
+				[Key(3)]
+				public HashSet<string> Tags { get; } = new();
+
+				[Key(4)]
+				public Queue<int> Items { get; } = new();
+
+				[Key(5)]
+				public ConcurrentDictionary<string, int> Counters { get; } = new();
+
+				// Read-only property with non-collection type should still trigger the warning
+				[{|NBMsgPack002:Key(6)|}]
+				public string ReadOnlyString { get; } = "test";
+
+				// Constructor parameter should be fine
+				[Key(7)]
+				public string CtorParam { get; }
+
+				public MyType(string ctorParam) => CtorParam = ctorParam;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
 }
