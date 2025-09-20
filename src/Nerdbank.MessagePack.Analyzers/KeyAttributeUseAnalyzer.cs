@@ -64,6 +64,64 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 		});
 	}
 
+	/// <summary>
+	/// Determines whether the given type is likely to be a mutable collection that would support IDeserializeInto{T}.
+	/// This is a heuristic to match the behavior of StandardVisitor without having to replicate all its complex logic.
+	/// </summary>
+	/// <param name="type">The type to check.</param>
+	/// <returns>True if the type is likely to support IDeserializeInto{T}; otherwise, false.</returns>
+	private static bool IsLikelyMutableCollectionType(ITypeSymbol type)
+	{
+		if (type is not INamedTypeSymbol namedType)
+		{
+			return false;
+		}
+
+		// Check for well-known mutable collection types in System.Collections.Generic
+		if (AnalyzerUtilities.IsInNamespace(type, ["System", "Collections", "Generic"]))
+		{
+			return namedType.Name switch
+			{
+				"List" when namedType.TypeArguments.Length == 1 => true,
+				"HashSet" when namedType.TypeArguments.Length == 1 => true,
+				"SortedSet" when namedType.TypeArguments.Length == 1 => true,
+				"LinkedList" when namedType.TypeArguments.Length == 1 => true,
+				"Queue" when namedType.TypeArguments.Length == 1 => true,
+				"Stack" when namedType.TypeArguments.Length == 1 => true,
+				"Dictionary" when namedType.TypeArguments.Length == 2 => true,
+				"SortedDictionary" when namedType.TypeArguments.Length == 2 => true,
+				"SortedList" when namedType.TypeArguments.Length == 2 => true,
+				_ => false,
+			};
+		}
+
+		// Check for well-known mutable collection types in System.Collections.Concurrent
+		if (AnalyzerUtilities.IsInNamespace(type, ["System", "Collections", "Concurrent"]))
+		{
+			return namedType.Name switch
+			{
+				"ConcurrentQueue" when namedType.TypeArguments.Length == 1 => true,
+				"ConcurrentStack" when namedType.TypeArguments.Length == 1 => true,
+				"ConcurrentBag" when namedType.TypeArguments.Length == 1 => true,
+				"ConcurrentDictionary" when namedType.TypeArguments.Length == 2 => true,
+				_ => false,
+			};
+		}
+
+		// Check for well-known mutable collection types in System.Collections
+		if (AnalyzerUtilities.IsInNamespace(type, ["System", "Collections"]))
+		{
+			return namedType.Name switch
+			{
+				"ArrayList" => true,
+				"Hashtable" => true,
+				_ => false,
+			};
+		}
+
+		return false;
+	}
+
 	private void SearchForInconsistentKeyUsage(SymbolAnalysisContext context, ReferenceSymbols referenceSymbols)
 	{
 		ITypeSymbol typeSymbol = (ITypeSymbol)context.Symbol;
@@ -152,6 +210,23 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 			IFieldSymbol f => f.IsReadOnly,
 			_ => false,
 		};
+
+		// Read-only properties and fields can still be serialized if they are collection types that support IDeserializeInto<T>
+		if (isReadOnly)
+		{
+			ITypeSymbol? memberType = member switch
+			{
+				IPropertySymbol property => property.Type,
+				IFieldSymbol field => field.Type,
+				_ => null,
+			};
+
+			if (memberType is not null)
+			{
+				isReadOnly = !IsLikelyMutableCollectionType(memberType);
+			}
+		}
+
 		return AnalyzerUtilities.HasPropertyShape(member, referenceSymbols) && !isReadOnly;
 	}
 
