@@ -8,7 +8,7 @@ As its natural successor, this library comes packed with features that its prede
 
 ## Features
 
-* Serializes in the compact and fast [MessagePack format](https://msgpack.org/).
+* Serializes in the compact and fast [MessagePack format](https://msgpack.io/).
 * [Performance](https://aarnott.github.io/Nerdbank.MessagePack/docs/performance.html) is on par with the highly tuned and popular MessagePack-CSharp library.
 * Automatically serialize any type annotated with the [PolyType `[GenerateShape]`](https://eiriktsarpalis.github.io/PolyType/api/PolyType.GenerateShapeAttribute.html) attribute
   or non-annotated types by adding [a 'witness' type](https://aarnott.github.io/Nerdbank.MessagePack/docs/type-shapes.html#witness-classes) with a similar annotation.
