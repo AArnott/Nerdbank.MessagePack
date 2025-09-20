@@ -1,4 +1,4 @@
-﻿# Nerdbank.MessagePack
+# Nerdbank.MessagePack
 
 ***A modern, fast and NativeAOT-compatible MessagePack serialization library***
 
@@ -58,32 +58,3 @@ Only the top-level type that you serialize needs the attribute.
 All types that it references will automatically have their 'shape' source generated as well so the whole object graph can be serialized quickly and safely.
 
 Learn more in our [getting started doc](https://aarnott.github.io/Nerdbank.MessagePack/docs/getting-started.html).
-
-## Why another MessagePack library?
-
-MessagePack-CSharp is a great library, and in fact is chiefly maintained by the same author as *this* library.
-Here are some reasons a new library was created:
-
-* MessagePack-CSharp has a long history and breaking changes are difficult to introduce.
-* MessagePack-CSharp was not "Native AOT" compatible nor trim-friendly (although it has a long history of getting *mostly* there through various tricks).
-* Nerdbank.MessagePack is based on `[GenerateShape]`, so it is *far* simpler than MessagePack-CSharp to author and maintain.
-* Nerdbank.MessagePack has no mutable statics, with the functional unpredictability that can bring.
-* Nerdbank.MessagePack can dynamically create converters with various options that may vary from other uses within the same process, providing more flexibility than MessagePack-CSharp's strict generic type static storage mechanism.
-* Nerdbank.MessagePack is far simpler to use. One attribute at the base of an object graph is typically all you need. MessagePack-CSharp demands attributes on every single type and every single field or property (even members that will not be serialized).
-* Nerdbank.MessagePack makes adding some long-sought for features from MessagePack-CSharp far easier to implement.
-
-See [a feature comparison table](https://aarnott.github.io/Nerdbank.MessagePack/docs/features.html#feature-comparison) that compares the two libraries.
-
-## Consuming CI builds
-
-You can acquire CI build packages (with no assurance of quality) to get early access to the latest changes without waiting for the next release to nuget.org.
-
-There are two feeds you can use to acquire these packages:
-
-- [GitHub Packages](https://github.com/AArnott?tab=packages&repo_name=Nerdbank.MessagePack) (requires GitHub authentication)
-- [Azure Artifacts](https://dev.azure.com/andrewarnott/OSS/_artifacts/feed/PublicCI) (no authentication required)
-
-## Sponsorships
-
-[GitHub Sponsors](https://github.com/sponsors/AArnott)
-[Zcash](zcash:u1vv2ws6xhs72faugmlrasyeq298l05rrj6wfw8hr3r29y3czev5qt4ugp7kylz6suu04363ze92dfg8ftxf3237js0x9p5r82fgy47xkjnw75tqaevhfh0rnua72hurt22v3w3f7h8yt6mxaa0wpeeh9jcm359ww3rl6fj5ylqqv54uuwrs8q4gys9r3cxdm3yslsh3rt6p7wznzhky7)

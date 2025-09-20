@@ -1,21 +1,21 @@
 # Features
 
 * Serializes in the compact and fast [MessagePack format](https://msgpack.io/).
-* [Performance](performance.md) is on par with the highly tuned and popular MessagePack-CSharp library.
-* Automatically serialize any type annotated with the [PolyType `[GenerateShape]`](xref:PolyType.GenerateShapeAttribute) attribute
-  or non-annotated types by adding [a 'witness' type](type-shapes.md#witness-classes) with a similar annotation.
-* Fast `ref`-based serialization and deserialization minimizes copying of large structs.
-* NativeAOT and trimming compatible.
-* Serialize only properties that have non-default values (optionally).
-* Keep memory pressure low by using async serialization directly to/from I/O like a network, IPC pipe or file.
-* [Streaming deserialization](streaming-deserialization.md) for large or over-time sequences.
+* **No attributes required** on your data types. Optional attributes allow customization and improve performance.
+* **Supports the latest C# syntax** including `required` and `init` properties, `record` classes and structs, and primary constructors.
+* This library is [perf-optimized](performance.md) and is **among the fastest** MessagePack serialization libraries available for .NET.
+* Works *great* in your **NativeAOT**, trimmed, **SignalR** or **ASP.NET Core MVC** applications or [**Unity**](unity.md) games.
+* Many [C# analyzers](../analyzers/index.md) to help you avoid common mistakes.
+* [Great security](security.md) for deserializing untrusted data.
+* [Polymorphic deserialization](unions.md) lets you deserialize derived types.
+* True async and [streaming deserialization](streaming-deserialization.md) for large or over-time sequences keeps your apps responsive and memory pressure low.
+* [Preserve reference equality](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) across serialization/deserialization (optional).
+* [Forward compatible data retention](customizing-serialization.md#retaining-unrecognized-data) allows you to deserialize and re-serialize data without dropping properties you didn't know about.
+* [Structural equality checking](structural-equality.md) and hashing *for arbitrary types* gives you deep by-value equality semantics without hand-authoring `Equals` and `GetHashCode` overrides.
+* **No mutable statics** ensures your code runs properly no matter what other code might run in the same process.
+* Only serialize properties with [non-default values](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) (optional).
 * Primitive msgpack reader and writer APIs for low-level scenarios.
 * Author custom converters for advanced scenarios.
-* Security mitigations for stack overflows.
-* Optionally serialize your custom types as arrays of values instead of maps of names and value for more compact representation and even higher performance.
-* Support for serializing instances of certain types derived from the declared type and deserializing them back to their original runtime types using [unions](unions.md).
-* Optionally [preserve reference equality](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) across serialization/deserialization.
-* Structural (i.e. deep, by-value) equality checking for arbitrary types, both with and without collision resistant hash functions.
 
 ## Feature comparison
 
@@ -33,6 +33,7 @@ Duck-typed polymorphic serialization | [✅](unions.md#duck-typing) | ❌ | ❌ 
 F# union type support     | [✅](fsharp.md) | ❌ | ❌ |
 Typeless serialization    | [✅](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) | ❌ |
 `dynamic` serialization    | [✅](getting-started.md#untyped-deserialization) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md) | ❌ |
+Forward compatible data retention | [✅](customizing-serialization.md#retaining-unrecognized-data) | ❌ | ❌ |
 Property name transformations | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy) | ❌ | ❌ |
 Skip serializing default values | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues) | [❌](https://github.com/MessagePack-CSharp/MessagePack-CSharp/issues/678) | 🌗 |
 Required and non-nullable property deserialization guaranteed | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeDefaultValues) | ❌ | ✅ |
