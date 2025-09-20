@@ -288,13 +288,64 @@ public class KeyAttributeUseAnalyzerTests
 				[Key(5)]
 				public ConcurrentDictionary<string, int> Counters { get; } = new();
 
+				// Read-only collection field should also be allowed 
+				[Key(6)]
+				public readonly HashSet<string> ReadOnlyCollectionField = new();
+
 				// Read-only property with non-collection type should still trigger the warning
-				[{|NBMsgPack002:Key(6)|}]
+				[{|NBMsgPack002:Key(7)|}]
 				public string ReadOnlyString { get; } = "test";
 
+				// Read-only field with non-collection type should still trigger the warning  
+				[{|NBMsgPack002:Key(8)|}]
+				public readonly string ReadOnlyStringField = "test";
+
 				// Constructor parameter should be fine
-				[Key(7)]
+				[Key(9)]
 				public string CtorParam { get; }
+
+				public MyType(string ctorParam) => CtorParam = ctorParam;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task KeyOnReadOnlyCollectionFields()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			using System.Collections.Generic;
+			using System.Collections.Concurrent;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				[Key(0)]
+				public int MyProperty1 { get; set; }
+
+				// Read-only collection fields should be allowed (no NBMsgPack002 warnings)
+				[Key(1)]
+				public readonly Dictionary<string, string> Parameters = new();
+
+				[Key(2)]
+				public readonly List<int> Numbers = new();
+
+				[Key(3)]
+				public readonly HashSet<string> Tags = new();
+
+				[Key(4)]
+				public readonly ConcurrentDictionary<string, int> Counters = new();
+
+				// Read-only non-collection field should still trigger the warning
+				[{|NBMsgPack002:Key(5)|}]
+				public readonly string ReadOnlyString = "test";
+
+				// Constructor parameter field should be fine
+				[Key(6)]
+				public readonly string CtorParam;
 
 				public MyType(string ctorParam) => CtorParam = ctorParam;
 			}

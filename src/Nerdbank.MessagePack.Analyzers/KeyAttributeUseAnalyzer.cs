@@ -211,10 +211,20 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 			_ => false,
 		};
 
-		// Read-only properties can still be serialized if they are collection types that support IDeserializeInto<T>
-		if (isReadOnly && member is IPropertySymbol property)
+		// Read-only properties and fields can still be serialized if they are collection types that support IDeserializeInto<T>
+		if (isReadOnly)
 		{
-			isReadOnly = !IsLikelyMutableCollectionType(property.Type);
+			ITypeSymbol? memberType = member switch
+			{
+				IPropertySymbol property => property.Type,
+				IFieldSymbol field => field.Type,
+				_ => null,
+			};
+
+			if (memberType is not null)
+			{
+				isReadOnly = !IsLikelyMutableCollectionType(memberType);
+			}
 		}
 
 		return AnalyzerUtilities.HasPropertyShape(member, referenceSymbols) && !isReadOnly;
