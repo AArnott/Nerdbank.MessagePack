@@ -437,8 +437,6 @@ namespace Nerdbank.MessagePack
 			value = default;
 			return false;
 		}
-
-		internal static Exception ThrowNotSupportedOnNETFramework() => throw new PlatformNotSupportedException("This functionality is only supported on .NET.");
 	}
 #endif
 }

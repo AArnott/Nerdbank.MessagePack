@@ -61,7 +61,7 @@ public class JsonSchemaContext
 			return CreateReference(qualifiedReference);
 		}
 
-		MessagePackConverter converter = this.cache.GetOrAddConverter(typeShape);
+		MessagePackConverter converter = this.cache.GetOrAddConverter(typeShape).ValueOrThrow;
 		if (converter.GetJsonSchema(this, typeShape) is not JsonObject schema)
 		{
 			schema = MessagePackConverter<int>.CreateUndocumentedSchema(converter.GetType());

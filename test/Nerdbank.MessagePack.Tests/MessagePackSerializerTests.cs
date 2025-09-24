@@ -100,9 +100,9 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		{
 			this.AssertRoundtrip(new HasMultiDimensionalArray());
 		}
-		catch (MessagePackSerializationException ex) when (ex.InnerException is PlatformNotSupportedException)
+		catch (MessagePackSerializationException ex) when (ex.GetBaseException() is PlatformNotSupportedException)
 		{
-			throw SkipException.ForSkip($"Skipped: {ex.Message}");
+			throw SkipException.ForSkip($"Skipped: {GetFullMessage(ex)}");
 		}
 	}
 

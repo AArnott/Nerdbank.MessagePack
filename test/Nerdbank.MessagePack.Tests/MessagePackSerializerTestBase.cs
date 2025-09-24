@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -31,6 +32,24 @@ public abstract partial class MessagePackSerializerTestBase
 	protected MessagePackSerializer Serializer { get; set; }
 
 	protected ITestOutputHelper Logger => TestContext.Current.TestOutputHelper ?? throw new InvalidOperationException("No logger available.");
+
+	public static string GetFullMessage(Exception ex)
+	{
+		StringBuilder builder = new();
+		Exception? current = ex;
+		while (current is not null)
+		{
+			if (builder.Length > 0)
+			{
+				builder.Append(' ');
+			}
+
+			builder.Append(current.Message);
+			current = current.InnerException;
+		}
+
+		return builder.ToString();
+	}
 
 #if !NET
 	internal static ITypeShapeProvider GetShapeProvider<TProvider>()
