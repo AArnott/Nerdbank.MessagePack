@@ -137,13 +137,23 @@ public static class OptionalConverters
 	/// <param name="kind">Either <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/>.</param>
 	/// <returns>The modified serializer.</returns>
 	/// <remarks>
+	/// <para>
 	/// By default, serializing a <see cref="DateTime"/> with an <see cref="DateTimeKind.Unspecified"/> kind
 	/// throws an exception because the MessagePack format does not permit that kind of ambiguity.
 	/// While an explicit <see cref="DateTimeKind"/> is always preferred, this method allows you to
 	/// assume a specific <see cref="DateTimeKind"/> for such values.
-	/// Such assumptions will be recorded in the serialized data, such that deserializing the data
-	/// will produce a <see cref="DateTime"/> with the <see cref="DateTimeKind"/> specified
-	/// in <paramref name="kind"/>.
+	/// </para>
+	/// <para>
+	/// Specifying <see cref="DateTimeKind.Utc"/> will cause unspecified values to be treated as UTC and therefore
+	/// serialized without any adjustment.
+	/// Specifying <see cref="DateTimeKind.Local"/> will cause unspecified values to be treated as local time and
+	/// therefore adjusted to UTC time during serialization.
+	/// </para>
+	/// <para>
+	/// The serialized form will always be UTC (per the MessagePack encoding spec),
+	/// and a deserialized <see cref="DateTime"/> will always have the <see cref="DateTimeKind"/>
+	/// set to <see cref="DateTimeKind.Utc" />.
+	/// </para>
 	/// </remarks>
 	/// <exception cref="ArgumentException">Thrown if this method has already been called on the given <paramref name="serializer"/> or a custom <see cref="DateTime"/> converter has already been set.</exception>
 	public static MessagePackSerializer WithAssumedDateTimeKind(this MessagePackSerializer serializer, DateTimeKind kind)
