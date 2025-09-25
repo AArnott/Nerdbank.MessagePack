@@ -7,6 +7,7 @@
     <PackageIcon>icon.png</PackageIcon>
     <PackageTags>MsgPack MessagePack Serialization SignalR HubProtocol</PackageTags>
     <PackageProjectUrl>https://aarnott.github.io/Nerdbank.MessagePack/docs/signalr.html</PackageProjectUrl>
+    <!-- <PackageValidationBaselineVersion>1.0.0</PackageValidationBaselineVersion> -->
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\Nerdbank.MessagePack\icon.png" Pack="true" PackagePath="" />
