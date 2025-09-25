@@ -104,8 +104,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <typeparam name="T">The data type to convert.</typeparam>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal ConverterResult<T> GetOrAddConverter<T>(ITypeShape<T> shape)
-		=> (ConverterResult<T>)(this.lastConverter is MessagePackConverter<T> lastConverter ? lastConverter : (this.lastConverter = this.CachedConverters.GetOrAdd(shape)!));
+	internal ConverterResult GetOrAddConverter<T>(ITypeShape<T> shape)
+		=> (ConverterResult)(this.lastConverter is MessagePackConverter<T> lastConverter ? lastConverter : (this.lastConverter = this.CachedConverters.GetOrAdd(shape)!));
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -114,8 +114,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// </summary>
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IConverterResult GetOrAddConverter(ITypeShape shape)
-		=> (IConverterResult)this.CachedConverters.GetOrAdd(shape)!;
+	internal ConverterResult GetOrAddConverter(ITypeShape shape)
+		=> (ConverterResult)this.CachedConverters.GetOrAdd(shape)!;
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -125,8 +125,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <typeparam name="T">The type to convert.</typeparam>
 	/// <param name="provider">The type shape provider.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal ConverterResult<T> GetOrAddConverter<T>(ITypeShapeProvider provider)
-		=> (ConverterResult<T>)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
+	internal ConverterResult GetOrAddConverter<T>(ITypeShapeProvider provider)
+		=> (ConverterResult)this.CachedConverters.GetOrAddOrThrow(typeof(T), provider);
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -136,8 +136,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <param name="type">The type to convert.</param>
 	/// <param name="provider">The type shape provider.</param>
 	/// <returns>A msgpack converter.</returns>
-	internal IConverterResult GetOrAddConverter(Type type, ITypeShapeProvider provider)
-		=> (IConverterResult)this.CachedConverters.GetOrAddOrThrow(type, provider);
+	internal ConverterResult GetOrAddConverter(Type type, ITypeShapeProvider provider)
+		=> (ConverterResult)this.CachedConverters.GetOrAddOrThrow(type, provider);
 
 	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available from

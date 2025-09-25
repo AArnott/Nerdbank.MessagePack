@@ -168,8 +168,8 @@ public record struct SerializationContext
 		where T : IShapeable<T>
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(T.GetTypeShape()).ValueOrThrow;
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		MessagePackConverter result = this.Cache.GetOrAddConverter(T.GetTypeShape()).ValueOrThrow;
+		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
 	}
 
 	/// <summary>
@@ -186,8 +186,8 @@ public record struct SerializationContext
 		where TProvider : IShapeable<T>
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(TProvider.GetTypeShape()).ValueOrThrow;
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		MessagePackConverter result = this.Cache.GetOrAddConverter(TProvider.GetTypeShape()).ValueOrThrow;
+		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
 	}
 #endif
 
@@ -209,8 +209,8 @@ public record struct SerializationContext
 	public MessagePackConverter<T> GetConverter<T>(ITypeShapeProvider? provider)
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
-		return this.ReferenceEqualityTracker is null ? result : result.WrapWithReferencePreservation();
+		MessagePackConverter result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
+		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
 	}
 
 	/// <summary>
@@ -244,8 +244,8 @@ public record struct SerializationContext
 	{
 		Requires.NotNull(shape);
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter<T> result = this.Cache.GetOrAddConverter(shape).ValueOrThrow;
-		return this.ReferenceEqualityTracker is null ? result : (MessagePackConverter<T>)((IMessagePackConverterInternal)result).WrapWithReferencePreservation();
+		MessagePackConverter result = this.Cache.GetOrAddConverter(shape).ValueOrThrow;
+		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
 	}
 
 	/// <summary>

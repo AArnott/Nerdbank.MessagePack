@@ -50,14 +50,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
 	{
 		object? result = typeShape.Accept(this.OutwardVisitor, state);
-		Debug.Assert(result is null or IConverterResult, $"We should not be returning raw converters, but we got one from {typeShape}.");
+		Debug.Assert(result is null or ConverterResult, $"We should not be returning raw converters, but we got one from {typeShape}.");
 		return result;
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (this.TryGetCustomOrPrimitiveConverter(objectShape, objectShape.AttributeProvider, out ConverterResult<T>? customConverter))
+		if (this.TryGetCustomOrPrimitiveConverter(objectShape, objectShape.AttributeProvider, out ConverterResult? customConverter))
 		{
 			return customConverter;
 		}
@@ -142,8 +142,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					}
 
 					break;
-				case IConverterResult failure:
-					if (failure.TryPrepareFailPath<T>(property, out ConverterResult<T>? failureResult))
+				case ConverterResult failure:
+					if (failure.TryPrepareFailPath(property, out ConverterResult? failureResult))
 					{
 						return failureResult;
 					}
@@ -152,7 +152,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 		}
 
-		ConverterResult<T> converter;
+		ConverterResult converter;
 		if (propertyAccessors is not null)
 		{
 			if (serializable is { Count: > 0 })
@@ -199,7 +199,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			ArrayConstructorVisitorInputs<T> inputs = new(propertyAccessors, unusedDataPropertyAccess);
 			converter = ctorShape is not null
-				? (ConverterResult<T>)ctorShape.Accept(this, inputs)!
+				? (ConverterResult)ctorShape.Accept(this, inputs)!
 				: ConverterResult.Ok(new ObjectArrayConverter<T>(inputs.GetJustAccessors(), unusedDataPropertyAccess, null, objectShape.Properties, this.owner.SerializeDefaultValues));
 		}
 		else
@@ -214,7 +214,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (ctorShape is not null)
 			{
 				MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, ctorParametersByName!, unusedDataPropertyAccess);
-				converter = (ConverterResult<T>)ctorShape.Accept(this, inputs)!;
+				converter = (ConverterResult)ctorShape.Accept(this, inputs)!;
 			}
 			else
 			{
@@ -237,9 +237,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			{
 				converter = union switch
 				{
-					IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, converter.Value, mapping).MapResult(st => new UnionConverter<T>(converter.Value, st)),
-					DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, converter.Value),
-					_ => ConverterResult.Err<T>(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
+					IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping).MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st)),
+					DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, (MessagePackConverter<T>)converter.Value),
+					_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
 				};
 			}
 		}
@@ -250,8 +250,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
 	{
-		ConverterResult<TUnion> baseTypeConverter = (ConverterResult<TUnion>)unionShape.BaseType.Accept(this)!;
-		if (baseTypeConverter.TryPrepareFailPath("union base type", out ConverterResult<TUnion>? failureResult))
+		ConverterResult baseTypeConverter = (ConverterResult)unionShape.BaseType.Accept(this)!;
+		if (baseTypeConverter.TryPrepareFailPath("union base type", out ConverterResult? failureResult))
 		{
 			return failureResult;
 		}
@@ -271,9 +271,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return union switch
 			{
 				{ Disabled: true } => baseTypeConverter,
-				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, baseTypeConverter.Value, mapping).Map(st => new UnionConverter<TUnion>(baseTypeConverter.Value, st)),
-				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter(duckTyping, baseTypeConverter.Value),
-				_ => ConverterResult.Err<TUnion>(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
+				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, (MessagePackConverter<TUnion>)baseTypeConverter.Value, mapping).Map(st => new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, st)),
+				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter(duckTyping, (MessagePackConverter<TUnion>)baseTypeConverter.Value),
+				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
 			};
 		}
 
@@ -284,7 +284,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
 			DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
-			ConverterResult<TUnion> caseConverter = (ConverterResult<TUnion>)unionCase.Accept(this, null)!;
+			ConverterResult caseConverter = (ConverterResult)unionCase.Accept(this, null)!;
 			if (caseConverter.TryPrepareFailPath(unionCase, out failureResult))
 			{
 				return failureResult;
@@ -305,20 +305,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			TryGetSerializer = (ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (serializers[idx].Alias, serializers[idx].Converter) : null,
 		};
 
-		return ConverterResult.Ok(new UnionConverter<TUnion>(baseTypeConverter.Value, subTypes));
+		return ConverterResult.Ok(new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, subTypes));
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
 		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseConverter = (ConverterResult<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
-		if (caseConverter.TryPrepareFailPath(unionCaseShape, out ConverterResult<TUnionCase>? failureResult))
+		var caseConverter = (ConverterResult)unionCaseShape.UnionCaseType.Accept(this)!;
+		if (caseConverter.TryPrepareFailPath(unionCaseShape, out ConverterResult? failureResult))
 		{
 			return failureResult;
 		}
 
-		return ConverterResult.Ok(new UnionCaseConverter<TUnionCase, TUnion>(caseConverter.Value, unionCaseShape.Marshaler));
+		return ConverterResult.Ok(new UnionCaseConverter<TUnionCase, TUnion>((MessagePackConverter<TUnionCase>)caseConverter.Value, unionCaseShape.Marshaler));
 	}
 
 	/// <inheritdoc/>
@@ -326,7 +326,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
-		ConverterResult<TPropertyType> converter = this.GetConverterForMemberOrParameter(propertyShape.PropertyType, propertyShape.AttributeProvider);
+		ConverterResult converter = this.GetConverterForMemberOrParameter(propertyShape.PropertyType, propertyShape.AttributeProvider);
 
 		static string CreateReadFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to deserialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
 		static string CreateWriteFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
@@ -375,7 +375,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				TPropertyType? value = getter(ref Unsafe.AsRef(in container));
 				try
 				{
-					converter.ValueOrThrow.Write(ref writer, value, context);
+					((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, value, context);
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 				{
@@ -386,7 +386,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			{
 				try
 				{
-					await converter.ValueOrThrow.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
+					await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 				{
@@ -405,7 +405,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			{
 				try
 				{
-					setter(ref container, converter.ValueOrThrow.Read(ref reader, context)!);
+					setter(ref container, ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Read(ref reader, context)!);
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 				{
@@ -416,7 +416,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			{
 				try
 				{
-					setter(ref container, (await converter.ValueOrThrow.ReadAsync(reader, context).ConfigureAwait(false))!);
+					setter(ref container, (await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).ReadAsync(reader, context).ConfigureAwait(false))!);
 					return container;
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
@@ -501,7 +501,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				{
 					if (constructorShape.Parameters.Count == 0)
 					{
-						return ConverterResult<TDeclaringType>.Ok(new ObjectMapConverter<TDeclaringType>(
+						return ConverterResult.Ok(new ObjectMapConverter<TDeclaringType>(
 							inputs.Serializers,
 							inputs.Deserializers,
 							inputs.UnusedDataProperty,
@@ -518,7 +518,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					{
 						ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
 						object parameterResult = p.Value.Accept(this, constructorShape)!;
-						if (parameterResult is IConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult<TDeclaringType>? failureResult))
+						if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
 						{
 							return failureResult;
 						}
@@ -573,7 +573,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						}
 
 						object parameterResult = parameter.Accept(this, constructorShape)!;
-						if (parameterResult is IConverterResult converterResult && converterResult.TryPrepareFailPath(parameter, out ConverterResult<TDeclaringType>? failureResult))
+						if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(parameter, out ConverterResult? failureResult))
 						{
 							return failureResult;
 						}
@@ -602,7 +602,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	{
 		IConstructorShape constructorShape = (IConstructorShape)(state ?? throw new ArgumentNullException(nameof(state)));
 
-		ConverterResult<TParameterType> converter = this.GetConverterForMemberOrParameter(parameterShape.ParameterType, parameterShape.AttributeProvider);
+		ConverterResult converter = this.GetConverterForMemberOrParameter(parameterShape.ParameterType, parameterShape.AttributeProvider);
 		if (!converter.Success)
 		{
 			return converter;
@@ -626,7 +626,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				try
 				{
 					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, converter.Value.Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+					setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 				{
@@ -638,7 +638,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				try
 				{
 					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, (await converter.Value.ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+					setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
 					return state;
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
@@ -654,7 +654,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				try
 				{
 					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, converter.Value.Read(ref reader, context)!);
+					setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context)!);
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 				{
@@ -666,7 +666,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				try
 				{
 					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, (await converter.Value.ReadAsync(reader, context).ConfigureAwait(false))!);
+					setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false))!);
 					return state;
 				}
 				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
@@ -681,26 +681,26 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			StringEncoding.UTF8.GetBytes(parameterShape.Name),
 			read,
 			readAsync,
-			converter.Value,
+			(MessagePackConverter<TParameterType>)converter.Value,
 			parameterShape.Position);
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
 	{
-		ConverterResult<TElement> converter = this.GetConverter(optionalShape.ElementType);
-		if (converter.TryPrepareFailPath(optionalShape, out ConverterResult<TElement>? failure))
+		ConverterResult converter = this.GetConverter(optionalShape.ElementType);
+		if (converter.TryPrepareFailPath(optionalShape, out ConverterResult? failure))
 		{
 			return failure;
 		}
 
-		return ConverterResult.Ok(new OptionalConverter<TOptional, TElement>(converter.Value, optionalShape.GetDeconstructor(), optionalShape.GetNoneConstructor(), optionalShape.GetSomeConstructor()));
+		return ConverterResult.Ok(new OptionalConverter<TOptional, TElement>((MessagePackConverter<TElement>)converter.Value, optionalShape.GetDeconstructor(), optionalShape.GetNoneConstructor(), optionalShape.GetSomeConstructor()));
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
 	{
-		if (this.TryGetCustomOrPrimitiveConverter(dictionaryShape, dictionaryShape.AttributeProvider, out ConverterResult<TDictionary>? customConverter))
+		if (this.TryGetCustomOrPrimitiveConverter(dictionaryShape, dictionaryShape.AttributeProvider, out ConverterResult? customConverter))
 		{
 			return customConverter;
 		}
@@ -708,26 +708,29 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
 
 		// Serialization functions.
-		ConverterResult<TKey> keyConverter = this.GetConverter(dictionaryShape.KeyType);
-		ConverterResult<TValue> valueConverter = this.GetConverter(dictionaryShape.ValueType);
+		ConverterResult keyConverterResult = this.GetConverter(dictionaryShape.KeyType);
+		ConverterResult valueConverterResult = this.GetConverter(dictionaryShape.ValueType);
 		Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
 
-		if (keyConverter.TryPrepareFailPath("key", out ConverterResult<TDictionary>? keyFailure))
+		if (keyConverterResult.TryPrepareFailPath("key", out ConverterResult? keyFailure))
 		{
 			return keyFailure;
 		}
 
-		if (valueConverter.TryPrepareFailPath("value", out ConverterResult<TDictionary>? valueFailure))
+		if (valueConverterResult.TryPrepareFailPath("value", out ConverterResult? valueFailure))
 		{
 			return valueFailure;
 		}
 
+		var keyConverter = (MessagePackConverter<TKey>)keyConverterResult.Value;
+		var valueConverter = (MessagePackConverter<TValue>)valueConverterResult.Value;
+
 		// Deserialization functions.
 		return ConverterResult.Ok(dictionaryShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter.Value, valueConverter.Value),
-			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter.Value, valueConverter.Value, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
-			CollectionConstructionStrategy.Parameterized => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter.Value, valueConverter.Value, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
+			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter),
+			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
+			CollectionConstructionStrategy.Parameterized => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
 			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
 		});
 	}
@@ -735,7 +738,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
 	{
-		if (this.TryGetCustomOrPrimitiveConverter(enumerableShape, enumerableShape.AttributeProvider, out ConverterResult<TEnumerable>? customConverter))
+		if (this.TryGetCustomOrPrimitiveConverter(enumerableShape, enumerableShape.AttributeProvider, out ConverterResult? customConverter))
 		{
 			return customConverter;
 		}
@@ -743,11 +746,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
 
 		// Serialization functions.
-		ConverterResult<TElement> elementConverter = this.GetConverter(enumerableShape.ElementType);
-		if (elementConverter.TryPrepareFailPath("element", out ConverterResult<TEnumerable>? elementFailure))
+		ConverterResult elementConverterResult = this.GetConverter(enumerableShape.ElementType);
+		if (elementConverterResult.TryPrepareFailPath("element", out ConverterResult? elementFailure))
 		{
 			return elementFailure;
 		}
+
+		var elementConverter = (MessagePackConverter<TElement>)elementConverterResult.Value;
 
 		if (enumerableShape.Type.IsArray)
 		{
@@ -755,14 +760,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (enumerableShape.Rank > 1)
 			{
 #if NET
-				return ConverterResult.Ok<TEnumerable>(this.owner.MultiDimensionalArrayFormat switch
+				return ConverterResult.Ok(this.owner.MultiDimensionalArrayFormat switch
 				{
-					MultiDimensionalArrayFormat.Nested => new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter.Value, enumerableShape.Rank),
-					MultiDimensionalArrayFormat.Flat => new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter.Value),
+					MultiDimensionalArrayFormat.Nested => new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank),
+					MultiDimensionalArrayFormat.Flat => new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter),
 					_ => throw new NotSupportedException(),
 				});
 #else
-				return ConverterResult.Err<TEnumerable>(new PlatformNotSupportedException("This functionality is only supported on .NET."));
+				return ConverterResult.Err(new PlatformNotSupportedException("This functionality is only supported on .NET."));
 #endif
 			}
 #if NET
@@ -780,20 +785,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 			else
 			{
-				return ConverterResult.Ok(new ArrayConverter<TElement>(elementConverter.Value));
+				return ConverterResult.Ok(new ArrayConverter<TElement>(elementConverter));
 			}
 		}
 
 		Func<TEnumerable, IEnumerable<TElement>>? getEnumerable = enumerableShape.IsAsyncEnumerable ? null : enumerableShape.GetGetEnumerable();
 		return ConverterResult.Ok(enumerableShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter.Value),
-			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter.Value, enumerableShape.GetAppender(), enumerableShape.GetDefaultConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
+			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
+			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAppender(), enumerableShape.GetDefaultConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
 #if NET
 			CollectionConstructionStrategy.Parameterized when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
 #endif
 			CollectionConstructionStrategy.Parameterized when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetParameterizedConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
-			CollectionConstructionStrategy.Parameterized => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter.Value, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
+			CollectionConstructionStrategy.Parameterized => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
 			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
 		});
 	}
@@ -801,37 +806,37 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
 	{
-		if (this.TryGetCustomOrPrimitiveConverter(enumShape, enumShape.AttributeProvider, out ConverterResult<TEnum>? customConverter))
+		if (this.TryGetCustomOrPrimitiveConverter(enumShape, enumShape.AttributeProvider, out ConverterResult? customConverter))
 		{
 			return customConverter;
 		}
 
-		ConverterResult<TUnderlying> underlyingConverter = this.GetConverter(enumShape.UnderlyingType);
-		if (underlyingConverter.TryPrepareFailPath(enumShape, out ConverterResult<TEnum>? failure))
+		ConverterResult underlyingConverter = this.GetConverter(enumShape.UnderlyingType);
+		if (underlyingConverter.TryPrepareFailPath(enumShape, out ConverterResult? failure))
 		{
 			return failure;
 		}
 
-		return ConverterResult.Ok<TEnum>(this.owner.SerializeEnumValuesByName
-			? new EnumAsStringConverter<TEnum, TUnderlying>(underlyingConverter.Value, enumShape.Members)
-			: new EnumAsOrdinalConverter<TEnum, TUnderlying>(underlyingConverter.Value));
+		return ConverterResult.Ok(this.owner.SerializeEnumValuesByName
+			? new EnumAsStringConverter<TEnum, TUnderlying>((MessagePackConverter<TUnderlying>)underlyingConverter.Value, enumShape.Members)
+			: new EnumAsOrdinalConverter<TEnum, TUnderlying>((MessagePackConverter<TUnderlying>)underlyingConverter.Value));
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
 	{
-		ConverterResult<TSurrogate> surrogateConverter = this.GetConverter(surrogateShape.SurrogateType, state: state);
-		if (surrogateConverter.TryPrepareFailPath(surrogateShape, out ConverterResult<T>? failure))
+		ConverterResult surrogateConverter = this.GetConverter(surrogateShape.SurrogateType, state: state);
+		if (surrogateConverter.TryPrepareFailPath(surrogateShape, out ConverterResult? failure))
 		{
 			return failure;
 		}
 
-		return ConverterResult.Ok(new SurrogateConverter<T, TSurrogate>(surrogateShape, surrogateConverter.Value));
+		return ConverterResult.Ok(new SurrogateConverter<T, TSurrogate>(surrogateShape, (MessagePackConverter<TSurrogate>)surrogateConverter.Value));
 	}
 
 	/// <inheritdoc/>
 	public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
-		=> ConverterResult.Err<TFunction>("Delegate types cannot be serialized.");
+		=> ConverterResult.Err("Delegate types cannot be serialized.");
 
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
@@ -851,7 +856,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// if it were to appear in <paramref name="memberAttributes"/>.
 	/// Callers that want to respect that attribute must call <see cref="TryGetConverterFromAttribute"/> first.
 	/// </remarks>
-	protected ConverterResult<T> GetConverter<T>(ITypeShape<T> shape, ICustomAttributeProvider? memberAttributes = null, object? state = null)
+	protected ConverterResult GetConverter<T>(ITypeShape<T> shape, ICustomAttributeProvider? memberAttributes = null, object? state = null)
 	{
 		if (memberAttributes is not null)
 		{
@@ -871,11 +876,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				// PERF: Ideally, we can store and retrieve member influenced converters
 				// just like we do for non-member influenced ones.
 				// We'd probably use a separate dictionary dedicated to member-influenced converters.
-				return (ConverterResult<T>)shape.Invoke(this, memberInfluence)!;
+				return (ConverterResult)shape.Invoke(this, memberInfluence)!;
 			}
 		}
 
-		return (ConverterResult<T>)this.context.GetOrAdd(shape, state)!;
+		return (ConverterResult)this.context.GetOrAdd(shape, state)!;
 	}
 
 	/// <summary>
@@ -884,10 +889,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="shape">The type shape.</param>
 	/// <param name="state">An optional state object to pass to the converter.</param>
 	/// <returns>The converter.</returns>
-	protected IConverterResult GetConverter(ITypeShape shape, object? state = null)
+	protected ConverterResult GetConverter(ITypeShape shape, object? state = null)
 	{
 		ITypeShapeFunc self = this;
-		return (IConverterResult)shape.Invoke(this, state)!;
+		return (ConverterResult)shape.Invoke(this, state)!;
 	}
 
 	private static void ThrowIfAlreadyAssigned<TArgumentState>(in TArgumentState argumentState, int position, string name)
@@ -931,8 +936,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 			else
 			{
-				IConverterResult subtypeConverter = this.GetConverter(shape);
-				if (subtypeConverter.TryPrepareFailPath(pair.Value, out ConverterResult<TBaseType>? failureResult))
+				ConverterResult subtypeConverter = this.GetConverter(shape);
+				if (subtypeConverter.TryPrepareFailPath(pair.Value, out ConverterResult? failureResult))
 				{
 					return failureResult.Error!;
 				}
@@ -990,7 +995,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="duckTyping">Information about the base type and derived types that distinguish objects between each type.</param>
 	/// <param name="baseTypeConverter">The converter to use when serializing the base type itself.</param>
 	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
-	private ConverterResult<TBase> CreateDuckTypingUnionConverter<TBase>(DerivedTypeDuckTyping duckTyping, MessagePackConverter<TBase> baseTypeConverter)
+	private ConverterResult CreateDuckTypingUnionConverter<TBase>(DerivedTypeDuckTyping duckTyping, MessagePackConverter<TBase> baseTypeConverter)
 	{
 		// Create converters for each member type
 		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length);
@@ -1001,8 +1006,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				throw new ArgumentException($"Type '{shape.Type}' is not assignable to base type '{typeof(TBase)}'.", nameof(duckTyping));
 			}
 
-			IConverterResult converter = this.GetConverter(shape);
-			if (converter.TryPrepareFailPath(shape, out ConverterResult<TBase>? failureResult))
+			ConverterResult converter = this.GetConverter(shape);
+			if (converter.TryPrepareFailPath(shape, out ConverterResult? failureResult))
 			{
 				return failureResult;
 			}
@@ -1021,7 +1026,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="attributeProvider"><inheritdoc cref="TryGetConverterFromAttribute{T}" path="/param[@name='attributeProvider']"/></param>
 	/// <param name="converter">Receives the converter if one is found.</param>
 	/// <returns>A value indicating whether a match was found.</returns>
-	private bool TryGetCustomOrPrimitiveConverter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult<T>? converter)
+	private bool TryGetCustomOrPrimitiveConverter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
 	{
 		// Check if the type has a custom converter.
 		if (this.owner.TryGetRuntimeProfferedConverter(typeShape, out MessagePackConverter<T>? proferredConverter))
@@ -1046,17 +1051,17 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return this.TryGetConverterFromAttribute(typeShape, attributeProvider, out converter);
 	}
 
-	private ConverterResult<T> GetConverterForMemberOrParameter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider)
+	private ConverterResult GetConverterForMemberOrParameter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider)
 	{
 		try
 		{
-			return this.TryGetConverterFromAttribute(typeShape, attributeProvider, out ConverterResult<T>? converter)
+			return this.TryGetConverterFromAttribute(typeShape, attributeProvider, out ConverterResult? converter)
 				? converter
 				: this.GetConverter(typeShape, attributeProvider);
 		}
 		catch (Exception ex)
 		{
-			return ConverterResult<T>.Err(ex);
+			return ConverterResult.Err(ex);
 		}
 	}
 
@@ -1072,7 +1077,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="converter">Receives the converter, if applicable.</param>
 	/// <returns>A value indicating whether a converter was found.</returns>
 	/// <exception cref="MessagePackSerializationException">Thrown if the prescribed converter has no default constructor.</exception>
-	private bool TryGetConverterFromAttribute<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult<T>? converter)
+	private bool TryGetConverterFromAttribute<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
 	{
 		if (attributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is not { } customConverterAttribute)
 		{

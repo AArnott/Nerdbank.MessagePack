@@ -13,14 +13,14 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 {
 	/// <inheritdoc/>
 	public DelayedValue Create<T>(ITypeShape<T> typeShape)
-		=> new DelayedValue<ConverterResult<T>>(self => ConverterResult.Ok(new DelayedConverter<T>(self)));
+		=> new DelayedValue<ConverterResult>(self => ConverterResult.Ok(new DelayedConverter<T>(self)));
 
 	/// <summary>
 	/// A converter that defers to another converter that is not yet available.
 	/// </summary>
 	/// <typeparam name="T">The convertible data type.</typeparam>
 	/// <param name="self">A box containing the not-yet-done converter.</param>
-	internal class DelayedConverter<T>(DelayedValue<ConverterResult<T>> self) : MessagePackConverter<T>
+	internal class DelayedConverter<T>(DelayedValue<ConverterResult> self) : MessagePackConverter<T>
 	{
 		/// <inheritdoc/>
 		public override bool PreferAsyncSerialization => self.Result.ValueOrThrow.PreferAsyncSerialization;
@@ -31,19 +31,19 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 
 		/// <inheritdoc/>
 		public override T? Read(ref MessagePackReader reader, SerializationContext context)
-			=> self.Result.ValueOrThrow.Read(ref reader, context);
+			=> ((MessagePackConverter<T>)self.Result.ValueOrThrow).Read(ref reader, context);
 
 		/// <inheritdoc/>
 		public override ValueTask<T?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
-			=> self.Result.ValueOrThrow.ReadAsync(reader, context);
+			=> ((MessagePackConverter<T>)self.Result.ValueOrThrow).ReadAsync(reader, context);
 
 		/// <inheritdoc/>
 		public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
-			=> self.Result.ValueOrThrow.Write(ref writer, value, context);
+			=> ((MessagePackConverter<T>)self.Result.ValueOrThrow).Write(ref writer, value, context);
 
 		/// <inheritdoc/>
 		public override ValueTask WriteAsync(MessagePackAsyncWriter writer, T? value, SerializationContext context)
-			=> self.Result.ValueOrThrow.WriteAsync(writer, value, context);
+			=> ((MessagePackConverter<T>)self.Result.ValueOrThrow).WriteAsync(writer, value, context);
 
 		/// <inheritdoc/>
 		public override ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context)
