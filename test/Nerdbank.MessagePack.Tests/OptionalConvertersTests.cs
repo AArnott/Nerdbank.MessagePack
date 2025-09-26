@@ -35,4 +35,14 @@ public class OptionalConvertersTests : MessagePackSerializerTestBase
 			   .WithAssumedDateTimeKind(DateTimeKind.Utc));
 		this.Logger.WriteLine(ex.Message);
 	}
+
+	[Fact]
+	public void WithHiFiDateTime_Twice()
+	{
+		ArgumentException ex = Assert.Throws<ArgumentException>(
+			   () => this.Serializer
+			   .WithHiFiDateTime()
+			   .WithHiFiDateTime());
+		this.Logger.WriteLine(ex.Message);
+	}
 }

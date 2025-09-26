@@ -160,12 +160,52 @@ public static class OptionalConverters
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		Requires.Argument(kind is DateTimeKind.Utc or DateTimeKind.Local, nameof(kind), "Only UTC and Local DateTimeKind values are supported.");
-		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter<DateTime>(ReferencePreservationMode.Off, out MessagePackConverter<DateTime>? builtin));
+		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter(ReferencePreservationMode.Off, out MessagePackConverter<DateTime>? builtin));
 		return serializer with
 		{
 			Converters = [
 				..serializer.Converters.Except([builtin]),
 				new DateTimeConverter { UnspecifiedKindAssumption = kind },
+			],
+		};
+	}
+
+	/// <summary>
+	/// Replaces the built-in <see cref="DateTime" /> converter that uses msgpack standard timestamp encoding
+	/// with a proprietary converter that preserves <see cref="DateTime.Kind"/> for <see cref="DateTime"/> values.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The msgpack encoding standard mandates that all timestamps are encoded as UTC.
+	/// This means all deserialized <see cref="DateTime"/> values have their <see cref="DateTime.Kind"/> set to <see cref="DateTimeKind.Utc"/>,
+	/// and forces serialization to throw if <see cref="DateTimeKind.Unspecified"/> is encountered
+	/// (unless <see cref="WithAssumedDateTimeKind(MessagePackSerializer, DateTimeKind)"/> is used).
+	/// </para>
+	/// <para>
+	/// With this method, <see cref="DateTime" /> values are serialized such that their <see cref="DateTime.Kind"/>
+	/// is preserved.
+	/// When the <see cref="DateTime.Kind"/> is <see cref="DateTimeKind.Utc"/>, the value is stored as a msgpack timestamp.
+	/// For other kinds, a msgpack array of two elements is used: <c>[ticks, kind]</c>.
+	/// </para>
+	/// <para>
+	/// Note that serializing anything other than <see cref="DateTimeKind.Utc"/> values is <em>not</em> recommended
+	/// both because it is not interoperable with other msgpack implementations and (more importantly)
+	/// because the party that deserializes the value may not be in the same time zone (even if the user and machine is the same)
+	/// and thus could end up with a different time interpretation than the one that was serialized.
+	/// </para>
+	/// </remarks>
+	/// <param name="serializer">The existing MessagePackSerializer to configure. Cannot be null.</param>
+	/// <returns>A new MessagePackSerializer instance with high-fidelity DateTime support enabled.</returns>
+	/// <seealso cref="WithAssumedDateTimeKind(MessagePackSerializer, DateTimeKind)"/>
+	public static MessagePackSerializer WithHiFiDateTime(this MessagePackSerializer serializer)
+	{
+		Requires.NotNull(serializer, nameof(serializer));
+		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter(ReferencePreservationMode.Off, out MessagePackConverter<DateTime>? builtin));
+		return serializer with
+		{
+			Converters = [
+				..serializer.Converters.Except([builtin]),
+				new HiFiDateTimeConverter(),
 			],
 		};
 	}
