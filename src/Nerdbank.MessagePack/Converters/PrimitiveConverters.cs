@@ -796,6 +796,68 @@ internal class DateTimeConverter : MessagePackConverter<DateTime>
 }
 
 /// <summary>
+/// Serializes <see cref="DateTime"/> values, including their <see cref="DateTime.Kind"/> property.
+/// </summary>
+/// <remarks>
+/// This uses a custom schema that may not be interoperable with other MessagePack implementations.
+/// </remarks>
+internal class HiFiDateTimeConverter : MessagePackConverter<DateTime>
+{
+	/// <inheritdoc/>
+	public override DateTime Read(ref MessagePackReader reader, SerializationContext context)
+	{
+		if (reader.NextMessagePackType == MessagePackType.Array)
+		{
+			int len = reader.ReadArrayHeader();
+			if (len != 2)
+			{
+				throw new MessagePackSerializationException($"Reading hi-fi DateTime value expected array length 2 but was {len}.");
+			}
+
+			long ticks = reader.ReadInt64();
+			DateTimeKind kind = (DateTimeKind)reader.ReadByte();
+			return new DateTime(ticks, kind);
+		}
+		else
+		{
+			// We can read this in the standard MessagePack DateTime format.
+			return reader.ReadDateTime();
+		}
+	}
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in DateTime value, SerializationContext context)
+	{
+		if (value.Kind == DateTimeKind.Utc)
+		{
+			// We can write this in the standard MessagePack DateTime format.
+			writer.Write(value);
+			return;
+		}
+
+		// We write this as an array of [ticks, kind]
+		writer.WriteArrayHeader(2);
+		writer.Write(value.Ticks);
+		writer.Write((byte)value.Kind);
+	}
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["oneOf"] = new JsonArray(
+				CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
+				new JsonObject
+				{
+					["type"] = "array",
+					["items"] = new JsonArray(
+						new JsonObject { ["type"] = "integer", ["minimum"] = DateTime.MinValue.Ticks, ["maximum"] = DateTime.MaxValue.Ticks },
+						new JsonObject { ["type"] = "integer", ["minimum"] = 0, ["maximum"] = 2 }),
+				}),
+		};
+}
+
+/// <summary>
 /// Serializes <see cref="DateTimeOffset"/> values.
 /// </summary>
 internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>

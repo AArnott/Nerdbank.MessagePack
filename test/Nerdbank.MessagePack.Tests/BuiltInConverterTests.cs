@@ -315,6 +315,37 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(DateTimeKind.Utc, deserialized?.Value.Kind);
 	}
 
+	[Theory, PairwiseData]
+	public void DateTime_HiFi(DateTimeKind kind)
+	{
+		this.Serializer = this.Serializer.WithHiFiDateTime();
+		DateTime original = new(2000, 1, 1, 2, 3, 4, 567, kind);
+		HasDateTime? deserialized = this.Roundtrip(new HasDateTime(original));
+
+		// Deserialized value should have retained the Kind.
+		Assert.Equal(original.Kind, deserialized?.Value.Kind);
+
+		// And in all other ways, be equal.
+		Assert.Equal(original, deserialized?.Value);
+
+		// Verify the actual encoding for each case.
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		reader.ReadMapHeader();
+		reader.ReadString(); // skip property name
+		if (kind == DateTimeKind.Utc)
+		{
+			// Standard encoding.
+			Assert.Equal(original, reader.ReadDateTime());
+		}
+		else
+		{
+			// HiFi encoding.
+			Assert.Equal(2, reader.ReadArrayHeader());
+			Assert.Equal(original.Ticks, reader.ReadInt64());
+			Assert.Equal((int)original.Kind, reader.ReadInt32());
+		}
+	}
+
 	[Fact]
 	public void DateTimeOffset()
 	{
