@@ -2,10 +2,26 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections;
+using System.Numerics;
 
 public partial class PrimitivesDerializationTests : MessagePackSerializerTestBase
 {
+#if NET
+	protected static readonly ReadOnlyMemory<object> ExpectedKeys = new object[] { "Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject", "decimal", "bigint", "guid", "i128", "u128" };
+#else
+	protected static readonly ReadOnlyMemory<object> ExpectedKeys = new object[] { "Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject", "decimal", "bigint", "guid" };
+#endif
+
 	protected static readonly DateTime ExpectedDateTime = new(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc);
+
+	private static readonly decimal ExpectedDecimal = 1.33333333m;
+	private static readonly BigInteger ExpectedBigInteger = new BigInteger(18) * long.MaxValue;
+	private static readonly Guid ExpectedGuid = Guid.NewGuid();
+
+#if NET
+	private static readonly Int128 ExpectedInt128 = new(15, 20);
+	private static readonly UInt128 ExpectedUInt128 = new(15, 20);
+#endif
 
 	[Fact]
 	public void PositiveIntKeyStretching()
@@ -42,7 +58,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 	{
 		// C# doesn't offer a way to call this method like other languages would, so we'll call it directly.
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
-		Assert.Equal(["Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject"], deserialized.Keys);
+		Assert.Equal(ExpectedKeys.ToArray(), deserialized.Keys);
 	}
 
 	[Fact]
@@ -58,7 +74,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		IReadOnlyDictionary<object, object?> dict = (IReadOnlyDictionary<object, object?>)deserialized;
 
-		Assert.Equal(6, dict.Count);
+		Assert.Equal(ExpectedKeys.Length, dict.Count);
 
 		Assert.True(dict.ContainsKey("nestedArray"));
 		Assert.IsType<object?[]>(dict["nestedArray"]);
@@ -77,7 +93,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 
 		Assert.True(encounteredDeeper);
 
-		Assert.Equal(["Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject"], dict.Keys);
+		Assert.Equal(ExpectedKeys.ToArray(), dict.Keys);
 		Assert.Equal(dict.Count, dict.Values.Count());
 	}
 
@@ -99,13 +115,13 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		Assert.False(dict.Contains(new KeyValuePair<object, object?>("Prop1", "Value2")));
 		Assert.False(dict.Contains(new KeyValuePair<object, object?>("PropX", "Value2")));
 
-		KeyValuePair<object, object?>[] array = new KeyValuePair<object, object?>[7];
+		KeyValuePair<object, object?>[] array = new KeyValuePair<object, object?>[ExpectedKeys.Length + 1];
 		dict.CopyTo(array, 1);
 		Assert.Null(array[0].Key);
 		Assert.Equal("Prop1", array[1].Key);
 		Assert.Equal("Value1", array[1].Value);
 
-		Assert.Equal(6, dict.Count);
+		Assert.Equal(ExpectedKeys.Length, dict.Count);
 
 		Assert.True(dict.ContainsKey("nestedArray"));
 		Assert.IsType<object?[]>(dict["nestedArray"]);
@@ -124,7 +140,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 
 		Assert.True(encounteredDeeper);
 
-		Assert.Equal(["Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject"], dict.Keys);
+		Assert.Equal(ExpectedKeys.ToArray(), dict.Keys);
 		Assert.Equal(dict.Count, dict.Values.Count());
 	}
 
@@ -138,19 +154,26 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		}
 
 		IEnumerator enumerator = ((IEnumerable)deserialized).GetEnumerator();
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("Prop1", enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("Prop2", enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("nestedArray", enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal(45UL, enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal(-45L, enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("nestedObject", enumerator.Current);
+		for (int i = 0; i < ExpectedKeys.Length; i++)
+		{
+			Assert.True(enumerator.MoveNext());
+			Assert.Equal(ExpectedKeys.Span[i], enumerator.Current);
+		}
+
 		Assert.False(enumerator.MoveNext());
+	}
+
+	[Fact]
+	public void Extension_Primitives()
+	{
+		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
+		Assert.Equal(ExpectedDecimal, deserialized["decimal"]);
+		Assert.Equal(ExpectedBigInteger, deserialized["bigint"]);
+		Assert.Equal(ExpectedGuid, deserialized["guid"]);
+#if NET
+		Assert.Equal(ExpectedInt128, deserialized["i128"]);
+		Assert.Equal(ExpectedUInt128, deserialized["u128"]);
+#endif
 	}
 
 	[Fact]
@@ -178,28 +201,47 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 
 	protected MessagePackReader ConstructReader()
 	{
+		this.Serializer = this.Serializer.WithObjectConverter();
+
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
-		writer.WriteMapHeader(6);
+		writer.WriteMapHeader(ExpectedKeys.Length);
 		writer.Write("Prop1");
-		writer.Write("Value1");
+		this.Serializer.Serialize<object>(ref writer, "Value1", Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		writer.Write("Prop2");
-		writer.Write(42);
+		this.Serializer.Serialize<object>(ref writer, 42, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		writer.Write("nestedArray");
 		writer.WriteArrayHeader(4);
-		writer.Write(true);
-		writer.Write(3.5);
-		writer.Write(new Extension(15, new byte[] { 1, 2, 3 }));
-		writer.Write(ExpectedDateTime);
+		this.Serializer.Serialize<object>(ref writer, true, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object>(ref writer, 3.5, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object>(ref writer, new Extension(15, new byte[] { 1, 2, 3 }), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object>(ref writer, ExpectedDateTime, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		writer.Write(45); // int key for stretching tests
-		writer.Write([1, 2, 3]);
+		this.Serializer.Serialize<object>(ref writer, (byte[])[1, 2, 3], Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		writer.Write(-45); // negative int key for stretching tests
-		writer.Write(false);
+		this.Serializer.Serialize<object>(ref writer, false, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 
 		writer.Write("nestedObject");
 		writer.WriteMapHeader(1);
 		writer.Write("nestedProp");
-		writer.Write("nestedValue");
+		this.Serializer.Serialize<object>(ref writer, "nestedValue", Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+
+		writer.Write("decimal");
+		this.Serializer.Serialize(ref writer, ExpectedDecimal, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+
+		writer.Write("bigint");
+		this.Serializer.Serialize(ref writer, ExpectedBigInteger, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+
+		writer.Write("guid");
+		this.Serializer.Serialize(ref writer, ExpectedGuid, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+
+#if NET
+		writer.Write("i128");
+		this.Serializer.Serialize(ref writer, ExpectedInt128, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+
+		writer.Write("u128");
+		this.Serializer.Serialize(ref writer, ExpectedUInt128, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+#endif
 
 		writer.Flush();
 

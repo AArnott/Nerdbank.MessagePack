@@ -3,7 +3,7 @@
 
 #pragma warning disable NBMsgPack031
 
-using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -72,25 +72,49 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 				MessagePackType.Array => ReadArray(ref reader, context),
 				MessagePackType.Map => ReadMap(ref reader, context),
 				MessagePackType.Binary => reader.ReadBytes()!.Value.ToArray(),
-				MessagePackType.Extension when TryReadDateTime(ref reader, out DateTime? dateTime) => dateTime,
+				MessagePackType.Extension when TryReadExtension(ref reader, context, out object? extensionValue) => extensionValue,
 				MessagePackType.Extension => reader.ReadExtension(),
 				_ => throw new NotImplementedException($"{reader.NextMessagePackType} not yet implemented."),
 			};
 
 		static object NonNonNegativeSignedInt(long value) => value < 0 ? value : (ulong)value;
 
-		static bool TryReadDateTime(ref MessagePackReader reader, out DateTime? dateTime)
+		static bool TryReadExtension(ref MessagePackReader reader, SerializationContext context, out object? value)
 		{
-			MessagePackReader peekReader = reader;
+			MessagePackReader peekReader = reader.CreatePeekReader();
 			ExtensionHeader header = peekReader.ReadExtensionHeader();
-			if (header.TypeCode != ReservedMessagePackExtensionTypeCode.DateTime)
+			if (header.TypeCode == ReservedMessagePackExtensionTypeCode.DateTime)
 			{
-				dateTime = null;
+				value = reader.ReadDateTime();
+			}
+			else if (header.TypeCode == context.ExtensionTypeCodes.Decimal)
+			{
+				value = context.GetConverter<decimal>(null).Read(ref reader, context);
+			}
+			else if (header.TypeCode == context.ExtensionTypeCodes.Guid && context.GetConverter<Guid>(null) is GuidAsBinaryConverter c)
+			{
+				value = c.Read(ref reader, context);
+			}
+			else if (header.TypeCode == context.ExtensionTypeCodes.BigInteger)
+			{
+				value = context.GetConverter<BigInteger>(null).Read(ref reader, context);
+			}
+#if NET
+			else if (header.TypeCode == context.ExtensionTypeCodes.Int128)
+			{
+				value = context.GetConverter<Int128>(null).Read(ref reader, context);
+			}
+			else if (header.TypeCode == context.ExtensionTypeCodes.UInt128)
+			{
+				value = context.GetConverter<UInt128>(null).Read(ref reader, context);
+			}
+#endif
+			else
+			{
+				value = null;
 				return false;
 			}
 
-			dateTime = peekReader.ReadDateTime(header);
-			reader = peekReader;
 			return true;
 		}
 
@@ -179,6 +203,26 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 			case float v:
 				writer.Write(v);
 				break;
+			case Extension v:
+				writer.Write(v);
+				break;
+			case decimal v:
+				context.GetConverter<decimal>(null).Write(ref writer, v, context);
+				break;
+			case Guid v:
+				context.GetConverter<Guid>(null).Write(ref writer, v, context);
+				break;
+			case BigInteger v:
+				context.GetConverter<BigInteger>(null).Write(ref writer, v, context);
+				break;
+#if NET
+			case Int128 v:
+				context.GetConverter<Int128>(null).Write(ref writer, v, context);
+				break;
+			case UInt128 v:
+				context.GetConverter<UInt128>(null).Write(ref writer, v, context);
+				break;
+#endif
 			default:
 				context.GetConverter(value.GetType(), null).WriteObject(ref writer, value, context);
 				break;

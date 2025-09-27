@@ -291,6 +291,9 @@ public static class ReservedMessagePackExtensionTypeCode
 /// leading the library to either prefer a msgpack standardized encoding for the data type or fail when that data type is used.
 /// </para>
 /// </remarks>
+/// <devremarks>
+/// Whenever adding to this type, consider updating <see cref="PrimitivesAsObjectConverter"/>.
+/// </devremarks>
 public record LibraryReservedMessagePackExtensionTypeCode
 {
 	/// <summary>
