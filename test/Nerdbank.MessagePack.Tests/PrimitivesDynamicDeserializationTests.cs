@@ -75,18 +75,12 @@ public partial class PrimitivesDynamicDeserializationTests : PrimitivesDerializa
 		}
 
 		IEnumerator enumerator = ((IEnumerable)deserialized).GetEnumerator();
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("Prop1", enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("Prop2", enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("nestedArray", enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal(45UL, enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal(-45L, enumerator.Current);
-		Assert.True(enumerator.MoveNext());
-		Assert.Equal("nestedObject", enumerator.Current);
+		for (int i = 0; i < ExpectedKeys.Length; i++)
+		{
+			Assert.True(enumerator.MoveNext());
+			Assert.Equal(ExpectedKeys.Span[i], enumerator.Current);
+		}
+
 		Assert.False(enumerator.MoveNext());
 	}
 
