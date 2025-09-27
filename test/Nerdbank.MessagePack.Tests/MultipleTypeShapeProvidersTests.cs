@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using PolyType.ReflectionProvider;
+using PolyType.Utilities;
+
 namespace Nerdbank.MessagePack.Tests;
 
 /// <summary>
@@ -44,8 +47,22 @@ public partial class MultipleTypeShapeProvidersTests : MessagePackSerializerTest
 		this.Serializer.Serialize(SomeExtension, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 	}
 
+	[Fact]
+	public void AggregatingShapeProvider()
+	{
+		AggregatingTypeShapeProvider provider = new(Witness.GeneratedTypeShapeProvider, ReflectionTypeShapeProvider.Default);
+
+		// First, serialize Extension via what should resolve as a shape from the main library's source generated provider.
+		this.Serializer.Serialize(SomeExtension, provider, TestContext.Current.CancellationToken);
+
+		// Now serialize a type that will have to come from the reflection provider, and references an Extension.
+		this.Serializer.Serialize(new TypeWithNoSourceGeneratedShape(SomeExtension), provider, TestContext.Current.CancellationToken);
+	}
+
 	[GenerateShape]
 	internal partial record Outer(Extension Inner);
+
+	internal record TypeWithNoSourceGeneratedShape(Extension Inner);
 
 	[GenerateShapeFor<Extension>]
 	private partial class Witness;
