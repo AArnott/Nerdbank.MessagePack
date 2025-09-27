@@ -372,6 +372,9 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(original, deserialized);
 	}
 
+	[Fact]
+	public void Extension() => this.AssertRoundtrip(new Extension(15, new byte[] { 1, 2, 3 }));
+
 	private (Guid Before, Guid After) RoundtripModifiedGuid(Func<string, string> modifier, MessagePackSerializer? serializer = null, MessagePackSerializer? deserializer = null)
 	{
 		serializer ??= this.Serializer;
