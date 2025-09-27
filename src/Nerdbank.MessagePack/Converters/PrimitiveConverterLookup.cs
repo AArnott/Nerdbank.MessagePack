@@ -56,6 +56,7 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _ByteArrayConverterReferencePreserving;
 	private static IMessagePackConverterInternal? _RawMessagePackConverter;
 	private static IMessagePackConverterInternal? _MessagePackValueConverter;
+	private static IMessagePackConverterInternal? _ExtensionConverter;
 #if NET
 	private static IMessagePackConverterInternal? _RuneConverter;
 	private static IMessagePackConverterInternal? _Int128Converter;
@@ -253,6 +254,12 @@ internal static class PrimitiveConverterLookup
 		if (typeof(T) == typeof(Nerdbank.MessagePack.MessagePackValue))
 		{
 			converter = (MessagePackConverter<T>)(_MessagePackValueConverter ??= new MessagePackValueConverter());
+			return true;
+		}
+
+		if (typeof(T) == typeof(Nerdbank.MessagePack.Extension))
+		{
+			converter = (MessagePackConverter<T>)(_ExtensionConverter ??= new ExtensionConverter());
 			return true;
 		}
 

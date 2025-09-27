@@ -10,7 +10,8 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <param name="TypeCode"><inheritdoc cref="ExtensionHeader(sbyte, uint)" path="/param[@name='TypeCode']"/></param>
 /// <param name="Data">The data payload, in whatever format is prescribed by the extension as per the <paramref name="TypeCode"/>.</param>
-public record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data) : IStructuralSecureEqualityComparer<Extension>
+[GenerateShape]
+public partial record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Data) : IStructuralSecureEqualityComparer<Extension>
 {
 	/// <summary>
 	/// Initializes a new instance of the <see cref="Extension"/> struct.

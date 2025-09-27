@@ -52,6 +52,7 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("byte[]", "ByteArrayConverter", IsRefType: true),
 	new ConverterInfo("Nerdbank.MessagePack.RawMessagePack", "RawMessagePackConverter"),
 	new ConverterInfo("Nerdbank.MessagePack.MessagePackValue", "MessagePackValueConverter"),
+	new ConverterInfo("Nerdbank.MessagePack.Extension", "ExtensionConverter"),
 };
 #>
 /// <summary>

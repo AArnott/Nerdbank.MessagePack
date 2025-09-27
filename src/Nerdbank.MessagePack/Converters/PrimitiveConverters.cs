@@ -1310,3 +1310,18 @@ internal class OptionalConverter<TOptional, TElement>(
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		=> ApplyJsonSchemaNullability(context.GetJsonSchema(((IOptionalTypeShape)typeShape).ElementType));
 }
+
+/// <summary>
+/// Writes out an <see cref="Extension"/> value.
+/// </summary>
+internal class ExtensionConverter : MessagePackConverter<Extension>
+{
+	/// <inheritdoc/>
+	public override Extension Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadExtension();
+
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in Extension value, SerializationContext context) => writer.Write(value);
+
+	/// <inheritdoc/>
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => CreateUndocumentedSchema(this.GetType());
+}
