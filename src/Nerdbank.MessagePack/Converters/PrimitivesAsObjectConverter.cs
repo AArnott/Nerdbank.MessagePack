@@ -84,13 +84,13 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 			MessagePackReader peekReader = reader.CreatePeekReader();
 			ExtensionHeader header = peekReader.ReadExtensionHeader();
 
-			// For any of these extensions that relies on a converter, we ensure that it is our expected converter
-			// that supports the extension typde code found.
+			// For any of these *library-defined* extensions that relies on a converter, we ensure that
+			// it is our expected converter that supports the extension typde code found.
 			// A user-supplied converter or even an in-library alternate converter (e.g. GuidAsStringConverter)
 			// wouldn't be able to do the job of deserialization.
 			if (header.TypeCode == ReservedMessagePackExtensionTypeCode.DateTime)
 			{
-				value = reader.ReadDateTime();
+				value = context.GetConverter<DateTime>(null).Read(ref reader, context);
 			}
 			else if (header.TypeCode == context.ExtensionTypeCodes.Decimal && context.GetConverter<decimal>(null) is DecimalConverter decimalConverter)
 			{
@@ -176,7 +176,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 				writer.Write(v);
 				break;
 			case DateTime v:
-				writer.Write(v);
+				context.GetConverter<DateTime>(null).Write(ref writer, v, context);
 				break;
 			case byte v:
 				writer.Write(v);

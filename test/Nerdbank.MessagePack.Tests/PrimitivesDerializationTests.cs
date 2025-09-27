@@ -14,6 +14,13 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 
 	protected static readonly DateTime ExpectedDateTime = new(2023, 1, 2, 0, 0, 0, DateTimeKind.Utc);
 
+	/// <summary>
+	/// A carefully mutated <see cref="ExpectedDateTime"/> value of <see cref="DateTimeKind.Unspecified"/> kind
+	/// such that if assumed to be local time, it will be converted to UTC during serialization and be deserialized to equal
+	/// <see cref="ExpectedDateTime"/>.
+	/// </summary>
+	protected static readonly DateTime ExpectedDateTimeUnspecifiedKind = new(ExpectedDateTime.ToLocalTime().Ticks, DateTimeKind.Unspecified);
+
 	private static readonly decimal ExpectedDecimal = 1.33333333m;
 	private static readonly BigInteger ExpectedBigInteger = new BigInteger(18) * long.MaxValue;
 	private static readonly Guid ExpectedGuid = Guid.NewGuid();
@@ -201,7 +208,9 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 
 	protected MessagePackReader ConstructReader()
 	{
-		this.Serializer = this.Serializer.WithObjectConverter();
+		this.Serializer = this.Serializer
+			.WithObjectConverter()
+			.WithAssumedDateTimeKind(DateTimeKind.Local);
 
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
@@ -211,11 +220,12 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		writer.Write("Prop2");
 		this.Serializer.Serialize<object>(ref writer, 42, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		writer.Write("nestedArray");
-		writer.WriteArrayHeader(4);
+		writer.WriteArrayHeader(5);
 		this.Serializer.Serialize<object>(ref writer, true, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		this.Serializer.Serialize<object>(ref writer, 3.5, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		this.Serializer.Serialize<object>(ref writer, new Extension(15, new byte[] { 1, 2, 3 }), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		this.Serializer.Serialize<object>(ref writer, ExpectedDateTime, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object>(ref writer, ExpectedDateTimeUnspecifiedKind, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		writer.Write(45); // int key for stretching tests
 		this.Serializer.Serialize<object>(ref writer, (byte[])[1, 2, 3], Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		writer.Write(-45); // negative int key for stretching tests
