@@ -11,11 +11,12 @@ public partial class PrimitivesDynamicDeserializationTests : PrimitivesDerializa
 	public void ReachIntoArray()
 	{
 		dynamic deserialized = this.DeserializePrimitives();
-		Assert.Equal(4, deserialized.nestedArray.Length);
+		Assert.Equal(5, deserialized.nestedArray.Length);
 		Assert.Equal(true, deserialized.nestedArray[0]);
 		Assert.Equal(3.5, deserialized.nestedArray[1]);
 		Assert.Equal(new Extension(15, new byte[] { 1, 2, 3 }), deserialized.nestedArray[2]);
 		Assert.Equal<DateTime>(ExpectedDateTime, deserialized.nestedArray[3]);
+		Assert.Equal<DateTime>(ExpectedDateTime, deserialized.nestedArray[4]);
 	}
 
 	[Fact]
