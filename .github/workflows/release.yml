@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-24.04
     environment: Publishing
     permissions:
-      actions: read
-      contents: write
+      actions: read # Required to download artifacts
+      contents: write # Upload artifacts to Release
       id-token: write # Required for NuGet CLI Login
     steps:
     - name: 🔎 Search for build of ${{ github.ref }}
