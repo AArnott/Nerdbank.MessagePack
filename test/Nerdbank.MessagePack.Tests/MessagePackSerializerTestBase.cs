@@ -21,6 +21,9 @@ public abstract partial class MessagePackSerializerTestBase
 			// so disable the buffer that would lead it down the synchronous paths since we have
 			// small test data sizes.
 			MaxAsyncBuffer = 0,
+
+			// Also pause async Serialization to flush frequently to exercise those code paths.
+			StartingContext = new SerializationContext { UnflushedBytesThreshold = 50 },
 		};
 	}
 

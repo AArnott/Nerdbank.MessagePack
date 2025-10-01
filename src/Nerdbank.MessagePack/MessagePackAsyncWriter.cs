@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using Microsoft;
 
@@ -40,11 +39,6 @@ public class MessagePackAsyncWriter(PipeWriter pipeWriter)
 	/// </remarks>
 	public MessagePackWriter CreateWriter()
 	{
-#if !NET
-		// ref fields are not supported on .NET Framework, so we have to prepare to copy the struct.
-		this.bufferWriter.Commit();
-#endif
-
 		return new(new BufferWriter(ref this.bufferWriter));
 	}
 
