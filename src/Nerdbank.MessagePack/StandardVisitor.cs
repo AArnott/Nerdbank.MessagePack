@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft;
+using Nerdbank.MessagePack.SecureHash;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
@@ -271,7 +272,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return union switch
 			{
 				{ Disabled: true } => baseTypeConverter,
-				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, (MessagePackConverter<TUnion>)baseTypeConverter.Value, mapping).Map(st => new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, st)),
+				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, (MessagePackConverter<TUnion>)baseTypeConverter.Value, mapping).MapResult(st => new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, st)),
 				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter(duckTyping, (MessagePackConverter<TUnion>)baseTypeConverter.Value),
 				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
 			};
@@ -726,13 +727,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		var valueConverter = (MessagePackConverter<TValue>)valueConverterResult.Value;
 
 		// Deserialization functions.
-		return ConverterResult.Ok(dictionaryShape.ConstructionStrategy switch
+		return dictionaryShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter),
-			CollectionConstructionStrategy.Mutable => new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
-			CollectionConstructionStrategy.Parameterized => new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence)),
-			_ => throw new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}"),
-		});
+			CollectionConstructionStrategy.None => ConverterResult.Ok(new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)),
+			CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
+			CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
+			_ => ConverterResult.Err(new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}")),
+		};
 	}
 
 	/// <inheritdoc/>
@@ -760,12 +761,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (enumerableShape.Rank > 1)
 			{
 #if NET
-				return ConverterResult.Ok(this.owner.MultiDimensionalArrayFormat switch
+				return this.owner.MultiDimensionalArrayFormat switch
 				{
-					MultiDimensionalArrayFormat.Nested => new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank),
-					MultiDimensionalArrayFormat.Flat => new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter),
-					_ => throw new NotSupportedException(),
-				});
+					MultiDimensionalArrayFormat.Nested => ConverterResult.Ok(new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank)),
+					MultiDimensionalArrayFormat.Flat => ConverterResult.Ok(new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter)),
+					_ => ConverterResult.Err(new NotSupportedException()),
+				};
 #else
 				return ConverterResult.Err(new PlatformNotSupportedException("This functionality is only supported on .NET."));
 #endif
@@ -790,17 +791,17 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		Func<TEnumerable, IEnumerable<TElement>>? getEnumerable = enumerableShape.IsAsyncEnumerable ? null : enumerableShape.GetGetEnumerable();
-		return ConverterResult.Ok(enumerableShape.ConstructionStrategy switch
+		return enumerableShape.ConstructionStrategy switch
 		{
-			CollectionConstructionStrategy.None => new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter),
-			CollectionConstructionStrategy.Mutable => new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAppender(), enumerableShape.GetDefaultConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
+			CollectionConstructionStrategy.None => ConverterResult.Ok(new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)),
+			CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAppender(), enumerableShape.GetDefaultConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence))),
 #if NET
-			CollectionConstructionStrategy.Parameterized when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => converter,
+			CollectionConstructionStrategy.Parameterized when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => ConverterResult.Ok(converter),
 #endif
-			CollectionConstructionStrategy.Parameterized when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetParameterizedConstructor(), out MessagePackConverter<TEnumerable>? converter) => converter,
-			CollectionConstructionStrategy.Parameterized => new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence)),
-			_ => throw new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}"),
-		});
+			CollectionConstructionStrategy.Parameterized when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetParameterizedConstructor(), out MessagePackConverter<TEnumerable>? converter) => ConverterResult.Ok(converter),
+			CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence))),
+			_ => ConverterResult.Err(new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}")),
+		};
 	}
 
 	/// <inheritdoc/>
@@ -1107,33 +1108,33 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return true;
 	}
 
-	private CollectionConstructionOptions<TKey> GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, MemberConverterInfluence? memberInfluence)
+	private Result<CollectionConstructionOptions<TKey>, VisitorError> GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, MemberConverterInfluence? memberInfluence)
 		where TKey : notnull
 		=> this.GetCollectionOptions(dictionaryShape.KeyType, dictionaryShape.SupportedComparer, memberInfluence);
 
-	private CollectionConstructionOptions<TElement> GetCollectionOptions<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, MemberConverterInfluence? memberInfluence)
+	private Result<CollectionConstructionOptions<TElement>, VisitorError> GetCollectionOptions<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, MemberConverterInfluence? memberInfluence)
 		=> this.GetCollectionOptions(enumerableShape.ElementType, enumerableShape.SupportedComparer, memberInfluence);
 
-	private CollectionConstructionOptions<TKey> GetCollectionOptions<TKey>(ITypeShape<TKey> keyShape, CollectionComparerOptions requiredComparer, MemberConverterInfluence? memberInfluence)
+	private Result<CollectionConstructionOptions<TKey>, VisitorError> GetCollectionOptions<TKey>(ITypeShape<TKey> keyShape, CollectionComparerOptions requiredComparer, MemberConverterInfluence? memberInfluence)
 	{
 		if (this.owner.ComparerProvider is null)
 		{
-			return default;
+			return default(CollectionConstructionOptions<TKey>);
 		}
 
 		try
 		{
 			return requiredComparer switch
 			{
-				CollectionComparerOptions.None => default,
-				CollectionComparerOptions.Comparer => new() { Comparer = memberInfluence?.GetComparer<TKey>() ?? this.owner.ComparerProvider.GetComparer(keyShape) },
-				CollectionComparerOptions.EqualityComparer => new() { EqualityComparer = memberInfluence?.GetEqualityComparer<TKey>() ?? this.owner.ComparerProvider.GetEqualityComparer(keyShape) },
-				_ => throw new NotSupportedException(),
+				CollectionComparerOptions.None => default(CollectionConstructionOptions<TKey>),
+				CollectionComparerOptions.Comparer => new CollectionConstructionOptions<TKey> { Comparer = memberInfluence?.GetComparer<TKey>() ?? this.owner.ComparerProvider.GetComparer(keyShape) },
+				CollectionComparerOptions.EqualityComparer => new CollectionConstructionOptions<TKey> { EqualityComparer = memberInfluence?.GetEqualityComparer<TKey>() ?? this.owner.ComparerProvider.GetEqualityComparer(keyShape) },
+				_ => new VisitorError(new NotSupportedException()),
 			};
 		}
-		catch (NotSupportedException ex) when (typeof(TKey) == typeof(object))
+		catch (Exception ex) when (SecureVisitor.TryGetEmptyTypeFailure(ex.GetBaseException(), out Type? emptyType))
 		{
-			throw new NotSupportedException("Serializing dictionaries or hash sets with System.Object keys is not supported. Consider using a strong-typed key with properties, or using a custom MessagePackSerializer.ComparerProvider.", ex);
+			return new VisitorError(new NotSupportedException($"Serializing dictionaries or hash sets with keys that are or contain empty types is not supported. {emptyType.FullName} is an empty type. Consider using a strong-typed key with properties, or using a custom (or null) MessagePackSerializer.ComparerProvider.", ex));
 		}
 	}
 

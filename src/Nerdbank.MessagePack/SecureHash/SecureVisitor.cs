@@ -12,6 +12,8 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// </summary>
 internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
+	private const string EmptyTypeCannotHashKey = "ObjectTarget";
+
 	private static readonly object IsUnionSentinel = new();
 
 	/// <inheritdoc/>
@@ -30,34 +32,41 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	/// <inheritdoc/>
 	public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 	{
-		if (CollisionResistantHasherLookup.TryGetPrimitiveHasher(out SecureEqualityComparer<T>? primitiveEqualityComparer))
+		try
 		{
-			return primitiveEqualityComparer;
-		}
+			if (CollisionResistantHasherLookup.TryGetPrimitiveHasher(out SecureEqualityComparer<T>? primitiveEqualityComparer))
+			{
+				return primitiveEqualityComparer;
+			}
 
-		if (typeof(T) == typeof(byte[]))
-		{
-			return HashCollisionResistantPrimitives.ByteArrayEqualityComparer.Default;
-		}
+			if (typeof(T) == typeof(byte[]))
+			{
+				return HashCollisionResistantPrimitives.ByteArrayEqualityComparer.Default;
+			}
 
-		if (typeof(IStructuralSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
-		{
-			return SecureCustomEqualityComparer<T>.Default;
-		}
+			if (typeof(IStructuralSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
+			{
+				return SecureCustomEqualityComparer<T>.Default;
+			}
 
-		// Do NOT blindly propagate state to the properties, because we don't want the Union sentinel
-		// to be applied from this object (which may be a union case) to its properties.
-		SecureAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
-			.. from property in objectShape.Properties
+			// Do NOT blindly propagate state to the properties, because we don't want the Union sentinel
+			// to be applied from this object (which may be a union case) to its properties.
+			SecureAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
+				.. from property in objectShape.Properties
 			   where property.HasGetter
 			   select (SecureEqualityComparer<T>)property.Accept(this, null)!]);
 
-		if (aggregatingEqualityComparer.IsEmpty && state != IsUnionSentinel)
-		{
-			throw new NotSupportedException($"The type {objectShape.Type} has no properties to compare by value.");
-		}
+			if (aggregatingEqualityComparer.IsEmpty && state != IsUnionSentinel)
+			{
+				throw new NotSupportedException($"This type has no properties to compare by value.") { Data = { [EmptyTypeCannotHashKey] = objectShape.Type } };
+			}
 
-		return aggregatingEqualityComparer;
+			return aggregatingEqualityComparer;
+		}
+		catch (Exception ex)
+		{
+			throw new NotSupportedException($"Problem generating secure equality comparer for {objectShape.Type.FullName}.", ex);
+		}
 	}
 
 	/// <inheritdoc/>
@@ -81,7 +90,16 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 
 	/// <inheritdoc/>
 	public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
-		=> new SecurePropertyEqualityComparer<TDeclaringType, TPropertyType>(propertyShape.GetGetter(), this.GetEqualityComparer(propertyShape.PropertyType));
+	{
+		try
+		{
+			return new SecurePropertyEqualityComparer<TDeclaringType, TPropertyType>(propertyShape.GetGetter(), this.GetEqualityComparer(propertyShape.PropertyType));
+		}
+		catch (Exception ex)
+		{
+			throw new NotSupportedException($"Failure while processing property {propertyShape.DeclaringType.Type.FullName}.{propertyShape.Name}.", ex);
+		}
+	}
 
 	/// <inheritdoc/>
 	public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
@@ -114,6 +132,21 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	/// <inheritdoc/>
 	public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
 		=> throw new NotSupportedException("Delegate typed properties cannot be compared.");
+
+	/// <summary>
+	/// Tests whether a given <see cref="Exception"/> was originally thrown due to a failed attempt to
+	/// generate a structural equality comparer over a type with no properties.
+	/// </summary>
+	/// <param name="ex">The exception to check.</param>
+	/// <param name="emptyType">Receives the empty type that originated the failure, if applicable.</param>
+	/// <returns><see langword="true" /> if the failure was originally caused by an empty type; <see langword="false" /> otherwise.</returns>
+	internal static bool TryGetEmptyTypeFailure(Exception ex, [NotNullWhen(true)] out Type? emptyType)
+	{
+		emptyType = ex is NotSupportedException && ex.Data.Contains(EmptyTypeCannotHashKey)
+			? (Type?)ex.Data[EmptyTypeCannotHashKey]
+			: null;
+		return emptyType is not null;
+	}
 
 	/// <summary>
 	/// Gets or creates an equality comparer for the given type shape.

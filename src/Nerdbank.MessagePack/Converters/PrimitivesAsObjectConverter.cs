@@ -21,8 +21,16 @@ namespace Nerdbank.MessagePack.Converters;
 /// <para>
 /// Maps are deserialized as objects that implement <see cref="IReadOnlyDictionary{TKey, TValue}"/>
 /// where the key is <see cref="object"/> and the value is a nullable <see cref="object"/>.
+/// Deserialized arrays will be typed as <see cref="object"/> arrays.
 /// This converter deserializes an entire msgpack structure using these primitives,
 /// since no type information is available to deserialize any sub-graph as a higher-level type.
+/// </para>
+/// <para>
+/// To use <see cref="object"/> as the declared type for fields or properties used as
+/// or within a key of a dictionary or hash set, either the field or property must be read-only and be
+/// pre-initialized with a collection instance,
+/// or <see cref="MessagePackSerializer.ComparerProvider"/> must also be set to <see langword="null" />
+/// or some other non-default provider that can hash <see cref="object"/> keys.
 /// </para>
 /// </remarks>
 /// <seealso cref="PrimitivesAsDynamicConverter"/>

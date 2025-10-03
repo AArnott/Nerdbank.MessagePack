@@ -21,4 +21,13 @@ internal static class ResultExtensions
 	/// <returns>The final result.</returns>
 	internal static ConverterResult MapResult<T1, T2>(this Result<T1, VisitorError> result, Func<T1, MessagePackConverter<T2>> mapper)
 		=> result.Success ? ConverterResult.Ok(mapper(result.Value)) : ConverterResult.Err(result.Error);
+
+	/// <summary>
+	/// Gets the value from a <see cref="Result{TValue, TError}"/> or throws an exception for the error condition.
+	/// </summary>
+	/// <typeparam name="T">The type of value to be returned.</typeparam>
+	/// <param name="result">The result to evaluate.</param>
+	/// <returns>The value.</returns>
+	internal static T GetValueOrThrow<T>(this Result<T, VisitorError> result)
+		=> result.Success ? result.Value : throw result.Error.ThrowException();
 }

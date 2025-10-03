@@ -243,12 +243,14 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	MessagePackConverter<TElement> elementConverter,
 	EnumerableAppender<TEnumerable, TElement> addElement,
 	MutableCollectionConstructor<TElement, TEnumerable> ctor,
-	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
+	Result<CollectionConstructionOptions<TElement>, VisitorError> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter), IDeserializeInto<TEnumerable>
 {
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
+		CollectionConstructionOptions<TElement> options = collectionConstructionOptions.GetValueOrThrow();
+
 		if (reader.TryReadNil())
 		{
 			return default;
@@ -257,7 +259,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		return this.DeserializeInto(
 			ref reader,
 			static (s, size) => s.ctor(s.options.WithCapacity(size)),
-			(ctor, options: collectionConstructionOptions),
+			(ctor, options),
 			context);
 	}
 #pragma warning restore NBMsgPack031
@@ -265,6 +267,8 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	/// <inheritdoc/>
 	public override async ValueTask<TEnumerable?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
+		CollectionConstructionOptions<TElement> options = collectionConstructionOptions.GetValueOrThrow();
+
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 		bool isNil;
 		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
@@ -281,7 +285,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 		return await this.DeserializeIntoAsync(
 			reader,
 			static (s, size) => s.ctor(s.options.WithCapacity(size)),
-			(ctor, options: collectionConstructionOptions),
+			(ctor, options),
 			context).ConfigureAwait(false);
 	}
 
@@ -382,11 +386,13 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 	Func<TEnumerable, IEnumerable<TElement>>? getEnumerable,
 	MessagePackConverter<TElement> elementConverter,
 	ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> ctor,
-	CollectionConstructionOptions<TElement> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
+	Result<CollectionConstructionOptions<TElement>, VisitorError> collectionConstructionOptions) : EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)
 {
 	/// <inheritdoc/>
 	public override TEnumerable? Read(ref MessagePackReader reader, SerializationContext context)
 	{
+		CollectionConstructionOptions<TElement> options = collectionConstructionOptions.GetValueOrThrow();
+
 		if (reader.TryReadNil())
 		{
 			return default;
@@ -404,7 +410,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 			}
 
 			i = null;
-			return ctor(elements.AsSpan(0, count), collectionConstructionOptions);
+			return ctor(elements.AsSpan(0, count), options);
 		}
 		catch (Exception ex) when (i is not null && ShouldWrapSerializationException(ex, context.CancellationToken))
 		{

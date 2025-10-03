@@ -250,10 +250,6 @@ public static class OptionalConverters
 	/// <returns>The modified serializer.</returns>
 	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="object"/> has already been added.</exception>
 	/// <inheritdoc cref="PrimitivesAsObjectConverter" path="/remarks"/>
-	/// <remarks>
-	/// Deserialized arrays will be typed as <see cref="object"/> arrays.
-	/// Deserialized dictionaries will be typed with <see cref="object"/> keys and values.
-	/// </remarks>
 	/// <seealso cref="WithDynamicObjectConverter(MessagePackSerializer)"/>
 	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer)
 	{

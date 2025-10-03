@@ -68,11 +68,12 @@ internal class VisitorError
 	/// Throws a <see cref="MessagePackSerializationException"/> describing the error chain.
 	/// This method never returns.
 	/// </summary>
+	/// <returns>Nothing. This method always throws.</returns>
 	/// <exception cref="MessagePackSerializationException">
 	/// Always thrown to report the prepared error message and, if available, the original exception.
 	/// </exception>
 	[DoesNotReturn]
-	internal void ThrowException()
+	internal Exception ThrowException()
 	{
 		this.Prepare(out StringBuilder builder, out Exception? originalException);
 		builder.Insert(0, "An error occurred while preparing the converter graph. ");
