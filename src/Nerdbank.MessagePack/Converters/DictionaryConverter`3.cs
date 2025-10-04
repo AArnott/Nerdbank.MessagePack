@@ -316,13 +316,15 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TValue> valueConverter,
 	DictionaryInserter<TDictionary, TKey, TValue> addEntry,
 	MutableCollectionConstructor<TKey, TDictionary> ctor,
-	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
+	Result<CollectionConstructionOptions<TKey>, VisitorError> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter), IDeserializeInto<TDictionary>
 	where TKey : notnull
 {
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - analyzer cannot see through this.method calls.
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
+		CollectionConstructionOptions<TKey> options = collectionConstructionOptions.GetValueOrThrow();
+
 		if (reader.TryReadNil())
 		{
 			return default;
@@ -331,14 +333,16 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		return this.DeserializeInto(
 			ref reader,
 			static (s, size) => s.ctor(s.options.WithCapacity(size)),
-			(ctor, options: collectionConstructionOptions),
+			(ctor, options),
 			context);
 	}
-#pragma warning restore NBMsgPack03
+#pragma warning restore NBMsgPack031
 
 	/// <inheritdoc/>
 	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
+		CollectionConstructionOptions<TKey> options = collectionConstructionOptions.GetValueOrThrow();
+
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
@@ -355,7 +359,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 		return await this.DeserializeIntoAsync(
 			reader,
 			static (s, size) => s.ctor(s.options.WithCapacity(size)),
-			(ctor, options: collectionConstructionOptions),
+			(ctor, options),
 			context).ConfigureAwait(false);
 	}
 
@@ -436,12 +440,14 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	MessagePackConverter<TKey> keyConverter,
 	MessagePackConverter<TValue> valueConverter,
 	ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> ctor,
-	CollectionConstructionOptions<TKey> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
+	Result<CollectionConstructionOptions<TKey>, VisitorError> collectionConstructionOptions) : DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)
 	where TKey : notnull
 {
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
+		CollectionConstructionOptions<TKey> options = collectionConstructionOptions.GetValueOrThrow();
+
 		if (reader.TryReadNil())
 		{
 			return default;
@@ -458,7 +464,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 				entries[i] = new(key, value);
 			}
 
-			return ctor(entries.AsSpan(0, count), collectionConstructionOptions);
+			return ctor(entries.AsSpan(0, count), options);
 		}
 		finally
 		{
@@ -469,6 +475,8 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 	/// <inheritdoc/>
 	public override async ValueTask<TDictionary?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
+		CollectionConstructionOptions<TKey> options = collectionConstructionOptions.GetValueOrThrow();
+
 		if (!this.PreferAsyncSerialization)
 		{
 			return await base.ReadAsync(reader, context).ConfigureAwait(false);
@@ -505,7 +513,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 				entries[i] = await this.ReadEntryAsync(reader, context).ConfigureAwait(false);
 			}
 
-			return ctor(entries.AsSpan(0, count), collectionConstructionOptions);
+			return ctor(entries.AsSpan(0, count), options);
 		}
 		finally
 		{
