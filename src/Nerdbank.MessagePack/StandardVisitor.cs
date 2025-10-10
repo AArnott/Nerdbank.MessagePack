@@ -66,7 +66,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		// Break up significant switch/if statements into local functions or methods to reduce the amount of time spent JITting whole code blocks that won't run.
 		// Local functions do not escape the declaring method's generic context, so use private methods when generic context is not required.
 		return NonPrimitiveObjectHelper();
-		object? NonPrimitiveObjectHelper()
+		ConverterResult NonPrimitiveObjectHelper()
 		{
 			IConstructorShape? ctorShape = objectShape.Constructor;
 
@@ -722,34 +722,38 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return customConverter;
 		}
 
-		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
-
-		// Serialization functions.
-		ConverterResult keyConverterResult = this.GetConverter(dictionaryShape.KeyType);
-		ConverterResult valueConverterResult = this.GetConverter(dictionaryShape.ValueType);
-		Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
-
-		if (keyConverterResult.TryPrepareFailPath("key", out ConverterResult? keyFailure))
+		return NonPrimitiveObjectHelper();
+		ConverterResult NonPrimitiveObjectHelper()
 		{
-			return keyFailure;
+			MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
+
+			// Serialization functions.
+			ConverterResult keyConverterResult = this.GetConverter(dictionaryShape.KeyType);
+			ConverterResult valueConverterResult = this.GetConverter(dictionaryShape.ValueType);
+			Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getReadable = dictionaryShape.GetGetDictionary();
+
+			if (keyConverterResult.TryPrepareFailPath("key", out ConverterResult? keyFailure))
+			{
+				return keyFailure;
+			}
+
+			if (valueConverterResult.TryPrepareFailPath("value", out ConverterResult? valueFailure))
+			{
+				return valueFailure;
+			}
+
+			var keyConverter = (MessagePackConverter<TKey>)keyConverterResult.Value;
+			var valueConverter = (MessagePackConverter<TValue>)valueConverterResult.Value;
+
+			// Deserialization functions.
+			return dictionaryShape.ConstructionStrategy switch
+			{
+				CollectionConstructionStrategy.None => ConverterResult.Ok(new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)),
+				CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
+				CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
+				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}")),
+			};
 		}
-
-		if (valueConverterResult.TryPrepareFailPath("value", out ConverterResult? valueFailure))
-		{
-			return valueFailure;
-		}
-
-		var keyConverter = (MessagePackConverter<TKey>)keyConverterResult.Value;
-		var valueConverter = (MessagePackConverter<TValue>)valueConverterResult.Value;
-
-		// Deserialization functions.
-		return dictionaryShape.ConstructionStrategy switch
-		{
-			CollectionConstructionStrategy.None => ConverterResult.Ok(new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)),
-			CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
-			CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
-			_ => ConverterResult.Err(new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}")),
-		};
 	}
 
 	/// <inheritdoc/>
@@ -760,64 +764,78 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return customConverter;
 		}
 
-		MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
-
-		// Serialization functions.
-		ConverterResult elementConverterResult = this.GetConverter(enumerableShape.ElementType);
-		if (elementConverterResult.TryPrepareFailPath("element", out ConverterResult? elementFailure))
+		return NonPrimitiveObjectHelper();
+		ConverterResult NonPrimitiveObjectHelper()
 		{
-			return elementFailure;
-		}
+			MemberConverterInfluence? memberInfluence = state as MemberConverterInfluence;
 
-		var elementConverter = (MessagePackConverter<TElement>)elementConverterResult.Value;
-
-		if (enumerableShape.Type.IsArray)
-		{
-			MessagePackConverter<TEnumerable>? converter;
-			if (enumerableShape.Rank > 1)
+			// Serialization functions.
+			ConverterResult elementConverterResult = this.GetConverter(enumerableShape.ElementType);
+			if (elementConverterResult.TryPrepareFailPath("element", out ConverterResult? elementFailure))
 			{
-#if NET
-				return this.owner.MultiDimensionalArrayFormat switch
+				return elementFailure;
+			}
+
+			var elementConverter = (MessagePackConverter<TElement>)elementConverterResult.Value;
+
+			if (enumerableShape.Type.IsArray)
+			{
+				return ArrayHelper();
+				ConverterResult ArrayHelper()
 				{
-					MultiDimensionalArrayFormat.Nested => ConverterResult.Ok(new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank)),
-					MultiDimensionalArrayFormat.Flat => ConverterResult.Ok(new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter)),
-					_ => ConverterResult.Err(new NotSupportedException()),
-				};
-#else
-				return ConverterResult.Err(new PlatformNotSupportedException("This functionality is only supported on .NET."));
-#endif
-			}
+					MessagePackConverter<TEnumerable>? converter;
+					if (enumerableShape.Rank > 1)
+					{
 #if NET
-			else if (!this.owner.DisableHardwareAcceleration &&
-				enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Parameterized &&
-				HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out converter))
-			{
-				return ConverterResult.Ok(converter);
-			}
+						return this.owner.MultiDimensionalArrayFormat switch
+						{
+							MultiDimensionalArrayFormat.Nested => ConverterResult.Ok(new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank)),
+							MultiDimensionalArrayFormat.Flat => ConverterResult.Ok(new ArrayWithFlattenedDimensionsConverter<TEnumerable, TElement>(elementConverter)),
+							_ => ConverterResult.Err(new NotSupportedException()),
+						};
+#else
+						return ConverterResult.Err(new PlatformNotSupportedException("This functionality is only supported on .NET."));
 #endif
-			else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Parameterized &&
-				ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetParameterizedConstructor(), out converter))
-			{
-				return ConverterResult.Ok(converter);
+					}
+#if NET
+					else if (!this.owner.DisableHardwareAcceleration &&
+						enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Parameterized &&
+						HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out converter))
+					{
+						return ConverterResult.Ok(converter);
+					}
+#endif
+					else if (enumerableShape.ConstructionStrategy == CollectionConstructionStrategy.Parameterized &&
+						ArraysOfPrimitivesConverters.TryGetConverter(enumerableShape.GetGetEnumerable(), enumerableShape.GetParameterizedConstructor(), out converter))
+					{
+						return ConverterResult.Ok(converter);
+					}
+					else
+					{
+						return ConverterResult.Ok(new ArrayConverter<TElement>(elementConverter));
+					}
+				}
 			}
 			else
 			{
-				return ConverterResult.Ok(new ArrayConverter<TElement>(elementConverter));
+				return NonArrayHelper();
+				ConverterResult NonArrayHelper()
+				{
+					Func<TEnumerable, IEnumerable<TElement>>? getEnumerable = enumerableShape.IsAsyncEnumerable ? null : enumerableShape.GetGetEnumerable();
+					return enumerableShape.ConstructionStrategy switch
+					{
+						CollectionConstructionStrategy.None => ConverterResult.Ok(new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)),
+						CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAppender(), enumerableShape.GetDefaultConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence))),
+#if NET
+						CollectionConstructionStrategy.Parameterized when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => ConverterResult.Ok(converter),
+#endif
+						CollectionConstructionStrategy.Parameterized when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetParameterizedConstructor(), out MessagePackConverter<TEnumerable>? converter) => ConverterResult.Ok(converter),
+						CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence))),
+						_ => ConverterResult.Err(new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}")),
+					};
+				}
 			}
 		}
-
-		Func<TEnumerable, IEnumerable<TElement>>? getEnumerable = enumerableShape.IsAsyncEnumerable ? null : enumerableShape.GetGetEnumerable();
-		return enumerableShape.ConstructionStrategy switch
-		{
-			CollectionConstructionStrategy.None => ConverterResult.Ok(new EnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter)),
-			CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetAppender(), enumerableShape.GetDefaultConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence))),
-#if NET
-			CollectionConstructionStrategy.Parameterized when !this.owner.DisableHardwareAcceleration && HardwareAccelerated.TryGetConverter<TEnumerable, TElement>(out MessagePackConverter<TEnumerable>? converter) => ConverterResult.Ok(converter),
-#endif
-			CollectionConstructionStrategy.Parameterized when getEnumerable is not null && ArraysOfPrimitivesConverters.TryGetConverter(getEnumerable, enumerableShape.GetParameterizedConstructor(), out MessagePackConverter<TEnumerable>? converter) => ConverterResult.Ok(converter),
-			CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new SpanEnumerableConverter<TEnumerable, TElement>(getEnumerable, elementConverter, enumerableShape.GetParameterizedConstructor(), this.GetCollectionOptions(enumerableShape, memberInfluence))),
-			_ => ConverterResult.Err(new NotSupportedException($"Unrecognized enumerable pattern: {typeof(TEnumerable).Name}")),
-		};
 	}
 
 	/// <inheritdoc/>
@@ -828,15 +846,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return customConverter;
 		}
 
-		ConverterResult underlyingConverter = this.GetConverter(enumShape.UnderlyingType);
-		if (underlyingConverter.TryPrepareFailPath(enumShape, out ConverterResult? failure))
+		return NonPrimitiveObjectHelper();
+		ConverterResult NonPrimitiveObjectHelper()
 		{
-			return failure;
-		}
+			ConverterResult underlyingConverter = this.GetConverter(enumShape.UnderlyingType);
+			if (underlyingConverter.TryPrepareFailPath(enumShape, out ConverterResult? failure))
+			{
+				return failure;
+			}
 
-		return ConverterResult.Ok(this.owner.SerializeEnumValuesByName
-			? new EnumAsStringConverter<TEnum, TUnderlying>((MessagePackConverter<TUnderlying>)underlyingConverter.Value, enumShape.Members)
-			: new EnumAsOrdinalConverter<TEnum, TUnderlying>((MessagePackConverter<TUnderlying>)underlyingConverter.Value));
+			return ConverterResult.Ok(this.owner.SerializeEnumValuesByName
+				? new EnumAsStringConverter<TEnum, TUnderlying>((MessagePackConverter<TUnderlying>)underlyingConverter.Value, enumShape.Members)
+				: new EnumAsOrdinalConverter<TEnum, TUnderlying>((MessagePackConverter<TUnderlying>)underlyingConverter.Value));
+		}
 	}
 
 	/// <inheritdoc/>
