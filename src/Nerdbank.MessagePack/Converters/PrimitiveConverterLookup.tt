@@ -59,11 +59,16 @@ var convertersByType = new List<ConverterInfo>
 /// Provides access to built-in converters for primitive types.
 /// </summary>
 /// <remarks>
-/// This class is carefully crafted to help trimming be effective by avoiding type references
+/// <para>This class is carefully crafted to avoid assembly loads by testing type names
+/// rather than types directly for types declared in assemblies that may not be loaded.</para>
+/// <para>On .NET, this class is also carefully crafted to help trimming be effective by avoiding type references
 /// to types that are not used in the application.
-/// Although the retrieval method references all the the fact that it is generic gives the
+/// Although the retrieval method references all the types, the fact that it is generic gives the
 /// JIT/AOT compiler the opportunity to only reference types that match the type argument
 /// (at least for the value types).
+/// The generic method itself leads to more methods to JIT at runtime when NativeAOT is *not* used.
+/// It's a trade-off, which is why we never use the generic method on .NET Framework where NativeAOT isn't even an option.
+/// </para>
 /// </remarks>
 internal static class PrimitiveConverterLookup
 {
@@ -82,6 +87,7 @@ internal static class PrimitiveConverterLookup
 <#   }
 } #>
 
+#if NET
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
 	/// </summary>
@@ -90,6 +96,16 @@ internal static class PrimitiveConverterLookup
 	/// <param name="converter">Receives the converter, if one is available.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
 	internal static bool TryGetPrimitiveConverter<T>(ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+#else
+	/// <summary>
+	/// Gets a built-in converter for the given type, if one is available.
+	/// </summary>
+	/// <param name="type">The type to get a converter for.</param>
+	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
+	/// <param name="converter">Receives the converter, if one is available.</param>
+	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
+	internal static bool TryGetPrimitiveConverter(Type type, ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter? converter)
+#endif
 	{
 <# foreach (var converterGroup in convertersByType.Where(c => !c.LazyLoad).GroupBy(c => c.PreprocessorCondition)) {
 	 if (converterGroup.Key is not null) { #>
@@ -97,22 +113,38 @@ internal static class PrimitiveConverterLookup
 <#   }
 	 foreach (var converter in converterGroup) {
 		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty; #>
+#if NET
 		if (typeof(T) == typeof(<#=converter.TypeName#>)<#=featureCondition#>)
+#else
+		if (type == typeof(<#=converter.TypeName#>)<#=featureCondition#>)
+#endif
 		{
 <#
 	if (converter.IsRefType) {
 #>
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
+#if NET
 				converter = (MessagePackConverter<T>)(<#=converter.ReferencePreservingFieldName#> ??= new <#= converter.ConverterName #>().WrapWithReferencePreservation());
+#else
+				converter = (MessagePackConverter)(<#=converter.ReferencePreservingFieldName#> ??= new <#= converter.ConverterName #>().WrapWithReferencePreservation());
+#endif
 			}
 			else
 			{
+#if NET
 				converter = (MessagePackConverter<T>)(<#=converter.FieldName#> ??= new <#= converter.ConverterName #>());
+#else
+				converter = (MessagePackConverter)(<#=converter.FieldName#> ??= new <#= converter.ConverterName #>());
+#endif
 			}
 
 <# } else { #>
+#if NET
 			converter = (MessagePackConverter<T>)(<#=converter.FieldName#> ??= new <#= converter.ConverterName #>());
+#else
+			converter = (MessagePackConverter)(<#=converter.FieldName#> ??= new <#= converter.ConverterName #>());
+#endif
 <# } #>
 			return true;
 		}
@@ -123,7 +155,11 @@ internal static class PrimitiveConverterLookup
 <#   }
 } #>
 
+#if NET
 		string primitiveTypeName = typeof(T).Name;
+#else
+		string primitiveTypeName = type.Name;
+#endif
 		string? primitiveTypeNamespace = null;
 
 <# foreach (var converterGroup in convertersByType.Where(c => c.LazyLoad).GroupBy(c => c.PreprocessorCondition)) {
@@ -138,22 +174,38 @@ internal static class PrimitiveConverterLookup
 		string leafName = converter.TypeName.Substring(converter.TypeName.LastIndexOf('.') + 1);
 		string ns = converter.TypeName.Substring(0, converter.TypeName.LastIndexOf('.'));
 		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty; #>
+#if NET
 		if (primitiveTypeName == "<#=leafName#>" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "<#=ns#>"<#=featureCondition#>)
+#else
+		if (primitiveTypeName == "<#=leafName#>" && (primitiveTypeNamespace ??= type.Namespace) == "<#=ns#>"<#=featureCondition#>)
+#endif
 		{
 <#
 	if (converter.IsRefType) {
 #>
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
+#if NET
 				converter = (MessagePackConverter<T>?)(<#=converter.ReferencePreservingFieldName#> ??= Create<#=converter.ConverterName#><T>().WrapWithReferencePreservation());
+#else
+				converter = (MessagePackConverter?)(<#=converter.ReferencePreservingFieldName#> ??= Create<#=converter.ConverterName#><T>().WrapWithReferencePreservation());
+#endif
 			}
 			else
 			{
+#if NET
 				converter = (MessagePackConverter<T>?)(<#=converter.FieldName#> ??= Create<#=converter.ConverterName#><T>());
+#else
+				converter = (MessagePackConverter?)(<#=converter.FieldName#> ??= Create<#=converter.ConverterName#><T>());
+#endif
 			}
 
 <# } else { #>
+#if NET
 			converter = (MessagePackConverter<T>?)(<#=converter.FieldName#> ??= Create<#=converter.ConverterName#><T>());
+#else
+			converter = (MessagePackConverter?)(<#=converter.FieldName#> ??= Create<#=converter.ConverterName#>(type));
+#endif
 <# } #>
 			return converter is not null;
 		}
@@ -173,7 +225,11 @@ internal static class PrimitiveConverterLookup
 #>
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
+#if NET
 	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#><T>() => typeof(T) == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>() : null;
+#else
+	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#>(Type type) => type == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>() : null;
+#endif
 <# } #>
 }
 <#+

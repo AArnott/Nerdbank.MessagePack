@@ -1098,12 +1098,15 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <summary>
 	/// Retrieves a converter for the given type shape from runtime-supplied user sources, primitive converters, or attribute-specified converters.
 	/// </summary>
-	/// <typeparam name="T">The type for which a converter is required.</typeparam>
 	/// <param name="typeShape">The shape for the type to be converted.</param>
 	/// <param name="attributeProvider"><inheritdoc cref="TryGetConverterFromAttribute" path="/param[@name='attributeProvider']"/></param>
 	/// <param name="converter">Receives the converter if one is found.</param>
 	/// <returns>A value indicating whether a match was found.</returns>
+#if NET
 	private bool TryGetCustomOrPrimitiveConverter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
+#else
+	private bool TryGetCustomOrPrimitiveConverter(ITypeShape typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
+#endif
 	{
 		// Check if the type has a custom converter.
 		if (this.owner.TryGetRuntimeProfferedConverter(typeShape, out MessagePackConverter? proferredConverter))
@@ -1112,14 +1115,18 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return true;
 		}
 
-		if (this.owner.InternStrings && typeof(T) == typeof(string))
+		if (this.owner.InternStrings && typeShape.Type == typeof(string))
 		{
-			converter = ConverterResult.Ok((MessagePackConverter<T>)(object)(this.owner.PreserveReferences != ReferencePreservationMode.Off ? ReferencePreservingInterningStringConverter : InterningStringConverter));
+			converter = ConverterResult.Ok((MessagePackConverter)(object)(this.owner.PreserveReferences != ReferencePreservationMode.Off ? ReferencePreservingInterningStringConverter : InterningStringConverter));
 			return true;
 		}
 
 		// Check if the type has a built-in converter.
+#if NET
 		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? primitiveConverter))
+#else
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(typeShape.Type, this.owner.PreserveReferences, out MessagePackConverter? primitiveConverter))
+#endif
 		{
 			converter = ConverterResult.Ok(primitiveConverter);
 			return true;
