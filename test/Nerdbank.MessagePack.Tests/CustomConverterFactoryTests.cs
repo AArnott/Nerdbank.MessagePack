@@ -81,17 +81,14 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 	[AttributeUsage(AttributeTargets.Interface)]
 	internal class RpcMarshaledAttribute : Attribute;
 
-	internal class MarshaledObjectConverterFactory : IMessagePackConverterFactory
+	internal class MarshaledObjectConverterFactory : IMessagePackConverterFactory, ITypeShapeFunc
 	{
-		public MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape)
+		public MessagePackConverter? CreateConverter(ITypeShape shape)
 		{
-			if (typeof(T).GetCustomAttribute<RpcMarshaledAttribute>() is null)
-			{
-				return null;
-			}
-
-			return new MarshaledObjectConverter<T>();
+			return shape.Type.GetCustomAttribute<RpcMarshaledAttribute>() is null ? null : this.Invoke(shape);
 		}
+
+		object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => new MarshaledObjectConverter<T>();
 	}
 
 	internal class MarshaledObjectConverter<T> : MessagePackConverter<T>
@@ -122,17 +119,14 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 		}
 	}
 
-	internal class CustomUnionConverterFactory : IMessagePackConverterFactory
+	internal class CustomUnionConverterFactory : IMessagePackConverterFactory, ITypeShapeFunc
 	{
-		public MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape)
+		public MessagePackConverter? CreateConverter(ITypeShape shape)
 		{
-			if (typeof(A).IsAssignableFrom(typeof(T)))
-			{
-				return new CustomUnionConverter<T>();
-			}
-
-			return null;
+			return typeof(A).IsAssignableFrom(shape.Type) ? this.Invoke(shape) : null;
 		}
+
+		object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => new CustomUnionConverter<T>();
 	}
 
 	private class CustomUnionConverter<T> : MessagePackConverter<T>

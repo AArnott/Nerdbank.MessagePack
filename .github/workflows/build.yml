@@ -69,11 +69,11 @@ jobs:
         # Allow variance of a small threshold of the expected value.
         # Fail even if it's smaller than anticipated so that the expected window can be shrunk in this file.
         if ($IsLinux) {
-          $ExpectedSize = 8.18
+          $ExpectedSize = 8.08
         } elseif ($IsMacOS) {
-          $ExpectedSize = 8.04
+          $ExpectedSize = 7.93
         } else {
-          $ExpectedSize = 6.94
+          $ExpectedSize = 6.88
         }
         $AllowedVariance = 0.2
         $SizeCheckPassed = [math]::Abs($ActualSize - $ExpectedSize) -le $AllowedVariance

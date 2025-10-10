@@ -179,7 +179,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 			{
 				foreach (IMessagePackConverterFactory factory in configuration.ConverterFactories)
 				{
-					if ((converter = factory.CreateConverter<T>(typeShape)) is not null)
+					if ((converter = (MessagePackConverter<T>?)factory.CreateConverter(typeShape)) is not null)
 					{
 						break;
 					}
