@@ -914,7 +914,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				// PERF: Ideally, we can store and retrieve member influenced converters
 				// just like we do for non-member influenced ones.
 				// We'd probably use a separate dictionary dedicated to member-influenced converters.
-				return (ConverterResult)shape.Invoke(this, memberInfluence)!;
+				return (ConverterResult)shape.Accept(this.OutwardVisitor, memberInfluence)!;
 			}
 		}
 
