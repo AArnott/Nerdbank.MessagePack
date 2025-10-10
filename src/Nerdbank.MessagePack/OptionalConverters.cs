@@ -160,7 +160,11 @@ public static class OptionalConverters
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		Requires.Argument(kind is DateTimeKind.Utc or DateTimeKind.Local, nameof(kind), "Only UTC and Local DateTimeKind values are supported.");
+#if NET
 		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter(ReferencePreservationMode.Off, out MessagePackConverter<DateTime>? builtin));
+#else
+		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter(typeof(DateTime), ReferencePreservationMode.Off, out MessagePackConverter? builtin));
+#endif
 		return serializer with
 		{
 			Converters = [
@@ -200,7 +204,11 @@ public static class OptionalConverters
 	public static MessagePackSerializer WithHiFiDateTime(this MessagePackSerializer serializer)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
+#if NET
 		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter(ReferencePreservationMode.Off, out MessagePackConverter<DateTime>? builtin));
+#else
+		Assumes.True(PrimitiveConverterLookup.TryGetPrimitiveConverter(typeof(DateTime), ReferencePreservationMode.Off, out MessagePackConverter? builtin));
+#endif
 		return serializer with
 		{
 			Converters = [
