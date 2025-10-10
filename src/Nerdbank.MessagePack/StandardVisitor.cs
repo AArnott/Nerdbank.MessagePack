@@ -605,70 +605,77 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
 
-		static string CreateReadFailMessage(IParameterShape<TArgumentState, TParameterType> parameterShape, IConstructorShape constructorShape) => $"Failed to deserialize value for '{parameterShape.Name}' parameter on {constructorShape.DeclaringType.Type.FullName}.";
-
 		DeserializeProperty<TArgumentState> read;
 		DeserializePropertyAsync<TArgumentState> readAsync;
 		bool throwOnNull =
 			(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties
 			&& parameterShape.IsNonNullable
 			&& !typeof(TParameterType).IsValueType;
+
+		// We use local functions to avoid JITting both paths of the if/else for a given parameter.
 		if (throwOnNull)
 		{
-			static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter '{parameter.Name}' is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
-			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+			ThrowingHelper();
+			void ThrowingHelper()
 			{
-				try
+				read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
 				{
-					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					try
+					{
+						ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+						setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+					}
+				};
+				readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
 				{
-					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
-				}
-			};
-			readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
-			{
-				try
-				{
-					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
-					return state;
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
-				}
-			};
+					try
+					{
+						ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+						setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
+						return state;
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+					}
+				};
+			}
 		}
 		else
 		{
-			read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+			NonThrowingHelper();
+			void NonThrowingHelper()
 			{
-				try
+				read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
 				{
-					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context)!);
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					try
+					{
+						ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+						setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context)!);
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+					}
+				};
+				readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
 				{
-					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
-				}
-			};
-			readAsync = async (TArgumentState state, MessagePackAsyncReader reader, SerializationContext context) =>
-			{
-				try
-				{
-					ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
-					setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false))!);
-					return state;
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
-				}
-			};
+					try
+					{
+						ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
+						setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false))!);
+						return state;
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
+					}
+				};
+			}
 		}
 
 		return new DeserializableProperty<TArgumentState>(
@@ -924,6 +931,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return ctorParametersByName;
 	}
+
+	private static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter '{parameter.Name}' is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
+
+	private static string CreateReadFailMessage(IParameterShape parameterShape, IConstructorShape constructorShape) => $"Failed to deserialize value for '{parameterShape.Name}' parameter on {constructorShape.DeclaringType.Type.FullName}.";
 
 	private object? VisitConstructor_ArrayHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, ArrayConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
 	{
