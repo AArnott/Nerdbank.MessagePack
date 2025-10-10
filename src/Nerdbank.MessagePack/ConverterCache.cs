@@ -143,7 +143,6 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// Gets a user-defined converter for the specified type if one is available from
 	/// converters the user has supplied <em>at runtime</em>.
 	/// </summary>
-	/// <typeparam name="T">The data type for which a custom converter is desired.</typeparam>
 	/// <param name="typeShape">The shape of the data type that requires a converter.</param>
 	/// <param name="converter">Receives the converter, if the user provided one.</param>
 	/// <returns>A value indicating whether a customer converter exists.</returns>
@@ -158,17 +157,17 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// A converter returned from this method will be wrapped with reference-preservation logic when appropriate.
 	/// </para>
 	/// </remarks>
-	internal bool TryGetRuntimeProfferedConverter<T>(ITypeShape<T> typeShape, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	internal bool TryGetRuntimeProfferedConverter(ITypeShape typeShape, [NotNullWhen(true)] out MessagePackConverter? converter)
 	{
 		converter = null;
-		if (!configuration.Converters.TryGetConverter(out converter))
+		if (!configuration.Converters.TryGetConverter(typeShape.Type, out converter))
 		{
-			if (configuration.ConverterTypes.TryGetConverterType(typeof(T), out Type? converterType) ||
-				(typeof(T).IsGenericType && configuration.ConverterTypes.TryGetConverterType(typeof(T).GetGenericTypeDefinition(), out converterType)))
+			if (configuration.ConverterTypes.TryGetConverterType(typeShape.Type, out Type? converterType) ||
+				(typeShape.Type.IsGenericType && configuration.ConverterTypes.TryGetConverterType(typeShape.Type.GetGenericTypeDefinition(), out converterType)))
 			{
 				if ((typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> factory)
 				{
-					converter = (MessagePackConverter<T>)factory();
+					converter = (MessagePackConverter)factory();
 				}
 				else
 				{
@@ -179,7 +178,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 			{
 				foreach (IMessagePackConverterFactory factory in configuration.ConverterFactories)
 				{
-					if ((converter = (MessagePackConverter<T>?)factory.CreateConverter(typeShape)) is not null)
+					if ((converter = factory.CreateConverter(typeShape)) is not null)
 					{
 						break;
 					}
@@ -189,7 +188,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 
 		if (converter is not null && configuration.PreserveReferences != ReferencePreservationMode.Off)
 		{
-			converter = converter.WrapWithReferencePreservation();
+			converter = ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
 		}
 
 		return converter is not null;
