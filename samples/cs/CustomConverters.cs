@@ -483,17 +483,14 @@ namespace CustomConverterFactory
     [AttributeUsage(AttributeTargets.Interface)]
     class MarshalByRefAttribute : Attribute;
 
-    class MarshalingConverterFactory(object trackerKey) : IMessagePackConverterFactory
+    class MarshalingConverterFactory(object trackerKey) : IMessagePackConverterFactory, ITypeShapeFunc
     {
-        public MessagePackConverter<T>? CreateConverter<T>(ITypeShape<T> shape)
+        public MessagePackConverter? CreateConverter(ITypeShape shape)
         {
-            if (typeof(T).GetCustomAttribute<MarshalByRefAttribute>() is not null)
-            {
-                return new MarshalingConverter<T>(trackerKey);
-            }
-
-            return null;
+            return shape.Type.GetCustomAttribute<MarshalByRefAttribute>() is not null ? this.Invoke(shape) : null;
         }
+
+        object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => new MarshalingConverter<T>(trackerKey);
     }
 
     class MarshalingConverter<T>(object trackerKey) : MessagePackConverter<T>
