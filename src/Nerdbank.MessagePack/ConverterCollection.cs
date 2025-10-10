@@ -66,22 +66,4 @@ public class ConverterCollection : IReadOnlyCollection<MessagePackConverter>
 		converter = default;
 		return false;
 	}
-
-	/// <summary>
-	/// Retrieves a converter for a given data type, if the user supplied one.
-	/// </summary>
-	/// <typeparam name="T">The data type.</typeparam>
-	/// <param name="converter">Receives the converter, if available.</param>
-	/// <returns>A value indicating whether a converter was available.</returns>
-	internal bool TryGetConverter<T>([NotNullWhen(true)] out MessagePackConverter<T>? converter)
-	{
-		if (this.Map.TryGetValue(typeof(T), out MessagePackConverter? converterBase))
-		{
-			converter = (MessagePackConverter<T>)converterBase;
-			return true;
-		}
-
-		converter = default;
-		return false;
-	}
 }
