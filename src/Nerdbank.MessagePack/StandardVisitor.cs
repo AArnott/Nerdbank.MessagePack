@@ -327,155 +327,170 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		ConverterResult converter = this.GetConverterForMemberOrParameter(propertyShape.PropertyType, propertyShape.AttributeProvider);
 
-		static string CreateReadFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to deserialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
-		static string CreateWriteFailMessage(IPropertyShape<TDeclaringType, TPropertyType> propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {typeof(TDeclaringType).FullName}.";
-
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
+
+		// We'll break up the significant conditioned blocks into local functions to reduce the amount of time spent JITting whole code blocks that won't run.
 		if (propertyShape.HasGetter)
 		{
-			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
-			EqualityComparer<TPropertyType> eq = EqualityComparer<TPropertyType>.Default;
-
-			if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always)
+			GetterHelper();
+			void GetterHelper()
 			{
-				// Test for value-independent flags that would indicate this property must always be serialized.
-				bool alwaysSerialize =
-					((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && typeof(TPropertyType).IsValueType) ||
-					((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !typeof(TPropertyType).IsValueType) ||
-					((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
+				Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
+				EqualityComparer<TPropertyType> eq = EqualityComparer<TPropertyType>.Default;
 
-				if (alwaysSerialize)
+				if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always)
 				{
-					shouldSerialize = static obj => true;
-				}
-				else
-				{
-					// The only possibility for serializing the property that remains is that it has a non-default value.
-					TPropertyType? defaultValue = default;
-					if (constructorParameterShape?.HasDefaultValue is true)
+					NotAlwaysHelper();
+					void NotAlwaysHelper()
 					{
-						defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
-					}
-					else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
-					{
-						defaultValue = attributeDefaultValue;
-					}
+						// Test for value-independent flags that would indicate this property must always be serialized.
+						bool alwaysSerialize =
+							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && typeof(TPropertyType).IsValueType) ||
+							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !typeof(TPropertyType).IsValueType) ||
+							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
 
-					shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
+						if (alwaysSerialize)
+						{
+							shouldSerialize = static obj => true;
+						}
+						else
+						{
+							// The only possibility for serializing the property that remains is that it has a non-default value.
+							TPropertyType? defaultValue = default;
+							if (constructorParameterShape?.HasDefaultValue is true)
+							{
+								defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
+							}
+							else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
+							{
+								defaultValue = attributeDefaultValue;
+							}
+
+							shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
+						}
+					}
 				}
+
+				SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
+				{
+					// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
+					// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
+					// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
+					TPropertyType? value = getter(ref Unsafe.AsRef(in container));
+					try
+					{
+						((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, value, context);
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+					}
+				};
+				SerializePropertyAsync<TDeclaringType> serializeAsync = async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
+				{
+					try
+					{
+						await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+					}
+				};
+				msgpackWriters = (serialize, serializeAsync);
 			}
-
-			SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
-			{
-				// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
-				// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
-				// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
-				TPropertyType? value = getter(ref Unsafe.AsRef(in container));
-				try
-				{
-					((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, value, context);
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-				}
-			};
-			SerializePropertyAsync<TDeclaringType> serializeAsync = async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
-			{
-				try
-				{
-					await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-				}
-			};
-			msgpackWriters = (serialize, serializeAsync);
 		}
 
 		bool suppressIfNoConstructorParameter = true;
 		(DeserializeProperty<TDeclaringType>, DeserializePropertyAsync<TDeclaringType>)? msgpackReaders = null;
 		if (propertyShape.HasSetter)
 		{
-			Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+			SetterHelper();
+			void SetterHelper()
 			{
-				try
-				{
-					setter(ref container, ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Read(ref reader, context)!);
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-				}
-			};
-			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
-			{
-				try
-				{
-					setter(ref container, (await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).ReadAsync(reader, context).ConfigureAwait(false))!);
-					return container;
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-				}
-			};
-			msgpackReaders = (deserialize, deserializeAsync);
-			suppressIfNoConstructorParameter = false;
-		}
-		else if (propertyShape.HasGetter && converter.Value is IDeserializeInto<TPropertyType> inflater)
-		{
-			// The property has no setter, but it has a getter and the property type is a collection.
-			// So we'll assume the declaring type initializes the collection in its constructor,
-			// and we'll just deserialize into it.
-			suppressIfNoConstructorParameter = false;
-			Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
-			DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
-			{
-				if (reader.TryReadNil())
-				{
-					// No elements to read. A null collection in msgpack doesn't let us set the collection to null, so just return.
-					return;
-				}
-
-				try
-				{
-					TPropertyType collection = getter(ref container);
-					inflater.DeserializeInto(ref reader, ref collection, context);
-				}
-				catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-				{
-					throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-				}
-			};
-			DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
-			{
-				MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
-				bool isNil;
-				while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
-				{
-					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-				}
-
-				if (!isNil)
+				Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
+				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
 				{
 					try
 					{
-						TPropertyType collection = propertyShape.GetGetter()(ref container);
-						await inflater.DeserializeIntoAsync(reader, collection, context).ConfigureAwait(false);
+						setter(ref container, ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Read(ref reader, context)!);
 					}
 					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 					{
 						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
 					}
-				}
+				};
+				DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
+				{
+					try
+					{
+						setter(ref container, (await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).ReadAsync(reader, context).ConfigureAwait(false))!);
+						return container;
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+					}
+				};
+				msgpackReaders = (deserialize, deserializeAsync);
+				suppressIfNoConstructorParameter = false;
+			}
+		}
+		else if (propertyShape.HasGetter && converter.Value is IDeserializeInto<TPropertyType> inflater)
+		{
+			CollectionHelper();
+			void CollectionHelper()
+			{
+				// The property has no setter, but it has a getter and the property type is a collection.
+				// So we'll assume the declaring type initializes the collection in its constructor,
+				// and we'll just deserialize into it.
+				suppressIfNoConstructorParameter = false;
+				Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
+				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+				{
+					if (reader.TryReadNil())
+					{
+						// No elements to read. A null collection in msgpack doesn't let us set the collection to null, so just return.
+						return;
+					}
 
-				return container;
-			};
-			msgpackReaders = (deserialize, deserializeAsync);
+					try
+					{
+						TPropertyType collection = getter(ref container);
+						inflater.DeserializeInto(ref reader, ref collection, context);
+					}
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					{
+						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+					}
+				};
+				DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
+				{
+					MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+					bool isNil;
+					while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+					{
+						streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+					}
+
+					if (!isNil)
+					{
+						try
+						{
+							TPropertyType collection = propertyShape.GetGetter()(ref container);
+							await inflater.DeserializeIntoAsync(reader, collection, context).ConfigureAwait(false);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+						}
+					}
+
+					return container;
+				};
+				msgpackReaders = (deserialize, deserializeAsync);
+			}
 		}
 
 		if (suppressIfNoConstructorParameter && constructorParameterShape is null)
@@ -935,6 +950,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter '{parameter.Name}' is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
 
 	private static string CreateReadFailMessage(IParameterShape parameterShape, IConstructorShape constructorShape) => $"Failed to deserialize value for '{parameterShape.Name}' parameter on {constructorShape.DeclaringType.Type.FullName}.";
+
+	private static string CreateReadFailMessage(IPropertyShape propertyShape) => $"Failed to deserialize '{propertyShape.Name}' property on {propertyShape.DeclaringType.Type.FullName}.";
+
+	private static string CreateWriteFailMessage(IPropertyShape propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {propertyShape.DeclaringType.Type.FullName}.";
 
 	private object? VisitConstructor_ArrayHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, ArrayConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
 	{
