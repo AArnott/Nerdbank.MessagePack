@@ -940,7 +940,7 @@ public partial record MessagePackSerializer
 			// and more bytes are still to come.
 			if (this.MaxAsyncBuffer > 0)
 			{
-				ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
+				ReadResult readResult = await reader.ReadAtLeastNoLOHAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
 				if (readResult.IsCompleted)
 				{
 					MessagePackReader msgpackReader = new(readResult.Buffer);
@@ -977,7 +977,7 @@ public partial record MessagePackSerializer
 			// and more bytes are still to come.
 			if (this.MaxAsyncBuffer > 0)
 			{
-				ReadResult readResult = await reader.ReadAtLeastAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
+				ReadResult readResult = await reader.ReadAtLeastNoLOHAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
 				if (readResult.IsCompleted)
 				{
 					MessagePackReader msgpackReader = new(readResult.Buffer);
