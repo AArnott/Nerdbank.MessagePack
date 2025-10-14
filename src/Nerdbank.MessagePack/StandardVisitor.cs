@@ -580,13 +580,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		DeserializeProperty<TArgumentState> read;
 		DeserializePropertyAsync<TArgumentState> readAsync;
-		bool throwOnNull =
-			(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties
-			&& parameterShape.IsNonNullable
-			&& !typeof(TParameterType).IsValueType;
 
 		// We use local functions to avoid JITting both paths of the if/else for a given parameter.
-		if (throwOnNull)
+		if (this.ShouldThrowOnNull(parameterShape))
 		{
 			ThrowingHelper();
 			void ThrowingHelper()
@@ -934,6 +930,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		=> ((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && propertyType.IsValueType) ||
 			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !propertyType.IsValueType) ||
 			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
+
+	private bool ShouldThrowOnNull(IParameterShape parameterShape)
+		=> (this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties
+			&& parameterShape.IsNonNullable
+			&& !parameterShape.ParameterType.Type.IsValueType;
 
 	private object? VisitConstructor_ArrayHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, ArrayConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
 	{
