@@ -347,36 +347,23 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
 				EqualityComparer<TPropertyType> eq = EqualityComparer<TPropertyType>.Default;
 
-				if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always)
+				if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always && !this.ShouldAlwaysSerializeParameter(typeof(TPropertyType), constructorParameterShape))
 				{
 					NotAlwaysHelper();
 					void NotAlwaysHelper()
 					{
-						// Test for value-independent flags that would indicate this property must always be serialized.
-						bool alwaysSerialize =
-							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && typeof(TPropertyType).IsValueType) ||
-							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !typeof(TPropertyType).IsValueType) ||
-							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
-
-						if (alwaysSerialize)
+						// The only possibility for serializing the property that remains is that it has a non-default value.
+						TPropertyType? defaultValue = default;
+						if (constructorParameterShape?.HasDefaultValue is true)
 						{
-							shouldSerialize = static obj => true;
+							defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
 						}
-						else
+						else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
 						{
-							// The only possibility for serializing the property that remains is that it has a non-default value.
-							TPropertyType? defaultValue = default;
-							if (constructorParameterShape?.HasDefaultValue is true)
-							{
-								defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
-							}
-							else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
-							{
-								defaultValue = attributeDefaultValue;
-							}
-
-							shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
+							defaultValue = attributeDefaultValue;
 						}
+
+						shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
 					}
 				}
 
@@ -385,10 +372,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
 					// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
 					// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
-					TPropertyType? value = getter(ref Unsafe.AsRef(in container));
 					try
 					{
-						((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, value, context);
+						((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
 					}
 					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 					{
@@ -943,6 +929,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private static string CreateReadFailMessage(IPropertyShape propertyShape) => $"Failed to deserialize '{propertyShape.Name}' property on {propertyShape.DeclaringType.Type.FullName}.";
 
 	private static string CreateWriteFailMessage(IPropertyShape propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {propertyShape.DeclaringType.Type.FullName}.";
+
+	private bool ShouldAlwaysSerializeParameter(Type propertyType, IParameterShape? constructorParameterShape)
+		=> ((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && propertyType.IsValueType) ||
+			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !propertyType.IsValueType) ||
+			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
 
 	private object? VisitConstructor_ArrayHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, ArrayConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
 	{
