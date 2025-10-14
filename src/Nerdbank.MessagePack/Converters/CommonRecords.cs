@@ -46,6 +46,33 @@ internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType co
 internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringType>(TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context);
 
 /// <summary>
+/// A non-generic interface for <see cref="ArrayConstructorVisitorInputs{TDeclaringType}"/>.
+/// </summary>
+internal interface IArrayConstructorVisitorInputs
+{
+	/// <summary>
+	/// Gets the number of properties.
+	/// </summary>
+	int Count { get; }
+
+	/// <summary>
+	/// Gets the name of the property at the given index.
+	/// </summary>
+	/// <param name="index">The zero-based index of the property.</param>
+	/// <returns>The name of the property at the given index.</returns>
+	string? GetPropertyNameByIndex(int index);
+}
+
+/// <summary>
+/// A non-generic interface for <see cref="MapConstructorVisitorInputs{TDeclaringType}"/>.
+/// </summary>
+internal interface IMapConstructorVisitorInputs
+{
+	/// <summary>Gets the collection of constructor parameters, with any conflicting names removed.</summary>
+	Dictionary<string, IParameterShape> ParametersByName { get; }
+}
+
+/// <summary>
 /// A map of serializable properties.
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type that contains the properties to be serialized.</typeparam>
@@ -220,7 +247,7 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 	MapSerializableProperties<TDeclaringType> serializers,
 	MapDeserializableProperties<TDeclaringType> deserializers,
 	Dictionary<string, IParameterShape> parametersByName,
-	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty)
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty) : IMapConstructorVisitorInputs
 {
 	/// <summary>Gets the serializable properties on the data type.</summary>
 	public MapSerializableProperties<TDeclaringType> Serializers => serializers;
@@ -228,7 +255,7 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 	/// <summary>Gets the deserializable properties on the data type.</summary>
 	public MapDeserializableProperties<TDeclaringType> Deserializers => deserializers;
 
-	/// <summary>Gets the collection of constructor parameters, with any conflicting names removed.</summary>
+	/// <inheritdoc />
 	public Dictionary<string, IParameterShape> ParametersByName => parametersByName;
 
 	/// <summary>Gets the special unused data property, if present.</summary>
@@ -244,13 +271,19 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 /// <param name="unusedDataProperty">The special unused data property, if present.</param>
 internal class ArrayConstructorVisitorInputs<TDeclaringType>(
 	List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> properties,
-	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty)
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty) : IArrayConstructorVisitorInputs
 {
 	/// <summary>Gets the accessors to use for accessing each array element.</summary>
 	public List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties => properties;
 
 	/// <summary>Gets the special unused data property, if present.</summary>
 	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
+
+	/// <inheritdoc/>
+	int IArrayConstructorVisitorInputs.Count => this.Properties.Count;
+
+	/// <inheritdoc/>
+	public string? GetPropertyNameByIndex(int index) => this.Properties[index]?.Name;
 
 	/// <summary>
 	/// Constructs an array of just the property accessors (without property names).

@@ -105,29 +105,37 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
 						if (keyAttribute is not null || this.owner.PerfOverSchemaStability || objectShape.IsTupleType)
 						{
-							propertyAccessors ??= new();
-							int index = keyAttribute?.Index ?? propertyIndex;
-							while (propertyAccessors.Count <= index)
+							UsesKeys();
+							void UsesKeys()
 							{
-								propertyAccessors.Add(null);
-							}
+								propertyAccessors ??= new();
+								int index = keyAttribute?.Index ?? propertyIndex;
+								while (propertyAccessors.Count <= index)
+								{
+									propertyAccessors.Add(null);
+								}
 
-							propertyAccessors[index] = (propertyName, accessors);
+								propertyAccessors[index] = (propertyName, accessors);
+							}
 						}
 						else
 						{
-							serializable ??= new();
-							deserializable ??= new();
-
-							StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
-							if (accessors.MsgPackWriters is var (serialize, serializeAsync))
+							NoKeys();
+							void NoKeys()
 							{
-								serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.Converter, accessors.ShouldSerialize, property));
-							}
+								serializable ??= new();
+								deserializable ??= new();
 
-							if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
-							{
-								deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter, property.Position));
+								StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+								if (accessors.MsgPackWriters is var (serialize, serializeAsync))
+								{
+									serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.Converter, accessors.ShouldSerialize, property));
+								}
+
+								if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
+								{
+									deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter, property.Position));
+								}
 							}
 						}
 
@@ -339,36 +347,23 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
 				EqualityComparer<TPropertyType> eq = EqualityComparer<TPropertyType>.Default;
 
-				if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always)
+				if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always && !this.ShouldAlwaysSerializeParameter(typeof(TPropertyType), constructorParameterShape))
 				{
 					NotAlwaysHelper();
 					void NotAlwaysHelper()
 					{
-						// Test for value-independent flags that would indicate this property must always be serialized.
-						bool alwaysSerialize =
-							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && typeof(TPropertyType).IsValueType) ||
-							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !typeof(TPropertyType).IsValueType) ||
-							((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
-
-						if (alwaysSerialize)
+						// The only possibility for serializing the property that remains is that it has a non-default value.
+						TPropertyType? defaultValue = default;
+						if (constructorParameterShape?.HasDefaultValue is true)
 						{
-							shouldSerialize = static obj => true;
+							defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
 						}
-						else
+						else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
 						{
-							// The only possibility for serializing the property that remains is that it has a non-default value.
-							TPropertyType? defaultValue = default;
-							if (constructorParameterShape?.HasDefaultValue is true)
-							{
-								defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
-							}
-							else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
-							{
-								defaultValue = attributeDefaultValue;
-							}
-
-							shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
+							defaultValue = attributeDefaultValue;
 						}
+
+						shouldSerialize = obj => !eq.Equals(getter(ref obj), defaultValue!);
 					}
 				}
 
@@ -377,10 +372,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
 					// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
 					// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
-					TPropertyType? value = getter(ref Unsafe.AsRef(in container));
 					try
 					{
-						((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, value, context);
+						((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
 					}
 					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 					{
@@ -529,30 +523,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		object? MapHelperNonEmptyCtor(MapConstructorVisitorInputs<TDeclaringType> inputs)
 		{
-			List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
-
 			var spanDictContent = new KeyValuePair<ReadOnlyMemory<byte>, DeserializableProperty<TArgumentState>>[inputs.ParametersByName.Count];
-			int i = 0;
-			foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
+			if (this.VisitConstructor_TryPerParameterMap(
+				constructorShape,
+				inputs,
+				(name, index, parameterResult) => spanDictContent[index] = new(name, (DeserializableProperty<TArgumentState>)parameterResult)) is { } failureResult)
 			{
-				ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
-				object parameterResult = p.Value.Accept(this, constructorShape)!;
-				if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
-				{
-					return failureResult;
-				}
-
-				var prop = (DeserializableProperty<TArgumentState>)parameterResult;
-				string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
-				spanDictContent[i++] = new(Encoding.UTF8.GetBytes(name), prop);
+				return failureResult;
 			}
 
 			SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = new(spanDictContent, ByteSpanEqualityComparer.Ordinal);
 
-			MapSerializableProperties<TDeclaringType> serializeable = inputs.Serializers;
-			serializeable.Properties = propertySerializers.ToArray();
 			return ConverterResult.Ok(new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
-				serializeable,
+				inputs.Serializers,
 				constructorShape.GetArgumentStateConstructor(),
 				inputs.UnusedDataProperty,
 				constructorShape.GetParameterizedConstructor(),
@@ -564,35 +547,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		object? ArrayHelperNonEmptyCtor(ArrayConstructorVisitorInputs<TDeclaringType> inputs)
 		{
-			Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
-			for (int i = 0; i < inputs.Properties.Count; i++)
-			{
-				if (inputs.Properties[i] is { } property)
-				{
-					propertyIndexesByName[property.Name] = i;
-				}
-			}
-
 			DeserializableProperty<TArgumentState>?[] parameters = new DeserializableProperty<TArgumentState>?[inputs.Properties.Count];
-			foreach (IParameterShape parameter in constructorShape.Parameters)
+			if (this.VisitConstructor_TryPerParameterArray(constructorShape, inputs, parameters) is { } failureResult)
 			{
-				if (parameter is IParameterShape<TArgumentState, UnusedDataPacket>)
-				{
-					continue;
-				}
-
-				if (!propertyIndexesByName.TryGetValue(parameter.Name, out int index))
-				{
-					throw new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type.");
-				}
-
-				object parameterResult = parameter.Accept(this, constructorShape)!;
-				if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(parameter, out ConverterResult? failureResult))
-				{
-					return failureResult;
-				}
-
-				parameters[index] = (DeserializableProperty<TArgumentState>)parameterResult;
+				return failureResult;
 			}
 
 			return ConverterResult.Ok(new ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
@@ -972,9 +930,68 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	private static string CreateWriteFailMessage(IPropertyShape propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {propertyShape.DeclaringType.Type.FullName}.";
 
+	private bool ShouldAlwaysSerializeParameter(Type propertyType, IParameterShape? constructorParameterShape)
+		=> ((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && propertyType.IsValueType) ||
+			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !propertyType.IsValueType) ||
+			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
+
 	private object? VisitConstructor_ArrayHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, ArrayConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
 	{
 		return ConverterResult.Ok(new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), inputs.UnusedDataProperty, defaultConstructor, constructorShape.DeclaringType.Properties, this.owner.SerializeDefaultValues));
+	}
+
+	private ConverterResult? VisitConstructor_TryPerParameterMap(IConstructorShape constructorShape, IMapConstructorVisitorInputs inputs, Action<ReadOnlyMemory<byte>, int, object> handler)
+	{
+		int i = 0;
+		foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
+		{
+			ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
+			object parameterResult = p.Value.Accept(this, constructorShape)!;
+			if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
+			{
+				return failureResult;
+			}
+
+			string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
+			handler(Encoding.UTF8.GetBytes(name), i++, parameterResult);
+		}
+
+		return null;
+	}
+
+	private ConverterResult? VisitConstructor_TryPerParameterArray(IConstructorShape constructorShape, IArrayConstructorVisitorInputs inputs, object?[] results)
+	{
+		Dictionary<string, int> propertyIndexesByName = new(inputs.Count, StringComparer.Ordinal);
+		for (int i = 0; i < inputs.Count; i++)
+		{
+			if (inputs.GetPropertyNameByIndex(i) is string name)
+			{
+				propertyIndexesByName[name] = i;
+			}
+		}
+
+		foreach (IParameterShape parameter in constructorShape.Parameters)
+		{
+			if (parameter.ParameterType.Type == typeof(UnusedDataPacket))
+			{
+				continue;
+			}
+
+			if (!propertyIndexesByName.TryGetValue(parameter.Name, out int index))
+			{
+				return ConverterResult.Err(new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type."));
+			}
+
+			object result = parameter.Accept(this, constructorShape)!;
+			if (result is ConverterResult converterResult && converterResult.TryPrepareFailPath(parameter, out ConverterResult? failureResult))
+			{
+				return failureResult;
+			}
+
+			results[index] = result;
+		}
+
+		return null;
 	}
 
 	private object? VisitConstructor_MapHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, MapConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
