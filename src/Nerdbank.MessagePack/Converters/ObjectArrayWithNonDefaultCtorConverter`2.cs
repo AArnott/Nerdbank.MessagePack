@@ -29,7 +29,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	where TArgumentState : IArgumentState
 {
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // Converters should read or write exactly one msgpack structure -- we use local functions
 	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning restore NBMsgPack031 // Converters should read or write exactly one msgpack structure
 	{
 		if (reader.TryReadNil())
 		{
@@ -40,64 +42,52 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		TArgumentState argState = argStateCtor();
 		UnusedDataPacket.Array? unused = null;
 
+		// We use local functions to reduce JIT cost to just what needs to execute.
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
-			// The indexes we have are the keys in the map rather than indexes into the array.
-			int count = reader.ReadMapHeader();
-			for (int i = 0; i < count; i++)
+			ReadMap(ref reader, context, ref argState, ref unused);
+			void ReadMap(ref MessagePackReader reader, SerializationContext context, ref TArgumentState argState, ref UnusedDataPacket.Array? unused)
 			{
-				int index = reader.ReadInt32();
-				if (properties.Length > index && parameters[index] is { } deserialize)
+				// The indexes we have are the keys in the map rather than indexes into the array.
+				int count = reader.ReadMapHeader();
+				for (int i = 0; i < count; i++)
 				{
-					deserialize.Read(ref argState, ref reader, context);
-				}
-				else
-				{
-					if (this.UnusedDataProperty?.Setter is not null)
+					int index = reader.ReadInt32();
+					if (properties.Length > index && parameters[index] is { } deserialize)
 					{
-						unused ??= new();
-						unused.Add(index, reader.ReadRaw(context));
+						deserialize.Read(ref argState, ref reader, context);
 					}
 					else
 					{
-						reader.Skip(context);
+						Helper.HandleUnrecognizedProperty(this.UnusedDataProperty, ref reader, context, ref unused, index);
 					}
 				}
-			}
 
-			ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
+				ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
+			}
 		}
 		else
 		{
-			int count = reader.ReadArrayHeader();
-			for (int i = 0; i < count; i++)
+			ReadArray(ref reader, context, ref argState, ref unused);
+			void ReadArray(ref MessagePackReader reader, SerializationContext context, ref TArgumentState argState, ref UnusedDataPacket.Array? unused)
 			{
-				if (parameters.Length > i && parameters[i] is { } deserialize)
+				int count = reader.ReadArrayHeader();
+				for (int i = 0; i < count; i++)
 				{
-					deserialize.Read(ref argState, ref reader, context);
-				}
-				else if (this.UnusedDataProperty?.Setter is not null)
-				{
-					unused ??= new();
-					unused.Add(i, reader.ReadRaw(context));
-				}
-				else
-				{
-					reader.Skip(context);
+					if (parameters.Length > i && parameters[i] is { } deserialize)
+					{
+						deserialize.Read(ref argState, ref reader, context);
+					}
+					else
+					{
+						Helper.HandleUnrecognizedProperty(this.UnusedDataProperty, ref reader, context, ref unused, i);
+					}
 				}
 			}
 		}
 
 		TDeclaringType value = ctor(ref argState);
-		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
-		{
-			this.UnusedDataProperty.Setter(ref value, unused);
-		}
-
-		if (value is IMessagePackSerializationCallbacks callbacks)
-		{
-			callbacks.OnAfterDeserialize();
-		}
+		Helper.ReadFinishedHelper(this.UnusedDataProperty, unused, ref value);
 
 		return value;
 	}
@@ -152,14 +142,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					{
 						deserialize(ref argState, ref syncReader, context);
 					}
-					else if (this.UnusedDataProperty?.Setter is not null)
-					{
-						unused ??= new();
-						unused.Add(propertyIndex, syncReader.ReadRaw(context));
-					}
 					else
 					{
-						syncReader.Skip(context);
+						Helper.HandleUnrecognizedProperty(this.UnusedDataProperty, ref syncReader, context, ref unused, propertyIndex);
 					}
 
 					remainingEntries--;
@@ -222,14 +207,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 						{
 							deserialize(ref argState, ref syncReader, context);
 						}
-						else if (this.UnusedDataProperty?.Setter is not null)
-						{
-							unused ??= new();
-							unused.Add(i, syncReader.ReadRaw(context));
-						}
 						else
 						{
-							syncReader.Skip(context);
+							Helper.HandleUnrecognizedProperty(this.UnusedDataProperty, ref syncReader, context, ref unused, i);
 						}
 					}
 
@@ -270,16 +250,43 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		TDeclaringType value = ctor(ref argState);
 
-		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
+		Helper.ReadFinishedHelper(this.UnusedDataProperty, unused, ref value);
+
+		return value;
+	}
+}
+
+#pragma warning disable SA1402 // File may only contain a single type
+#pragma warning disable SA1600 // Elements should be documented
+
+/// <summary>
+/// Helper methods with reduced generic context to encourage native code reuse and reduce JIT cost.
+/// </summary>
+file class Helper
+{
+	internal static void ReadFinishedHelper<TDeclaringType>(DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty, UnusedDataPacket.Array? unused, ref TDeclaringType value)
+	{
+		if (unused is not null && value is not null && unusedDataProperty?.Setter is not null)
 		{
-			this.UnusedDataProperty.Setter(ref value, unused);
+			unusedDataProperty.Setter(ref value, unused);
 		}
 
 		if (value is IMessagePackSerializationCallbacks callbacks)
 		{
 			callbacks.OnAfterDeserialize();
 		}
+	}
 
-		return value;
+	internal static void HandleUnrecognizedProperty<TDeclaringType>(DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty, ref MessagePackReader reader, in SerializationContext context, ref UnusedDataPacket.Array? unused, int index)
+	{
+		if (unusedDataProperty?.Setter is not null)
+		{
+			unused ??= new();
+			unused.Add(index, reader.ReadRaw(context));
+		}
+		else
+		{
+			reader.Skip(context);
+		}
 	}
 }
