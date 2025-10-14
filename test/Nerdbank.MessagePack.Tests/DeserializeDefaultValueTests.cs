@@ -5,6 +5,7 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 {
 	private static readonly ReadOnlySequence<byte> NullMessageMsgPackMap = CreateNullMessageObject();
 	private static readonly ReadOnlySequence<byte> EmptyMsgPackMap = CreateEmptyMap();
+	private static readonly ReadOnlySequence<byte> EmptyMsgPackArray = CreateEmptyArray();
 
 	[Theory, PairwiseData]
 	public async Task NullValueRejectedForNonNullableRequiredProperty(bool async)
@@ -40,6 +41,18 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 	public async Task RejectMissingValueForNonNullableRequiredProperty(bool async)
 	{
 		await this.ExpectDeserializationThrowsAsync<RequiredNonNullProperty>(EmptyMsgPackMap, async, MessagePackSerializationException.ErrorCode.MissingRequiredProperty);
+	}
+
+	[Theory, PairwiseData]
+	public async Task RejectMissingValueForNonNullableRequiredProperty_KeyedMap(bool async)
+	{
+		await this.ExpectDeserializationThrowsAsync<RequiredNonNullKeyedProperty>(EmptyMsgPackMap, async, MessagePackSerializationException.ErrorCode.MissingRequiredProperty);
+	}
+
+	[Theory, PairwiseData]
+	public async Task RejectMissingValueForNonNullableRequiredProperty_KeyedArray(bool async)
+	{
+		await this.ExpectDeserializationThrowsAsync<RequiredNonNullKeyedProperty>(EmptyMsgPackArray, async, MessagePackSerializationException.ErrorCode.MissingRequiredProperty);
 	}
 
 	[Fact]
@@ -97,6 +110,15 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 		return seq;
 	}
 
+	private static ReadOnlySequence<byte> CreateEmptyArray()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteArrayHeader(0);
+		writer.Flush();
+		return seq;
+	}
+
 	private async ValueTask<T?> DeserializeMaybeAsync<T>(ReadOnlySequence<byte> msgpack, bool async)
 #if NET
 		where T : IShapeable<T>
@@ -125,6 +147,9 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 
 	[GenerateShape]
 	public partial record RequiredNonNullProperty(string Message);
+
+	[GenerateShape]
+	public partial record RequiredNonNullKeyedProperty([property: Key(0)] string Message);
 
 	[GenerateShape]
 	public partial record OptionalNonNullProperty(string Message = "");

@@ -64,8 +64,6 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					}
 				}
 			}
-
-			ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		}
 		else
 		{
@@ -88,6 +86,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			}
 		}
 
+		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		TDeclaringType value = ctor(ref argState);
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
 		{
@@ -195,8 +194,6 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 				reader.ReturnReader(ref syncReader);
 			}
-
-			ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		}
 		else
 		{
@@ -268,6 +265,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			}
 		}
 
+		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
