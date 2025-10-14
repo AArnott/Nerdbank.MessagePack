@@ -537,30 +537,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		object? MapHelperNonEmptyCtor(MapConstructorVisitorInputs<TDeclaringType> inputs)
 		{
-			List<SerializableProperty<TDeclaringType>> propertySerializers = inputs.Serializers.Properties.Span.ToList();
-
 			var spanDictContent = new KeyValuePair<ReadOnlyMemory<byte>, DeserializableProperty<TArgumentState>>[inputs.ParametersByName.Count];
-			int i = 0;
-			foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
+			if (this.VisitConstructor_TryPerParameterMap(
+				constructorShape,
+				inputs,
+				(name, index, parameterResult) => spanDictContent[index] = new(name, (DeserializableProperty<TArgumentState>)parameterResult)) is { } failureResult)
 			{
-				ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
-				object parameterResult = p.Value.Accept(this, constructorShape)!;
-				if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
-				{
-					return failureResult;
-				}
-
-				var prop = (DeserializableProperty<TArgumentState>)parameterResult;
-				string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
-				spanDictContent[i++] = new(Encoding.UTF8.GetBytes(name), prop);
+				return failureResult;
 			}
 
 			SpanDictionary<byte, DeserializableProperty<TArgumentState>> parameters = new(spanDictContent, ByteSpanEqualityComparer.Ordinal);
 
-			MapSerializableProperties<TDeclaringType> serializeable = inputs.Serializers;
-			serializeable.Properties = propertySerializers.ToArray();
 			return ConverterResult.Ok(new ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
-				serializeable,
+				inputs.Serializers,
 				constructorShape.GetArgumentStateConstructor(),
 				inputs.UnusedDataProperty,
 				constructorShape.GetParameterizedConstructor(),
@@ -572,35 +561,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		object? ArrayHelperNonEmptyCtor(ArrayConstructorVisitorInputs<TDeclaringType> inputs)
 		{
-			Dictionary<string, int> propertyIndexesByName = new(StringComparer.Ordinal);
-			for (int i = 0; i < inputs.Properties.Count; i++)
-			{
-				if (inputs.Properties[i] is { } property)
-				{
-					propertyIndexesByName[property.Name] = i;
-				}
-			}
-
 			DeserializableProperty<TArgumentState>?[] parameters = new DeserializableProperty<TArgumentState>?[inputs.Properties.Count];
-			foreach (IParameterShape parameter in constructorShape.Parameters)
+			if (this.VisitConstructor_TryPerParameterArray(constructorShape, inputs, parameters) is { } failureResult)
 			{
-				if (parameter is IParameterShape<TArgumentState, UnusedDataPacket>)
-				{
-					continue;
-				}
-
-				if (!propertyIndexesByName.TryGetValue(parameter.Name, out int index))
-				{
-					throw new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type.");
-				}
-
-				object parameterResult = parameter.Accept(this, constructorShape)!;
-				if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(parameter, out ConverterResult? failureResult))
-				{
-					return failureResult;
-				}
-
-				parameters[index] = (DeserializableProperty<TArgumentState>)parameterResult;
+				return failureResult;
 			}
 
 			return ConverterResult.Ok(new ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
@@ -983,6 +947,60 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private object? VisitConstructor_ArrayHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, ArrayConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
 	{
 		return ConverterResult.Ok(new ObjectArrayConverter<TDeclaringType>(inputs.GetJustAccessors(), inputs.UnusedDataProperty, defaultConstructor, constructorShape.DeclaringType.Properties, this.owner.SerializeDefaultValues));
+	}
+
+	private ConverterResult? VisitConstructor_TryPerParameterMap(IConstructorShape constructorShape, IMapConstructorVisitorInputs inputs, Action<ReadOnlyMemory<byte>, int, object> handler)
+	{
+		int i = 0;
+		foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
+		{
+			ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
+			object parameterResult = p.Value.Accept(this, constructorShape)!;
+			if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
+			{
+				return failureResult;
+			}
+
+			string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
+			handler(Encoding.UTF8.GetBytes(name), i++, parameterResult);
+		}
+
+		return null;
+	}
+
+	private ConverterResult? VisitConstructor_TryPerParameterArray(IConstructorShape constructorShape, IArrayConstructorVisitorInputs inputs, object?[] results)
+	{
+		Dictionary<string, int> propertyIndexesByName = new(inputs.Count, StringComparer.Ordinal);
+		for (int i = 0; i < inputs.Count; i++)
+		{
+			if (inputs.GetPropertyNameByIndex(i) is string name)
+			{
+				propertyIndexesByName[name] = i;
+			}
+		}
+
+		foreach (IParameterShape parameter in constructorShape.Parameters)
+		{
+			if (parameter.ParameterType.Type == typeof(UnusedDataPacket))
+			{
+				continue;
+			}
+
+			if (!propertyIndexesByName.TryGetValue(parameter.Name, out int index))
+			{
+				return ConverterResult.Err(new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type."));
+			}
+
+			object result = parameter.Accept(this, constructorShape)!;
+			if (result is ConverterResult converterResult && converterResult.TryPrepareFailPath(parameter, out ConverterResult? failureResult))
+			{
+				return failureResult;
+			}
+
+			results[index] = result;
+		}
+
+		return null;
 	}
 
 	private object? VisitConstructor_MapHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, MapConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
