@@ -105,29 +105,37 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
 						if (keyAttribute is not null || this.owner.PerfOverSchemaStability || objectShape.IsTupleType)
 						{
-							propertyAccessors ??= new();
-							int index = keyAttribute?.Index ?? propertyIndex;
-							while (propertyAccessors.Count <= index)
+							UsesKeys();
+							void UsesKeys()
 							{
-								propertyAccessors.Add(null);
-							}
+								propertyAccessors ??= new();
+								int index = keyAttribute?.Index ?? propertyIndex;
+								while (propertyAccessors.Count <= index)
+								{
+									propertyAccessors.Add(null);
+								}
 
-							propertyAccessors[index] = (propertyName, accessors);
+								propertyAccessors[index] = (propertyName, accessors);
+							}
 						}
 						else
 						{
-							serializable ??= new();
-							deserializable ??= new();
-
-							StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
-							if (accessors.MsgPackWriters is var (serialize, serializeAsync))
+							NoKeys();
+							void NoKeys()
 							{
-								serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.Converter, accessors.ShouldSerialize, property));
-							}
+								serializable ??= new();
+								deserializable ??= new();
 
-							if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
-							{
-								deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter, property.Position));
+								StringEncoding.GetEncodedStringBytes(propertyName, out ReadOnlyMemory<byte> utf8Bytes, out ReadOnlyMemory<byte> msgpackEncoded);
+								if (accessors.MsgPackWriters is var (serialize, serializeAsync))
+								{
+									serializable.Add(new(propertyName, msgpackEncoded, serialize, serializeAsync, accessors.Converter, accessors.ShouldSerialize, property));
+								}
+
+								if (accessors.MsgPackReaders is var (deserialize, deserializeAsync))
+								{
+									deserializable.Add(new(property.Name, utf8Bytes, deserialize, deserializeAsync, accessors.Converter, property.Position));
+								}
 							}
 						}
 
