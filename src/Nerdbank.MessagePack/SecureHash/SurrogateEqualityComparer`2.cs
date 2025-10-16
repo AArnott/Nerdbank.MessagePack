@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if NETSTANDARD
+#if !NET
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8767 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
 #endif
