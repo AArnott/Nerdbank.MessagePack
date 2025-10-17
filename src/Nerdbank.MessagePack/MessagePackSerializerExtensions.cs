@@ -51,6 +51,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static JsonObject GetJsonSchema<T>(this MessagePackSerializer self)
 		=> Requires.NotNull(self).GetJsonSchema(TypeShapeResolver.ResolveDynamicOrThrow<T>());
@@ -73,6 +74,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static JsonObject GetJsonSchema<T, TProvider>(this MessagePackSerializer self)
 		=> Requires.NotNull(self).GetJsonSchema(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
@@ -90,6 +92,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the SerializationContext.GetConverter<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T>(this SerializationContext context)
 		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
@@ -106,6 +109,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the SerializationContext.GetConverter<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T, TProvider>(this SerializationContext context)
 		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
@@ -123,6 +127,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the ConverterContext.GetConverter<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T>(this ConverterContext context)
 		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
@@ -139,6 +144,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the ConverterContext.GetConverter<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T, TProvider>(this ConverterContext context)
 		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
