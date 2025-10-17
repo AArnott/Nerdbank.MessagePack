@@ -10,7 +10,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// A converter for the <see cref="JsonElement"/> type.
 /// </summary>
 /// <remarks>
-/// This converter only writes these objects. It throws <see cref="NotSupportedException"/> when reading them.
+/// Because <see cref="JsonElement"/> is merely a struct that points to underlying data,
+/// the msgpack is first translated to UTF-8 JSON and then parsed into a <see cref="JsonElement"/>.
 /// </remarks>
 [GenerateShapeFor<JsonNode>]
 internal partial class JsonElementConverter : MessagePackConverter<JsonElement>
