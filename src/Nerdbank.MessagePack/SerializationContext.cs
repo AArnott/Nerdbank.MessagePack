@@ -216,17 +216,17 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets a converter for a given type shape.
 	/// </summary>
-	/// <param name="shape">The shape of the type to be converted.</param>
+	/// <param name="typeShape">The shape of the type to be converted.</param>
 	/// <returns>The converter.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public MessagePackConverter GetConverter(ITypeShape shape)
+	public MessagePackConverter GetConverter(ITypeShape typeShape)
 	{
-		Requires.NotNull(shape);
+		Requires.NotNull(typeShape);
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.Cache.GetOrAddConverter(shape).ValueOrThrow;
+		MessagePackConverter result = this.Cache.GetOrAddConverter(typeShape).ValueOrThrow;
 		return this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation();
 	}
 
@@ -234,17 +234,17 @@ public record struct SerializationContext
 	/// Gets a converter for a given type shape.
 	/// </summary>
 	/// <typeparam name="T">The type to be converted.</typeparam>
-	/// <param name="shape">The shape of the type to be converted.</param>
+	/// <param name="typeShape">The shape of the type to be converted.</param>
 	/// <returns>The converter.</returns>
 	/// <exception cref="InvalidOperationException">Thrown if no serialization operation is in progress.</exception>
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public MessagePackConverter<T> GetConverter<T>(ITypeShape<T> shape)
+	public MessagePackConverter<T> GetConverter<T>(ITypeShape<T> typeShape)
 	{
-		Requires.NotNull(shape);
+		Requires.NotNull(typeShape);
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.Cache.GetOrAddConverter(shape).ValueOrThrow;
+		MessagePackConverter result = this.Cache.GetOrAddConverter(typeShape).ValueOrThrow;
 		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
 	}
 
@@ -258,8 +258,9 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This method is intended only for use by custom converters in order to delegate conversion of sub-values.
 	/// </remarks>
-	public MessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider)
+	public MessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider = null)
 	{
+		Requires.NotNull(type);
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		IMessagePackConverterInternal result = (IMessagePackConverterInternal)this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
 		return this.ReferenceEqualityTracker is null ? (MessagePackConverter)result : result.WrapWithReferencePreservation();

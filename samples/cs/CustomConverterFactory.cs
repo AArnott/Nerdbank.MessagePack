@@ -7,7 +7,7 @@ namespace CustomConverterFactory
     internal class NonGenericCustomConverterFactory : IMessagePackConverterFactory
     {
         // special purpose factory knows exactly what it supports. No generic type parameter needed.
-        public MessagePackConverter? CreateConverter(ITypeShape shape)
+        public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
             => shape.Type == typeof(List<Guid>) ? new WrapInArrayConverter<List<Guid>>() : null;
     }
     #endregion
@@ -16,7 +16,7 @@ namespace CustomConverterFactory
     internal class GenericCustomConverterFactory : IMessagePackConverterFactory, ITypeShapeFunc
     {
         // perform type check, then defer to generic method.
-        public MessagePackConverter? CreateConverter(ITypeShape shape)
+        public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
             => shape.Type == typeof(int) ? this.Invoke(shape) : null;
 
         // type check is already done, just create the converter.
@@ -29,7 +29,7 @@ namespace CustomConverterFactory
     internal class VisitorCustomConverterFactory : IMessagePackConverterFactory
     {
         // perform type check, then defer to generic method.
-        public MessagePackConverter? CreateConverter(ITypeShape shape)
+        public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
             => shape is IEnumerableTypeShape enumShape && enumShape.Type.GetGenericTypeDefinition() == typeof(List<>) ?
                 (MessagePackConverter?)shape.Accept(Visitor.Instance) : null;
 
