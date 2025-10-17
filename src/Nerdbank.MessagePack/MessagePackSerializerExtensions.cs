@@ -81,7 +81,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetConverter{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetConverter{T, TProvider}(SerializationContext)"/> instead,
 	/// or use <see cref="SerializationContext.GetConverter{T}(ITypeShapeProvider?)"/> for an option that does not require source generation.
 	/// </remarks>
 #if NET8_0
@@ -108,5 +108,38 @@ public static partial class MessagePackSerializerExtensions
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T, TProvider>(this SerializationContext context)
+		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+
+	/// <inheritdoc cref="ConverterContext.GetConverter{T}(ITypeShape{T})"/>
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetConverter{T, TProvider}(ConverterContext)"/> instead,
+	/// or use <see cref="ConverterContext.GetConverter{T}(ITypeShapeProvider?)"/> for an option that does not require source generation.
+	/// </remarks>
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static MessagePackConverter<T> GetConverter<T>(this ConverterContext context)
+		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
+
+	/// <inheritdoc cref="SerializationContext.GetConverter{T}(ITypeShape{T})"/>
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use <see cref="ConverterContext.GetConverter{T}(ITypeShapeProvider?)"/> for an option that does not require source generation.
+	/// </remarks>
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static MessagePackConverter<T> GetConverter<T, TProvider>(this ConverterContext context)
 		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
 }

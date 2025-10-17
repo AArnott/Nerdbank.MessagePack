@@ -31,6 +31,7 @@ public interface IMessagePackConverterFactory
 	/// Creates a converter for the given type if this factory is capable of it.
 	/// </summary>
 	/// <param name="shape">The shape of the type to be serialized.</param>
+	/// <param name="context">The context in which this factory is being invoked. Provides access to other converters that may be required by the requested converter.</param>
 	/// <returns>The converter for the data type, or <see langword="null" />.</returns>
 	/// <remarks>
 	/// Implementations that require a generic type parameter for the type to be converted should
@@ -38,11 +39,11 @@ public interface IMessagePackConverterFactory
 	/// method that creates the converter.
 	/// The implementation of <em>this</em> method should perform any type checks necessary
 	/// to determine whether this factory applies to the given shape, and if so,
-	/// call <see cref="MessagePackConverterFactoryExtensions.Invoke{T}(T, ITypeShape)"/>
+	/// call <see cref="MessagePackConverterFactoryExtensions.Invoke{T}(T, ITypeShape, object?)"/>
 	/// to forward the call to the generic <see cref="ITypeShapeFunc.Invoke{T}(ITypeShape{T}, object?)"/> method
 	/// defined on that same class.
 	/// </remarks>
-	MessagePackConverter? CreateConverter(ITypeShape shape);
+	MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context);
 }
 
 /// <summary>
@@ -56,10 +57,11 @@ public static class MessagePackConverterFactoryExtensions
 	/// <typeparam name="T">The concrete <see cref="IMessagePackConverterFactory"/> type.</typeparam>
 	/// <param name="self">The instance of the factory.</param>
 	/// <param name="shape">The shape to create a converter for.</param>
+	/// <param name="state">Optional state to pass onto the inner method.</param>
 	/// <returns>The converter.</returns>
-	public static MessagePackConverter? Invoke<T>(this T self, ITypeShape shape)
+	public static MessagePackConverter? Invoke<T>(this T self, ITypeShape shape, object? state = null)
 		where T : IMessagePackConverterFactory, ITypeShapeFunc
 	{
-		return (MessagePackConverter?)Requires.NotNull(shape).Invoke(self);
+		return (MessagePackConverter?)Requires.NotNull(shape).Invoke(self, state);
 	}
 }

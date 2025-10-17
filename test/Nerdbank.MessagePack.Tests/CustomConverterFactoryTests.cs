@@ -59,6 +59,20 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 		Assert.True(deserialized[0].CustomSerialized);
 	}
 
+	[Fact]
+	public void GetSubConverterFromContext()
+	{
+		this.Serializer = this.Serializer with { ConverterFactories = [new DoubleArrayWrapperFactory()] };
+
+		List<char> list = ['a', 'b', 'c'];
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<List<char>, Witness>(list);
+
+		// Verify that the list was in fact double-wrapped, indicating the custom factory was used.
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadArrayHeader());
+		Assert.Equal(3, reader.ReadArrayHeader());
+	}
+
 	[GenerateShape, TypeShape(Kind = TypeShapeKind.None)]
 	internal partial class A
 	{
@@ -81,9 +95,74 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 	[AttributeUsage(AttributeTargets.Interface)]
 	internal class RpcMarshaledAttribute : Attribute;
 
+	internal class DoubleArrayWrapperFactory : IMessagePackConverterFactory
+	{
+		public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
+		{
+			if (shape is IEnumerableTypeShape { Type.IsGenericType: true, ElementType: ITypeShape elementShape } enumShape && shape.Type.GetGenericTypeDefinition() == typeof(List<>))
+			{
+				return (MessagePackConverter?)shape.Accept(new Visitor(), context);
+			}
+
+			return null;
+		}
+
+		private class Visitor : TypeShapeVisitor
+		{
+			public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
+			{
+				ConverterContext context = (ConverterContext)state!;
+				MessagePackConverter<TElement> subconverter = context.GetConverter(enumerableShape.ElementType);
+				Assert.Same(subconverter, context.GetConverter((ITypeShape)enumerableShape.ElementType));
+				Assert.Same(subconverter, context.GetConverter(enumerableShape.ElementType.Type));
+				Assert.Same(subconverter, context.GetConverter(enumerableShape.ElementType.Type, enumerableShape.ElementType.Provider));
+				Assert.Same(subconverter, context.GetConverter<TElement>(context.TypeShapeProvider));
+
+				return new Converter<TElement>(subconverter);
+			}
+		}
+
+		private class Converter<T>(MessagePackConverter<T> elementConverter) : MessagePackConverter<List<T>>
+		{
+			public override List<T>? Read(ref MessagePackReader reader, SerializationContext context)
+			{
+				if (reader.TryReadNil())
+				{
+					return null;
+				}
+
+				Assert.Equal(1, reader.ReadArrayHeader());
+				int len = reader.ReadArrayHeader();
+				List<T> result = new(len);
+				for (int i = 0; i < len; i++)
+				{
+					result.Add(elementConverter.Read(ref reader, context)!);
+				}
+
+				return result;
+			}
+
+			public override void Write(ref MessagePackWriter writer, in List<T>? value, SerializationContext context)
+			{
+				if (value is null)
+				{
+					writer.WriteNil();
+					return;
+				}
+
+				writer.WriteArrayHeader(1);
+				writer.WriteArrayHeader(value.Count);
+				for (int i = 0; i < value.Count; i++)
+				{
+					elementConverter.Write(ref writer, value[i], context);
+				}
+			}
+		}
+	}
+
 	internal class MarshaledObjectConverterFactory : IMessagePackConverterFactory, ITypeShapeFunc
 	{
-		public MessagePackConverter? CreateConverter(ITypeShape shape)
+		public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
 		{
 			return shape.Type.GetCustomAttribute<RpcMarshaledAttribute>() is null ? null : this.Invoke(shape);
 		}
@@ -121,7 +200,7 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 
 	internal class CustomUnionConverterFactory : IMessagePackConverterFactory, ITypeShapeFunc
 	{
-		public MessagePackConverter? CreateConverter(ITypeShape shape)
+		public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
 		{
 			return typeof(A).IsAssignableFrom(shape.Type) ? this.Invoke(shape) : null;
 		}
@@ -161,5 +240,6 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 	}
 
 	[GenerateShapeFor<A[]>]
+	[GenerateShapeFor<List<char>>]
 	private partial class Witness;
 }
