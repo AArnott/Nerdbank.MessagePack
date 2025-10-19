@@ -53,8 +53,57 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Equal(42, deserialized.Value);
 	}
 
-	[GenerateShape]
-	[TypeShape(Marshaler = typeof(Marshaler))]
+	[Fact]
+	public void SurrogateIgnoredWithCustomConverterByInstanceRegistration()
+	{
+		this.Serializer = this.Serializer with { Converters = [new OriginalTypeConverter()] };
+
+		OriginalType obj = new(3, 5);
+		OriginalType? deserialized = this.Roundtrip(obj);
+
+		// Verify that the custom converter was used by the way it changes the data.
+		Assert.Equal(0, deserialized?.GetA());
+		Assert.Equal(8, deserialized?.GetB());
+	}
+
+	[Fact]
+	public void SurrogateIgnoredWithCustomConverterByTypeRegistration()
+	{
+		this.Serializer = this.Serializer with { ConverterTypes = [typeof(OriginalTypeConverter)] };
+
+		OriginalType obj = new(3, 5);
+		OriginalType? deserialized = this.Roundtrip(obj);
+
+		// Verify that the custom converter was used by the way it changes the data.
+		Assert.Equal(0, deserialized?.GetA());
+		Assert.Equal(8, deserialized?.GetB());
+	}
+
+	[Fact]
+	public void SurrogateIgnoredWithCustomConverterByFactoryRegistration()
+	{
+		this.Serializer = this.Serializer with { ConverterFactories = [new OriginalTypeConverterFactory()] };
+
+		OriginalType obj = new(3, 5);
+		OriginalType? deserialized = this.Roundtrip(obj);
+
+		// Verify that the custom converter was used by the way it changes the data.
+		Assert.Equal(0, deserialized?.GetA());
+		Assert.Equal(8, deserialized?.GetB());
+	}
+
+	[Fact]
+	public void SurrogateIgnoredWithCustomConverterByAttribute()
+	{
+		OriginalTypeWithSurrogateAndConverter obj = new(3, 5);
+		OriginalTypeWithSurrogateAndConverter? deserialized = this.Roundtrip(obj);
+
+		// Verify that the custom converter was used by the way it changes the data.
+		Assert.Equal(3, deserialized?.GetA());
+		Assert.Equal(5, deserialized?.GetB());
+	}
+
+	[GenerateShape(Marshaler = typeof(Marshaler))]
 	internal partial class OriginalType
 	{
 		private int a;
@@ -68,6 +117,10 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 
 		public int Sum => this.a + this.b;
 
+		internal int GetA() => this.a;
+
+		internal int GetB() => this.b;
+
 		internal record struct MarshaledType(int A, int B);
 
 		internal class Marshaler : IMarshaler<OriginalType, MarshaledType?>
@@ -77,6 +130,66 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 
 			public MarshaledType? Marshal(OriginalType? value)
 				=> value is null ? null : new(value.a, value.b);
+		}
+	}
+
+	[GenerateShape(Marshaler = typeof(Marshaler))]
+	[MessagePackConverter(typeof(Converter))]
+	internal partial class OriginalTypeWithSurrogateAndConverter
+	{
+		private int a;
+		private int b;
+
+		internal OriginalTypeWithSurrogateAndConverter(int a, int b)
+		{
+			this.a = a;
+			this.b = b;
+		}
+
+		public int Sum => this.a + this.b;
+
+		internal int GetA() => this.a;
+
+		internal int GetB() => this.b;
+
+		internal record struct MarshaledType(int A, int B);
+
+		internal class Marshaler : IMarshaler<OriginalTypeWithSurrogateAndConverter, MarshaledType?>
+		{
+			public OriginalTypeWithSurrogateAndConverter? Unmarshal(MarshaledType? surrogate)
+				=> throw new Exception("Marshaler should not be used.");
+
+			public MarshaledType? Marshal(OriginalTypeWithSurrogateAndConverter? value)
+				=> throw new Exception("Marshaler should not be used.");
+		}
+
+		internal class Converter : MessagePackConverter<OriginalTypeWithSurrogateAndConverter>
+		{
+			public override OriginalTypeWithSurrogateAndConverter? Read(ref MessagePackReader reader, SerializationContext context)
+			{
+				if (reader.TryReadNil())
+				{
+					return null;
+				}
+
+				reader.ReadArrayHeader();
+				int a = reader.ReadInt32();
+				int b = reader.ReadInt32();
+				return new OriginalTypeWithSurrogateAndConverter(a, b);
+			}
+
+			public override void Write(ref MessagePackWriter writer, in OriginalTypeWithSurrogateAndConverter? value, SerializationContext context)
+			{
+				if (value is null)
+				{
+					writer.WriteNil();
+					return;
+				}
+
+				writer.WriteArrayHeader(2);
+				writer.Write(value.a);
+				writer.Write(value.b);
+			}
 		}
 	}
 
@@ -94,6 +207,39 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 
 			public MarshaledType? Marshal(OpenGenericDataType<T>? value)
 				=> value is null ? null : new(value.Value);
+		}
+	}
+
+	internal class OriginalTypeConverter : MessagePackConverter<OriginalType>
+	{
+		public override OriginalType? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int sum = reader.ReadInt32();
+			return new OriginalType(0, sum);
+		}
+
+		public override void Write(ref MessagePackWriter writer, in OriginalType? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.Write(value.Sum);
+		}
+	}
+
+	private class OriginalTypeConverterFactory : IMessagePackConverterFactory
+	{
+		public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
+		{
+			return type == typeof(OriginalType) ? new OriginalTypeConverter() : null;
 		}
 	}
 

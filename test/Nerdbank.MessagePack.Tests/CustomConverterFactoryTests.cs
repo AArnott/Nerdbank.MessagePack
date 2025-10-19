@@ -97,7 +97,7 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 
 	internal class DoubleArrayWrapperFactory : IMessagePackConverterFactory
 	{
-		public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
+		public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
 		{
 			if (shape is IEnumerableTypeShape { Type.IsGenericType: true, ElementType: ITypeShape elementShape } enumShape && shape.Type.GetGenericTypeDefinition() == typeof(List<>))
 			{
@@ -162,9 +162,9 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 
 	internal class MarshaledObjectConverterFactory : IMessagePackConverterFactory, ITypeShapeFunc
 	{
-		public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
+		public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
 		{
-			return shape.Type.GetCustomAttribute<RpcMarshaledAttribute>() is null ? null : this.Invoke(shape);
+			return shape?.Type.GetCustomAttribute<RpcMarshaledAttribute>() is null ? null : this.Invoke(shape);
 		}
 
 		object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => new MarshaledObjectConverter<T>();
@@ -200,9 +200,9 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 
 	internal class CustomUnionConverterFactory : IMessagePackConverterFactory, ITypeShapeFunc
 	{
-		public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
+		public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
 		{
-			return typeof(A).IsAssignableFrom(shape.Type) ? this.Invoke(shape) : null;
+			return typeof(A).IsAssignableFrom(type) && shape is not null ? this.Invoke(shape) : null;
 		}
 
 		object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => new CustomUnionConverter<T>();

@@ -30,7 +30,13 @@ public interface IMessagePackConverterFactory
 	/// <summary>
 	/// Creates a converter for the given type if this factory is capable of it.
 	/// </summary>
-	/// <param name="shape">The shape of the type to be serialized.</param>
+	/// <param name="type">The type to be serialized.</param>
+	/// <param name="shape">
+	/// The shape of the type to be serialized, if available.
+	/// The shape will typically be available.
+	/// The only known exception is when the type has a
+	/// <see cref="TypeShapeAttribute.Marshaler">PolyType marshaler</see> defined.
+	/// </param>
 	/// <param name="context">The context in which this factory is being invoked. Provides access to other converters that may be required by the requested converter.</param>
 	/// <returns>The converter for the data type, or <see langword="null" />.</returns>
 	/// <remarks>
@@ -43,7 +49,7 @@ public interface IMessagePackConverterFactory
 	/// to forward the call to the generic <see cref="ITypeShapeFunc.Invoke{T}(ITypeShape{T}, object?)"/> method
 	/// defined on that same class.
 	/// </remarks>
-	MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context);
+	MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context);
 }
 
 /// <summary>

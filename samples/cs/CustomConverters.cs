@@ -485,9 +485,9 @@ namespace CustomConverterFactory
 
     class MarshalingConverterFactory(object trackerKey) : IMessagePackConverterFactory, ITypeShapeFunc
     {
-        public MessagePackConverter? CreateConverter(ITypeShape shape, in ConverterContext context)
+        public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
         {
-            return shape.Type.GetCustomAttribute<MarshalByRefAttribute>() is not null ? this.Invoke(shape) : null;
+            return shape?.Type.GetCustomAttribute<MarshalByRefAttribute>() is not null ? this.Invoke(shape) : null;
         }
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => new MarshalingConverter<T>(trackerKey);
