@@ -143,7 +143,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// Gets a user-defined converter for the specified type if one is available from
 	/// converters the user has supplied <em>at runtime</em>.
 	/// </summary>
-	/// <param name="typeShape">The shape of the data type that requires a converter.</param>
+	/// <param name="type">The type to be converted.</param>
+	/// <param name="typeShape">The shape of the data type that requires a converter, if available.</param>
+	/// <param name="shapeProvider">The shape provider used for this conversion overall (which may not have a shape available if <paramref name="typeShape" /> is <see langword="null" />.</param>
 	/// <param name="converter">Receives the converter, if the user provided one.</param>
 	/// <returns>A value indicating whether a customer converter exists.</returns>
 	/// <remarks>
@@ -157,29 +159,33 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// A converter returned from this method will be wrapped with reference-preservation logic when appropriate.
 	/// </para>
 	/// </remarks>
-	internal bool TryGetRuntimeProfferedConverter(ITypeShape typeShape, [NotNullWhen(true)] out MessagePackConverter? converter)
+	internal bool TryGetRuntimeProfferedConverter(Type type, ITypeShape? typeShape, ITypeShapeProvider shapeProvider, [NotNullWhen(true)] out MessagePackConverter? converter)
 	{
 		converter = null;
-		if (!configuration.Converters.TryGetConverter(typeShape.Type, out converter))
+		if (!configuration.Converters.TryGetConverter(type, out converter))
 		{
-			if (configuration.ConverterTypes.TryGetConverterType(typeShape.Type, out Type? converterType) ||
-				(typeShape.Type.IsGenericType && configuration.ConverterTypes.TryGetConverterType(typeShape.Type.GetGenericTypeDefinition(), out converterType)))
+			if (configuration.ConverterTypes.TryGetConverterType(type, out Type? converterType) ||
+				(type.IsGenericType && configuration.ConverterTypes.TryGetConverterType(type.GetGenericTypeDefinition(), out converterType)))
 			{
-				if ((typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> factory)
+				if ((typeShape?.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> factory)
 				{
 					converter = (MessagePackConverter)factory();
 				}
+				else if (!converterType.IsGenericTypeDefinition)
+				{
+					converter = (MessagePackConverter)Activator.CreateInstance(converterType)!;
+				}
 				else
 				{
-					throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {typeShape.Type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
+					throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
 				}
 			}
 			else
 			{
-				ConverterContext context = new(this, typeShape.Provider, this.PreserveReferences);
+				ConverterContext context = new(this, shapeProvider, this.PreserveReferences);
 				foreach (IMessagePackConverterFactory factory in configuration.ConverterFactories)
 				{
-					if ((converter = factory.CreateConverter(typeShape, context)) is not null)
+					if ((converter = factory.CreateConverter(type, typeShape, context)) is not null)
 					{
 						break;
 					}
