@@ -4,6 +4,8 @@
 [Trait("AsyncSerialization", "true")]
 public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 {
+	private static readonly ReadOnlyMemory<byte> BigDataBlob = Enumerable.Range(0, 100).Select(n => (byte)(n % 256)).ToArray();
+
 	[Fact]
 	public async Task RoundtripPoco() => await this.AssertRoundtripAsync(new Poco(1, 2));
 
@@ -38,6 +40,17 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 
 	[Fact]
 	public async Task LargeArray() => await this.AssertRoundtripAsync(new ArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToArray()));
+
+	/// <summary>
+	/// Verifies that the array converter can handle async serialization when its elements are not async capable.
+	/// </summary>
+	[Fact]
+	public async Task LargeArrayWithBigElements()
+	{
+		this.Serializer = this.Serializer with { Converters = [.. this.Serializer.Converters, new PocoNonAsyncConverter()] };
+
+		await this.AssertRoundtripAsync(new ArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i) { DataBlob = BigDataBlob }).ToArray()));
+	}
 
 	[Fact]
 	public async Task LargeList() => await this.AssertRoundtripAsync(new ListOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToList()));
@@ -141,7 +154,20 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	private partial class Witness;
 
 	[GenerateShape]
-	public partial record Poco(int X, int Y);
+	public partial record Poco(int X, int Y)
+	{
+		public ReadOnlyMemory<byte> DataBlob { get; init; }
+
+		public virtual bool Equals(Poco? other)
+		{
+			return other is not null
+				&& this.X == other.X
+				&& this.Y == other.Y
+				&& this.DataBlob.Span.SequenceEqual(other.DataBlob.Span);
+		}
+
+		public override int GetHashCode() => HashCode.Combine(this.X, this.Y);
+	}
 
 	[GenerateShape]
 	public partial record PocoWithDefaultCtor
@@ -235,6 +261,38 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		{
 			this.AsyncDeserializationCounter++;
 			return base.ReadAsync(reader, context);
+		}
+	}
+
+	private class PocoNonAsyncConverter : MessagePackConverter<Poco>
+	{
+		public override Poco? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int len = reader.ReadArrayHeader();
+			Assert.Equal(3, len);
+			int x = reader.ReadInt32();
+			int y = reader.ReadInt32();
+			ReadOnlyMemory<byte> blob = reader.ReadBytes()?.ToArray() ?? default;
+			return new Poco(x, y) { DataBlob = blob };
+		}
+
+		public override void Write(ref MessagePackWriter writer, in Poco? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			writer.WriteArrayHeader(3);
+			writer.Write(value.X);
+			writer.Write(value.Y);
+			writer.Write(value.DataBlob.Span);
 		}
 	}
 
