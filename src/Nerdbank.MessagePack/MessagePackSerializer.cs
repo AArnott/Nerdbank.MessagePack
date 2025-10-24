@@ -1003,19 +1003,9 @@ public partial record MessagePackSerializer
 		}
 	}
 
-	/// <summary>
-	/// Determines whether an exception thrown during (de)serialization should be wrapped.
-	/// </summary>
-	/// <param name="ex">The thrown exception.</param>
-	/// <param name="cancellationToken">The cancellation token.</param>
-	/// <returns><see langword="true" /> if the exception should be wrapped; <see langword="false" /> otherwise.</returns>
-	/// <remarks>
-	/// We wrap all exceptions <em>except</em> <see cref="OperationCanceledException"/> if the cancellation token is cancelled.
-	/// In other words, the only time we allow any exception to escape is when the operation was cancelled, because
-	/// users expect to catch <see cref="OperationCanceledException"/> when they cancel an operation.
-	/// </remarks>
+	/// <inheritdoc cref="MessagePackConverter.ShouldWrapSerializationException(Exception, CancellationToken)"/>
 	private static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
-		=> ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
+		=> MessagePackConverter.ShouldWrapSerializationException(ex, cancellationToken);
 
 	/// <summary>
 	/// A wrapper around <see cref="SerializationContext"/> that makes disposal easier.
