@@ -1,4 +1,4 @@
-# NBMsgPack010: `[DerivedTypeShape]` alias must be unique
+# NBMsgPack011: `[DerivedTypeShape]` alias must be unique
 
 <xref:PolyType.DerivedTypeShapeAttribute> should specify an alias that is unique within the scope of the type it is applied to.
 
