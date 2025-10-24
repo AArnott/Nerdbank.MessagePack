@@ -22,8 +22,15 @@ Also features an automatic structural equality API.</PackageDescription>
     <PackageReference Include="PolyType" />
     <PackageReference Include="System.IO.Pipelines" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETCoreApp'">
+    <Compile Remove="NETPolyfills\**\*.cs" />
+    <EmbeddedResource Remove="NETPolyfills\**\*.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="NETPolyfills\SR.resx" ClassName="System.SR" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
-    <PackageReference Include="Microsoft.Bcl.HashCode" />
+    <!-- <PackageReference Include="Microsoft.Bcl.HashCode" /> We embed the source for this to reduce assembly loads. -->
     <PackageReference Include="System.Collections.Immutable" />
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
