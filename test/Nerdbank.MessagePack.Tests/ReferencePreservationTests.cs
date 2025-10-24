@@ -207,7 +207,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void KnownSubTypes_StaticRegistration()
+	public void DerivedTypeShapes_StaticRegistration()
 	{
 		BaseRecord baseInstance = new BaseRecord();
 		BaseRecord derivedInstance = new DerivedRecordA();
@@ -223,7 +223,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void KnownSubTypes_DynamicRegistration()
+	public void DerivedTypeShapes_DynamicRegistration()
 	{
 		DerivedShapeMapping<BaseRecord> mapping = new DerivedShapeMapping<BaseRecord>();
 		mapping.Add<DerivedRecordB>(1, Witness.GeneratedTypeShapeProvider);
