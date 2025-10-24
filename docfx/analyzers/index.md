@@ -10,9 +10,9 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack001](NBMsgPack001.md) | Usage | Error | Apply `[Key]` consistently across members
 [NBMsgPack002](NBMsgPack002.md) | Usage | Warning | Avoid `[Key]` on non-serialized members
 [NBMsgPack003](NBMsgPack003.md) | Usage | Error | `[Key]` index must be unique
-[NBMsgPack010](NBMsgPack010.md) | Usage | Error | `[KnownSubType]` should specify an assignable type
-[NBMsgPack011](NBMsgPack011.md) | Usage | Error | `[KnownSubType]` alias must be unique
-[NBMsgPack012](NBMsgPack012.md) | Usage | Error | `[KnownSubType]` type must be unique
+[NBMsgPack010](NBMsgPack010.md) | Usage | Error | `[DerivedTypeShape]` should specify an assignable type
+[NBMsgPack011](NBMsgPack011.md) | Usage | Error | `[DerivedTypeShape]` alias must be unique
+[NBMsgPack012](NBMsgPack012.md) | Usage | Error | `[DerivedTypeShape]` type must be unique
 [NBMsgPack020](NBMsgPack020.md) | Usage | Error | `[MessagePackConverter]` type must be compatible converter
 [NBMsgPack021](NBMsgPack021.md) | Usage | Error | `[MessagePackConverter]` type missing default constructor
 [NBMsgPack030](NBMsgPack030.md) | Usage | Warning | Converters should not call top-level `MessagePackSerializer` methods

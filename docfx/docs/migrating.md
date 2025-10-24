@@ -34,7 +34,7 @@ Learn more about this in our [Getting Started](getting-started.md) guide.
 
 ```diff
 -[MessagePackObject]
-+[GenerateShape] // only necessary if you pass `MyType` directly to the MessagePackSerializer or KnownSubTypeAttribute
++[GenerateShape] // only necessary if you pass `MyType` directly to MessagePackSerializer
  public class MyType
  {
  }
@@ -72,19 +72,19 @@ For public members that should be ignored, replace this attribute with <xref:Pol
 ### `UnionAttribute`
 
 MessagePack-CSharp defines a `UnionAttribute` by which you can serialize an object when you know its base type or interface at compile-time, but whose exact type is not known until runtime, provided you can predict the closed set of allowed runtime types in advance.
-Nerdbank.MessagePack supports this same use case via its @Nerdbank.MessagePack.KnownSubTypeAttribute, and migration is straightforward:
+Nerdbank.MessagePack supports this same use case via its <xref:PolyType.DerivedTypeShapeAttribute>, and migration is straightforward:
 
 ```diff
 -[Union(0, typeof(MyType1))]
 -[Union(1, typeof(MyType2))]
-+[KnownSubType(typeof(MyType1), 0)]
-+[KnownSubType(typeof(MyType2), 1)]
++[DerivedTypeShape(typeof(MyType1), Tag = 0)]
++[DerivedTypeShape(typeof(MyType2), Tag = 1)]
  public interface IMyType
  {
  }
 ```
 
-Any types referenced by the @Nerdbank.MessagePack.KnownSubTypeAttribute must be annotated with <xref:PolyType.GenerateShapeAttribute> as described above.
+Any types referenced by the <xref:PolyType.DerivedTypeShapeAttribute> must be annotated with <xref:PolyType.GenerateShapeAttribute> as described above.
 
 ### `IMessagePackFormatter<T>`
 

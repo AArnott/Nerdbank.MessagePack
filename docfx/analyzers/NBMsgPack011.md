@@ -1,14 +1,14 @@
-# NBMsgPack010: `[KnownSubType]` alias must be unique
+# NBMsgPack010: `[DerivedTypeShape]` alias must be unique
 
-@Nerdbank.MessagePack.KnownSubTypeAttribute should specify an alias that is unique within the scope of the type it is applied to.
+<xref:PolyType.DerivedTypeShapeAttribute> should specify an alias that is unique within the scope of the type it is applied to.
 
 Learn more about [subtype unions](../docs/unions.md).
 
 ## Example violations
 
 ```cs
-[KnownSubType<DerivedType1>(1)]
-[KnownSubType<DerivedType2>(1)] // Reused an alias
+[DerivedTypeShape(typeof(DerivedType1), Tag = 1)]
+[DerivedTypeShape(typeof(DerivedType2), Tag = 1)] // Reused an alias
 class BaseType
 {
 }
@@ -27,8 +27,8 @@ class DerivedType2 : BaseType
 Change the alias to one that has not yet been used.
 
 ```cs
-[KnownSubType<DerivedType1>(1)]
-[KnownSubType<DerivedType2>(2)]
+[DerivedTypeShape(typeof(DerivedType1), Tag = 1)]
+[DerivedTypeShape(typeof(DerivedType2), Tag = 2)]
 class BaseType
 {
 }
@@ -48,12 +48,12 @@ Note that across types, the alias does not need to be unique.
 The following is perfectly valid:
 
 ```cs
-[KnownSubType<DerivedFromBaseType>(1)]
+[DerivedTypeShape(typeof(DerivedFromBaseType), Tag = 1)]
 class BaseType
 {
 }
 
-[KnownSubType<DerivedFromAnotherType>(1)]
+[DerivedTypeShape(typeof(DerivedFromAnotherType), Tag = 1)]
 class AnotherType
 {
 }

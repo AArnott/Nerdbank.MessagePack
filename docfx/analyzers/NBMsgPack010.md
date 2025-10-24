@@ -1,13 +1,13 @@
-# NBMsgPack010: `[KnownSubType]` should specify an assignable type
+# NBMsgPack010: `[DerivedTypeShape]` should specify an assignable type
 
-@Nerdbank.MessagePack.KnownSubTypeAttribute should specify a type that is assignable to the type the attribute is applied to.
+<xref:PolyType.DerivedTypeShapeAttribute> should specify a type that is assignable to the type the attribute is applied to.
 
 Learn more about [subtype unions](../docs/unions.md).
 
 ## Example violations
 
 ```cs
-[KnownSubType<DerivedType>(1)] // DerivedType is not in fact derived from BaseType
+[DerivedTypeShape(typeof(DerivedType), Tag = 1)] // DerivedType is not in fact derived from BaseType
 class BaseType
 {
 }
@@ -25,7 +25,7 @@ Remove the attribute or specify a type that is actually derived from the applied
 In the fixed code below, the `DerivedType` is actually fixed to derive from `BaseType`.
 
 ```cs
-[KnownSubType<DerivedType>(1)]
+[DerivedTypeShape(typeof(DerivedType), Tag = 1)]
 class BaseType
 {
 }
