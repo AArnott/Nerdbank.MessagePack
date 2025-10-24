@@ -20,7 +20,7 @@ internal static class Data
 		internal static readonly global::PocoMapInit Single = new() { SomeInt = 42, SomeString = "Hello, World!" };
 		internal static readonly ReadOnlySequence<byte> SingleMsgpack = new(MsgPackCSharp.MessagePackSerializer.Serialize(Single, MsgPackCSharp.MessagePackSerializerOptions.Standard));
 		internal static readonly ReadOnlySequence<byte> SingleUtf8Json = SerializeJson(Single);
-		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json);
+		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json.ToArray());
 		internal static readonly Stream SingleJsonStream = new MemoryStream(SingleUtf8Json.ToArray());
 
 		internal static readonly global::PocoMapInit[] Array = Enumerable.Range(0, 1000).Select(n => new global::PocoMapInit { SomeInt = n, SomeString = "Hello" }).ToArray();
@@ -32,7 +32,7 @@ internal static class Data
 		internal static readonly global::PocoMap Single = new() { SomeInt = 42, SomeString = "Hello, World!" };
 		internal static readonly ReadOnlySequence<byte> SingleMsgpack = new(MsgPackCSharp.MessagePackSerializer.Serialize(Single, MsgPackCSharp.MessagePackSerializerOptions.Standard));
 		internal static readonly ReadOnlySequence<byte> SingleUtf8Json = SerializeJson(Single);
-		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json);
+		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json.ToArray());
 		internal static readonly Stream SingleJsonStream = new MemoryStream(SingleUtf8Json.ToArray());
 
 		internal static readonly global::PocoMap[] Array = Enumerable.Range(0, 1000).Select(n => new global::PocoMap { SomeInt = n, SomeString = "Hello" }).ToArray();
@@ -44,7 +44,7 @@ internal static class Data
 		internal static readonly global::PocoAsArrayInit Single = new() { SomeInt = 42, SomeString = "Hello, World!" };
 		internal static readonly ReadOnlySequence<byte> SingleMsgpack = new(MsgPackCSharp.MessagePackSerializer.Serialize(Single, MsgPackCSharp.MessagePackSerializerOptions.Standard));
 		internal static readonly ReadOnlySequence<byte> SingleUtf8Json = SerializeJson(Single);
-		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json);
+		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json.ToArray());
 		internal static readonly Stream SingleJsonStream = new MemoryStream(SingleUtf8Json.ToArray());
 
 		internal static readonly global::PocoAsArrayInit[] Array = Enumerable.Range(0, 1000).Select(n => new global::PocoAsArrayInit { SomeInt = n, SomeString = "Hello" }).ToArray();
@@ -56,7 +56,7 @@ internal static class Data
 		internal static readonly global::PocoAsArray Single = new() { SomeInt = 42, SomeString = "Hello, World!" };
 		internal static readonly ReadOnlySequence<byte> SingleMsgpack = new(MsgPackCSharp.MessagePackSerializer.Serialize(Single, MsgPackCSharp.MessagePackSerializerOptions.Standard));
 		internal static readonly ReadOnlySequence<byte> SingleUtf8Json = SerializeJson(Single);
-		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json);
+		internal static readonly string SingleJson = Encoding.UTF8.GetString(SingleUtf8Json.ToArray());
 		internal static readonly Stream SingleJsonStream = new MemoryStream(SingleUtf8Json.ToArray());
 
 		internal static readonly global::PocoAsArray[] Array = Enumerable.Range(0, 1000).Select(n => new global::PocoAsArray { SomeInt = n, SomeString = "Hello" }).ToArray();
