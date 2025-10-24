@@ -83,11 +83,18 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			MessagePackWriter syncWriter = writer.CreateWriter();
 			syncWriter.WriteArrayHeader(elements.Count);
 			int i = 0;
-			try
+			do
 			{
-				for (; i < elements.Count; i++)
+				try
 				{
-					elementConverter.Write(ref syncWriter, elements[i], context);
+					for (; i < elements.Count && !writer.IsTimeToFlush(context, syncWriter); i++)
+					{
+						elementConverter.Write(ref syncWriter, elements[i], context);
+					}
+				}
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				{
+					throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 				}
 
 				if (writer.IsTimeToFlush(context, syncWriter))
@@ -97,10 +104,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 					syncWriter = writer.CreateWriter();
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
-			{
-				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
-			}
+			while (i < elements.Count);
 
 			writer.ReturnWriter(ref syncWriter);
 		}

@@ -95,11 +95,11 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 		}
 		else
 		{
+			MessagePackWriter syncWriter = writer.CreateWriter();
+			syncWriter.WriteArrayHeader(value.Length);
 			int progress = 0;
 			do
 			{
-				MessagePackWriter syncWriter = writer.CreateWriter();
-				syncWriter.WriteArrayHeader(value.Length);
 				try
 				{
 					for (; progress < value.Length && !writer.IsTimeToFlush(context, syncWriter); progress++)
@@ -113,10 +113,16 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 					throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), progress), ex);
 				}
 
-				writer.ReturnWriter(ref syncWriter);
-				await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+				if (writer.IsTimeToFlush(context, syncWriter))
+				{
+					writer.ReturnWriter(ref syncWriter);
+					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+					syncWriter = writer.CreateWriter();
+				}
 			}
 			while (progress < value.Length);
+
+			writer.ReturnWriter(ref syncWriter);
 		}
 	}
 

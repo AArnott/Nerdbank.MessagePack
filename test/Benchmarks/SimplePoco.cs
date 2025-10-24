@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if NET
+
 using Benchmarks;
 using JsonNet = Newtonsoft.Json;
 using STJ = System.Text.Json;
@@ -151,3 +153,5 @@ public partial class SimplePoco
 		return STJ.JsonSerializer.Deserialize(ref r, typeInfo);
 	}
 }
+
+#endif
