@@ -42,6 +42,10 @@
 			"matchPackageNames": [ "MessagePack" ],
 			"matchUpdateTypes": "patch",
 			"enabled": false
+		},
+		{
+			"matchPackageNames": ["github/codeql-action"],
+			"pinDigests": false
 		}
 	]
 }
