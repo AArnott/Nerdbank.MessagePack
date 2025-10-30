@@ -34,7 +34,7 @@ jobs:
             rid: win-x64
 
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
     - name: ⚙ Install prerequisites
@@ -90,7 +90,7 @@ jobs:
         $Details | ConvertTo-Json | Out-File -FilePath "aot-size-result.json"
       shell: pwsh
     - name: 📤 Upload AOT size result
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      uses: actions/upload-artifact@v4
       with:
         name: aot-size-${{ matrix.os }}-${{ matrix.rid }}
         path: aot-size-result.json
@@ -130,7 +130,7 @@ jobs:
     needs: build
     steps:
       - name: 📥 Download AOT size results
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@v5
         with:
           pattern: aot-size-*
           path: aot-results
@@ -187,11 +187,11 @@ jobs:
       security-events: write
 
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
     - name: 🔍 Initialize CodeQL
-      uses: github/codeql-action/init@5fe9434cd24fe243e33e7f3305f8a5b519b70280 # v4
+      uses: github/codeql-action/init@v4
       with:
         languages: csharp
     - name: ⚙ Install prerequisites
@@ -202,13 +202,13 @@ jobs:
     - name: 🛠 build
       run: dotnet pack --no-restore -c ${{ env.BUILDCONFIGURATION }}
     - name: 🔍 Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@5fe9434cd24fe243e33e7f3305f8a5b519b70280 # v4
+      uses: github/codeql-action/analyze@v4
 
   docs:
     name: 📃 Docs
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+    - uses: actions/checkout@v5
     - name: 🔗 Markup Link Checker (mlc)
       uses: becheran/mlc@18a06b3aa2901ca197de59c8b0b1f54fdba6b3fa # v1.0.0
       with:

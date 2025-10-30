@@ -4,6 +4,11 @@
 	"labels": ["dependencies"],
 	"packageRules": [
 		{
+			"matchManagers": ["github-actions"],
+			"matchPackagePrefixes": ["github/", "actions/"],
+			"pinDigests": false
+		},
+		{
 			"matchPackageNames": ["nbgv", "nerdbank.gitversioning"],
 			"groupName": "nbgv and nerdbank.gitversioning updates"
 		},
