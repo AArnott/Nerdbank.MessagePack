@@ -152,6 +152,14 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
 
 	/// <inheritdoc/>
+	public override bool SkipToPropertyValue(ref MessagePackReader reader, IPropertyShape propertyShape, SerializationContext context)
+		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+
+	/// <inheritdoc/>
+	public override bool SkipToIndexValue(ref MessagePackReader reader, object? index, SerializationContext context)
+		=> throw new NotSupportedException($"The {this.GetType().FullName} converter does not support this operation.");
+
+	/// <inheritdoc/>
 	public override sealed void WriteObject(ref MessagePackWriter writer, object? value, SerializationContext context) => this.Write(ref writer, (T?)value, context);
 
 	/// <inheritdoc/>

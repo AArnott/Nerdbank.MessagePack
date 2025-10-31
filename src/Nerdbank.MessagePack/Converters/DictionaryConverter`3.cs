@@ -189,6 +189,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
+		EqualityComparer<TKey?> keyComparer = EqualityComparer<TKey?>.Default;
 		for (int i = 0; i < count; i++)
 		{
 			reader.ReturnReader(ref streamingReader);
@@ -205,7 +206,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 				reader.ReturnReader(ref syncReader);
 			}
 
-			if (EqualityComparer<TKey?>.Default.Equals(key, desiredKey))
+			if (keyComparer.Equals(key, desiredKey))
 			{
 				return true;
 			}
@@ -219,6 +220,40 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 		}
 
 		reader.ReturnReader(ref streamingReader);
+		return false;
+	}
+
+	/// <inheritdoc/>
+	public override bool SkipToIndexValue(ref MessagePackReader reader, object? index, SerializationContext context)
+	{
+		if (index is null)
+		{
+			return false;
+		}
+
+		TKey desiredKey = (TKey)index;
+
+		if (reader.TryReadNil())
+		{
+			return false;
+		}
+
+		int count = reader.ReadMapHeader();
+
+		EqualityComparer<TKey?> keyComparer = EqualityComparer<TKey?>.Default;
+		for (int i = 0; i < count; i++)
+		{
+			TKey? key = keyConverter.Read(ref reader, context);
+
+			if (keyComparer.Equals(key, desiredKey))
+			{
+				return true;
+			}
+
+			// Skip the value since the key didn't match.
+			reader.Skip(context);
+		}
+
 		return false;
 	}
 

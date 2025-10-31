@@ -65,6 +65,16 @@ public abstract class MessagePackConverter
 	public abstract ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context);
 
 	/// <summary>
+	/// Skips ahead in the msgpack data to the point where the value of the specified property can be read.
+	/// </summary>
+	/// <param name="reader">The reader.</param>
+	/// <param name="propertyShape">The shape of the property whose value is to be skipped to.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <returns><see langword="true" /> if the specified property was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
+	/// <remarks><inheritdoc cref="SkipToIndexValue(ref MessagePackReader, object?, SerializationContext)" path="/remarks"/></remarks>
+	public abstract bool SkipToPropertyValue(ref MessagePackReader reader, IPropertyShape propertyShape, SerializationContext context);
+
+	/// <summary>
 	/// Skips ahead in the msgpack data to the point where the value at the specified index can be read.
 	/// </summary>
 	/// <param name="reader">The reader.</param>
@@ -76,6 +86,19 @@ public abstract class MessagePackConverter
 	/// to skip to the starting position of a sequence that should be asynchronously enumerated.
 	/// </remarks>
 	public abstract ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context);
+
+	/// <summary>
+	/// Skips ahead in the msgpack data to the point where the value at the specified index can be read.
+	/// </summary>
+	/// <param name="reader">The reader.</param>
+	/// <param name="index">The key or index of the value to be retrieved.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <returns><see langword="true" /> if the specified index was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
+	///// <remarks>
+	///// This method may be used by <see cref="MessagePackSerializer.DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	///// to skip to the starting position of the particular object to be deserialized.
+	///// </remarks>
+	public abstract bool SkipToIndexValue(ref MessagePackReader reader, object? index, SerializationContext context);
 
 	/// <summary>
 	/// Determines if a thrown exception should be wrapped with contextual information.

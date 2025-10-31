@@ -39,6 +39,12 @@ internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnio
 	public override ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context) => inner.SkipToPropertyValueAsync(reader, propertyShape, context);
 
 	/// <inheritdoc/>
+	public override bool SkipToIndexValue(ref MessagePackReader reader, object? index, SerializationContext context) => inner.SkipToIndexValue(ref reader, index, context);
+
+	/// <inheritdoc/>
+	public override bool SkipToPropertyValue(ref MessagePackReader reader, IPropertyShape propertyShape, SerializationContext context) => inner.SkipToPropertyValue(ref reader, propertyShape, context);
+
+	/// <inheritdoc/>
 	internal override MessagePackConverter<TUnion> UnwrapReferencePreservation() => throw new NotImplementedException();
 
 	/// <inheritdoc/>
