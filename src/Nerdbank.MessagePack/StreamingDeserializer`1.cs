@@ -22,11 +22,12 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 	/// </summary>
 	/// <param name="path">The path to the sequence to be enumerated.</param>
 	/// <param name="throwOnUnreachableSequence"><see langword="true" /> to throw if the <paramref name="path"/> cannot be reached or it is null when we get there; <see langword="false" /> to produce an empty sequence in that situation instead.</param>
-	/// <param name="elementConverter">The shape of the element to be deserialized.</param>
 	/// <param name="skipTrailingBytes">A value indicating whether to bother fast-forwarding after completing the enumeration to position the reader at the EOF or next top-level structure.</param>
 	/// <returns>The async enumeration.</returns>
-	internal async IAsyncEnumerable<TElement?> EnumerateArrayAsync(Expression path, bool throwOnUnreachableSequence, MessagePackConverter<TElement> elementConverter, bool skipTrailingBytes)
+	internal async IAsyncEnumerable<TElement?> EnumerateArrayAsync(Expression path, bool throwOnUnreachableSequence, bool skipTrailingBytes)
 	{
+		MessagePackConverter<TElement> elementConverter = (MessagePackConverter<TElement>)serializer.ConverterCache.GetOrAddConverter(typeof(TElement), provider).ValueOrThrow;
+
 		// Navigate to the sequence.
 		{
 			if (await this.NavigateToMemberAsync(path).ConfigureAwait(false) is Expression incompleteExpression)

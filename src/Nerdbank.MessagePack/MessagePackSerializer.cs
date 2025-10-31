@@ -762,16 +762,16 @@ public partial record MessagePackSerializer
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, (MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter<T>(provider).ValueOrThrow, cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializeEnumerableCoreAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), (MessagePackConverter<TElement>)this.ConverterCache.GetOrAddConverter(shape.Provider.GetTypeShapeOrThrow<TElement>()).ValueOrThrow, cancellationToken);
+		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, MessagePackConverter{TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializeEnumerableCoreAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
-		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, Requires.NotNull(options), (MessagePackConverter<TElement>)this.ConverterCache.GetOrAddConverter<TElement>(provider).ValueOrThrow, cancellationToken);
+		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
 
 	/// <summary>
 	/// Gets a converter for a given type shape.
@@ -870,7 +870,6 @@ public partial record MessagePackSerializer
 	/// <param name="reader">The reader to deserialize from. <see cref="PipeReader.CompleteAsync(Exception?)"/> will be called only at the conclusion of a successful enumeration.</param>
 	/// <param name="provider"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <param name="options">Options to apply to the streaming enumeration.</param>
-	/// <param name="converter">The msgpack converter for the root data type.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>An async enumerable, suitable for use with <c>await foreach</c>.</returns>
 	/// <remarks>
@@ -885,7 +884,7 @@ public partial record MessagePackSerializer
 	/// </para>
 	/// </remarks>
 	/// <inheritdoc cref="ThrowIfPreservingReferencesDuringEnumeration" path="/exception"/>
-	private async IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, MessagePackConverter<TElement> converter, [EnumeratorCancellation] CancellationToken cancellationToken)
+	private async IAsyncEnumerable<TElement?> DeserializeEnumerableCoreAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
@@ -895,7 +894,7 @@ public partial record MessagePackSerializer
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 
 		StreamingDeserializer<TElement> helper = new(this, provider, asyncReader, context.Value);
-		await foreach (TElement? element in helper.EnumerateArrayAsync(options.Path, throwOnUnreachableSequence: !options.EmptySequenceForUndiscoverablePath, converter, options.LeaveOpen).ConfigureAwait(false))
+		await foreach (TElement? element in helper.EnumerateArrayAsync(options.Path, throwOnUnreachableSequence: !options.EmptySequenceForUndiscoverablePath, options.LeaveOpen).ConfigureAwait(false))
 		{
 			yield return element;
 		}
