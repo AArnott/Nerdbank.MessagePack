@@ -6,6 +6,7 @@ items:
 - name: Unions
   href: unions.md
 - href: streaming-deserialization.md
+- href: targeted-deserialization.md
 - href: built-in-converters.md
 - name: Custom converters
   href: custom-converters.md

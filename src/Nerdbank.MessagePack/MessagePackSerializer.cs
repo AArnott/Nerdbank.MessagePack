@@ -773,6 +773,10 @@ public partial record MessagePackSerializer
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
 
+	/// <inheritdoc cref="DeserializePathCore{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		=> this.DeserializePathCore(ref reader, Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
+
 	/// <summary>
 	/// Gets a converter for a given type shape.
 	/// </summary>
@@ -904,6 +908,21 @@ public partial record MessagePackSerializer
 		{
 			await reader.CompleteAsync().ConfigureAwait(false);
 		}
+	}
+
+	private TElement? DeserializePathCore<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	{
+		this.ThrowIfPreservingReferencesDuringEnumeration();
+
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+
+		SkipToPathViaExpression skipper = new(this, provider, context.Value);
+		if (skipper.NavigateToMember(ref reader, options.Path) is Expression unreachable)
+		{
+			return options.DefaultForUndiscoverablePath ? default : throw SkipToPathViaExpression.IncompletePathException(unreachable);
+		}
+
+		return this.Deserialize<TElement>(ref reader, provider, cancellationToken);
 	}
 
 	/// <exception cref="NotSupportedException">Thrown if <see cref="PreserveReferences"/> is not <see cref="ReferencePreservationMode.Off"/>.</exception>
@@ -1072,6 +1091,26 @@ public partial record MessagePackSerializer
 	}
 
 	/// <summary>
+	/// Specifies options for deserializing a value from a MessagePack-encoded object graph using a provided property path
+	/// expression.
+	/// </summary>
+	/// <typeparam name="T">The type of the root object from which the property path is evaluated.</typeparam>
+	/// <typeparam name="TElement">The type of the value at the end of the property path.</typeparam>
+	/// <param name="Path">An expression that specifies the property path to the value to be deserialized from the object graph.</param>
+	public record class DeserializePathOptions<T, TElement>(Expression<Func<T, TElement>> Path)
+	{
+		/// <summary>
+		/// Gets a value indicating whether to produce <c>default(TElement)</c> if <see cref="Path"/> does not lead
+		/// to the target value (due to a missing property or null value) in the msgpack data.
+		/// </summary>
+		/// <value>The default value is <see langword="false" />.</value>
+		/// <remarks>
+		/// When this value is <see langword="false"/>, a <see cref="MessagePackSerializationException"/> is thrown when <see cref="Path"/> does not lead to the target value.
+		/// </remarks>
+		public bool DefaultForUndiscoverablePath { get; init; }
+	}
+
+	/// <summary>
 	/// Options for streaming a sequence of values from a msgpack stream.
 	/// </summary>
 	/// <typeparam name="T">The envelope type; i.e. the outer-most structure that contains the sequence.</typeparam>
@@ -1090,6 +1129,7 @@ public partial record MessagePackSerializer
 		/// <summary>
 		/// Gets a value indicating whether to produce an empty sequence if <see cref="Path"/> does not lead to a sequence (due to a missing property or null value) in the msgpack data.
 		/// </summary>
+		/// <value>The default value is <see langword="false" />.</value>
 		/// <remarks>
 		/// When this value is <see langword="false"/>, a <see cref="MessagePackSerializationException"/> is thrown when <see cref="Path"/> does not lead to a sequence.
 		/// </remarks>
