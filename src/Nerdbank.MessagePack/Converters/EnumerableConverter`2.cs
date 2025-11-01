@@ -215,6 +215,31 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 		return true;
 	}
 
+	/// <inheritdoc/>
+	public override bool SkipToIndexValue(ref MessagePackReader reader, object? index, SerializationContext context)
+	{
+		int skipCount = (int)index!;
+
+		if (reader.TryReadNil())
+		{
+			return false;
+		}
+
+		int length = reader.ReadArrayHeader();
+
+		if (length < skipCount + 1)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < skipCount; i++)
+		{
+			reader.Skip(context);
+		}
+
+		return true;
+	}
+
 	/// <summary>
 	/// Reads one element from the reader.
 	/// </summary>

@@ -503,6 +503,37 @@ internal class ObjectMapConverter<T>(
 		return false;
 	}
 
+	/// <inheritdoc/>
+	public override bool SkipToPropertyValue(ref MessagePackReader reader, IPropertyShape propertyShape, SerializationContext context)
+	{
+		if (reader.TryReadNil())
+		{
+			return false;
+		}
+
+		context.DepthStep();
+
+		int mapEntries = reader.ReadMapHeader();
+
+		for (int i = 0; i < mapEntries; i++)
+		{
+			ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
+
+			if (this.TryMatchPropertyName(propertyName, propertyShape.Name))
+			{
+				// Return before reading the value.
+				return true;
+			}
+			else
+			{
+				// Skip over the value.
+				reader.Skip(context);
+			}
+		}
+
+		return false;
+	}
+
 	/// <summary>
 	/// Searches for a property with a given UTF-8 encoded name, and checks to see if it matches the expected name expressed as a string.
 	/// </summary>
