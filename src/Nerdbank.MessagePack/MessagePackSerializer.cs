@@ -773,6 +773,10 @@ public partial record MessagePackSerializer
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
 
+	/// <inheritdoc cref="DeserializePathCore{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	public TElement DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		=> this.DeserializePathCore(ref reader, Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
+
 	/// <summary>
 	/// Gets a converter for a given type shape.
 	/// </summary>
@@ -903,6 +907,20 @@ public partial record MessagePackSerializer
 		if (!options.LeaveOpen)
 		{
 			await reader.CompleteAsync().ConfigureAwait(false);
+		}
+	}
+
+	private TElement DeserializePathCore<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	{
+		ThrowIfPreservingReferencesDuringEnumeration();
+
+		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+
+		StreamingDeserializer<TElement> helper = new(this, provider, ref reader, context.Value);
+
+		foreach (TElement? element in helper.EnumerateArray(options.Path, throwOnUnreachableSequence: !options.DefaultIfUndiscoverablePath, options.LeaveOpen))
+		{
+			yield return element;
 		}
 	}
 
@@ -1069,6 +1087,11 @@ public partial record MessagePackSerializer
 		/// into JSON-friendly representations.
 		/// </summary>
 		public bool IgnoreKnownExtensions { get; set; }
+	}
+
+	public record class DeserializePathOptions<T, TElement>(Expression<Func<T, TElement>> Path)
+	{
+		public bool DefaultIfUndiscoverablePath { get; init; }
 	}
 
 	/// <summary>
