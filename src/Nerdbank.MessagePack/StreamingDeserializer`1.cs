@@ -35,7 +35,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 				// The path was not found. We probably encountered a null or absent member along the path.
 				if (throwOnUnreachableSequence)
 				{
-					throw IncompletePathException(incompleteExpression);
+					throw SkipToPathViaExpression.IncompletePathException(incompleteExpression);
 				}
 
 				yield break;
@@ -56,7 +56,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 			{
 				if (throwOnUnreachableSequence)
 				{
-					throw IncompletePathException(path is LambdaExpression lambda ? lambda.Body : path);
+					throw SkipToPathViaExpression.IncompletePathException(path is LambdaExpression lambda ? lambda.Body : path);
 				}
 
 				reader.ReturnReader(ref streamingReader);
@@ -134,9 +134,6 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 		{
 			await reader.AdvanceToEndOfTopLevelStructureAsync().ConfigureAwait(false);
 		}
-
-		static Exception IncompletePathException(Expression incompletePath)
-			=> new MessagePackSerializationException($"The path to the sequence could not be followed. {incompletePath} is missing or has a null value.");
 	}
 
 	private ValueTask<Expression?> NavigateToMemberAsync(Expression path)
@@ -148,6 +145,7 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 	{
 		internal async ValueTask<Expression?> VisitAsync(Expression? expression)
 		{
+			context.CancellationToken.ThrowIfCancellationRequested();
 			Expression? result = expression switch
 			{
 				LambdaExpression lambdaExpression => await this.VisitLambda(lambdaExpression).ConfigureAwait(false),

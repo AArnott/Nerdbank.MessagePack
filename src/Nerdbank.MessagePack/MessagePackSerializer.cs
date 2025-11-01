@@ -774,7 +774,7 @@ public partial record MessagePackSerializer
 		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
 
 	/// <inheritdoc cref="DeserializePathCore{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
-	public TElement DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializePathCore(ref reader, Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
 
 	/// <summary>
@@ -910,18 +910,19 @@ public partial record MessagePackSerializer
 		}
 	}
 
-	private TElement DeserializePathCore<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	private TElement? DeserializePathCore<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 	{
-		ThrowIfPreservingReferencesDuringEnumeration();
+		this.ThrowIfPreservingReferencesDuringEnumeration();
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
 
-		StreamingDeserializer<TElement> helper = new(this, provider, ref reader, context.Value);
-
-		foreach (TElement? element in helper.EnumerateArray(options.Path, throwOnUnreachableSequence: !options.DefaultIfUndiscoverablePath, options.LeaveOpen))
+		SkipToPathViaExpression skipper = new(this, provider, context.Value);
+		if (skipper.NavigateToMember(ref reader, options.Path) is Expression unreachable)
 		{
-			yield return element;
+			return options.DefaultForUndiscoverablePath ? default : throw SkipToPathViaExpression.IncompletePathException(unreachable);
 		}
+
+		return this.Deserialize<TElement>(ref reader, provider, cancellationToken);
 	}
 
 	/// <exception cref="NotSupportedException">Thrown if <see cref="PreserveReferences"/> is not <see cref="ReferencePreservationMode.Off"/>.</exception>
@@ -1089,9 +1090,23 @@ public partial record MessagePackSerializer
 		public bool IgnoreKnownExtensions { get; set; }
 	}
 
+	/// <summary>
+	/// Specifies options for deserializing a value from a MessagePack-encoded object graph using a provided property path
+	/// expression.
+	/// </summary>
+	/// <typeparam name="T">The type of the root object from which the property path is evaluated.</typeparam>
+	/// <typeparam name="TElement">The type of the value at the end of the property path.</typeparam>
+	/// <param name="Path">An expression that specifies the property path to the value to be deserialized from the object graph.</param>
 	public record class DeserializePathOptions<T, TElement>(Expression<Func<T, TElement>> Path)
 	{
-		public bool DefaultIfUndiscoverablePath { get; init; }
+		/// <summary>
+		/// Gets a value indicating whether to produce <c>default(TElement)</c> if <see cref="Path"/> does not lead
+		/// to a sequence (due to a missing property or null value) in the msgpack data.
+		/// </summary>
+		/// <remarks>
+		/// When this value is <see langword="false"/>, a <see cref="MessagePackSerializationException"/> is thrown when <see cref="Path"/> does not lead to a sequence.
+		/// </remarks>
+		public bool DefaultForUndiscoverablePath { get; init; }
 	}
 
 	/// <summary>
