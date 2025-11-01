@@ -52,5 +52,13 @@ internal sealed class DelayedConverterFactory : IDelayedValueFactory
 		/// <inheritdoc/>
 		public override ValueTask<bool> SkipToPropertyValueAsync(MessagePackAsyncReader reader, IPropertyShape propertyShape, SerializationContext context)
 			=> self.Result.ValueOrThrow.SkipToPropertyValueAsync(reader, propertyShape, context);
+
+		/// <inheritdoc/>
+		public override bool SkipToIndexValue(ref MessagePackReader reader, object? index, SerializationContext context)
+			=> self.Result.ValueOrThrow.SkipToIndexValue(ref reader, index, context);
+
+		/// <inheritdoc/>
+		public override bool SkipToPropertyValue(ref MessagePackReader reader, IPropertyShape propertyShape, SerializationContext context)
+			=> self.Result.ValueOrThrow.SkipToPropertyValue(ref reader, propertyShape, context);
 	}
 }

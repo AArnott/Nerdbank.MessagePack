@@ -780,6 +780,71 @@ internal class ObjectArrayConverter<T>(
 		}
 	}
 
+	/// <inheritdoc/>
+	public override bool SkipToPropertyValue(ref MessagePackReader reader, IPropertyShape propertyShape, SerializationContext context)
+	{
+		int index = -1;
+		for (int i = 0; i < properties.Length; i++)
+		{
+			PropertyAccessors<T>? property = properties.Span[i];
+			if (propertyShape.Equals(property?.Shape))
+			{
+				index = i;
+				break;
+			}
+		}
+
+		if (index == -1)
+		{
+			return false;
+		}
+
+		if (reader.TryReadNil())
+		{
+			return false;
+		}
+
+		context.DepthStep();
+
+		MessagePackType peekType = reader.NextMessagePackType;
+
+		if (peekType == MessagePackType.Map)
+		{
+			int count = reader.ReadMapHeader();
+			for (int i = 0; i < count; i++)
+			{
+				int key = reader.ReadInt32();
+
+				if (key == index)
+				{
+					return true;
+				}
+
+				// Skip over the value.
+				reader.Skip(context);
+			}
+
+			return false;
+		}
+		else
+		{
+			int count = reader.ReadArrayHeader();
+
+			if (count < index + 1)
+			{
+				return false;
+			}
+
+			// Skip over the preceding elements.
+			for (int i = 0; i < index; i++)
+			{
+				reader.Skip(context);
+			}
+
+			return true;
+		}
+	}
+
 	/// <summary>
 	/// Initializes an array to the property keys that should be serialized.
 	/// </summary>
