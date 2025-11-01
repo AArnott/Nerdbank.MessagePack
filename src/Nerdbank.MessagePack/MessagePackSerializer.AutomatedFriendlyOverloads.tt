@@ -54,7 +54,7 @@ void WriteClass(bool targetNET) {
         string thisKeyword = targetNET ? "this" : "Requires.NotNull(self)";
         string staticModifier = targetNET ? "" : "static ";
         string methodAttributes = targetNET ? "" : """
-        
+
             #if NET8_0
             	[RequiresDynamicCode(ResolveDynamicMessage)]
             #endif
@@ -157,6 +157,25 @@ void WriteClass(bool targetNET) {
 <#
         }
 
+        foreach (DeserializeTransport transport in Enum.GetValues(typeof(DeserializeTransport)))
+        {
+            (string firstParameterType, string firstParameterName) = transport switch
+            {
+                DeserializeTransport.ReadOnlyMemory => ("ReadOnlyMemory<byte>", "bytes"),
+                DeserializeTransport.ReadOnlySequence => ("scoped in ReadOnlySequence<byte>", "bytes"),
+                DeserializeTransport.Stream => ("Stream", "stream"),
+                _ => throw new NotSupportedException(),
+            };
+            AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
+#>
+
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePath{T, TElement}(<#=firstParameterDocId#>ITypeShapeProvider, <#=serializerClassQualifier#>DeserializePathOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #>TElement? DeserializePath<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#><#=serializerClassQualifier#>DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializePath(<#=firstArg#><#=getShape#>.Provider, options, cancellationToken);
+<#
+        }
+
         foreach (SerializeAsyncTransport transport in Enum.GetValues(typeof(SerializeAsyncTransport)))
         {
             (string firstParameterType, string firstParameterName) = transport switch
@@ -206,8 +225,8 @@ void WriteClass(bool targetNET) {
   }
   enum ShapeSource
   {
-      // Parameter, // This is hand-authored, and is what the automatically generated overloads forward to.
+  // Parameter, // This is hand-authored, and is what the automatically generated overloads forward to.
       T,
-      TProvider,
+    TProvider,
   }
 #>
