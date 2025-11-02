@@ -774,8 +774,8 @@ public partial record MessagePackSerializer
 		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
 
 	/// <inheritdoc cref="DeserializePathCore{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
-	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
-		=> this.DeserializePathCore(ref reader, Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
+	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		=> this.DeserializePathCore(ref reader, Requires.NotNull(provider), options, cancellationToken);
 
 	/// <summary>
 	/// Gets a converter for a given type shape.
@@ -1097,7 +1097,7 @@ public partial record MessagePackSerializer
 	/// <typeparam name="T">The type of the root object from which the property path is evaluated.</typeparam>
 	/// <typeparam name="TElement">The type of the value at the end of the property path.</typeparam>
 	/// <param name="Path">An expression that specifies the property path to the value to be deserialized from the object graph.</param>
-	public record class DeserializePathOptions<T, TElement>(Expression<Func<T, TElement>> Path)
+	public record struct DeserializePathOptions<T, TElement>(Expression<Func<T, TElement>> Path)
 	{
 		/// <summary>
 		/// Gets a value indicating whether to produce <c>default(TElement)</c> if <see cref="Path"/> does not lead
@@ -1116,7 +1116,12 @@ public partial record MessagePackSerializer
 	/// <typeparam name="T">The envelope type; i.e. the outer-most structure that contains the sequence.</typeparam>
 	/// <typeparam name="TElement">The type of element to be enumerated.</typeparam>
 	/// <param name="Path">The path leading from the envelope type <typeparamref name="T"/> to the sequence of <typeparamref name="TElement"/> values.</param>
-	public record class StreamingEnumerationOptions<T, TElement>(Expression<Func<T, IEnumerable<TElement>>> Path)
+	/// <devremarks>
+	/// This is a class rather than a struct because it is passed to async methods, which cannot accept 'in' parameters,
+	/// and a struct would have to be copied by value, which is slower than copying a pointer.
+	/// If callers want to reduce GC pressure from this (unlikely), they can cache and reuse an instance.
+	/// </devremarks>
+	public record StreamingEnumerationOptions<T, TElement>(Expression<Func<T, IEnumerable<TElement>>> Path)
 	{
 		/// <summary>
 		/// Gets a value indicating whether the <see cref="PipeReader"/> should be left open after the enumeration completes.

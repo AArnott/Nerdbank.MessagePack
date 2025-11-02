@@ -516,27 +516,27 @@ public partial record MessagePackSerializer
 		await pipeReader.CompleteAsync().ConfigureAwait(false);
 	}
 
-	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-	public TElement? DeserializePath<T, TElement>(ReadOnlyMemory<byte> buffer, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public TElement? DeserializePath<T, TElement>(ReadOnlyMemory<byte> buffer, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		MessagePackReader reader = new(buffer);
 		return this.DeserializePath(ref reader, provider, options, cancellationToken);
 	}
 
-	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-	public TElement? DeserializePath<T, TElement>(scoped in ReadOnlySequence<byte> buffer, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public TElement? DeserializePath<T, TElement>(scoped in ReadOnlySequence<byte> buffer, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		MessagePackReader reader = new(buffer);
 		return this.DeserializePath(ref reader, provider, options, cancellationToken);
 	}
 
-	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
 	/// <remarks>
 	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
@@ -544,7 +544,7 @@ public partial record MessagePackSerializer
 	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only msgpack content.
 	/// </remarks>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-	public TElement? DeserializePath<T, TElement>(Stream stream, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public TElement? DeserializePath<T, TElement>(Stream stream, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		Requires.NotNull(stream);

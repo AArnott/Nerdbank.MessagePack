@@ -94,10 +94,10 @@ public abstract class MessagePackConverter
 	/// <param name="index">The key or index of the value to be retrieved.</param>
 	/// <param name="context">The serialization context.</param>
 	/// <returns><see langword="true" /> if the specified index was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
-	///// <remarks>
-	///// This method may be used by <see cref="MessagePackSerializer.DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)"/>
-	///// to skip to the starting position of the particular object to be deserialized.
-	///// </remarks>
+	/// <remarks>
+	/// This method may be used by <see cref="MessagePackSerializer.DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	/// to skip to the starting position of the particular object to be deserialized.
+	/// </remarks>
 	public abstract bool SkipToIndexValue(ref MessagePackReader reader, object? index, SerializationContext context);
 
 	/// <summary>
