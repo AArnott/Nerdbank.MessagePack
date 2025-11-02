@@ -169,9 +169,9 @@ void WriteClass(bool targetNET) {
             AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePath{T, TElement}(<#=firstParameterDocId#>ITypeShapeProvider, <#=serializerClassQualifier#>DeserializePathOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePath{T, TElement}(<#=firstParameterDocId#>ITypeShapeProvider, in <#=serializerClassQualifier#>DeserializePathOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
-	public <#= staticModifier #>TElement? DeserializePath<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#><#=serializerClassQualifier#>DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public <#= staticModifier #>TElement? DeserializePath<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#>in <#=serializerClassQualifier#>DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializePath(<#=firstArg#><#=getShape#>.Provider, options, cancellationToken);
 <#
         }
