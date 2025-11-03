@@ -6,7 +6,6 @@
 using System.Diagnostics.CodeAnalysis;
 using AotNativeConsole.Models.Animals;
 using Nerdbank.MessagePack;
-using PolyType;
 
 namespace AotNativeConsole.Models;
 
@@ -47,7 +46,10 @@ public partial class MyShape
 
 	public MyShape AddShapeItem(Animal shapeItem)
 	{
-		ArgumentNullException.ThrowIfNull(shapeItem);
+		if (shapeItem is null)
+		{
+			throw new ArgumentNullException(nameof(shapeItem));
+		}
 
 		this.Animals.Add(shapeItem);
 		return this;

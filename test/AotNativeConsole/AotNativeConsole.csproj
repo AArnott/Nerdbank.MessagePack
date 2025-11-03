@@ -17,6 +17,7 @@
   <ItemGroup>
     <AnalyzerProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
     <AnalyzerProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj" />
+    <Compile Include="..\Benchmarks\DataModels\LargeDataModel.cs" Link="Models\LargeDataModel.cs" Condition="false" />
     <ProjectReference Include="@(AnalyzerProjectReference)">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
