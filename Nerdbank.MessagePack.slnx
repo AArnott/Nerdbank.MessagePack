@@ -27,6 +27,7 @@
   </Folder>
   <Folder Name="/Solution Items/test/">
     <File Path="test/.editorconfig" />
+    <File Path="test/AOT.props" />
     <File Path="test/Directory.Build.props" />
     <File Path="test/Directory.Build.targets" />
     <File Path="test/dirs.proj" />

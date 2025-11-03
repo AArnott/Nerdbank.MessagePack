@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <SelfContained>true</SelfContained>
     <PublishAot>true</PublishAot>
+    <!--<PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>-->
     <InvariantGlobalization>true</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <RuntimeIdentifiers>$(AvailableRuntimeIdentifiers)</RuntimeIdentifiers>
