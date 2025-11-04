@@ -1,0 +1,4 @@
+M:PolyType.ITypeShapeProvider.GetTypeShape(System.Type); Breaks trimming. Walk a given ITypeShape to get the shapes you need.
+M:PolyType.TypeShapeProviderExtensions.GetTypeShapeOrThrow(PolyType.ITypeShapeProvider,System.Type); Breaks trimming. Walk a given ITypeShape to get the shapes you need.
+M:PolyType.TypeShapeProviderExtensions.GetTypeShapeOrThrow``1(PolyType.ITypeShapeProvider); Breaks trimming. Walk a given ITypeShape to get the shapes you need.
+M:PolyType.TypeShapeProviderExtensions.GetTypeShape``1(PolyType.ITypeShapeProvider); Breaks trimming. Walk a given ITypeShape to get the shapes you need.

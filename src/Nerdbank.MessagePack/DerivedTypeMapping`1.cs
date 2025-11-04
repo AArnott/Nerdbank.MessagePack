@@ -8,6 +8,7 @@ namespace Nerdbank.MessagePack;
 /// <inheritdoc cref="DerivedShapeMapping{TBase}" path="/summary"/>
 /// <inheritdoc cref="DerivedShapeMapping{TBase}" path="/typeparam"/>
 /// <param name="provider">The type shape provider to use for a type when added without an express shape or provider.</param>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Public API accepts an ITypeShapeProvider.")]
 public class DerivedTypeMapping<TBase>(ITypeShapeProvider provider) : DerivedShapeMapping<TBase>
 {
 	/// <inheritdoc/>

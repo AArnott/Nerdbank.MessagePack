@@ -12,9 +12,9 @@ namespace Nerdbank.MessagePack;
 /// without deserializing it.
 /// </summary>
 /// <param name="serializer">The serializer from which to obtain converters that will be used to skip forward.</param>
-/// <param name="provider">The type shape provider that may be used to create the required converters.</param>
+/// <param name="rootShape">The shape of the type at the start of the expression.</param>
 /// <param name="context">Serialization context.</param>
-internal struct SkipToPathViaExpression(MessagePackSerializer serializer, ITypeShapeProvider provider, SerializationContext context)
+internal struct SkipToPathViaExpression(MessagePackSerializer serializer, ITypeShape rootShape, SerializationContext context)
 {
 	/// <summary>
 	/// Creates an exception suitable for throwing to describe a path through msgpack data that could not be completed.
@@ -32,27 +32,29 @@ internal struct SkipToPathViaExpression(MessagePackSerializer serializer, ITypeS
 	/// </summary>
 	/// <param name="reader">The reader to advance along the path.</param>
 	/// <param name="path">The path to navigate to.</param>
-	/// <returns>The expression that could not be reached, or <see langword="null"/> if navigation was successful.</returns>
-	internal Expression? NavigateToMember(ref MessagePackReader reader, Expression path) => this.Visit(ref reader, path);
+	/// <returns>The expression that could not be reached, or the <see cref="ITypeShape"/> of the leave element if navigation was successful.</returns>
+	internal Result<ITypeShape, Expression> NavigateToMember(ref MessagePackReader reader, Expression path) => this.Visit(ref reader, path);
 
-	private Expression? Visit(ref MessagePackReader reader, Expression? expression)
+	private static Result<ITypeShape, Expression> Ok(ITypeShape tailShape) => Result<ITypeShape, Expression>.Ok(tailShape);
+
+	private static Result<ITypeShape, Expression> Err(Expression incompleteExpression) => Result<ITypeShape, Expression>.Err(incompleteExpression);
+
+	private Result<ITypeShape, Expression> Visit(ref MessagePackReader reader, Expression? expression)
 	{
 		context.CancellationToken.ThrowIfCancellationRequested();
-		Expression? result = expression switch
+		return expression switch
 		{
-			LambdaExpression lambdaExpression => this.VisitLambda(ref reader, lambdaExpression),
-			ParameterExpression parameterExpression => this.VisitParameter(parameterExpression),
+			LambdaExpression lambdaExpression => this.Visit(ref reader, lambdaExpression.Body),
+			ParameterExpression => Ok(rootShape), // We've reached the root of the expression.
 			MemberExpression memberExpression => this.VisitMember(ref reader, memberExpression),
 			BinaryExpression arrayIndexExpression when expression.NodeType == ExpressionType.ArrayIndex => this.VisitIndex(ref reader, arrayIndexExpression),
 			MethodCallExpression methodCallExpression => this.VisitMethodCall(ref reader, methodCallExpression),
 			null => default,
 			_ => throw new NotSupportedException($"{expression.NodeType} is not a supported expression type."),
 		};
-
-		return result;
 	}
 
-	private Expression? VisitMethodCall(ref MessagePackReader reader, MethodCallExpression expression)
+	private Result<ITypeShape, Expression> VisitMethodCall(ref MessagePackReader reader, MethodCallExpression expression)
 	{
 		if (expression is not { Object: not null, Method: { Name: "get_Item", IsSpecialName: true }, Arguments.Count: 1 })
 		{
@@ -72,33 +74,29 @@ internal struct SkipToPathViaExpression(MessagePackSerializer serializer, ITypeS
 		};
 
 		// First navigate to the object.
-		if (this.Visit(ref reader, expression.Object) is Expression incompletePath)
+		Result<ITypeShape, Expression> parentResult = this.Visit(ref reader, expression.Object);
+		if (parentResult is { Success: false } err)
 		{
-			return incompletePath;
+			return err.Error;
 		}
+
+		ITypeShape resultShape = parentResult.Value switch
+		{
+			IDictionaryTypeShape dict => dict.ValueType,
+			IEnumerableTypeShape enumerable => enumerable.ElementType,
+			_ => throw new NotSupportedException($"Unsupported shape type {parentResult.Value.GetType().Name}."),
+		};
 
 		// Ask the converter to retrieve the element at the given index.
 		// We use a converter to do the actual skipping.
-		ITypeShape? typeShape = provider.GetTypeShape(expression.Object.Type);
-		Requires.Argument(typeShape is not null, nameof(expression), "The expression does not have a known type shape.");
-		MessagePackConverter converter = serializer.GetConverter(typeShape).ValueOrThrow;
+		MessagePackConverter converter = serializer.GetConverter(parentResult.Value).ValueOrThrow;
 
-		return converter.SkipToIndexValue(ref reader, indexArg, context) ? null : expression;
+		return converter.SkipToIndexValue(ref reader, indexArg, context)
+			? Ok(resultShape)
+			: Err(expression);
 	}
 
-	private Expression? VisitLambda(ref MessagePackReader reader, LambdaExpression lambdaExpression)
-	{
-		return this.Visit(ref reader, lambdaExpression.Body);
-	}
-
-	private Expression? VisitParameter(ParameterExpression expression)
-	{
-		// Do nothing.
-		// We've reached the root of the expression.
-		return null;
-	}
-
-	private Expression? VisitIndex(ref MessagePackReader reader, BinaryExpression expression)
+	private Result<ITypeShape, Expression> VisitIndex(ref MessagePackReader reader, BinaryExpression expression)
 	{
 		if (expression.Right is not ConstantExpression { Value: int skipElements })
 		{
@@ -106,16 +104,19 @@ internal struct SkipToPathViaExpression(MessagePackSerializer serializer, ITypeS
 		}
 
 		// First navigate to the expression.
-		if (this.Visit(ref reader, expression.Left) is Expression incompletePath)
+		Result<ITypeShape, Expression> parentResult = this.Visit(ref reader, expression.Left);
+		if (parentResult is { Success: false } err)
 		{
-			return incompletePath;
+			return err.Error;
 		}
 
 		// We can't navigate to a member if this object is null.
 		if (reader.NextMessagePackType == MessagePackType.Nil)
 		{
-			return expression.Left;
+			return Err(expression.Left);
 		}
+
+		var enumerableTypeShape = (IEnumerableTypeShape)parentResult.Value;
 
 		// Skip the given number of elements.
 		int count = reader.ReadArrayHeader();
@@ -129,41 +130,38 @@ internal struct SkipToPathViaExpression(MessagePackSerializer serializer, ITypeS
 			reader.Skip(context);
 		}
 
-		return null;
+		return Ok(enumerableTypeShape.ElementType);
 	}
 
-	private Expression? VisitMember(ref MessagePackReader reader, MemberExpression expression)
+	private Result<ITypeShape, Expression> VisitMember(ref MessagePackReader reader, MemberExpression expression)
 	{
 		Requires.Argument(expression.Expression is not null, nameof(expression), "Expression must not be null.");
 
 		// First navigate to the expression.
-		if (this.Visit(ref reader, expression.Expression) is Expression incompletePath)
+		Result<ITypeShape, Expression> parentResult = this.Visit(ref reader, expression.Expression);
+		if (parentResult is { Success: false } err)
 		{
-			return incompletePath;
+			return err.Error;
 		}
 
 		// We can't navigate to a member if this object is null.
 		if (reader.NextMessagePackType == MessagePackType.Nil)
 		{
-			return expression.Expression;
+			return Err(expression.Expression);
 		}
 
 		// Now navigate to the member.
 		// Find the matching property shape.
-		ITypeShape? typeShape = provider.GetTypeShape(expression.Expression.Type);
-		Requires.Argument(typeShape is not null, nameof(expression), "The expression does not have a known type shape.");
-
-		IPropertyShape? propertyShape = typeShape switch
+		if (parentResult.Value is not IObjectTypeShape objectTypeShape ||
+			FindPropertyByName(objectTypeShape, expression.Member.Name) is not IPropertyShape propertyShape)
 		{
-			IObjectTypeShape objectTypeShape => FindPropertyByName(objectTypeShape, expression.Member.Name),
-			_ => null,
-		};
-		Requires.Argument(propertyShape is not null, nameof(expression), "The expression does not refer to a serialized property.");
+			throw Requires.Fail("The expression does not refer to a serialized property.");
+		}
 
 		// We use a converter to do the actual skipping.
-		MessagePackConverter converter = serializer.GetConverter(typeShape).ValueOrThrow;
+		MessagePackConverter converter = serializer.GetConverter(parentResult.Value).ValueOrThrow;
 
-		return converter.SkipToPropertyValue(ref reader, propertyShape, context) ? null : expression;
+		return converter.SkipToPropertyValue(ref reader, propertyShape, context) ? Ok(propertyShape.PropertyType) : Err(expression);
 
 		static IPropertyShape? FindPropertyByName(IObjectTypeShape typeShape, string name)
 		{

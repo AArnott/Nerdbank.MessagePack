@@ -18,6 +18,20 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
 		this.LogMsgPack(msgpack);
 
+		MessagePackSerializer.DeserializePathOptions<OuterContainer, OuterContainer> options = new(c => c);
+		OuterContainer? result = this.Serializer.DeserializePath<OuterContainer, OuterContainer, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+
+		Assert.NotNull(result);
+		Assert.Equal(5, result.Inner?.Value);
+	}
+
+	[Fact]
+	public void OneStepObject()
+	{
+		OuterContainer container = new(new(5));
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		this.LogMsgPack(msgpack);
+
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, InnerValue> options = new(c => c.Inner!);
 		InnerValue? result = this.Serializer.DeserializePath<OuterContainer, InnerValue, Witness>(msgpack, options, TestContext.Current.CancellationToken);
 

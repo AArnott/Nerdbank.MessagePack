@@ -762,20 +762,23 @@ public partial record MessagePackSerializer
 	public IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(PipeReader reader, ITypeShapeProvider provider, CancellationToken cancellationToken = default)
 		=> this.DeserializeEnumerableAsync(Requires.NotNull(reader), provider, (MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter<T>(provider).ValueOrThrow, cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableCoreAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
-	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
+	/// <inheritdoc cref="DeserializeEnumerableCoreAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(shape).Provider, Requires.NotNull(options), cancellationToken);
+		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(shape), Requires.NotNull(options), cancellationToken);
 
-	/// <inheritdoc cref="DeserializeEnumerableCoreAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializeEnumerableCoreAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
+	/// <param name="provider"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Public API accepts an ITypeShapeProvider.")]
 	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
-		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), Requires.NotNull(provider), Requires.NotNull(options), cancellationToken);
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+		=> this.DeserializeEnumerableCoreAsync(Requires.NotNull(reader), (ITypeShape<T>)Requires.NotNull(provider).GetTypeShapeOrThrow(typeof(T)), Requires.NotNull(options), cancellationToken);
 
-	/// <inheritdoc cref="DeserializePathCore{T, TElement}(ref MessagePackReader, ITypeShapeProvider, DeserializePathOptions{T, TElement}, CancellationToken)"/>
-	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
-		=> this.DeserializePathCore(ref reader, Requires.NotNull(provider), options, cancellationToken);
+	/// <inheritdoc cref="DeserializePathCore{T, TElement}(ref MessagePackReader, ITypeShape{T}, DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShape<T> shape, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		=> this.DeserializePathCore(ref reader, Requires.NotNull(shape), options, cancellationToken);
 
 	/// <summary>
 	/// Gets a converter for a given type shape.
@@ -872,7 +875,7 @@ public partial record MessagePackSerializer
 	/// <typeparam name="T">The type that describes the top-level msgpack structure.</typeparam>
 	/// <typeparam name="TElement">The type of element to be enumerated within the structure.</typeparam>
 	/// <param name="reader">The reader to deserialize from. <see cref="PipeReader.CompleteAsync(Exception?)"/> will be called only at the conclusion of a successful enumeration.</param>
-	/// <param name="provider"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 	/// <param name="options">Options to apply to the streaming enumeration.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>An async enumerable, suitable for use with <c>await foreach</c>.</returns>
@@ -888,16 +891,16 @@ public partial record MessagePackSerializer
 	/// </para>
 	/// </remarks>
 	/// <inheritdoc cref="ThrowIfPreservingReferencesDuringEnumeration" path="/exception"/>
-	private async IAsyncEnumerable<TElement?> DeserializeEnumerableCoreAsync<T, TElement>(PipeReader reader, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken)
+	private async IAsyncEnumerable<TElement?> DeserializeEnumerableCoreAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken)
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
-		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
 
-		StreamingDeserializer<TElement> helper = new(this, provider, asyncReader, context.Value);
+		StreamingDeserializer<TElement> helper = new(this, shape, asyncReader, context.Value);
 		await foreach (TElement? element in helper.EnumerateArrayAsync(options.Path, throwOnUnreachableSequence: !options.EmptySequenceForUndiscoverablePath, options.LeaveOpen).ConfigureAwait(false))
 		{
 			yield return element;
@@ -910,19 +913,18 @@ public partial record MessagePackSerializer
 		}
 	}
 
-	private TElement? DeserializePathCore<T, TElement>(ref MessagePackReader reader, ITypeShapeProvider provider, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	private TElement? DeserializePathCore<T, TElement>(ref MessagePackReader reader, ITypeShape<T> shape, DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
-		using DisposableSerializationContext context = this.CreateSerializationContext(provider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 
-		SkipToPathViaExpression skipper = new(this, provider, context.Value);
-		if (skipper.NavigateToMember(ref reader, options.Path) is Expression unreachable)
+		SkipToPathViaExpression skipper = new(this, shape, context.Value);
+		return skipper.NavigateToMember(ref reader, options.Path) switch
 		{
-			return options.DefaultForUndiscoverablePath ? default : throw SkipToPathViaExpression.IncompletePathException(unreachable);
-		}
-
-		return this.Deserialize<TElement>(ref reader, provider, cancellationToken);
+			{ Success: false, Error: { } unreachable } => options.DefaultForUndiscoverablePath ? default : throw SkipToPathViaExpression.IncompletePathException(unreachable),
+			{ Success: true, Value: { } leafShape } => this.Deserialize(ref reader, (ITypeShape<TElement>)leafShape, cancellationToken),
+		};
 	}
 
 	/// <exception cref="NotSupportedException">Thrown if <see cref="PreserveReferences"/> is not <see cref="ReferencePreservationMode.Off"/>.</exception>
