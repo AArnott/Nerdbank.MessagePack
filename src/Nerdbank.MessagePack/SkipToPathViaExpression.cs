@@ -32,7 +32,7 @@ internal struct SkipToPathViaExpression(MessagePackSerializer serializer, ITypeS
 	/// </summary>
 	/// <param name="reader">The reader to advance along the path.</param>
 	/// <param name="path">The path to navigate to.</param>
-	/// <returns>The expression that could not be reached, or the <see cref="ITypeShape"/> of the leave element if navigation was successful.</returns>
+	/// <returns>The expression that could not be reached, or the <see cref="ITypeShape"/> of the leaf element if navigation was successful.</returns>
 	internal Result<ITypeShape, Expression> NavigateToMember(ref MessagePackReader reader, Expression path) => this.Visit(ref reader, path);
 
 	private static Result<ITypeShape, Expression> Ok(ITypeShape tailShape) => Result<ITypeShape, Expression>.Ok(tailShape);
