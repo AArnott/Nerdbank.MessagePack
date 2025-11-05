@@ -2,10 +2,11 @@
 
 ## Installation
 
-Consume this library via its NuGet Package.
-Click on the badge to find its latest version and the instructions for consuming it that best apply to your project.
+Consume this library via one of its NuGet packages.
 
-[![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg)](https://nuget.org/packages/Nerdbank.MessagePack)
+[![Nerdbank.MessagePack NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg?label=Nerdbank.MessagePack)](https://www.nuget.org/packages/Nerdbank.MessagePack)<br />
+[![Nerdbank.MessagePack.SignalR NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.SignalR.svg?label=Nerdbank.MessagePack.SignalR)](https://www.nuget.org/packages/Nerdbank.MessagePack.SignalR)<br />
+[![Nerdbank.MessagePack.AspNetCoreMvcFormatter NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.AspNetCoreMvcFormatter.svg?label=Nerdbank.MessagePack.AspNetCoreMvcFormatter)](https://www.nuget.org/packages/Nerdbank.MessagePack.AspNetCoreMvcFormatter)
 
 ### C# language version
 

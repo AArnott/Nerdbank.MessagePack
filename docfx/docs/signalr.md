@@ -2,7 +2,7 @@
 
 This library provides a MessagePack-based Hub Protocol implementation for ASP.NET Core SignalR, offering significant performance improvements over the default JSON protocol.
 
-[![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.SignalR.svg)](https://nuget.org/packages/Nerdbank.MessagePack.SignalR)
+[![Nerdbank.MessagePack.SignalR NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.SignalR.svg?label=Nerdbank.MessagePack.SignalR)](https://www.nuget.org/packages/Nerdbank.MessagePack.SignalR)
 
 ## Benefits
 

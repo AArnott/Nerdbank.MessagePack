@@ -1,11 +1,14 @@
-﻿# Nerdbank.MessagePack
+﻿﻿# Nerdbank.MessagePack
 
 ***A modern, fast and NativeAOT-compatible MessagePack serialization library***
 
-[![NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg)](https://www.nuget.org/packages/Nerdbank.MessagePack)
 [![Docs](https://img.shields.io/badge/docs-blue)](https://aarnott.github.io/Nerdbank.MessagePack/)
 [![codecov](https://codecov.io/gh/AArnott/Nerdbank.MessagePack/graph/badge.svg?token=CLMWEX3M3W)](https://codecov.io/gh/AArnott/Nerdbank.MessagePack)
 [![🏭 Build](https://github.com/AArnott/Nerdbank.MessagePack/actions/workflows/build.yml/badge.svg)](https://github.com/AArnott/Nerdbank.MessagePack/actions/workflows/build.yml)
+
+[![Nerdbank.MessagePack NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg?label=Nerdbank.MessagePack)](https://www.nuget.org/packages/Nerdbank.MessagePack)<br />
+[![Nerdbank.MessagePack.SignalR NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.SignalR.svg?label=Nerdbank.MessagePack.SignalR)](https://www.nuget.org/packages/Nerdbank.MessagePack.SignalR)<br />
+[![Nerdbank.MessagePack.AspNetCoreMvcFormatter NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.AspNetCoreMvcFormatter.svg?label=Nerdbank.MessagePack.AspNetCoreMvcFormatter)](https://www.nuget.org/packages/Nerdbank.MessagePack.AspNetCoreMvcFormatter)
 
 ## Features
 
@@ -20,6 +23,7 @@ See [a side-by-side feature comparison across popular libraries](https://aarnott
 * [Great security](https://aarnott.github.io/Nerdbank.MessagePack/docs/security.html) for deserializing untrusted data.
 * [Polymorphic deserialization](https://aarnott.github.io/Nerdbank.MessagePack/docs/unions.html) lets you deserialize derived types.
 * True async and [streaming deserialization](https://aarnott.github.io/Nerdbank.MessagePack/docs/streaming-deserialization.html) for large or over-time sequences keeps your apps responsive and memory pressure low.
+* Deserialize [just the fragment you require](https://aarnott.github.io/Nerdbank.MessagePack/docs/targeted-deserialization.html) with intuitive LINQ expressions.
 * [Preserve reference equality](https://aarnott.github.io/Nerdbank.MessagePack/api/Nerdbank.MessagePack.MessagePackSerializer.html#Nerdbank_MessagePack_MessagePackSerializer_PreserveReferences) across serialization/deserialization (optional).
 * [Forward compatible data retention](https://aarnott.github.io/Nerdbank.MessagePack/docs/customizing-serialization.html#retaining-unrecognized-data) allows you to deserialize and re-serialize data without dropping properties you didn't know about.
 * [Structural equality checking](https://aarnott.github.io/Nerdbank.MessagePack/docs/structural-equality.html) and hashing *for arbitrary types* gives you deep by-value equality semantics without hand-authoring `Equals` and `GetHashCode` overrides.
