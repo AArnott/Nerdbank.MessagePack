@@ -505,38 +505,31 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken"><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/returns"/></returns>
 	/// <remarks><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShapeProvider, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/remarks"/></remarks>
-	public async IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(Stream stream, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-	{
-		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		await foreach (TElement? result in this.DeserializeEnumerableAsync(pipeReader, provider, options, cancellationToken).ConfigureAwait(false))
-		{
-			yield return result;
-		}
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Public API accepts an ITypeShapeProvider.")]
+	public IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(Stream stream, ITypeShapeProvider provider, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		=> this.DeserializeEnumerableAsync<T, TElement>(stream, (ITypeShape<T>)provider.GetTypeShapeOrThrow(typeof(T)), options, cancellationToken);
 
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
-	}
-
-	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-	public TElement? DeserializePath<T, TElement>(ReadOnlyMemory<byte> buffer, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public TElement? DeserializePath<T, TElement>(ReadOnlyMemory<byte> buffer, ITypeShape<T> shape, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		MessagePackReader reader = new(buffer);
-		return this.DeserializePath(ref reader, provider, options, cancellationToken);
+		return this.DeserializePath(ref reader, shape, options, cancellationToken);
 	}
 
-	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-	public TElement? DeserializePath<T, TElement>(scoped in ReadOnlySequence<byte> buffer, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public TElement? DeserializePath<T, TElement>(scoped in ReadOnlySequence<byte> buffer, ITypeShape<T> shape, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		MessagePackReader reader = new(buffer);
-		return this.DeserializePath(ref reader, provider, options, cancellationToken);
+		return this.DeserializePath(ref reader, shape, options, cancellationToken);
 	}
 
-	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShapeProvider, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
 	/// <remarks>
 	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
@@ -544,7 +537,7 @@ public partial record MessagePackSerializer
 	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only msgpack content.
 	/// </remarks>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-	public TElement? DeserializePath<T, TElement>(Stream stream, ITypeShapeProvider provider, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public TElement? DeserializePath<T, TElement>(Stream stream, ITypeShape<T> shape, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	{
 		Requires.NotNull(stream);
@@ -552,7 +545,7 @@ public partial record MessagePackSerializer
 		// Fast path for MemoryStream.
 		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
 		{
-			return this.DeserializePath(buffer.AsMemory(), provider, options, cancellationToken);
+			return this.DeserializePath(buffer.AsMemory(), shape, options, cancellationToken);
 		}
 		else
 		{
@@ -567,7 +560,7 @@ public partial record MessagePackSerializer
 			}
 			while (bytesLastRead > 0);
 
-			return this.DeserializePath(rental.Value, provider, options, cancellationToken);
+			return this.DeserializePath(rental.Value, shape, options, cancellationToken);
 		}
 	}
 }

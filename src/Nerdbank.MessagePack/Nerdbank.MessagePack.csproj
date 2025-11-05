@@ -16,6 +16,7 @@ Also features an automatic structural equality API.</PackageDescription>
     <!-- <PackageValidationBaselineVersion>1.0.0</PackageValidationBaselineVersion> -->
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.NET.StringTools" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
@@ -28,6 +29,7 @@ Also features an automatic structural equality API.</PackageDescription>
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="BannedSymbols.txt" />
     <None Include="icon.png" Pack="true" PackagePath="" />
     <None Update="Converters\ArraysOfPrimitivesConverters.Generated.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -118,6 +120,7 @@ Also features an automatic structural equality API.</PackageDescription>
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="$(TargetFramework)\PublicAPI.*.txt" />
+    <AdditionalFiles Include="BannedSymbols.txt" />
   </ItemGroup>
   <Target Name="ConsumeAnalyzersDirectly" AfterTargets="ResolveProjectReferences">
     <ItemGroup>

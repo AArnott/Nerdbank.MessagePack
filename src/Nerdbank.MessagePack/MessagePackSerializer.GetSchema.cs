@@ -24,6 +24,7 @@ public partial record MessagePackSerializer
 	/// <typeparam name="T">The type whose schema should be produced.</typeparam>
 	/// <param name="provider"><inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <returns><inheritdoc cref="GetJsonSchema(ITypeShape)" path="/returns"/></returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Public API accepts an ITypeShapeProvider.")]
 	public JsonObject GetJsonSchema<T>(ITypeShapeProvider provider)
 	{
 		Requires.NotNull(provider);

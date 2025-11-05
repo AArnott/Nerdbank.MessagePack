@@ -12,10 +12,10 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <typeparam name="TElement">The type of element to be deserialized.</typeparam>
 /// <param name="serializer">The serializer.</param>
-/// <param name="provider">The provider to use to obtain the <see cref="ITypeShape"/> objects we need along the way.</param>
+/// <param name="rootShape">The shape of the type at the start of the expression.</param>
 /// <param name="reader">The async reader of the msgpack data.</param>
 /// <param name="context">Deserialization context.</param>
-internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer serializer, ITypeShapeProvider provider, MessagePackAsyncReader reader, SerializationContext context)
+internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer serializer, ITypeShape rootShape, MessagePackAsyncReader reader, SerializationContext context)
 {
 	/// <summary>
 	/// Enumerates the elements of an array at the given path in the MessagePack stream.
@@ -26,11 +26,11 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 	/// <returns>The async enumeration.</returns>
 	internal async IAsyncEnumerable<TElement?> EnumerateArrayAsync(Expression path, bool throwOnUnreachableSequence, bool skipTrailingBytes)
 	{
-		MessagePackConverter<TElement> elementConverter = (MessagePackConverter<TElement>)serializer.ConverterCache.GetOrAddConverter(typeof(TElement), provider).ValueOrThrow;
-
 		// Navigate to the sequence.
+		ITypeShape leafShape;
 		{
-			if (await this.NavigateToMemberAsync(path).ConfigureAwait(false) is Expression incompleteExpression)
+			Result<ITypeShape, Expression> result = await this.VisitAsync(path).ConfigureAwait(false);
+			if (result is { Success: false, Error: { } incompleteExpression })
 			{
 				// The path was not found. We probably encountered a null or absent member along the path.
 				if (throwOnUnreachableSequence)
@@ -40,9 +40,12 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 
 				yield break;
 			}
+
+			leafShape = ((IEnumerableTypeShape)result.Value).ElementType;
 		}
 
 		// Enumerate the actual sequence.
+		MessagePackConverter<TElement> elementConverter = (MessagePackConverter<TElement>)serializer.ConverterCache.GetOrAddConverter(leafShape).ValueOrThrow;
 		{
 			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 
@@ -136,176 +139,177 @@ internal readonly struct StreamingDeserializer<TElement>(MessagePackSerializer s
 		}
 	}
 
-	private ValueTask<Expression?> NavigateToMemberAsync(Expression path)
+	private static Result<ITypeShape, Expression> Ok(ITypeShape tailShape) => Result<ITypeShape, Expression>.Ok(tailShape);
+
+	private static Result<ITypeShape, Expression> Err(Expression incompleteExpression) => Result<ITypeShape, Expression>.Err(incompleteExpression);
+
+	private ValueTask<Result<ITypeShape, Expression>> VisitAsync(Expression expression)
 	{
-		return new AsyncExpressionVisitor(serializer, reader, provider, context).VisitAsync(path);
+		context.CancellationToken.ThrowIfCancellationRequested();
+		return expression switch
+		{
+			LambdaExpression lambdaExpression => this.VisitAsync(lambdaExpression.Body),
+			ParameterExpression => new(Ok(rootShape)), // We've reached the root of the expression.
+			MemberExpression memberExpression => this.VisitMember(memberExpression),
+			BinaryExpression arrayIndexExpression when expression.NodeType == ExpressionType.ArrayIndex => this.VisitIndex(arrayIndexExpression),
+			MethodCallExpression methodCallExpression => this.VisitMethodCall(methodCallExpression),
+			_ => throw new NotSupportedException($"{expression.NodeType} is not a supported expression type."),
+		};
 	}
 
-	private struct AsyncExpressionVisitor(MessagePackSerializer serializer, MessagePackAsyncReader reader, ITypeShapeProvider provider, SerializationContext context)
-	{
-		internal async ValueTask<Expression?> VisitAsync(Expression? expression)
-		{
-			context.CancellationToken.ThrowIfCancellationRequested();
-			Expression? result = expression switch
-			{
-				LambdaExpression lambdaExpression => await this.VisitLambda(lambdaExpression).ConfigureAwait(false),
-				ParameterExpression parameterExpression => await this.VisitParameter(parameterExpression).ConfigureAwait(false),
-				MemberExpression memberExpression => await this.VisitMember(memberExpression).ConfigureAwait(false),
-				BinaryExpression arrayIndexExpression when expression.NodeType == ExpressionType.ArrayIndex => await this.VisitIndex(arrayIndexExpression).ConfigureAwait(false),
-				MethodCallExpression methodCallExpression => await this.VisitMethodCall(methodCallExpression).ConfigureAwait(false),
-				null => default,
-				_ => throw new NotSupportedException($"{expression.NodeType} is not a supported expression type."),
-			};
-
-			// If the visit worked, but the next value is nil, we return the expression that led us to the nil value.
-			if (result is null && await this.IsNilAsync().ConfigureAwait(false))
-			{
-				return expression;
-			}
-
-			return result;
-		}
-
 #pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
-		private async ValueTask<Expression?> VisitMethodCall(MethodCallExpression expression)
+	private async ValueTask<Result<ITypeShape, Expression>> VisitMethodCall(MethodCallExpression expression)
+	{
+		if (expression is not { Object: not null, Method: { Name: "get_Item", IsSpecialName: true }, Arguments.Count: 1 })
 		{
-			if (expression is not { Object: not null, Method: { Name: "get_Item", IsSpecialName: true }, Arguments.Count: 1 })
-			{
-				throw new NotSupportedException("Unsupported method call expression.");
-			}
+			throw new NotSupportedException("Unsupported method call expression.");
+		}
 
-			object? indexArg = expression.Arguments[0] switch
+		object? indexArg = expression.Arguments[0] switch
+		{
+			ConstantExpression constantExpression => constantExpression.Value,
+			MemberExpression memberExpression when memberExpression.Expression is ConstantExpression owner => memberExpression.Member switch
 			{
-				ConstantExpression constantExpression => constantExpression.Value,
-				MemberExpression memberExpression when memberExpression.Expression is ConstantExpression owner => memberExpression.Member switch
-				{
-					FieldInfo fieldInfo => fieldInfo.GetValue(owner.Value),
-					PropertyInfo propertyInfo => propertyInfo.GetValue(owner.Value),
-					_ => throw new NotSupportedException("Unsupported index expression."),
-				},
+				FieldInfo fieldInfo => fieldInfo.GetValue(owner.Value),
+				PropertyInfo propertyInfo => propertyInfo.GetValue(owner.Value),
 				_ => throw new NotSupportedException("Unsupported index expression."),
-			};
+			},
+			_ => throw new NotSupportedException("Unsupported index expression."),
+		};
 
-			// First navigate to the object.
-			if ((await this.VisitAsync(expression.Object).ConfigureAwait(false)) is Expression incompletePath)
-			{
-				return incompletePath;
-			}
-
-			// Ask the converter to retrieve the element at the given index.
-			// We use a converter to do the actual skipping.
-			ITypeShape? typeShape = provider.GetTypeShape(expression.Object.Type);
-			Requires.Argument(typeShape is not null, nameof(expression), "The expression does not have a known type shape.");
-			MessagePackConverter converter = serializer.GetConverter(typeShape).ValueOrThrow;
-
-			return await converter.SkipToIndexValueAsync(reader, indexArg, context).ConfigureAwait(false) ? null : expression;
+		// First navigate to the object.
+		Result<ITypeShape, Expression> parentResult = await this.VisitAsync(expression.Object).ConfigureAwait(false);
+		if (parentResult is { Success: false } err)
+		{
+			return err.Error;
 		}
 
-		private ValueTask<Expression?> VisitLambda(LambdaExpression lambdaExpression)
+		// If the visit worked, but the next value is nil, we return the expression that led us to the nil value.
+		if (await this.IsNilAsync().ConfigureAwait(false))
 		{
-			return this.VisitAsync(lambdaExpression.Body);
+			return Err(expression);
 		}
 
-		private ValueTask<Expression?> VisitParameter(ParameterExpression expression)
+		ITypeShape resultShape = parentResult.Value switch
 		{
-			// Do nothing.
-			// We've reached the root of the expression.
-			return new((Expression?)null);
+			IDictionaryTypeShape dict => dict.ValueType,
+			IEnumerableTypeShape enumerable => enumerable.ElementType,
+			_ => throw new NotSupportedException($"Unsupported shape type {parentResult.Value.GetType().Name}."),
+		};
+
+		// Ask the converter to retrieve the element at the given index.
+		// We use a converter to do the actual skipping.
+		MessagePackConverter converter = serializer.GetConverter(parentResult.Value).ValueOrThrow;
+
+		return await converter.SkipToIndexValueAsync(reader, indexArg, context).ConfigureAwait(false)
+			? Ok(resultShape)
+			: Err(expression);
+	}
+
+	private async ValueTask<Result<ITypeShape, Expression>> VisitIndex(BinaryExpression expression)
+	{
+		if (expression.Right is not ConstantExpression { Value: int skipElements })
+		{
+			throw new NotSupportedException("Unsupported index expression.");
 		}
 
-		private async ValueTask<Expression?> VisitIndex(BinaryExpression expression)
+		// First navigate to the expression.
+		Result<ITypeShape, Expression> parentResult = await this.VisitAsync(expression.Left).ConfigureAwait(false);
+		if (parentResult is { Success: false } err)
 		{
-			if (expression.Right is not ConstantExpression { Value: int skipElements })
-			{
-				throw new NotSupportedException("Unsupported index expression.");
-			}
+			return err.Error;
+		}
 
-			// First navigate to the expression.
-			if ((await this.VisitAsync(expression.Left).ConfigureAwait(false)) is Expression incompletePath)
-			{
-				return incompletePath;
-			}
+		// If the visit worked, but the next value is nil, we return the expression that led us to the nil value.
+		if (await this.IsNilAsync().ConfigureAwait(false))
+		{
+			return Err(expression);
+		}
 
-			// Skip the given number of elements.
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
-			int count;
-			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+		var enumerableTypeShape = (IEnumerableTypeShape)parentResult.Value;
+
+		// Skip the given number of elements.
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		int count;
+		while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+		{
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+		}
+
+		if (count < skipElements + 1)
+		{
+			reader.ReturnReader(ref streamingReader);
+			return expression;
+		}
+
+		SerializationContext localContext = context;
+		for (int i = 0; i < skipElements; i++)
+		{
+			while (streamingReader.TrySkip(ref localContext).NeedsMoreBytes())
 			{
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
+		}
 
-			if (count < skipElements + 1)
-			{
-				reader.ReturnReader(ref streamingReader);
-				return expression;
-			}
+		reader.ReturnReader(ref streamingReader);
+		return Ok(enumerableTypeShape.ElementType);
+	}
 
-			for (int i = 0; i < skipElements; i++)
+	private async ValueTask<Result<ITypeShape, Expression>> VisitMember(MemberExpression expression)
+	{
+		Requires.Argument(expression.Expression is not null, nameof(expression), "Expression must not be null.");
+
+		// First navigate to the expression.
+		Result<ITypeShape, Expression> parentResult = await this.VisitAsync(expression.Expression).ConfigureAwait(false);
+		if (parentResult is { Success: false } err)
+		{
+			return err.Error;
+		}
+
+		// If the visit worked, but the next value is nil, we return the expression that led us to the nil value.
+		if (await this.IsNilAsync().ConfigureAwait(false))
+		{
+			return Err(expression.Expression);
+		}
+
+		// Now navigate to the member.
+		// Find the matching property shape.
+		if (parentResult.Value is not IObjectTypeShape objectTypeShape ||
+			FindPropertyByName(objectTypeShape, expression.Member.Name) is not IPropertyShape propertyShape)
+		{
+			throw Requires.Fail("The expression does not refer to a serialized property.");
+		}
+
+		// We use a converter to do the actual skipping.
+		MessagePackConverter converter = serializer.GetConverter(parentResult.Value).ValueOrThrow;
+
+		return await converter.SkipToPropertyValueAsync(reader, propertyShape, context).ConfigureAwait(false) ? Ok(propertyShape.PropertyType) : Err(expression);
+
+		static IPropertyShape? FindPropertyByName(IObjectTypeShape typeShape, string name)
+		{
+			foreach (IPropertyShape property in typeShape.Properties)
 			{
-				while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				if (property.Name == name)
 				{
-					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+					return property;
 				}
 			}
 
-			reader.ReturnReader(ref streamingReader);
 			return null;
 		}
-
-		private async ValueTask<Expression?> VisitMember(MemberExpression expression)
-		{
-			Requires.Argument(expression.Expression is not null, nameof(expression), "Expression must not be null.");
-
-			// First navigate to the expression.
-			if ((await this.VisitAsync(expression.Expression).ConfigureAwait(false)) is Expression incompletePath)
-			{
-				return incompletePath;
-			}
-
-			// Now navigate to the member.
-
-			// Find the matching property shape.
-			ITypeShape? typeShape = provider.GetTypeShape(expression.Expression.Type);
-			Requires.Argument(typeShape is not null, nameof(expression), "The expression does not have a known type shape.");
-
-			IPropertyShape? propertyShape = typeShape switch
-			{
-				IObjectTypeShape objectTypeShape => FindPropertyByName(objectTypeShape, expression.Member.Name),
-				_ => null,
-			};
-			Requires.Argument(propertyShape is not null, nameof(expression), "The expression does not refer to a serialized property.");
-
-			// We use a converter to do the actual skipping.
-			MessagePackConverter converter = serializer.GetConverter(typeShape).ValueOrThrow;
-
-			return await converter.SkipToPropertyValueAsync(reader, propertyShape, context).ConfigureAwait(false) ? null : expression;
-
-			static IPropertyShape? FindPropertyByName(IObjectTypeShape typeShape, string name)
-			{
-				foreach (IPropertyShape property in typeShape.Properties)
-				{
-					if (property.Name == name)
-					{
-						return property;
-					}
-				}
-
-				return null;
-			}
-		}
+	}
 #pragma warning restore VSTHRD200 // Use "Async" suffix for async methods
 
-		private async ValueTask<bool> IsNilAsync()
+	private async ValueTask<bool> IsNilAsync()
+	{
+		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
+		bool isNil;
+		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
 		{
-			MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
-			bool isNil;
-			while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
-			reader.ReturnReader(ref streamingReader);
-			return isNil;
+			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
+
+		reader.ReturnReader(ref streamingReader);
+		return isNil;
 	}
 }
