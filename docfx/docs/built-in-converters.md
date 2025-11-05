@@ -44,6 +44,7 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 ## Other
 
 - @System.Boolean
+- @System.Globalization.CultureInfo
 - @System.Guid
 - @System.Nullable`1
 - @System.Drawing.Color

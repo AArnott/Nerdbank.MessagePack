@@ -216,6 +216,21 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<HasGuid>()));
 	}
 
+	[Fact]
+	public void CultureInfo_Roundtrips()
+	{
+		Assert.Equal("fr-FR", this.Roundtrip<CultureInfo, Witness>(CultureInfo.GetCultureInfo("fr-FR"))?.Name);
+		Assert.Equal("es", this.Roundtrip<CultureInfo, Witness>(CultureInfo.GetCultureInfo("es"))?.Name);
+	}
+
+	[Fact]
+	public void CultureInfo_Encoding()
+	{
+		byte[] msgpack = this.Serializer.Serialize(CultureInfo.GetCultureInfo("es-ES"), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal("es-ES", reader.ReadString());
+	}
+
 	[Theory, PairwiseData]
 	public void Guid_StringFormats(OptionalConverters.GuidStringFormat format)
 	{
@@ -449,5 +464,6 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<Point>]
 	[GenerateShapeFor<Color>]
 	[GenerateShapeFor<byte[]>]
+	[GenerateShapeFor<CultureInfo>]
 	private partial class Witness;
 }
