@@ -6,6 +6,8 @@
 #pragma warning disable SA1402 // File may only contain a single type
 
 using System.Drawing;
+using System.Globalization;
+using System.Text;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -57,5 +59,37 @@ internal class SystemDrawingPointConverter : MessagePackConverter<Point>
 				new JsonObject { ["type"] = "integer", ["format"] = "int32" },
 				new JsonObject { ["type"] = "integer", ["format"] = "int32" }),
 			["description"] = "A point represented by two integers.",
+		};
+}
+
+internal class SystemGlobalizationCultureInfoConverter : MessagePackConverter<CultureInfo>
+{
+	public override CultureInfo? Read(ref MessagePackReader reader, SerializationContext context)
+		=> reader.ReadString() is string name ? CultureInfo.GetCultureInfo(name) : null;
+
+	public override void Write(ref MessagePackWriter writer, in CultureInfo? value, SerializationContext context)
+		=> writer.Write(value?.Name);
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["description"] = "A culture name.",
+		};
+}
+
+internal class SystemTextEncodingConverter : MessagePackConverter<Encoding>
+{
+	public override Encoding? Read(ref MessagePackReader reader, SerializationContext context)
+		=> reader.ReadString() is string name ? Encoding.GetEncoding(name) : null;
+
+	public override void Write(ref MessagePackWriter writer, in Encoding? value, SerializationContext context)
+		=> writer.Write(value?.WebName);
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["description"] = "An encoding name.",
 		};
 }

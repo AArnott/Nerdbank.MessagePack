@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 {
@@ -214,6 +215,41 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.Logger.WriteLine($"Randomly generated guid: {value}");
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
 		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<HasGuid>()));
+	}
+
+	[Fact]
+	public void CultureInfo_Roundtrips()
+	{
+		Assert.Equal("fr-FR", this.Roundtrip<CultureInfo, Witness>(CultureInfo.GetCultureInfo("fr-FR"))?.Name);
+		Assert.Equal("es", this.Roundtrip<CultureInfo, Witness>(CultureInfo.GetCultureInfo("es"))?.Name);
+	}
+
+	[Fact]
+	public void CultureInfo_Encoding()
+	{
+		byte[] msgpack = this.Serializer.Serialize(CultureInfo.GetCultureInfo("es-ES"), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal("es-ES", reader.ReadString());
+	}
+
+	[Fact]
+	public void EventArgs_Roundtrip()
+	{
+		Assert.NotNull(this.Roundtrip<EventArgs, Witness>(new EventArgs()));
+	}
+
+	[Fact]
+	public void Encoding_Roundtrip()
+	{
+		Assert.Equal(Encoding.UTF8.WebName, this.Roundtrip<Encoding, Witness>(Encoding.UTF8)?.WebName);
+	}
+
+	[Fact]
+	public void Encoding_Encoding()
+	{
+		byte[] msgpack = this.Serializer.Serialize(Encoding.GetEncoding("utf-8"), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal("utf-8", reader.ReadString());
 	}
 
 	[Theory, PairwiseData]
@@ -449,5 +485,8 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<Point>]
 	[GenerateShapeFor<Color>]
 	[GenerateShapeFor<byte[]>]
+	[GenerateShapeFor<CultureInfo>]
+	[GenerateShapeFor<EventArgs>]
+	[GenerateShapeFor<Encoding>]
 	private partial class Witness;
 }
