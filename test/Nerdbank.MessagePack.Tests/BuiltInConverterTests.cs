@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 {
@@ -229,6 +230,20 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize(CultureInfo.GetCultureInfo("es-ES"), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal("es-ES", reader.ReadString());
+	}
+
+	[Fact]
+	public void Encoding_Roundtrip()
+	{
+		Assert.Equal(Encoding.UTF8.WebName, this.Roundtrip<Encoding, Witness>(Encoding.UTF8)?.WebName);
+	}
+
+	[Fact]
+	public void Encoding_Encoding()
+	{
+		byte[] msgpack = this.Serializer.Serialize(Encoding.GetEncoding("utf-8"), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal("utf-8", reader.ReadString());
 	}
 
 	[Theory, PairwiseData]
@@ -465,5 +480,6 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<Color>]
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<CultureInfo>]
+	[GenerateShapeFor<Encoding>]
 	private partial class Witness;
 }

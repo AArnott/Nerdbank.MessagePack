@@ -7,6 +7,7 @@
 
 using System.Drawing;
 using System.Globalization;
+using System.Text;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -74,5 +75,21 @@ internal class SystemGlobalizationCultureInfoConverter : MessagePackConverter<Cu
 		{
 			["type"] = "string",
 			["description"] = "A culture name.",
+		};
+}
+
+internal class SystemTextEncodingConverter : MessagePackConverter<Encoding>
+{
+	public override Encoding? Read(ref MessagePackReader reader, SerializationContext context)
+		=> reader.ReadString() is string name ? Encoding.GetEncoding(name) : null;
+
+	public override void Write(ref MessagePackWriter writer, in Encoding? value, SerializationContext context)
+		=> writer.Write(value?.WebName);
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "string",
+			["description"] = "An encoding name.",
 		};
 }

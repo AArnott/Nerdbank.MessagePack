@@ -44,12 +44,13 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 ## Other
 
 - @System.Boolean
+- @System.Drawing.Color
 - @System.Globalization.CultureInfo
+- @System.Text.Encoding
 - @System.Guid
 - @System.Nullable`1
-- @System.Drawing.Color
-- @System.Version
 - @System.Uri
+- @System.Version
 - @Nerdbank.MessagePack.RawMessagePack
 
 ## Optional converters
