@@ -47,6 +47,7 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 - @System.Drawing.Color
 - @System.Globalization.CultureInfo
 - @System.Text.Encoding
+- @System.EventArgs
 - @System.Guid
 - @System.Nullable`1
 - @System.Uri

@@ -233,6 +233,12 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void EventArgs_Roundtrip()
+	{
+		Assert.NotNull(this.Roundtrip<EventArgs, Witness>(new EventArgs()));
+	}
+
+	[Fact]
 	public void Encoding_Roundtrip()
 	{
 		Assert.Equal(Encoding.UTF8.WebName, this.Roundtrip<Encoding, Witness>(Encoding.UTF8)?.WebName);
@@ -480,6 +486,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<Color>]
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<CultureInfo>]
+	[GenerateShapeFor<EventArgs>]
 	[GenerateShapeFor<Encoding>]
 	private partial class Witness;
 }
