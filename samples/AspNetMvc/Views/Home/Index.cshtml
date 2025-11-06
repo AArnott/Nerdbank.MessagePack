@@ -1,0 +1,29 @@
+<html>
+<head>
+    <script src="https://unpkg.com/msgpack-lite@0.1.26/dist/msgpack.min.js"></script>
+</head>
+<body>
+    <h1>Welcome to ASP.NET MVC!</h1>
+    <p>This is a sample view.</p>
+    <input type="text" id="personId" placeholder="Enter person ID (optional)">
+    <button id="fetchBtn">Fetch Person Data</button>
+    <div id="result"></div>
+    <script>
+        document.getElementById('fetchBtn').addEventListener('click', async () => {
+            const id = document.getElementById('personId').value.trim();
+            const url = id ? `/api/v1/person/${id}` : '/api/v1/person';
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Accept': 'application/x-msgpack' }
+                });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const buffer = await response.arrayBuffer();
+                const data = msgpack.decode(new Uint8Array(buffer));
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
