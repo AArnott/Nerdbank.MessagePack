@@ -128,27 +128,26 @@ internal record SerializerConfiguration
 	}
 
 	/// <summary>
-	/// Gets a value indicating whether to ignore <see cref="KeyAttribute"/> when serializing objects,
+	/// Gets a value indicating whether to ignore <see cref="KeyAttribute"/> when serializing and deserializing objects,
 	/// causing objects to be serialized as maps with property names instead of arrays with indices.
 	/// </summary>
 	/// <value>The default value is <see langword="false" />.</value>
 	/// <remarks>
 	/// <para>
 	/// When set to <see langword="true"/>, all <see cref="KeyAttribute"/> decorations on properties and fields
-	/// will be disregarded during serialization, and objects will be serialized as maps using property names as keys.
+	/// will be disregarded during serialization and deserialization, and objects will be serialized as maps using property names as keys.
 	/// This is useful when combined with <see cref="MessagePackSerializer.ConvertToJson(ReadOnlyMemory{byte}, MessagePackSerializer.JsonOptions?)"/>
 	/// for data inspection, or when sending data to systems that prefer JSON objects over JSON arrays.
 	/// </para>
 	/// <para>
 	/// When both this property and <see cref="PerfOverSchemaStability"/> are set to <see langword="true"/>,
-	/// this property takes precedence and objects will be serialized as maps (property names)
-	/// rather than as arrays (property indices).
+	/// objects will be serialized as arrays (per <see cref="PerfOverSchemaStability"/>), but the indices from
+	/// <see cref="KeyAttribute"/> will be ignored and properties will be assigned array indices based on their
+	/// declaration order instead.
 	/// </para>
 	/// <para>
-	/// Enabling this property will change the schema of serialized data for types that use <see cref="KeyAttribute"/>.
-	/// Data serialized with this property set to <see langword="true"/> can still be deserialized
-	/// with this property set to <see langword="false"/> (or vice versa) as long as the deserializer
-	/// is prepared to handle both map and array representations.
+	/// This property must be set to the same value for both serialization and deserialization, or the deserializer
+	/// will fail due to incompatible schemas.
 	/// </para>
 	/// </remarks>
 	public bool IgnoreKeyAttributes

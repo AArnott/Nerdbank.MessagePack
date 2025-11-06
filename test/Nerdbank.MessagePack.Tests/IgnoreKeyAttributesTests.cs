@@ -27,9 +27,10 @@ public partial class IgnoreKeyAttributesTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void IgnoreKeyAttributes_TakesPrecedenceOverPerfOverSchemaStability()
+	public void IgnoreKeyAttributes_WithPerfOverSchemaStability_ProducesArray()
 	{
-		// When both are true, IgnoreKeyAttributes should win and produce maps
+		// When both are true, PerfOverSchemaStability still produces arrays,
+		// but KeyAttribute indices are ignored and properties use declaration order
 		this.Serializer = this.Serializer with
 		{
 			IgnoreKeyAttributes = true,
@@ -38,8 +39,8 @@ public partial class IgnoreKeyAttributesTests : MessagePackSerializerTestBase
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new RecordWithKeyAttributes("Andrew", 99));
 		MessagePackReader reader = new(msgpack);
 
-		// Should be a map because IgnoreKeyAttributes takes precedence
-		Assert.Equal(2, reader.ReadMapHeader());
+		// Should be an array because PerfOverSchemaStability is true
+		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
 	[Fact]
