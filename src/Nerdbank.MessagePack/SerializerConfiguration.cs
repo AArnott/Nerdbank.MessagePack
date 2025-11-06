@@ -21,6 +21,7 @@ internal record SerializerConfiguration
 	private ImmutableArray<IMessagePackConverterFactory> converterFactories = [];
 	private DerivedTypeUnionCollection derivedTypeUnions = [];
 	private bool perfOverSchemaStability;
+	private bool ignoreKeyAttributes;
 	private bool serializeEnumValuesByName;
 	private ReferencePreservationMode preserveReferences;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
@@ -124,6 +125,36 @@ internal record SerializerConfiguration
 	{
 		get => this.perfOverSchemaStability;
 		init => this.ChangeSetting(ref this.perfOverSchemaStability, value);
+	}
+
+	/// <summary>
+	/// Gets a value indicating whether to ignore <see cref="KeyAttribute"/> when serializing objects,
+	/// causing objects to be serialized as maps with property names instead of arrays with indices.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <remarks>
+	/// <para>
+	/// When set to <see langword="true"/>, all <see cref="KeyAttribute"/> decorations on properties and fields
+	/// will be disregarded during serialization, and objects will be serialized as maps using property names as keys.
+	/// This is useful when combined with <see cref="MessagePackSerializer.ConvertToJson(ReadOnlyMemory{byte}, MessagePackSerializer.JsonOptions?)"/>
+	/// for data inspection, or when sending data to systems that prefer JSON objects over JSON arrays.
+	/// </para>
+	/// <para>
+	/// This setting is mutually exclusive with <see cref="PerfOverSchemaStability"/>.
+	/// When both are set to <see langword="true"/>, <see cref="IgnoreKeyAttributes"/> takes precedence
+	/// and objects will be serialized as maps.
+	/// </para>
+	/// <para>
+	/// Enabling this property will change the schema of serialized data for types that use <see cref="KeyAttribute"/>.
+	/// Data serialized with this property set to <see langword="true"/> can still be deserialized
+	/// with this property set to <see langword="false"/> (or vice versa) as long as the deserializer
+	/// is prepared to handle both map and array representations.
+	/// </para>
+	/// </remarks>
+	public bool IgnoreKeyAttributes
+	{
+		get => this.ignoreKeyAttributes;
+		init => this.ChangeSetting(ref this.ignoreKeyAttributes, value);
 	}
 
 	/// <summary>

@@ -76,6 +76,13 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { PerfOverSchemaStability = value };
 	}
 
+	/// <inheritdoc cref="SerializerConfiguration.IgnoreKeyAttributes"/>
+	public bool IgnoreKeyAttributes
+	{
+		get => this.configuration.IgnoreKeyAttributes;
+		init => this.configuration = this.configuration with { IgnoreKeyAttributes = value };
+	}
+
 	/// <inheritdoc cref="SerializerConfiguration.SerializeEnumValuesByName"/>
 	public bool SerializeEnumValuesByName
 	{
