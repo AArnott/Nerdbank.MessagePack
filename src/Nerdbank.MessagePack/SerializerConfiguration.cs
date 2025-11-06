@@ -140,9 +140,9 @@ internal record SerializerConfiguration
 	/// for data inspection, or when sending data to systems that prefer JSON objects over JSON arrays.
 	/// </para>
 	/// <para>
-	/// This setting is mutually exclusive with <see cref="PerfOverSchemaStability"/>.
-	/// When both are set to <see langword="true"/>, <see cref="IgnoreKeyAttributes"/> takes precedence
-	/// and objects will be serialized as maps.
+	/// When both this property and <see cref="PerfOverSchemaStability"/> are set to <see langword="true"/>,
+	/// this property takes precedence and objects will be serialized as maps (property names)
+	/// rather than as arrays (property indices).
 	/// </para>
 	/// <para>
 	/// Enabling this property will change the schema of serialized data for types that use <see cref="KeyAttribute"/>.
