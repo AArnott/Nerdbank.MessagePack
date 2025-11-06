@@ -21,6 +21,7 @@ internal record SerializerConfiguration
 	private ImmutableArray<IMessagePackConverterFactory> converterFactories = [];
 	private DerivedTypeUnionCollection derivedTypeUnions = [];
 	private bool perfOverSchemaStability;
+	private bool ignoreKeyAttributes;
 	private bool serializeEnumValuesByName;
 	private ReferencePreservationMode preserveReferences;
 	private MessagePackNamingPolicy? propertyNamingPolicy;
@@ -124,6 +125,35 @@ internal record SerializerConfiguration
 	{
 		get => this.perfOverSchemaStability;
 		init => this.ChangeSetting(ref this.perfOverSchemaStability, value);
+	}
+
+	/// <summary>
+	/// Gets a value indicating whether to ignore <see cref="KeyAttribute"/> when serializing and deserializing objects,
+	/// causing objects to be serialized as maps with property names instead of arrays with indices.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <remarks>
+	/// <para>
+	/// When set to <see langword="true"/>, all <see cref="KeyAttribute"/> decorations on properties and fields
+	/// will be disregarded during serialization and deserialization, and objects will be serialized as maps using property names as keys.
+	/// This is useful when combined with <see cref="MessagePackSerializer.ConvertToJson(ReadOnlyMemory{byte}, MessagePackSerializer.JsonOptions?)"/>
+	/// for data inspection, or when sending data to systems that prefer JSON objects over JSON arrays.
+	/// </para>
+	/// <para>
+	/// When both this property and <see cref="PerfOverSchemaStability"/> are set to <see langword="true"/>,
+	/// objects will be serialized as arrays (per <see cref="PerfOverSchemaStability"/>), but the indices from
+	/// <see cref="KeyAttribute"/> will be ignored and properties will be assigned array indices based on their
+	/// declaration order instead.
+	/// </para>
+	/// <para>
+	/// This property must be set to the same value for both serialization and deserialization, or the deserializer
+	/// will fail due to incompatible schemas.
+	/// </para>
+	/// </remarks>
+	public bool IgnoreKeyAttributes
+	{
+		get => this.ignoreKeyAttributes;
+		init => this.ChangeSetting(ref this.ignoreKeyAttributes, value);
 	}
 
 	/// <summary>

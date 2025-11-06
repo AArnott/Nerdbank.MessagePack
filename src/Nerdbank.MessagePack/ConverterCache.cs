@@ -62,6 +62,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <inheritdoc cref="SerializerConfiguration.PerfOverSchemaStability"/>
 	internal bool PerfOverSchemaStability => configuration.PerfOverSchemaStability;
 
+	/// <inheritdoc cref="SerializerConfiguration.IgnoreKeyAttributes"/>
+	internal bool IgnoreKeyAttributes => configuration.IgnoreKeyAttributes;
+
 	/// <inheritdoc cref="SerializerConfiguration.DisableHardwareAcceleration"/>
 	internal bool DisableHardwareAcceleration => configuration.DisableHardwareAcceleration;
 

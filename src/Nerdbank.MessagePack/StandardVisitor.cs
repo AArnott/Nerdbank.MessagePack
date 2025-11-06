@@ -102,7 +102,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				switch (property.Accept(this, matchingConstructorParameter))
 				{
 					case PropertyAccessors<T> accessors:
-						KeyAttribute? keyAttribute = (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
+						KeyAttribute? keyAttribute = this.owner.IgnoreKeyAttributes ? null : (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
 						if (keyAttribute is not null || this.owner.PerfOverSchemaStability || objectShape.IsTupleType)
 						{
 							UsesKeys();
