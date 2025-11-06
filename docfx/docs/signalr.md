@@ -2,8 +2,6 @@
 
 This library provides a MessagePack-based Hub Protocol implementation for ASP.NET Core SignalR, offering significant performance improvements over the default JSON protocol.
 
-[![Nerdbank.MessagePack.SignalR NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.SignalR.svg?label=Nerdbank.MessagePack.SignalR)](https://www.nuget.org/packages/Nerdbank.MessagePack.SignalR)
-
 ## Benefits
 
 - **Smaller Payloads**: MessagePack produces significantly smaller payloads compared to JSON
@@ -15,9 +13,7 @@ This library provides a MessagePack-based Hub Protocol implementation for ASP.NE
 
 Install the NuGet package:
 
-```xml
-<PackageReference Include="Nerdbank.MessagePack.SignalR" Version="x.x.x" />
-```
+[![Nerdbank.MessagePack.SignalR NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.SignalR.svg?label=Nerdbank.MessagePack.SignalR)](https://www.nuget.org/packages/Nerdbank.MessagePack.SignalR)
 
 Add a call to <xref:Nerdbank.MessagePack.SignalR.ServiceCollectionExtensions.AddMessagePackProtocol*> to your builder class, as demonstrated in the configuration samples below.
 
