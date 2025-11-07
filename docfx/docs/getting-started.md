@@ -55,7 +55,7 @@ PolyType also has [limited support for DataContract attributes](https://eiriktsa
 ### Limitations
 
 Not all types are suitable for serialization.
-I/O types (e.g. `Steam`) or types that are more about function that data (e.g. `Task<T>`, `CancellationToken`) are not suitable for serialization.
+I/O types (e.g. <xref:System.IO.Stream>) or types that are more about function that data (e.g. <xref:System.Threading.Tasks.Task`1>, <xref:System.Threading.CancellationToken>) are not suitable for serialization.
 
 For security and trim-friendly reasons, the type of the object being deserialized must be known at compile time, by default.
 An [optional `object` converter](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) can be used to serialize any runtime type for which a shape is available. It will deserialize into maps, arrays, and primitives rather than the original type.
