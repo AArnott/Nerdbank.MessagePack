@@ -31,7 +31,7 @@ namespace StreamingDeserialization
         async Task ReadFamilyMembersAsync(PipeReader reader)
         {
             MessagePackSerializer.StreamingEnumerationOptions<Family, Person> options = new(f => f.Members);
-            await foreach (Person? item in Serializer.DeserializeEnumerableAsync(reader, options))
+            await foreach (Person? item in Serializer.DeserializePathEnumerableAsync(reader, options))
             {
                 // Process item here.
             }

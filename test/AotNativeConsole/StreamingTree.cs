@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO.Pipelines;
-using Nerdbank.MessagePack;
-using PolyType;
 
 internal static class StreamingTree
 {
@@ -28,7 +26,7 @@ internal static class StreamingTree
 
 		// "async" enumerating deserialization using an expression tree.
 		MessagePackSerializer.StreamingEnumerationOptions<Tree, Fruit> options = new(t => t.Fruits);
-		await foreach (Fruit? fruit in serializer.DeserializeEnumerableAsync(PipeReader.Create(new(bytes)), options))
+		await foreach (Fruit? fruit in serializer.DeserializePathEnumerableAsync(PipeReader.Create(new(bytes)), options))
 		{
 			Console.WriteLine($"  Fruit with {fruit?.Seeds} seeds");
 		}

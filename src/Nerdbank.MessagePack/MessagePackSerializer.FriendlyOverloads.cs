@@ -319,19 +319,19 @@ public partial record MessagePackSerializer
 		await pipeReader.CompleteAsync().ConfigureAwait(false);
 	}
 
-	/// <summary><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/summary"/></summary>
-	/// <typeparam name="T"><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
-	/// <typeparam name="TElement"><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/typeparam[@name='TElement']"/></typeparam>
+	/// <summary><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/summary"/></summary>
+	/// <typeparam name="T"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
+	/// <typeparam name="TElement"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/typeparam[@name='TElement']"/></typeparam>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
-	/// <param name="shape"><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='shape']"/></param>
-	/// <param name="options"><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='options']"/></param>
-	/// <param name="cancellationToken"><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
-	/// <returns><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/returns"/></returns>
-	/// <remarks><inheritdoc cref="DeserializeEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/remarks"/></remarks>
-	public async IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<T, TElement>(Stream stream, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+	/// <param name="shape"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='shape']"/></param>
+	/// <param name="options"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='options']"/></param>
+	/// <param name="cancellationToken"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
+	/// <returns><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/returns"/></returns>
+	/// <remarks><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/remarks"/></remarks>
+	public async IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<T, TElement>(Stream stream, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		await foreach (TElement? result in this.DeserializeEnumerableAsync(pipeReader, shape, options, cancellationToken).ConfigureAwait(false))
+		await foreach (TElement? result in this.DeserializePathEnumerableAsync(pipeReader, shape, options, cancellationToken).ConfigureAwait(false))
 		{
 			yield return result;
 		}
