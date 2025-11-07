@@ -413,7 +413,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	public void WriteLargeStringToStream()
 	{
 		string value = new string('x', 100 * 1024);
-		this.Serializer.Serialize(Stream.Null, value, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(Stream.Null, value, SourceGenProvider.String, TestContext.Current.CancellationToken);
 	}
 
 	/// <summary>
@@ -426,18 +426,18 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	[Fact]
 	public void ObjectKeyedCollections()
 	{
-		byte[] msgpack = this.Serializer.Serialize<IDictionary>(new Dictionary<string, object>(), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary>(msgpack, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken));
+		byte[] msgpack = this.Serializer.Serialize(new Dictionary<string, object>(), SourceGenProvider.IDictionary, TestContext.Current.CancellationToken);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize(msgpack, SourceGenProvider.IDictionary, TestContext.Current.CancellationToken));
 		NotSupportedException innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
 		this.Logger.WriteLine(innerException.Message);
 
-		msgpack = this.Serializer.Serialize<IDictionary<object, string>>(new Dictionary<object, string>(), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
-		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary<object, string>>(msgpack, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken));
+		msgpack = this.Serializer.Serialize(new Dictionary<object, string>(), SourceGenProvider.IDictionary_Object_String, TestContext.Current.CancellationToken);
+		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize(msgpack, SourceGenProvider.IDictionary_Object_String, TestContext.Current.CancellationToken));
 		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
 		this.Logger.WriteLine(innerException.Message);
 
-		msgpack = this.Serializer.Serialize(new HashSet<object>(), Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
-		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<HashSet<object>>(msgpack, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken));
+		msgpack = this.Serializer.Serialize(new HashSet<object>(), SourceGenProvider.HashSet_Object, TestContext.Current.CancellationToken);
+		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize(msgpack, SourceGenProvider.HashSet_Object, TestContext.Current.CancellationToken));
 		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
 		this.Logger.WriteLine(innerException.Message);
 

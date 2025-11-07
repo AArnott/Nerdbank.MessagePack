@@ -19,7 +19,7 @@ partial class Performance
     #region LoadsTooMany
     void LoadsTooMany()
     {
-        this.serializer.Serialize(value: true, Witness.GeneratedTypeShapeProvider);
+        this.serializer.Serialize(value: true, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<bool>());
     }
 
     [GenerateShapeFor<bool>]

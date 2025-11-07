@@ -1,4 +1,5 @@
 ﻿open Nerdbank.MessagePack
+open PolyType
 open PolyType.ReflectionProvider
 
 type Animal =
@@ -19,11 +20,11 @@ let farm = {
 let serializer = MessagePackSerializer()
 let msgpack =
     let refableValue = farm // need to pass by reference
-    serializer.Serialize(&refableValue, ReflectionTypeShapeProvider.Default)
+    serializer.Serialize(&refableValue, ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<Farm>())
 
 serializer.ConvertToJson(msgpack) |> printfn "Farm as JSON: %s"
 
-let newFarm = serializer.Deserialize<Farm>(msgpack, ReflectionTypeShapeProvider.Default)
+let newFarm = serializer.Deserialize(msgpack, ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<Farm>())
 
 printfn "Farm animals:"
 newFarm.Animals |> Seq.iter (function

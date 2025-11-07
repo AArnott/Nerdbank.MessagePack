@@ -45,10 +45,10 @@ internal partial class MessagePackHubProtocol
 	}
 
 	private static void WriteHeaders(ref MessagePackWriter writer, IDictionary<string, string>? headers)
-	   => EnvelopeSerializer.Serialize(ref writer, headers ?? ImmutableDictionary<string, string>.Empty, Witness.GeneratedTypeShapeProvider);
+	   => EnvelopeSerializer.Serialize(ref writer, headers ?? ImmutableDictionary<string, string>.Empty, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_SignalR.Default.IDictionary_String_String);
 
 	private static void WriteStreamIds(ref MessagePackWriter writer, string[]? streamIds)
-		=> EnvelopeSerializer.Serialize(ref writer, streamIds ?? [], Witness.GeneratedTypeShapeProvider);
+		=> EnvelopeSerializer.Serialize(ref writer, streamIds ?? [], PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_SignalR.Default.String_Array);
 
 	private void WriteMessageCore(IBufferWriter<byte> output, HubMessage message)
 	{

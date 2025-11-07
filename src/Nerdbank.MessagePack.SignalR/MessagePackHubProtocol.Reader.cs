@@ -207,7 +207,7 @@ internal partial class MessagePackHubProtocol
 			return null;
 		}
 
-		return EnvelopeSerializer.Deserialize<IDictionary<string, string>>(ref reader, Witness.GeneratedTypeShapeProvider);
+		return EnvelopeSerializer.Deserialize(ref reader, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_SignalR.Default.IDictionary_String_String);
 	}
 
 	private static string[]? ReadStreamIds(ref MessagePackReader reader)
@@ -219,7 +219,7 @@ internal partial class MessagePackHubProtocol
 			return null;
 		}
 
-		return EnvelopeSerializer.Deserialize<string[]>(ref reader, Witness.GeneratedTypeShapeProvider);
+		return EnvelopeSerializer.Deserialize(ref reader, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_SignalR.Default.String_Array);
 	}
 
 	private static Type? TryGetReturnType(IInvocationBinder binder, string invocationId)

@@ -32,6 +32,8 @@ public abstract partial class MessagePackSerializerTestBase
 	/// </summary>
 	public static TimeSpan AsyncDelay => TimeSpan.FromMilliseconds(250);
 
+	internal static PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests SourceGenProvider => PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default;
+
 	protected MessagePackSerializer Serializer { get; set; }
 
 	protected ITestOutputHelper Logger => TestContext.Current.TestOutputHelper ?? throw new InvalidOperationException("No logger available.");

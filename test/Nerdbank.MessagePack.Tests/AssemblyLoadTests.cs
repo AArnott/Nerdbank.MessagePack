@@ -130,8 +130,8 @@ public partial class AssemblyLoadTests
 			MessagePackSerializer serializer = new();
 
 			ITypeShapeProvider typeProvider = ReflectionTypeShapeProvider.Default;
-			byte[] buffer = serializer.Serialize(value, typeProvider);
-			return serializer.Deserialize<T>(buffer, typeProvider)!;
+			byte[] buffer = serializer.Serialize(value, typeProvider.GetTypeShapeOrThrow<T>());
+			return serializer.Deserialize<T>(buffer, typeProvider.GetTypeShapeOrThrow<T>())!;
 		}
 
 		internal T SerializeRoundtripWithSourceGenProvider<T>(T value)
@@ -139,8 +139,8 @@ public partial class AssemblyLoadTests
 			MessagePackSerializer serializer = new();
 
 			ITypeShapeProvider typeProvider = PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default;
-			byte[] buffer = serializer.Serialize(value, typeProvider);
-			return serializer.Deserialize<T>(buffer, typeProvider)!;
+			byte[] buffer = serializer.Serialize(value, typeProvider.GetTypeShapeOrThrow<T>());
+			return serializer.Deserialize<T>(buffer, typeProvider.GetTypeShapeOrThrow<T>())!;
 		}
 
 #pragma warning restore CA1822 // Mark members as static

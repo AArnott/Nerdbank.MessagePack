@@ -139,7 +139,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		writer.Write("value2");
 		writer.Flush();
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Deserialize<Dictionary<string, string>>(seq, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken));
+			() => this.Serializer.Deserialize(seq, SourceGenProvider.Dictionary_String_String, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.GetBaseException().Message);
 	}
 
