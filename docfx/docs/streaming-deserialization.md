@@ -7,7 +7,7 @@ There are times however where progressively obtaining the deserialized elements 
 For example, perhaps the stream contains a very long sequence of elements, and processing them incrementally instead of all at once can save memory or improve performance.
 Or perhaps the stream is intentionally a long-lived generator stream that emits values over long periods of time, and it is important to the receiver that values are produced and available right away, before the stream ends.
 
-The @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods address such use cases.
+The <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync*> and <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializePathEnumerableAsync*> methods address such use cases.
 
 One must first classify the presentation of msgpack streaming values to be deserialized.
 Two forms are supported:
@@ -18,7 +18,7 @@ Two forms are supported:
 ## Sequence with no envelope
 
 A sequence of msgpack structures without an array or any other data is said to have no envelope.
-To asynchronously enumerate each of these structures, we use the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods that take no @Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions`2 parameter, such as @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync``1(System.IO.Pipelines.PipeReader,System.Threading.CancellationToken).
+To asynchronously enumerate each of these structures, we use the <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync*> methods.
 
 [!code-csharp[](../../samples/cs/StreamingDeserialization.cs#TopLevelStreamingEnumeration)]
 
@@ -28,7 +28,7 @@ A sequence of msgpack structures that are found within a larger structure (e.g. 
 To asynchronously enumerate each of these structures requires first parsing through the envelope preamble to navigate to the sequence.
 After enumerating the sequence, the remainder of the envelope is parsed in order to leave the reader positioned at valid position, at the end of the overall msgpack structure.
 
-Navigating through the envelope is done by an expression provided to the @Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions`2 argument passed to any of the @Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync* methods that accept that as a parameter.
+Navigating through the envelope is done by an expression provided to the <xref:Nerdbank.MessagePack.MessagePackSerializer.StreamingEnumerationOptions`2> argument passed to any of the <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializePathEnumerableAsync*> methods that accept that as a parameter.
 
 [!code-csharp[](../../samples/cs/StreamingDeserialization.cs#StreamingEnumerationWithEnvelope)]
 

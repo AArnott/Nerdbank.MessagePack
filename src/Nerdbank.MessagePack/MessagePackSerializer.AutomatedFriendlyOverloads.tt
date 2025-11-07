@@ -148,12 +148,12 @@ void WriteClass(bool targetNET) {
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializeEnumerableAsync(<#=firstArg#>, <#=getShape#>, cancellationToken);
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, <#=serializerClassQualifier#>StreamingEnumerationOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePathEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, <#=serializerClassQualifier#>StreamingEnumerationOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
-	public <#= staticModifier #>IAsyncEnumerable<TElement?> DeserializeEnumerableAsync<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#>, <#=serializerClassQualifier#>StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
+	public <#= staticModifier #>IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#>, <#=serializerClassQualifier#>StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
-		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializeEnumerableAsync(<#=firstArg#>, <#=getShape#>, options, cancellationToken);
+		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializePathEnumerableAsync(<#=firstArg#>, <#=getShape#>, options, cancellationToken);
 <#
         }
 

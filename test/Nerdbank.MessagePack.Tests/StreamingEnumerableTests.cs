@@ -161,7 +161,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		int readCount = 0;
 		PipeReader reader = PipeReader.Create(sequence);
 		MessagePackSerializer.StreamingEnumerationOptions<int[], int> options = new(a => a);
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.Int32_Array, options, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.Int32_Array, options, TestContext.Current.CancellationToken))
 		{
 			readCount++;
 			this.Logger.WriteLine(current.ToString());
@@ -180,7 +180,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
 		List<SimpleStreamingContainerKeyed?> actual = new();
-		await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.SimpleStreamingContainerKeyed_Array, options, TestContext.Current.CancellationToken))
+		await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.SimpleStreamingContainerKeyed_Array, options, TestContext.Current.CancellationToken))
 		{
 			actual.Add(item);
 		}
@@ -202,7 +202,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		List<SimpleStreamingContainerKeyed?> actual = new();
 		NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async delegate
 		{
-			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.SimpleStreamingContainerKeyed_Array, options, TestContext.Current.CancellationToken))
+			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.SimpleStreamingContainerKeyed_Array, options, TestContext.Current.CancellationToken))
 			{
 				actual.Add(item);
 			}
@@ -228,7 +228,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -258,7 +258,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.SimpleStreamingContainerKeyed, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.SimpleStreamingContainerKeyed, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -292,7 +292,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByArray, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByArray, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -326,7 +326,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByImmutableArray, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByImmutableArray, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -360,7 +360,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByDictionary, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByDictionary, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -395,7 +395,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByDictionaryCustomKey, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainerByDictionaryCustomKey, options, TestContext.Current.CancellationToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -425,7 +425,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}
@@ -455,7 +455,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}
@@ -485,7 +485,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializeEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, SourceGenProvider.OuterStreamingContainer, options, TestContext.Current.CancellationToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}

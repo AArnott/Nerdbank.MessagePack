@@ -82,7 +82,7 @@ public abstract class MessagePackConverter
 	/// <param name="context">The serialization context.</param>
 	/// <returns><see langword="true" /> if the specified index was found in the data and the value is ready to be read; <see langword="false" /> otherwise.</returns>
 	/// <remarks>
-	/// This method is used by <see cref="MessagePackSerializer.DeserializeEnumerableAsync{T, TElement}(System.IO.Pipelines.PipeReader, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
+	/// This method is used by <see cref="MessagePackSerializer.DeserializePathEnumerableAsync{T, TElement}(System.IO.Pipelines.PipeReader, ITypeShape{T}, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
 	/// to skip to the starting position of a sequence that should be asynchronously enumerated.
 	/// </remarks>
 	public abstract ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context);
