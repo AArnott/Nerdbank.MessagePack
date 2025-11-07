@@ -242,7 +242,7 @@ public static class StructuralEqualityComparer
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, without hash collision resistance.
 	/// </summary>
 	/// <typeparam name="T">The type to be compared.</typeparam>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.CreateSerializationContext(ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <returns>The equality comparer.</returns>
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
@@ -254,7 +254,7 @@ public static class StructuralEqualityComparer
 	/// Gets a deep by-value equality comparer for the type <typeparamref name="T"/>, with hash collision resistance.
 	/// </summary>
 	/// <typeparam name="T">The type to be compared.</typeparam>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.CreateSerializationContext(ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <returns>The equality comparer.</returns>
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.

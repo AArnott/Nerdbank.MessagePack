@@ -37,14 +37,7 @@ public partial class MultipleTypeShapeProvidersTests : MessagePackSerializerTest
 	public void ShapesFromTwoAssemblies_BothDirect()
 	{
 		this.Serializer.Serialize(SomeExtension, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize(SomeExtension, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default.Extension, TestContext.Current.CancellationToken);
-	}
-
-	[Fact]
-	public void ShapesFromTwoAssemblies_BothDirectOneProvider()
-	{
-		this.Serializer.Serialize(SomeExtension, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize(SomeExtension, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(SomeExtension, SourceGenProvider.Extension, TestContext.Current.CancellationToken);
 	}
 
 	[Fact]
@@ -53,10 +46,10 @@ public partial class MultipleTypeShapeProvidersTests : MessagePackSerializerTest
 		AggregatingTypeShapeProvider provider = new(Witness.GeneratedTypeShapeProvider, ReflectionTypeShapeProvider.Default);
 
 		// First, serialize Extension via what should resolve as a shape from the main library's source generated provider.
-		this.Serializer.Serialize(SomeExtension, provider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(SomeExtension, provider.GetTypeShapeOrThrow<Extension>(), TestContext.Current.CancellationToken);
 
 		// Now serialize a type that will have to come from the reflection provider, and references an Extension.
-		this.Serializer.Serialize(new TypeWithNoSourceGeneratedShape(SomeExtension), provider, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(new TypeWithNoSourceGeneratedShape(SomeExtension), provider.GetTypeShapeOrThrow<TypeWithNoSourceGeneratedShape>(), TestContext.Current.CancellationToken);
 	}
 
 	[GenerateShape]

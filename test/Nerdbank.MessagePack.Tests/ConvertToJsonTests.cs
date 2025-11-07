@@ -230,7 +230,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 #if NET
 		this.Serializer.Serialize(sequence, value);
 #else
-		this.Serializer.Serialize(sequence, value, Witness.GeneratedTypeShapeProvider);
+		this.Serializer.Serialize(sequence, value, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<T>());
 #endif
 		using StringWriter jsonWriter = new();
 		MessagePackReader reader = new(sequence);

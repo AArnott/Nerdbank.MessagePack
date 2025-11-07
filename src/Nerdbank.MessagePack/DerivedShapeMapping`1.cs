@@ -49,7 +49,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeUnion, IDerivedTypeMapping,
 	/// </summary>
 	/// <typeparam name="TDerived">The sub-type.</typeparam>
 	/// <param name="alias">The alias for the sub-type.</param>
-	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.CreateSerializationContext(ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="alias"/> or <typeparamref name="TDerived"/> has already been added to this mapping.</exception>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Public API accepts an ITypeShapeProvider.")]
 	public void Add<TDerived>(DerivedTypeIdentifier alias, ITypeShapeProvider provider)

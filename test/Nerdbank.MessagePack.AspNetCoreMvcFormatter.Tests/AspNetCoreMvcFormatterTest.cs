@@ -38,7 +38,7 @@ public partial class AspNetCoreMvcFormatterTest
 			Description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
 		};
 
-		byte[] messagePackBinary = this.serializer.Serialize(person, Witness.GeneratedTypeShapeProvider, TestContext.Current.CancellationToken);
+		byte[] messagePackBinary = this.serializer.Serialize(person, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_AspNetCoreMvcFormatter_Tests.Default.User, TestContext.Current.CancellationToken);
 
 		// OutputFormatter
 		OutputFormatterWriteContext outputFormatterContext = GetOutputFormatterContext(person, typeof(User), MsgPackContentType);

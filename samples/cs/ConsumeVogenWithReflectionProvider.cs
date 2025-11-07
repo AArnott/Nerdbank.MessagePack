@@ -29,7 +29,7 @@ namespace ConsumeVogenWithMarshalers
             // because the PolyType source generator cannot see Vogen's source generated code.
             // Alternatively, define the data types in another project and reference that project
             // from here, then PolyType source generated type shapes will be available.
-            byte[] msgpack = serializer.Serialize(customer, ReflectionTypeShapeProvider.Default);
+            byte[] msgpack = serializer.Serialize(customer, ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<Customer>());
         }
     }
     #endregion
