@@ -211,10 +211,8 @@ public partial record MessagePackSerializer
 		// Fast path for MemoryStream.
 		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
 		{
-			// Account for the stream's current position
-			int offset = buffer.Offset + (int)ms.Position;
-			int count = buffer.Count - (int)ms.Position;
-			return this.Deserialize(buffer.AsMemory(offset, count), shape, cancellationToken);
+			Memory<byte> remainingMemory = buffer.AsMemory((int)ms.Position);
+			return this.Deserialize(remainingMemory, shape, cancellationToken);
 		}
 		else
 		{
@@ -245,10 +243,8 @@ public partial record MessagePackSerializer
 		// Fast path for MemoryStream.
 		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
 		{
-			// Account for the stream's current position
-			int offset = buffer.Offset + (int)ms.Position;
-			int count = buffer.Count - (int)ms.Position;
-			return this.DeserializeObject(buffer.AsMemory(offset, count), shape, cancellationToken);
+			Memory<byte> remainingMemory = buffer.AsMemory((int)ms.Position);
+			return this.DeserializeObject(remainingMemory, shape, cancellationToken);
 		}
 		else
 		{
@@ -288,10 +284,8 @@ public partial record MessagePackSerializer
 		// Fast path for MemoryStream.
 		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
 		{
-			// Account for the stream's current position
-			int offset = buffer.Offset + (int)ms.Position;
-			int count = buffer.Count - (int)ms.Position;
-			return this.Deserialize(buffer.AsMemory(offset, count), shape, cancellationToken);
+			Memory<byte> remainingMemory = buffer.AsMemory((int)ms.Position);
+			return this.Deserialize(remainingMemory, shape, cancellationToken);
 		}
 
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
@@ -314,10 +308,8 @@ public partial record MessagePackSerializer
 		// Fast path for MemoryStream.
 		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
 		{
-			// Account for the stream's current position
-			int offset = buffer.Offset + (int)ms.Position;
-			int count = buffer.Count - (int)ms.Position;
-			return this.DeserializeObject(buffer.AsMemory(offset, count), shape, cancellationToken);
+			Memory<byte> remainingMemory = buffer.AsMemory((int)ms.Position);
+			return this.DeserializeObject(remainingMemory, shape, cancellationToken);
 		}
 
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
@@ -396,10 +388,8 @@ public partial record MessagePackSerializer
 		// Fast path for MemoryStream.
 		if (stream is MemoryStream ms && ms.TryGetBuffer(out ArraySegment<byte> buffer))
 		{
-			// Account for the stream's current position
-			int offset = buffer.Offset + (int)ms.Position;
-			int count = buffer.Count - (int)ms.Position;
-			return this.DeserializePath(buffer.AsMemory(offset, count), shape, options, cancellationToken);
+			Memory<byte> remainingMemory = buffer.AsMemory((int)ms.Position);
+			return this.DeserializePath(remainingMemory, shape, options, cancellationToken);
 		}
 		else
 		{
