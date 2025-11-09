@@ -39,6 +39,50 @@ public partial class StreamTests : MessagePackSerializerTestBase
 		Person? deserialized = this.Serializer.Deserialize<Person>(stream, TestContext.Current.CancellationToken);
 	}
 
+	[Fact]
+	public void Deserialize_FromMemoryStreamAtNonZeroPosition()
+	{
+		// Create test data
+		Person person1 = new("Andrew", "Arnott");
+		Person person2 = new("Jane", "Doe");
+
+		// Serialize both persons to a MemoryStream
+		MemoryStream stream = new();
+		this.Serializer.Serialize(stream, person1, TestContext.Current.CancellationToken);
+		long person2Position = stream.Position;
+		this.Serializer.Serialize(stream, person2, TestContext.Current.CancellationToken);
+
+		// Reset to position of second person and deserialize
+		stream.Position = person2Position;
+		Person? deserialized = this.Serializer.Deserialize<Person>(stream, TestContext.Current.CancellationToken);
+
+		// Should get the second person, not the first
+		Assert.Equal(person2, deserialized);
+		Assert.NotEqual(person1, deserialized);
+	}
+
+	[Fact]
+	public async Task DeserializeAsync_FromMemoryStreamAtNonZeroPosition()
+	{
+		// Create test data
+		Person person1 = new("Andrew", "Arnott");
+		Person person2 = new("Jane", "Doe");
+
+		// Serialize both persons to a MemoryStream
+		MemoryStream stream = new();
+		await this.Serializer.SerializeAsync(stream, person1, TestContext.Current.CancellationToken);
+		long person2Position = stream.Position;
+		await this.Serializer.SerializeAsync(stream, person2, TestContext.Current.CancellationToken);
+
+		// Reset to position of second person and deserialize
+		stream.Position = person2Position;
+		Person? deserialized = await this.Serializer.DeserializeAsync<Person>(stream, TestContext.Current.CancellationToken);
+
+		// Should get the second person, not the first
+		Assert.Equal(person2, deserialized);
+		Assert.NotEqual(person1, deserialized);
+	}
+
 	[GenerateShape]
 	public partial record Person(string FirstName, string LastName);
 }
