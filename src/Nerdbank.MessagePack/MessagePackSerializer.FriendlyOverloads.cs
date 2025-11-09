@@ -187,9 +187,20 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)" />
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
 	/// <remarks>
-	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
+	/// <para>
+	/// The implementation of this method currently is to buffer the entire remaining content of the <paramref name="stream"/> into memory before deserializing.
 	/// This is for simplicity and perf reasons.
-	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only msgpack content.
+	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only the msgpack content intended to deserialize in this call.
+	/// </para>
+	/// <para>
+	/// If you need to deserialize only a portion of the <paramref name="stream"/>, convert it to a <see cref="PipeReader" /> first
+	/// (you may use <see cref="PipeReader.Create(Stream, StreamPipeReaderOptions)" />)
+	/// use a deserialize overload that takes a <see cref="PipeReader" />,
+	/// and <em>only</em> interact with the stream using the <see cref="PipeReader" /> thereafter.
+	/// Or to keep deserialization synchronous, read the stream into a memory buffer first,
+	/// create a <see cref="MessagePackReader" /> based on that memory buffer,
+	/// and use the deserialize overload that accepts <see cref="MessagePackReader" />.
+	/// </para>
 	/// </remarks>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public T? Deserialize<T>(Stream stream, ITypeShape<T> shape, CancellationToken cancellationToken = default)
@@ -224,11 +235,7 @@ public partial record MessagePackSerializer
 
 	/// <inheritdoc cref="DeserializeObject(ref MessagePackReader, ITypeShape, CancellationToken)"/>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
-	/// <remarks>
-	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
-	/// This is for simplicity and perf reasons.
-	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only msgpack content.
-	/// </remarks>
+	/// <inheritdoc cref="Deserialize{T}(Stream, ITypeShape{T}, CancellationToken)" path="/remarks" />
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public object? DeserializeObject(Stream stream, ITypeShape shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
@@ -264,10 +271,16 @@ public partial record MessagePackSerializer
 	/// Deserializes a value from a <see cref="Stream"/>.
 	/// </summary>
 	/// <typeparam name="T"><inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
-	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
+	/// <param name="stream">The stream to deserialize from. If this stream contains more than the one top-level msgpack structure this method deserializes, the stream may be positioned beyond the end of the deserialized structure after deserialization due to buffering.</param>
 	/// <param name="shape"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
+	/// <remarks>
+	/// If you need to deserialize only a portion of the <paramref name="stream"/>, convert it to a <see cref="PipeReader" /> first
+	/// (you may use <see cref="PipeReader.Create(Stream, StreamPipeReaderOptions)" />)
+	/// use a deserialize overload that takes a <see cref="PipeReader" />,
+	/// and <em>only</em> interact with the stream using the <see cref="PipeReader" /> thereafter.
+	/// </remarks>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public async ValueTask<T?> DeserializeAsync<T>(Stream stream, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
@@ -373,11 +386,7 @@ public partial record MessagePackSerializer
 
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
-	/// <remarks>
-	/// The implementation of this method currently is to buffer the entire content of the <paramref name="stream"/> into memory before deserializing.
-	/// This is for simplicity and perf reasons.
-	/// Callers should only provide streams that are known to be small enough to fit in memory and contain only msgpack content.
-	/// </remarks>
+	/// <inheritdoc cref="Deserialize{T}(Stream, ITypeShape{T}, CancellationToken)" path="/remarks" />
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public TElement? DeserializePath<T, TElement>(Stream stream, ITypeShape<T> shape, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
