@@ -86,3 +86,13 @@ This means that although the security check saw "guest", the processor will see 
 There is no good reason for a serialized object to define two values for the same property.
 The same exploit is possible with objects encoded in messagepack.
 Nerdbank.MessagePack mitigates this threat automatically by throwing a <xref:Nerdbank.MessagePack.MessagePackSerializationException> with its <xref:Nerdbank.MessagePack.MessagePackSerializationException.Code> property set to <xref:Nerdbank.MessagePack.MessagePackSerializationException.ErrorCode.DoublePropertyAssignment> during deserialization when any such double assignment is detected.
+
+## Loading arbitrary types
+
+When data to be deserialized can specify the type into which the data is deserialized, attackers may exploit that capability to get a trusted program to misbehave by feeding it data contrived to deserialize into objects that are configured to exhibit unexpected behavior favorable to the attacker.
+
+Nerdbank.MessagePack does not support deserialization of arbitrary types.
+Data must deserialize into a graph of a known, closed set of types.
+[Unions](unions.md) may be used to allow the data to dictate which of a closed set of derived types may be activated for a given base class, however.
+
+An application may author a [custom converter](custom-converters.md) to add support for data dictating the type to be deserialized, but this is not recommended for security reasons.
