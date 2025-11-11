@@ -16,6 +16,11 @@ namespace Nerdbank.MessagePack;
 
 public partial record MessagePackSerializer
 {
+	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)" />
+	[ExcludeFromCodeCoverage]
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value, CancellationToken cancellationToken = default)
+		where T : IShapeable<T> => this.Serialize(ref writer, value, T.GetTypeShape(), cancellationToken);
+
 	/// <inheritdoc cref="Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public byte[] Serialize<T>(in T? value, CancellationToken cancellationToken = default)
@@ -30,6 +35,11 @@ public partial record MessagePackSerializer
 	[ExcludeFromCodeCoverage]
 	public void Serialize<T>(Stream stream, in T? value, CancellationToken cancellationToken = default)
 		where T : IShapeable<T> => this.Serialize(stream, value, T.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)" />
+	[ExcludeFromCodeCoverage]
+	public T? Deserialize<T>(ref MessagePackReader reader, CancellationToken cancellationToken = default)
+		where T : IShapeable<T> => this.Deserialize(ref reader, T.GetTypeShape(), cancellationToken);
 
 	/// <inheritdoc cref="Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
@@ -88,6 +98,11 @@ public partial record MessagePackSerializer
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where T : IShapeable<T> => this.DeserializePathEnumerableAsync(stream, T.GetTypeShape(), options, cancellationToken);
 
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)" />
+	[ExcludeFromCodeCoverage]
+	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		where T : IShapeable<T> => this.DeserializePath(ref reader, T.GetTypeShape(), options, cancellationToken);
+
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ReadOnlyMemory{byte}, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public TElement? DeserializePath<T, TElement>(ReadOnlyMemory<byte> bytes, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
@@ -117,6 +132,11 @@ public partial record MessagePackSerializer
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where T : IShapeable<T> => this.SerializeAsync(stream, value, T.GetTypeShape(), cancellationToken);
 
+	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)" />
+	[ExcludeFromCodeCoverage]
+	public void Serialize<T, TProvider>(ref MessagePackWriter writer, in T? value, CancellationToken cancellationToken = default)
+		where TProvider : IShapeable<T> => this.Serialize(ref writer, value, TProvider.GetTypeShape(), cancellationToken);
+
 	/// <inheritdoc cref="Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public byte[] Serialize<T, TProvider>(in T? value, CancellationToken cancellationToken = default)
@@ -131,6 +151,11 @@ public partial record MessagePackSerializer
 	[ExcludeFromCodeCoverage]
 	public void Serialize<T, TProvider>(Stream stream, in T? value, CancellationToken cancellationToken = default)
 		where TProvider : IShapeable<T> => this.Serialize(stream, value, TProvider.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)" />
+	[ExcludeFromCodeCoverage]
+	public T? Deserialize<T, TProvider>(ref MessagePackReader reader, CancellationToken cancellationToken = default)
+		where TProvider : IShapeable<T> => this.Deserialize(ref reader, TProvider.GetTypeShape(), cancellationToken);
 
 	/// <inheritdoc cref="Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
@@ -189,6 +214,11 @@ public partial record MessagePackSerializer
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where TProvider : IShapeable<T> => this.DeserializePathEnumerableAsync(stream, TProvider.GetTypeShape(), options, cancellationToken);
 
+	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)" />
+	[ExcludeFromCodeCoverage]
+	public TElement? DeserializePath<T, TElement, TProvider>(ref MessagePackReader reader, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		where TProvider : IShapeable<T> => this.DeserializePath(ref reader, TProvider.GetTypeShape(), options, cancellationToken);
+
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ReadOnlyMemory{byte}, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public TElement? DeserializePath<T, TElement, TProvider>(ReadOnlyMemory<byte> bytes, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
@@ -223,6 +253,24 @@ public partial record MessagePackSerializer
 
 public static partial class MessagePackSerializerExtensions
 {
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static void Serialize<T>(this MessagePackSerializer self, ref MessagePackWriter writer, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(ref writer, value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
 	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
@@ -276,6 +324,24 @@ public static partial class MessagePackSerializerExtensions
 #endif
 	public static void Serialize<T>(this MessagePackSerializer self, Stream stream, in T? value, CancellationToken cancellationToken = default)
 		=> Requires.NotNull(self).Serialize(stream, value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T>(this MessagePackSerializer self, ref MessagePackReader reader, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(ref reader, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
 
 	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
@@ -451,6 +517,24 @@ public static partial class MessagePackSerializerExtensions
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		=> Requires.NotNull(self).DeserializePathEnumerableAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T>(), options, cancellationToken);
 
+	/// <inheritdoc cref="MessagePackSerializer.DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static TElement? DeserializePath<T, TElement>(this MessagePackSerializer self, ref MessagePackReader reader, in MessagePackSerializer.DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).DeserializePath(ref reader, TypeShapeResolver.ResolveDynamicOrThrow<T>(), options, cancellationToken);
+
 	/// <inheritdoc cref="MessagePackSerializer.DeserializePath{T, TElement}(ReadOnlyMemory{byte}, ITypeShape{T}, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
@@ -545,6 +629,23 @@ public static partial class MessagePackSerializerExtensions
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		=> Requires.NotNull(self).SerializeAsync(stream, value, TypeShapeResolver.ResolveDynamicOrThrow<T>(), cancellationToken);
 
+	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static void Serialize<T, TProvider>(this MessagePackSerializer self, ref MessagePackWriter writer, in T? value, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Serialize(ref writer, value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
 	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(in T, ITypeShape{T}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
@@ -595,6 +696,23 @@ public static partial class MessagePackSerializerExtensions
 #endif
 	public static void Serialize<T, TProvider>(this MessagePackSerializer self, Stream stream, in T? value, CancellationToken cancellationToken = default)
 		=> Requires.NotNull(self).Serialize(stream, value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static T? Deserialize<T, TProvider>(this MessagePackSerializer self, ref MessagePackReader reader, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).Deserialize(ref reader, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), cancellationToken);
 
 	/// <inheritdoc cref="MessagePackSerializer.Deserialize{T}(ReadOnlyMemory{byte}, ITypeShape{T}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
@@ -760,6 +878,23 @@ public static partial class MessagePackSerializerExtensions
 	public static IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<T, TElement, TProvider>(this MessagePackSerializer self, Stream stream, MessagePackSerializer.StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		=> Requires.NotNull(self).DeserializePathEnumerableAsync(stream, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), options, cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// </remarks>
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static TElement? DeserializePath<T, TElement, TProvider>(this MessagePackSerializer self, ref MessagePackReader reader, in MessagePackSerializer.DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
+		=> Requires.NotNull(self).DeserializePath(ref reader, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>(), options, cancellationToken);
 
 	/// <inheritdoc cref="MessagePackSerializer.DeserializePath{T, TElement}(ReadOnlyMemory{byte}, ITypeShape{T}, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
