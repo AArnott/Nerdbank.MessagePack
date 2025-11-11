@@ -26,11 +26,12 @@ public static partial class MessagePackSerializerExtensions
 }
 <#
 void WriteClass(bool targetNET) {
-    static void AssembleInputs(string firstParameterType, string firstParameterName, bool moreParameters, out string firstParameter, out string firstArg, out string firstParameterDocId)
+    static void AssembleInputs(string firstParameterModifier, string firstParameterType, string firstParameterName, bool moreParameters, out string firstParameter, out string firstArg, out string firstParameterDocId)
     {
-        firstParameter = firstParameterType.Length == 0 ? "" : $"{firstParameterType} {firstParameterName}";
-        firstArg = firstParameterName.Length == 0 ? "" : $"{firstParameterName}";
-        firstParameterDocId = firstParameterType.Length == 0 ? "" : $"{firstParameterType.Replace("scoped ", "").Replace('<', '{').Replace('>', '}')}, ";
+        if (firstParameterModifier.Length > 0) firstParameterModifier += " ";
+        firstParameter = firstParameterType.Length == 0 ? "" : $"{firstParameterModifier}{firstParameterType} {firstParameterName}";
+        firstArg = firstParameterName.Length == 0 ? "" : $"{firstParameterModifier}{firstParameterName}";
+        firstParameterDocId = firstParameterType.Length == 0 ? "" : $"{firstParameterModifier}{firstParameterType.Replace("scoped ", "").Replace('<', '{').Replace('>', '}')}, ";
 
         if (moreParameters)
         {
@@ -87,14 +88,15 @@ void WriteClass(bool targetNET) {
 
         foreach (SerializeTransport transport in Enum.GetValues(typeof(SerializeTransport)))
         {
-            (string returnType, string firstParameterType, string firstParameterName) = transport switch
+            (string returnType, string firstParameterModifier, string firstParameterType, string firstParameterName) = transport switch
             {
-                SerializeTransport.ByteArray => ("byte[]", "", ""),
-                SerializeTransport.IBufferWriter => ("void", "IBufferWriter<byte>", "writer"),
-                SerializeTransport.Stream => ("void", "Stream", "stream"),
+                SerializeTransport.MessagePackWriter => ("void", "ref", "MessagePackWriter", "writer"),
+                SerializeTransport.ByteArray => ("byte[]", "", "", ""),
+                SerializeTransport.IBufferWriter => ("void", "", "IBufferWriter<byte>", "writer"),
+                SerializeTransport.Stream => ("void", "", "Stream", "stream"),
                 _ => throw new NotSupportedException(),
             };
-            AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
+            AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
 	/// <inheritdoc cref="<#=serializerClassQualifier#>Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
@@ -106,14 +108,15 @@ void WriteClass(bool targetNET) {
 
         foreach (DeserializeTransport transport in Enum.GetValues(typeof(DeserializeTransport)))
         {
-            (string firstParameterType, string firstParameterName) = transport switch
+            (string firstParameterModifier, string firstParameterType, string firstParameterName) = transport switch
             {
-                DeserializeTransport.ReadOnlyMemory => ("ReadOnlyMemory<byte>", "bytes"),
-                DeserializeTransport.ReadOnlySequence => ("scoped in ReadOnlySequence<byte>", "bytes"),
-                DeserializeTransport.Stream => ("Stream", "stream"),
+                DeserializeTransport.MessagePackReader => ("ref", "MessagePackReader", "reader"),
+                DeserializeTransport.ReadOnlyMemory => ("", "ReadOnlyMemory<byte>", "bytes"),
+                DeserializeTransport.ReadOnlySequence => ("", "scoped in ReadOnlySequence<byte>", "bytes"),
+                DeserializeTransport.Stream => ("", "Stream", "stream"),
                 _ => throw new NotSupportedException(),
             };
-            AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
+            AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
 	/// <inheritdoc cref="<#=serializerClassQualifier#>Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
@@ -125,13 +128,14 @@ void WriteClass(bool targetNET) {
 
         foreach (DeserializeAsyncTransport transport in Enum.GetValues(typeof(DeserializeAsyncTransport)))
         {
+            string firstParameterModifier = "";
             (string firstParameterType, string firstParameterName) = transport switch
             {
                 DeserializeAsyncTransport.PipeReader => ("PipeReader", "reader"),
                 DeserializeAsyncTransport.Stream => ("Stream", "stream"),
                 _ => throw new NotSupportedException(),
             };
-            AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
+            AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
 	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
@@ -159,14 +163,15 @@ void WriteClass(bool targetNET) {
 
         foreach (DeserializeTransport transport in Enum.GetValues(typeof(DeserializeTransport)))
         {
-            (string firstParameterType, string firstParameterName) = transport switch
+            (string firstParameterModifier, string firstParameterType, string firstParameterName) = transport switch
             {
-                DeserializeTransport.ReadOnlyMemory => ("ReadOnlyMemory<byte>", "bytes"),
-                DeserializeTransport.ReadOnlySequence => ("scoped in ReadOnlySequence<byte>", "bytes"),
-                DeserializeTransport.Stream => ("Stream", "stream"),
+                DeserializeTransport.MessagePackReader => ("ref", "MessagePackReader", "reader"),
+                DeserializeTransport.ReadOnlyMemory => ("", "ReadOnlyMemory<byte>", "bytes"),
+                DeserializeTransport.ReadOnlySequence => ("", "scoped in ReadOnlySequence<byte>", "bytes"),
+                DeserializeTransport.Stream => ("", "Stream", "stream"),
                 _ => throw new NotSupportedException(),
             };
-            AssembleInputs(firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
+            AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
 	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePath{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, in <#=serializerClassQualifier#>DeserializePathOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
@@ -178,13 +183,14 @@ void WriteClass(bool targetNET) {
 
         foreach (SerializeAsyncTransport transport in Enum.GetValues(typeof(SerializeAsyncTransport)))
         {
+            string firstParameterModifier = "";
             (string firstParameterType, string firstParameterName) = transport switch
             {
                 SerializeAsyncTransport.PipeWriter => ("PipeWriter", "writer"),
                 SerializeAsyncTransport.Stream => ("Stream", "stream"),
                 _ => throw new NotSupportedException(),
             };
-            AssembleInputs(firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
+            AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
 	/// <inheritdoc cref="<#=serializerClassQualifier#>SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
@@ -201,14 +207,14 @@ void WriteClass(bool targetNET) {
 <#+
   enum SerializeTransport
   {
-      // MessagePackWriter, // this is hand-authored with intentionally limited overloads
+      MessagePackWriter,
       ByteArray,
       IBufferWriter,
       Stream,
   }
   enum DeserializeTransport
   {
-      // MessagePackReader, // this is hand-authored with intentionally limited overloads
+      MessagePackReader,
       ReadOnlyMemory,
       ReadOnlySequence,
       Stream,
