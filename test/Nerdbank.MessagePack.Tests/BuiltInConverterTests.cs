@@ -227,7 +227,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[Fact]
 	public void CultureInfo_Encoding()
 	{
-		byte[] msgpack = this.Serializer.Serialize(CultureInfo.GetCultureInfo("es-ES"), SourceGenProvider.CultureInfo, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<CultureInfo, Witness>(CultureInfo.GetCultureInfo("es-ES"), TestContext.Current.CancellationToken);
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal("es-ES", reader.ReadString());
 	}
@@ -247,7 +247,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Encoding_Encoding()
 	{
-		byte[] msgpack = this.Serializer.Serialize(Encoding.GetEncoding("utf-8"), SourceGenProvider.Encoding, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<Encoding, Witness>(Encoding.GetEncoding("utf-8"), TestContext.Current.CancellationToken);
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal("utf-8", reader.ReadString());
 	}
@@ -397,14 +397,14 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		byte[] original = [1, 2, 3];
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq) { OldSpec = true };
-		this.Serializer.Serialize(ref writer, original, SourceGenProvider.Byte_Array, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<byte[], Witness>(ref writer, original, TestContext.Current.CancellationToken);
 		writer.Flush();
 
 		// Verify that the test is doing what we think it is.
 		MessagePackReader reader = new(seq);
 		Assert.Equal(MessagePackType.String, reader.NextMessagePackType);
 
-		byte[]? deserialized = this.Serializer.Deserialize(seq, SourceGenProvider.Byte_Array, TestContext.Current.CancellationToken);
+		byte[]? deserialized = this.Serializer.Deserialize<byte[], Witness>(seq, TestContext.Current.CancellationToken);
 		Assert.Equal(original, deserialized);
 	}
 
@@ -418,13 +418,12 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 
 		Guid original = System.Guid.NewGuid();
 		this.Logger.WriteLine($"Randomly generated guid: {original}");
-		byte[] msgpack = serializer.Serialize(original, SourceGenProvider.Guid, TestContext.Current.CancellationToken);
-		msgpack = this.Serializer.Serialize(
-			modifier(this.Serializer.Deserialize(msgpack, SourceGenProvider.String, TestContext.Current.CancellationToken)!),
-			SourceGenProvider.String,
+		byte[] msgpack = serializer.Serialize<Guid, Witness>(original, TestContext.Current.CancellationToken);
+		msgpack = this.Serializer.Serialize<string, Witness>(
+			modifier(this.Serializer.Deserialize<string, Witness>(msgpack, TestContext.Current.CancellationToken)!),
 			TestContext.Current.CancellationToken);
 		this.LogMsgPack(msgpack);
-		Guid deserialized = deserializer.Deserialize(msgpack, SourceGenProvider.Guid, TestContext.Current.CancellationToken);
+		Guid deserialized = deserializer.Deserialize<Guid, Witness>(msgpack, TestContext.Current.CancellationToken);
 		return (original, deserialized);
 	}
 
@@ -481,6 +480,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	public partial record HasDateTimeOffset(DateTimeOffset Value);
 
+	[GenerateShapeFor<string>]
 	[GenerateShapeFor<Guid>]
 	[GenerateShapeFor<Point>]
 	[GenerateShapeFor<Color>]

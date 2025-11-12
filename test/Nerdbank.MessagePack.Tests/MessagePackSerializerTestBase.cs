@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -32,8 +31,6 @@ public abstract partial class MessagePackSerializerTestBase
 	/// </summary>
 	public static TimeSpan AsyncDelay => TimeSpan.FromMilliseconds(250);
 
-	internal static PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests SourceGenProvider => PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default;
-
 	protected MessagePackSerializer Serializer { get; set; }
 
 	protected ITestOutputHelper Logger => TestContext.Current.TestOutputHelper ?? throw new InvalidOperationException("No logger available.");
@@ -54,27 +51,6 @@ public abstract partial class MessagePackSerializerTestBase
 		}
 
 		return builder.ToString();
-	}
-
-#if !NET
-	internal static ITypeShapeProvider GetShapeProvider<TProvider>()
-	{
-		PropertyInfo shapeProperty = typeof(TProvider).GetProperty("GeneratedTypeShapeProvider", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException($"{typeof(TProvider).FullName} is not a witness class.");
-		Assert.NotNull(shapeProperty);
-		return (ITypeShapeProvider)shapeProperty.GetValue(null)!;
-	}
-#endif
-
-	internal static ITypeShape<T> GetTypeShape<T, TProvider>()
-#if NET
-		where TProvider : IShapeable<T>
-#endif
-	{
-#if NET
-		return TProvider.GetTypeShape();
-#else
-		return (ITypeShape<T>)GetShapeProvider<TProvider>().GetTypeShapeOrThrow(typeof(T));
-#endif
 	}
 
 	internal static ValueTask<ReadResult> FetchOneByteAtATimeAsync(object? state, SequencePosition consumed, SequencePosition examined, CancellationToken cancellationToken)
@@ -143,7 +119,7 @@ public abstract partial class MessagePackSerializerTestBase
 		where T : IShapeable<T>
 		=> this.AssertRoundtrip<T, T>(value);
 #else
-		=> this.AssertRoundtrip<T, Witness>(value);
+		=> this.AssertRoundtrip<T, T>(value);
 #endif
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T, TProvider>(T? value)
@@ -151,11 +127,7 @@ public abstract partial class MessagePackSerializerTestBase
 		where TProvider : IShapeable<T>
 #endif
 	{
-#if NET
-		T? roundtripped = this.Roundtrip(value, TProvider.GetTypeShape());
-#else
-		T? roundtripped = this.Roundtrip(value, GetTypeShape<T, TProvider>());
-#endif
+		T? roundtripped = this.Roundtrip<T, TProvider>(value);
 		if (value is IStructuralSecureEqualityComparer<T> deepComparer)
 		{
 			Assert.True(deepComparer.StructuralEquals(roundtripped), "Roundtripped value does not match the original value by deep equality.");
@@ -173,11 +145,7 @@ public abstract partial class MessagePackSerializerTestBase
 		where T : IShapeable<T>
 #endif
 	{
-#if NET
 		await this.AssertRoundtripAsync<T, T>(value);
-#else
-		await this.AssertRoundtripAsync<T, Witness>(value);
-#endif
 		return this.lastRoundtrippedMsgpack;
 	}
 
@@ -195,7 +163,7 @@ public abstract partial class MessagePackSerializerTestBase
 #if NET
 		where T : IShapeable<T> => this.Roundtrip(value, T.GetTypeShape());
 #else
-		=> this.Roundtrip(value, GetTypeShape<T, Witness>());
+		=> this.Roundtrip(value, TypeShapeResolver.ResolveDynamicOrThrow<T>());
 #endif
 
 	protected T? Roundtrip<T, TProvider>(T? value)
@@ -203,7 +171,7 @@ public abstract partial class MessagePackSerializerTestBase
 		where TProvider : IShapeable<T>
 		=> this.Roundtrip(value, TProvider.GetTypeShape());
 #else
-		=> this.Roundtrip(value, GetTypeShape<T, TProvider>());
+		=> this.Roundtrip(value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
 #endif
 
 	protected T? Roundtrip<T>(T? value, ITypeShape<T> shape)
@@ -220,7 +188,7 @@ public abstract partial class MessagePackSerializerTestBase
 		where T : IShapeable<T>
 		=> this.RoundtripAsync(value, T.GetTypeShape());
 #else
-		=> this.RoundtripAsync(value, GetTypeShape<T, Witness>());
+		=> this.RoundtripAsync(value, TypeShapeResolver.ResolveDynamicOrThrow<T>());
 #endif
 
 	protected ValueTask<T?> RoundtripAsync<T, TProvider>(T? value)
@@ -228,7 +196,7 @@ public abstract partial class MessagePackSerializerTestBase
 		where TProvider : IShapeable<T>
 		=> this.RoundtripAsync(value, TProvider.GetTypeShape());
 #else
-		=> this.RoundtripAsync(value, GetTypeShape<T, TProvider>());
+		=> this.RoundtripAsync(value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
 #endif
 
 	protected async ValueTask<T?> RoundtripAsync<T>(T? value, ITypeShape<T> shape)

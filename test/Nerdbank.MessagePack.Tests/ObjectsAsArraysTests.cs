@@ -288,7 +288,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 		long positionAfterIndex = sequence.Length;
 
-		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>(), TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, TestContext.Current.CancellationToken);
 		writer.Flush();
 		this.LogMsgPack(sequence);
 
@@ -334,7 +334,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 		long positionAfterIndex = sequence.Length;
 
-		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, GetShape<Person>(), TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, TestContext.Current.CancellationToken);
 		writer.Flush();
 		this.LogMsgPack(sequence);
 
@@ -381,13 +381,6 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		ClassWithPropertyGettersWithCtorParam obj = new(true);
 		this.AssertRoundtrip(obj);
 	}
-
-	private static ITypeShape<T> GetShape<T>()
-#if NET
-		where T : IShapeable<T> => T.GetTypeShape();
-#else
-		=> GetTypeShape<T, Witness>();
-#endif
 
 	[GenerateShapeFor<int>]
 	private partial class Witness;

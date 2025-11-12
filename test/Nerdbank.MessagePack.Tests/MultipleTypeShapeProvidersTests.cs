@@ -37,7 +37,7 @@ public partial class MultipleTypeShapeProvidersTests : MessagePackSerializerTest
 	public void ShapesFromTwoAssemblies_BothDirect()
 	{
 		this.Serializer.Serialize(SomeExtension, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize(SomeExtension, SourceGenProvider.Extension, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(SomeExtension, TestContext.Current.CancellationToken);
 	}
 
 	[Fact]

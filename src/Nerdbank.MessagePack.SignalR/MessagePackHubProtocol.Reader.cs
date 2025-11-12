@@ -219,7 +219,7 @@ internal partial class MessagePackHubProtocol
 			return null;
 		}
 
-		return EnvelopeSerializer.Deserialize(ref reader, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_SignalR.Default.String_Array);
+		return EnvelopeSerializer.Deserialize<string[], Witness>(ref reader);
 	}
 
 	private static Type? TryGetReturnType(IInvocationBinder binder, string invocationId)
