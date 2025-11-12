@@ -27,11 +27,15 @@ public class MessagePackInputFormatter : InputFormatter
 	private readonly MessagePackSerializer serializer;
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackInputFormatter"/> class with a default <see cref="MessagePackSerializer"/>.
+	/// Initializes a new instance of the <see cref="MessagePackInputFormatter"/> class.
 	/// </summary>
 	/// <param name="typeShapeProvider"><inheritdoc cref="MessagePackInputFormatter(ITypeShapeProvider, MessagePackSerializer)" path="/param[@name='typeShapeProvider']"/></param>
+	/// <remarks>
+	/// The <see cref="MessagePackSerializer"/> this constructor initializes includes converters commonly useful to ASP.NET Core MVC scenarios,
+	/// including <see cref="OptionalConverters.WithObjectConverter(MessagePackSerializer)"/>.
+	/// </remarks>
 	public MessagePackInputFormatter(ITypeShapeProvider typeShapeProvider)
-		: this(typeShapeProvider, new MessagePackSerializer())
+		: this(typeShapeProvider, new MessagePackSerializer().WithObjectConverter())
 	{
 	}
 
