@@ -32,7 +32,9 @@ void ConfigureServices(IServiceCollection services)
     });
 }
 
-// Generate a shape for ProblemDetails so that error responses can be serialized.
+// Generate shapes for types commonly used in communicating errors in ASP.NET Core MVC.
 [GenerateShapeFor<ProblemDetails>]
+[GenerateShapeFor<SerializableError>]
+[GenerateShapeFor<string[]>]
 partial class Witness;
 #endregion

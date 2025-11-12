@@ -7,21 +7,30 @@
     <p>This is a sample view.</p>
     <input type="text" id="personId" placeholder="Enter person ID (optional)">
     <button id="fetchBtn">Fetch Person Data</button>
+    <div id="errorMessage" style="color: red;"></div>
     <div id="result"></div>
     <script>
         document.getElementById('fetchBtn').addEventListener('click', async () => {
             const id = document.getElementById('personId').value.trim();
             const url = id ? `/api/v1/person/${id}` : '/api/v1/person';
+            document.getElementById('errorMessage').textContent = ''; // Clear previous error
             try {
                 const response = await fetch(url, {
                     headers: { 'Accept': 'application/x-msgpack' }
                 });
-                if (!response.ok) throw new Error('Network response was not ok');
                 const buffer = await response.arrayBuffer();
                 const data = msgpack.decode(new Uint8Array(buffer));
-                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                if (!response.ok) {
+                    // Assuming data is ModelState with errors, e.g., { id: ['ID must be 10 or less.'] }
+                    const errorMsg = data?.id?.[0] || 'Unknown error';
+                    document.getElementById('errorMessage').textContent = errorMsg;
+                    document.getElementById('result').innerHTML = '';
+                } else {
+                    document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
             } catch (error) {
-                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+                document.getElementById('errorMessage').textContent = 'Error: ' + error.message;
+                document.getElementById('result').innerHTML = '';
             }
         });
     </script>

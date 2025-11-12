@@ -25,6 +25,12 @@ public partial class PersonController : ControllerBase
     [HttpGet("{id}")]
     public ActionResult<Person> Get(int id)
     {
+        if (id > 10)
+        {
+            this.ModelState.AddModelError("id", "ID must be 10 or less.");
+            return this.BadRequest(this.ModelState);
+        }
+
         return this.Ok(new Person(id, $"Person {id}"));
     }
 

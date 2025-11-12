@@ -25,11 +25,15 @@ public class MessagePackOutputFormatter : OutputFormatter
 	private readonly MessagePackSerializer serializer;
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="MessagePackOutputFormatter"/> class with a default <see cref="MessagePackSerializer"/>.
+	/// Initializes a new instance of the <see cref="MessagePackOutputFormatter"/> class.
 	/// </summary>
 	/// <param name="typeShapeProvider"><inheritdoc cref="MessagePackOutputFormatter(ITypeShapeProvider, MessagePackSerializer)" path="/param[@name='typeShapeProvider']"/></param>
+	/// <remarks>
+	/// The <see cref="MessagePackSerializer"/> this constructor initializes includes converters commonly useful to ASP.NET Core MVC scenarios,
+	/// including <see cref="OptionalConverters.WithObjectConverter(MessagePackSerializer)"/>.
+	/// </remarks>
 	public MessagePackOutputFormatter(ITypeShapeProvider typeShapeProvider)
-		: this(typeShapeProvider, new MessagePackSerializer())
+		: this(typeShapeProvider, new MessagePackSerializer().WithObjectConverter())
 	{
 	}
 
@@ -45,7 +49,7 @@ public class MessagePackOutputFormatter : OutputFormatter
 	/// <exception cref="ArgumentNullException">Thrown when <paramref name="serializer"/> is <see langword="null"/>.</exception>
 	public MessagePackOutputFormatter(ITypeShapeProvider typeShapeProvider, MessagePackSerializer serializer)
 	{
-		this.typeShapeProvider = typeShapeProvider;
+		this.typeShapeProvider = typeShapeProvider ?? throw new ArgumentNullException(nameof(typeShapeProvider));
 		this.serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
 		this.SupportedMediaTypes.Add(ContentType);
 	}
