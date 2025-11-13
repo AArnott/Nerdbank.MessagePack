@@ -216,41 +216,41 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		MessagePackWriter writer = new(seq);
 		writer.WriteMapHeader(ExpectedKeys.Length);
 		writer.Write("Prop1");
-		this.Serializer.Serialize<object>(ref writer, "Value1", SourceGenProvider.Object, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, "Value1", TestContext.Current.CancellationToken);
 		writer.Write("Prop2");
-		this.Serializer.Serialize<object>(ref writer, 42, SourceGenProvider.Object, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, 42, TestContext.Current.CancellationToken);
 		writer.Write("nestedArray");
 		writer.WriteArrayHeader(5);
-		this.Serializer.Serialize<object>(ref writer, true, SourceGenProvider.Object, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object>(ref writer, 3.5, SourceGenProvider.Object, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object>(ref writer, new Extension(15, new byte[] { 1, 2, 3 }), SourceGenProvider.Object, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object>(ref writer, ExpectedDateTime, SourceGenProvider.Object, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object>(ref writer, ExpectedDateTimeUnspecifiedKind, SourceGenProvider.Object, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, true, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, 3.5, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, new Extension(15, new byte[] { 1, 2, 3 }), TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, ExpectedDateTime, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, ExpectedDateTimeUnspecifiedKind, TestContext.Current.CancellationToken);
 		writer.Write(45); // int key for stretching tests
-		this.Serializer.Serialize<object>(ref writer, (byte[])[1, 2, 3], SourceGenProvider.Object, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, (byte[])[1, 2, 3], TestContext.Current.CancellationToken);
 		writer.Write(-45); // negative int key for stretching tests
-		this.Serializer.Serialize<object>(ref writer, false, SourceGenProvider.Object, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, false, TestContext.Current.CancellationToken);
 
 		writer.Write("nestedObject");
 		writer.WriteMapHeader(1);
 		writer.Write("nestedProp");
-		this.Serializer.Serialize<object>(ref writer, "nestedValue", SourceGenProvider.Object, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, "nestedValue", TestContext.Current.CancellationToken);
 
 		writer.Write("decimal");
-		this.Serializer.Serialize(ref writer, ExpectedDecimal, SourceGenProvider.Decimal, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<decimal, Witness>(ref writer, ExpectedDecimal, TestContext.Current.CancellationToken);
 
 		writer.Write("bigint");
-		this.Serializer.Serialize(ref writer, ExpectedBigInteger, SourceGenProvider.BigInteger, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<BigInteger, Witness>(ref writer, ExpectedBigInteger, TestContext.Current.CancellationToken);
 
 		writer.Write("guid");
-		this.Serializer.Serialize(ref writer, ExpectedGuid, SourceGenProvider.Guid, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<Guid, Witness>(ref writer, ExpectedGuid, TestContext.Current.CancellationToken);
 
 #if NET
 		writer.Write("i128");
-		this.Serializer.Serialize(ref writer, ExpectedInt128, SourceGenProvider.Int128, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<Int128, Witness>(ref writer, ExpectedInt128, TestContext.Current.CancellationToken);
 
 		writer.Write("u128");
-		this.Serializer.Serialize(ref writer, ExpectedUInt128, SourceGenProvider.UInt128, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<UInt128, Witness>(ref writer, ExpectedUInt128, TestContext.Current.CancellationToken);
 #endif
 
 		writer.Flush();
@@ -259,6 +259,14 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		return new MessagePackReader(seq);
 	}
 
+#if NET
+	[GenerateShapeFor<Int128>]
+	[GenerateShapeFor<UInt128>]
+#endif
+	[GenerateShapeFor<decimal>]
+	[GenerateShapeFor<BigInteger>]
+	[GenerateShapeFor<Guid>]
+	[GenerateShapeFor<object>]
 	[GenerateShapeFor<IReadOnlyDictionary<MessagePackValue, object>>]
 	private partial class Witness;
 }

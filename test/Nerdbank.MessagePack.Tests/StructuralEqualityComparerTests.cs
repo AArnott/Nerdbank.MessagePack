@@ -127,7 +127,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 #if NET
 		where TProvider : IShapeable<T> => this.GetEqualityComparer(TProvider.GetTypeShape());
 #else
-		=> this.GetEqualityComparer(MessagePackSerializerTestBase.GetTypeShape<T, TProvider>());
+		=> this.GetEqualityComparer(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
 #endif
 
 	protected IEqualityComparer<T> GetEqualityComparer<T>()
@@ -144,7 +144,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 #if NET
 		where T : notnull, IShapeable<T> => this.AssertEqualityComparerBehavior<T, T>(equivalent, different);
 #else
-		where T : notnull => this.AssertEqualityComparerBehavior<T, Witness>(equivalent, different);
+		where T : notnull => this.AssertEqualityComparerBehavior<T, T>(equivalent, different);
 #endif
 
 	/// <summary>
