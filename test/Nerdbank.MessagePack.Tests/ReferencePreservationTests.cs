@@ -226,7 +226,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	public void DerivedTypeShapes_DynamicRegistration()
 	{
 		DerivedShapeMapping<BaseRecord> mapping = new DerivedShapeMapping<BaseRecord>();
-		mapping.Add<DerivedRecordB>(1, Witness.GeneratedTypeShapeProvider);
+		mapping.Add<BaseRecord, DerivedRecordB>(1);
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
 		BaseRecord baseInstance = new BaseRecord();
