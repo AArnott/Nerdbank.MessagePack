@@ -3,9 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json.Nodes;
-using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -21,10 +19,10 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// <param name="attributeProvider">The attribute provider for the target.</param>
 	/// <param name="schema">The schema for the target.</param>
 	/// <param name="namePrefix">An optional prefix to include in the description, or to use by itself when no <see cref="DescriptionAttribute"/> is present.</param>
-	protected static void ApplyDescription(ICustomAttributeProvider? attributeProvider, JsonObject schema, string? namePrefix = null)
+	protected static void ApplyDescription(IGenericCustomAttributeProvider attributeProvider, JsonObject schema, string? namePrefix = null)
 	{
 		string? description;
-		if (attributeProvider?.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute descriptionAttribute)
+		if (attributeProvider.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute descriptionAttribute)
 		{
 			description = descriptionAttribute.Description;
 			if (namePrefix is not null)
@@ -50,11 +48,11 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// <param name="attributeProvider">The attribute provider for the target.</param>
 	/// <param name="propertySchema">The schema for the target.</param>
 	/// <param name="parameterShape">The constructor parameter that matches the property, if applicable.</param>
-	protected static void ApplyDefaultValue(ICustomAttributeProvider? attributeProvider, JsonObject propertySchema, IParameterShape? parameterShape)
+	protected static void ApplyDefaultValue(IGenericCustomAttributeProvider attributeProvider, JsonObject propertySchema, IParameterShape? parameterShape)
 	{
 		JsonValue? defaultValue =
 			parameterShape?.HasDefaultValue is true ? CreateJsonValue(parameterShape.DefaultValue) :
-			attributeProvider?.GetCustomAttribute<DefaultValueAttribute>() is DefaultValueAttribute att ? CreateJsonValue(att.Value) :
+			attributeProvider.GetCustomAttribute<DefaultValueAttribute>() is DefaultValueAttribute att ? CreateJsonValue(att.Value) :
 			null;
 
 		if (defaultValue is not null)
