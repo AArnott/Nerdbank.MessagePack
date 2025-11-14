@@ -46,6 +46,7 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? _DateTimeConverter;
 	private static IMessagePackConverterInternal? _DateTimeOffsetConverter;
 	private static IMessagePackConverterInternal? _TimeSpanConverter;
+	private static IMessagePackConverterInternal? _ExceptionConverter;
 	private static IMessagePackConverterInternal? _SystemGlobalizationCultureInfoConverter;
 	private static IMessagePackConverterInternal? _SystemTextEncodingConverter;
 	private static IMessagePackConverterInternal? _SystemDrawingColorConverter;
@@ -313,6 +314,20 @@ internal static class PrimitiveConverterLookup
 			converter = (MessagePackConverter<T>)(_TimeSpanConverter ??= new TimeSpanConverter());
 #else
 			converter = (MessagePackConverter)(_TimeSpanConverter ??= new TimeSpanConverter());
+#endif
+			return true;
+		}
+
+#if NET
+		if (typeof(T) == typeof(System.Exception))
+#else
+		if (type == typeof(System.Exception))
+#endif
+		{
+#if NET
+			converter = (MessagePackConverter<T>)(_ExceptionConverter ??= new ExceptionConverter());
+#else
+			converter = (MessagePackConverter)(_ExceptionConverter ??= new ExceptionConverter());
 #endif
 			return true;
 		}

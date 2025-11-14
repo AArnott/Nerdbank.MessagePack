@@ -41,6 +41,7 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("Half", "HalfConverter", "NET"),
 	new ConverterInfo("TimeOnly", "TimeOnlyConverter", "NET"),
 	new ConverterInfo("DateOnly", "DateOnlyConverter", "NET"),
+	new ConverterInfo("System.Exception", "ExceptionConverter"),
 	new ConverterInfo("System.Globalization.CultureInfo", "SystemGlobalizationCultureInfoConverter"),
 	new ConverterInfo("System.Text.Encoding", "SystemTextEncodingConverter"),
 	new ConverterInfo("System.Drawing.Color", "SystemDrawingColorConverter") { LazyLoad = true },
