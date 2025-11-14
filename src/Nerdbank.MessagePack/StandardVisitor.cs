@@ -4,6 +4,7 @@
 #pragma warning disable DuckTyping // Experimental API
 
 using System.Collections.Frozen;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -102,7 +103,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				switch (property.Accept(this, matchingConstructorParameter))
 				{
 					case PropertyAccessors<T> accessors:
-						KeyAttribute? keyAttribute = this.owner.IgnoreKeyAttributes ? null : (KeyAttribute?)property.AttributeProvider?.GetCustomAttributes(typeof(KeyAttribute), false).FirstOrDefault();
+						KeyAttribute? keyAttribute = this.owner.IgnoreKeyAttributes ? null : property.AttributeProvider.GetCustomAttributes<KeyAttribute>(inherit: false).FirstOrDefault();
 						if (keyAttribute is not null || this.owner.PerfOverSchemaStability || objectShape.IsTupleType)
 						{
 							UsesKeys();
@@ -358,7 +359,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						{
 							defaultValue = (TPropertyType?)constructorParameterShape.DefaultValue;
 						}
-						else if (propertyShape.AttributeProvider?.GetCustomAttributes(typeof(System.ComponentModel.DefaultValueAttribute), true).FirstOrDefault() is System.ComponentModel.DefaultValueAttribute { Value: TPropertyType attributeDefaultValue })
+						else if (propertyShape.AttributeProvider?.GetCustomAttributes<DefaultValueAttribute>(inherit: true).FirstOrDefault() is { Value: TPropertyType attributeDefaultValue })
 						{
 							defaultValue = attributeDefaultValue;
 						}
@@ -823,7 +824,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
 	{
 		// Custom converters take priority over surrogates, which may apply to other PolyType scenarios.
-		if (this.TryGetCustomOrPrimitiveConverter(surrogateShape.Type, (ITypeShape<T>?)null, surrogateShape.Provider, surrogateShape.Type, out ConverterResult? customConverter))
+		if (this.TryGetCustomOrPrimitiveConverter(surrogateShape.Type, (ITypeShape<T>?)null, surrogateShape.Provider, surrogateShape.AttributeProvider, out ConverterResult? customConverter))
 		{
 			return customConverter;
 		}
@@ -858,7 +859,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// if it were to appear in <paramref name="memberAttributes"/>.
 	/// Callers that want to respect that attribute must call <see cref="TryGetConverterFromAttribute"/> first.
 	/// </remarks>
-	protected ConverterResult GetConverter(ITypeShape shape, ICustomAttributeProvider? memberAttributes = null, object? state = null)
+	protected ConverterResult GetConverter(ITypeShape shape, IGenericCustomAttributeProvider? memberAttributes = null, object? state = null)
 	{
 		if (memberAttributes is not null)
 		{
@@ -951,7 +952,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		int i = 0;
 		foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
 		{
-			ICustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
+			IGenericCustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
 			object parameterResult = p.Value.Accept(this, constructorShape)!;
 			if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
 			{
@@ -1119,10 +1120,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	}
 
 #if NET
-	private bool TryGetCustomOrPrimitiveConverter<T>(ITypeShape<T> typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
+	private bool TryGetCustomOrPrimitiveConverter<T>(ITypeShape<T> typeShape, IGenericCustomAttributeProvider attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
 		=> this.TryGetCustomOrPrimitiveConverter(typeShape.Type, typeShape, typeShape.Provider, attributeProvider, out converter);
 #else
-	private bool TryGetCustomOrPrimitiveConverter(ITypeShape typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
+	private bool TryGetCustomOrPrimitiveConverter(ITypeShape typeShape, IGenericCustomAttributeProvider attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
 		=> this.TryGetCustomOrPrimitiveConverter(typeShape.Type, typeShape, typeShape.Provider, attributeProvider, out converter);
 #endif
 
@@ -1136,9 +1137,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="converter">Receives the converter if one is found.</param>
 	/// <returns>A value indicating whether a match was found.</returns>
 #if NET
-	private bool TryGetCustomOrPrimitiveConverter<T>(Type type, ITypeShape<T>? typeShape, ITypeShapeProvider shapeProvider, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
+	private bool TryGetCustomOrPrimitiveConverter<T>(Type type, ITypeShape<T>? typeShape, ITypeShapeProvider shapeProvider, IGenericCustomAttributeProvider attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
 #else
-	private bool TryGetCustomOrPrimitiveConverter(Type type, ITypeShape? typeShape, ITypeShapeProvider shapeProvider, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
+	private bool TryGetCustomOrPrimitiveConverter(Type type, ITypeShape? typeShape, ITypeShapeProvider shapeProvider, IGenericCustomAttributeProvider attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
 #endif
 	{
 		// Check if the type has a custom converter.
@@ -1168,7 +1169,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return this.TryGetConverterFromAttribute(type, typeShape, attributeProvider, out converter);
 	}
 
-	private ConverterResult GetConverterForMemberOrParameter(ITypeShape typeShape, ICustomAttributeProvider? attributeProvider)
+	private ConverterResult GetConverterForMemberOrParameter(ITypeShape typeShape, IGenericCustomAttributeProvider attributeProvider)
 	{
 		try
 		{
@@ -1194,9 +1195,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <param name="converter">Receives the converter, if applicable.</param>
 	/// <returns>A value indicating whether a converter was found.</returns>
 	/// <exception cref="MessagePackSerializationException">Thrown if the prescribed converter has no default constructor.</exception>
-	private bool TryGetConverterFromAttribute(Type type, ITypeShape? typeShape, ICustomAttributeProvider? attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
+	private bool TryGetConverterFromAttribute(Type type, ITypeShape? typeShape, IGenericCustomAttributeProvider attributeProvider, [NotNullWhen(true)] out ConverterResult? converter)
 	{
-		if (attributeProvider?.GetCustomAttribute<MessagePackConverterAttribute>() is not { } customConverterAttribute)
+		if (attributeProvider.GetCustomAttribute<MessagePackConverterAttribute>() is not { } customConverterAttribute)
 		{
 			converter = null;
 			return false;

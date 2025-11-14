@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
@@ -213,7 +212,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <param name="name">The original property name as given by <see cref="IPropertyShape"/>.</param>
 	/// <param name="attributeProvider">The attribute provider for the property.</param>
 	/// <returns>The serialized property name to use.</returns>
-	internal string GetSerializedPropertyName(string name, ICustomAttributeProvider? attributeProvider)
+	internal string GetSerializedPropertyName(string name, IGenericCustomAttributeProvider? attributeProvider)
 	{
 		if (this.PropertyNamingPolicy is null)
 		{
@@ -221,7 +220,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		}
 
 		// If the property was decorated with [PropertyShape(Name = "...")], do *not* meddle with the property name.
-		if (attributeProvider?.GetCustomAttributes(typeof(PropertyShapeAttribute), false).FirstOrDefault() is PropertyShapeAttribute { Name: not null })
+		if (attributeProvider?.GetCustomAttributes<PropertyShapeAttribute>(inherit: false).FirstOrDefault() is PropertyShapeAttribute { Name: not null })
 		{
 			return name;
 		}
