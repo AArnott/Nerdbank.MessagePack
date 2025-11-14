@@ -28,6 +28,7 @@ public static class DerivedShapeMappingExtensions
 #if NET
 		[PreferDotNetAlternativeApi(UseDotNetAlternativeMessage)]
 		[EditorBrowsable(EditorBrowsableState.Never)]
+		[Obsolete("Use the DerivedShapeMapping<TBase>.Add<TDerived>(DerivedTypeIdentifier) instance method instead. If using the extension method syntax, check that TDerived actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 		public void Add<TDerived>(DerivedTypeIdentifier alias)
 			where TDerived : TBase => self.Add(alias, TypeShapeResolver.ResolveDynamicOrThrow<TDerived>());
@@ -48,6 +49,7 @@ public static class DerivedShapeMappingExtensions
 #if NET
 		[PreferDotNetAlternativeApi(UseDotNetAlternativeMessage)]
 		[EditorBrowsable(EditorBrowsableState.Never)]
+		[Obsolete("Use the DerivedShapeMapping<TBase>.Add<TDerived, TProvider>(DerivedTypeIdentifier) instance method instead. If using the extension method syntax, check that TProvider actually has a [GenerateShapeFor<TDerived>] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 		public void Add<TDerived, TProvider>(DerivedTypeIdentifier alias)
 			where TDerived : TBase

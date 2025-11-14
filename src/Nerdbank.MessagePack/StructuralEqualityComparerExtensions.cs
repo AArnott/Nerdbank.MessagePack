@@ -35,6 +35,7 @@ public static class StructuralEqualityComparerExtensions
 #if NET
 		[PreferDotNetAlternativeApi($"Use {nameof(StructuralEqualityComparer.GetDefault)}<T> instead.")]
 		[EditorBrowsable(EditorBrowsableState.Never)]
+		[Obsolete("Use the StructuralEqualityComparer.GetDefault<T>() method instead. Check that T actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 		public static IEqualityComparer<T> GetDefault<T>()
 			=> (IEqualityComparer<T>)StructuralEqualityComparer.DefaultEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<T>())!;
@@ -61,6 +62,7 @@ public static class StructuralEqualityComparerExtensions
 #if NET
 		[PreferDotNetAlternativeApi($"Use {nameof(GetHashCollisionResistant)}<T> instead.")]
 		[EditorBrowsable(EditorBrowsableState.Never)]
+		[Obsolete("Use the StructuralEqualityComparer.GetHashCollisionResistant<T>() method instead. Check that T actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 		public static IEqualityComparer<T> GetHashCollisionResistant<T>()
 			=> (IEqualityComparer<T>)StructuralEqualityComparer.HashCollisionResistantEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<T>())!;
@@ -87,6 +89,7 @@ public static class StructuralEqualityComparerExtensions
 #if NET
 		[PreferDotNetAlternativeApi($"Use {nameof(GetDefault)}<T, TProvider> instead.")]
 		[EditorBrowsable(EditorBrowsableState.Never)]
+		[Obsolete("Use the StructuralEqualityComparer.GetDefault<T>() instance method instead. Check that TProvider actually has a [GenerateShapeFor<T>] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 		public static IEqualityComparer<T> GetDefault<T, TProvider>()
 			=> (IEqualityComparer<T>)StructuralEqualityComparer.DefaultEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<TProvider>())!;
@@ -113,6 +116,7 @@ public static class StructuralEqualityComparerExtensions
 #if NET
 		[PreferDotNetAlternativeApi($"Use {nameof(GetHashCollisionResistant)}<T, TProvider> instead.")]
 		[EditorBrowsable(EditorBrowsableState.Never)]
+		[Obsolete("Use the StructuralEqualityComparer.GetHashCollisionResistant<T>() instance method instead. Check that TProvider actually has a [GenerateShapeFor<T>] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 		public static IEqualityComparer<T> GetHashCollisionResistant<T, TProvider>()
 			=> (IEqualityComparer<T>)StructuralEqualityComparer.HashCollisionResistantEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<TProvider>())!;
