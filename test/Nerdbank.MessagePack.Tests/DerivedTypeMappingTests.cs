@@ -7,12 +7,15 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	public void NonUniqueAliasesRejected_Integers()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
+
+		// We don't really need the #if NET region because the #else region would work everywhere.
+		// But we want at least one test to cover the .NET-only method.
 #if NET
-		mapping.Add<MyDerivedA>(1);
+		mapping.Add<MyBase, MyDerivedA>(1);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1));
 #else
-		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1, Witness.GeneratedTypeShapeProvider));
+		mapping.Add<MyBase, MyDerivedA>(1);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyBase, MyDerivedB>(1));
 #endif
 		logger.WriteLine(ex.Message);
 	}
@@ -21,13 +24,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	public void NonUniqueAliasesRejected_Strings()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
-#if NET
-		mapping.Add<MyDerivedA>("A");
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A"));
-#else
-		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A", Witness.GeneratedTypeShapeProvider));
-#endif
+		mapping.Add<MyBase, MyDerivedA>("A");
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyBase, MyDerivedB>("A"));
 		logger.WriteLine(ex.Message);
 	}
 
@@ -35,13 +33,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	public void NonUniqueTypesRejected_Integers()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
-#if NET
-		mapping.Add<MyDerivedA>(1);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
-#else
-		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.GeneratedTypeShapeProvider));
-#endif
+		mapping.Add<MyBase, MyDerivedA>(1);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyBase, MyDerivedA>(2));
 		logger.WriteLine(ex.Message);
 	}
 
@@ -49,13 +42,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	public void NonUniqueTypesRejected_Strings()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
-#if NET
-		mapping.Add<MyDerivedA>("A");
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2));
-#else
-		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.GeneratedTypeShapeProvider));
-#endif
+		mapping.Add<MyBase, MyDerivedA>("A");
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyBase, MyDerivedA>(2));
 		logger.WriteLine(ex.Message);
 	}
 
@@ -63,13 +51,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	public void NonUniquePairsRejected_Integers()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
-#if NET
-		mapping.Add<MyDerivedA>(1);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1));
-#else
-		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider));
-#endif
+		mapping.Add<MyBase, MyDerivedA>(1);
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyBase, MyDerivedA>(1));
 		logger.WriteLine(ex.Message);
 	}
 
@@ -77,13 +60,8 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	public void NonUniquePairsRejected_Strings()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
-#if NET
-		mapping.Add<MyDerivedA>("A");
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A"));
-#else
-		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
-		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider));
-#endif
+		mapping.Add<MyBase, MyDerivedA>("A");
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyBase, MyDerivedA>("A"));
 		logger.WriteLine(ex.Message);
 	}
 
@@ -191,22 +169,14 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 	public void ShapeMappingFrozenAfterAdding()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
-#if NET
-		mapping.Add<MyDerivedA>(1);
-#else
-		mapping.AddSourceGenerated<MyDerivedA>(1);
-#endif
+		mapping.Add<MyBase, MyDerivedA>(1);
 		MessagePackSerializer serializer = new()
 		{
 			DerivedTypeUnions = [mapping],
 		};
 
 		// Now that we've added the mapping to the serializer, it is frozen.
-#if NET
-		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyDerivedA>(1));
-#else
-		Assert.Throws<InvalidOperationException>(() => mapping.AddSourceGenerated<MyDerivedA>(1));
-#endif
+		Assert.Throws<InvalidOperationException>(() => mapping.Add<MyBase, MyDerivedA>(1));
 	}
 
 	[Fact]

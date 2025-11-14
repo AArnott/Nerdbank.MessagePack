@@ -49,15 +49,7 @@ You can specify a particular @System.Collections.Generic.IEqualityComparer`1 for
 
 Here is an example:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/Security.cs#SecureEqualityComparersNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/Security.cs#SecureEqualityComparersNETFX)]
-
----
+[!code-csharp[](../../samples/cs/Security.cs#SecureEqualityComparers)]
 
 > [!IMPORTANT]
 > Note how the collection properties do _not_ define a property setter.

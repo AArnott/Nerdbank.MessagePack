@@ -38,7 +38,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	public void BaseTypeExplicitIdentifier_RuntimeMapping()
 	{
 		DerivedShapeMapping<BaseClass> mapping = new();
-		mapping.Add<BaseClass>(3, Witness.GeneratedTypeShapeProvider);
+		mapping.Add<BaseClass, BaseClass>(3);
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
 		BaseClass? result = this.Roundtrip(new BaseClass());
@@ -153,9 +153,9 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		if (runtimeMapping)
 		{
 			DerivedShapeMapping<BaseClass> mapping = new();
-			mapping.Add<DerivedA>(1, Witness.GeneratedTypeShapeProvider);
-			mapping.Add<DerivedAA>(2, Witness.GeneratedTypeShapeProvider);
-			mapping.Add<DerivedB>(3, Witness.GeneratedTypeShapeProvider);
+			mapping.Add<BaseClass, DerivedA>(1);
+			mapping.Add<BaseClass, DerivedAA>(2);
+			mapping.Add<BaseClass, DerivedB>(3);
 			this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 		}
 
@@ -208,8 +208,8 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		mapping.Add<DynamicallyRegisteredDerivedA>(1);
 		mapping.Add<DynamicallyRegisteredDerivedB>(2);
 #else
-		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.GeneratedTypeShapeProvider);
-		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.GeneratedTypeShapeProvider);
+		mapping.Add<DynamicallyRegisteredBase, DynamicallyRegisteredDerivedA>(1);
+		mapping.Add<DynamicallyRegisteredBase, DynamicallyRegisteredDerivedB>(2);
 #endif
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
@@ -226,8 +226,8 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		mapping.Add<DynamicallyRegisteredDerivedA>("A");
 		mapping.Add<DynamicallyRegisteredDerivedB>("B");
 #else
-		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.GeneratedTypeShapeProvider);
-		mapping.Add<DynamicallyRegisteredDerivedB>("B", Witness.GeneratedTypeShapeProvider);
+		mapping.Add<DynamicallyRegisteredBase, DynamicallyRegisteredDerivedA>("A");
+		mapping.Add<DynamicallyRegisteredBase, DynamicallyRegisteredDerivedB>("B");
 #endif
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
@@ -240,7 +240,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	public void RuntimeRegistration_OverridesStatic()
 	{
 		DerivedShapeMapping<BaseClass> mapping = new();
-		mapping.Add<DerivedB>(1, Witness.GeneratedTypeShapeProvider);
+		mapping.Add<BaseClass, DerivedB>(1);
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
 		// Verify that the base type has just one header.

@@ -23,7 +23,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
             internal DerivedShapeMapping<MyType> ConstructUnionMapping()
             {
                 DerivedShapeMapping<MyType> mapping = new();
-                mapping.AddSourceGenerated<MyDerivedType>(1);
+                mapping.Add<MyDerivedType>(1);
                 return mapping;
             }
         }
@@ -76,7 +76,7 @@ namespace Samples.AnalyzerDocs.NBMsgPack051
 #if NET
                 mapping.Add<MyDerivedType>(1);
 #else
-                mapping.AddSourceGenerated<MyDerivedType>(1);
+                mapping.Add<MyType, MyDerivedType>(1);
 #endif
                 return mapping;
             }

@@ -169,8 +169,8 @@ namespace RuntimeSubTypes
         internal MessagePackSerializer ConfigureAnimalsMapping(MessagePackSerializer serializer)
         {
             DerivedShapeMapping<Animal> mapping = new();
-            mapping.AddSourceGenerated<Horse>(1);
-            mapping.AddSourceGenerated<Cow>(2);
+            mapping.Add<Animal, Horse>(1);
+            mapping.Add<Animal, Cow>(2);
 
             return serializer with { DerivedTypeUnions = [.. serializer.DerivedTypeUnions, mapping] };
         }
