@@ -157,6 +157,7 @@ public static class StructuralEqualityComparer
 	[PreferDotNetAlternativeApi($"Use {nameof(GetDefault)}<T> instead.")]
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public static IEqualityComparer<T> GetDefaultSourceGenerated<T>()
 		=> (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<T>())!;
 
@@ -183,6 +184,7 @@ public static class StructuralEqualityComparer
 	[PreferDotNetAlternativeApi($"Use {nameof(GetHashCollisionResistant)}<T> instead.")]
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public static IEqualityComparer<T> GetHashCollisionResistantSourceGenerated<T>()
 		=> (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<T>())!;
 
@@ -209,6 +211,7 @@ public static class StructuralEqualityComparer
 	[PreferDotNetAlternativeApi($"Use {nameof(GetDefault)}<T, TProvider> instead.")]
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public static IEqualityComparer<T> GetDefaultSourceGenerated<T, TProvider>()
 		=> (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<TProvider>())!;
 
@@ -235,6 +238,7 @@ public static class StructuralEqualityComparer
 	[PreferDotNetAlternativeApi($"Use {nameof(GetHashCollisionResistant)}<T, TProvider> instead.")]
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public static IEqualityComparer<T> GetHashCollisionResistantSourceGenerated<T, TProvider>()
 		=> (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<TProvider>())!;
 
@@ -247,6 +251,7 @@ public static class StructuralEqualityComparer
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public static IEqualityComparer<T> GetDefault<T>(ITypeShapeProvider provider)
 		=> (IEqualityComparer<T>)DefaultEqualityComparerCache.GetOrAddOrThrow(typeof(T), provider);
 
@@ -259,6 +264,7 @@ public static class StructuralEqualityComparer
 	/// <remarks>
 	/// See the remarks on the class for important notes about correctness of this implementation.
 	/// </remarks>
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public static IEqualityComparer<T> GetHashCollisionResistant<T>(ITypeShapeProvider provider)
 		=> (IEqualityComparer<T>)HashCollisionResistantEqualityComparerCache.GetOrAddOrThrow(typeof(T), provider);
 

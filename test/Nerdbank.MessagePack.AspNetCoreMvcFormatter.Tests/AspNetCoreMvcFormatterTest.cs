@@ -73,7 +73,7 @@ public partial class AspNetCoreMvcFormatterTest
 		Assert.False(result.HasError);
 
 		User userModel = Assert.IsType<User>(result.Model);
-		Assert.Equal(userModel, person, StructuralEqualityComparer.GetDefault<User>(Witness.GeneratedTypeShapeProvider));
+		Assert.Equal(userModel, person, StructuralEqualityComparer.GetDefault(PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_AspNetCoreMvcFormatter_Tests.Default.User));
 	}
 
 	[Fact]
