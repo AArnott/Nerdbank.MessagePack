@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable CS0618 // Type or member is obsolete -- remove this line after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 merges
+
 partial class Security
 {
     void SetMaxDepth()

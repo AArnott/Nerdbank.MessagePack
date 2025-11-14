@@ -52,6 +52,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeUnion, IDerivedTypeMapping,
 	/// <param name="provider"><inheritdoc cref="MessagePackSerializer.CreateSerializationContext(ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="alias"/> or <typeparamref name="TDerived"/> has already been added to this mapping.</exception>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Public API accepts an ITypeShapeProvider.")]
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead. This method will be removed soon.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public void Add<TDerived>(DerivedTypeIdentifier alias, ITypeShapeProvider provider)
 		where TDerived : TBase
 	{
@@ -80,7 +81,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeUnion, IDerivedTypeMapping,
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TDerived"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="AddSourceGenerated{TDerived, TProvider}(DerivedTypeIdentifier)"/> instead,
-	/// or use <see cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShapeProvider)"/> for an option that does not require source generation.
+	/// or use <see cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})"/> for an option that does not require source generation.
 	/// </remarks>
 #if NET8_0
 	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
@@ -89,6 +90,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeUnion, IDerivedTypeMapping,
 	[PreferDotNetAlternativeApi(UseDotNetAlternativeMessage)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead. This method will be removed soon.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public void AddSourceGenerated<TDerived>(DerivedTypeIdentifier alias)
 		where TDerived : TBase => this.Add(alias, TypeShapeResolver.ResolveDynamicOrThrow<TDerived>());
 
@@ -100,7 +102,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeUnion, IDerivedTypeMapping,
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="TDerived"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use <see cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShapeProvider)"/> for an option that does not require source generation.
+	/// Use <see cref="Add{TDerived}(DerivedTypeIdentifier, ITypeShape{TDerived})"/> for an option that does not require source generation.
 	/// </remarks>
 #if NET8_0
 	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
@@ -109,6 +111,7 @@ public class DerivedShapeMapping<TBase> : DerivedTypeUnion, IDerivedTypeMapping,
 	[PreferDotNetAlternativeApi(UseDotNetAlternativeMessage)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
 #endif
+	[Obsolete("Use the overload that takes an ITypeShape<T> instead. This method will be removed soon.")] // remove API after https://github.com/AArnott/Nerdbank.MessagePack/pull/771 has merged.
 	public void AddSourceGenerated<TDerived, TProvider>(DerivedTypeIdentifier alias)
 		where TDerived : TBase
 		=> this.Add(alias, TypeShapeResolver.ResolveDynamicOrThrow<TDerived, TProvider>());
