@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <RoslynVersion>4.14.0</RoslynVersion>
+    <RoslynVersion>5.0.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25173.3</CodeAnalysisAnalyzerVersion>
     <PolyTypeVersion>1.0.0-rc.9</PolyTypeVersion>
