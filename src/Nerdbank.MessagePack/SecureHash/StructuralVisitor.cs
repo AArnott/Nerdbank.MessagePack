@@ -30,6 +30,11 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 			return StructuralByteArrayEqualityComparer.Default;
 		}
 
+		if (typeof(T) == typeof(ReadOnlySequence<byte>))
+		{
+			return StructuralReadOnlySequenceOfByteEqualityComparer.Default;
+		}
+
 		if (typeof(IStructuralSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
 		{
 			return StructuralCustomEqualityComparer<T>.Default;

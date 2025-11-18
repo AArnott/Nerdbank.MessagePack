@@ -52,6 +52,11 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		[new HaveReadOnlyMemoryOfByte(new byte[] { 1, 3 }), new HaveReadOnlyMemoryOfByte(new byte[] { 1, 2, 3 })]);
 
 	[Fact]
+	public void ReadOnlySequenceOfByte() => this.AssertEqualityComparerBehavior(
+		[new HaveReadOnlySequenceOfByte(new([1, 2])), new HaveReadOnlySequenceOfByte(new([1, 2]))],
+		[new HaveReadOnlySequenceOfByte(new([1, 3])), new HaveReadOnlySequenceOfByte(new([1, 2, 3]))]);
+
+	[Fact]
 	public void DerivedTypeEquality()
 	{
 		SomeBaseType.Derived1 derived1A = new(42);
@@ -246,6 +251,12 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	internal partial class HaveReadOnlyMemoryOfByte(ReadOnlyMemory<byte> buffer)
 	{
 		public ReadOnlyMemory<byte> Buffer => buffer;
+	}
+
+	[GenerateShape]
+	internal partial class HaveReadOnlySequenceOfByte(ReadOnlySequence<byte> buffer)
+	{
+		public ReadOnlySequence<byte> Buffer => buffer;
 	}
 
 	[GenerateShape]
