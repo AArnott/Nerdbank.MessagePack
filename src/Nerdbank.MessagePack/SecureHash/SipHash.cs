@@ -88,7 +88,7 @@ internal class SipHash
 	/// <summary>Computes 64-bit SipHash tag for the specified message.</summary>
 	/// <param name="data">The byte array for which to compute a SipHash tag.</param>
 	/// <returns>Returns 64-bit (8 bytes) SipHash tag.</returns>
-	public long Compute(ReadOnlySpan<byte> data)
+	public long Compute(scoped ReadOnlySpan<byte> data)
 	{
 		unchecked
 		{
