@@ -233,6 +233,29 @@ public class KeyAttributeUseAnalyzerTests
 	}
 
 	[Fact]
+	public async Task KeyOnPropertyWithOnlyGetterButAlsoHasCtorParam()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+			
+			[GenerateShape]
+			internal partial struct AddArgs
+			{
+				public AddArgs(int a)
+				{
+					this.a = a;
+				}
+
+				[Key(0)]
+				public int a { get; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task KeyOnReadOnlyCollectionProperty()
 	{
 		string source = /* lang=c#-test */ """
