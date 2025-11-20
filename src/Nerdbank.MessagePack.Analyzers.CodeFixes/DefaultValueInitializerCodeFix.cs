@@ -85,12 +85,8 @@ public class DefaultValueInitializerCodeFix : CodeFixProvider
 			return document;
 		}
 
-		// Create the DefaultValue attribute
-		string attributeArgument = initializerValue.ToString();
-
-		// For member access expressions (enums), we need typeof(EnumType).GetField("EnumValue").GetRawConstantValue()
-		// But for simplicity, we'll use the member access syntax directly as it's more readable
-		AttributeArgumentSyntax[] args = [SyntaxFactory.AttributeArgument(SyntaxFactory.ParseExpression(attributeArgument))];
+		// Create the DefaultValue attribute using the original expression directly
+		AttributeArgumentSyntax[] args = [SyntaxFactory.AttributeArgument(initializerValue)];
 
 		AttributeSyntax attribute = SyntaxFactory.Attribute(
 			SyntaxFactory.ParseName("System.ComponentModel.DefaultValue"),
