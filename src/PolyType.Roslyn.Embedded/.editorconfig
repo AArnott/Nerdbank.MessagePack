@@ -1,0 +1,21 @@
+# This directory contains embedded source from PolyType.Roslyn
+# Disable style analyzers for this embedded code
+
+root = false
+
+[*.cs]
+# Disable StyleCop analyzers
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.MaintainabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.ReadabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.OrderingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.NamingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.LayoutRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.DocumentationRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpacingRules.severity = none
+
+# Disable IDE analyzers
+dotnet_diagnostic.IDE0009.severity = none
+dotnet_diagnostic.IDE0008.severity = none
+
+# Disable CA analyzers for embedded code
+dotnet_diagnostic.CA1062.severity = none

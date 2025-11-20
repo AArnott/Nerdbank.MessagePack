@@ -5,4 +5,11 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Include PolyType.Roslyn source files directly -->
+    <Compile Include="..\PolyType.Roslyn.Embedded\Shared\Helpers\CommonHelpers.cs" Link="PolyType.Roslyn\Shared\Helpers\%(Filename).cs" />
+    <Compile Include="..\PolyType.Roslyn.Embedded\Shared\Helpers\DebugExt.cs" Link="PolyType.Roslyn\Shared\Helpers\%(Filename).cs" />
+    <Compile Include="..\PolyType.Roslyn.Embedded\**\*.cs" Exclude="**\bin\**;**\obj\**;**\Shared\**;**\.csproj;**\version.json;**\README.md" Link="PolyType.Roslyn\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
