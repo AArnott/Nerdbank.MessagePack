@@ -44,16 +44,12 @@ public partial record MessagePackSerializer
 	private SerializerConfiguration configuration = SerializerConfiguration.Default;
 	private int maxAsyncBuffer = 1 * 1024 * 1024;
 
-#if NET
-
 	/// <inheritdoc cref="SerializerConfiguration.MultiDimensionalArrayFormat"/>
 	public MultiDimensionalArrayFormat MultiDimensionalArrayFormat
 	{
 		get => this.configuration.MultiDimensionalArrayFormat;
 		init => this.configuration = this.configuration with { MultiDimensionalArrayFormat = value };
 	}
-
-#endif
 
 	/// <inheritdoc cref="SerializerConfiguration.PropertyNamingPolicy"/>
 	public MessagePackNamingPolicy? PropertyNamingPolicy

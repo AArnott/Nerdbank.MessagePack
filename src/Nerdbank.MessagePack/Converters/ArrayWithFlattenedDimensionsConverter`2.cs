@@ -86,7 +86,7 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 			writer.Write(array.GetLength(i));
 		}
 
-		Span<TElement> elements = AsSpan(array);
+		ReadOnlySpan<TElement> elements = AsSpan(array);
 		writer.WriteArrayHeader(elements.Length);
 		for (int i = 0; i < elements.Length; i++)
 		{

@@ -70,13 +70,12 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Array_Null() => this.AssertRoundtrip(new ClassWithArray { IntArray = null });
 
-#if NET
 #pragma warning disable SA1500 // Braces for multi-line statements should not share line
 	[Theory, PairwiseData]
 	public void MultidimensionalArray(MultiDimensionalArrayFormat format)
 	{
 		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = format };
-		this.AssertRoundtrip(new HasMultiDimensionalArray
+		ReadOnlySequence<byte> mgpack = this.AssertRoundtrip(new HasMultiDimensionalArray
 		{
 			Array2D = new[,]
 			{
@@ -89,9 +88,22 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 				{ { 40, 41, 42, 43 }, { 44, 45, 46, 47 }, { 48, 49, 50, 51 } },
 			},
 		});
+
+		string expected =
+			format switch
+			{
+				MultiDimensionalArrayFormat.Nested => /* lang=json */ """
+					{"Array2D":[[1,2,5],[3,4,6]],"Array3D":[[[20,21,22,23],[24,25,26,27],[28,29,30,31]],[[40,41,42,43],[44,45,46,47],[48,49,50,51]]]}
+					""",
+				MultiDimensionalArrayFormat.Flat => /* lang=json */ """
+					{"Array2D":[[2,3],[1,2,5,3,4,6]],"Array3D":[[2,3,4],[20,21,22,23,24,25,26,27,28,29,30,31,40,41,42,43,44,45,46,47,48,49,50,51]]}
+					""",
+				_ => throw new NotSupportedException(),
+			};
+
+		Assert.Equal(expected, this.Serializer.ConvertToJson(mgpack));
 	}
 #pragma warning restore SA1500 // Braces for multi-line statements should not share line
-#endif
 
 	[Fact]
 	public void MultidimensionalArray_Null()

@@ -31,9 +31,7 @@ internal record SerializerConfiguration
 	private DeserializeDefaultValuesPolicy deserializeDefaultValues = DeserializeDefaultValuesPolicy.Default;
 	private LibraryReservedMessagePackExtensionTypeCode libraryExtensionTypeCodes = LibraryReservedMessagePackExtensionTypeCode.Default;
 	private IComparerProvider? comparerProvider = SecureComparerProvider.Default;
-#if NET
 	private MultiDimensionalArrayFormat multiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested;
-#endif
 
 	private SerializerConfiguration()
 	{
@@ -329,7 +327,6 @@ internal record SerializerConfiguration
 		init => this.ChangeSetting(ref this.comparerProvider, value);
 	}
 
-#if NET
 	/// <summary>
 	/// Gets the format to use when serializing multi-dimensional arrays.
 	/// </summary>
@@ -338,7 +335,6 @@ internal record SerializerConfiguration
 		get => this.multiDimensionalArrayFormat;
 		init => this.ChangeSetting(ref this.multiDimensionalArrayFormat, value);
 	}
-#endif
 
 	/// <summary>
 	/// Gets the <see cref="Nerdbank.MessagePack.ConverterCache"/> object based on this configuration.
