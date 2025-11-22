@@ -17,10 +17,16 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TArray">The type of the array.</typeparam>
 /// <typeparam name="TElement">The type of element stored in the array.</typeparam>
 /// <remarks>
+/// <para>
 /// The msgpack spec doesn't define how to encode multi-dimensional arrays,
 /// so we just nest arrays for each dimension.
 /// This may change if <see href="https://github.com/msgpack/msgpack/pull/267">this pull request</see> is ever merged
 /// into the msgpack spec.
+/// </para>
+/// <para>
+/// The format for this is:
+/// <c>[[0-0, 0-1, ...], [1-0, 1-1, ...]]</c>.
+/// </para>
 /// </remarks>
 internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackConverter<TElement> elementConverter, int rank) : MessagePackConverter<TArray>
 {
@@ -38,7 +44,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 		}
 
 		int[] dimensions = dimensionsReusable ??= new int[rank];
-		this.PeekDimensionsLength(reader, dimensions);
+		ArrayConverterUtilities.PeekNestedDimensionsLength(reader, dimensions);
 		Array array = Array.CreateInstance(typeof(TElement), dimensions);
 		Span<TElement> elements = AsSpan(array);
 		this.ReadSubArray(ref reader, dimensions, elements, context);
@@ -90,7 +96,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	/// <param name="dimensions">The remaining dimensions to be written.</param>
 	/// <param name="elements">A flat list of elements to write.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Write" path="/param[@name='context']"/></param>
-	private void WriteSubArray(ref MessagePackWriter writer, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
+	private void WriteSubArray(ref MessagePackWriter writer, ReadOnlySpan<int> dimensions, ReadOnlySpan<TElement> elements, SerializationContext context)
 	{
 		context.DepthStep();
 		int outerDimension = dimensions[0];
@@ -120,7 +126,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 	/// <param name="dimensions">The remaining dimensions to be read.</param>
 	/// <param name="elements">A flat list of elements to populate.</param>
 	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
-	private void ReadSubArray(ref MessagePackReader reader, Span<int> dimensions, Span<TElement> elements, SerializationContext context)
+	private void ReadSubArray(ref MessagePackReader reader, ReadOnlySpan<int> dimensions, Span<TElement> elements, SerializationContext context)
 	{
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
@@ -141,21 +147,6 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 			{
 				elements[i] = elementConverter.Read(ref reader, context)!;
 			}
-		}
-	}
-
-	/// <summary>
-	/// Reads the array headers necessary to determine the length of each dimension for an array.
-	/// </summary>
-	/// <param name="reader">The reader. This is <em>not</em> a <see langword="ref" /> so as to not impact the caller's read position.</param>
-	/// <param name="dimensions">The dimensional array to initialize.</param>
-#pragma warning disable NBMsgPack050 // use "ref MessagePackReader" for parameter type
-	private void PeekDimensionsLength(MessagePackReader reader, int[] dimensions)
-#pragma warning restore NBMsgPack050 // use "ref MessagePackReader" for parameter type
-	{
-		for (int i = 0; i < dimensions.Length; i++)
-		{
-			dimensions[i] = reader.ReadArrayHeader();
 		}
 	}
 }

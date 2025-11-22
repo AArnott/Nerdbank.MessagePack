@@ -32,10 +32,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 
 	private MultiProviderTypeCache? cachedConverters;
 
-#if NET
 	/// <inheritdoc cref="SerializerConfiguration.MultiDimensionalArrayFormat"/>
 	internal MultiDimensionalArrayFormat MultiDimensionalArrayFormat => configuration.MultiDimensionalArrayFormat;
-#endif
 
 	/// <inheritdoc cref="SerializerConfiguration.PreserveReferences"/>
 	internal ReferencePreservationMode PreserveReferences => configuration.PreserveReferences;

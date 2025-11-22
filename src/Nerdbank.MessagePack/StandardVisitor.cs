@@ -21,6 +21,9 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 {
+#if !NET
+	private static readonly ConverterResult ArrayRankTooHighOnNetFx = ConverterResult.Err(new PlatformNotSupportedException("This functionality is only supported on .NET."));
+#endif
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
 
@@ -753,7 +756,22 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							_ => ConverterResult.Err(new NotSupportedException()),
 						};
 #else
-						return ConverterResult.Err(new PlatformNotSupportedException("This functionality is only supported on .NET."));
+						return this.owner.MultiDimensionalArrayFormat switch
+						{
+							MultiDimensionalArrayFormat.Nested => enumerableShape.Rank switch
+							{
+								2 => ConverterResult.Ok(new ArrayRank2NestedConverter<TElement>(elementConverter)),
+								3 => ConverterResult.Ok(new ArrayRank3NestedConverter<TElement>(elementConverter)),
+								_ => ArrayRankTooHighOnNetFx,
+							},
+							MultiDimensionalArrayFormat.Flat => enumerableShape.Rank switch
+							{
+								2 => ConverterResult.Ok(new ArrayRank2FlattenedConverter<TElement>(elementConverter)),
+								3 => ConverterResult.Ok(new ArrayRank3FlattenedConverter<TElement>(elementConverter)),
+								_ => ArrayRankTooHighOnNetFx,
+							},
+							_ => ConverterResult.Err(new NotSupportedException()),
+						};
 #endif
 					}
 #if NET
