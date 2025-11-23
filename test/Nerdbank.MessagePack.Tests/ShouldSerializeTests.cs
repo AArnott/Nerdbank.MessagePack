@@ -32,6 +32,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Person_AllDefaults()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
 		Person person = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
@@ -42,6 +43,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	[Fact]
 	public async Task Person_AllDefaultsAsync()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
 		Person person = new();
 		ReadOnlySequence<byte> sequence = await this.AssertRoundtripAsync(person);
 
@@ -87,6 +89,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	[Fact]
 	public void PersonWithName()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
 		Person person = new() { Name = "Andrew" };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
@@ -98,6 +101,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	[Fact]
 	public void PersonWithAge()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
 		Person person = new() { Age = 42 };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 
@@ -109,6 +113,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Person_DifferentFavoriteColor()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		Person person = new() { FavoriteColor = "Red" };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 		MessagePackReader reader = new(sequence);
@@ -130,6 +136,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Person_NoFavoriteColor()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
 		Person person = new() { FavoriteColor = null };
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(person);
 		MessagePackReader reader = new(sequence);
@@ -153,6 +160,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	[Fact]
 	public void RenamedPropertyMatchedWithCtorDefaultParameter_AllDefaults()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		CtorWithRenamedProperty obj = new();
 		ReadOnlySequence<byte> sequence = this.AssertRoundtrip(obj);
 

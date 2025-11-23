@@ -70,6 +70,8 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 	[Theory, PairwiseData]
 	public async Task ArrayObject(bool async, bool forceMap)
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		ArrayModelV2 originalV2 = new()
 		{
 			Name = "Test",
@@ -106,6 +108,8 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 	[Theory, PairwiseData]
 	public async Task ArrayObject_NonDefaultCtor(bool async, bool forceMap)
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		ArrayModelV2NonDefaultCtor originalV2 = new()
 		{
 			Name = "Test",

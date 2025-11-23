@@ -181,6 +181,8 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Indented_NestingObject()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		this.AssertConvertToJson5(
 			"""
 			{
