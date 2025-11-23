@@ -130,6 +130,8 @@ Also features an automatic structural equality API.</PackageDescription>
   <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup" Condition="'$(TargetFramework)'=='netstandard2.0'">
     <ItemGroup>
       <TfmSpecificPackageFile Include="%(AnalyzerAssembly.Identity)" PackagePath="analyzers\cs\" />
+      <!-- Include PolyType.Roslyn dependency for analyzers -->
+      <TfmSpecificPackageFile Include="$(NuGetPackageRoot)polytype.roslyn\$(PolyTypeVersion)\lib\netstandard2.0\PolyType.Roslyn.dll" PackagePath="analyzers\cs\" />
     </ItemGroup>
   </Target>
 </Project>
