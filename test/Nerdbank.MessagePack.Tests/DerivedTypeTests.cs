@@ -39,6 +39,8 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	[Fact]
 	public void BaseTypeExplicitIdentifier_RuntimeMapping()
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		DerivedShapeMapping<BaseClass> mapping = new();
 		mapping.Add<BaseClass>(3, Witness.GeneratedTypeShapeProvider);
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };

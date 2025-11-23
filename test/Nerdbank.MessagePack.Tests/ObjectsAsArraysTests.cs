@@ -143,6 +143,8 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	[Theory, PairwiseData]
 	public async Task PersonWithDefaultConstructor_WithoutLastName(bool async)
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		// The most compact representation of this is an array of length 1.
 		// Verify that this is what the converter chose.
 		PersonWithDefaultConstructor person = new() { FirstName = "Andrew", LastName = null };
@@ -154,6 +156,8 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	[Theory, PairwiseData]
 	public async Task PersonWithDefaultConstructor_WithoutFirstName(bool async)
 	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
+
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose.
 		PersonWithDefaultConstructor person = new() { FirstName = null, LastName = "Arnott" };
