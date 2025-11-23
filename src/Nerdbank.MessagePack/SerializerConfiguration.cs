@@ -251,7 +251,7 @@ internal record SerializerConfiguration
 	/// <summary>
 	/// Gets the policy concerning which properties to serialize though they are set to their default values.
 	/// </summary>
-	/// <value>The default value is <see cref="SerializeDefaultValuesPolicy.Always"/>, meaning that only required properties or properties with non-default values will be serialized.</value>
+	/// <value>The default value is <see cref="SerializeDefaultValuesPolicy.Always"/>, meaning that all properties will be serialized regardless of their values.</value>
 	/// <remarks>
 	/// <para>
 	/// By default, the serializer omits properties and fields that are set to their default values when serializing objects.
