@@ -148,8 +148,8 @@ public class DefaultValueInitializerAnalyzerTests
 			[GenerateShape]
 			public partial class MyType
 			{
-			    [System.ComponentModel.DefaultValue(42)]
-			    public int MyField = 42;
+				[System.ComponentModel.DefaultValue(42)]
+				public int MyField = 42;
 			}
 			""";
 
@@ -181,8 +181,8 @@ public class DefaultValueInitializerAnalyzerTests
 			[GenerateShape]
 			public partial class TestClass
 			{
-			    [System.ComponentModel.DefaultValue(TestEnum.Second)]
-			    public TestEnum MyEnum = TestEnum.Second;
+				[System.ComponentModel.DefaultValue(TestEnum.Second)]
+				public TestEnum MyEnum = TestEnum.Second;
 			}
 
 			public enum TestEnum
@@ -214,8 +214,8 @@ public class DefaultValueInitializerAnalyzerTests
 			[GenerateShape]
 			public partial class MyType
 			{
-			    [System.ComponentModel.DefaultValue("test")]
-			    public string MyProperty { get; set; } = "test";
+				[System.ComponentModel.DefaultValue("test")]
+				public string MyProperty { get; set; } = "test";
 			}
 			""";
 
@@ -241,8 +241,8 @@ public class DefaultValueInitializerAnalyzerTests
 			[GenerateShape]
 			public partial class MyType
 			{
-			    [System.ComponentModel.DefaultValue(-42)]
-			    public int MyProperty { get; set; } = -42;
+				[System.ComponentModel.DefaultValue(-42)]
+				public int MyProperty { get; set; } = -42;
 			}
 			""";
 
@@ -261,6 +261,82 @@ public class DefaultValueInitializerAnalyzerTests
 				public int {|NBMsgPack110:Field1|} = 1;
 				public string {|NBMsgPack110:Field2|} = "test";
 				public bool {|NBMsgPack110:Field3|} = true;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task TransitiveTypeWithInitializer()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class RootType
+			{
+				public NestedType Nested { get; set; }
+			}
+
+			public partial class NestedType
+			{
+				public int {|NBMsgPack110:InitializedField|} = 42;
+			}
+
+			public partial class UnrelatedType
+			{
+				public int UnrelatedField = 42;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task TransitiveTypeWithInitializer_UnreachableDueToIgnoredProperty()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class RootType
+			{
+				[PropertyShape(Ignore = true)]
+				public NestedType Nested1 { get; set; }
+
+				private NestedType Nested2 { get; set; }
+			}
+
+			public partial class NestedType
+			{
+				public int InitializedField = 42;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task TransitiveTypeMultipleLevels()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class RootType
+			{
+				public Level1Type Level1 { get; set; }
+			}
+
+			public partial class Level1Type
+			{
+				public Level2Type Level2 { get; set; }
+			}
+
+			public partial class Level2Type
+			{
+				public string {|NBMsgPack110:Data|} = "default";
 			}
 			""";
 

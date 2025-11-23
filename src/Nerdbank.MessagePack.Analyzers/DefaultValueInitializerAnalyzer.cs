@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using PolyType.Roslyn;
 
 namespace Nerdbank.MessagePack.Analyzers;
 
@@ -21,7 +22,8 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 		category: "Usage",
 		defaultSeverity: DiagnosticSeverity.Warning,
 		isEnabledByDefault: true,
-		helpLinkUri: AnalyzerUtilities.GetHelpLink(MissingDefaultValueAttributeDiagnosticId));
+		helpLinkUri: AnalyzerUtilities.GetHelpLink(MissingDefaultValueAttributeDiagnosticId),
+		customTags: WellKnownDiagnosticTags.CompilationEnd);
 
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [
 		MissingDefaultValueAttributeDescriptor,
@@ -39,6 +41,8 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				return;
 			}
 
+			KnownSymbols knownSymbols = new(context.Compilation);
+
 			// Get the DefaultValue attribute symbol
 			INamedTypeSymbol? defaultValueAttribute = context.Compilation.GetTypeByMetadataName("System.ComponentModel.DefaultValueAttribute");
 			if (defaultValueAttribute is null)
@@ -46,51 +50,97 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				return;
 			}
 
+			// Use PolyType.Roslyn's TypeDataModelGenerator to find all types transitively included in the shape
+			// TODO: What about finding TypeShapeAttribute, PropertyShapeAttribute, assembly-level attributes, etc.?
+			//       Is the Include method thread-safe?
+			TypeDataModelGenerator generator = new(context.Compilation.Assembly, knownSymbols, context.CancellationToken);
+
 			context.RegisterSymbolAction(
-				symbolContext =>
-				{
-					this.AnalyzeType(symbolContext, referenceSymbols, defaultValueAttribute);
-				},
+				symbolContext => this.CollectShapes(symbolContext, generator, referenceSymbols),
 				SymbolKind.NamedType);
+
+			context.RegisterCompilationEndAction(
+				context =>
+				{
+					// Look over all shaped types.
+					// Get all generated models - these are all the types for which shapes are generated
+					IEnumerable<TypeDataModel> allModels = generator.GeneratedModels.Values;
+
+					// Analyze each type that has a shape generated
+					foreach (TypeDataModel model in allModels)
+					{
+						this.AnalyzeTypeModel(context, model, defaultValueAttribute, referenceSymbols);
+					}
+				});
 		});
 	}
 
-	private void AnalyzeType(SymbolAnalysisContext context, ReferenceSymbols referenceSymbols, INamedTypeSymbol defaultValueAttribute)
+	private void CollectShapes(SymbolAnalysisContext context, TypeDataModelGenerator generator, ReferenceSymbols referenceSymbols)
 	{
 		INamedTypeSymbol typeSymbol = (INamedTypeSymbol)context.Symbol;
 
-		// Check if this type has a GenerateShapeAttribute
-		if (!typeSymbol.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, referenceSymbols.GenerateShapeAttribute)))
+		// Check if this type has a GenerateShapeAttribute or GenerateShapeForAttribute - this is our entry point
+		foreach (AttributeData attribute in typeSymbol.GetAttributes())
+		{
+			// TODO: What about all the other arguments to these attributes?
+			if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, referenceSymbols.GenerateShapeForAttribute))
+			{
+				if (attribute.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: ITypeSymbol shapedType }])
+				{
+					generator.IncludeType(shapedType);
+				}
+
+				continue;
+			}
+
+			// Look for generic variant.
+			if (attribute.AttributeClass?.TypeArguments is [{ } typeArg] && SymbolEqualityComparer.Default.Equals(attribute.AttributeClass.ConstructUnboundGenericType(), referenceSymbols.GenerateShapeForGenericAttribute))
+			{
+				generator.IncludeType(typeArg);
+				continue;
+			}
+
+			// Look for ordinary GenerateShapeAttribute.
+			if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, referenceSymbols.GenerateShapeAttribute))
+			{
+				generator.IncludeType(typeSymbol);
+			}
+		}
+	}
+
+	private void AnalyzeTypeModel(CompilationAnalysisContext context, TypeDataModel model, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
+	{
+		// Only analyze object types that have properties
+		if (model is not ObjectDataModel objectModel)
 		{
 			return;
 		}
 
-		// Check all fields and properties
-		foreach (ISymbol member in typeSymbol.GetMembers())
+		// Check all properties from the model
+		foreach (PropertyDataModel property in objectModel.Properties)
 		{
+			ISymbol member = property.PropertySymbol;
+
+			if (member.IsStatic || member.IsImplicitlyDeclared)
+			{
+				continue;
+			}
+
 			if (member is IFieldSymbol field)
 			{
 				this.AnalyzeField(context, field, defaultValueAttribute, referenceSymbols);
 			}
-			else if (member is IPropertySymbol property)
+			else if (member is IPropertySymbol propertySymbol)
 			{
-				this.AnalyzeProperty(context, property, defaultValueAttribute, referenceSymbols);
+				this.AnalyzeProperty(context, propertySymbol, defaultValueAttribute, referenceSymbols);
 			}
 		}
 	}
 
-	private void AnalyzeField(SymbolAnalysisContext context, IFieldSymbol field, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
+	private void AnalyzeField(CompilationAnalysisContext context, IFieldSymbol field, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
 	{
 		// Skip static, const, or compiler-generated fields
-		if (field.IsStatic || field.IsConst || field.IsImplicitlyDeclared)
-		{
-			return;
-		}
-
-		// Check if the field is marked to be ignored
-		if (field.GetAttributes().Any(attr =>
-			SymbolEqualityComparer.Default.Equals(attr.AttributeClass, referenceSymbols.PropertyShapeAttribute) &&
-			attr.NamedArguments.Any(na => na.Key == Constants.PropertyShapeAttribute.IgnoreProperty && na.Value.Value is true)))
+		if (field.IsConst)
 		{
 			return;
 		}
@@ -112,18 +162,10 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, field.Name));
 	}
 
-	private void AnalyzeProperty(SymbolAnalysisContext context, IPropertySymbol property, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
+	private void AnalyzeProperty(CompilationAnalysisContext context, IPropertySymbol property, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
 	{
 		// Skip static, indexers, or compiler-generated properties
-		if (property.IsStatic || property.IsIndexer || property.IsImplicitlyDeclared)
-		{
-			return;
-		}
-
-		// Check if the property is marked to be ignored
-		if (property.GetAttributes().Any(attr =>
-			SymbolEqualityComparer.Default.Equals(attr.AttributeClass, referenceSymbols.PropertyShapeAttribute) &&
-			attr.NamedArguments.Any(na => na.Key == Constants.PropertyShapeAttribute.IgnoreProperty && na.Value.Value is true)))
+		if (property.IsIndexer)
 		{
 			return;
 		}

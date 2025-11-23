@@ -125,6 +125,7 @@ Also features an automatic structural equality API.</PackageDescription>
   <Target Name="ConsumeAnalyzersDirectly" AfterTargets="ResolveProjectReferences">
     <ItemGroup>
       <Analyzer Include="%(AnalyzerAssembly.Identity)" />
+      <Analyzer Include="$(NuGetPackageRoot)polytype.roslyn\$(PolyTypeVersion)\lib\netstandard2.0\PolyType.Roslyn.dll" />
     </ItemGroup>
   </Target>
   <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup" Condition="'$(TargetFramework)'=='netstandard2.0'">

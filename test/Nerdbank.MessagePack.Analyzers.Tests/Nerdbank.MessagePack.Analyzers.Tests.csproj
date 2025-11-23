@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="PolyType" />
+    <PackageReference Include="PolyType.Roslyn" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
