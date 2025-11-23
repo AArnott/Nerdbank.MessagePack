@@ -53,7 +53,7 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 			// Use PolyType.Roslyn's TypeDataModelGenerator to find all types transitively included in the shape
 			// TODO: What about finding TypeShapeAttribute, PropertyShapeAttribute, assembly-level attributes, etc.?
 			//       Is the Include method thread-safe?
-			TypeDataModelGenerator generator = new(context.Compilation.Assembly, knownSymbols, context.CancellationToken);
+			PolyTypeShapeSynthesis generator = new(context.Compilation.Assembly, knownSymbols, context.CancellationToken);
 
 			context.RegisterSymbolAction(
 				symbolContext => this.CollectShapes(symbolContext, generator, referenceSymbols),
