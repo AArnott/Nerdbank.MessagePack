@@ -22,5 +22,14 @@ internal class RawMessagePackConverter : MessagePackConverter<RawMessagePack>
 	public override RawMessagePack Read(ref MessagePackReader reader, SerializationContext context) => new RawMessagePack(reader.ReadRaw(context)).ToOwned();
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in RawMessagePack value, SerializationContext context) => writer.WriteRaw(value.MsgPack);
+	public override void Write(ref MessagePackWriter writer, in RawMessagePack value, SerializationContext context)
+	{
+		if (value.MsgPack.IsEmpty)
+		{
+			// Guard against accidental invalid msgpack due to an uninitialized struct.
+			throw new MessagePackSerializationException("Cannot write an empty RawMessagePack value.");
+		}
+
+		writer.WriteRaw(value.MsgPack);
+	}
 }
