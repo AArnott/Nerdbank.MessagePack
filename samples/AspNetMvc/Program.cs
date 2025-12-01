@@ -35,6 +35,7 @@ void ConfigureServices(IServiceCollection services)
 // Generate shapes for types commonly used in communicating errors in ASP.NET Core MVC.
 [GenerateShapeFor<ProblemDetails>]
 [GenerateShapeFor<SerializableError>]
+[GenerateShapeFor<ValidationProblemDetails>]
 [GenerateShapeFor<string[]>]
 partial class Witness;
 #endregion
