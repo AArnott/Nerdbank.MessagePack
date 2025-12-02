@@ -3,6 +3,7 @@
 
 using System.IO.Pipelines;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using PolyType;
 using PolyType.ReflectionProvider;
@@ -16,7 +17,7 @@ namespace Nerdbank.MessagePack.AspNetCoreMvcFormatter;
 /// This formatter supports the "application/x-msgpack" media type and uses the provided <see cref="ITypeShapeProvider"/>
 /// to resolve type shapes for deserialization with the specified <see cref="MessagePackSerializer"/>.
 /// </remarks>
-public class MessagePackInputFormatter : InputFormatter
+public class MessagePackInputFormatter : InputFormatter, IInputFormatterExceptionPolicy
 {
 	/// <summary>
 	/// The content type that this formatter supports for deserialization.
@@ -56,6 +57,9 @@ public class MessagePackInputFormatter : InputFormatter
 		this.SupportedMediaTypes.Add(ContentType);
 	}
 
+	/// <inheritdoc />
+	InputFormatterExceptionPolicy IInputFormatterExceptionPolicy.ExceptionPolicy => InputFormatterExceptionPolicy.MalformedInputExceptions;
+
 	/// <summary>
 	/// Reads and deserializes the request body from MessagePack format into the target model type.
 	/// </summary>
@@ -80,9 +84,22 @@ public class MessagePackInputFormatter : InputFormatter
 		ITypeShape shape = this.typeShapeProvider.GetTypeShapeOrThrow(context.ModelType);
 
 		var reader = PipeReader.Create(request.Body);
-		object? model = await this.serializer.DeserializeObjectAsync(reader, shape, context.HttpContext.RequestAborted);
-		await reader.CompleteAsync();
+		object? model;
+		try
+		{
+			model = await this.serializer.DeserializeObjectAsync(reader, shape, context.HttpContext.RequestAborted);
+		}
+		catch (MessagePackSerializationException exception)
+		{
+			Exception modelStateException = new InputFormatterException(exception.Message, exception);
+			context.ModelState.TryAddModelError(string.Empty, modelStateException, context.Metadata);
+			return InputFormatterResult.Failure();
+		}
+		finally
+		{
+			await reader.CompleteAsync();
+		}
 
-		return await InputFormatterResult.SuccessAsync(model);
+		return InputFormatterResult.Success(model);
 	}
 }

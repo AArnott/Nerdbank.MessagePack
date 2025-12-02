@@ -109,6 +109,35 @@ public partial class AspNetCoreMvcFormatterTest
 		Assert.Equal(MsgPackContentType, this.deformatter.SupportedMediaTypes.Single());
 	}
 
+	[Fact]
+	public void MessagePackInputFormatterExceptionPolicyIsMalformedInputExceptions()
+	{
+		Assert.Equal(InputFormatterExceptionPolicy.MalformedInputExceptions, ((IInputFormatterExceptionPolicy)this.deformatter).ExceptionPolicy);
+	}
+
+	[Fact]
+	public async Task MessagePackInputFormatterReturnsFailureOnMalformedInput()
+	{
+		// Create malformed MessagePack data - we'll send data that would be a string where we expect an integer
+		// First serialize a valid User to see the structure, then create a malformed one
+		var malformedData = new byte[] { 0x81, 0xa6, 0x55, 0x73, 0x65, 0x72, 0x49, 0x64, 0xa5, 0x68, 0x65, 0x6c, 0x6c, 0x6f }; // { "UserId": "hello" } (string instead of int)
+
+		var httpContext = new DefaultHttpContext();
+		httpContext.Features.Set<IHttpResponseFeature>(new TestResponseFeature());
+		httpContext.Request.Body = new NonSeekableReadStream(malformedData);
+		httpContext.Request.ContentType = MsgPackContentType;
+
+		InputFormatterContext inputFormatterContext = this.CreateInputFormatterContext(typeof(User), httpContext);
+
+		Assert.True(this.deformatter.CanRead(inputFormatterContext));
+
+		// This should NOT throw - it should return a failure result instead
+		InputFormatterResult result = await this.deformatter.ReadAsync(inputFormatterContext);
+
+		Assert.True(result.HasError);
+		Assert.True(inputFormatterContext.ModelState.ErrorCount > 0);
+	}
+
 	/// <summary>
 	/// <see href="https://github.com/aspnet/Mvc/blob/master/test/Microsoft.AspNetCore.Mvc.Formatters.Json.Test/JsonOutputFormatterTests.cs#L453">JsonOutputFormatterTests.cs#L453</see>.
 	/// </summary>
