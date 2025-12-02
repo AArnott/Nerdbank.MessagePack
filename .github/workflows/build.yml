@@ -25,15 +25,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             rid: linux-x64
-          - os: macos-14
+          - os: macos-15
             rid: osx-arm64
-          - os: windows-2022
+          - os: windows-2025
             rid: win-x64
 
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
     - name: ⚙ Install prerequisites
@@ -143,9 +143,9 @@ jobs:
 
           # Define the expected combinations
           $Combinations = @(
-            @{ OS = "ubuntu-22.04"; RID = "linux-x64" },
-            @{ OS = "macos-14"; RID = "osx-arm64" },
-            @{ OS = "windows-2022"; RID = "win-x64" }
+            @{ OS = "ubuntu-24.04"; RID = "linux-x64" },
+            @{ OS = "macos-15"; RID = "osx-arm64" },
+            @{ OS = "windows-2025"; RID = "win-x64" }
           )
 
           "Target | Actual size | Expected size | Verdict
@@ -211,7 +211,7 @@ jobs:
     name: 📃 Docs
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
     - name: 🔗 Markup Link Checker (mlc)
       uses: becheran/mlc@18a06b3aa2901ca197de59c8b0b1f54fdba6b3fa # v1.0.0
       with:
