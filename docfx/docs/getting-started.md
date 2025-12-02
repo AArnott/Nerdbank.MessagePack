@@ -10,13 +10,18 @@ Consume this library via one of its NuGet packages.
 
 ### C# language version
 
-When your project targets .NET Framework or .NET Standard 2.x, the C# language version may default to 7.3.
-C# 12 introduced support for generic attributes, which is a fundamental requirement PolyType, upon which Nerdbank.MessagePack is based.
-If you find generic attributes are not allowed in your C# code, change your .csproj file to include this snippet:
+The best experience comes when you use **C# 14**.
+
+* C# 12 added support for generic attributes.
+* C# 14 added extension members.
+
+When your project targets anything less than .NET 10, C# may default to an older language version, but you can still use it, provided you build with Visual Studio 2026 or the .NET 10 SDK.
+
+You can update your C# language version by adding the following snippet to your csproj or Directory.Build.props:
 
 ```xml
 <PropertyGroup>
-  <LangVersion>12</LangVersion>
+  <LangVersion>14</LangVersion>
 </PropertyGroup>
 ```
 
