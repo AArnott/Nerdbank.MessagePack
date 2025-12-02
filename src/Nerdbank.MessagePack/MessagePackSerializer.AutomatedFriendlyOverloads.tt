@@ -72,7 +72,7 @@ void WriteClass(bool targetNET) {
             	/// <remarks>
             	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
             	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-            	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+            	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
             	/// </remarks>
             """,
             ShapeSource.TProvider => $$"""
@@ -80,7 +80,7 @@ void WriteClass(bool targetNET) {
             	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
             	/// <remarks>
             	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-            	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+            	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
             	/// </remarks>
             """,
             _ => throw new NotSupportedException(),
