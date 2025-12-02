@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if !DOCFX
+
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
@@ -118,3 +120,5 @@ public static class StructuralEqualityComparerExtensions
 			=> (IEqualityComparer<T>)StructuralEqualityComparer.HashCollisionResistantEqualityComparerCache.GetOrAdd(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>())!;
 	}
 }
+
+#endif

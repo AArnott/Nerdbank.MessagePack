@@ -33,7 +33,7 @@ dotnet format --verify-no-changes --no-restore
 
 **Build documentation** (takes ~19 seconds):
 ```bash
-dotnet docfx docfx/docfx.json --warningsAsErrors --disableGitFeatures
+DocFx=true dotnet docfx docfx/docfx.json --warningsAsErrors --disableGitFeatures
 ```
 
 **NEVER CANCEL**: Code formatting verification takes approximately 71 seconds. This is normal and expected.
@@ -59,7 +59,7 @@ Should start web server without errors (web UI testing limited in this environme
 
 ### Key Projects (src/)
 - `Nerdbank.MessagePack` - Main MessagePack serialization library
-- `Nerdbank.MessagePack.SignalR` - SignalR integration 
+- `Nerdbank.MessagePack.SignalR` - SignalR integration
 - `Nerdbank.MessagePack.AspNetCoreMvcFormatter` - ASP.NET Core MVC formatter
 - `Nerdbank.MessagePack.Analyzers` - Roslyn analyzers and code fixes
 
@@ -70,7 +70,7 @@ Should start web server without errors (web UI testing limited in this environme
 
 ### Samples (samples/)
 - `AspNetMvc` - ASP.NET Core MVC integration example
-- `SignalR` - SignalR integration example  
+- `SignalR` - SignalR integration example
 - `cs` and `fs` - C# and F# usage examples
 
 ## Software Design
@@ -117,7 +117,7 @@ dotnet docfx
 ## CRITICAL Timing Expectations
 - **Dependency setup**: 2-3 seconds
 - **Full build**: 7-76 seconds (fast with cache, slower on first build) (NEVER CANCEL - use 120+ minute timeouts)
-- **Test suite**: ~25 seconds (NEVER CANCEL - use 60+ minute timeouts)  
+- **Test suite**: ~25 seconds (NEVER CANCEL - use 60+ minute timeouts)
 - **Format verification**: ~71 seconds (NEVER CANCEL - use 90+ minute timeouts)
 - **Documentation build**: ~19 seconds
 
