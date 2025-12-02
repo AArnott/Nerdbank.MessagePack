@@ -13,7 +13,7 @@ Also features an automatic structural equality API.</PackageDescription>
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
     <PackageIcon>icon.png</PackageIcon>
     <PackageTags>MsgPack MessagePack Serialization Serializer Unity structural-equality secure-hash</PackageTags>
-    <!-- <PackageValidationBaselineVersion>1.0.0</PackageValidationBaselineVersion> -->
+    <PackageValidationBaselineVersion>0.12.28-rc</PackageValidationBaselineVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
