@@ -12,15 +12,7 @@ It does this via the @"Nerdbank.MessagePack.StructuralEqualityComparer.GetDefaul
 
 Here is an example of using this for structural equality checking for a user-defined type that does not implement it itself:
 
-# [.NET](#tab/net)
-
-[!code-csharp[](../../samples/cs/StructuralEquality.cs#StructuralEqualityNET)]
-
-# [.NET Standard](#tab/netfx)
-
-[!code-csharp[](../../samples/cs/StructuralEquality.cs#StructuralEqualityNETFX)]
-
----
+[!code-csharp[](../../samples/cs/StructuralEquality.cs#StructuralEquality)]
 
 Collision resistant hashing functions can be produced by calling @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* instead of @Nerdbank.MessagePack.StructuralEqualityComparer.GetDefault*, as described in [our topic on hash collisions](security.md#hash-collisions).
 

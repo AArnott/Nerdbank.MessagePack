@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable NBMsgPack051 // This test multi-targets
+
 [Trait("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
@@ -226,7 +228,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	public void DerivedTypeShapes_DynamicRegistration()
 	{
 		DerivedShapeMapping<BaseRecord> mapping = new DerivedShapeMapping<BaseRecord>();
-		mapping.Add(1, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default.DerivedRecordB);
+		mapping.AddSourceGenerated<DerivedRecordB, Witness>(1);
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
 		BaseRecord baseInstance = new BaseRecord();
@@ -659,6 +661,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<CustomType[]>]
 	[GenerateShapeFor<string[]>]
 	[GenerateShapeFor<BaseRecord[]>]
+	[GenerateShapeFor<DerivedRecordB>]
 	[GenerateShapeFor<Dictionary<string, int>[]>]
 	private partial class Witness;
 }

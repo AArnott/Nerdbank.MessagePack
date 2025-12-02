@@ -258,7 +258,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -276,7 +276,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -294,7 +294,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -312,7 +312,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -330,7 +330,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -348,7 +348,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -366,7 +366,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -384,7 +384,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -402,7 +402,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -422,7 +422,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -442,7 +442,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -462,7 +462,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -482,7 +482,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -502,7 +502,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -522,7 +522,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -540,7 +540,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -558,7 +558,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -576,7 +576,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -594,7 +594,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -614,7 +614,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
-	/// or use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -633,7 +633,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -650,7 +650,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -667,7 +667,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -684,7 +684,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -701,7 +701,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -718,7 +718,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -735,7 +735,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -752,7 +752,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -769,7 +769,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -788,7 +788,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -807,7 +807,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -826,7 +826,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -845,7 +845,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -864,7 +864,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -883,7 +883,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -900,7 +900,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -917,7 +917,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -934,7 +934,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
 #if NET8_0
@@ -951,7 +951,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
@@ -970,7 +970,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
-	/// Use an overload that accepts a <see cref="ITypeShapeProvider"/> for an option that does not require source generation.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
