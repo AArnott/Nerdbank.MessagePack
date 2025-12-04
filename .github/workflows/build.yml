@@ -62,17 +62,17 @@ jobs:
           (gci $Path).Length / 1024 / 1024
         }
 
-        $Path = './bin/AotNativeConsole/${{ env.BUILDCONFIGURATION }}/net9.0/${{ matrix.rid }}/publish/AotNativeConsole'
+        $Path = './bin/AotNativeConsole/${{ env.BUILDCONFIGURATION }}/net10.0/${{ matrix.rid }}/publish/AotNativeConsole'
         $ActualSize = GetSizeInMB($Path)
 
         # Allow variance of a small threshold of the expected value.
         # Fail even if it's smaller than anticipated so that the expected window can be shrunk in this file.
         if ($IsLinux) {
-          $ExpectedSize = 8.01
+          $ExpectedSize = 7.03
         } elseif ($IsMacOS) {
-          $ExpectedSize = 7.87
+          $ExpectedSize = 6.43
         } else {
-          $ExpectedSize = 6.79
+          $ExpectedSize = 6.83
         }
         $AllowedVariance = 0.2
         $SizeCheckPassed = [math]::Abs($ActualSize - $ExpectedSize) -le $AllowedVariance

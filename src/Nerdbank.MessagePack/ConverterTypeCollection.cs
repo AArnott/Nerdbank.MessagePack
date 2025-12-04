@@ -98,14 +98,22 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 	/// <summary>
 	/// A wrapper around <see cref="Type"/> that ensures a trimmed application will preserve the type's public default constructor.
 	/// </summary>
-	/// <param name="type">The wrapped type. A type that does not declare a public default constructor may still be wrapped, but may result in a runtime error later.</param>
-	public readonly struct TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
+	public readonly struct TypeWithDefaultConstructor
 	{
+		/// <summary>
+		/// Initializes a new instance of the <see cref="TypeWithDefaultConstructor"/> struct.
+		/// </summary>
+		/// <param name="type">The wrapped type. A type that does not declare a public default constructor may still be wrapped, but may result in a runtime error later.</param>
+		public TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
+		{
+			this.Type = type;
+		}
+
 		/// <summary>
 		/// Gets the wrapped type.
 		/// </summary>
 		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-		public Type Type => type;
+		public Type Type { get; }
 
 		/// <summary>
 		/// Implicitly converts a <see cref="Type"/> to a <see cref="TypeWithDefaultConstructor"/>.
