@@ -9,13 +9,17 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Nerdbank.MessagePack.SignalR;
 using PolyType;
 
 internal class HostedSignalR : IAsyncDisposable
 {
-	private HostedSignalR(TestServer server, HubConnection client)
+	private readonly IHost host;
+
+	private HostedSignalR(IHost host, TestServer server, HubConnection client)
 	{
+		this.host = host;
 		this.Server = server;
 		this.Client = client;
 	}
@@ -28,6 +32,8 @@ internal class HostedSignalR : IAsyncDisposable
 	{
 		await this.Client.DisposeAsync();
 		this.Server.Dispose();
+		await this.host.StopAsync();
+		this.host.Dispose();
 	}
 
 	/// <summary>
@@ -40,30 +46,36 @@ internal class HostedSignalR : IAsyncDisposable
 	internal static async Task<HostedSignalR> CreateAsync(ITypeShapeProvider typeShapeProvider, bool useNerdbankMessagePackForServer = true, bool useNerdbankMessagePackForClient = true, Action<HubConnection>? onSetupConnection = null)
 	{
 		// Create server
-		IWebHostBuilder hostBuilder = new WebHostBuilder()
-			.ConfigureServices(services =>
+		IHostBuilder hostBuilder = Host.CreateDefaultBuilder()
+			.ConfigureWebHostDefaults(webBuilder =>
 			{
-				ISignalRServerBuilder signalRBuilder = services.AddSignalR();
+				webBuilder
+					.UseTestServer()
+					.ConfigureServices(services =>
+					{
+						ISignalRServerBuilder signalRBuilder = services.AddSignalR();
 
-				if (useNerdbankMessagePackForServer)
-				{
-					signalRBuilder.AddMessagePackProtocol(typeShapeProvider);
-				}
-				else
-				{
-					signalRBuilder.AddMessagePackProtocol();
-				}
-			})
-			.Configure(app =>
-			{
-				app.UseRouting();
-				app.UseEndpoints(endpoints =>
-				{
-					endpoints.MapHub<IntegrationTestHub>("/testHub");
-				});
+						if (useNerdbankMessagePackForServer)
+						{
+							signalRBuilder.AddMessagePackProtocol(typeShapeProvider);
+						}
+						else
+						{
+							signalRBuilder.AddMessagePackProtocol();
+						}
+					})
+					.Configure(app =>
+					{
+						app.UseRouting();
+						app.UseEndpoints(endpoints =>
+						{
+							endpoints.MapHub<IntegrationTestHub>("/testHub");
+						});
+					});
 			});
 
-		TestServer server = new(hostBuilder);
+		IHost host = await hostBuilder.StartAsync();
+		TestServer server = host.GetTestServer();
 
 		// Create client
 		IHubConnectionBuilder connectionBuilder = new HubConnectionBuilder()
@@ -88,7 +100,7 @@ internal class HostedSignalR : IAsyncDisposable
 
 		await client.StartAsync();
 
-		return new(server, client);
+		return new(host, server, client);
 	}
 }
 
