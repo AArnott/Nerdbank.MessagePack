@@ -62,7 +62,7 @@ jobs:
           (gci $Path).Length / 1024 / 1024
         }
 
-        $Path = './bin/AotNativeConsole/${{ env.BUILDCONFIGURATION }}/net9.0/${{ matrix.rid }}/publish/AotNativeConsole'
+        $Path = './bin/AotNativeConsole/${{ env.BUILDCONFIGURATION }}/net10.0/${{ matrix.rid }}/publish/AotNativeConsole'
         $ActualSize = GetSizeInMB($Path)
 
         # Allow variance of a small threshold of the expected value.
