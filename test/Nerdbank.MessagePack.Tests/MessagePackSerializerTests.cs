@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections;
+using System.Runtime.CompilerServices;
 using Xunit.Sdk;
 
 public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
@@ -496,6 +497,40 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(original.Value / 2, deserialized?.Value);
 	}
 
+	[Fact]
+	public unsafe void FixedArrays()
+	{
+		StructWithFixedArray original = default;
+		for (int i = 0; i < StructWithFixedArray.Length; i++)
+		{
+			original.Element0[i] = (byte)(i + 1);
+		}
+
+		StructWithFixedArray deserialized = this.Roundtrip(original);
+		for (int i = 0; i < StructWithFixedArray.Length; i++)
+		{
+			Assert.Equal(original.Element0[i], deserialized.Element0[i]);
+		}
+	}
+
+#if NET
+	[Fact]
+	public void InlineArrays_Primitive()
+	{
+		StructWithInlineArrayPrimitive original = default;
+		for (int i = 0; i < StructWithInlineArrayPrimitive.Length; i++)
+		{
+			original[i] = (byte)(i + 1);
+		}
+
+		StructWithInlineArrayPrimitive deserialized = this.Roundtrip(original);
+		for (int i = 0; i < StructWithInlineArrayPrimitive.Length; i++)
+		{
+			Assert.Equal(original[i], deserialized[i]);
+		}
+	}
+#endif
+
 	/// <summary>
 	/// Carefully writes a msgpack-encoded array of bytes.
 	/// </summary>
@@ -510,6 +545,25 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		writer.Flush();
 		return sequence;
 	}
+
+	[GenerateShape]
+	public partial struct StructWithFixedArray
+	{
+		public const int Length = 10;
+
+		public unsafe fixed byte Element0[Length];
+	}
+
+#if NET
+	[GenerateShape]
+	[InlineArray(Length)]
+	public partial struct StructWithInlineArrayPrimitive
+	{
+		public const int Length = 10;
+
+		private byte element0;
+	}
+#endif
 
 	[GenerateShape]
 	public partial class KeyedCollections
