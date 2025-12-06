@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
@@ -173,7 +174,18 @@ internal class ConverterCache(SerializerConfiguration configuration)
 				}
 				else if (!converterType.IsGenericTypeDefinition)
 				{
-					converter = (MessagePackConverter)Activator.CreateInstance(converterType)!;
+					// Try to find a constructor that takes a ConverterContext parameter
+					ConverterContext context = new(this, shapeProvider, this.PreserveReferences);
+					ConstructorInfo? converterContextCtor = converterType.GetConstructor([typeof(ConverterContext)]);
+					if (converterContextCtor is not null)
+					{
+						converter = (MessagePackConverter)converterContextCtor.Invoke([context]);
+					}
+					else
+					{
+						// Fall back to parameterless constructor
+						converter = (MessagePackConverter)Activator.CreateInstance(converterType)!;
+					}
 				}
 				else
 				{

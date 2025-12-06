@@ -83,7 +83,7 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 	/// <param name="dataType">The data type.</param>
 	/// <param name="converterType">Receives the converter type, if available.</param>
 	/// <returns>A value indicating whether the converter type was available.</returns>
-	internal bool TryGetConverterType(Type dataType, [NotNullWhen(true), DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] out Type? converterType)
+	internal bool TryGetConverterType(Type dataType, [NotNullWhen(true), DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] out Type? converterType)
 	{
 		if (this.Map.TryGetValue(dataType, out TypeWithDefaultConstructor converterTypeWithDefaultCtor))
 		{
@@ -96,15 +96,15 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 	}
 
 	/// <summary>
-	/// A wrapper around <see cref="Type"/> that ensures a trimmed application will preserve the type's public default constructor.
+	/// A wrapper around <see cref="Type"/> that ensures a trimmed application will preserve the type's public constructors.
 	/// </summary>
 	public readonly struct TypeWithDefaultConstructor
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TypeWithDefaultConstructor"/> struct.
 		/// </summary>
-		/// <param name="type">The wrapped type. A type that does not declare a public default constructor may still be wrapped, but may result in a runtime error later.</param>
-		public TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
+		/// <param name="type">The wrapped type.</param>
+		public TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
 		{
 			this.Type = type;
 		}
@@ -112,7 +112,7 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 		/// <summary>
 		/// Gets the wrapped type.
 		/// </summary>
-		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 		public Type Type { get; }
 
 		/// <summary>
@@ -120,13 +120,13 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 		/// </summary>
 		/// <remarks>This operator enables seamless conversion from a <see cref="Type"/> to a <see cref="TypeWithDefaultConstructor"/>.</remarks>
 		/// <param name="type">The type to convert.</param>
-		public static implicit operator TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) => new(type);
+		public static implicit operator TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type) => new(type);
 
 		/// <summary>
 		/// Implicitly converts a <see cref="TypeWithDefaultConstructor"/> instance to its underlying <see cref="Type"/>.
 		/// </summary>
 		/// <param name="type">The <see cref="TypeWithDefaultConstructor"/> instance to convert.</param>
-		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
 		public static implicit operator Type(TypeWithDefaultConstructor type) => type.Type;
 	}
 }
