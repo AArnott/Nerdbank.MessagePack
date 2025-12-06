@@ -411,7 +411,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 	}
 
 	/// <summary>
-	/// A converter that uses a ConverterContext constructor to cache sub-converters.
+	/// A converter that uses a <see cref="ConverterContext" /> constructor to cache sub-converters.
 	/// </summary>
 	[GenerateShapeFor<int>]
 	private partial class TreeConverterWithConverterContext : MessagePackConverter<Tree>

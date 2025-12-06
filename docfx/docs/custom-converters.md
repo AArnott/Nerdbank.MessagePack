@@ -97,47 +97,23 @@ So even if you define your type `MyType` with <xref:PolyType.GenerateShapeAttrib
 
 #### Caching sub-converters with ConverterContext
 
-For improved performance, custom converters can cache sub-converters by accepting a @Nerdbank.MessagePack.ConverterContext parameter in their constructor.
-The @Nerdbank.MessagePack.ConverterContext provides access to the @Nerdbank.MessagePack.ConverterContext.GetConverter* methods, allowing converters to obtain and cache sub-converters at construction time rather than looking them up on each invocation.
+For improved performance, custom converters can cache sub-converters by accepting a <xref:Nerdbank.MessagePack.ConverterContext> parameter in their constructor.
+The <xref:Nerdbank.MessagePack.ConverterContext> provides access to the <xref:Nerdbank.MessagePack.ConverterContext.GetConverter*> methods, allowing converters to obtain and cache sub-converters at construction time rather than looking them up on each invocation.
 
-When a converter type is registered via @Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes?displayProperty=nameWithType, the serializer will automatically invoke a public constructor that accepts a @Nerdbank.MessagePack.ConverterContext parameter if one exists.
+When a converter type is registered via <xref:Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes?displayProperty=nameWithType>, the serializer will automatically invoke a public constructor that accepts a <xref:Nerdbank.MessagePack.ConverterContext> parameter if one exists.
 If no such constructor is found, the serializer falls back to invoking a parameterless constructor.
 
 Here's an example:
 
-```cs
-[GenerateShapeFor<string>]
-public partial class MyConverter : MessagePackConverter<MyType>
-{
-    private readonly MessagePackConverter<string> stringConverter;
-
-    public MyConverter(ConverterContext context)
-    {
-        this.stringConverter = context.GetConverter<string>(GeneratedTypeShapeProvider);
-    }
-
-    public override void Write(ref MessagePackWriter writer, in MyType? value, SerializationContext context)
-    {
-        this.stringConverter.Write(ref writer, value?.Name, context);
-    }
-
-    public override MyType? Read(ref MessagePackReader reader, SerializationContext context)
-    {
-        string? name = this.stringConverter.Read(ref reader, context);
-        return new MyType { Name = name };
-    }
-}
-```
+[!code-csharp[](../../samples/cs/CustomConverters.cs#ConverterContextConstructor)]
 
 Then register the converter type:
 
-```cs
-serializer = serializer with { ConverterTypes = [typeof(MyConverter)] };
-```
+[!code-csharp[](../../samples/cs/CustomConverters.cs#ConverterContextConstructorRegistration)]
 
 > [!NOTE]
-> Converters with a @Nerdbank.MessagePack.ConverterContext constructor are dedicated to a specific @Nerdbank.MessagePack.MessagePackSerializer instance and cannot be shared across multiple serializer instances.
-> When using @Nerdbank.MessagePack.MessagePackSerializer.Converters?displayProperty=nameWithType to register converter instances directly, use a parameterless constructor instead and obtain sub-converters through @Nerdbank.MessagePack.SerializationContext.GetConverter* in your Read/Write methods.
+> Converters with a <xref:Nerdbank.MessagePack.ConverterContext> constructor are dedicated to a specific <xref:Nerdbank.MessagePack.MessagePackSerializer> instance and cannot be shared across multiple serializer instances.
+> When using <xref:Nerdbank.MessagePack.MessagePackSerializer.Converters?displayProperty=nameWithType> to register converter instances directly, use a parameterless constructor instead and obtain sub-converters through <xref:Nerdbank.MessagePack.SerializationContext.GetConverter*> in your Read/Write methods.
 
 ### Version compatibility
 
@@ -242,14 +218,14 @@ When the converter is specified as an *open* generic, it must have exactly the s
 
 ### Runtime registration
 
-For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of @Nerdbank.MessagePack.MessagePackSerializer using the <xref:Nerdbank.MessagePack.MessagePackSerializer.Converters> property.
+For precise runtime control of where your converter is used and/or how it is instantiated/configured, you may register an instance of your custom converter with an instance of <xref:Nerdbank.MessagePack.MessagePackSerializer> using the <xref:Nerdbank.MessagePack.MessagePackSerializer.Converters> property.
 
 [!code-csharp[](../../samples/cs/CustomConverters.cs#CustomConverterRegisteredAtRuntime)]
 
-Runtime registration of open generic converters (i.e. converters that themselves are generic types) can either be as live objects (which necessarily locks the converters down to just one closed generic type) or you can register the converter's open generic type itself using @Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes?displayProperty=nameWithType, in which case the converter will be activated on-demand when an object graph that carries an instance of the generic data type needs to be serialized.
+Runtime registration of open generic converters (i.e. converters that themselves are generic types) can either be as live objects (which necessarily locks the converters down to just one closed generic type) or you can register the converter's open generic type itself using <xref:Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes?displayProperty=nameWithType>, in which case the converter will be activated on-demand when an object graph that carries an instance of the generic data type needs to be serialized.
 
-When registering a converter type (rather than an instance) via @Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes, the serializer will:
-1. First attempt to invoke a public constructor that accepts a @Nerdbank.MessagePack.ConverterContext parameter (if one exists).
+When registering a converter type (rather than an instance) via <xref:Nerdbank.MessagePack.MessagePackSerializer.ConverterTypes>, the serializer will:
+1. First attempt to invoke a public constructor that accepts a <xref:Nerdbank.MessagePack.ConverterContext> parameter (if one exists).
 2. Otherwise, invoke the public parameterless constructor.
 
 This allows converters to cache sub-converters at construction time for improved performance, as described in [Caching sub-converters with ConverterContext](#caching-sub-converters-with-convertercontext).

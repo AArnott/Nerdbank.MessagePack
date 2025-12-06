@@ -15,9 +15,9 @@ namespace Nerdbank.MessagePack;
 /// An immutable collection of <see cref="MessagePackConverter{T}"/> types.
 /// </summary>
 [CollectionBuilder(typeof(ConverterTypeCollection), nameof(Create))]
-public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstructor>
+public class ConverterTypeCollection : IReadOnlyCollection<ConverterType>
 {
-	private ConverterTypeCollection(FrozenDictionary<Type, TypeWithDefaultConstructor> map)
+	private ConverterTypeCollection(FrozenDictionary<Type, ConverterType> map)
 	{
 		this.Map = map;
 	}
@@ -28,7 +28,7 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 	/// <summary>
 	/// Gets a mapping of data types to their custom converter types.
 	/// </summary>
-	private FrozenDictionary<Type, TypeWithDefaultConstructor> Map { get; }
+	private FrozenDictionary<Type, ConverterType> Map { get; }
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="ConverterTypeCollection"/> class
@@ -36,9 +36,9 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 	/// </summary>
 	/// <param name="converterTypes">The <see cref="MessagePackConverter{T}"/> types that should be elements in the collection.</param>
 	/// <returns>The newly initialized collection type.</returns>
-	public static ConverterTypeCollection Create(ReadOnlySpan<TypeWithDefaultConstructor> converterTypes)
+	public static ConverterTypeCollection Create(ReadOnlySpan<ConverterType> converterTypes)
 	{
-		Dictionary<Type, TypeWithDefaultConstructor> map = [];
+		Dictionary<Type, ConverterType> map = [];
 
 		foreach (Type converterType in converterTypes)
 		{
@@ -69,13 +69,13 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 
 	/// <summary>Gets an enumerator over the <see cref="Type"/> elements of the collection.</summary>
 	/// <returns>The enumerator.</returns>
-	public ImmutableArray<TypeWithDefaultConstructor>.Enumerator GetEnumerator() => this.Map.Values.GetEnumerator();
+	public ImmutableArray<ConverterType>.Enumerator GetEnumerator() => this.Map.Values.GetEnumerator();
 
 	/// <inheritdoc />
-	IEnumerator<TypeWithDefaultConstructor> IEnumerable<TypeWithDefaultConstructor>.GetEnumerator() => ((IReadOnlyList<TypeWithDefaultConstructor>)this.Map.Values).GetEnumerator();
+	IEnumerator<ConverterType> IEnumerable<ConverterType>.GetEnumerator() => ((IReadOnlyList<ConverterType>)this.Map.Values).GetEnumerator();
 
 	/// <inheritdoc />
-	IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TypeWithDefaultConstructor>)this).GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<ConverterType>)this).GetEnumerator();
 
 	/// <summary>
 	/// Retrieves a converter type for a given data type.
@@ -85,9 +85,9 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 	/// <returns>A value indicating whether the converter type was available.</returns>
 	internal bool TryGetConverterType(Type dataType, [NotNullWhen(true), DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] out Type? converterType)
 	{
-		if (this.Map.TryGetValue(dataType, out TypeWithDefaultConstructor converterTypeWithDefaultCtor))
+		if (this.Map.TryGetValue(dataType, out ConverterType converterTypeWithCtor))
 		{
-			converterType = converterTypeWithDefaultCtor;
+			converterType = converterTypeWithCtor;
 			return true;
 		}
 
@@ -98,13 +98,13 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 	/// <summary>
 	/// A wrapper around <see cref="Type"/> that ensures a trimmed application will preserve the type's public constructors.
 	/// </summary>
-	public readonly struct TypeWithDefaultConstructor
+	public readonly struct ConverterType
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="TypeWithDefaultConstructor"/> struct.
+		/// Initializes a new instance of the <see cref="ConverterType"/> struct.
 		/// </summary>
 		/// <param name="type">The wrapped type.</param>
-		public TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+		public ConverterType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
 		{
 			this.Type = type;
 		}
@@ -116,17 +116,17 @@ public class ConverterTypeCollection : IReadOnlyCollection<TypeWithDefaultConstr
 		public Type Type { get; }
 
 		/// <summary>
-		/// Implicitly converts a <see cref="Type"/> to a <see cref="TypeWithDefaultConstructor"/>.
+		/// Implicitly converts a <see cref="Type"/> to a <see cref="ConverterType"/>.
 		/// </summary>
-		/// <remarks>This operator enables seamless conversion from a <see cref="Type"/> to a <see cref="TypeWithDefaultConstructor"/>.</remarks>
+		/// <remarks>This operator enables seamless conversion from a <see cref="Type"/> to a <see cref="ConverterType"/>.</remarks>
 		/// <param name="type">The type to convert.</param>
-		public static implicit operator TypeWithDefaultConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type) => new(type);
+		public static implicit operator ConverterType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type) => new(type);
 
 		/// <summary>
-		/// Implicitly converts a <see cref="TypeWithDefaultConstructor"/> instance to its underlying <see cref="Type"/>.
+		/// Implicitly converts a <see cref="ConverterType"/> instance to its underlying <see cref="Type"/>.
 		/// </summary>
-		/// <param name="type">The <see cref="TypeWithDefaultConstructor"/> instance to convert.</param>
+		/// <param name="type">The <see cref="ConverterType"/> instance to convert.</param>
 		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-		public static implicit operator Type(TypeWithDefaultConstructor type) => type.Type;
+		public static implicit operator Type(ConverterType type) => type.Type;
 	}
 }
