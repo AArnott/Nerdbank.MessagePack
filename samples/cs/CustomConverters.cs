@@ -544,3 +544,48 @@ namespace CustomConverterFactory
     }
     #endregion
 }
+
+namespace ConverterContextConstructorSample
+{
+    using Nerdbank.MessagePack;
+
+    #region ConverterContextConstructor
+    [GenerateShapeFor<string>]
+    public partial class MyConverter : MessagePackConverter<MyType>
+    {
+        private readonly MessagePackConverter<string> stringConverter;
+
+        public MyConverter(ConverterContext context)
+        {
+            this.stringConverter = context.GetConverter<string>(GeneratedTypeShapeProvider);
+        }
+
+        public override void Write(ref MessagePackWriter writer, in MyType? value, SerializationContext context)
+        {
+            this.stringConverter.Write(ref writer, value?.Name, context);
+        }
+
+        public override MyType? Read(ref MessagePackReader reader, SerializationContext context)
+        {
+            string? name = this.stringConverter.Read(ref reader, context);
+            return new MyType { Name = name };
+        }
+    }
+    #endregion
+
+    public class MyType
+    {
+        public string? Name { get; set; }
+    }
+
+    class Example
+    {
+        void Main()
+        {
+            #region ConverterContextConstructorRegistration
+            MessagePackSerializer serializer = new();
+            serializer = serializer with { ConverterTypes = [typeof(MyConverter)] };
+            #endregion
+        }
+    }
+}

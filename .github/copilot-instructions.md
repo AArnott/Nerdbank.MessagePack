@@ -92,6 +92,14 @@ Should start web server without errors (web UI testing limited in this environme
 * Add API doc comments to all new public and internal members.
 * Always run `dotnet format --verify-no-changes --no-restore` before committing changes or CI will fail.
 
+## Documentation
+
+* When writing DocFX documentation (`.md` files in the `docfx` directory), use `<xref:symbolname>` syntax for cross-references to types and members instead of `@symbolname` syntax.
+  * Example: Use `<xref:Nerdbank.MessagePack.ConverterContext>` instead of `@Nerdbank.MessagePack.ConverterContext`
+  * This ensures proper linking and IDE support in the generated documentation.
+* Code samples should be placed in the `samples/cs` directory with region tags and referenced from documentation using `[!code-csharp[](path#region)]` syntax.
+  * This keeps samples compilable and tested as part of the build.
+
 ## Common Tasks
 
 ### After Making Changes

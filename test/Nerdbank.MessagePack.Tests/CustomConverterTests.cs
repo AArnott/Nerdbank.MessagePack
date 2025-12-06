@@ -117,6 +117,14 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		this.Logger.WriteLine(ex.Message);
 	}
 
+	[Fact]
+	public void ConverterWithConverterContextConstructor()
+	{
+		this.Serializer = this.Serializer with { ConverterTypes = [typeof(TreeConverterWithConverterContext)] };
+		Tree? deserialized = this.Roundtrip(new Tree(5));
+		Assert.Equal(10, deserialized?.FruitCount);
+	}
+
 	[GenerateShape]
 	[MessagePackConverter(typeof(StatefulConverter))]
 	internal partial record struct TypeWithStatefulConverter(int Value);
@@ -399,6 +407,42 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 			}
 
 			writer.Write(value.FruitCount);
+		}
+	}
+
+	/// <summary>
+	/// A converter that uses a <see cref="ConverterContext"/> constructor to cache sub-converters.
+	/// </summary>
+	[GenerateShapeFor<int>]
+	private partial class TreeConverterWithConverterContext : MessagePackConverter<Tree>
+	{
+		private readonly MessagePackConverter<int> intConverter;
+
+		public TreeConverterWithConverterContext(ConverterContext context)
+		{
+			this.intConverter = context.GetConverter<int>(GeneratedTypeShapeProvider);
+		}
+
+		public override Tree? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			if (reader.TryReadNil())
+			{
+				return null;
+			}
+
+			int value = this.intConverter.Read(ref reader, context);
+			return new Tree(value);
+		}
+
+		public override void Write(ref MessagePackWriter writer, in Tree? value, SerializationContext context)
+		{
+			if (value is null)
+			{
+				writer.WriteNil();
+				return;
+			}
+
+			this.intConverter.Write(ref writer, value.FruitCount * 2, context);
 		}
 	}
 
