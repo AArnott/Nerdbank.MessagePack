@@ -321,4 +321,10 @@
   <data name="NBMsgPack106_Title" xml:space="preserve">
     <value>Use ConstructorShapeAttribute</value>
   </data>
+  <data name="NBMsgPack110_MessageFormat" xml:space="preserve">
+    <value>Field or property '{0}' has an initializer that may differ from the default value. Consider adding [DefaultValue(...)] attribute to specify the intended default value for serialization.</value>
+  </data>
+  <data name="NBMsgPack110_Title" xml:space="preserve">
+    <value>Add DefaultValueAttribute when using non-default initializers</value>
+  </data>
 </root>
