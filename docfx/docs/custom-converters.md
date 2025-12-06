@@ -113,7 +113,7 @@ public partial class MyConverter : MessagePackConverter<MyType>
 
     public MyConverter(ConverterContext context)
     {
-        this.stringConverter = context.GetConverter<string, MyConverter>();
+        this.stringConverter = context.GetConverter<string>(GeneratedTypeShapeProvider);
     }
 
     public override void Write(ref MessagePackWriter writer, in MyType? value, SerializationContext context)

@@ -175,10 +175,10 @@ internal class ConverterCache(SerializerConfiguration configuration)
 				else if (!converterType.IsGenericTypeDefinition)
 				{
 					// Try to find a constructor that takes a ConverterContext parameter
-					ConverterContext context = new(this, shapeProvider, this.PreserveReferences);
 					ConstructorInfo? converterContextCtor = converterType.GetConstructor([typeof(ConverterContext)]);
 					if (converterContextCtor is not null)
 					{
+						ConverterContext context = new(this, shapeProvider, this.PreserveReferences);
 						converter = (MessagePackConverter)converterContextCtor.Invoke([context]);
 					}
 					else
