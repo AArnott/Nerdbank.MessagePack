@@ -12,6 +12,10 @@
 			"groupName": "xunit"
 		},
 		{
+			"matchPackageNames": ["Microsoft.Testing.Extensions.*"],
+			"groupName": "Microsoft Testing Platform"
+		},
+		{
 			"matchPackageNames": ["BenchmarkDotNet*"],
 			"groupName": "BenchmarkDotNet"
 		},
