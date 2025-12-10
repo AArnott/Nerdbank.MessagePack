@@ -56,17 +56,30 @@ public class SharedTestCases : MessagePackSerializerTestBase
 					// DateTime values need special handling because deserialized DateTimes are always UTC,
 					// but the original value might have been Unspecified (treated as Local during serialization).
 					// We normalize both values to UTC for comparison to avoid timezone-dependent test failures.
-					object? expectedValue = testCase.Value;
-					object? actualValue = deserializedValue;
-					if (typeof(T) == typeof(DateTime) && testCase.Value is DateTime dt)
+					if (typeof(T) == typeof(DateTime))
 					{
-						DateTime expectedDateTime = dt.Kind == DateTimeKind.Unspecified
-							? DateTime.SpecifyKind(dt, DateTimeKind.Local).ToUniversalTime()
-							: dt.ToUniversalTime();
-						expectedValue = expectedDateTime;
-					}
+						DateTime? expectedDateTime = null;
+						DateTime? actualDateTime = null;
 
-					Assert.Equal(expectedValue, actualValue);
+						if (testCase.Value is DateTime dt)
+						{
+							expectedDateTime = dt.Kind == DateTimeKind.Unspecified
+								? DateTime.SpecifyKind(dt, DateTimeKind.Local).ToUniversalTime()
+								: dt.ToUniversalTime();
+						}
+
+						if (deserializedValue is DateTime dtActual)
+						{
+							// Deserialized DateTimes should already be UTC, but normalize just to be safe.
+							actualDateTime = dtActual.ToUniversalTime();
+						}
+
+						Assert.Equal(expectedDateTime, actualDateTime);
+					}
+					else
+					{
+						Assert.Equal(testCase.Value, deserializedValue);
+					}
 				}
 				else
 				{
