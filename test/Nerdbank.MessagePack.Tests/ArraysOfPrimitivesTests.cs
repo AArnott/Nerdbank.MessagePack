@@ -108,6 +108,14 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 		this.Roundtrip<Memory<double>, Witness>(values);
 	}
 
+	[Fact]
+	public void LargeEnumerableOfInt()
+	{
+		// A very large enumerable so that it exceeds any default buffer sizes.
+		IEnumerable<int> model = Enumerable.Range(0, 1600);
+		this.Roundtrip<IEnumerable<int>, Witness>(model);
+	}
+
 	private static unsafe T[]? GetRandomValues<T>(int length)
 		where T : unmanaged
 	{
@@ -150,5 +158,6 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<Memory<ulong>>]
 	[GenerateShapeFor<Memory<float>>]
 	[GenerateShapeFor<Memory<double>>]
+	[GenerateShapeFor<IEnumerable<int>>]
 	private partial class Witness;
 }

@@ -75,7 +75,7 @@ internal static partial class ArraysOfPrimitivesConverters
 				{
 					TElement[] array = enumerable.ToArray();
 					writer.WriteArrayHeader(array.Length);
-					Span<byte> span = writer.GetSpan(count * MsgPackBufferLengthFactor);
+					Span<byte> span = writer.GetSpan(array.Length * MsgPackBufferLengthFactor);
 					for (int i = 0; i < array.Length; i++)
 					{
 						Assumes.True(this.TryWrite(span[totalBytesWritten..], array[i], out int justWritten));
