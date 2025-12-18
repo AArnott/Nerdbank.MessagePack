@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <Import Project="../AOT.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" />
+    <PackageReference Include="TUnit.Engine" />
+    <PackageReference Include="xunit.v3.assert" />
+  </ItemGroup>
+
+  <Import Project="$(RepoRootPath)test/AnalyzerConsumer.targets" />
+</Project>

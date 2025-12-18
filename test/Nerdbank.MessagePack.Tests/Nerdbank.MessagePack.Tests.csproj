@@ -10,18 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Analyzer</OutputItemType>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Analyzer</OutputItemType>
-    </ProjectReference>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="DiffPlex" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="NetArchTest.eNhancedEdition" />
@@ -63,4 +51,5 @@
     <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
   </ItemGroup>
 
+  <Import Project="$(RepoRootPath)test/AnalyzerConsumer.targets" />
 </Project>
