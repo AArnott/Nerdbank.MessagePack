@@ -12,6 +12,7 @@
     <!-- We want to build all target frameworks of the TUnit project,
          and also *publish* each individual target framework of the TUnit project. -->
     <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" Publish="false" />
+    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net8.0" />
     <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net9.0" />
     <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net10.0" />
   </ItemGroup>

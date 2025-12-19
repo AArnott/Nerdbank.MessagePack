@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Don't target net8.0 until trimmer warning in MTP is fixed: https://github.com/microsoft/testfx/issues/7153 -->
-    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <Import Project="../AOT.props" Condition="'$(TargetFramework)' != 'net472'" />
