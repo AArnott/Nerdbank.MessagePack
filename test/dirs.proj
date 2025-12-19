@@ -8,5 +8,6 @@
 
     <MultiRIDProjectReference Include="AotCompatibilityTest\AotCompatibilityTest.csproj" />
     <MultiRIDProjectReference Include="AotNativeConsole\AotNativeConsole.csproj" />
+    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" />
   </ItemGroup>
 </Project>

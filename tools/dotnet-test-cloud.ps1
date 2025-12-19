@@ -4,7 +4,9 @@
 .SYNOPSIS
     Runs tests as they are run in cloud test runs.
 .PARAMETER Configuration
-    The configuration within which to run tests
+    The configuration within which to run tests.
+.PARAMETER IncludeNativeAOT
+    Whether to run the NativeAOT-compiled tests too.
 .PARAMETER Agent
     The name of the agent. This is used in preparing test run titles.
 .PARAMETER PublishResults
@@ -17,6 +19,7 @@
 [CmdletBinding()]
 Param(
     [string]$Configuration='Debug',
+    [switch]$IncludeNativeAOT,
     [string]$Agent='Local',
     [switch]$PublishResults,
     [switch]$x86,
@@ -40,7 +43,7 @@ if ($x86) {
       Write-Host "Running tests using `"$dotnet`"" -ForegroundColor DarkGray
     } else {
       Write-Error "Unable to find 32-bit dotnet.exe"
-      return 1
+      exit 1
     }
   }
 }
@@ -51,10 +54,12 @@ $testLogs = Join-Path $ArtifactStagingFolder test_logs
 $globalJson = Get-Content $PSScriptRoot/../global.json | ConvertFrom-Json
 $isMTP = $globalJson.test.runner -eq 'Microsoft.Testing.Platform'
 $extraArgs = @()
+$failedTests = 0
 
 if ($isMTP) {
     if ($OnCI) { $extraArgs += '--no-progress' }
     & $dotnet test --solution $RepoRoot `
+        -p:Platform=NonTUnit `
         --no-build `
         -c $Configuration `
         -bl:"$testBinLog" `
@@ -71,6 +76,34 @@ if ($isMTP) {
         --results-directory $testLogs `
         --report-trx `
         @extraArgs
+    if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+
+    & $dotnet test --project $RepoRoot/test/Nerdbank.MessagePack.TUnit `
+        --no-build `
+        -c $Configuration `
+        -bl:"$testBinLog" `
+        --treenode-filter '/*/*/*/*[TestCategory!=FailsInCloudTest]' `
+        --coverage `
+        --coverage-output-format cobertura `
+        --hangdump `
+        --hangdump-timeout 120s `
+        --crashdump `
+        --diagnostic `
+        --diagnostic-output-directory $testLogs `
+        --diagnostic-verbosity Information `
+        --results-directory $testLogs `
+        --report-trx `
+        @extraArgs
+    if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+
+    if ($IncludeNativeAOT) {
+        $TestExecutableName = 'Nerdbank.MessagePack.TUnit'
+        if (!($IsMacOS -or $IsLinux)) { $TestExecutableName += '.exe' }
+        Get-ChildItem "$RepoRoot/bin/Nerdbank.MessagePack.TUnit/$Configuration/*/*/publish/$TestExecutableName" |% {
+            & $_
+            if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+        }
+    }
 
     $trxFiles = Get-ChildItem -Recurse -Path $testLogs\*.trx
 } else {
@@ -87,6 +120,7 @@ if ($isMTP) {
         --diag "$testDiagLog;TraceLevel=info" `
         --logger trx `
         @extraArgs
+    if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 
     $trxFiles = Get-ChildItem -Recurse -Path $RepoRoot\test\*.trx
 }
@@ -118,4 +152,8 @@ $trxFiles |% {
 
     Write-Host "##vso[results.publish type=VSTest;runTitle=$runTitle;publishRunAttachments=true;resultFiles=$_;failTaskOnFailedTests=true;testRunSystem=VSTS - PTR;]"
   }
+}
+
+if ($failedTests -ne 0) {
+    exit $failedTests
 }

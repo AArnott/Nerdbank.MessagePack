@@ -1,4 +1,8 @@
 <Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="NonTUnit" />
+  </Configurations>
   <Folder Name="/Samples/">
     <Project Path="samples/AspNetMvc/AspNetMvc.csproj" />
     <Project Path="samples/cs/Samples.csproj" />
@@ -27,6 +31,7 @@
   </Folder>
   <Folder Name="/Solution Items/test/">
     <File Path="test/.editorconfig" />
+    <File Path="test/AnalyzerConsumer.targets" />
     <File Path="test/AOT.props" />
     <File Path="test/Directory.Build.props" />
     <File Path="test/Directory.Build.targets" />
@@ -47,5 +52,8 @@
     <Project Path="test/Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests/Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests.csproj" Id="0b1a3684-c54e-40ba-8648-88cd8c6d6093" />
     <Project Path="test/Nerdbank.MessagePack.SignalR.Tests/Nerdbank.MessagePack.SignalR.Tests.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj" />
+    <Project Path="test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj">
+      <Build Solution="*|NonTUnit" Project="false" />
+    </Project>
   </Folder>
 </Solution>
