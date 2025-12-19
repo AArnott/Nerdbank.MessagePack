@@ -48,7 +48,8 @@ if ($x86) {
   }
 }
 
-$testBinLog = Join-Path $ArtifactStagingFolder (Join-Path build_logs test.binlog)
+$testBinLogXunit = Join-Path $ArtifactStagingFolder (Join-Path build_logs test-xunit.binlog)
+$testBinLogTUnit = Join-Path $ArtifactStagingFolder (Join-Path build_logs test-tunit.binlog)
 $testLogs = Join-Path $ArtifactStagingFolder test_logs
 
 $globalJson = Get-Content $PSScriptRoot/../global.json | ConvertFrom-Json
@@ -58,49 +59,53 @@ $failedTests = 0
 
 if ($isMTP) {
     if ($OnCI) { $extraArgs += '--no-progress' }
+
+    $dumpSwitches = @(
+        ,'--hangdump'
+        ,'--hangdump-timeout','120s'
+        ,'--crashdump'
+    )
+    $mtpArgs = @(
+        ,'--coverage'
+        ,'--coverage-output-format','cobertura'
+        ,'--diagnostic'
+        ,'--diagnostic-output-directory',$testLogs
+        ,'--diagnostic-verbosity','Information'
+        ,'--results-directory',$testLogs
+        ,'--report-trx'
+    )
+
     & $dotnet test --solution $RepoRoot `
         -p:Platform=NonTUnit `
         --no-build `
         -c $Configuration `
-        -bl:"$testBinLog" `
+        -bl:"$testBinLogXunit" `
         --filter-not-trait 'TestCategory=FailsInCloudTest' `
-        --coverage `
-        --coverage-output-format cobertura `
         --coverage-settings "$PSScriptRoot/test.runsettings" `
-        --hangdump `
-        --hangdump-timeout 120s `
-        --crashdump `
-        --diagnostic `
-        --diagnostic-output-directory $testLogs `
-        --diagnostic-verbosity Information `
-        --results-directory $testLogs `
-        --report-trx `
+        @mtpArgs `
+        @dumpSwitches `
         @extraArgs
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 
     & $dotnet test --project $RepoRoot/test/Nerdbank.MessagePack.TUnit `
         --no-build `
         -c $Configuration `
-        -bl:"$testBinLog" `
+        -bl:"$testBinLogTUnit" `
         --treenode-filter '/*/*/*/*[TestCategory!=FailsInCloudTest]' `
-        --coverage `
-        --coverage-output-format cobertura `
-        --hangdump `
-        --hangdump-timeout 120s `
-        --crashdump `
-        --diagnostic `
-        --diagnostic-output-directory $testLogs `
-        --diagnostic-verbosity Information `
-        --results-directory $testLogs `
-        --report-trx `
+        @mtpArgs `
+        @dumpSwitches `
         @extraArgs
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 
     if ($IncludeNativeAOT) {
         $TestExecutableName = 'Nerdbank.MessagePack.TUnit'
-        if (!($IsMacOS -or $IsLinux)) { $TestExecutableName += '.exe' }
+        $NativeAOTArgs = $mtpArgs
+        if (!($IsMacOS -or $IsLinux)) {
+            $TestExecutableName += '.exe'
+            $NativeAOTArgs += $dumpSwitches # dump-related switches only work on NativeAOT exe's on Windows.
+        }
         Get-ChildItem "$RepoRoot/bin/Nerdbank.MessagePack.TUnit/$Configuration/*/*/publish/$TestExecutableName" |% {
-            & $_
+            & $_ @NativeAOTArgs @extraArgs
             if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
         }
     }
@@ -116,7 +121,7 @@ if ($isMTP) {
         --settings "$PSScriptRoot/test.runsettings" `
         --blame-hang-timeout 120s `
         --blame-crash `
-        -bl:"$testBinLog" `
+        -bl:"$testBinLogXunit" `
         --diag "$testDiagLog;TraceLevel=info" `
         --logger trx `
         @extraArgs
