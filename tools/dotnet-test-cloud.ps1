@@ -48,7 +48,8 @@ if ($x86) {
   }
 }
 
-$testBinLog = Join-Path $ArtifactStagingFolder (Join-Path build_logs test.binlog)
+$testBinLogXunit = Join-Path $ArtifactStagingFolder (Join-Path build_logs test-xunit.binlog)
+$testBinLogTUnit = Join-Path $ArtifactStagingFolder (Join-Path build_logs test-tunit.binlog)
 $testLogs = Join-Path $ArtifactStagingFolder test_logs
 
 $globalJson = Get-Content $PSScriptRoot/../global.json | ConvertFrom-Json
@@ -62,7 +63,7 @@ if ($isMTP) {
         -p:Platform=NonTUnit `
         --no-build `
         -c $Configuration `
-        -bl:"$testBinLog" `
+        -bl:"$testBinLogXunit" `
         --filter-not-trait 'TestCategory=FailsInCloudTest' `
         --coverage `
         --coverage-output-format cobertura `
@@ -81,7 +82,7 @@ if ($isMTP) {
     & $dotnet test --project $RepoRoot/test/Nerdbank.MessagePack.TUnit `
         --no-build `
         -c $Configuration `
-        -bl:"$testBinLog" `
+        -bl:"$testBinLogTUnit" `
         --treenode-filter '/*/*/*/*[TestCategory!=FailsInCloudTest]' `
         --coverage `
         --coverage-output-format cobertura `
@@ -116,7 +117,7 @@ if ($isMTP) {
         --settings "$PSScriptRoot/test.runsettings" `
         --blame-hang-timeout 120s `
         --blame-crash `
-        -bl:"$testBinLog" `
+        -bl:"$testBinLogXunit" `
         --diag "$testDiagLog;TraceLevel=info" `
         --logger trx `
         @extraArgs
