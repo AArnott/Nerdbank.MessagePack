@@ -1,8 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Don't target net8.0 until trimmer warning in MTP is fixed: https://github.com/microsoft/testfx/issues/7153 -->
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
-  <Import Project="../AOT.props" />
+  <Import Project="../AOT.props" Condition="'$(TargetFramework)' != 'net472'" />
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <TargetFrameworks>$(TargetFrameworks);net472</TargetFrameworks>
+    <RuntimeIdentifiers>$(RuntimeIdentifiers);win-x86</RuntimeIdentifiers>
+    <RuntimeIdentifier>$(DefaultRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" />
