@@ -12,6 +12,10 @@
 			"groupName": "xunit"
 		},
 		{
+			"matchPackageNames": ["tunit*"],
+			"groupName": "tunit"
+		},
+		{
 			"matchPackageNames": ["Microsoft.Testing.Extensions.*"],
 			"groupName": "Microsoft Testing Platform"
 		},

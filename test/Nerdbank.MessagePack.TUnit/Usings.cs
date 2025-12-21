@@ -10,4 +10,3 @@ global using Nerdbank.Streams;
 global using PolyType;
 global using PolyType.Abstractions;
 global using TUnit.Core.Logging;
-global using Xunit;

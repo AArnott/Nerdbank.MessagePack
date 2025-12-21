@@ -114,7 +114,7 @@ public abstract partial class MessagePackSerializerTestBase
 		return schemaString;
 	}
 
-	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
+	protected Task<ReadOnlySequence<byte>> AssertRoundtrip<T>(T? value)
 #if NET
 		where T : IShapeable<T>
 		=> this.AssertRoundtrip<T, T>(value);
@@ -122,7 +122,7 @@ public abstract partial class MessagePackSerializerTestBase
 		=> this.AssertRoundtrip<T, T>(value);
 #endif
 
-	protected ReadOnlySequence<byte> AssertRoundtrip<T, TProvider>(T? value)
+	protected async Task<ReadOnlySequence<byte>> AssertRoundtrip<T, TProvider>(T? value)
 #if NET
 		where TProvider : IShapeable<T>
 #endif
@@ -130,11 +130,11 @@ public abstract partial class MessagePackSerializerTestBase
 		T? roundtripped = this.Roundtrip<T, TProvider>(value);
 		if (value is IStructuralSecureEqualityComparer<T> deepComparer)
 		{
-			Assert.True(deepComparer.StructuralEquals(roundtripped), "Roundtripped value does not match the original value by deep equality.");
+			await Assert.That(deepComparer.StructuralEquals(roundtripped)).IsTrue();
 		}
 		else
 		{
-			Assert.Equal(value, roundtripped);
+			await Assert.That(roundtripped).IsEqualTo(value);
 		}
 
 		return this.lastRoundtrippedMsgpack;
@@ -145,8 +145,7 @@ public abstract partial class MessagePackSerializerTestBase
 		where T : IShapeable<T>
 #endif
 	{
-		await this.AssertRoundtripAsync<T, T>(value);
-		return this.lastRoundtrippedMsgpack;
+		return await this.AssertRoundtripAsync<T, T>(value);
 	}
 
 	protected async Task<ReadOnlySequence<byte>> AssertRoundtripAsync<T, TProvider>(T? value)
@@ -155,7 +154,7 @@ public abstract partial class MessagePackSerializerTestBase
 #endif
 	{
 		T? roundtripped = await this.RoundtripAsync<T, TProvider>(value);
-		Assert.Equal(value, roundtripped);
+		await Assert.That(roundtripped).IsEqualTo(value);
 		return this.lastRoundtrippedMsgpack;
 	}
 

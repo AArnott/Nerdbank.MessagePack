@@ -14,8 +14,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="PolyType.TestCases" />
-    <PackageReference Include="TUnit.Engine" />
-    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="TUnit" />
   </ItemGroup>
 
   <Import Project="$(RepoRootPath)test/AnalyzerConsumer.targets" />
