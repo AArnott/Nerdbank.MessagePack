@@ -17,7 +17,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	/// Verifies that properties are independent on each instance of <see cref="MessagePackSerializer"/>
 	/// of properties on other instances.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void PropertiesAreIndependent()
 	{
 		this.Serializer = this.Serializer with { SerializeEnumValuesByName = true };
@@ -28,50 +28,50 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.True(s2.SerializeEnumValuesByName);
 	}
 
-	[Fact]
+	[Test]
 	public void SimpleNull() => this.AssertRoundtrip<Fruit>(null);
 
-	[Fact]
+	[Test]
 	public void SimplePoco() => this.AssertRoundtrip(new Fruit { Seeds = 18 });
 
-	[Fact]
+	[Test]
 	public void NoProperties() => this.AssertRoundtrip(new EmptyClass());
 
-	[Fact]
+	[Test]
 	public void AllIntTypes() => this.AssertRoundtrip(new IntRichPoco { Int8 = -1, Int16 = -2, Int32 = -3, Int64 = -4, UInt8 = 1, UInt16 = 2, UInt32 = 3, UInt64 = 4 });
 
-	[Fact]
+	[Test]
 	public void SimpleRecordClass() => this.AssertRoundtrip(new RecordClass(42) { Weight = 5, ChildNumber = 2 });
 
-	[Fact]
+	[Test]
 	public void ClassWithDefaultCtorWithInitProperty() => this.AssertRoundtrip(new DefaultCtorWithInitProperty { Age = 42 });
 
-	[Fact]
+	[Test]
 	public void RecordWithOtherPrimitives() => this.AssertRoundtrip(new OtherPrimitiveTypes("hello", true, 0.1f, 0.2));
 
-	[Fact]
+	[Test]
 	public void NullableStruct_Null() => this.AssertRoundtrip(new RecordWithNullableStruct(null));
 
-	[Fact]
+	[Test]
 	public void NullableStruct_NotNull() => this.AssertRoundtrip(new RecordWithNullableStruct(3));
 
-	[Fact]
+	[Test]
 	public void Dictionary() => this.AssertRoundtrip(new ClassWithDictionary { StringInt = new() { { "a", 1 }, { "b", 2 } } });
 
-	[Fact]
+	[Test]
 	public void Dictionary_Null() => this.AssertRoundtrip(new ClassWithDictionary { StringInt = null });
 
-	[Fact]
+	[Test]
 	public void ImmutableDictionary() => this.AssertRoundtrip(new ClassWithImmutableDictionary { StringInt = ImmutableDictionary<string, int>.Empty.Add("a", 1) });
 
-	[Fact]
+	[Test]
 	public void Array() => this.AssertRoundtrip(new ClassWithArray { IntArray = [1, 2, 3] });
 
-	[Fact]
+	[Test]
 	public void Array_Null() => this.AssertRoundtrip(new ClassWithArray { IntArray = null });
 
 #pragma warning disable SA1500 // Braces for multi-line statements should not share line
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(EnumDataSource<MultiDimensionalArrayFormat>), nameof(EnumDataSource<>.Values))]
 	public void MultidimensionalArray(MultiDimensionalArrayFormat format)
 	{
 		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = format };
@@ -105,7 +105,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 #pragma warning restore SA1500 // Braces for multi-line statements should not share line
 
-	[Fact]
+	[Test]
 	public void MultidimensionalArray_Null()
 	{
 		try
@@ -118,25 +118,25 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void Enumerable() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = [1, 2, 3] });
 
-	[Fact]
+	[Test]
 	public void Enumerable_Null() => this.AssertRoundtrip(new ClassWithEnumerable { IntEnum = null });
 
-	[Fact]
+	[Test]
 	public void Enum() => this.AssertRoundtrip(new HasEnum(SomeEnum.B));
 
-	[Fact]
+	[Test]
 	public void SerializeUnannotatedViaWitness() => this.AssertRoundtrip<UnannotatedPoco, Witness>(new UnannotatedPoco { Value = 42 });
 
-	[Fact]
+	[Test]
 	public void SerializeGraphWithAnnotationOnlyAtBase() => this.AssertRoundtrip(new ReferencesUnannotatedPoco { Poco = new UnannotatedPoco { Value = 42 } });
 
-	[Fact]
+	[Test]
 	public void PrivateFields() => this.AssertRoundtrip(new InternalRecordWithPrivateField { PrivateFieldAccessor = 42, PrivatePropertyAccessor = 43 });
 
-	[Fact]
+	[Test]
 	public void ReadOnlyPropertiesNotSerialized()
 	{
 		RecordWithReadOnlyProperties obj = new(1, 2);
@@ -147,19 +147,19 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadOnlyPropertiesNotSerialized_NoCtor()
 	{
 		RecordWithReadOnlyProperties_NoConstructor obj = new(1, 2);
-		byte[] msgpack = this.Serializer.Serialize(obj, TestContext.Current.CancellationToken);
-		this.Logger.WriteLine(this.Serializer.ConvertToJson(msgpack));
+		byte[] msgpack = this.Serializer.Serialize(obj, this.TimeoutToken);
+		this.Logger.LogInformation(this.Serializer.ConvertToJson(msgpack));
 		MessagePackReader reader = new(msgpack);
 
 		// The Sum field should not be serialized.
 		Assert.Equal(2, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadOnlyPropertiesNotSerialized_Keyed()
 	{
 		RecordWithReadOnlyPropertiesKeyed obj = new(1, 2);
@@ -170,13 +170,13 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void SystemObject()
 	{
 		Assert.NotNull(this.Roundtrip<object, Witness>(new object()));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReadOnlyCollectionProperties()
 	{
 		var testData = new ClassWithReadOnlyCollectionProperties
@@ -188,16 +188,16 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		await this.AssertRoundtripAsync(testData);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadOnlyObjectProperty_IsNotSerialized()
 	{
 		ClassWithReadOnlyObjectProperty obj = new() { AgeAccessor = 15 };
-		byte[] msgpack = this.Serializer.Serialize(obj, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize(obj, this.TimeoutToken);
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadOnlyObjectPropertyWithCtorParameter_IsSerialized()
 	{
 		ClassWithReadOnlyObjectPropertyAndCtorParam obj = new(15);
@@ -207,12 +207,12 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Verifies that an unexpected nil value doesn't disturb deserializing readonly collections.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task ReadOnlyCollectionProperties_Nil()
 	{
 		ReadOnlySequence<byte> sequence = PrepareSequence();
-		this.Serializer.Deserialize<ClassWithReadOnlyCollectionProperties>(sequence, TestContext.Current.CancellationToken);
-		await this.Serializer.DeserializeAsync<ClassWithReadOnlyCollectionProperties>(PipeReader.Create(sequence), TestContext.Current.CancellationToken);
+		this.Serializer.Deserialize<ClassWithReadOnlyCollectionProperties>(sequence, this.TimeoutToken);
+		await this.Serializer.DeserializeAsync<ClassWithReadOnlyCollectionProperties>(PipeReader.Create(sequence), this.TimeoutToken);
 
 		Sequence<byte> PrepareSequence()
 		{
@@ -228,7 +228,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ByteArraySerializedOptimally()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<byte[], Witness>([1, 2, 3]);
@@ -237,7 +237,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.NotNull(reader.ReadBytes());
 	}
 
-	[Fact]
+	[Test]
 	public void ByteMemorySerializedOptimally()
 	{
 		Memory<byte> original = new byte[] { 1, 2, 3 };
@@ -248,7 +248,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.NotNull(reader.ReadBytes());
 	}
 
-	[Fact]
+	[Test]
 	public void ByteReadOnlyMemorySerializedOptimally()
 	{
 		ReadOnlyMemory<byte> original = new byte[] { 1, 2, 3 };
@@ -259,121 +259,121 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.NotNull(reader.ReadBytes());
 	}
 
-	[Fact]
+	[Test]
 	public void ByteArrayCanDeserializeSuboptimally()
 	{
 		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
 
-		byte[]? result = this.Serializer.Deserialize<byte[], Witness>(sequence, TestContext.Current.CancellationToken);
+		byte[]? result = this.Serializer.Deserialize<byte[], Witness>(sequence, this.TimeoutToken);
 		Assert.NotNull(result);
 		Assert.Equal<byte>([1, 2, 3], result);
 	}
 
-	[Fact]
+	[Test]
 	public void ByteMemoryCanDeserializeSuboptimally()
 	{
 		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
 
-		Memory<byte> result = this.Serializer.Deserialize<Memory<byte>, Witness>(sequence, TestContext.Current.CancellationToken);
+		Memory<byte> result = this.Serializer.Deserialize<Memory<byte>, Witness>(sequence, this.TimeoutToken);
 		Assert.Equal<byte>([1, 2, 3], result.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void ByteReadOnlyMemoryCanDeserializeSuboptimally()
 	{
 		Sequence<byte> sequence = GetByteArrayAsActualMsgPackArray();
 
-		ReadOnlyMemory<byte> result = this.Serializer.Deserialize<ReadOnlyMemory<byte>, Witness>(sequence, TestContext.Current.CancellationToken);
+		ReadOnlyMemory<byte> result = this.Serializer.Deserialize<ReadOnlyMemory<byte>, Witness>(sequence, this.TimeoutToken);
 		Assert.Equal<byte>([1, 2, 3], result.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterVsBuiltIn_TopLevel()
 	{
 		this.Serializer = this.Serializer with { Converters = [new CustomStringConverter()] };
-		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello", TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<string, Witness>("Hello", this.TimeoutToken);
 		this.LogMsgPack(msgpack);
-		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack, TestContext.Current.CancellationToken));
+		Assert.Equal("HelloWR", this.Serializer.Deserialize<string, Witness>(msgpack, this.TimeoutToken));
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterVsBuiltIn_SubLevel()
 	{
 		this.Serializer = this.Serializer with { Converters = [new CustomStringConverter()] };
-		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0), TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize(new OtherPrimitiveTypes("Hello", false, 0, 0), this.TimeoutToken);
 		this.LogMsgPack(msgpack);
-		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack, TestContext.Current.CancellationToken)?.AString);
+		Assert.Equal("HelloWR", this.Serializer.Deserialize<OtherPrimitiveTypes>(msgpack, this.TimeoutToken)?.AString);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeObject_DeserializeObject()
 	{
 		Fruit value = new() { Seeds = 5 };
 
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq);
-		this.Serializer.SerializeObject(ref writer, value, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit)), TestContext.Current.CancellationToken);
+		this.Serializer.SerializeObject(ref writer, value, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit)), this.TimeoutToken);
 		writer.Flush();
 
 		this.LogMsgPack(seq);
 
 		MessagePackReader reader = new(seq);
-		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit)), TestContext.Current.CancellationToken);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(ref reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit)), this.TimeoutToken);
 		Assert.Equal(value, deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeObject_ByteArray()
 	{
 		Fruit value = new() { Seeds = 5 };
 		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
-		byte[] serialized = this.Serializer.SerializeObject(value, shape, TestContext.Current.CancellationToken);
-		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(serialized, shape, TestContext.Current.CancellationToken);
+		byte[] serialized = this.Serializer.SerializeObject(value, shape, this.TimeoutToken);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(serialized, shape, this.TimeoutToken);
 		Assert.Equal(value, deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeObject_IBufferWriter()
 	{
 		Fruit value = new() { Seeds = 5 };
 		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
 		var bufferWriter = new Sequence<byte>();
-		this.Serializer.SerializeObject(bufferWriter, value, shape, TestContext.Current.CancellationToken);
-		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(bufferWriter.AsReadOnlySequence, shape, TestContext.Current.CancellationToken);
+		this.Serializer.SerializeObject(bufferWriter, value, shape, this.TimeoutToken);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(bufferWriter.AsReadOnlySequence, shape, this.TimeoutToken);
 		Assert.Equal(value, deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeObject_Stream()
 	{
 		Fruit value = new() { Seeds = 5 };
 		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
 		var stream = new MemoryStream();
-		this.Serializer.SerializeObject(stream, value, shape, TestContext.Current.CancellationToken);
+		this.Serializer.SerializeObject(stream, value, shape, this.TimeoutToken);
 		stream.Position = 0;
-		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(stream, shape, TestContext.Current.CancellationToken);
+		Fruit? deserialized = (Fruit?)this.Serializer.DeserializeObject(stream, shape, this.TimeoutToken);
 		Assert.Equal(value, deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public async Task SerializeObjectAsync_Stream()
 	{
 		Fruit value = new() { Seeds = 5 };
 		ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(Fruit));
 		var stream = new MemoryStream();
-		await this.Serializer.SerializeObjectAsync(stream, value, shape, TestContext.Current.CancellationToken);
+		await this.Serializer.SerializeObjectAsync(stream, value, shape, this.TimeoutToken);
 		stream.Position = 0;
-		Fruit? deserialized = (Fruit?)await this.Serializer.DeserializeObjectAsync(stream, shape, TestContext.Current.CancellationToken);
+		Fruit? deserialized = (Fruit?)await this.Serializer.DeserializeObjectAsync(stream, shape, this.TimeoutToken);
 		Assert.Equal(value, deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public void CtorParameterNameMatchesSerializedInsteadOfDeclaredName_Roundtrips()
 	{
 		this.AssertRoundtrip(new TypeWithConstructorParameterMatchingSerializedPropertyName(2));
 	}
 
-	[Fact]
+	[Test]
 	public void CtorParameterNameMatchesSerializedInsteadOfDeclaredName_DefaultValueWorks()
 	{
 		Sequence<byte> seq = new();
@@ -382,18 +382,18 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		writer.Flush();
 
 		TypeWithConstructorParameterMatchingSerializedPropertyName? deserialized =
-			this.Serializer.Deserialize<TypeWithConstructorParameterMatchingSerializedPropertyName>(seq, TestContext.Current.CancellationToken);
+			this.Serializer.Deserialize<TypeWithConstructorParameterMatchingSerializedPropertyName>(seq, this.TimeoutToken);
 		Assert.NotNull(deserialized);
 		Assert.Equal(8, deserialized.Marshaled);
 	}
 
-	[Fact]
+	[Test]
 	public void ClassWithIndexerCanBeSerialized()
 	{
 		this.AssertRoundtrip(new ClassWithIndexer { Member = 3 });
 	}
 
-	[Fact]
+	[Test]
 	public void TupleSerializedAsArray()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<Tuple<int, bool>, Witness>(new(1, true));
@@ -401,7 +401,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void ValueTupleSerializedAsArray()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<(int, bool), Witness>(new(1, true));
@@ -409,7 +409,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void IImmutableList()
 	{
 		IImmutableList<int> list = ImmutableList.Create(1, 2, 3);
@@ -421,11 +421,11 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Regression test for <see href="https://github.com/AArnott/Nerdbank.MessagePack/issues/416">issue 416</see>.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void WriteLargeStringToStream()
 	{
 		string value = new string('x', 100 * 1024);
-		this.Serializer.Serialize<string, Witness>(Stream.Null, value, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<string, Witness>(Stream.Null, value, this.TimeoutToken);
 	}
 
 	/// <summary>
@@ -435,28 +435,28 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	/// Object-keys are not supported both because they leave nothing to be serialized and because they cannot be securely hashed.
 	/// Manual verification of the logged output should confirm that the exception message is helpful.
 	/// </remarks>
-	[Fact]
+	[Test]
 	public void ObjectKeyedCollections()
 	{
-		byte[] msgpack = this.Serializer.Serialize<IDictionary, Witness>(new Dictionary<string, object>(), TestContext.Current.CancellationToken);
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary, Witness>(msgpack, TestContext.Current.CancellationToken));
+		byte[] msgpack = this.Serializer.Serialize<IDictionary, Witness>(new Dictionary<string, object>(), this.TimeoutToken);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary, Witness>(msgpack, this.TimeoutToken));
 		NotSupportedException innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
-		this.Logger.WriteLine(innerException.Message);
+		this.Logger.LogInformation(innerException.Message);
 
-		msgpack = this.Serializer.Serialize<IDictionary<object, string>, Witness>(new Dictionary<object, string>(), TestContext.Current.CancellationToken);
-		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary<object, string>, Witness>(msgpack, TestContext.Current.CancellationToken));
+		msgpack = this.Serializer.Serialize<IDictionary<object, string>, Witness>(new Dictionary<object, string>(), this.TimeoutToken);
+		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary<object, string>, Witness>(msgpack, this.TimeoutToken));
 		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
-		this.Logger.WriteLine(innerException.Message);
+		this.Logger.LogInformation(innerException.Message);
 
-		msgpack = this.Serializer.Serialize<HashSet<object>, Witness>(new HashSet<object>(), TestContext.Current.CancellationToken);
-		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<HashSet<object>, Witness>(msgpack, TestContext.Current.CancellationToken));
+		msgpack = this.Serializer.Serialize<HashSet<object>, Witness>(new HashSet<object>(), this.TimeoutToken);
+		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<HashSet<object>, Witness>(msgpack, this.TimeoutToken));
 		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
-		this.Logger.WriteLine(innerException.Message);
+		this.Logger.LogInformation(innerException.Message);
 
-		this.Logger.WriteLine(ex.ToString());
+		this.Logger.LogInformation(ex.ToString());
 	}
 
-	[Fact]
+	[Test]
 	public void CustomDictionaryWithCustomConverter()
 	{
 		HasCustomDictionary original = new(new CustomDictionary<string, int> { { "a", 1 }, { "b", 2 } });
@@ -472,7 +472,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(2 * 2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void CustomListWithCustomConverter()
 	{
 		HasCustomList original = new(new CustomList<string> { "hi" });
@@ -488,7 +488,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterOnParameter()
 	{
 		HasCustomConverterOnParameter original = new(10);

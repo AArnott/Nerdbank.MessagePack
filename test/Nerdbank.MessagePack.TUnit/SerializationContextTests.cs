@@ -10,14 +10,14 @@ public partial class SerializationContextTests
 	/// <summary>
 	/// Verifies that the <see cref="SerializationContext.GetConverter{T}()"/> method throws when not within a serialization operation.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void GetConverterThrows()
 	{
 		SerializationContext context = new();
 		Assert.Throws<InvalidOperationException>(() => context.GetConverter<MyType>());
 	}
 
-	[Fact]
+	[Test]
 	public void DepthStep_ThrowsOnCancellation()
 	{
 		CancellationTokenSource cts = new();
@@ -27,7 +27,7 @@ public partial class SerializationContextTests
 		Assert.Throws<OperationCanceledException>(context.DepthStep);
 	}
 
-	[Fact]
+	[Test]
 	public void DepthStep_ThrowsOnStackDepth()
 	{
 		SerializationContext context = new() { MaxDepth = 2 };
@@ -36,7 +36,7 @@ public partial class SerializationContextTests
 		Assert.Throws<MessagePackSerializationException>(context.DepthStep);
 	}
 
-	[Fact]
+	[Test]
 	public void StateDictionary_Add_Remove()
 	{
 		SerializationContext context = new()
@@ -50,14 +50,14 @@ public partial class SerializationContextTests
 		Assert.Null(context["first"]);
 	}
 
-	[Fact]
+	[Test]
 	public void StateDictionary_NonExistent()
 	{
 		SerializationContext context = new();
 		Assert.Null(context["DOESnotEXIST"]);
 	}
 
-	[Fact]
+	[Test]
 	public void StateDictionary_PersistentCollection()
 	{
 		SerializationContext original = new()

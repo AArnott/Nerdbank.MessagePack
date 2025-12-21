@@ -3,7 +3,7 @@
 
 public partial class StreamTests : MessagePackSerializerTestBase
 {
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task SerializeWithStreamAsync(bool memoryStream)
 	{
 		Person person = new("Andrew", "Arnott");
@@ -14,15 +14,15 @@ public partial class StreamTests : MessagePackSerializerTestBase
 			stream = new MonitoringStream(stream);
 		}
 
-		await this.Serializer.SerializeAsync(stream, person, TestContext.Current.CancellationToken);
+		await this.Serializer.SerializeAsync(stream, person, this.TimeoutToken);
 
 		stream.Position = 0;
-		Person? deserialized = await this.Serializer.DeserializeAsync<Person>(stream, TestContext.Current.CancellationToken);
+		Person? deserialized = await this.Serializer.DeserializeAsync<Person>(stream, this.TimeoutToken);
 
 		Assert.Equal(person, deserialized);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public void SerializeWithStream(bool memoryStream)
 	{
 		Person person = new("Andrew", "Arnott");
@@ -33,13 +33,13 @@ public partial class StreamTests : MessagePackSerializerTestBase
 			stream = new MonitoringStream(stream);
 		}
 
-		this.Serializer.Serialize(stream, person, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(stream, person, this.TimeoutToken);
 
 		stream.Position = 0;
-		Person? deserialized = this.Serializer.Deserialize<Person>(stream, TestContext.Current.CancellationToken);
+		Person? deserialized = this.Serializer.Deserialize<Person>(stream, this.TimeoutToken);
 	}
 
-	[Fact]
+	[Test]
 	public void Deserialize_FromMemoryStreamAtNonZeroPosition()
 	{
 		// Create test data
@@ -48,20 +48,20 @@ public partial class StreamTests : MessagePackSerializerTestBase
 
 		// Serialize both persons to a MemoryStream
 		MemoryStream stream = new();
-		this.Serializer.Serialize(stream, person1, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(stream, person1, this.TimeoutToken);
 		long person2Position = stream.Position;
-		this.Serializer.Serialize(stream, person2, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(stream, person2, this.TimeoutToken);
 
 		// Reset to position of second person and deserialize
 		stream.Position = person2Position;
-		Person? deserialized = this.Serializer.Deserialize<Person>(stream, TestContext.Current.CancellationToken);
+		Person? deserialized = this.Serializer.Deserialize<Person>(stream, this.TimeoutToken);
 
 		// Should get the second person, not the first
 		Assert.Equal(person2, deserialized);
 		Assert.NotEqual(person1, deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DeserializeAsync_FromMemoryStreamAtNonZeroPosition()
 	{
 		// Create test data
@@ -70,13 +70,13 @@ public partial class StreamTests : MessagePackSerializerTestBase
 
 		// Serialize both persons to a MemoryStream
 		MemoryStream stream = new();
-		await this.Serializer.SerializeAsync(stream, person1, TestContext.Current.CancellationToken);
+		await this.Serializer.SerializeAsync(stream, person1, this.TimeoutToken);
 		long person2Position = stream.Position;
-		await this.Serializer.SerializeAsync(stream, person2, TestContext.Current.CancellationToken);
+		await this.Serializer.SerializeAsync(stream, person2, this.TimeoutToken);
 
 		// Reset to position of second person and deserialize
 		stream.Position = person2Position;
-		Person? deserialized = await this.Serializer.DeserializeAsync<Person>(stream, TestContext.Current.CancellationToken);
+		Person? deserialized = await this.Serializer.DeserializeAsync<Person>(stream, this.TimeoutToken);
 
 		// Should get the second person, not the first
 		Assert.Equal(person2, deserialized);

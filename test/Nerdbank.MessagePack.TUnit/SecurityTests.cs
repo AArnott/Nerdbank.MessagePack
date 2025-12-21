@@ -8,7 +8,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Verifies that the serializer will guard against stack overflow attacks for map-formatted objects.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void StackGuard_ObjectMap_Serialize()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
@@ -16,13 +16,13 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 
 		// Try serializing that structure. This should throw for security reasons.
 		Sequence<byte> buffer = new();
-		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(buffer, outer, TestContext.Current.CancellationToken));
+		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(buffer, outer, this.TimeoutToken));
 	}
 
 	/// <summary>
 	/// Verifies that the serializer will allow depths within the prescribed limit.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void StackGuard_ObjectMap_Serialize_WithinLimit()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
@@ -30,36 +30,36 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 
 		// Try serializing that structure. This should throw for security reasons.
 		Sequence<byte> buffer = new();
-		this.Serializer.Serialize(buffer, outer, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(buffer, outer, this.TimeoutToken);
 	}
 
 	/// <summary>
 	/// Verifies that the deserializer will guard against stack overflow attacks for map-formatted objects.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void StackGuard_ObjectMap_Deserialize()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
 		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth + 1);
 
 		// Try deserializing that structure. This should throw for security reasons.
-		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Nested>(buffer, TestContext.Current.CancellationToken));
+		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Nested>(buffer, this.TimeoutToken));
 	}
 
 	/// <summary>
 	/// Verifies that the deserializer will allow depths within the prescribed limit.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void StackGuard_ObjectMap_Deserialize_WithinLimit()
 	{
 		// Prepare a very deep structure, designed to blow the stack.
 		ReadOnlySequence<byte> buffer = this.FormatDeepMsgPackMap(this.Serializer.StartingContext.MaxDepth);
 
 		// Try deserializing that structure. This should throw for security reasons.
-		this.Serializer.Deserialize<Nested>(buffer, TestContext.Current.CancellationToken);
+		this.Serializer.Deserialize<Nested>(buffer, this.TimeoutToken);
 	}
 
-	[Fact]
+	[Test]
 	public void ManualHashCollisionResistance()
 	{
 		// This doesn't really test for hash collision resistance directly.
@@ -71,7 +71,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void ComparerProvider_CanBeOverridden()
 	{
 		this.Serializer = this.Serializer with { ComparerProvider = null };
@@ -86,10 +86,10 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		KeyedCollections? deserializedData = this.Roundtrip(testData);
 		Assert.NotNull(deserializedData);
 
-		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.StringSet.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
 
 		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
 		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
@@ -100,7 +100,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Verifies that the dictionaries created by the deserializer use collision resistant key hashes.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void ComparerProvider_CollisionResistantDefault()
 	{
 		KeyedCollections testData = new()
@@ -113,10 +113,10 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		KeyedCollections? deserializedData = this.Roundtrip(testData);
 		Assert.NotNull(deserializedData);
 
-		this.Logger.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.StringSet.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		this.Logger.LogInformation(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
 
 		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
 		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
@@ -124,7 +124,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		Assert.NotEqual(EqualityComparer<Fruit>.Default, deserializedData.FruitDictionary.Comparer);
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializerThrowsOnKeyCollisions()
 	{
 		// This test is designed to ensure that the deserializer throws an exception when it encounters a key collision.
@@ -139,8 +139,8 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		writer.Write("value2");
 		writer.Flush();
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Deserialize<Dictionary<string, string>, Witness>(seq, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.GetBaseException().Message);
+			() => this.Serializer.Deserialize<Dictionary<string, string>, Witness>(seq, this.TimeoutToken));
+		this.Logger.LogInformation(ex.GetBaseException().Message);
 	}
 
 	private Nested ConstructDeepObjectGraph(int depth)
