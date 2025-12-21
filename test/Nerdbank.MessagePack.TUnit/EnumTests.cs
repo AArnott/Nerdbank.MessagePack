@@ -45,47 +45,47 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 
 	public MessagePackType ExpectedType { get; set; }
 
-	[Fact]
+	[Test]
 	public void SimpleEnum()
 	{
 		this.AssertEnum<Simple, Witness>(Simple.Two);
 	}
 
-	[Fact]
+	[Test]
 	public void Enum_WithCaseInsensitiveCollisions()
 	{
 		this.AssertEnum<CaseInsensitiveCollisions, Witness>(CaseInsensitiveCollisions.OnE);
 		this.AssertEnum<CaseInsensitiveCollisions, Witness>(CaseInsensitiveCollisions.One);
 	}
 
-	[Fact]
+	[Test]
 	public void NonExistentValue_NonFlags()
 	{
 		this.ExpectedType = MessagePackType.Integer;
 		this.AssertEnum<Simple, Witness>((Simple)15);
 	}
 
-	[Fact]
+	[Test]
 	public void NonExistentValue_Flags()
 	{
 		this.ExpectedType = MessagePackType.Integer;
 		this.AssertEnum<FlagsEnum, Witness>((FlagsEnum)15);
 	}
 
-	[Fact]
+	[Test]
 	public void OneValueFromFlags()
 	{
 		this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One);
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleFlags()
 	{
 		this.ExpectedType = MessagePackType.Integer;
 		this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One | FlagsEnum.Two);
 	}
 
-	[Fact]
+	[Test]
 	public void NonUniqueNamesInEnum_Roundtrip()
 	{
 		this.AssertEnum<EnumWithNonUniqueNames, Witness>(EnumWithNonUniqueNames.AnotherOne);
@@ -109,7 +109,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<T, TWitness>(value);
 		this.AssertType(msgpack, this.ExpectedType);
-		this.Logger.WriteLine(value.ToString());
+		this.Logger.LogTrace(value.ToString());
 		return msgpack;
 	}
 
@@ -119,6 +119,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		Assert.Equal(expectedType, reader.NextMessagePackType);
 	}
 
+	[InheritsTests]
 	public class EnumAsStringTests : EnumTests
 	{
 		public EnumAsStringTests()
@@ -127,27 +128,27 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 			this.ExpectedType = MessagePackType.String;
 		}
 
-		[Fact]
+		[Test]
 		public void CaseInsensitiveByDefault()
 		{
-			Assert.Equal(Simple.One, this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("ONE"), TestContext.Current.CancellationToken));
+			Assert.Equal(Simple.One, this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("ONE"), this.TimeoutToken));
 		}
 
-		[Fact]
+		[Test]
 		public void UnrecognizedName()
 		{
-			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), TestContext.Current.CancellationToken));
-			this.Logger.WriteLine(ex.Message);
+			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), this.TimeoutToken));
+			this.Logger.LogTrace(ex.Message);
 		}
 
-		[Fact]
+		[Test]
 		public void NonUniqueNamesInEnum_ParseEitherName()
 		{
-			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), TestContext.Current.CancellationToken));
-			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), TestContext.Current.CancellationToken));
+			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), this.TimeoutToken));
+			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), this.TimeoutToken));
 		}
 
-		[Fact]
+		[Test]
 		public void RenamedEnumValues()
 		{
 			ReadOnlySequence<byte> msgpack = this.AssertEnum<EnumWithRenamedValues, Witness>(EnumWithRenamedValues.First);
@@ -157,6 +158,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		}
 	}
 
+	[InheritsTests]
 	public class EnumAsOrdinalTests : EnumTests
 	{
 		public EnumAsOrdinalTests()

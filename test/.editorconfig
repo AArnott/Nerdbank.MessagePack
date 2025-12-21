@@ -56,3 +56,6 @@ dotnet_diagnostic.SA1133.severity = silent
 
 # SA1611: Element parameters should be documented
 dotnet_diagnostic.SA1611.severity = silent
+
+# TUnit0018: Test methods should not assign instance data (https://github.com/thomhurst/TUnit/discussions/4120)
+dotnet_diagnostic.TUnit0018.severity = suggestion
