@@ -5,7 +5,6 @@
 // Copyright (c) 2025 morfah
 using System.Diagnostics.CodeAnalysis;
 using AotNativeConsole.Models.Animals;
-using Nerdbank.MessagePack;
 
 namespace AotNativeConsole.Models;
 
@@ -37,7 +36,7 @@ public partial class MyShape
 	[Key(7)]
 	public List<Animal> Animals { get; }
 
-	[MemberNotNull(nameof(this.Name))]
+	[MemberNotNull(nameof(Name))]
 	public MyShape SetName(string name)
 	{
 		this.Name = name;
