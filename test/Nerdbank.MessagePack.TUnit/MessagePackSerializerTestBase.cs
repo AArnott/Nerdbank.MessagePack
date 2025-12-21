@@ -232,7 +232,7 @@ public abstract partial class MessagePackSerializerTestBase
 
 	protected void LogMsgPack(ReadOnlySequence<byte> msgPack)
 	{
-		this.Logger.LogTrace(this.Serializer.ConvertToJson(msgPack));
+		this.Logger.LogInformation(this.Serializer.ConvertToJson(msgPack));
 	}
 
 	[GenerateShapeFor<bool>]
