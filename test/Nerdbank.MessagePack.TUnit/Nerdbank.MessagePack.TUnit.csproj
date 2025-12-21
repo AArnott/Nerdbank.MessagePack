@@ -14,7 +14,13 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="PolyType.TestCases" />
-    <PackageReference Include="TUnit" />
+    <PackageReference Include="TUnit.Engine" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net9.0'))">
+    <PackageReference Include="xunit.v3.assert.aot" />
+  </ItemGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net9.0'))">
+    <PackageReference Include="xunit.v3.assert" />
   </ItemGroup>
 
   <Import Project="$(RepoRootPath)test/AnalyzerConsumer.targets" />

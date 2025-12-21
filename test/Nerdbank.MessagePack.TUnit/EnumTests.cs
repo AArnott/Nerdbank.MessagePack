@@ -46,50 +46,50 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 	public MessagePackType ExpectedType { get; set; }
 
 	[Test]
-	public async Task SimpleEnum()
+	public void SimpleEnum()
 	{
-		await this.AssertEnum<Simple, Witness>(Simple.Two);
+		this.AssertEnum<Simple, Witness>(Simple.Two);
 	}
 
 	[Test]
-	public async Task Enum_WithCaseInsensitiveCollisions()
+	public void Enum_WithCaseInsensitiveCollisions()
 	{
-		await this.AssertEnum<CaseInsensitiveCollisions, Witness>(CaseInsensitiveCollisions.OnE);
-		await this.AssertEnum<CaseInsensitiveCollisions, Witness>(CaseInsensitiveCollisions.One);
+		this.AssertEnum<CaseInsensitiveCollisions, Witness>(CaseInsensitiveCollisions.OnE);
+		this.AssertEnum<CaseInsensitiveCollisions, Witness>(CaseInsensitiveCollisions.One);
 	}
 
 	[Test]
-	public async Task NonExistentValue_NonFlags()
+	public void NonExistentValue_NonFlags()
 	{
 		this.ExpectedType = MessagePackType.Integer;
-		await this.AssertEnum<Simple, Witness>((Simple)15);
+		this.AssertEnum<Simple, Witness>((Simple)15);
 	}
 
 	[Test]
-	public async Task NonExistentValue_Flags()
+	public void NonExistentValue_Flags()
 	{
 		this.ExpectedType = MessagePackType.Integer;
-		await this.AssertEnum<FlagsEnum, Witness>((FlagsEnum)15);
+		this.AssertEnum<FlagsEnum, Witness>((FlagsEnum)15);
 	}
 
 	[Test]
-	public async Task OneValueFromFlags()
+	public void OneValueFromFlags()
 	{
-		await this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One);
+		this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One);
 	}
 
 	[Test]
-	public async Task MultipleFlags()
+	public void MultipleFlags()
 	{
 		this.ExpectedType = MessagePackType.Integer;
-		await this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One | FlagsEnum.Two);
+		this.AssertEnum<FlagsEnum, Witness>(FlagsEnum.One | FlagsEnum.Two);
 	}
 
 	[Test]
-	public async Task NonUniqueNamesInEnum_Roundtrip()
+	public void NonUniqueNamesInEnum_Roundtrip()
 	{
-		await this.AssertEnum<EnumWithNonUniqueNames, Witness>(EnumWithNonUniqueNames.AnotherOne);
-		await this.AssertEnum<EnumWithNonUniqueNames, Witness>(EnumWithNonUniqueNames.One);
+		this.AssertEnum<EnumWithNonUniqueNames, Witness>(EnumWithNonUniqueNames.AnotherOne);
+		this.AssertEnum<EnumWithNonUniqueNames, Witness>(EnumWithNonUniqueNames.One);
 	}
 
 	private static ReadOnlySequence<byte> SerializeEnumName(string name)
@@ -101,22 +101,22 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		return seq;
 	}
 
-	private async Task<ReadOnlySequence<byte>> AssertEnum<T, TWitness>(T value)
+	private ReadOnlySequence<byte> AssertEnum<T, TWitness>(T value)
 		where T : struct, Enum
 #if NET
 		where TWitness : IShapeable<T>
 #endif
 	{
-		ReadOnlySequence<byte> msgpack = await this.AssertRoundtrip<T, TWitness>(value);
-		await this.AssertType(msgpack, this.ExpectedType);
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<T, TWitness>(value);
+		this.AssertType(msgpack, this.ExpectedType);
 		this.Logger.LogTrace(value.ToString());
 		return msgpack;
 	}
 
-	private async Task AssertType(ReadOnlySequence<byte> msgpack, MessagePackType expectedType)
+	private void AssertType(ReadOnlySequence<byte> msgpack, MessagePackType expectedType)
 	{
 		MessagePackReader reader = new(msgpack);
-		await Assert.That(reader.NextMessagePackType).IsEqualTo(expectedType);
+		Assert.Equal(expectedType, reader.NextMessagePackType);
 	}
 
 	[InheritsTests]
@@ -129,33 +129,32 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		}
 
 		[Test]
-		public async Task CaseInsensitiveByDefault()
+		public void CaseInsensitiveByDefault()
 		{
-			await Assert.That(this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("ONE"), this.TimeoutToken)).IsEqualTo(Simple.One);
+			Assert.Equal(Simple.One, this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("ONE"), this.TimeoutToken));
 		}
 
 		[Test]
-		public async Task UnrecognizedName()
+		public void UnrecognizedName()
 		{
-			MessagePackSerializationException? ex = await Assert.ThrowsAsync<MessagePackSerializationException>(() => Task.Run(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), this.TimeoutToken)));
-			await Assert.That(ex).IsNotNull();
-			this.Logger.LogTrace(ex!.Message);
+			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), this.TimeoutToken));
+			this.Logger.LogTrace(ex.Message);
 		}
 
 		[Test]
-		public async Task NonUniqueNamesInEnum_ParseEitherName()
+		public void NonUniqueNamesInEnum_ParseEitherName()
 		{
-			await Assert.That(this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), this.TimeoutToken)).IsEqualTo(EnumWithNonUniqueNames.One);
-			await Assert.That(this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), this.TimeoutToken)).IsEqualTo(EnumWithNonUniqueNames.AnotherOne);
+			Assert.Equal(EnumWithNonUniqueNames.One, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.One)), this.TimeoutToken));
+			Assert.Equal(EnumWithNonUniqueNames.AnotherOne, this.Serializer.Deserialize<EnumWithNonUniqueNames, Witness>(SerializeEnumName(nameof(EnumWithNonUniqueNames.AnotherOne)), this.TimeoutToken));
 		}
 
 		[Test]
-		public async Task RenamedEnumValues()
+		public void RenamedEnumValues()
 		{
-			ReadOnlySequence<byte> msgpack = await this.AssertEnum<EnumWithRenamedValues, Witness>(EnumWithRenamedValues.First);
+			ReadOnlySequence<byte> msgpack = this.AssertEnum<EnumWithRenamedValues, Witness>(EnumWithRenamedValues.First);
 			MessagePackReader reader = new(msgpack);
 			string? actual = reader.ReadString();
-			await Assert.That(actual).IsEqualTo("1st");
+			Assert.Equal("1st", actual);
 		}
 	}
 
