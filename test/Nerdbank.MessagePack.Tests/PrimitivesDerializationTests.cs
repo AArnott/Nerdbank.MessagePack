@@ -263,6 +263,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 	[GenerateShapeFor<Int128>]
 	[GenerateShapeFor<UInt128>]
 #endif
+	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<BigInteger>]
 	[GenerateShapeFor<Guid>]

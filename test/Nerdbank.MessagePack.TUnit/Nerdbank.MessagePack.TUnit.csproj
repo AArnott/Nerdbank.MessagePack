@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../AOT.props" Condition="'$(TargetFramework)' != 'net472'" />
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
+    <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
-  <Import Project="../AOT.props" Condition="'$(TargetFramework)' != 'net472'" />
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
     <TargetFrameworks>$(TargetFrameworks);net472</TargetFrameworks>
     <RuntimeIdentifiers>$(RuntimeIdentifiers);win-x86</RuntimeIdentifiers>

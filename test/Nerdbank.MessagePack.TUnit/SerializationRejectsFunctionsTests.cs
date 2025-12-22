@@ -3,7 +3,7 @@
 
 public partial class SerializationRejectsFunctionsTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void UnserializedDelegateTypesDoNotBreakSerialization()
 	{
 		this.AssertRoundtrip(new TypeWithUnserializedPropertyWithFunctionProperty { SimpleProperty = 42 });

@@ -3,7 +3,7 @@
 
 public partial class SecureKeyCollectionsTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void CanSerializeDictionariesWithEmptyKeys_ButNotDeserialize()
 	{
 		MessagePackSerializer serializer = new MessagePackSerializer().WithObjectConverter();
@@ -14,19 +14,19 @@ public partial class SecureKeyCollectionsTests : MessagePackSerializerTestBase
 
 		// Serialization should succeed because although we cannot create an equality comparer,
 		// that only limits our ability to deserialize, not serialize.
-		byte[] payload = serializer.Serialize(container, TestContext.Current.CancellationToken);
+		byte[] payload = serializer.Serialize(container, this.TimeoutToken);
 
 		// Deserialization should fail because the FilterKey type has an 'object' property which is not supported.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => serializer.Deserialize<HasDictionaryWithIndirectObjectKey>(payload, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.ToString());
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => serializer.Deserialize<HasDictionaryWithIndirectObjectKey>(payload, this.TimeoutToken));
+		Console.WriteLine(ex.ToString());
 		Assert.IsType<NotSupportedException>(ex.GetBaseException());
 
 		// Deserialization with primitives should work fine though.
 		MessagePackReader reader = new(payload);
-		Assert.NotNull(serializer.DeserializePrimitives(ref reader, TestContext.Current.CancellationToken));
+		Assert.NotNull(serializer.DeserializePrimitives(ref reader, this.TimeoutToken));
 	}
 
-	[Fact]
+	[Test]
 	public void CanSerializeSetsWithEmptyKeys_ButNotDeserialize()
 	{
 		MessagePackSerializer serializer = new MessagePackSerializer().WithObjectConverter();
@@ -37,19 +37,19 @@ public partial class SecureKeyCollectionsTests : MessagePackSerializerTestBase
 
 		// Serialization should succeed because although we cannot create an equality comparer,
 		// that only limits our ability to deserialize, not serialize.
-		byte[] payload = serializer.Serialize(container, TestContext.Current.CancellationToken);
+		byte[] payload = serializer.Serialize(container, this.TimeoutToken);
 
 		// Deserialization should fail because the FilterKey type has an 'object' property which is not supported.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => serializer.Deserialize<HasHashSetWithIndirectObjectKey>(payload, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.ToString());
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => serializer.Deserialize<HasHashSetWithIndirectObjectKey>(payload, this.TimeoutToken));
+		Console.WriteLine(ex.ToString());
 		Assert.IsType<NotSupportedException>(ex.GetBaseException());
 
 		// Deserialization with primitives should work fine though.
 		MessagePackReader reader = new(payload);
-		Assert.NotNull(serializer.DeserializePrimitives(ref reader, TestContext.Current.CancellationToken));
+		Assert.NotNull(serializer.DeserializePrimitives(ref reader, this.TimeoutToken));
 	}
 
-	[Fact]
+	[Test]
 	public void CanSerializeDictionariesWithEmptyKeys_AndDeserializeWithGetterOnlyCollection()
 	{
 		MessagePackSerializer serializer = new MessagePackSerializer().WithObjectConverter();
@@ -57,18 +57,18 @@ public partial class SecureKeyCollectionsTests : MessagePackSerializerTestBase
 
 		// Serialization should succeed because although we cannot create an equality comparer,
 		// that only limits our ability to deserialize, not serialize.
-		byte[] payload = serializer.Serialize(container, TestContext.Current.CancellationToken);
+		byte[] payload = serializer.Serialize(container, this.TimeoutToken);
 
 		// Deserialization should also succeed because we never have to or get to initialize the keyed collection ourselves.
-		HasDictionaryWithIndirectObjectKeyGetterOnly? deserialized = serializer.Deserialize<HasDictionaryWithIndirectObjectKeyGetterOnly>(payload, TestContext.Current.CancellationToken);
+		HasDictionaryWithIndirectObjectKeyGetterOnly? deserialized = serializer.Deserialize<HasDictionaryWithIndirectObjectKeyGetterOnly>(payload, this.TimeoutToken);
 		Assert.NotNull(deserialized);
 
 		// Deserialization with primitives should work fine too.
 		MessagePackReader reader = new(payload);
-		Assert.NotNull(serializer.DeserializePrimitives(ref reader, TestContext.Current.CancellationToken));
+		Assert.NotNull(serializer.DeserializePrimitives(ref reader, this.TimeoutToken));
 	}
 
-	[Fact]
+	[Test]
 	public void CanSerializeSetsWithEmptyKeys_AndDeserializeWithGetterOnlyCollection()
 	{
 		MessagePackSerializer serializer = new MessagePackSerializer().WithObjectConverter();
@@ -76,15 +76,15 @@ public partial class SecureKeyCollectionsTests : MessagePackSerializerTestBase
 
 		// Serialization should succeed because although we cannot create an equality comparer,
 		// that only limits our ability to deserialize, not serialize.
-		byte[] payload = serializer.Serialize(container, TestContext.Current.CancellationToken);
+		byte[] payload = serializer.Serialize(container, this.TimeoutToken);
 
 		// Deserialization should also succeed because we never have to or get to initialize the keyed collection ourselves.
-		HasHashSetWithIndirectObjectKeyGetterOnly? deserialized = serializer.Deserialize<HasHashSetWithIndirectObjectKeyGetterOnly>(payload, TestContext.Current.CancellationToken);
+		HasHashSetWithIndirectObjectKeyGetterOnly? deserialized = serializer.Deserialize<HasHashSetWithIndirectObjectKeyGetterOnly>(payload, this.TimeoutToken);
 		Assert.NotNull(deserialized);
 
 		// Deserialization with primitives should work fine too.
 		MessagePackReader reader = new(payload);
-		Assert.NotNull(serializer.DeserializePrimitives(ref reader, TestContext.Current.CancellationToken));
+		Assert.NotNull(serializer.DeserializePrimitives(ref reader, this.TimeoutToken));
 	}
 
 	[GenerateShape]
