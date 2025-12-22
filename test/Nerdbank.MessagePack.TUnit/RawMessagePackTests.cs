@@ -3,14 +3,14 @@
 
 public partial class RawMessagePackTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void DefaultCtor()
 	{
 		RawMessagePack raw = default;
 		Assert.True(raw.MsgPack.IsEmpty);
 	}
 
-	[Fact]
+	[Test]
 	public void CtorWithSequence()
 	{
 		Sequence<byte> bytes = new();
@@ -19,37 +19,37 @@ public partial class RawMessagePackTests : MessagePackSerializerTestBase
 		Assert.Equal(bytes, raw.MsgPack);
 	}
 
-	[Fact]
+	[Test]
 	public void DeferredSerialization()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData, TestContext.Current.CancellationToken) };
+		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData, this.TimeoutToken) };
 
 		Envelope? deserializedEnvelope = this.Roundtrip(envelope);
 
 		Assert.NotNull(deserializedEnvelope);
 		Assert.Equal(envelope, deserializedEnvelope);
 		Assert.True(deserializedEnvelope.Deferred.IsOwned);
-		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred, TestContext.Current.CancellationToken);
+		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred, this.TimeoutToken);
 		Assert.Equal(userData, deserializedUserData);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DeferredSerializationAsync()
 	{
 		DeferredData userData = new() { UserString = "Hello, World!" };
-		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData, TestContext.Current.CancellationToken) };
+		Envelope envelope = new() { Deferred = (RawMessagePack)this.Serializer.Serialize(userData, this.TimeoutToken) };
 
 		Envelope? deserializedEnvelope = await this.RoundtripAsync(envelope);
 
 		Assert.NotNull(deserializedEnvelope);
 		Assert.Equal(envelope, deserializedEnvelope);
 		Assert.True(deserializedEnvelope.Deferred.IsOwned);
-		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred, TestContext.Current.CancellationToken);
+		DeferredData? deserializedUserData = this.Serializer.Deserialize<DeferredData>(deserializedEnvelope.Deferred, this.TimeoutToken);
 		Assert.Equal(userData, deserializedUserData);
 	}
 
-	[Fact]
+	[Test]
 	public void Equality()
 	{
 		RawMessagePack empty1 = default;
@@ -75,7 +75,7 @@ public partial class RawMessagePackTests : MessagePackSerializerTestBase
 		Assert.True(fragmentedMsgPack1.Equals(fragmentedMsgPack2));
 	}
 
-	[Fact]
+	[Test]
 	public void ToOwned_Empty()
 	{
 		RawMessagePack msgpack = new(default);
@@ -84,7 +84,7 @@ public partial class RawMessagePackTests : MessagePackSerializerTestBase
 		Assert.True(owned.IsOwned);
 	}
 
-	[Fact]
+	[Test]
 	public void ToOwned_NonEmpty()
 	{
 		// Verify that we consider an initial version to be borrowed.
@@ -104,7 +104,7 @@ public partial class RawMessagePackTests : MessagePackSerializerTestBase
 		Assert.Equal(owned.MsgPack, reowned.MsgPack);
 	}
 
-	[Fact]
+	[Test]
 	public void ToString_Overridden()
 	{
 		Assert.Equal("<raw msgpack>", default(RawMessagePack).ToString());

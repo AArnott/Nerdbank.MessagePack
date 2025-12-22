@@ -3,7 +3,10 @@
 
 #pragma warning disable NBMsgPack051 // This test multi-targets
 
-[Trait("ReferencePreservation", "true")]
+using System.Runtime.CompilerServices;
+using Microsoft;
+
+[Property("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
 	public ReferencePreservationTests()
@@ -11,7 +14,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 	}
 
-	[Fact]
+	[Test]
 	public void ObjectReferencePreservation()
 	{
 		object value = new();
@@ -29,8 +32,8 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.NotSame(deserializedRoot.Value3, deserializedRoot.Value1);
 	}
 
-	[Trait("AsyncSerialization", "true")]
-	[Fact]
+	[Property("AsyncSerialization", "true")]
+	[Test]
 	public async Task AsyncSerialization()
 	{
 		CustomType o = new();
@@ -41,7 +44,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Null(deserializedArray[2]);
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterByAttributeSkippedByReferencePreservation()
 	{
 		CustomType2 value = new() { Message = "test" };
@@ -51,7 +54,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedArray[0], deserializedArray[1]);
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterByRegistrationSkippedByReferencePreservation()
 	{
 		this.Serializer = this.Serializer with { Converters = [new CustomTypeConverter()] };
@@ -65,7 +68,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Equal(value, deserializedArray[0]);
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterByRegistrationSkippedByReferencePreservation_Reconfigured()
 	{
 		this.Serializer = this.Serializer with
@@ -85,7 +88,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Equal(value, deserializedArray[0]);
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterGetsReferencePreservingPrimitiveConverter()
 	{
 		string stringValue = "test";
@@ -96,7 +99,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedArray[0].Message, deserializedArray[1].Message);
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverterGetsReferencePreservingNonPrimitiveConverter()
 	{
 		CustomType inner = new() { Message = "Hi" };
@@ -108,7 +111,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized[0].Value, deserialized[1].Value);
 	}
 
-	[Fact]
+	[Test]
 	public void StringReferencePreservation()
 	{
 		string city = "New York";
@@ -128,7 +131,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot.City, deserializedRoot.State);
 	}
 
-	[Fact]
+	[Test]
 	public void DictionaryReferencePreservation()
 	{
 		Dictionary<string, int> dict = new() { ["a"] = 1, ["b"] = 2 };
@@ -137,7 +140,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedArray[0], deserializedArray[1]);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public void ReferenceConsolidationWhenInterningIsOn(bool interning)
 	{
 		this.Serializer = this.Serializer with { InternStrings = interning };
@@ -167,7 +170,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	/// This is important because the two objects with equal value in the object graph before serialization could me mutated independently.
 	/// A round-trip through serialization should not combine these into a single reference or mutation of one would affect its appearance elsewhere in the graph.
 	/// </remarks>
-	[Fact]
+	[Test]
 	public void ReferenceDistinctionBetweenEquivalentValuesIsPreserved()
 	{
 		CustomType2[] array = [new() { Message = "test" }, new() { Message = "test" }];
@@ -179,7 +182,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Verifies that the extension type code used for object references can be customized.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void CustomExtensionTypeCode()
 	{
 		this.Serializer = this.Serializer with
@@ -193,7 +196,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		object value = new();
 		RecordWithObjects root = new() { Value1 = value, Value2 = value };
 		Sequence<byte> sequence = new();
-		this.Serializer.Serialize(sequence, root, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(sequence, root, this.TimeoutToken);
 		this.LogMsgPack(sequence);
 
 		MessagePackReader reader = new(sequence);
@@ -203,12 +206,12 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		reader.Skip(this.Serializer.StartingContext); // Value2 name
 		Assert.Equal(100, reader.ReadExtensionHeader().TypeCode);
 
-		RecordWithObjects? deserializedRoot = this.Serializer.Deserialize<RecordWithObjects>(sequence, TestContext.Current.CancellationToken);
+		RecordWithObjects? deserializedRoot = this.Serializer.Deserialize<RecordWithObjects>(sequence, this.TimeoutToken);
 		Assert.NotNull(deserializedRoot);
 		Assert.Same(deserializedRoot.Value1, deserializedRoot.Value2);
 	}
 
-	[Fact]
+	[Test]
 	public void DerivedTypeShapes_StaticRegistration()
 	{
 		BaseRecord baseInstance = new BaseRecord();
@@ -224,11 +227,23 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized[2], deserialized[3]);
 	}
 
-	[Fact]
+	[Test]
 	public void DerivedTypeShapes_DynamicRegistration()
 	{
+#if NET8_0
+		if (!RuntimeFeature.IsDynamicCodeSupported)
+		{
+			Skip.Test("This tests an API that only works on .NET 8 with dynamic code enabled.");
+			throw Assumes.NotReachable();
+		}
+#endif
+
 		DerivedShapeMapping<BaseRecord> mapping = new DerivedShapeMapping<BaseRecord>();
+#if NET8_0 // .NET 8 will never reach this code when dynamic code is not allowed.
+#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+#endif
 		mapping.AddSourceGenerated<DerivedRecordB, Witness>(1);
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
 		BaseRecord baseInstance = new BaseRecord();
@@ -244,7 +259,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized[2], deserialized[3]);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_Rejected_DuringSerialization(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
@@ -253,37 +268,37 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 
 		if (async)
 		{
-			await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.SerializeAsync(Stream.Null, first, TestContext.Current.CancellationToken));
+			await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.SerializeAsync(Stream.Null, first, this.TimeoutToken));
 		}
 		else
 		{
-			Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(first, TestContext.Current.CancellationToken));
+			Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(first, this.TimeoutToken));
 		}
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_Rejected_DuringDeserialization(bool async)
 	{
 		// First, compose a msgpack buffer that contains cycles.
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
 		SinglyLinkedListNode first = new();
 		first.Next = first;
-		byte[] msgpack = this.Serializer.Serialize(first, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize(first, this.TimeoutToken);
 
 		// Now reconfigure the serializer to reject cycles and attempt to deserialize.
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 
 		if (async)
 		{
-			await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.DeserializeAsync<SinglyLinkedListNode>(PipeReader.Create(new(msgpack)), TestContext.Current.CancellationToken));
+			await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.DeserializeAsync<SinglyLinkedListNode>(PipeReader.Create(new(msgpack)), this.TimeoutToken));
 		}
 		else
 		{
-			Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<SinglyLinkedListNode>(msgpack, TestContext.Current.CancellationToken));
+			Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<SinglyLinkedListNode>(msgpack, this.TimeoutToken));
 		}
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_ReferenceSelf(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -294,7 +309,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot, deserializedRoot.Next);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_Minimal(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -308,7 +323,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot, deserializedRoot.Next?.Next);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_Minimal_WithKeys(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -322,7 +337,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot, deserializedRoot.Next?.Next);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_Multistep(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -338,7 +353,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot, deserializedRoot.Next?.Next?.Next);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_OrderRequirementSatisfied(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -353,7 +368,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedRoot, deserializedRoot.Second?.First);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_OrderRequirementNotSatisfied(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -382,7 +397,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		////Assert.Same(deserializedRoot, deserializedRoot.First.Second);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_DoublyLinkedList(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -414,7 +429,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(b, c.Previous);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_InvolvingStruct(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -427,7 +442,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized, deserialized.Struct.Object);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_ManyTypes(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
@@ -453,7 +468,7 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized, deserialized.Optional?.Item1);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task CyclicReference_Union(bool async)
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.AllowCycles };
