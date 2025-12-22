@@ -5,49 +5,49 @@
 
 public partial class UseComparerTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void EqualityComparerByStaticMember()
 	{
 		var deserialized = this.Roundtrip(new UsesStaticEqualityComparer());
 		Assert.Same(StringComparer.OrdinalIgnoreCase, deserialized?.StringInt.Comparer);
 	}
 
-	[Fact]
+	[Test]
 	public void ComparerByStaticMember()
 	{
 		var deserialized = this.Roundtrip(new UsesStaticComparer());
 		Assert.Same(StringComparer.OrdinalIgnoreCase, deserialized?.StringInt.Comparer);
 	}
 
-	[Fact]
+	[Test]
 	public void EqualityComparerByInstanceMember()
 	{
 		var deserialized = this.Roundtrip(new UsesInstanceEqualityComparer());
 		Assert.Same(StringComparer.OrdinalIgnoreCase, deserialized?.StringInt.Comparer);
 	}
 
-	[Fact]
+	[Test]
 	public void ComparerByInstanceMember()
 	{
 		var deserialized = this.Roundtrip(new UsesInstanceComparer());
 		Assert.Same(StringComparer.OrdinalIgnoreCase, deserialized?.StringInt.Comparer);
 	}
 
-	[Fact]
+	[Test]
 	public void EqualityComparerByType()
 	{
 		var deserialized = this.Roundtrip(new UsesInstanceEqualityComparer());
 		Assert.Same(StringComparer.OrdinalIgnoreCase, deserialized?.StringInt.Comparer);
 	}
 
-	[Fact]
+	[Test]
 	public void ComparerByType()
 	{
 		var deserialized = this.Roundtrip(new UsesInstanceComparer());
 		Assert.Same(StringComparer.OrdinalIgnoreCase, deserialized?.StringInt.Comparer);
 	}
 
-	[Fact]
+	[Test]
 	public void ComparerOnParameter()
 	{
 		var deserialized = this.Roundtrip(new ComparerOnConstructorParameter(new()));

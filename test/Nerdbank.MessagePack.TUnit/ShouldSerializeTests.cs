@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 
-[Trait("ShouldSerialize", "true")]
+[Property("ShouldSerialize", "true")]
 public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 {
 	public ShouldSerializeTests()
@@ -29,7 +29,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void Person_AllDefaults()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -40,7 +40,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public async Task Person_AllDefaultsAsync()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -51,7 +51,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void PersonWithPrimaryConstructor_AllDefaultsByType()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
@@ -64,7 +64,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.True(reader.TryReadNil());
 	}
 
-	[Fact]
+	[Test]
 	public void PersonWithPrimaryConstructor_AllDefaultsByExplicitDefault()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
@@ -75,7 +75,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDefaultValues()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
@@ -86,7 +86,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(Person.PropertyCount, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void PersonWithName()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -98,7 +98,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(nameof(Person.Name), reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void PersonWithAge()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -110,7 +110,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(nameof(Person.Age), reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void Person_DifferentFavoriteColor()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -122,7 +122,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void PersonWithPrimaryConstructor_DifferentFavoriteColor()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
@@ -133,7 +133,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(nameof(Person.FavoriteColor), reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void Person_NoFavoriteColor()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -145,7 +145,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.True(reader.TryReadNil());
 	}
 
-	[Fact]
+	[Test]
 	public void PersonWithPrimaryConstructor_NoFavoriteColor()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
@@ -157,7 +157,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.True(reader.TryReadNil());
 	}
 
-	[Fact]
+	[Test]
 	public void RenamedPropertyMatchedWithCtorDefaultParameter_AllDefaults()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -169,7 +169,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void RenamedPropertyMatchedWithCtorDefaultParameter_ChangedName()
 	{
 		CtorWithRenamedProperty obj = new("Gal");
@@ -179,7 +179,7 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void RenamedPropertyMatchedWithCtorDefaultParameter_NullName()
 	{
 		CtorWithRenamedProperty obj = new(null);
@@ -189,9 +189,8 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
-	[Theory]
-	[PairwiseData]
-	public void Flags_OnMembersOfAllKinds([CombinatorialMemberData(nameof(AllPolicies))] SerializeDefaultValuesPolicy policy)
+	[Test, MethodDataSource(nameof(AllPolicies))]
+	public void Flags_OnMembersOfAllKinds(SerializeDefaultValuesPolicy policy)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = policy };
 
@@ -235,9 +234,9 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Theory]
-	[InlineData(SerializeDefaultValuesPolicy.Never)]
-	[InlineData(SerializeDefaultValuesPolicy.Required)]
+	[Test]
+	[Arguments(SerializeDefaultValuesPolicy.Never)]
+	[Arguments(SerializeDefaultValuesPolicy.Required)]
 	public void Flags_OnRequiredAndOptionalParameters(SerializeDefaultValuesPolicy policy)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = policy };
@@ -259,10 +258,10 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Theory]
-	[InlineData(SerializeDefaultValuesPolicy.Never)]
-	[InlineData(SerializeDefaultValuesPolicy.Required)]
-	[InlineData(SerializeDefaultValuesPolicy.Always)]
+	[Test]
+	[Arguments(SerializeDefaultValuesPolicy.Never)]
+	[Arguments(SerializeDefaultValuesPolicy.Required)]
+	[Arguments(SerializeDefaultValuesPolicy.Always)]
 	public void PropertyWithNonDefaultInitializer_PreservesValue(SerializeDefaultValuesPolicy policy)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = policy };
