@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-[Trait("AsyncSerialization", "true")]
+[Property("AsyncSerialization", "true")]
 public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 {
 	/// <summary>
 	/// Streams multiple elements with no array envelope.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task DeserializeEnumerableAsync_TopLevel_PipeReader()
 	{
 		using Sequence<byte> sequence = new();
@@ -21,10 +21,10 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		int readCount = 0;
 		PipeReader reader = PipeReader.Create(sequence);
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int, Witness>(reader, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int, Witness>(reader, this.TimeoutToken))
 		{
 			readCount++;
-			this.Logger.WriteLine(current.ToString());
+			Console.WriteLine(current.ToString());
 		}
 
 		Assert.Equal(10, readCount);
@@ -33,11 +33,11 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Streams multiple elements with no array envelope.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task DeserializeEnumerableAsync_TopLevel_Empty()
 	{
 		PipeReader reader = PipeReader.Create(new([]));
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int, Witness>(reader, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int, Witness>(reader, this.TimeoutToken))
 		{
 			Assert.Fail("No items should have been read.");
 		}
@@ -46,7 +46,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Streams multiple elements with no array envelope.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task DeserializeEnumerableAsync_TopLevel_Stream()
 	{
 		using Sequence<byte> sequence = new();
@@ -60,10 +60,10 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		int readCount = 0;
 		MemoryStream reader = new(sequence.AsReadOnlySequence.ToArray());
-		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializeEnumerableAsync<int>(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), this.TimeoutToken))
 		{
 			readCount++;
-			this.Logger.WriteLine(current.ToString());
+			Console.WriteLine(current.ToString());
 		}
 
 		Assert.Equal(10, readCount);
@@ -73,7 +73,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies that there is no hang due to double reads.
 	/// </summary>
 	/// <remarks>Regression test for <see href="https://github.com/AArnott/Nerdbank.MessagePack/issues/282">this user-filed bug</see>.</remarks>
-	[Fact]
+	[Test]
 	public async Task DeserializeEnumerableAsync_TopLevel_ReadItAll()
 	{
 		using Sequence<byte> sequence = new();
@@ -86,9 +86,9 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		FragmentedPipeReader reader = new(sequence, breakPosition);
 		List<int> realizedList = [];
-		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), TestContext.Current.CancellationToken))
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), this.TimeoutToken))
 		{
-			this.Logger.WriteLine($"Received {value}");
+			Console.WriteLine($"Received {value}");
 			realizedList.Add(value);
 			Assert.Equal(realizedList.Count, value);
 			if (realizedList.Count == 2)
@@ -105,7 +105,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies that there is no hang due to double reads.
 	/// </summary>
 	/// <remarks>Regression test for <see href="https://github.com/AArnott/Nerdbank.MessagePack/issues/282">this user-filed bug</see>.</remarks>
-	[Fact]
+	[Test]
 	public async Task DeserializeEnumerableAsync_TopLevel_Fragmented()
 	{
 		using Sequence<byte> sequence = new();
@@ -123,9 +123,9 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 
 		FragmentedPipeReader reader = new(sequence, breakPosition1, breakPosition2);
 		List<int> realizedList = [];
-		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), TestContext.Current.CancellationToken))
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), this.TimeoutToken))
 		{
-			this.Logger.WriteLine($"Received {value}");
+			Console.WriteLine($"Received {value}");
 			realizedList.Add(value);
 			Assert.Equal(realizedList.Count, value);
 			if (realizedList.Count == 2)
@@ -145,7 +145,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Streams elements of a top-level msgpack array.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task DeserializeEnumerableAsync_Array()
 	{
 		using Sequence<byte> sequence = new();
@@ -161,26 +161,26 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		int readCount = 0;
 		PipeReader reader = PipeReader.Create(sequence);
 		MessagePackSerializer.StreamingEnumerationOptions<int[], int> options = new(a => a);
-		await foreach (int current in this.Serializer.DeserializePathEnumerableAsync<int[], int, Witness>(reader, options, TestContext.Current.CancellationToken))
+		await foreach (int current in this.Serializer.DeserializePathEnumerableAsync<int[], int, Witness>(reader, options, this.TimeoutToken))
 		{
 			readCount++;
-			this.Logger.WriteLine(current.ToString());
+			Console.WriteLine(current.ToString());
 		}
 
 		Assert.Equal(10, readCount);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DeserializeEnumerableAsync_AsyncElementConverter()
 	{
 		SimpleStreamingContainerKeyed[] array = [new(), new()];
-		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>(array, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>(array, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		MessagePackSerializer.StreamingEnumerationOptions<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed> options = new(a => a);
 		List<SimpleStreamingContainerKeyed?> actual = new();
-		await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializePathEnumerableAsync<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed, Witness>(reader, options, TestContext.Current.CancellationToken))
+		await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializePathEnumerableAsync<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed, Witness>(reader, options, this.TimeoutToken))
 		{
 			actual.Add(item);
 		}
@@ -188,13 +188,13 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		Assert.Equal(2, actual.Count);
 	}
 
-	[Trait("ReferencePreservation", "true")]
-	[Fact]
+	[Property("ReferencePreservation", "true")]
+	[Test]
 	public async Task DeserializeEnumerableAsync_ReferencesPreserved()
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 		SimpleStreamingContainerKeyed original = new();
-		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>([original, original], TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<SimpleStreamingContainerKeyed[], Witness>([original, original], this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		PipeReader reader = PipeReader.Create(new(msgpack));
@@ -202,7 +202,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		List<SimpleStreamingContainerKeyed?> actual = new();
 		NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async delegate
 		{
-			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializePathEnumerableAsync<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed, Witness>(reader, options, TestContext.Current.CancellationToken))
+			await foreach (SimpleStreamingContainerKeyed? item in this.Serializer.DeserializePathEnumerableAsync<SimpleStreamingContainerKeyed[], SimpleStreamingContainerKeyed, Witness>(reader, options, this.TimeoutToken))
 			{
 				actual.Add(item);
 			}
@@ -210,16 +210,16 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 			Assert.Equal(2, actual.Count);
 			Assert.Same(actual[0], actual[1]);
 		});
-		this.Logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_SequenceWithinTwoContainers(bool leaveOpen)
 	{
 		OuterStreamingContainer container = new(new(true, [1, 2, 3], true));
 		Sequence<byte> msgpack = new();
-		msgpack.Append(this.Serializer.Serialize(container, TestContext.Current.CancellationToken));
-		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", TestContext.Current.CancellationToken));
+		msgpack.Append(this.Serializer.Serialize(container, this.TimeoutToken));
+		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", this.TimeoutToken));
 		this.LogMsgPack(msgpack);
 		PipeReader reader = PipeReader.Create(msgpack);
 
@@ -228,7 +228,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -238,18 +238,18 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, this.TimeoutToken);
 			Assert.Equal("hi", actual);
 		}
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_SequenceWithinTwoContainers_Keyed(bool leaveOpen, bool asMap)
 	{
 		SimpleStreamingContainerKeyed container = new() { Before = asMap ? null : "a", Values = [1, 2, 3], After = asMap ? null : "b" };
 		Sequence<byte> msgpack = new();
-		msgpack.Append(this.Serializer.Serialize(container, TestContext.Current.CancellationToken));
-		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", TestContext.Current.CancellationToken));
+		msgpack.Append(this.Serializer.Serialize(container, this.TimeoutToken));
+		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", this.TimeoutToken));
 		this.LogMsgPack(msgpack);
 		PipeReader reader = PipeReader.Create(msgpack);
 
@@ -258,7 +258,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -268,7 +268,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, this.TimeoutToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -277,13 +277,13 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an array indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_StepThroughArray(bool leaveOpen)
 	{
 		OuterStreamingContainerByArray container = new([null, new(true, [1, 2, 3], false), new(true, [1], false)]);
 		Sequence<byte> msgpack = new();
-		msgpack.Append(this.Serializer.Serialize(container, TestContext.Current.CancellationToken));
-		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", TestContext.Current.CancellationToken));
+		msgpack.Append(this.Serializer.Serialize(container, this.TimeoutToken));
+		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", this.TimeoutToken));
 		this.LogMsgPack(msgpack);
 		PipeReader reader = PipeReader.Create(msgpack);
 
@@ -292,7 +292,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -302,7 +302,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, this.TimeoutToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -311,13 +311,13 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_StepThroughImmutableArray(bool leaveOpen)
 	{
 		OuterStreamingContainerByImmutableArray container = new([null, new(true, [1, 2, 3], false), new(true, [1], false)]);
 		Sequence<byte> msgpack = new();
-		msgpack.Append(this.Serializer.Serialize(container, TestContext.Current.CancellationToken));
-		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", TestContext.Current.CancellationToken));
+		msgpack.Append(this.Serializer.Serialize(container, this.TimeoutToken));
+		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", this.TimeoutToken));
 		this.LogMsgPack(msgpack);
 		PipeReader reader = PipeReader.Create(msgpack);
 
@@ -326,7 +326,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -336,7 +336,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, this.TimeoutToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -345,13 +345,13 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_StepThroughDictionary(bool leaveOpen)
 	{
 		OuterStreamingContainerByDictionary container = new(new() { ["a"] = null, ["b"] = new(true, [1, 2, 3], false) });
 		Sequence<byte> msgpack = new();
-		msgpack.Append(this.Serializer.Serialize(container, TestContext.Current.CancellationToken));
-		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", TestContext.Current.CancellationToken));
+		msgpack.Append(this.Serializer.Serialize(container, this.TimeoutToken));
+		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", this.TimeoutToken));
 		this.LogMsgPack(msgpack);
 		PipeReader reader = PipeReader.Create(msgpack);
 
@@ -360,7 +360,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -370,7 +370,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, this.TimeoutToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -379,13 +379,13 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_StepThroughDictionaryCustomKey(bool leaveOpen)
 	{
 		OuterStreamingContainerByDictionaryCustomKey container = new(new() { [new CustomKey(5)] = null, [new CustomKey(3)] = new(true, [1, 2, 3], false) });
 		Sequence<byte> msgpack = new();
-		msgpack.Append(this.Serializer.Serialize(container, TestContext.Current.CancellationToken));
-		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", TestContext.Current.CancellationToken));
+		msgpack.Append(this.Serializer.Serialize(container, this.TimeoutToken));
+		msgpack.Append(this.Serializer.Serialize<string, Witness>("hi", this.TimeoutToken));
 		this.LogMsgPack(msgpack);
 		PipeReader reader = PipeReader.Create(msgpack);
 
@@ -395,7 +395,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		{
 			LeaveOpen = leaveOpen,
 		};
-		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+		await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 		{
 			Assert.Equal(count++ + 1, item);
 		}
@@ -405,7 +405,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		if (leaveOpen)
 		{
 			// Verify correct positioning by deserializing the next top-level structure in the pipe.
-			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, TestContext.Current.CancellationToken);
+			string? actual = await this.Serializer.DeserializeAsync<string, Witness>(reader, this.TimeoutToken);
 			Assert.Equal("hi", actual);
 		}
 	}
@@ -414,10 +414,10 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path turns out to be a null value.
 	/// </summary>
 	/// <param name="preferEmptySequence">A value indicating whether we're verifying behavior that prefers an empty sequence over throwing when a null is encountered.</param>
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_NullRoot(bool preferEmptySequence)
 	{
-		byte[] msgpack = this.Serializer.Serialize<OuterStreamingContainer>(null, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterStreamingContainer>(null, this.TimeoutToken);
 		MessagePackSerializer.StreamingEnumerationOptions<OuterStreamingContainer, int> options = new(c => c.Inner!.Values!)
 		{
 			EmptySequenceForUndiscoverablePath = preferEmptySequence,
@@ -425,7 +425,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}
@@ -434,7 +434,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		}
 		catch (MessagePackSerializationException ex)
 		{
-			this.Logger.WriteLine(ex.ToString());
+			Console.WriteLine(ex.ToString());
 			Assert.False(preferEmptySequence, "Should not have thrown an exception.");
 			Assert.Matches(@"\Wc(?!\.Inner)", ex.Message);
 		}
@@ -444,10 +444,10 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path turns out to be a null value.
 	/// </summary>
 	/// <param name="preferEmptySequence">A value indicating whether we're verifying behavior that prefers an empty sequence over throwing when a null is encountered.</param>
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_NullMidPath(bool preferEmptySequence)
 	{
-		byte[] msgpack = this.Serializer.Serialize(new OuterStreamingContainer(null), TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize(new OuterStreamingContainer(null), this.TimeoutToken);
 		MessagePackSerializer.StreamingEnumerationOptions<OuterStreamingContainer, int> options = new(c => c.Inner!.Values!)
 		{
 			EmptySequenceForUndiscoverablePath = preferEmptySequence,
@@ -455,7 +455,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}
@@ -464,7 +464,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		}
 		catch (MessagePackSerializationException ex)
 		{
-			this.Logger.WriteLine(ex.ToString());
+			Console.WriteLine(ex.ToString());
 			Assert.False(preferEmptySequence, "Should not have thrown an exception.");
 			Assert.Matches(@"\Wc\.Inner(?!\.Values)", ex.Message);
 		}
@@ -474,10 +474,10 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path turns out to be a null value.
 	/// </summary>
 	/// <param name="preferEmptySequence">A value indicating whether we're verifying behavior that prefers an empty sequence over throwing when a null is encountered.</param>
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeEnumerableAsync_NullSequenceMember(bool preferEmptySequence)
 	{
-		byte[] msgpack = this.Serializer.Serialize(new OuterStreamingContainer(new(true, null, false)), TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize(new OuterStreamingContainer(new(true, null, false)), this.TimeoutToken);
 		MessagePackSerializer.StreamingEnumerationOptions<OuterStreamingContainer, int> options = new(c => c.Inner!.Values!)
 		{
 			EmptySequenceForUndiscoverablePath = preferEmptySequence,
@@ -485,7 +485,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(new(msgpack));
 		try
 		{
-			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, TestContext.Current.CancellationToken))
+			await foreach (int item in this.Serializer.DeserializePathEnumerableAsync(reader, options, this.TimeoutToken))
 			{
 				Assert.Fail("Should not have received any items.");
 			}
@@ -494,7 +494,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		}
 		catch (MessagePackSerializationException ex)
 		{
-			this.Logger.WriteLine(ex.ToString());
+			Console.WriteLine(ex.ToString());
 			Assert.False(preferEmptySequence, "Should not have thrown an exception.");
 			Assert.Matches(@"\Wc\.Inner\.Values", ex.Message);
 		}

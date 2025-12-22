@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-[Trait("AsyncSerialization", "true")]
+[Property("AsyncSerialization", "true")]
 public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 {
 	private static readonly ReadOnlyMemory<byte> BigDataBlob = Enumerable.Range(0, 100).Select(n => (byte)(n % 256)).ToArray();
 
-	[Fact]
+	[Test]
 	public async Task RoundtripPoco() => await this.AssertRoundtripAsync(new Poco(1, 2));
 
-	[Fact]
+	[Test]
 	public async Task RoundtripPocoWithDefaultCtor() => await this.AssertRoundtripAsync(new PocoWithDefaultCtor { X = 1, Y = 2 });
 
-	[Fact]
+	[Test]
 	public async Task PocoDictionary()
 	{
 		DictionaryOfPocos value = new(new Dictionary<string, Poco>
@@ -25,7 +25,7 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		await this.AssertRoundtripAsync(value);
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrimitivesDictionary()
 	{
 		DictionaryOfPrimitives value = new(new Dictionary<string, int>
@@ -38,13 +38,13 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		await this.AssertRoundtripAsync(value);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LargeArray() => await this.AssertRoundtripAsync(new ArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToArray()));
 
 	/// <summary>
 	/// Verifies that the array converter can handle async serialization when its elements are not async capable.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task LargeArrayWithBigElements()
 	{
 		this.Serializer = this.Serializer with { Converters = [.. this.Serializer.Converters, new PocoNonAsyncConverter()] };
@@ -52,40 +52,40 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		await this.AssertRoundtripAsync(new ArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i) { DataBlob = BigDataBlob }).ToArray()));
 	}
 
-	[Fact]
+	[Test]
 	public async Task LargeList() => await this.AssertRoundtripAsync(new ListOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToList()));
 
-	[Fact]
+	[Test]
 	public async Task LargeImmutableArray() => await this.AssertRoundtripAsync(new ImmutableArrayOfPocos(Enumerable.Range(0, 1000).Select(i => new Poco(i, i)).ToImmutableArray()));
 
-	[Fact]
+	[Test]
 	public async Task Null_Array() => await this.AssertRoundtripAsync(new ArrayOfPocos(null));
 
-	[Fact]
+	[Test]
 	public async Task Null() => await this.AssertRoundtripAsync<Poco>(null);
 
-	[Fact]
+	[Test]
 	public async Task ArrayOfInts() => await this.AssertRoundtripAsync(new ArrayOfPrimitives([1, 2, 3]));
 
-	[Fact]
+	[Test]
 	public async Task ObjectAsArrayOfValues() => await this.AssertRoundtripAsync(new PocoAsArray(42));
 
-	[Fact]
+	[Test]
 	public async Task ObjectAsArrayOfValues_Null() => await this.AssertRoundtripAsync<PocoAsArray>(null);
 
-	[Fact]
+	[Test]
 	public async Task ObjectAsArrayOfValues_DefaultCtor() => await this.AssertRoundtripAsync(new PocoAsArrayWithDefaultCtor { Value = 42 });
 
-	[Fact]
+	[Test]
 	public async Task ObjectAsArrayOfValues_DefaultCtor_Null() => await this.AssertRoundtripAsync<PocoAsArrayWithDefaultCtor>(null);
 
-	[Fact]
+	[Test]
 	public async Task WithPreBuffering()
 	{
 		SpecialRecordConverter converter = new();
 		this.Serializer = this.Serializer with { Converters = [converter] };
 		var msgpack = new ReadOnlySequence<byte>(
-			this.Serializer.Serialize(new SpecialRecord { Property = 446 }, TestContext.Current.CancellationToken));
+			this.Serializer.Serialize(new SpecialRecord { Property = 446 }, this.TimeoutToken));
 
 		// Verify that with a sufficiently low async buffer, the async paths are taken.
 		this.Serializer = new()
@@ -93,7 +93,7 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 			MaxAsyncBuffer = 1,
 			Converters = [converter],
 		};
-		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), TestContext.Current.CancellationToken);
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), this.TimeoutToken);
 		Assert.Equal(1, converter.AsyncDeserializationCounter);
 
 		// Verify that with a sufficiently high async buffer, the sync paths are taken.
@@ -103,31 +103,31 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 			MaxAsyncBuffer = 15,
 			Converters = [converter],
 		};
-		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), TestContext.Current.CancellationToken);
+		await this.Serializer.DeserializeAsync<SpecialRecord>(new FragmentedPipeReader(msgpack), this.TimeoutToken);
 		Assert.Equal(0, converter.AsyncDeserializationCounter);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DecodeLargeString()
 	{
 		string expected = new string('a', 100 * 1024);
-		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
+		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, this.TimeoutToken));
 		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0), msgpack.GetPosition(1), msgpack.GetPosition(512), msgpack.GetPosition(6000), msgpack.GetPosition(32 * 1024));
-		string? actual = await this.Serializer.DeserializeAsync(pipeReader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<string>(), TestContext.Current.CancellationToken);
+		string? actual = await this.Serializer.DeserializeAsync(pipeReader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<string>(), this.TimeoutToken);
 		Assert.Equal(expected, actual);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DecodeEmptyString()
 	{
 		string expected = string.Empty;
-		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, TestContext.Current.CancellationToken));
+		ReadOnlySequence<byte> msgpack = new(this.Serializer.Serialize<string, Witness>(expected, this.TimeoutToken));
 		FragmentedPipeReader pipeReader = new(msgpack, msgpack.GetPosition(0));
-		string? actual = await this.Serializer.DeserializeAsync(pipeReader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<string>(), TestContext.Current.CancellationToken);
+		string? actual = await this.Serializer.DeserializeAsync(pipeReader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<string>(), this.TimeoutToken);
 		Assert.Equal(expected, actual);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task DeserializeAsyncAdvancesPipeReader(bool forceAsync)
 	{
 		this.Serializer = this.Serializer with { MaxAsyncBuffer = forceAsync ? 0 : 1024 };
@@ -140,11 +140,11 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		PipeReader reader = PipeReader.Create(sequence);
 
 		// Deserialize a value. It should advance the reader exactly across the msgpack structure.
-		int number = await this.Serializer.DeserializeAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), TestContext.Current.CancellationToken);
+		int number = await this.Serializer.DeserializeAsync(reader, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>(), this.TimeoutToken);
 		Assert.Equal(42, number);
 
 		// Verify that the reader is now positioned at the next byte.
-		ReadResult readResult = await reader.ReadAsync(TestContext.Current.CancellationToken);
+		ReadResult readResult = await reader.ReadAsync(this.TimeoutToken);
 		Assert.True(readResult.IsCompleted);
 		Assert.Equal("a"u8, readResult.Buffer.ToArray());
 	}

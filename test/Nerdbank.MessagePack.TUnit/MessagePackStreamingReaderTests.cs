@@ -4,11 +4,11 @@
 using System.Text;
 using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
-public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
+public class MessagePackStreamingReaderTests
 {
 	private static readonly ReadOnlySequence<byte> ArrayOf3Bools = CreateMsgPackArrayOf3Bools();
 
-	[Fact]
+	[Test]
 	public void ReadIncompleteBuffer()
 	{
 		MessagePackStreamingReader incompleteReader = new(ArrayOf3Bools.Slice(0, 2));
@@ -19,7 +19,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryRead(out boolean));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReplenishBufferAsync_AddsMoreBytesOnce()
 	{
 		// Arrange the reader to have an incomplete buffer and that upon request it will get the rest of it.
@@ -42,7 +42,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(DecodeResult.InsufficientBuffer, incompleteReader.TryReadNil());
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReplenishBufferAsync_AddsMoreBytes_ThenCompletes()
 	{
 		// Arrange the reader to have an incomplete buffer and that upon request it will get the rest of it.
@@ -68,7 +68,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(DecodeResult.EmptyBuffer, incompleteReader.TryReadNil());
 	}
 
-	[Fact]
+	[Test]
 	public async Task SkipIncrementally()
 	{
 		Sequence<byte> seq = new();
@@ -115,10 +115,10 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 
 		Assert.False(boolValue);
 		Assert.Equal(ros.End, reader.Position);
-		logger.WriteLine($"Fetched {fetchCount} times (for a sequence that is {ros.Length} bytes long.)");
+		Console.WriteLine($"Fetched {fetchCount} times (for a sequence that is {ros.Length} bytes long.)");
 	}
 
-	[Fact]
+	[Test]
 	public async Task TryRead_Extension()
 	{
 		Extension originalExtension = new(1, new byte[] { 1, 2, 3 });
@@ -142,7 +142,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(originalExtension, deserializedExtension);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TryReadBinary()
 	{
 		byte[] originalData = [1, 2, 3];
@@ -166,7 +166,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(originalData, deserializedData.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public async Task TryRead_String()
 	{
 		string originalData = "hello";
@@ -190,7 +190,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(originalData, deserializedString);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TryReadStringSequence()
 	{
 		string originalData = "hello";
@@ -214,7 +214,7 @@ public class MessagePackStreamingReaderTests(ITestOutputHelper logger)
 		Assert.Equal(originalData, Encoding.UTF8.GetString(deserializedString.ToArray()));
 	}
 
-	[Fact]
+	[Test]
 	public async Task TryReadStringSpan()
 	{
 		string originalData = "hello";

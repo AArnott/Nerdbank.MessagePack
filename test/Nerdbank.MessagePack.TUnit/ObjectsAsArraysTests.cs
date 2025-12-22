@@ -3,7 +3,7 @@
 
 public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 {
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task Person_Roundtrip(bool async)
 	{
 		var person = new Person { FirstName = "Andrew", LastName = "Arnott" };
@@ -17,21 +17,21 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void PersonWithDefaultConstructor_Roundtrip() => this.AssertRoundtrip(new PersonWithDefaultConstructor { FirstName = "Andrew", LastName = "Arnott" });
 
-	[Fact]
+	[Test]
 	public void Null() => this.AssertRoundtrip<Person>(null);
 
-	[Fact]
+	[Test]
 	public void Null_DefaultCtro() => this.AssertRoundtrip<PersonWithDefaultConstructor>(null);
 
-	[Fact]
+	[Test]
 	public void Person_SerializesAsArray()
 	{
 		Person person = new() { FirstName = "Andrew", LastName = "Arnott" };
 		Sequence<byte> buffer = new();
-		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(buffer, person, this.TimeoutToken);
 		this.LogMsgPack(buffer);
 
 		MessagePackReader reader = new(buffer);
@@ -41,12 +41,12 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal("Arnott", reader.ReadString());
 		Assert.True(reader.End);
 
-		Person? deserialized = this.Serializer.Deserialize<Person>(buffer, TestContext.Current.CancellationToken);
+		Person? deserialized = this.Serializer.Deserialize<Person>(buffer, this.TimeoutToken);
 		Assert.Equal(person, deserialized);
 	}
 
-	[Trait("ShouldSerialize", "true")]
-	[Theory, PairwiseData]
+	[Property("ShouldSerialize", "true")]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task Person_WithoutLastName(bool async)
 	{
 		this.Serializer = this.Serializer with
@@ -63,8 +63,8 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 
-	[Trait("ShouldSerialize", "true")]
-	[Theory, PairwiseData]
+	[Property("ShouldSerialize", "true")]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task Person_WithoutFirstName(bool async)
 	{
 		this.Serializer = this.Serializer with
@@ -81,8 +81,8 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
-	[Trait("ShouldSerialize", "true")]
-	[Theory, PairwiseData]
+	[Property("ShouldSerialize", "true")]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task Person_AllDefaultValues(bool async)
 	{
 		this.Serializer = this.Serializer with
@@ -99,7 +99,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadArrayHeader());
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task Person_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -112,12 +112,12 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 
 		Person? person = async
-			? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<Person>(sequence, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence), this.TimeoutToken)
+			: this.Serializer.Deserialize<Person>(sequence, this.TimeoutToken);
 		Assert.Equal(new Person { FirstName = "A", LastName = "B" }, person);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task Person_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -135,12 +135,12 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 
 		Person? person = async
-			? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<Person>(sequence, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<Person>(PipeReader.Create(sequence), this.TimeoutToken)
+			: this.Serializer.Deserialize<Person>(sequence, this.TimeoutToken);
 		Assert.Equal(new Person { FirstName = "A", LastName = "B" }, person);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task PersonWithDefaultConstructor_WithoutLastName(bool async)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -153,7 +153,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task PersonWithDefaultConstructor_WithoutFirstName(bool async)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -166,11 +166,13 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
-	[Trait("ShouldSerialize", "true")]
-	[Theory, PairwiseData]
-	public async Task PersonWithDefaultConstructor_AllDefaultValues(
-		bool async,
-		[CombinatorialValues(SerializeDefaultValuesPolicy.Always, SerializeDefaultValuesPolicy.Never)] SerializeDefaultValuesPolicy serializeDefaultValues)
+	[Property("ShouldSerialize", "true")]
+	[Test]
+	[Arguments(true, SerializeDefaultValuesPolicy.Always)]
+	[Arguments(false, SerializeDefaultValuesPolicy.Always)]
+	[Arguments(true, SerializeDefaultValuesPolicy.Never)]
+	[Arguments(false, SerializeDefaultValuesPolicy.Never)]
+	public async Task PersonWithDefaultConstructor_AllDefaultValues(bool async, SerializeDefaultValuesPolicy serializeDefaultValues)
 	{
 		// The most compact representation of this is a map of length 1.
 		// Verify that this is what the converter chose, iff we're in that mode.
@@ -182,7 +184,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadArrayHeader());
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task PersonWithDefaultConstructor_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -195,12 +197,12 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 
 		PersonWithDefaultConstructor? person = async
-			? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence), this.TimeoutToken)
+			: this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence, this.TimeoutToken);
 		Assert.Equal(new PersonWithDefaultConstructor { FirstName = "A", LastName = "B" }, person);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task PersonWithDefaultConstructor_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -218,12 +220,12 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 
 		PersonWithDefaultConstructor? person = async
-			? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<PersonWithDefaultConstructor>(PipeReader.Create(sequence), this.TimeoutToken)
+			: this.Serializer.Deserialize<PersonWithDefaultConstructor>(sequence, this.TimeoutToken);
 		Assert.Equal(new PersonWithDefaultConstructor { FirstName = "A", LastName = "B" }, person);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AsyncAndSyncPropertyMix()
 	{
 		FamilyWithAsyncProperties family = new()
@@ -239,8 +241,8 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(5, reader.ReadArrayHeader());
 	}
 
-	[Trait("ShouldSerialize", "true")]
-	[Fact]
+	[Property("ShouldSerialize", "true")]
+	[Test]
 	public async Task AsyncAndSyncPropertyMix_AsMap()
 	{
 		this.Serializer = this.Serializer with
@@ -263,7 +265,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task AsyncAndSyncPropertyMix_ReadMapFromNonContiguousBuffer(bool breakBeforeIndex)
 	{
 		this.Serializer = this.Serializer with
@@ -292,7 +294,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 		long positionAfterIndex = sequence.Length;
 
-		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, this.TimeoutToken);
 		writer.Flush();
 		this.LogMsgPack(sequence);
 
@@ -309,12 +311,12 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		// Deserialize, through a pipe that lets us control the buffer segments.
 		FragmentedPipeReader pipeReader = new(sequence, sequence.AsReadOnlySequence.GetPosition(splitPosition));
 
-		FamilyWithAsyncProperties? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncProperties>(pipeReader, TestContext.Current.CancellationToken);
+		FamilyWithAsyncProperties? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncProperties>(pipeReader, this.TimeoutToken);
 
 		Assert.Equal(expectedFamily, family);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
 	public async Task AsyncAndSyncPropertyMix_ReadMapFromNonContiguousBuffer_DefaultCtor(bool breakBeforeIndex)
 	{
 		FamilyWithAsyncPropertiesWithDefaultCtor expectedFamily = new()
@@ -338,7 +340,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		writer.Flush();
 		long positionAfterIndex = sequence.Length;
 
-		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(ref writer, expectedFamily.FirstChild, this.TimeoutToken);
 		writer.Flush();
 		this.LogMsgPack(sequence);
 
@@ -355,12 +357,12 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		// Deserialize, through a pipe that lets us control the buffer segments.
 		FragmentedPipeReader pipeReader = new(sequence, sequence.AsReadOnlySequence.GetPosition(splitPosition));
 
-		FamilyWithAsyncPropertiesWithDefaultCtor? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncPropertiesWithDefaultCtor>(pipeReader, TestContext.Current.CancellationToken);
+		FamilyWithAsyncPropertiesWithDefaultCtor? family = await this.Serializer.DeserializeAsync<FamilyWithAsyncPropertiesWithDefaultCtor>(pipeReader, this.TimeoutToken);
 
 		Assert.Equal(expectedFamily, family);
 	}
 
-	[Fact]
+	[Test]
 	public void PropertyGettersIgnored()
 	{
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
@@ -369,17 +371,17 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void PropertyGetterWithCtorParamAndMissingKey()
 	{
 		ClassWithPropertyGettersWithCtorParamAndMissingKey obj = new("hi") { Value = true };
 
 		// We expect this to throw because a qualified property is not attributed with KeyAttribute.
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(obj, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.Message);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(obj, this.TimeoutToken));
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void PropertyGetterWithCtorParam()
 	{
 		ClassWithPropertyGettersWithCtorParam obj = new(true);

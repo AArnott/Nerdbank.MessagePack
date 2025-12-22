@@ -3,7 +3,7 @@
 
 public class MessagePackAsyncReaderTests
 {
-	[Fact]
+	[Test]
 	public async Task BufferNextStructureAsync_IncompleteBuffer()
 	{
 		Sequence<byte> seq = new();

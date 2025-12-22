@@ -5,12 +5,12 @@ using System.ComponentModel;
 
 public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void PropertyWithAlteredName()
 	{
 		Person person = new Person { FirstName = "Andrew", LastName = "Arnott" };
 		Sequence<byte> buffer = new();
-		this.Serializer.Serialize(buffer, person, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize(buffer, person, this.TimeoutToken);
 		this.LogMsgPack(buffer);
 
 		MessagePackReader reader = new(buffer);
@@ -20,13 +20,13 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		Assert.Equal("last_name", reader.ReadString());
 		Assert.Equal("Arnott", reader.ReadString());
 
-		Assert.Equal(person, this.Serializer.Deserialize<Person>(buffer, TestContext.Current.CancellationToken));
+		Assert.Equal(person, this.Serializer.Deserialize<Person>(buffer, this.TimeoutToken));
 	}
 
-	[Fact]
+	[Test]
 	public void PropertyAndConstructorNameCaseMismatch() => this.AssertRoundtrip(new ClassWithConstructorParameterNameMatchTest("Andrew"));
 
-	[Fact]
+	[Test]
 	public void PropertyGettersIgnored()
 	{
 		ClassWithUnserializedPropertyGetters obj = new() { Value = true };
@@ -35,7 +35,7 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchRequiredBetweenPropertyAndItsSyncValue()
 	{
 		Sequence<byte> seq = new();
@@ -50,11 +50,11 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		writer.Flush();
 
 		FragmentedPipeReader reader = new(seq.AsReadOnlySequence, breakPosition);
-		PersonWithAge? person = await this.Serializer.DeserializeAsync<PersonWithAge>(reader, TestContext.Current.CancellationToken);
+		PersonWithAge? person = await this.Serializer.DeserializeAsync<PersonWithAge>(reader, this.TimeoutToken);
 		Assert.Equal(1, person?.Age);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchRequiredBetweenPropertyAndItsSyncValue_DefaultCtor()
 	{
 		Sequence<byte> seq = new();
@@ -69,11 +69,11 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		writer.Flush();
 
 		FragmentedPipeReader reader = new(seq.AsReadOnlySequence, breakPosition);
-		PersonWithAgeDefaultCtor? person = await this.Serializer.DeserializeAsync<PersonWithAgeDefaultCtor>(reader, TestContext.Current.CancellationToken);
+		PersonWithAgeDefaultCtor? person = await this.Serializer.DeserializeAsync<PersonWithAgeDefaultCtor>(reader, this.TimeoutToken);
 		Assert.Equal(1, person?.Age);
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializeLongerPropertyNameThanDeclared()
 	{
 		Sequence<byte> seq = new();
@@ -82,7 +82,7 @@ public partial class ObjectsAsMapTests : MessagePackSerializerTestBase
 		writer.Write("VeryLongPropertyName");
 		writer.Write(42);
 		writer.Flush();
-		OptionalPropertyWithShortName? obj = this.Serializer.Deserialize<OptionalPropertyWithShortName>(seq, TestContext.Current.CancellationToken);
+		OptionalPropertyWithShortName? obj = this.Serializer.Deserialize<OptionalPropertyWithShortName>(seq, this.TimeoutToken);
 		Assert.NotNull(obj);
 	}
 
