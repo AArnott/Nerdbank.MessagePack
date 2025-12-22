@@ -6,25 +6,25 @@ using System.Numerics;
 
 public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void Null() => this.AssertConvertToJson<Primitives>("null", null);
 
-	[Fact]
+	[Test]
 	public void Simple() => this.AssertConvertToJson(@"{""Seeds"":3,""Is"":true,""Number"":1.2}", new Primitives(3, true, 1.2));
 
-	[Fact]
+	[Test]
 	public void Simple2() => this.AssertConvertToJson(@"{""Seeds"":-3,""Is"":true,""Number"":-0.3}", new Primitives(-3, true, -0.3));
 
-	[Fact]
+	[Test]
 	public void Array() => this.AssertConvertToJson(@"{""IntArray"":[1,2,3]}", new ArrayWrapper(1, 2, 3));
 
 	/// <summary>
 	/// Verifies the behavior of the simpler method that takes a buffer and returns a string.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void Sequence() => Assert.Equal("null", this.Serializer.ConvertToJson(new([0xc0])));
 
-	[Fact]
+	[Test]
 	public void Guid_LittleEndian()
 	{
 		Guid guid = Guid.NewGuid();
@@ -35,7 +35,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			new GuidWrapper(guid));
 	}
 
-	[Fact]
+	[Test]
 	public void BigInteger()
 	{
 		BigInteger value = new BigInteger(ulong.MaxValue) * 3;
@@ -46,7 +46,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			new BigIntegerWrapper(value));
 	}
 
-	[Fact]
+	[Test]
 	public void Decimal()
 	{
 		decimal value = new decimal(ulong.MaxValue) * 3;
@@ -58,7 +58,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	}
 
 #if NET
-	[Fact]
+	[Test]
 	public void Int128()
 	{
 		foreach (Int128 value in new[] { System.Int128.MinValue, 0, System.Int128.MaxValue })
@@ -71,7 +71,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void UInt128()
 	{
 		foreach (UInt128 value in new[] { System.UInt128.MinValue, System.UInt128.MaxValue })
@@ -85,7 +85,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	}
 #endif
 
-	[Fact]
+	[Test]
 	public void Indented_Object_Tabs()
 	{
 		this.AssertConvertToJson(
@@ -100,7 +100,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			new() { Indentation = "\t" });
 	}
 
-	[Fact]
+	[Test]
 	public void Indented_Object_Spaces()
 	{
 		this.AssertConvertToJson(
@@ -115,7 +115,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			new() { Indentation = "  " });
 	}
 
-	[Fact]
+	[Test]
 	public void Indented_Array()
 	{
 		this.AssertConvertToJson(
@@ -132,7 +132,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			new() { Indentation = "\t" });
 	}
 
-	[Fact]
+	[Test]
 	public void Indented_TrailingCommas_Array()
 	{
 		this.AssertConvertToJson5(
@@ -152,7 +152,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Asserts that trailing commas are not added when we're not using newlines anyway.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void TrailingCommas_IgnoredWithoutIndentation()
 	{
 		this.AssertConvertToJson(
@@ -163,7 +163,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			new() { TrailingCommas = true });
 	}
 
-	[Fact]
+	[Test]
 	public void Indented_TrailingCommas()
 	{
 		this.AssertConvertToJson5(
@@ -178,7 +178,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 			new() { Indentation = "\t", TrailingCommas = true });
 	}
 
-	[Fact]
+	[Test]
 	public void Indented_NestingObject()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -209,7 +209,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 #endif
 	{
 		string json = this.ConvertToJson(value, options);
-		this.Logger.WriteLine(json);
+		Console.WriteLine(json);
 		Assert.Equal(expected, json);
 	}
 
@@ -219,7 +219,7 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 #endif
 	{
 		string json = this.ConvertToJson(value, options);
-		this.Logger.WriteLine(json);
+		Console.WriteLine(json);
 		Assert.Equal(expected, json);
 	}
 
