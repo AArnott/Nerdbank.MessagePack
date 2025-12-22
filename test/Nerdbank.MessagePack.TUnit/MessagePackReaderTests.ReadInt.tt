@@ -110,12 +110,12 @@ string GetMinValue(Type intType) => $"0x{intType.GetField(nameof(int.MinValue)).
 	};
 <# foreach (Type t1 in allTypes) { #>
 
-	[Fact]
+	[Test]
 	public void Read<#=t1.Name#>_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= <#=t1.Name#>.MaxValue && value >= <#=t1.Name#>.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).Read<#=t1.Name#>());
@@ -129,7 +129,7 @@ string GetMinValue(Type intType) => $"0x{intType.GetField(nameof(int.MinValue)).
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void Read<#=t1.Name#>_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).Read<#=t1.Name#>());

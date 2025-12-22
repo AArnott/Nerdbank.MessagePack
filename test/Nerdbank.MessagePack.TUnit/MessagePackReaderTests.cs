@@ -9,13 +9,6 @@ public partial class MessagePackReaderTests
 	private const byte BytePositiveValue = 3;
 	private static readonly ReadOnlySequence<byte> StringEncodedAsFixStr = Encode((ref MessagePackWriter w) => w.Write("hi"));
 
-	private readonly ITestOutputHelper logger;
-
-	public MessagePackReaderTests(ITestOutputHelper logger)
-	{
-		this.logger = logger;
-	}
-
 	private delegate void RangeChecker(ref MessagePackReader reader);
 
 	private delegate void ReaderOperation(ref MessagePackReader reader);
@@ -24,24 +17,24 @@ public partial class MessagePackReaderTests
 
 	private delegate void WriterEncoder(ref MessagePackWriter writer);
 
-	[Fact]
+	[Test]
 	public void ReadSingle_ReadIntegersOfVariousLengthsAndMagnitudes()
 	{
 		foreach ((System.Numerics.BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			Assert.Equal((float)(double)value, new MessagePackReader(encoded).ReadSingle());
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadSingle_CanReadDouble()
 	{
 		var reader = new MessagePackReader(Encode((ref MessagePackWriter w) => w.Write(1.23)));
 		Assert.Equal(1.23f, reader.ReadSingle());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadArrayHeader_MitigatesLargeAllocations()
 	{
 		var sequence = new Sequence<byte>();
@@ -56,7 +49,7 @@ public partial class MessagePackReaderTests
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadArrayHeader()
 	{
 		var sequence = new Sequence<byte>();
@@ -73,7 +66,7 @@ public partial class MessagePackReaderTests
 		Assert.Equal(expectedCount, actualCount);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadMapHeader_MitigatesLargeAllocations()
 	{
 		var sequence = new Sequence<byte>();
@@ -88,7 +81,7 @@ public partial class MessagePackReaderTests
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadMapHeader()
 	{
 		var sequence = new Sequence<byte>();
@@ -105,31 +98,31 @@ public partial class MessagePackReaderTests
 		Assert.Equal(expectedCount, actualCount);
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadMapHeader_Ranges()
 	{
 		this.AssertCodeRange((ref MessagePackReader r) => r.TryReadMapHeader(out _), c => c is >= MessagePackCode.MinFixMap and <= MessagePackCode.MaxFixMap, c => c is MessagePackCode.Map16 or MessagePackCode.Map32);
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadArrayHeader_Ranges()
 	{
 		this.AssertCodeRange((ref MessagePackReader r) => r.TryReadArrayHeader(out _), c => c is >= MessagePackCode.MinFixArray and <= MessagePackCode.MaxFixArray, c => c is MessagePackCode.Array16 or MessagePackCode.Array32);
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadString_Ranges()
 	{
 		this.AssertCodeRange((ref MessagePackReader r) => r.TryReadStringSpan(out _), c => c is MessagePackCode.Nil, c => c is (>= MessagePackCode.MinFixStr and <= MessagePackCode.MaxFixStr) or MessagePackCode.Str8 or MessagePackCode.Str16 or MessagePackCode.Str32);
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadInt_Ranges()
 	{
 		this.AssertCodeRange((ref MessagePackReader r) => r.ReadInt32(), c => c is (>= MessagePackCode.MinFixInt and <= MessagePackCode.MaxFixInt) or (>= MessagePackCode.MinNegativeFixInt and <= MessagePackCode.MaxNegativeFixInt), c => c is MessagePackCode.Int64 or MessagePackCode.Int32 or MessagePackCode.Int16 or MessagePackCode.Int8 or MessagePackCode.UInt64 or MessagePackCode.UInt32 or MessagePackCode.UInt16 or MessagePackCode.UInt8);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadExtensionHeader_MitigatesLargeAllocations()
 	{
 		var sequence = new Sequence<byte>();
@@ -148,7 +141,7 @@ public partial class MessagePackReaderTests
 		reader.ReadExtensionHeader();
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadExtensionHeader()
 	{
 		var sequence = new Sequence<byte>();
@@ -165,7 +158,7 @@ public partial class MessagePackReaderTests
 		Assert.Equal(expectedExtensionHeader, actualExtensionHeader);
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadStringSpan_Fragmented()
 	{
 		var contiguousSequence = new Sequence<byte>();
@@ -188,7 +181,7 @@ public partial class MessagePackReaderTests
 		Assert.Equal([1, 2, 3], actualSequence.Value.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadStringSpan_Contiguous()
 	{
 		var sequence = new Sequence<byte>();
@@ -203,7 +196,7 @@ public partial class MessagePackReaderTests
 		Assert.True(reader.End);
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadStringSpan_Nil()
 	{
 		var sequence = new Sequence<byte>();
@@ -217,7 +210,7 @@ public partial class MessagePackReaderTests
 		Assert.Equal(sequence.AsReadOnlySequence.Start, reader.Position);
 	}
 
-	[Fact]
+	[Test]
 	public void TryReadStringSpan_WrongType()
 	{
 		var sequence = new Sequence<byte>();
@@ -232,7 +225,7 @@ public partial class MessagePackReaderTests
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void ReadStringSpan_Fragmented()
 	{
 		var contiguousSequence = new Sequence<byte>();
@@ -249,7 +242,7 @@ public partial class MessagePackReaderTests
 		Assert.Equal([1, 2, 3], span.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadStringSpan_Contiguous()
 	{
 		var sequence = new Sequence<byte>();
@@ -264,7 +257,7 @@ public partial class MessagePackReaderTests
 		Assert.True(reader.End);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadStringSpan_Nil()
 	{
 		var sequence = new Sequence<byte>();
@@ -279,7 +272,7 @@ public partial class MessagePackReaderTests
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void ReadStringSpan_WrongType()
 	{
 		var sequence = new Sequence<byte>();
@@ -294,7 +287,7 @@ public partial class MessagePackReaderTests
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void ReadString_MultibyteChars()
 	{
 		var reader = new MessagePackReader(TestConstants.MsgPackEncodedMultibyteCharString);
@@ -302,7 +295,7 @@ public partial class MessagePackReaderTests
 		Assert.Equal(TestConstants.MultibyteCharString, actual);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadRaw()
 	{
 		var sequence = new Sequence<byte>();
@@ -329,7 +322,7 @@ public partial class MessagePackReaderTests
 		Assert.True(reader.End);
 	}
 
-	[Fact]
+	[Test]
 	public void Read_CheckOperations_WithNoBytesLeft()
 	{
 		ReadOnlySequence<byte> partialMessage = default;
@@ -343,7 +336,7 @@ public partial class MessagePackReaderTests
 		AssertThrowsEndOfStreamException(partialMessage, (ref MessagePackReader reader) => reader.IsNil);
 	}
 
-	[Fact]
+	[Test]
 	public void Read_WithInsufficientBytesLeft()
 	{
 		void AssertIncomplete<T>(WriterEncoder encoder, ReadOperation<T> decoder, bool validMsgPack = true)
@@ -390,7 +383,7 @@ public partial class MessagePackReaderTests
 		AssertIncomplete((ref MessagePackWriter writer) => writer.Write(0xff), (ref MessagePackReader reader) => reader.ReadUInt64());
 	}
 
-	[Fact]
+	[Test]
 	public void CreatePeekReader()
 	{
 		var reader = new MessagePackReader(StringEncodedAsFixStr);
@@ -491,14 +484,14 @@ public partial class MessagePackReaderTests
 
 				if (expectedMatch != actual)
 				{
-					this.logger.WriteLine($"Byte 0x{code:x2} was {actual} but was expected to be {expectedMatch}.");
+					Console.WriteLine($"Byte 0x{code:x2} was {actual} but was expected to be {expectedMatch}.");
 					mismatch = true;
 				}
 			}
 			catch (Exception ex)
 			{
 				mismatch = true;
-				this.logger.WriteLine($"Byte 0x{code:x2} threw an exception: {ex}");
+				Console.WriteLine($"Byte 0x{code:x2} threw an exception: {ex}");
 			}
 		}
 

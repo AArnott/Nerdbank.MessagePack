@@ -138,12 +138,12 @@ public partial class MessagePackReaderTests
 		(unchecked((Int64)0x8000000000000000), Encode((ref MessagePackWriter w) => w.WriteInt64(-9223372036854775808))),
 	};
 
-	[Fact]
+	[Test]
 	public void ReadByte_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Byte.MaxValue && value >= Byte.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadByte());
@@ -157,18 +157,18 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadByte_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadByte());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadUInt16_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= UInt16.MaxValue && value >= UInt16.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadUInt16());
@@ -182,18 +182,18 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadUInt16_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt16());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadUInt32_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= UInt32.MaxValue && value >= UInt32.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadUInt32());
@@ -207,18 +207,18 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadUInt32_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt32());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadUInt64_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= UInt64.MaxValue && value >= UInt64.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadUInt64());
@@ -232,18 +232,18 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadUInt64_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadUInt64());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadSByte_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= SByte.MaxValue && value >= SByte.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadSByte());
@@ -257,18 +257,18 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadSByte_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadSByte());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadInt16_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Int16.MaxValue && value >= Int16.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadInt16());
@@ -282,18 +282,18 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadInt16_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt16());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadInt32_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Int32.MaxValue && value >= Int32.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadInt32());
@@ -307,18 +307,18 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadInt32_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt32());
 	}
 
-	[Fact]
+	[Test]
 	public void ReadInt64_ReadVariousLengthsAndMagnitudes()
 	{
 		foreach ((BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
 		{
-			this.logger.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
+			Console.WriteLine("Decoding 0x{0:x} from {1}", value, MessagePackCode.ToFormatName(encoded.First.Span[0]));
 			if (value <= Int64.MaxValue && value >= Int64.MinValue)
 			{
 				Assert.Equal(value, new MessagePackReader(encoded).ReadInt64());
@@ -332,7 +332,7 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ReadInt64_ThrowsOnUnexpectedCode()
 	{
 		Assert.Throws<MessagePackSerializationException>(() => new MessagePackReader(StringEncodedAsFixStr).ReadInt64());

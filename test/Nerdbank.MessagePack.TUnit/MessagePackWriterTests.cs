@@ -6,18 +6,11 @@ using System.Text;
 
 public class MessagePackWriterTests
 {
-	private readonly ITestOutputHelper logger;
-
-	public MessagePackWriterTests(ITestOutputHelper logger)
-	{
-		this.logger = logger;
-	}
-
 	/// <summary>
 	/// Verifies that <see cref="MessagePackWriter.WriteRaw(ReadOnlySpan{byte})"/>
 	/// accepts a span that came from stackalloc.
 	/// </summary>
-	[Fact]
+	[Test]
 	public unsafe void WriteRaw_StackAllocatedSpan()
 	{
 		var sequence = new Sequence<byte>();
@@ -38,7 +31,7 @@ public class MessagePackWriterTests
 		Assert.Equal(2, written[7]);
 	}
 
-	[Fact]
+	[Test]
 	public void Write_ByteArray_null()
 	{
 		var sequence = new Sequence<byte>();
@@ -49,7 +42,7 @@ public class MessagePackWriterTests
 		Assert.True(reader.TryReadNil());
 	}
 
-	[Fact]
+	[Test]
 	public void Write_ByteArray()
 	{
 		var sequence = new Sequence<byte>();
@@ -61,7 +54,7 @@ public class MessagePackWriterTests
 		Assert.Equal(buffer, reader.ReadBytes()?.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void Write_String_null()
 	{
 		var sequence = new Sequence<byte>();
@@ -72,7 +65,7 @@ public class MessagePackWriterTests
 		Assert.True(reader.TryReadNil());
 	}
 
-	[Fact]
+	[Test]
 	public void Write_String()
 	{
 		var sequence = new Sequence<byte>();
@@ -84,7 +77,7 @@ public class MessagePackWriterTests
 		Assert.Equal(expected, reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void Write_String_MultibyteChars()
 	{
 		var sequence = new Sequence<byte>();
@@ -92,11 +85,11 @@ public class MessagePackWriterTests
 		writer.Write(TestConstants.MultibyteCharString);
 		writer.Flush();
 
-		this.logger.WriteLine("Written bytes: [{0}]", string.Join(", ", sequence.AsReadOnlySequence.ToArray().Select(b => string.Format(CultureInfo.InvariantCulture, "0x{0:x2}", b))));
+		Console.WriteLine("Written bytes: [{0}]", string.Join(", ", sequence.AsReadOnlySequence.ToArray().Select(b => string.Format(CultureInfo.InvariantCulture, "0x{0:x2}", b))));
 		Assert.Equal(TestConstants.MsgPackEncodedMultibyteCharString.ToArray(), sequence.AsReadOnlySequence.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void WriteStringHeader()
 	{
 		var sequence = new Sequence<byte>();
@@ -110,7 +103,7 @@ public class MessagePackWriterTests
 		Assert.Equal("hello", reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void Write_MessagePackString()
 	{
 		MessagePackString msgpackString = new("abc");
@@ -123,7 +116,7 @@ public class MessagePackWriterTests
 		Assert.Equal("abc", reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void WriteBinHeader()
 	{
 		var sequence = new Sequence<byte>();
@@ -136,7 +129,7 @@ public class MessagePackWriterTests
 		Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, reader.ReadBytes()?.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void WriteExtensionHeader_NegativeExtension()
 	{
 		var sequence = new Sequence<byte>();
@@ -155,7 +148,7 @@ public class MessagePackWriterTests
 		Assert.Equal(header.Length, readHeader.Length);
 	}
 
-	[Fact]
+	[Test]
 	public void TryWriteWithBuggyWriter()
 	{
 		Assert.Throws<InvalidOperationException>(() =>
@@ -165,7 +158,7 @@ public class MessagePackWriterTests
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void WriteVeryLargeData()
 	{
 		Sequence<byte> sequence = new();

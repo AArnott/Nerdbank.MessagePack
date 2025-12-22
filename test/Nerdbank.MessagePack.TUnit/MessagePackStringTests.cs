@@ -1,11 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class MessagePackStringTests
+public partial class MessagePackStringTests : MessagePackSerializerTestBase
 {
-	private static readonly MessagePackSerializer Serializer = new();
-
-	[Fact]
+	[Test]
 	public void CtorAndProperties()
 	{
 		MessagePackString msgpackString = new("abc");
@@ -14,7 +12,7 @@ public partial class MessagePackStringTests
 		Assert.Equal([MessagePackCode.MinFixStr | 3, .. "abc"u8], msgpackString.MsgPack.ToArray());
 	}
 
-	[Fact]
+	[Test]
 	public void IsMatch_Span()
 	{
 		MessagePackString msgpackString = new("abc");
@@ -24,7 +22,7 @@ public partial class MessagePackStringTests
 		Assert.False(msgpackString.IsMatch("def"u8));
 	}
 
-	[Fact]
+	[Test]
 	public void IsMatch_Sequence_Contiguous()
 	{
 		MessagePackString msgpackString = new("abc");
@@ -34,7 +32,7 @@ public partial class MessagePackStringTests
 		Assert.False(msgpackString.IsMatch(ContiguousSequence("def"u8)));
 	}
 
-	[Fact]
+	[Test]
 	public void IsMatch_Sequence_NonContiguous()
 	{
 		MessagePackString msgpackString = new("abc");
@@ -54,14 +52,14 @@ public partial class MessagePackStringTests
 		Assert.False(msgpackString.IsMatch(SplitSequence("def"u8, 2)));
 	}
 
-	[Fact]
+	[Test]
 	public void TryRead()
 	{
-		MessagePackReader matchingReaderContiguous = new(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken));
-		MessagePackReader matchingReaderFragmented = new(SplitSequence<byte>(Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken), 2));
-		MessagePackReader mismatchingReader = new(Serializer.Serialize<string, Witness>("def", TestContext.Current.CancellationToken));
-		MessagePackReader nilReader = new(Serializer.Serialize<string, Witness>(null, TestContext.Current.CancellationToken));
-		MessagePackReader intReader = new(Serializer.Serialize<int, Witness>(3, TestContext.Current.CancellationToken));
+		MessagePackReader matchingReaderContiguous = new(this.Serializer.Serialize<string, Witness>("abc", this.TimeoutToken));
+		MessagePackReader matchingReaderFragmented = new(SplitSequence<byte>(this.Serializer.Serialize<string, Witness>("abc", this.TimeoutToken), 2));
+		MessagePackReader mismatchingReader = new(this.Serializer.Serialize<string, Witness>("def", this.TimeoutToken));
+		MessagePackReader nilReader = new(this.Serializer.Serialize<string, Witness>(null, this.TimeoutToken));
+		MessagePackReader intReader = new(this.Serializer.Serialize<int, Witness>(3, this.TimeoutToken));
 
 		MessagePackString msgpackString = new("abc");
 
@@ -75,7 +73,7 @@ public partial class MessagePackStringTests
 		Assert.False(intReader.End);
 	}
 
-	[Fact]
+	[Test]
 	public void Equals_GetHashCode()
 	{
 		MessagePackString abc1 = new("abc");

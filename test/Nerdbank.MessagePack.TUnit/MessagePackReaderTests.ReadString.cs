@@ -3,7 +3,7 @@
 
 public partial class MessagePackReaderTests
 {
-	[Fact]
+	[Test]
 	public void ReadString_HandlesSingleSegment()
 	{
 		ReadOnlySequence<byte> seq = this.BuildSequence(new[]
@@ -17,7 +17,7 @@ public partial class MessagePackReaderTests
 		Assert.Equal("AB", result);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadString_HandlesMultipleSegments()
 	{
 		ReadOnlySequence<byte> seq = this.BuildSequence(
