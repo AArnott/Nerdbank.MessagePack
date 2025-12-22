@@ -9,16 +9,24 @@ public partial class DerivedTypeDuckTypingTests : MessagePackSerializerTestBase
 	{
 		this.Serializer = this.Serializer with
 		{
+#if NET
+			DerivedTypeUnions = [
+				new DerivedTypeDuckTyping(
+					TypeShapeResolver.Resolve<Animal>(),
+					TypeShapeResolver.Resolve<Dog>(),
+					TypeShapeResolver.Resolve<Cat>()),
+#else
 			DerivedTypeUnions = [
 				new DerivedTypeDuckTyping(
 					TypeShapeResolver.ResolveDynamicOrThrow<Animal>(),
 					TypeShapeResolver.ResolveDynamicOrThrow<Dog>(),
 					TypeShapeResolver.ResolveDynamicOrThrow<Cat>()),
+#endif
 			],
 		};
 	}
 
-	[Fact]
+	[Test]
 	public void RequiredPropertyDistinction_Roundtrip()
 	{
 		this.AssertRoundtrip<Animal>(new Dog("Buddy", 5));

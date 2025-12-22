@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
+public partial class DerivedTypeMappingTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void NonUniqueAliasesRejected_Integers()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
@@ -14,10 +14,10 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>(1, Witness.GeneratedTypeShapeProvider));
 #endif
-		logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void NonUniqueAliasesRejected_Strings()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
@@ -28,10 +28,10 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedB>("A", Witness.GeneratedTypeShapeProvider));
 #endif
-		logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void NonUniqueTypesRejected_Integers()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
@@ -42,10 +42,10 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.GeneratedTypeShapeProvider));
 #endif
-		logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void NonUniqueTypesRejected_Strings()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
@@ -56,10 +56,10 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(2, Witness.GeneratedTypeShapeProvider));
 #endif
-		logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void NonUniquePairsRejected_Integers()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
@@ -70,10 +70,10 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>(1, Witness.GeneratedTypeShapeProvider));
 #endif
-		logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void NonUniquePairsRejected_Strings()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
@@ -84,10 +84,10 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider);
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => mapping.Add<MyDerivedA>("A", Witness.GeneratedTypeShapeProvider));
 #endif
-		logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void ObjectInitializerSyntax()
 	{
 		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
@@ -100,7 +100,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		Assert.Equal(typeof(MyDerivedB), mapping["B"]);
 	}
 
-	[Fact]
+	[Test]
 	public void DictionaryInitializerSyntax()
 	{
 		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
@@ -113,7 +113,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		Assert.Equal(typeof(MyDerivedB), mapping["B"]);
 	}
 
-	[Fact]
+	[Test]
 	public void ObjectInitializerSyntax_NonUniqueTypes()
 	{
 		Assert.Throws<ArgumentException>(() =>
@@ -126,7 +126,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void ObjectInitializerSyntax_NonUniqueAlias()
 	{
 		Assert.Throws<ArgumentException>(() =>
@@ -139,7 +139,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void DictionaryInitializerSyntax_NonUniqueTypes()
 	{
 		Assert.Throws<ArgumentException>(() =>
@@ -152,7 +152,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void DictionaryInitializerSyntax_AddTypeAgainAfterImplicitRemoval()
 	{
 		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)
@@ -166,7 +166,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		Assert.Equal(typeof(MyDerivedA), mapping["A"]);
 	}
 
-	[Fact]
+	[Test]
 	public void DerivedShapeMapping_DisabledTests()
 	{
 		var union = DerivedTypeUnion.CreateDisabled(typeof(MyBase));
@@ -174,7 +174,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		Assert.Same(typeof(MyBase), union.BaseType);
 	}
 
-	[Fact]
+	[Test]
 	[SuppressMessage("Assertions", "xUnit2013:Do not use equality check to check for collection size.", Justification = "The whole point of this test is to ensure that the Count property matches what the enumerator would produce.")]
 	public void EnumerateMappings()
 	{
@@ -187,7 +187,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 		Assert.Equal(serializer.DerivedTypeUnions.Count, serializer.DerivedTypeUnions.Count());
 	}
 
-	[Fact]
+	[Test]
 	public void ShapeMappingFrozenAfterAdding()
 	{
 		DerivedShapeMapping<MyBase> mapping = new();
@@ -209,7 +209,7 @@ public partial class DerivedTypeMappingTests(ITestOutputHelper logger)
 #endif
 	}
 
-	[Fact]
+	[Test]
 	public void TypeMappingFrozenAfterAdding()
 	{
 		DerivedTypeMapping<MyBase> mapping = new(Witness.GeneratedTypeShapeProvider)

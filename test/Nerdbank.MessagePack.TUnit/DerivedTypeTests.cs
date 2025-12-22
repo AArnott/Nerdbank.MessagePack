@@ -3,7 +3,7 @@
 
 public partial class DerivedTypeTests : MessagePackSerializerTestBase
 {
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task BaseType(bool async)
 	{
 		BaseClass value = new() { BaseClassProperty = 5 };
@@ -17,7 +17,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void BaseTypeExplicitIdentifier()
 	{
 		BaseTypeExplicitBase? result = this.Roundtrip(new BaseTypeExplicitBase());
@@ -34,7 +34,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void BaseTypeExplicitIdentifier_RuntimeMapping()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -52,7 +52,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void DerivedAType()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 });
@@ -67,7 +67,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.True(reader.End);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task DerivedA_AsBaseType(bool async)
 	{
 		var value = new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 };
@@ -81,26 +81,26 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void DerivedAA_AsBaseType() => this.AssertRoundtrip<BaseClass>(new DerivedAA { BaseClassProperty = 5, DerivedAProperty = 6 });
 
-	[Fact]
+	[Test]
 	public void DerivedB_AsBaseType() => this.AssertRoundtrip<BaseClass>(new DerivedB(10) { BaseClassProperty = 5 });
 
-	[Fact]
+	[Test]
 	public void EnumerableDerived_BaseType()
 	{
 		// This is a lossy operation. Only the collection elements are serialized,
 		// and the class cannot be deserialized because the constructor doesn't take a collection.
 		EnumerableDerived value = new(3) { BaseClassProperty = 5 };
-		byte[] msgpack = this.Serializer.Serialize<BaseClass>(value, TestContext.Current.CancellationToken);
-		this.Logger.WriteLine(this.Serializer.ConvertToJson(msgpack));
+		byte[] msgpack = this.Serializer.Serialize<BaseClass>(value, this.TimeoutToken);
+		Console.WriteLine(this.Serializer.ConvertToJson(msgpack));
 	}
 
-	[Fact]
+	[Test]
 	public void ClosedGenericDerived_BaseType() => this.AssertRoundtrip<BaseClass>(new DerivedGeneric<int>(5) { BaseClassProperty = 10 });
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task Null(bool async)
 	{
 		if (async)
@@ -113,7 +113,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void UnrecognizedAlias()
 	{
 		Sequence<byte> sequence = new();
@@ -123,11 +123,11 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		writer.WriteMapHeader(0);
 		writer.Flush();
 
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.Message);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, this.TimeoutToken));
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void UnrecognizedArraySize()
 	{
 		Sequence<byte> sequence = new();
@@ -138,18 +138,18 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		writer.WriteNil();
 		writer.Flush();
 
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.Message);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<BaseClass>(sequence, this.TimeoutToken));
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void UnknownDerivedType()
 	{
 		BaseClass? result = this.Roundtrip<BaseClass>(new UnknownDerived());
 		Assert.IsType<BaseClass>(result);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public void UnknownDerivedType_PrefersClosestMatch(bool runtimeMapping)
 	{
 		if (runtimeMapping)
@@ -165,7 +165,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.IsType<DerivedAA>(this.Roundtrip<BaseClass>(new DerivedAAUnknown()));
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task MixedAliasTypes(bool async)
 	{
 		MixedAliasBase value = new MixedAliasDerivedA();
@@ -181,7 +181,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(10, reader.ReadInt32());
 	}
 
-	[Fact]
+	[Test]
 	public void ImpliedAlias()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<ImpliedAliasBase>(new ImpliedAliasDerived());
@@ -190,7 +190,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(typeof(ImpliedAliasDerived).Name, reader.ReadString());
 	}
 
-	[Fact]
+	[Test]
 	public void RecursiveSubTypes()
 	{
 		// If it were to work, this is how we expect it to work:
@@ -202,7 +202,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(13, reader.ReadInt32());
 	}
 
-	[Fact]
+	[Test]
 	public void RuntimeRegistration_Integers()
 	{
 		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
@@ -220,7 +220,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedB());
 	}
 
-	[Fact]
+	[Test]
 	public void RuntimeRegistration_Strings()
 	{
 		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
@@ -238,7 +238,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedB());
 	}
 
-	[Fact]
+	[Test]
 	public void RuntimeRegistration_OverridesStatic()
 	{
 		DerivedShapeMapping<BaseClass> mapping = new();
@@ -265,7 +265,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	/// <summary>
 	/// Verify that an empty mapping is allowed and produces the schema that allows for sub-types to be added in the future.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void RuntimeRegistration_EmptyMapping()
 	{
 		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
@@ -277,7 +277,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverter_InvokedAsUnionCase_WhenSetAsRuntimeConverter()
 	{
 		this.Serializer = this.Serializer with { Converters = [new BaseClassCustomConverter()] };
@@ -289,7 +289,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip<BaseTypeWithCustomConverterAttribute>(new BaseTypeWithCustomConverterAttributeDerived { BaseClassProperty = 8, DerivedAProperty = 10 });
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverter_InvokedAsUnionCase_WhenSetViaConverterAttribute()
 	{
 		this.AssertRoundtrip<BaseTypeWithCustomConverterAttribute>(new() { BaseClassProperty = 5 });
@@ -299,7 +299,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip<BaseTypeWithCustomConverterAttribute>(new BaseTypeWithCustomConverterAttributeDerived { BaseClassProperty = 8, DerivedAProperty = 10 });
 	}
 
-	[Fact]
+	[Test]
 	public void CustomConverter_InvokedAsUnionCase_WhenSetViaConverterAttributeOnMember()
 	{
 		this.AssertRoundtrip<HasUnionMemberWithMemberAttribute>(new() { Value = new BaseClass { BaseClassProperty = 5 } });
@@ -312,7 +312,7 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(new HasUnionMemberWithMemberAttribute { Value = new BaseClass { BaseClassProperty = 8 } }, deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public void DisableAttributeUnionAtRuntime()
 	{
 		this.Serializer = this.Serializer with
