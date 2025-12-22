@@ -33,7 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
     <Compile Include="..\Nerdbank.MessagePack.TUnit\PrimitivesDerializationTests.cs" Link="PrimitivesDerializationTests.cs" />
     <Compile Include="..\Nerdbank.MessagePack.TUnit\SurrogateTests.OriginalType.cs" Link="SurrogateTests.OriginalType.cs" />
   </ItemGroup>

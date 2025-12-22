@@ -9,26 +9,26 @@ public class InternedBuffersTests
 {
 	private readonly InternedBuffers intern = new();
 
-	[Fact]
+	[Test]
 	public void EqualSpansProduceRefEqualMemory()
 	{
 		Assert.True(this.intern.Intern([1, 2, 3]).Span == this.intern.Intern([1, 2, 3]).Span);
 	}
 
-	[Fact]
+	[Test]
 	public void NonEqualSpansProduceUniqueMemory()
 	{
 		Assert.False(this.intern.Intern([1, 2, 4]).Span == this.intern.Intern([1, 2, 3]).Span);
 	}
 
-	[Fact]
+	[Test]
 	public void InterningStoredInIsolation()
 	{
 		InternedBuffers intern2 = new();
 		Assert.False(this.intern.Intern([1, 2, 3]).Span == intern2.Intern([1, 2, 3]).Span);
 	}
 
-	[Fact]
+	[Test]
 	public void InternSeveralBuffers()
 	{
 		// This verifies that several buffers can be interned and retrieved at once.
@@ -47,7 +47,7 @@ public class InternedBuffersTests
 		Assert.True(memory1.Span == memory1b.Span);
 	}
 
-	[Fact]
+	[Test]
 	public void BuffersAreWeaklyRetained()
 	{
 		WeakReference<byte[]> weakRef = Helper();

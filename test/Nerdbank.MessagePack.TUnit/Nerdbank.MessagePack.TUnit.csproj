@@ -32,6 +32,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
     <Compile Update="MessagePackReaderTests.ReadInt.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
