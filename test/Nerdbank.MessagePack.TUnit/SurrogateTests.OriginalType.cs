@@ -6,8 +6,8 @@ public partial class SurrogateTests
 	[GenerateShape(Marshaler = typeof(Marshaler))]
 	internal partial class OriginalType
 	{
-		private int a;
-		private int b;
+		private readonly int a;
+		private readonly int b;
 
 		internal OriginalType(int a, int b)
 		{
