@@ -1,10 +1,10 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-[Trait("IgnoreKeyAttributes", "true")]
+[Property("IgnoreKeyAttributes", "true")]
 public partial class IgnoreKeyAttributesTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void ObjectWithKeyAttributesBecomesMap()
 	{
 		this.Serializer = this.Serializer with { IgnoreKeyAttributes = true };
@@ -15,7 +15,7 @@ public partial class IgnoreKeyAttributesTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void ObjectWithKeyAttributesBecomesArray_WhenIgnoreKeyAttributesIsFalse()
 	{
 		this.Serializer = this.Serializer with { IgnoreKeyAttributes = false };
@@ -26,7 +26,7 @@ public partial class IgnoreKeyAttributesTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void IgnoreKeyAttributes_WithPerfOverSchemaStability_ProducesArray()
 	{
 		// When both are true, PerfOverSchemaStability still produces arrays,
@@ -43,7 +43,7 @@ public partial class IgnoreKeyAttributesTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void ObjectWithoutKeyAttributes_NotAffectedByIgnoreKeyAttributes()
 	{
 		this.Serializer = this.Serializer with { IgnoreKeyAttributes = true };
@@ -54,7 +54,7 @@ public partial class IgnoreKeyAttributesTests : MessagePackSerializerTestBase
 		Assert.Equal(2, reader.ReadMapHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void ComplexObject_WithNestedKeyAttributes()
 	{
 		this.Serializer = this.Serializer with { IgnoreKeyAttributes = true };

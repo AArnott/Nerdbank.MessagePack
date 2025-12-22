@@ -6,14 +6,14 @@ using System.Runtime.CompilerServices;
 
 public class MessagePackValueTests
 {
-	[Fact]
+	[Test]
 	public void StructSize()
 	{
 		// This test is here to ensure that the struct doesn't grow unexpectedly.
 		Assert.Equal(24, Unsafe.SizeOf<MessagePackValue>());
 	}
 
-	[Fact]
+	[Test]
 	public void ByteConversion()
 	{
 		// Test normal value
@@ -29,7 +29,7 @@ public class MessagePackValueTests
 		Assert.Equal(byte.MaxValue, (byte)token);
 	}
 
-	[Fact]
+	[Test]
 	public void SByteConversion()
 	{
 		// Test normal value
@@ -45,7 +45,7 @@ public class MessagePackValueTests
 		Assert.Equal(sbyte.MaxValue, (sbyte)token);
 	}
 
-	[Fact]
+	[Test]
 	public void UShortConversion()
 	{
 		// Test normal value
@@ -61,7 +61,7 @@ public class MessagePackValueTests
 		Assert.Equal(ushort.MaxValue, (ushort)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ShortConversion()
 	{
 		// Test normal value
@@ -77,7 +77,7 @@ public class MessagePackValueTests
 		Assert.Equal(short.MaxValue, (short)token);
 	}
 
-	[Fact]
+	[Test]
 	public void UIntConversion()
 	{
 		// Test normal value
@@ -93,7 +93,7 @@ public class MessagePackValueTests
 		Assert.Equal(uint.MaxValue, (uint)token);
 	}
 
-	[Fact]
+	[Test]
 	public void IntConversion()
 	{
 		// Test normal value
@@ -109,7 +109,7 @@ public class MessagePackValueTests
 		Assert.Equal(int.MaxValue, (int)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ULongConversion()
 	{
 		// Test normal value
@@ -125,7 +125,7 @@ public class MessagePackValueTests
 		Assert.Equal(ulong.MaxValue, (ulong)token);
 	}
 
-	[Fact]
+	[Test]
 	public void LongConversion()
 	{
 		// Test normal value
@@ -141,7 +141,7 @@ public class MessagePackValueTests
 		Assert.Equal(long.MaxValue, (long)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ByteConversion_Overflow()
 	{
 		// Test overflow
@@ -152,7 +152,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (byte)token);
 	}
 
-	[Fact]
+	[Test]
 	public void SByteConversion_Overflow()
 	{
 		// Test overflow
@@ -163,7 +163,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (sbyte)token);
 	}
 
-	[Fact]
+	[Test]
 	public void UShortConversion_Overflow()
 	{
 		// Test overflow
@@ -174,7 +174,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (ushort)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ShortConversion_Overflow()
 	{
 		// Test overflow
@@ -185,7 +185,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (short)token);
 	}
 
-	[Fact]
+	[Test]
 	public void UIntConversion_Overflow()
 	{
 		// Test overflow
@@ -196,7 +196,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (uint)token);
 	}
 
-	[Fact]
+	[Test]
 	public void IntConversion_Overflow()
 	{
 		// Test overflow
@@ -207,7 +207,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (int)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ULongConversion_Overflow()
 	{
 		// Test overflow for ulong (only negative values can overflow)
@@ -215,7 +215,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (ulong)token);
 	}
 
-	[Fact]
+	[Test]
 	public void LongConversion_Overflow()
 	{
 		// Since MessagePackToken uses long/ulong internally,
@@ -224,7 +224,7 @@ public class MessagePackValueTests
 		Assert.Throws<OverflowException>(() => (long)token);
 	}
 
-	[Fact]
+	[Test]
 	public void BooleanConversion()
 	{
 		// Test normal value
@@ -236,7 +236,7 @@ public class MessagePackValueTests
 		Assert.False((bool)token);
 	}
 
-	[Fact]
+	[Test]
 	public void FloatConversion()
 	{
 		// Test normal value
@@ -270,7 +270,7 @@ public class MessagePackValueTests
 		Assert.Equal(float.NegativeInfinity, (float)token);
 	}
 
-	[Fact]
+	[Test]
 	public void DoubleConversion()
 	{
 		// Test normal value
@@ -308,7 +308,7 @@ public class MessagePackValueTests
 		Assert.Equal(double.NegativeInfinity, (double)token);
 	}
 
-	[Fact]
+	[Test]
 	public void FloatConversion_Overflow()
 	{
 		// Test overflow
@@ -321,7 +321,7 @@ public class MessagePackValueTests
 		Assert.True(float.IsNegativeInfinity((float)token));
 	}
 
-	[Fact]
+	[Test]
 	public void DoubleConversion_Overflow()
 	{
 		// There's no value larger than double in MessagePackToken
@@ -330,7 +330,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (double)token);
 	}
 
-	[Fact]
+	[Test]
 	public void StringConversion()
 	{
 		// Test normal value
@@ -347,7 +347,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (string?)token);
 	}
 
-	[Fact]
+	[Test]
 	public void BinaryConversion()
 	{
 		// Test normal value
@@ -360,7 +360,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (ReadOnlyMemory<byte>)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ArrayConversion()
 	{
 		MessagePackValue token = new MessagePackValue[] { "Hi", "Bye" };
@@ -373,7 +373,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (ReadOnlyMemory<MessagePackValue>)token);
 	}
 
-	[Fact]
+	[Test]
 	public void MapConversion()
 	{
 		MessagePackValue token = new Dictionary<MessagePackValue, MessagePackValue>
@@ -390,7 +390,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (ReadOnlyMemory<MessagePackValue>)token);
 	}
 
-	[Fact]
+	[Test]
 	public void MapConversion_Frozen()
 	{
 		MessagePackValue token = new Dictionary<MessagePackValue, MessagePackValue>
@@ -407,7 +407,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (ReadOnlyMemory<MessagePackValue>)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ExtensionConversion()
 	{
 		MessagePackValue token = new Extension(-5, (byte[])[1, 2, 3]);
@@ -420,7 +420,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (Extension)token);
 	}
 
-	[Fact]
+	[Test]
 	public void DateTimeConversion()
 	{
 		MessagePackValue token = new DateTime(2025, 01, 12, 1, 1, 1, DateTimeKind.Utc);
@@ -433,7 +433,7 @@ public class MessagePackValueTests
 		Assert.Throws<InvalidCastException>(() => (DateTime)token);
 	}
 
-	[Fact]
+	[Test]
 	public void ToString_Tests()
 	{
 		Assert.Equal("null", new MessagePackValue(null).ToString());
@@ -451,7 +451,7 @@ public class MessagePackValueTests
 		Assert.Equal("01/12/2025 01:01:01", new MessagePackValue(new DateTime(2025, 01, 12, 1, 1, 1, DateTimeKind.Utc)).ToString());
 	}
 
-	[Fact]
+	[Test]
 	public void Equality()
 	{
 		MessagePackValue left = 5, right = "hi";
@@ -459,7 +459,7 @@ public class MessagePackValueTests
 		Assert.NotEqual(left.GetHashCode(), right.GetHashCode());
 	}
 
-	[Fact]
+	[Test]
 	public void GetHashCode_Shallow_Deep()
 	{
 		MessagePackValue v1a = new MessagePackValue[] { 1, 2, 3 };
