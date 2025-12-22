@@ -109,7 +109,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<T, TWitness>(value);
 		this.AssertType(msgpack, this.ExpectedType);
-		this.Logger.LogTrace(value.ToString());
+		Console.WriteLine(value);
 		return msgpack;
 	}
 
@@ -138,7 +138,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 		public void UnrecognizedName()
 		{
 			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Simple, Witness>(SerializeEnumName("FOO"), this.TimeoutToken));
-			this.Logger.LogTrace(ex.Message);
+			Console.WriteLine(ex.Message);
 		}
 
 		[Test]
