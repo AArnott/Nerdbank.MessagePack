@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-[Trait("Surrogates", "true")]
+[Property("Surrogates", "true")]
 public partial class SurrogateTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void NonNullReference()
 	{
 		OriginalType? deserialized = this.Roundtrip(new OriginalType(1, 2));
@@ -12,14 +12,14 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Equal(3, deserialized.Sum);
 	}
 
-	[Fact]
+	[Test]
 	public void NullReference()
 	{
 		OriginalType? deserialized = this.Roundtrip<OriginalType>(null);
 		Assert.Null(deserialized);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NonNullReference_Async()
 	{
 		OriginalType? deserialized = await this.RoundtripAsync(new OriginalType(1, 2));
@@ -27,15 +27,15 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Equal(3, deserialized.Sum);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NullReference_Async()
 	{
 		OriginalType? deserialized = await this.RoundtripAsync<OriginalType>(null);
 		Assert.Null(deserialized);
 	}
 
-	[Fact]
-	[Trait("ReferencePreservation", "true")]
+	[Test]
+	[Property("ReferencePreservation", "true")]
 	public void ReferencePreservation()
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
@@ -45,7 +45,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Same(deserializedArray[0], deserializedArray[1]);
 	}
 
-	[Fact]
+	[Test]
 	public void GenericMarshaler()
 	{
 		OpenGenericDataType<int>? deserialized = this.Roundtrip<OpenGenericDataType<int>, Witness>(new OpenGenericDataType<int> { Value = 42 });
@@ -53,7 +53,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Equal(42, deserialized.Value);
 	}
 
-	[Fact]
+	[Test]
 	public void SurrogateIgnoredWithCustomConverterByInstanceRegistration()
 	{
 		this.Serializer = this.Serializer with { Converters = [new OriginalTypeConverter()] };
@@ -66,7 +66,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Equal(8, deserialized?.GetB());
 	}
 
-	[Fact]
+	[Test]
 	public void SurrogateIgnoredWithCustomConverterByTypeRegistration()
 	{
 		this.Serializer = this.Serializer with { ConverterTypes = [typeof(OriginalTypeConverter)] };
@@ -79,7 +79,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Equal(8, deserialized?.GetB());
 	}
 
-	[Fact]
+	[Test]
 	public void SurrogateIgnoredWithCustomConverterByFactoryRegistration()
 	{
 		this.Serializer = this.Serializer with { ConverterFactories = [new OriginalTypeConverterFactory()] };
@@ -92,7 +92,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 		Assert.Equal(8, deserialized?.GetB());
 	}
 
-	[Fact]
+	[Test]
 	public void SurrogateIgnoredWithCustomConverterByAttribute()
 	{
 		OriginalTypeWithSurrogateAndConverter obj = new(3, 5);
