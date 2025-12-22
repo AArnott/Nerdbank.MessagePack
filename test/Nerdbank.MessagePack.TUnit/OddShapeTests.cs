@@ -12,13 +12,13 @@ public partial class OddShapeTests : MessagePackSerializerTestBase
 	/// constructor parameters do not align with its settable properties, which is not supported by the serialization
 	/// framework.
 	/// </remarks>
-	[Fact]
+	[Test]
 	public void OddShapeWithParameterAndPropertyMismatch()
 	{
 		ClassWithParameterAndPropertyMismatch instance = new(42) { Comparer = 1 };
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(instance, TestContext.Current.CancellationToken));
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(instance, this.TimeoutToken));
 		NotSupportedException baseException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
-		this.Logger.WriteLine(baseException.Message);
+		Console.WriteLine(baseException.Message);
 	}
 
 	[GenerateShape]

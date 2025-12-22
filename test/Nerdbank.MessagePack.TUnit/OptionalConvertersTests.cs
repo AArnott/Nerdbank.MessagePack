@@ -3,21 +3,21 @@
 
 public partial class OptionalConvertersTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void NullCheck()
 	{
 		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithSystemTextJsonConverters(null!));
 		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithGuidConverter(null!, OptionalConverters.GuidStringFormat.StringN));
 	}
 
-	[Fact]
+	[Test]
 	public void DoubleAddThrows()
 	{
 		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidStringFormat.StringD);
 		Assert.Throws<ArgumentException>(() => this.Serializer.WithGuidConverter(OptionalConverters.GuidStringFormat.StringN));
 	}
 
-	[Fact]
+	[Test]
 	public void WithAssumedDateTimeKind_InvalidInputs()
 	{
 		// The valid inputs are tested in the BuiltInConverterTests class.
@@ -26,23 +26,23 @@ public partial class OptionalConvertersTests : MessagePackSerializerTestBase
 		Assert.Throws<ArgumentException>("kind", () => OptionalConverters.WithAssumedDateTimeKind(this.Serializer, DateTimeKind.Unspecified));
 	}
 
-	[Fact]
+	[Test]
 	public void WithAssumedDateTimeKind_Twice()
 	{
 		ArgumentException ex = Assert.Throws<ArgumentException>(
 			   () => this.Serializer
 			   .WithAssumedDateTimeKind(DateTimeKind.Local)
 			   .WithAssumedDateTimeKind(DateTimeKind.Utc));
-		this.Logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void WithHiFiDateTime_Twice()
 	{
 		ArgumentException ex = Assert.Throws<ArgumentException>(
 			   () => this.Serializer
 			   .WithHiFiDateTime()
 			   .WithHiFiDateTime());
-		this.Logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 	}
 }

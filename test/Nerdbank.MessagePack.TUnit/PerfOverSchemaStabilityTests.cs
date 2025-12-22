@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-[Trait("PerfOverSchemaStability", "true")]
+[Property("PerfOverSchemaStability", "true")]
 public partial class PerfOverSchemaStabilityTests : MessagePackSerializerTestBase
 {
 	public PerfOverSchemaStabilityTests()
@@ -9,7 +9,7 @@ public partial class PerfOverSchemaStabilityTests : MessagePackSerializerTestBas
 		this.Serializer = this.Serializer with { PerfOverSchemaStability = true };
 	}
 
-	[Fact]
+	[Test]
 	public void ObjectMapBecomesArray()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new RecordWithoutKeyAttributes("Andrew", 99));
@@ -17,7 +17,7 @@ public partial class PerfOverSchemaStabilityTests : MessagePackSerializerTestBas
 		Assert.Equal(2, reader.ReadArrayHeader());
 	}
 
-	[Fact]
+	[Test]
 	public void DerivedTypeIdentifierIsInt()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<Animal>(new Horse("Andrew", 99));
