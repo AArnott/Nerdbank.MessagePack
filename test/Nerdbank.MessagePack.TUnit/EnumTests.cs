@@ -109,7 +109,7 @@ public abstract partial class EnumTests : MessagePackSerializerTestBase
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<T, TWitness>(value);
 		this.AssertType(msgpack, this.ExpectedType);
-		this.Logger.LogInformation(value.ToString());
+		Console.WriteLine(value.ToString());
 		return msgpack;
 	}
 
