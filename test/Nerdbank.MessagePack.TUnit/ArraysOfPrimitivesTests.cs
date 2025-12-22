@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Numerics;
-using System.Reflection;
 
 public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 {
@@ -12,8 +11,8 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 	private static readonly Random Random = new Random();
 #endif
 
-	[Theory, PairwiseData]
-	public void BoolArray([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(byte))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<byte>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void BoolArray(int length)
 	{
 		bool[]? values = null;
 		if (length >= 0)
@@ -26,8 +25,8 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 		this.Roundtrip<bool[], Witness>(values);
 	}
 
-	[Theory, PairwiseData]
-	public void Boolean([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(byte))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<byte>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void Boolean(int length)
 	{
 		bool[]? values = null;
 		if (length >= 0)
@@ -40,40 +39,40 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 		this.Roundtrip<Memory<bool>, Witness>(values);
 	}
 
-	[Theory, PairwiseData]
-	public void Int8([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(sbyte))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<sbyte>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void Int8(int length)
 		=> this.Roundtrip<Memory<sbyte>, Witness>(GetRandomValues<sbyte>(length));
 
-	[Theory, PairwiseData]
-	public void Int16([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(short))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<short>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void Int16(int length)
 		=> this.Roundtrip<Memory<short>, Witness>(GetRandomValues<short>(length));
 
-	[Theory, PairwiseData]
-	public void Int32([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(int))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<int>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void Int32(int length)
 		=> this.Roundtrip<Memory<int>, Witness>(GetRandomValues<int>(length));
 
-	[Theory, PairwiseData]
-	public void Int64([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(long))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<long>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void Int64(int length)
 		=> this.Roundtrip<Memory<long>, Witness>(GetRandomValues<long>(length));
 
-	[Theory, PairwiseData]
-	public void UInt8([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(byte))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<byte>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void UInt8(int length)
 		=> this.Roundtrip<Memory<byte>, Witness>(GetRandomValues<byte>(length));
 
-	[Theory, PairwiseData]
-	public void UInt16([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(ushort))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<ushort>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void UInt16(int length)
 		=> this.Roundtrip<Memory<ushort>, Witness>(GetRandomValues<ushort>(length));
 
-	[Theory, PairwiseData]
-	public void UInt32([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(uint))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<uint>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void UInt32(int length)
 		=> this.Roundtrip<Memory<uint>, Witness>(GetRandomValues<uint>(length));
 
-	[Theory, PairwiseData]
-	public void UInt64([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(ulong))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<ulong>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void UInt64(int length)
 		=> this.Roundtrip<Memory<ulong>, Witness>(GetRandomValues<ulong>(length));
 
-	[Theory, PairwiseData]
-	public void Single([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(float))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<float>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void Single(int length)
 	{
 		float[]? values = null;
 		if (length >= 0)
@@ -92,8 +91,8 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 		this.Roundtrip<Memory<float>, Witness>(values);
 	}
 
-	[Theory, PairwiseData]
-	public void Double([CombinatorialMemberData(nameof(GetInterestingLengths), typeof(double))] int length)
+	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<double>), nameof(GetInterestingLengthsHelper<>.Helper))]
+	public void Double(int length)
 	{
 		double[]? values = null;
 		if (length >= 0)
@@ -108,7 +107,7 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 		this.Roundtrip<Memory<double>, Witness>(values);
 	}
 
-	[Fact]
+	[Test]
 	public void LargeEnumerableOfInt()
 	{
 		// A very large enumerable so that it exceeds any default buffer sizes.
@@ -138,13 +137,14 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 		return values;
 	}
 
-	private static int[] GetInterestingLengths(Type type) => (int[])typeof(ArraysOfPrimitivesTests).GetMethod(nameof(GetInterestingLengthsHelper), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, null)!;
-
+	public static class GetInterestingLengthsHelper<T>
+	{
 #if NET
-	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, Vector<T>.Count - 1, Vector<T>.Count, Vector<T>.Count + 1, (Vector<T>.Count * 2) + 2, 10_000];
+		public static int[] Helper() => [-1, 0, 4, Vector<T>.Count - 1, Vector<T>.Count, Vector<T>.Count + 1, (Vector<T>.Count * 2) + 2, 10_000];
 #else
-	private static int[] GetInterestingLengthsHelper<T>() => [-1, 0, 4, 100, 10_000];
+		public static int[] Helper() => [-1, 0, 4, 100, 10_000];
 #endif
+	}
 
 	[GenerateShapeFor<bool[]>]
 	[GenerateShapeFor<Memory<bool>>]
