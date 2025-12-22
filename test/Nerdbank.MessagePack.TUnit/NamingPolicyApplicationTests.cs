@@ -8,34 +8,34 @@ public partial class NamingPolicyApplicationTests : MessagePackSerializerTestBas
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
 	}
 
-	[Fact]
+	[Test]
 	public void Roundtrip_NonDefaultCtor() => this.AssertRoundtrip(new NonDefaultCtor("hi", "bye"));
 
-	[Fact]
+	[Test]
 	public void Roundtrip_DefaultCtor() => this.AssertRoundtrip(new DefaultCtor { SomeProperty = "hi", AnotherProperty = "bye" });
 
-	[Fact]
+	[Test]
 	public void Roundtrip_KeyedProperties() => this.AssertRoundtrip(new KeyedProperties { SomeProperty = "hi" });
 
-	[Fact]
+	[Test]
 	public void PolicyAppliedToInferredPropertyNames_DefaultCtor()
 	{
 		this.PolicyAppliedToInferredPropertyNamesHelper(new DefaultCtor { SomeProperty = "hi", AnotherProperty = "bye" });
 	}
 
-	[Fact]
+	[Test]
 	public void PolicyAppliedToInferredPropertyNames_NonDefaultCtor()
 	{
 		this.PolicyAppliedToInferredPropertyNamesHelper(new NonDefaultCtor("hi", "bye"));
 	}
 
-	[Fact]
+	[Test]
 	public void PolicyNotAppliedToExplicitPropertyNames_DefaultCtor()
 	{
 		this.PolicyNotAppliedToExplicitPropertyNamesHelper(new DefaultCtor { SomeProperty = "hi", AnotherProperty = "bye" });
 	}
 
-	[Fact]
+	[Test]
 	public void PolicyNotAppliedToExplicitPropertyNames_NonDefaultCtor()
 	{
 		this.PolicyNotAppliedToExplicitPropertyNamesHelper(new NonDefaultCtor("hi", "bye"));
