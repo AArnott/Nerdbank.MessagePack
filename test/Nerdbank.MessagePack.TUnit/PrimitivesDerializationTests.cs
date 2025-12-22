@@ -4,7 +4,15 @@
 using System.Collections;
 using System.Numerics;
 
-public partial class PrimitivesDerializationTests : MessagePackSerializerTestBase
+#if !TUnit
+using TestAttribute = Xunit.FactAttribute;
+#endif
+
+public
+#if !TUnit
+	abstract
+#endif
+	partial class PrimitivesDerializationTests : MessagePackSerializerTestBase
 {
 #if NET
 	protected static readonly ReadOnlyMemory<object> ExpectedKeys = new object[] { "Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject", "decimal", "bigint", "guid", "i128", "u128" };
@@ -30,7 +38,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 	private static readonly UInt128 ExpectedUInt128 = new(15, 20);
 #endif
 
-	[Fact]
+	[Test]
 	public void PositiveIntKeyStretching()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
@@ -43,7 +51,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		Assert.IsType<byte[]>(deserialized[45u]);
 	}
 
-	[Fact]
+	[Test]
 	public void NegativeIntKeyStretching()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
@@ -53,14 +61,14 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		Assert.IsType<bool>(deserialized[(short)-45]);
 	}
 
-	[Fact]
+	[Test]
 	public void SimpleValuesByIndex()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		Assert.Equal(new byte[] { 1, 2, 3 }, deserialized[45]);
 	}
 
-	[Fact]
+	[Test]
 	public void Keys()
 	{
 		// C# doesn't offer a way to call this method like other languages would, so we'll call it directly.
@@ -68,14 +76,14 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		Assert.Equal(ExpectedKeys.ToArray(), deserialized.Keys);
 	}
 
-	[Fact]
+	[Test]
 	public void ReachIntoMap()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		Assert.Equal("nestedValue", ((IDictionary<object, object?>)deserialized["nestedObject"]!)["nestedProp"]);
 	}
 
-	[Fact]
+	[Test]
 	public void IReadOnlyDictionary()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
@@ -104,7 +112,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		Assert.Equal(dict.Count, dict.Values.Count());
 	}
 
-	[Fact]
+	[Test]
 	public void IDictionaryOfKV()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
@@ -151,13 +159,13 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		Assert.Equal(dict.Count, dict.Values.Count());
 	}
 
-	[Fact]
+	[Test]
 	public void Enumerate_Dictionary()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
 		foreach (KeyValuePair<object, object?> pair in deserialized)
 		{
-			this.Logger.WriteLine($"{pair.Key} ({pair.Key.GetType().Name}) = {deserialized[pair.Key]}");
+			this.Log($"{pair.Key} ({pair.Key.GetType().Name}) = {deserialized[pair.Key]}");
 		}
 
 		IEnumerator enumerator = ((IEnumerable)deserialized).GetEnumerator();
@@ -170,7 +178,7 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		Assert.False(enumerator.MoveNext());
 	}
 
-	[Fact]
+	[Test]
 	public void Extension_Primitives()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
@@ -183,25 +191,25 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 #endif
 	}
 
-	[Fact]
+	[Test]
 	public void MissingMembers_Indexer()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
-		this.Logger.WriteLine(Assert.Throws<KeyNotFoundException>(() => deserialized[88]).Message);
+		this.Log(Assert.Throws<KeyNotFoundException>(() => deserialized[88]).Message);
 	}
 
-	[Fact]
+	[Test]
 	public void WritingNotAllowed_Indexer()
 	{
 		IDictionary<object, object?> deserialized = this.DeserializePrimitives();
-		this.Logger.WriteLine(Assert.Throws<NotSupportedException>(() => deserialized["doesNotExist"] = "hi").Message);
-		this.Logger.WriteLine(Assert.Throws<NotSupportedException>(() => deserialized["nestedObject"] = "hi").Message);
+		this.Log(Assert.Throws<NotSupportedException>(() => deserialized["doesNotExist"] = "hi").Message);
+		this.Log(Assert.Throws<NotSupportedException>(() => deserialized["nestedObject"] = "hi").Message);
 	}
 
 	protected virtual IDictionary<object, object?> DeserializePrimitives()
 	{
 		MessagePackReader reader = this.ConstructReader();
-		object? deserialized = this.Serializer.DeserializePrimitives(ref reader, TestContext.Current.CancellationToken);
+		object? deserialized = this.Serializer.DeserializePrimitives(ref reader, this.TimeoutToken);
 		Assert.NotNull(deserialized);
 		return (IDictionary<object, object?>)deserialized;
 	}
@@ -216,46 +224,46 @@ public partial class PrimitivesDerializationTests : MessagePackSerializerTestBas
 		MessagePackWriter writer = new(seq);
 		writer.WriteMapHeader(ExpectedKeys.Length);
 		writer.Write("Prop1");
-		this.Serializer.Serialize<object, Witness>(ref writer, "Value1", TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, "Value1", this.TimeoutToken);
 		writer.Write("Prop2");
-		this.Serializer.Serialize<object, Witness>(ref writer, 42, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, 42, this.TimeoutToken);
 		writer.Write("nestedArray");
 		writer.WriteArrayHeader(5);
-		this.Serializer.Serialize<object, Witness>(ref writer, true, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object, Witness>(ref writer, 3.5, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object, Witness>(ref writer, new Extension(15, new byte[] { 1, 2, 3 }), TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object, Witness>(ref writer, ExpectedDateTime, TestContext.Current.CancellationToken);
-		this.Serializer.Serialize<object, Witness>(ref writer, ExpectedDateTimeUnspecifiedKind, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, true, this.TimeoutToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, 3.5, this.TimeoutToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, new Extension(15, new byte[] { 1, 2, 3 }), this.TimeoutToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, ExpectedDateTime, this.TimeoutToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, ExpectedDateTimeUnspecifiedKind, this.TimeoutToken);
 		writer.Write(45); // int key for stretching tests
-		this.Serializer.Serialize<object, Witness>(ref writer, (byte[])[1, 2, 3], TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, (byte[])[1, 2, 3], this.TimeoutToken);
 		writer.Write(-45); // negative int key for stretching tests
-		this.Serializer.Serialize<object, Witness>(ref writer, false, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, false, this.TimeoutToken);
 
 		writer.Write("nestedObject");
 		writer.WriteMapHeader(1);
 		writer.Write("nestedProp");
-		this.Serializer.Serialize<object, Witness>(ref writer, "nestedValue", TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<object, Witness>(ref writer, "nestedValue", this.TimeoutToken);
 
 		writer.Write("decimal");
-		this.Serializer.Serialize<decimal, Witness>(ref writer, ExpectedDecimal, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<decimal, Witness>(ref writer, ExpectedDecimal, this.TimeoutToken);
 
 		writer.Write("bigint");
-		this.Serializer.Serialize<BigInteger, Witness>(ref writer, ExpectedBigInteger, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<BigInteger, Witness>(ref writer, ExpectedBigInteger, this.TimeoutToken);
 
 		writer.Write("guid");
-		this.Serializer.Serialize<Guid, Witness>(ref writer, ExpectedGuid, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<Guid, Witness>(ref writer, ExpectedGuid, this.TimeoutToken);
 
 #if NET
 		writer.Write("i128");
-		this.Serializer.Serialize<Int128, Witness>(ref writer, ExpectedInt128, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<Int128, Witness>(ref writer, ExpectedInt128, this.TimeoutToken);
 
 		writer.Write("u128");
-		this.Serializer.Serialize<UInt128, Witness>(ref writer, ExpectedUInt128, TestContext.Current.CancellationToken);
+		this.Serializer.Serialize<UInt128, Witness>(ref writer, ExpectedUInt128, this.TimeoutToken);
 #endif
 
 		writer.Flush();
 
-		this.Logger.WriteLine(this.Serializer.ConvertToJson(seq));
+		this.Log(this.Serializer.ConvertToJson(seq));
 		return new MessagePackReader(seq);
 	}
 
