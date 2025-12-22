@@ -127,7 +127,7 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		Assert.Equal(expected, actual);
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeAsyncAdvancesPipeReader(bool forceAsync)
 	{
 		this.Serializer = this.Serializer with { MaxAsyncBuffer = forceAsync ? 0 : 1024 };

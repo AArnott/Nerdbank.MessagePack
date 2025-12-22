@@ -3,7 +3,7 @@
 
 public partial class VersionSafeSerializationTests : MessagePackSerializerTestBase
 {
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task MapObject(bool async)
 	{
 		MapModelV2 originalV2 = new()
@@ -35,7 +35,7 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 		Assert.Equal(originalV2.Age, restoredV2.Age);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task MapObject_NonDefaultCtor(bool async)
 	{
 		MapModelV2NonDefaultCtor originalV2 = new()
@@ -67,7 +67,7 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 		Assert.Equal(originalV2.Age, restoredV2.Age);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task ArrayObject(bool async, bool forceMap)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -105,7 +105,7 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 		Assert.Equal(originalV2.ForceMap, restoredV2.ForceMap);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task ArrayObject_NonDefaultCtor(bool async, bool forceMap)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -143,7 +143,7 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 		Assert.Equal(originalV2.ForceMap, restoredV2.ForceMap);
 	}
 
-	[Fact]
+	[Test]
 	public void StructWithVersionSafety()
 	{
 		Sequence<byte> seq = new();
@@ -177,12 +177,12 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 			// Wrap the MemoryStream to hide its type to avoid the library taking a 'fast path'.
 			using MemoryStream ms = new();
 			using MonitoringStream wrapper = new(ms);
-			await this.Serializer.SerializeAsync<T>(wrapper, value, TestContext.Current.CancellationToken);
+			await this.Serializer.SerializeAsync<T>(wrapper, value, this.TimeoutToken);
 			return ms.ToArray();
 		}
 		else
 		{
-			return this.Serializer.Serialize<T>(value, TestContext.Current.CancellationToken);
+			return this.Serializer.Serialize<T>(value, this.TimeoutToken);
 		}
 	}
 
@@ -196,11 +196,11 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 			// Wrap the MemoryStream to hide its type to avoid the library taking a 'fast path'.
 			using MemoryStream ms = new(data);
 			using MonitoringStream wrapper = new(ms);
-			return await this.Serializer.DeserializeAsync<T>(ms, TestContext.Current.CancellationToken);
+			return await this.Serializer.DeserializeAsync<T>(ms, this.TimeoutToken);
 		}
 		else
 		{
-			return this.Serializer.Deserialize<T>(data, TestContext.Current.CancellationToken);
+			return this.Serializer.Deserialize<T>(data, this.TimeoutToken);
 		}
 	}
 
@@ -210,8 +210,8 @@ public partial class VersionSafeSerializationTests : MessagePackSerializerTestBa
 #endif
 	{
 		this.LogMsgPack(raw);
-		T? value = this.Serializer.Deserialize<T>(raw, TestContext.Current.CancellationToken);
-		RawMessagePack result = (RawMessagePack)this.Serializer.Serialize(value, TestContext.Current.CancellationToken);
+		T? value = this.Serializer.Deserialize<T>(raw, this.TimeoutToken);
+		RawMessagePack result = (RawMessagePack)this.Serializer.Serialize(value, this.TimeoutToken);
 		this.LogMsgPack(result);
 		return result;
 	}

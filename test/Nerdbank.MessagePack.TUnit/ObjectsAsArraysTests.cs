@@ -3,7 +3,7 @@
 
 public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 {
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task Person_Roundtrip(bool async)
 	{
 		var person = new Person { FirstName = "Andrew", LastName = "Arnott" };
@@ -46,7 +46,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	}
 
 	[Property("ShouldSerialize", "true")]
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task Person_WithoutLastName(bool async)
 	{
 		this.Serializer = this.Serializer with
@@ -64,7 +64,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	}
 
 	[Property("ShouldSerialize", "true")]
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task Person_WithoutFirstName(bool async)
 	{
 		this.Serializer = this.Serializer with
@@ -82,7 +82,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	}
 
 	[Property("ShouldSerialize", "true")]
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task Person_AllDefaultValues(bool async)
 	{
 		this.Serializer = this.Serializer with
@@ -99,7 +99,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(0, reader.ReadArrayHeader());
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task Person_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -117,7 +117,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(new Person { FirstName = "A", LastName = "B" }, person);
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task Person_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -140,7 +140,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(new Person { FirstName = "A", LastName = "B" }, person);
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task PersonWithDefaultConstructor_WithoutLastName(bool async)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -153,7 +153,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadArrayHeader());
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task PersonWithDefaultConstructor_WithoutFirstName(bool async)
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Required };
@@ -184,7 +184,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(serializeDefaultValues == SerializeDefaultValuesPolicy.Always ? 3 : 0, reader.ReadArrayHeader());
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task PersonWithDefaultConstructor_UnexpectedlyLongArray(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -202,7 +202,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(new PersonWithDefaultConstructor { FirstName = "A", LastName = "B" }, person);
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task PersonWithDefaultConstructor_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
@@ -265,7 +265,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(1, reader.ReadMapHeader());
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task AsyncAndSyncPropertyMix_ReadMapFromNonContiguousBuffer(bool breakBeforeIndex)
 	{
 		this.Serializer = this.Serializer with
@@ -316,7 +316,7 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(expectedFamily, family);
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task AsyncAndSyncPropertyMix_ReadMapFromNonContiguousBuffer_DefaultCtor(bool breakBeforeIndex)
 	{
 		FamilyWithAsyncPropertiesWithDefaultCtor expectedFamily = new()

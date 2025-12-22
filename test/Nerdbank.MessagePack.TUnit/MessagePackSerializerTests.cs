@@ -71,7 +71,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	public void Array_Null() => this.AssertRoundtrip(new ClassWithArray { IntArray = null });
 
 #pragma warning disable SA1500 // Braces for multi-line statements should not share line
-	[Test, MethodDataSource(typeof(EnumDataSource<MultiDimensionalArrayFormat>), nameof(EnumDataSource<>.Values))]
+	[Test, MatrixDataSource]
 	public void MultidimensionalArray(MultiDimensionalArrayFormat format)
 	{
 		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = format };

@@ -213,7 +213,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 		Console.WriteLine(ex.Message);
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_SequenceWithinTwoContainers(bool leaveOpen)
 	{
 		OuterStreamingContainer container = new(new(true, [1, 2, 3], true));
@@ -277,7 +277,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an array indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_StepThroughArray(bool leaveOpen)
 	{
 		OuterStreamingContainerByArray container = new([null, new(true, [1, 2, 3], false), new(true, [1], false)]);
@@ -311,7 +311,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_StepThroughImmutableArray(bool leaveOpen)
 	{
 		OuterStreamingContainerByImmutableArray container = new([null, new(true, [1, 2, 3], false), new(true, [1], false)]);
@@ -345,7 +345,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_StepThroughDictionary(bool leaveOpen)
 	{
 		OuterStreamingContainerByDictionary container = new(new() { ["a"] = null, ["b"] = new(true, [1, 2, 3], false) });
@@ -379,7 +379,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path includes an indexer.
 	/// </summary>
 	/// <param name="leaveOpen">Whether to the reader should be positioned at the next element.</param>
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_StepThroughDictionaryCustomKey(bool leaveOpen)
 	{
 		OuterStreamingContainerByDictionaryCustomKey container = new(new() { [new CustomKey(5)] = null, [new CustomKey(3)] = new(true, [1, 2, 3], false) });
@@ -414,7 +414,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path turns out to be a null value.
 	/// </summary>
 	/// <param name="preferEmptySequence">A value indicating whether we're verifying behavior that prefers an empty sequence over throwing when a null is encountered.</param>
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_NullRoot(bool preferEmptySequence)
 	{
 		byte[] msgpack = this.Serializer.Serialize<OuterStreamingContainer>(null, this.TimeoutToken);
@@ -444,7 +444,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path turns out to be a null value.
 	/// </summary>
 	/// <param name="preferEmptySequence">A value indicating whether we're verifying behavior that prefers an empty sequence over throwing when a null is encountered.</param>
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_NullMidPath(bool preferEmptySequence)
 	{
 		byte[] msgpack = this.Serializer.Serialize(new OuterStreamingContainer(null), this.TimeoutToken);
@@ -474,7 +474,7 @@ public partial class StreamingEnumerableTests : MessagePackSerializerTestBase
 	/// Verifies handling when the specified path turns out to be a null value.
 	/// </summary>
 	/// <param name="preferEmptySequence">A value indicating whether we're verifying behavior that prefers an empty sequence over throwing when a null is encountered.</param>
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task DeserializeEnumerableAsync_NullSequenceMember(bool preferEmptySequence)
 	{
 		byte[] msgpack = this.Serializer.Serialize(new OuterStreamingContainer(new(true, null, false)), this.TimeoutToken);

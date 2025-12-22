@@ -3,7 +3,7 @@
 
 public partial class StreamTests : MessagePackSerializerTestBase
 {
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public async Task SerializeWithStreamAsync(bool memoryStream)
 	{
 		Person person = new("Andrew", "Arnott");
@@ -22,7 +22,7 @@ public partial class StreamTests : MessagePackSerializerTestBase
 		Assert.Equal(person, deserialized);
 	}
 
-	[Test, MethodDataSource(typeof(DataSources), nameof(DataSources.BooleanValues))]
+	[Test, MatrixDataSource]
 	public void SerializeWithStream(bool memoryStream)
 	{
 		Person person = new("Andrew", "Arnott");
