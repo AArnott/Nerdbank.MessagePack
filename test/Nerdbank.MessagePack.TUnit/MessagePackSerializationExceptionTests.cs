@@ -3,13 +3,13 @@
 
 public class MessagePackSerializationExceptionTests
 {
-	[Fact]
+	[Test]
 	public void Code_Default()
 	{
 		Assert.Equal(MessagePackSerializationException.ErrorCode.Unspecified, new MessagePackSerializationException().Code);
 	}
 
-	[Fact]
+	[Test]
 	public void Code_Inherited()
 	{
 		Assert.Equal(

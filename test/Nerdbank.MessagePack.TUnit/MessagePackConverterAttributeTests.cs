@@ -11,13 +11,13 @@ public partial class MessagePackConverterAttributeTests : MessagePackSerializerT
 		Value2 = 2,
 	}
 
-	[Fact]
+	[Test]
 	public void CustomTypeWithConverter()
 	{
 		this.AssertRoundtrip(new CustomType() { InternalProperty = "some value" });
 	}
 
-	[Fact]
+	[Test]
 	public void TypeWithCustomConvertedMembers()
 	{
 		var instance = new TypeWithCustomMembers()
@@ -38,18 +38,18 @@ public partial class MessagePackConverterAttributeTests : MessagePackSerializerT
 		Assert.Equal(96, reader.ReadInt32());
 	}
 
-	[Fact]
+	[Test]
 	public void GenericConverterOnMemberOfGenericType()
 	{
 		this.AssertRoundtrip(new Container() { Value = new(42) });
 	}
 
-	[Fact]
+	[Test]
 	public void EnumWithCustomConverter()
 	{
 		MyEnum value = MyEnum.Value2;
-		byte[] msgpack = this.Serializer.Serialize<MyEnum, Witness>(value, TestContext.Current.CancellationToken);
-		MyEnum deserializedValue = this.Serializer.Deserialize<MyEnum, Witness>(msgpack, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<MyEnum, Witness>(value, this.TimeoutToken);
+		MyEnum deserializedValue = this.Serializer.Deserialize<MyEnum, Witness>(msgpack, this.TimeoutToken);
 		Assert.Equal(value, deserializedValue);
 
 		MessagePackReader reader = new(msgpack);
