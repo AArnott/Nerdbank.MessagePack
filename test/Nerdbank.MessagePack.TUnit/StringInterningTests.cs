@@ -8,10 +8,10 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer with { InternStrings = true };
 	}
 
-	[Fact]
+	[Test]
 	public void InternStringsDefault() => Assert.False(new MessagePackSerializer().InternStrings);
 
-	[Fact]
+	[Test]
 	public void NoInterning()
 	{
 		this.Serializer = this.Serializer with { InternStrings = false };
@@ -20,7 +20,7 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		Assert.NotSame(deserialized[0], deserialized[1]);
 	}
 
-	[Fact]
+	[Test]
 	public void Interning()
 	{
 		this.Serializer = this.Serializer with { InternStrings = true };
@@ -34,23 +34,23 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized[0], deserialized2[0]);
 	}
 
-	[Fact]
+	[Test]
 	public void Null() => this.Roundtrip<string, Witness>(null);
 
-	[Fact]
+	[Test]
 	public void Empty() => this.Roundtrip<string, Witness>(string.Empty);
 
-	[Fact]
+	[Test]
 	public void VeryLargeString() => this.Roundtrip<string, Witness>(new string('a', 100_000));
 
-	[Fact]
+	[Test]
 	public void Fragmented()
 	{
-		ReadOnlyMemory<byte> buffer = this.Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken);
+		ReadOnlyMemory<byte> buffer = this.Serializer.Serialize<string, Witness>("abc", this.TimeoutToken);
 		Sequence<byte> seq = new();
 		seq.Append(buffer[..^1]);
 		seq.Append(buffer[^1..]);
-		string? deserialized = this.Serializer.Deserialize<string, Witness>(seq, TestContext.Current.CancellationToken);
+		string? deserialized = this.Serializer.Deserialize<string, Witness>(seq, this.TimeoutToken);
 		Assert.Equal("abc", deserialized);
 	}
 
