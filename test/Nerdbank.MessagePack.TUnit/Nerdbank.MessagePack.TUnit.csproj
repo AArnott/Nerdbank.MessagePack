@@ -5,12 +5,12 @@
     <OutputType>Exe</OutputType>
     <InvariantGlobalization>false</InvariantGlobalization>
     <DefineConstants>$(DefineConstants);TUnit</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
     <TargetFrameworks>$(TargetFrameworks);net472</TargetFrameworks>
     <RuntimeIdentifiers>$(RuntimeIdentifiers);win-x86</RuntimeIdentifiers>
     <RuntimeIdentifier>$(DefaultRuntimeIdentifier)</RuntimeIdentifier>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
