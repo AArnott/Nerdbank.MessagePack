@@ -11,110 +11,110 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 	}
 
 	// Test deserializing the root object.
-	[Fact]
+	[Test]
 	public void RootObject()
 	{
 		OuterContainer container = new(new(5));
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, OuterContainer> options = new(c => c);
-		OuterContainer? result = this.Serializer.DeserializePath<OuterContainer, OuterContainer, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		OuterContainer? result = this.Serializer.DeserializePath<OuterContainer, OuterContainer, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.NotNull(result);
 		Assert.Equal(5, result.Inner?.Value);
 	}
 
-	[Fact]
+	[Test]
 	public void OneStepObject()
 	{
 		OuterContainer container = new(new(5));
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, InnerValue> options = new(c => c.Inner!);
-		InnerValue? result = this.Serializer.DeserializePath<OuterContainer, InnerValue, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		InnerValue? result = this.Serializer.DeserializePath<OuterContainer, InnerValue, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.NotNull(result);
 		Assert.Equal(5, result.Value);
 	}
 
 	// Test deserializing a primitive at the end of a non-empty path.
-	[Fact]
+	[Test]
 	public void NestedPrimitive()
 	{
 		OuterContainer container = new(new(42));
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, int> options = new(c => c.Inner!.Value);
-		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(42, result);
 	}
 
 	// Test deserializing an object at the end of a non-empty path.
-	[Fact]
+	[Test]
 	public void NestedObject()
 	{
 		ThreeLevelContainer container = new(new(new(99)));
-		byte[] msgpack = this.Serializer.Serialize<ThreeLevelContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ThreeLevelContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ThreeLevelContainer, InnerValue> options = new(c => c.Middle!.Inner!);
-		InnerValue? result = this.Serializer.DeserializePath<ThreeLevelContainer, InnerValue, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		InnerValue? result = this.Serializer.DeserializePath<ThreeLevelContainer, InnerValue, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.NotNull(result);
 		Assert.Equal(99, result.Value);
 	}
 
 	// Test deserializing a collection at the end of a non-empty path.
-	[Fact]
+	[Test]
 	public void Collection()
 	{
 		ContainerWithCollection container = new([1, 2, 3]);
-		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerWithCollection, int[]> options = new(c => c.Values!);
-		int[]? result = this.Serializer.DeserializePath<ContainerWithCollection, int[], Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int[]? result = this.Serializer.DeserializePath<ContainerWithCollection, int[], Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal([1, 2, 3], result!);
 	}
 
 	// Test deserializing an enum at the end of a non-empty path.
-	[Fact]
+	[Test]
 	public void Enum()
 	{
 		ContainerWithEnum container = new(TestEnum.Value2);
-		byte[] msgpack = this.Serializer.Serialize<ContainerWithEnum, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerWithEnum, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerWithEnum, TestEnum> options = new(c => c.Status);
-		TestEnum result = this.Serializer.DeserializePath<ContainerWithEnum, TestEnum, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		TestEnum result = this.Serializer.DeserializePath<ContainerWithEnum, TestEnum, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(TestEnum.Value2, result);
 	}
 
 	// Test deserializing a null value.
-	[Fact]
+	[Test]
 	public void NullValue()
 	{
 		OuterContainer container = new(null);
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
-		InnerValue? result = this.Serializer.DeserializePath<OuterContainer, InnerValue?, Witness>(msgpack, new(c => c.Inner), TestContext.Current.CancellationToken);
+		InnerValue? result = this.Serializer.DeserializePath<OuterContainer, InnerValue?, Witness>(msgpack, new(c => c.Inner), this.TimeoutToken);
 
 		Assert.Null(result);
 	}
 
 	// Test throwing when the path is not found.
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public void MemberPathNotFound_Throws(bool nullRoot)
 	{
 		OuterContainer? container = nullRoot ? null : new(null);
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, int> options = new(c => c.Inner!.Value)
@@ -123,9 +123,9 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 		};
 
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() =>
-			this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, TestContext.Current.CancellationToken));
+			this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, this.TimeoutToken));
 
-		this.Logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 		if (nullRoot)
 		{
 			Assert.Matches(@"\Wc(?!\.Inner)", ex.Message);
@@ -137,11 +137,11 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 	}
 
 	// Test getting default value when the path is not found.
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public void MemberPathNotFound_ReturnsDefault(bool nullRoot)
 	{
 		OuterContainer? container = nullRoot ? null : new OuterContainer(null);
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container as OuterContainer, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container as OuterContainer, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, int> options = new(c => c.Inner!.Value)
@@ -149,16 +149,16 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 			DefaultForUndiscoverablePath = true,
 		};
 
-		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(0, result);
 	}
 
 	// Test throwing when the path is not found.
-	[Fact]
+	[Test]
 	public void IndexPathNotFound_Throws()
 	{
-		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(new ContainerWithCollection(null), TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(new ContainerWithCollection(null), this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerWithCollection, int> options = new(c => c.Values![2])
@@ -167,17 +167,17 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 		};
 
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() =>
-			this.Serializer.DeserializePath<ContainerWithCollection, int, Witness>(msgpack, options, TestContext.Current.CancellationToken));
+			this.Serializer.DeserializePath<ContainerWithCollection, int, Witness>(msgpack, options, this.TimeoutToken));
 
-		this.Logger.WriteLine(ex.Message);
+		Console.WriteLine(ex.Message);
 		Assert.Matches(@"\Wc\.Values(?!\[)", ex.Message);
 	}
 
 	// Test getting default value when the path is not found.
-	[Fact]
+	[Test]
 	public void IndexPathNotFound_ReturnsDefault()
 	{
-		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(new ContainerWithCollection(null), TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(new ContainerWithCollection(null), this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerWithCollection, int> options = new(c => c.Values![2])
@@ -185,176 +185,176 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 			DefaultForUndiscoverablePath = true,
 		};
 
-		int result = this.Serializer.DeserializePath<ContainerWithCollection, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<ContainerWithCollection, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(0, result);
 	}
 
 	// Test step through array indexer
-	[Fact]
+	[Test]
 	public void ThroughArray()
 	{
 		ContainerByArray container = new([null, new(10), new(20)]);
-		byte[] msgpack = this.Serializer.Serialize<ContainerByArray, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerByArray, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerByArray, int> options = new(c => c.Values[1]!.Value);
-		int result = this.Serializer.DeserializePath<ContainerByArray, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<ContainerByArray, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(10, result);
 	}
 
 	// Test step through dictionary
-	[Fact]
+	[Test]
 	public void ThroughDictionary()
 	{
 		ContainerByDictionary container = new(new() { ["a"] = null, ["b"] = new(15) });
-		byte[] msgpack = this.Serializer.Serialize<ContainerByDictionary, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerByDictionary, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerByDictionary, int> options = new(c => c.Values["b"]!.Value);
-		int result = this.Serializer.DeserializePath<ContainerByDictionary, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<ContainerByDictionary, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(15, result);
 	}
 
 	// Test step through dictionary with custom key
-	[Fact]
+	[Test]
 	public void ThroughDictionaryCustomKey()
 	{
 		ContainerByDictionaryCustomKey container = new(new() { [new CustomKey(5)] = null, [new CustomKey(3)] = new(25) });
-		byte[] msgpack = this.Serializer.Serialize<ContainerByDictionaryCustomKey, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerByDictionaryCustomKey, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		CustomKey key = new(3);
 		MessagePackSerializer.DeserializePathOptions<ContainerByDictionaryCustomKey, int> options = new(c => c.Values[key]!.Value);
-		int result = this.Serializer.DeserializePath<ContainerByDictionaryCustomKey, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<ContainerByDictionaryCustomKey, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(25, result);
 	}
 
 	// Test step through ImmutableArray indexer
-	[Fact]
+	[Test]
 	public void ThroughImmutableArray()
 	{
 		ContainerByImmutableArray container = new([null, new(30), new(40)]);
-		byte[] msgpack = this.Serializer.Serialize<ContainerByImmutableArray, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerByImmutableArray, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerByImmutableArray, int> options = new(c => c.Values[2]!.Value);
-		int result = this.Serializer.DeserializePath<ContainerByImmutableArray, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<ContainerByImmutableArray, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(40, result);
 	}
 
 	// Test with keyed properties (array format)
-	[Fact]
+	[Test]
 	public void KeyedProperties()
 	{
 		KeyedContainer container = new() { Before = "a", Value = new(50), After = "b" };
-		byte[] msgpack = this.Serializer.Serialize<KeyedContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<KeyedContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<KeyedContainer, int> options = new(c => c.Value!.Value);
-		int result = this.Serializer.DeserializePath<KeyedContainer, int, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<KeyedContainer, int, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(50, result);
 	}
 
 	// Test overloads with ReadOnlyMemory
-	[Fact]
+	[Test]
 	public void ReadOnlyMemory_Overload()
 	{
 		OuterContainer container = new(new(7));
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, int> options = new(c => c.Inner!.Value);
-		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack.AsMemory(), options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack.AsMemory(), options, this.TimeoutToken);
 
 		Assert.Equal(7, result);
 	}
 
 	// Test overloads with ReadOnlySequence
-	[Fact]
+	[Test]
 	public void ReadOnlySequence_Overload()
 	{
 		OuterContainer container = new(new(8));
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 
 		ReadOnlySequence<byte> sequence = new(msgpack);
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, int> options = new(c => c.Inner!.Value);
-		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(sequence, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(sequence, options, this.TimeoutToken);
 
 		Assert.Equal(8, result);
 	}
 
 	// Test overloads with Stream
-	[Fact]
+	[Test]
 	public void Stream_Overload()
 	{
 		OuterContainer container = new(new(9));
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 
 		using MemoryStream stream = new(msgpack);
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, int> options = new(c => c.Inner!.Value);
-		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(stream, options, TestContext.Current.CancellationToken);
+		int result = this.Serializer.DeserializePath<OuterContainer, int, Witness>(stream, options, this.TimeoutToken);
 
 		Assert.Equal(9, result);
 	}
 
 	// Test with reference preservation disabled
-	[Trait("ReferencePreservation", "true")]
-	[Fact]
+	[Property("ReferencePreservation", "true")]
+	[Test]
 	public void ReferencesPreserved_NotSupported()
 	{
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
 		OuterContainer container = new(new(12));
-		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<OuterContainer, Witness>(container, this.TimeoutToken);
 
 		MessagePackSerializer.DeserializePathOptions<OuterContainer, int> options = new(c => c.Inner!.Value);
 		NotSupportedException ex = Assert.Throws<NotSupportedException>(() =>
-			this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.Message);
+			this.Serializer.DeserializePath<OuterContainer, int, Witness>(msgpack, options, this.TimeoutToken));
+		Console.WriteLine(ex.Message);
 	}
 
 	// Test with complex path through multiple levels
-	[Fact]
+	[Test]
 	public void ComplexPath()
 	{
 		ComplexContainer container = new(new(new() { ["key1"] = [1, 2, 3], ["key2"] = [4, 5, 6] }));
-		byte[] msgpack = this.Serializer.Serialize<ComplexContainer, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ComplexContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ComplexContainer, short> options = new(c => c.Outer!.Values["key2"]![1]);
-		short result = this.Serializer.DeserializePath<ComplexContainer, short, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		short result = this.Serializer.DeserializePath<ComplexContainer, short, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(5, result);
 	}
 
 	// Test deserializing string value
-	[Fact]
+	[Test]
 	public void StringValue()
 	{
 		ContainerWithString container = new("hello world");
-		byte[] msgpack = this.Serializer.Serialize<ContainerWithString, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerWithString, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerWithString, string> options = new(c => c.Text!);
-		string? result = this.Serializer.DeserializePath<ContainerWithString, string, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		string? result = this.Serializer.DeserializePath<ContainerWithString, string, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal("hello world", result);
 	}
 
 	// Test deserializing struct value type
-	[Fact]
+	[Test]
 	public void StructValue()
 	{
 		ContainerWithStruct container = new(new StructRecord(100, "test"));
-		byte[] msgpack = this.Serializer.Serialize<ContainerWithStruct, Witness>(container, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<ContainerWithStruct, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		MessagePackSerializer.DeserializePathOptions<ContainerWithStruct, StructRecord> options = new(c => c.Data);
-		StructRecord result = this.Serializer.DeserializePath<ContainerWithStruct, StructRecord, Witness>(msgpack, options, TestContext.Current.CancellationToken);
+		StructRecord result = this.Serializer.DeserializePath<ContainerWithStruct, StructRecord, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(100, result.Id);
 		Assert.Equal("test", result.Name);

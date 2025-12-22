@@ -3,7 +3,7 @@
 
 public partial class DoubleAssignmentTests : MessagePackSerializerTestBase
 {
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task MapNoArgState_Collision(bool async)
 	{
 		Sequence<byte> seq = new();
@@ -20,7 +20,7 @@ public partial class DoubleAssignmentTests : MessagePackSerializerTestBase
 		await this.ExpectDeserializationThrowsAsync<MapNoArgState>(seq, async);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task MapWithArgState_Collision(bool async)
 	{
 		Sequence<byte> seq = new();
@@ -37,7 +37,7 @@ public partial class DoubleAssignmentTests : MessagePackSerializerTestBase
 		await this.ExpectDeserializationThrowsAsync<MapWithArgState>(seq, async);
 	}
 
-	[Fact]
+	[Test]
 	public async Task VeryLargeType_Collision()
 	{
 		Sequence<byte> seq = new();
@@ -55,7 +55,7 @@ public partial class DoubleAssignmentTests : MessagePackSerializerTestBase
 		Assert.Contains("P2", ex.Message);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task ArrayNoArgState_Collision(bool async)
 	{
 		Sequence<byte> seq = new();
@@ -75,7 +75,7 @@ public partial class DoubleAssignmentTests : MessagePackSerializerTestBase
 		await this.ExpectDeserializationThrowsAsync<ArrayNoArgState>(seq, async);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task ArrayWithArgState_Collision(bool async)
 	{
 		Sequence<byte> seq = new();
@@ -101,9 +101,9 @@ public partial class DoubleAssignmentTests : MessagePackSerializerTestBase
 #endif
 	{
 		MessagePackSerializationException ex = async
-			? await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.DeserializeAsync<T>(new MemoryStream(msgpack.ToArray()), TestContext.Current.CancellationToken).AsTask())
-			: Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<T>(msgpack, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.GetBaseException().Message);
+			? await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.DeserializeAsync<T>(new MemoryStream(msgpack.ToArray()), this.TimeoutToken).AsTask())
+			: Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<T>(msgpack, this.TimeoutToken));
+		Console.WriteLine(ex.GetBaseException().Message);
 		MessagePackSerializationException rootCauseException = Assert.IsType<MessagePackSerializationException>(ex.GetBaseException());
 		Assert.Equal(MessagePackSerializationException.ErrorCode.DoublePropertyAssignment, rootCauseException.Code);
 		return rootCauseException;

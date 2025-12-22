@@ -7,19 +7,19 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 	private static readonly ReadOnlySequence<byte> EmptyMsgPackMap = CreateEmptyMap();
 	private static readonly ReadOnlySequence<byte> EmptyMsgPackArray = CreateEmptyArray();
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task NullValueRejectedForNonNullableRequiredProperty(bool async)
 	{
 		await this.ExpectDeserializationThrowsAsync<RequiredNonNullProperty>(NullMessageMsgPackMap, async, MessagePackSerializationException.ErrorCode.DisallowedNullValue);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task NullValueRejectedForNonNullableOptionalProperty(bool async)
 	{
 		await this.ExpectDeserializationThrowsAsync<OptionalNonNullProperty>(NullMessageMsgPackMap, async, MessagePackSerializationException.ErrorCode.DisallowedNullValue);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task NullValueAllowedForNonNullableOptionalProperty_WithFlag(bool async)
 	{
 		this.Serializer = this.Serializer with { DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties };
@@ -28,7 +28,7 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 		Assert.Null(deserialized.Message);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task NullValueAllowedForNonNullableRequiredProperty_WithFlag(bool async)
 	{
 		this.Serializer = this.Serializer with { DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties };
@@ -37,25 +37,25 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 		Assert.Null(deserialized.Message);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task RejectMissingValueForNonNullableRequiredProperty(bool async)
 	{
 		await this.ExpectDeserializationThrowsAsync<RequiredNonNullProperty>(EmptyMsgPackMap, async, MessagePackSerializationException.ErrorCode.MissingRequiredProperty);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task RejectMissingValueForNonNullableRequiredProperty_KeyedMap(bool async)
 	{
 		await this.ExpectDeserializationThrowsAsync<RequiredNonNullKeyedProperty>(EmptyMsgPackMap, async, MessagePackSerializationException.ErrorCode.MissingRequiredProperty);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task RejectMissingValueForNonNullableRequiredProperty_KeyedArray(bool async)
 	{
 		await this.ExpectDeserializationThrowsAsync<RequiredNonNullKeyedProperty>(EmptyMsgPackArray, async, MessagePackSerializationException.ErrorCode.MissingRequiredProperty);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RejectMissingValueForRequiredPropertyFromVeryLargeType()
 	{
 		Sequence<byte> seq = new();
@@ -73,7 +73,7 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 		Assert.Contains("P64, P65, P66", ex.Message);
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task MissingValueAllowedForNonNullableOptionalProperty(bool async)
 	{
 		OptionalNonNullProperty? deserialized = await this.DeserializeMaybeAsync<OptionalNonNullProperty>(EmptyMsgPackMap, async);
@@ -81,7 +81,7 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 		Assert.Equal(string.Empty, deserialized.Message); // When omitted, the default value is the empty string for this particular property.
 	}
 
-	[Theory, PairwiseData]
+	[Test, MatrixDataSource]
 	public async Task MissingValueAllowedForNonNullableRequiredProperty_WithFlag(bool async)
 	{
 		this.Serializer = this.Serializer with { DeserializeDefaultValues = DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties };
@@ -125,8 +125,8 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 #endif
 	{
 		return async
-			? await this.Serializer.DeserializeAsync<T>(new MemoryStream(msgpack.ToArray()), TestContext.Current.CancellationToken)
-			: this.Serializer.Deserialize<T>(msgpack, TestContext.Current.CancellationToken);
+			? await this.Serializer.DeserializeAsync<T>(new MemoryStream(msgpack.ToArray()), this.TimeoutToken)
+			: this.Serializer.Deserialize<T>(msgpack, this.TimeoutToken);
 	}
 
 	private async ValueTask<MessagePackSerializationException> ExpectDeserializationThrowsAsync<T>(ReadOnlySequence<byte> msgpack, bool async, MessagePackSerializationException.ErrorCode expectedCause)
@@ -135,9 +135,9 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 #endif
 	{
 		MessagePackSerializationException ex = async
-			? await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.DeserializeAsync<T>(new MemoryStream(msgpack.ToArray()), TestContext.Current.CancellationToken).AsTask())
-			: Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<T>(msgpack, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.GetBaseException().Message);
+			? await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.DeserializeAsync<T>(new MemoryStream(msgpack.ToArray()), this.TimeoutToken).AsTask())
+			: Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<T>(msgpack, this.TimeoutToken));
+		Console.WriteLine(ex.GetBaseException().Message);
 
 		MessagePackSerializationException rootCauseException = Assert.IsType<MessagePackSerializationException>(ex.GetBaseException());
 		Assert.Equal(expectedCause, rootCauseException.Code);

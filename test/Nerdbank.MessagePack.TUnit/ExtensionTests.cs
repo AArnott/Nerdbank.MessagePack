@@ -8,7 +8,7 @@ public class ExtensionTests
 	private Extension ext2 = new(2, new byte[] { 1, 2, 3, 4, 5 });
 	private Extension ext3 = new(1, new byte[] { 1, 2, 4, 5 });
 
-	[Fact]
+	[Test]
 	public void Equality()
 	{
 		Assert.Equal(this.ext1a, this.ext1b);
@@ -16,7 +16,7 @@ public class ExtensionTests
 		Assert.NotEqual(this.ext1a, this.ext3);
 	}
 
-	[Fact]
+	[Test]
 	public void GetHashCode_Overridden()
 	{
 		Assert.Equal(this.ext1a.GetHashCode(), this.ext1b.GetHashCode());
@@ -24,7 +24,7 @@ public class ExtensionTests
 		Assert.NotEqual(this.ext1a.GetHashCode(), this.ext3.GetHashCode());
 	}
 
-	[Fact]
+	[Test]
 	public void GetSecureHashCode_StructuralEquality()
 	{
 		// The secure hash code should be the same for two structurally equal extensions.
