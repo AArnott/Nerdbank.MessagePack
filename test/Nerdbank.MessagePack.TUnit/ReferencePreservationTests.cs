@@ -3,9 +3,6 @@
 
 #pragma warning disable NBMsgPack051 // This test multi-targets
 
-using System.Runtime.CompilerServices;
-using Microsoft;
-
 [Property("ReferencePreservation", "true")]
 public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 {
@@ -230,20 +227,12 @@ public partial class ReferencePreservationTests : MessagePackSerializerTestBase
 	[Test]
 	public void DerivedTypeShapes_DynamicRegistration()
 	{
-#if NET8_0
-		if (!RuntimeFeature.IsDynamicCodeSupported)
-		{
-			Skip.Test("This tests an API that only works on .NET 8 with dynamic code enabled.");
-			throw Assumes.NotReachable();
-		}
-#endif
-
 		DerivedShapeMapping<BaseRecord> mapping = new DerivedShapeMapping<BaseRecord>();
-#if NET8_0 // .NET 8 will never reach this code when dynamic code is not allowed.
-#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
-#endif
+#if NET
+		mapping.Add<DerivedRecordB, Witness>(1);
+#else
 		mapping.AddSourceGenerated<DerivedRecordB, Witness>(1);
-#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+#endif
 		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
 
 		BaseRecord baseInstance = new BaseRecord();
