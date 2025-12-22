@@ -3,7 +3,7 @@
 
 public partial class CustomEnumerableTypes : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void CustomListOfIntDerivedCollection()
 	{
 		ListOfInt list = new() { 1, 2, 3 };

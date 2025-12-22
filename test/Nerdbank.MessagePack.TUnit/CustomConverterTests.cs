@@ -6,20 +6,20 @@
 
 public partial class CustomConverterTests : MessagePackSerializerTestBase
 {
-	[Fact]
+	[Test]
 	public void ConverterThatDelegates()
 	{
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
-	[Fact]
+	[Test]
 	public void AttributedTypeWorksAfterFirstSerialization()
 	{
 		this.AssertRoundtrip(new Tree(3));
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
-	[Fact]
+	[Test]
 	public void RegisterWorksAfterFirstSerialization()
 	{
 		this.AssertRoundtrip(new Tree(3));
@@ -33,21 +33,21 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(2, treeConverter.InvocationCount);
 	}
 
-	[Fact]
+	[Test]
 	public void UseNonGenericSubConverters_ShapeProvider()
 	{
 		this.Serializer = this.Serializer with { Converters = [new CustomTypeConverterNonGenericTypeShapeProvider()] };
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
-	[Fact]
+	[Test]
 	public void UseNonGenericSubConverters_Shape()
 	{
 		this.Serializer = this.Serializer with { Converters = [new CustomTypeConverterNonGenericTypeShape()] };
 		this.AssertRoundtrip(new CustomType { InternalProperty = "Hello, World!" });
 	}
 
-	[Fact]
+	[Test]
 	public void StatefulConverters()
 	{
 		SerializationContext modifiedStarterContext = this.Serializer.StartingContext;
@@ -66,14 +66,14 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		Assert.Null(this.Serializer.StartingContext["SHOULDVANISH"]);
 	}
 
-	[Fact]
+	[Test]
 	public void GenericDataAndGenericConverterByOpenGenericAttribute()
 	{
 		GenericData<string>? deserialized = this.Roundtrip<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" });
 		Assert.Equal("Hello, World!11", deserialized?.Value);
 	}
 
-	[Fact]
+	[Test]
 	public void GenericDataAndGenericConverterByClosedGenericRuntimeRegistration()
 	{
 		this.Serializer = this.Serializer with { Converters = [new GenericDataConverter2<string>()] };
@@ -81,7 +81,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		Assert.Equal("Hello, World!22", deserialized?.Value);
 	}
 
-	[Fact]
+	[Test]
 	public void GenericDataAndGenericConverterByOpenGenericRuntimeRegistration()
 	{
 		this.Serializer = this.Serializer with { ConverterTypes = [typeof(GenericDataConverter2<>)] };
@@ -89,7 +89,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		Assert.Equal("Hello, World!22", deserialized?.Value);
 	}
 
-	[Fact]
+	[Test]
 	public void GenericDataAndNonGenericConverterByRuntimeRegistration()
 	{
 		this.Serializer = this.Serializer with { ConverterTypes = [typeof(GenericDataConverterNonGeneric)] };
@@ -101,7 +101,7 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		Assert.Equal("Hello, World!11", deserialized2?.Value);
 	}
 
-	[Fact]
+	[Test]
 	public void NonGenericRuntimeRegistrationOfConverterByType()
 	{
 		this.Serializer = this.Serializer with { ConverterTypes = [typeof(TreeConverterPlus2)] };
@@ -109,15 +109,15 @@ public partial class CustomConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(5, deserialized?.FruitCount);
 	}
 
-	[Fact]
+	[Test]
 	public void GenericDataAndGenericConverterByOpenGenericRuntimeRegistration_NotAssociated()
 	{
 		this.Serializer = this.Serializer with { ConverterTypes = [typeof(GenericDataConverter3<>)] };
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" }, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.Message);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<GenericData<string>, Witness>(new GenericData<string> { Value = "Hello, World!" }, this.TimeoutToken));
+		Console.WriteLine(ex.Message);
 	}
 
-	[Fact]
+	[Test]
 	public void ConverterWithConverterContextConstructor()
 	{
 		this.Serializer = this.Serializer with { ConverterTypes = [typeof(TreeConverterWithConverterContext)] };

@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
+    <Compile Include="..\Nerdbank.MessagePack.TUnit\SurrogateTests.OriginalType.cs" Link="SurrogateTests.OriginalType.cs" />
   </ItemGroup>
 
   <Import Project="$(RepoRootPath)test/AnalyzerConsumer.targets" />

@@ -11,7 +11,7 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 		Task DoSomethingAsync();
 	}
 
-	[Fact]
+	[Test]
 	public void CustomUnionSerializer()
 	{
 		this.Serializer = this.Serializer with { ConverterFactories = [new CustomUnionConverterFactory()] };
@@ -29,7 +29,7 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 		Assert.True(bAsB.CustomSerialized);
 	}
 
-	[Fact]
+	[Test]
 	public void MarshaledInterfaceSerializer()
 	{
 		this.Serializer = this.Serializer with { ConverterFactories = [new MarshaledObjectConverterFactory()] };
@@ -39,8 +39,8 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 		Assert.IsType<MarshaledInterfaceProxy>(proxy);
 	}
 
-	[Fact]
-	[Trait("ReferencePreservation", "true")]
+	[Test]
+	[Property("ReferencePreservation", "true")]
 	public void FactoryWithReferencePreservation()
 	{
 		this.Serializer = this.Serializer with
@@ -59,7 +59,7 @@ public partial class CustomConverterFactoryTests : MessagePackSerializerTestBase
 		Assert.True(deserialized[0].CustomSerialized);
 	}
 
-	[Fact]
+	[Test]
 	public void GetSubConverterFromContext()
 	{
 		this.Serializer = this.Serializer with { ConverterFactories = [new DoubleArrayWrapperFactory()] };
