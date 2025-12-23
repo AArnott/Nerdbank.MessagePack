@@ -86,10 +86,10 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		KeyedCollections? deserializedData = this.Roundtrip(testData);
 		Assert.NotNull(deserializedData);
 
-		this.Logger.LogInformation(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.LogInformation(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.LogInformation(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.LogInformation(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
 
 		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
 		Assert.Equal(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
@@ -113,10 +113,10 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		KeyedCollections? deserializedData = this.Roundtrip(testData);
 		Assert.NotNull(deserializedData);
 
-		this.Logger.LogInformation(deserializedData.StringSet.Comparer.GetType().FullName!);
-		this.Logger.LogInformation(deserializedData.StringDictionary.Comparer.GetType().FullName!);
-		this.Logger.LogInformation(deserializedData.FruitSet.Comparer.GetType().FullName!);
-		this.Logger.LogInformation(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.StringSet.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.StringDictionary.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.FruitSet.Comparer.GetType().FullName!);
+		Console.WriteLine(deserializedData.FruitDictionary.Comparer.GetType().FullName!);
 
 		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringSet.Comparer);
 		Assert.NotEqual(EqualityComparer<string>.Default, deserializedData.StringDictionary.Comparer);
@@ -140,7 +140,7 @@ public partial class SecurityTests : MessagePackSerializerTestBase
 		writer.Flush();
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
 			() => this.Serializer.Deserialize<Dictionary<string, string>, Witness>(seq, this.TimeoutToken));
-		this.Logger.LogInformation(ex.GetBaseException().Message);
+		Console.WriteLine(ex.GetBaseException().Message);
 	}
 
 	private Nested ConstructDeepObjectGraph(int depth)

@@ -152,7 +152,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	{
 		RecordWithReadOnlyProperties_NoConstructor obj = new(1, 2);
 		byte[] msgpack = this.Serializer.Serialize(obj, this.TimeoutToken);
-		this.Logger.LogInformation(this.Serializer.ConvertToJson(msgpack));
+		Console.WriteLine(this.Serializer.ConvertToJson(msgpack));
 		MessagePackReader reader = new(msgpack);
 
 		// The Sum field should not be serialized.
@@ -441,19 +441,19 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<IDictionary, Witness>(new Dictionary<string, object>(), this.TimeoutToken);
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary, Witness>(msgpack, this.TimeoutToken));
 		NotSupportedException innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
-		this.Logger.LogInformation(innerException.Message);
+		Console.WriteLine(innerException.Message);
 
 		msgpack = this.Serializer.Serialize<IDictionary<object, string>, Witness>(new Dictionary<object, string>(), this.TimeoutToken);
 		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<IDictionary<object, string>, Witness>(msgpack, this.TimeoutToken));
 		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
-		this.Logger.LogInformation(innerException.Message);
+		Console.WriteLine(innerException.Message);
 
 		msgpack = this.Serializer.Serialize<HashSet<object>, Witness>(new HashSet<object>(), this.TimeoutToken);
 		ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<HashSet<object>, Witness>(msgpack, this.TimeoutToken));
 		innerException = Assert.IsType<NotSupportedException>(ex.GetBaseException());
-		this.Logger.LogInformation(innerException.Message);
+		Console.WriteLine(innerException.Message);
 
-		this.Logger.LogInformation(ex.ToString());
+		Console.WriteLine(ex.ToString());
 	}
 
 	[Test]
