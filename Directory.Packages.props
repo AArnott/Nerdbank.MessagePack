@@ -46,7 +46,7 @@
     <PackageVersion Include="Vogen" Version="8.0.4" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
     <PackageVersion Include="xunit.v3.assert" Version="3.2.1" />
-    <PackageVersion Include="xunit.v3.assert.aot" Version="3.2.2-pre.8" />
+    <PackageVersion Include="xunit.v3.assert.aot" Version="3.2.2-pre.10" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
     <!-- The versions specified here should be the latest ones supported by the OLDEST .NET runtime version that is still supported
