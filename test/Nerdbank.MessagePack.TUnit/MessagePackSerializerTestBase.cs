@@ -114,6 +114,8 @@ public abstract partial class MessagePackSerializerTestBase
 		return schemaString;
 	}
 
+	protected void Log(string message) => Console.WriteLine(message);
+
 	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
 #if NET
 		where T : IShapeable<T>
