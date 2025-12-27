@@ -200,6 +200,12 @@ Consider the following example where a type hierarchy is registered without usin
 
 ---
 
+Runtime derived type registration is no substitute for requiring [type shapes](type-shapes.md).
+Rather, runtime derived type registration is useful when:
+
+1. The shapes do not express any derived type information.
+1. You need to override the derived type information in the shapes, due to it being incorrect or incomplete (e.g. your application is extensible and you don't have complete derived type information at compile-time).
+
 ### Duck typing
 
 Shape-based unions allow you to participate in a union based on the *shape* (the publicly serializable members) of a type rather than requiring a type header.
