@@ -9,7 +9,8 @@
 		},
 		{
 			"matchPackageNames": ["xunit*"],
-			"groupName": "xunit"
+			"groupName": "xunit",
+			"schedule": ["on the first day of the month"]
 		},
 		{
 			"matchPackageNames": ["tunit*"],
