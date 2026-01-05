@@ -930,7 +930,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	private static Dictionary<string, IParameterShape> PrepareCtorParametersByName(IConstructorShape ctorShape)
 	{
-		Dictionary<string, IParameterShape> ctorParametersByName = new(StringComparer.Ordinal);
+		Dictionary<string, IParameterShape> ctorParametersByName = new(StringComparer.OrdinalIgnoreCase);
 		foreach (IParameterShape ctorParameter in ctorShape.Parameters)
 		{
 			// Keep the one with the Kind that we prefer.
@@ -970,14 +970,16 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		int i = 0;
 		foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
 		{
-			IGenericCustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
+			IPropertyShape? matchingProperty = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => string.Equals(prop.Name, p.Value.Name, StringComparison.OrdinalIgnoreCase));
 			object parameterResult = p.Value.Accept(this, constructorShape)!;
 			if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
 			{
 				return failureResult;
 			}
 
-			string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
+			string name = matchingProperty is not null
+				? this.owner.GetSerializedPropertyName(matchingProperty.Name, matchingProperty.AttributeProvider)
+				: p.Value.Name;
 			handler(Encoding.UTF8.GetBytes(name), i++, parameterResult);
 		}
 
@@ -986,7 +988,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	private ConverterResult? VisitConstructor_TryPerParameterArray(IConstructorShape constructorShape, IArrayConstructorVisitorInputs inputs, object?[] results)
 	{
-		Dictionary<string, int> propertyIndexesByName = new(inputs.Count, StringComparer.Ordinal);
+		Dictionary<string, int> propertyIndexesByName = new(inputs.Count, StringComparer.OrdinalIgnoreCase);
 		for (int i = 0; i < inputs.Count; i++)
 		{
 			if (inputs.GetPropertyNameByIndex(i) is string name)
