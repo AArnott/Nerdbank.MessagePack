@@ -189,6 +189,22 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public async Task ReadOnlyCollectionPropertiesWithCtor()
+	{
+		var testData = new ClassWithReadOnlyCollectionPropertiesAndCtor(["c"]);
+		this.AssertRoundtrip(testData);
+		await this.AssertRoundtripAsync(testData);
+	}
+
+	[Fact]
+	public async Task ReadOnlyCollectionKeyedPropertiesWithCtor()
+	{
+		var testData = new ClassWithReadOnlyCollectionKeyedPropertiesAndCtor(["c"]);
+		this.AssertRoundtrip(testData);
+		await this.AssertRoundtripAsync(testData);
+	}
+
+	[Fact]
 	public void ReadOnlyObjectProperty_IsNotSerialized()
 	{
 		ClassWithReadOnlyObjectProperty obj = new() { AgeAccessor = 15 };
@@ -532,6 +548,35 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 
 		public bool Equals(ClassWithReadOnlyCollectionProperties? other)
 			=> StructuralEquality.Equal(this.List, other?.List) && StructuralEquality.Equal(this.Dictionary, other?.Dictionary);
+	}
+
+	[GenerateShape]
+	public partial class ClassWithReadOnlyCollectionPropertiesAndCtor : IEquatable<ClassWithReadOnlyCollectionPropertiesAndCtor>
+	{
+		public ClassWithReadOnlyCollectionPropertiesAndCtor(IReadOnlyList<string> myList)
+		{
+			this.MyList = [.. myList];
+		}
+
+		public List<string> MyList { get; }
+
+		public bool Equals(ClassWithReadOnlyCollectionPropertiesAndCtor? other)
+			=> StructuralEquality.Equal(this.MyList, other?.MyList);
+	}
+
+	[GenerateShape]
+	public partial class ClassWithReadOnlyCollectionKeyedPropertiesAndCtor : IEquatable<ClassWithReadOnlyCollectionKeyedPropertiesAndCtor>
+	{
+		public ClassWithReadOnlyCollectionKeyedPropertiesAndCtor(IReadOnlyList<string> myList)
+		{
+			this.MyList = [.. myList];
+		}
+
+		[Key(0)]
+		public List<string> MyList { get; }
+
+		public bool Equals(ClassWithReadOnlyCollectionKeyedPropertiesAndCtor? other)
+			=> StructuralEquality.Equal(this.MyList, other?.MyList);
 	}
 
 	[GenerateShape]
