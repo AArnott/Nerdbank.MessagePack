@@ -75,6 +75,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			IConstructorShape? ctorShape = objectShape.Constructor;
 
 			Dictionary<string, IParameterShape>? ctorParametersByName = ctorShape is not null ? PrepareCtorParametersByName(ctorShape) : null;
+			Dictionary<string, IParameterShape?>? ctorParametersByNameIgnoreCase = null;
 
 			List<SerializableProperty<T>>? serializable = null;
 			List<DeserializableProperty<T>>? deserializable = null;
@@ -101,19 +102,15 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 
 				IParameterShape? matchingConstructorParameter = null;
-				if (ctorParametersByName is not null)
+
+				// Try exact match first, then case-insensitive fallback for camelCase/PascalCase matching (e.g., myList → MyList).
+				// The fallback lookup is cached and treats case-only duplicates as ambiguous (no match) to preserve scenarios like "t" and "T".
+				if (ctorParametersByName is not null && !ctorParametersByName.TryGetValue(property.Name, out matchingConstructorParameter))
 				{
-					// Try exact match first, then case-insensitive fallback for camelCase/PascalCase matching (e.g., myList → MyList).
-					if (!ctorParametersByName.TryGetValue(property.Name, out matchingConstructorParameter))
+					ctorParametersByNameIgnoreCase ??= CreateCaseInsensitiveParameterLookup(ctorParametersByName);
+					if (!ctorParametersByNameIgnoreCase.TryGetValue(property.Name, out matchingConstructorParameter) || matchingConstructorParameter is null)
 					{
-						foreach (KeyValuePair<string, IParameterShape> kvp in ctorParametersByName)
-						{
-							if (string.Equals(kvp.Key, property.Name, StringComparison.OrdinalIgnoreCase))
-							{
-								matchingConstructorParameter = kvp.Value;
-								break;
-							}
-						}
+						matchingConstructorParameter = null;
 					}
 				}
 
@@ -961,6 +958,44 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return ctorParametersByName;
 	}
 
+	private static Dictionary<string, IParameterShape?> CreateCaseInsensitiveParameterLookup(Dictionary<string, IParameterShape> source)
+	{
+		Dictionary<string, IParameterShape?> result = new(source.Count, StringComparer.OrdinalIgnoreCase);
+		foreach (KeyValuePair<string, IParameterShape> kvp in source)
+		{
+			if (result.ContainsKey(kvp.Key))
+			{
+				// Multiple entries that differ only by case are treated as ambiguous.
+				result[kvp.Key] = null;
+			}
+			else
+			{
+				result.Add(kvp.Key, kvp.Value);
+			}
+		}
+
+		return result;
+	}
+
+	private static Dictionary<string, int?> CreateCaseInsensitiveIndexLookup(Dictionary<string, int> source)
+	{
+		Dictionary<string, int?> result = new(source.Count, StringComparer.OrdinalIgnoreCase);
+		foreach (KeyValuePair<string, int> kvp in source)
+		{
+			if (result.ContainsKey(kvp.Key))
+			{
+				// Multiple entries that differ only by case are treated as ambiguous.
+				result[kvp.Key] = null;
+			}
+			else
+			{
+				result.Add(kvp.Key, kvp.Value);
+			}
+		}
+
+		return result;
+	}
+
 	private static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter '{parameter.Name}' is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
 
 	private static string CreateReadFailMessage(IParameterShape parameterShape, IConstructorShape constructorShape) => $"Failed to deserialize value for '{parameterShape.Name}' parameter on {constructorShape.DeclaringType.Type.FullName}.";
@@ -1005,6 +1040,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private ConverterResult? VisitConstructor_TryPerParameterArray(IConstructorShape constructorShape, IArrayConstructorVisitorInputs inputs, object?[] results)
 	{
 		Dictionary<string, int> propertyIndexesByName = new(inputs.Count, StringComparer.Ordinal);
+		Dictionary<string, int?>? propertyIndexesByNameIgnoreCase = null;
 		for (int i = 0; i < inputs.Count; i++)
 		{
 			if (inputs.GetPropertyNameByIndex(i) is string name)
@@ -1021,23 +1057,16 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 
 			// Try exact match first, then case-insensitive fallback for camelCase/PascalCase matching (e.g., myList → MyList).
+			// The fallback lookup is cached and treats case-only duplicates as ambiguous (no match).
 			if (!propertyIndexesByName.TryGetValue(parameter.Name, out int index))
 			{
-				bool found = false;
-				foreach (KeyValuePair<string, int> kvp in propertyIndexesByName)
-				{
-					if (string.Equals(kvp.Key, parameter.Name, StringComparison.OrdinalIgnoreCase))
-					{
-						index = kvp.Value;
-						found = true;
-						break;
-					}
-				}
-
-				if (!found)
+				propertyIndexesByNameIgnoreCase ??= CreateCaseInsensitiveIndexLookup(propertyIndexesByName);
+				if (!propertyIndexesByNameIgnoreCase.TryGetValue(parameter.Name, out int? fallbackIndex) || fallbackIndex is null)
 				{
 					return ConverterResult.Err(new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type."));
 				}
+
+				index = fallbackIndex.Value;
 			}
 
 			object result = parameter.Accept(this, constructorShape)!;
