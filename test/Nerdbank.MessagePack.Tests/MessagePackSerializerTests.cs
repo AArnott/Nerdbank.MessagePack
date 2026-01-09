@@ -245,6 +245,17 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void PropertiesWithCaseOnlySerializedNameDifferencesMutableCanRoundtrip()
+	{
+		RecordWithMutablePropertiesWithSerializedNamesUniqueOnlyInCapitalization original = new()
+		{
+			First = 1,
+			Second = 2,
+		};
+		this.AssertRoundtrip(original);
+	}
+
+	[Fact]
 	public void PropertiesWithCaseOnlySerializedNameDifferencesCanRoundtrip()
 	{
 		RecordWithPropertiesWithSerializedNamesUniqueOnlyInCapitalization original = new()
@@ -617,6 +628,16 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		internal int AgeAccessor { get; set; }
 
 		public bool Equals(ClassWithReadOnlyObjectPropertyAndCtorParam? other) => other is not null && this.Age == other.Age;
+	}
+
+	[GenerateShape]
+	public partial record RecordWithMutablePropertiesWithSerializedNamesUniqueOnlyInCapitalization
+	{
+		[PropertyShape(Name = "t")]
+		public int First { get; set; }
+
+		[PropertyShape(Name = "T")]
+		public int Second { get; set; }
 	}
 
 	[GenerateShape]
