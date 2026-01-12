@@ -21,9 +21,69 @@ export NBGV_GitEngine=Disabled
 dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release
 
 ### Testing
-**Run tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 5-10 minutes):
+
+**IMPORTANT**: This repository uses Microsoft.Testing.Platform (MTP v2) with xunit v3. Traditional `--filter` syntax does NOT work. Use the options below instead.
+
+**Run all tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 5-10 minutes):
 ```bash
-dotnet test --no-build -c Release --filter "TestCategory!=FailsInCloudTest"
+dotnet test --no-build -c Release
+```
+
+**Run tests for a specific test project**:
+```bash
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release
+```
+
+**Run a single test method**:
+```bash
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release -- --filter-method PrimitivesDerializationTests.PositiveIntKeyStretching
+```
+
+**Run all tests in a test class**:
+```bash
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release -- --filter-class PrimitivesDerializationTests
+```
+
+**Run tests with wildcard matching** (supports wildcards at beginning and/or end):
+```bash
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release -- --filter-method "*Positive*"
+```
+
+**Run tests with a specific trait** (equivalent to category filtering):
+```bash
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release -- --filter-trait "AsyncSerialization=true"
+```
+
+**Exclude tests with a specific trait**:
+```bash
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release -- --filter-not-trait "FailsInCloudTest=true"
+```
+
+**Run tests for a specific framework only**:
+```bash
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release --framework net9.0
+```
+
+**List all available tests without running them**:
+```bash
+cd test/Nerdbank.MessagePack.Tests
+dotnet run --no-build -c Release --framework net9.0 -- --list-tests
+```
+
+**List tests matching a filter**:
+```bash
+cd test/Nerdbank.MessagePack.Tests
+dotnet run --no-build -c Release --framework net9.0 -- --list-tests --filter-class PrimitivesDerializationTests
+```
+
+**Key points about test filtering with MTP v2 / xunit v3**:
+- Options after `--` are passed to the test runner, not to `dotnet test`
+- Use `--filter-method`, `--filter-class`, `--filter-namespace` for simple filtering
+- Use `--filter-trait` and `--filter-not-trait` for trait-based filtering (replaces `--filter "TestCategory=..."`)
+- Traditional VSTest `--filter` expressions do NOT work
+- Wildcards `*` are supported at the beginning and/or end of filter values
+- Multiple simple filters of the same type use OR logic, different types combine with AND
+- See `--help` for query filter language for advanced scenarios
 
 ### Code Quality
 **Verify code formatting** (takes ~71 seconds - NEVER CANCEL, set timeout to 90+ minutes):
@@ -81,8 +141,8 @@ Should start web server without errors (web UI testing limited in this environme
 ## Testing
 
 * There should generally be one test project (under the `test` directory) per shipping project (under the `src` directory). Test projects are named after the project being tested with a `.Tests` suffix.
-* Tests should use the Xunit testing framework.
-* Some tests are known to be unstable. When running tests, you should skip the unstable ones by running `dotnet test --filter "TestCategory!=FailsInCloudTest"`.
+* Tests use xunit v3 with Microsoft.Testing.Platform (MTP v2). Traditional VSTest `--filter` syntax does NOT work.
+* Some tests are known to be unstable. When running tests, you should skip the unstable ones by using `-- --filter-not-trait "FailsInCloudTest=true"`.
 * Test suite contains 7767 total tests with ~7359 passing and ~408 skipped when using the stability filter.
 
 ## Coding Style
@@ -104,7 +164,7 @@ Should start web server without errors (web UI testing limited in this environme
 
 ### After Making Changes
 1. **Build**: `dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release` (NEVER CANCEL - 7-76s)
-2. **Test**: `dotnet test --no-build -c Release --filter "TestCategory!=FailsInCloudTest"` (25s)
+2. **Test**: `dotnet test --no-build -c Release` (25s)
 3. **Format**: `dotnet format --verify-no-changes --no-restore` (NEVER CANCEL - 71s)
 4. **Validate**: Run AOT console sample for functionality verification
 
@@ -119,7 +179,7 @@ dotnet docfx
 ### Troubleshooting
 - **Build fails**: Ensure `NBGV_GitEngine=Disabled` is set
 - **Long restore times**: Use `./init.ps1` to bootstrap dependencies first
-- **Test instability**: Always use the `TestCategory!=FailsInCloudTest` filter
+- **Test instability**: Use `-- --filter-not-trait "FailsInCloudTest=true"` to skip unstable tests
 - **Format failures**: Run `dotnet format` (without `--verify-no-changes`) to fix automatically
 
 ## CRITICAL Timing Expectations
