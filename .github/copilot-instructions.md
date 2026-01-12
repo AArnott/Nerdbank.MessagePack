@@ -19,6 +19,7 @@ export NBGV_GitEngine=Disabled
 **Build the repository** (takes 7-76 seconds depending on cache - do not cancel unless it exceeds 10-15 minutes, set timeout to 10-15 minutes):
 ```bash
 dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release
+```
 
 ### Testing
 
