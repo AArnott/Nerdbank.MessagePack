@@ -194,7 +194,7 @@ jobs:
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
     - name: 🔍 Initialize CodeQL
-      uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+      uses: github/codeql-action/init@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
       with:
         languages: csharp
     - name: ⚙ Install prerequisites
@@ -205,7 +205,7 @@ jobs:
     - name: 🛠 build
       run: dotnet pack --no-restore -c ${{ env.BUILDCONFIGURATION }}
     - name: 🔍 Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+      uses: github/codeql-action/analyze@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
 
   docs:
     name: 📃 Docs
