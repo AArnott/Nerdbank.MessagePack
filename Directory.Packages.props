@@ -45,7 +45,7 @@
     <PackageVersion Include="TUnit.Engine" Version="1.7.16" />
     <PackageVersion Include="Vogen" Version="8.0.4" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
-    <PackageVersion Include="xunit.v3.assert" Version="3.2.1" />
+    <PackageVersion Include="xunit.v3.assert" Version="3.2.2" />
     <PackageVersion Include="xunit.v3.assert.aot" Version="3.2.2-pre.16" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
