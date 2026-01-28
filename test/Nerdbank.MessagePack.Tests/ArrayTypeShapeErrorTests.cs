@@ -1,6 +1,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#pragma warning disable NBMsgPack051 // Suppress warnings about missing shape for array types in this test file, since we are testing the runtime behavior for such violations.
+
 /// <summary>
 /// Tests for improved error messages when serializing or deserializing array types without proper witness types.
 /// </summary>
