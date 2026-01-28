@@ -208,6 +208,8 @@ public static partial class MessagePackSerializerExtensions
 				$"For example:\n\n" +
 				$"[GenerateShapeFor<{typeof(T).Name}>]\n" +
 				$"partial class {typeof(TProvider).Name};\n\n" +
+				$"Then use the witness type when serializing or deserializing:\n" +
+				$"var result = serializer.Deserialize<{typeof(T).Name}, {typeof(TProvider).Name}>(stream);\n\n" +
 				$"See https://aarnott.github.io/Nerdbank.MessagePack/docs/type-shapes.html for more information.",
 				ex);
 		}
