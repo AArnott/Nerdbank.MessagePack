@@ -148,4 +148,68 @@ public static partial class MessagePackSerializerExtensions
 #endif
 	public static MessagePackConverter<T> GetConverter<T, TProvider>(this ConverterContext context)
 		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+
+	/// <summary>
+	/// Resolves a type shape, providing enhanced error messages for array types.
+	/// </summary>
+	/// <typeparam name="T">The type to resolve a shape for.</typeparam>
+	/// <returns>The type shape.</returns>
+	/// <exception cref="NotSupportedException">
+	/// Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.
+	/// For array types, provides specific guidance on using witness types.
+	/// </exception>
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+	private static ITypeShape<T> ResolveTypeShapeOrThrow<T>()
+	{
+		try
+		{
+			return TypeShapeResolver.ResolveDynamicOrThrow<T>();
+		}
+		catch (NotSupportedException ex) when (typeof(T).IsArray)
+		{
+			throw new NotSupportedException(
+				$"The type '{typeof(T).FullName}' does not have a generated shape. " +
+				$"To serialize or deserialize an array as a top-level type, use a witness type with the [GenerateShapeFor<{typeof(T).Name}>] attribute. " +
+				$"For example:\n\n" +
+				$"[GenerateShapeFor<{typeof(T).Name}>]\n" +
+				$"partial class Witness;\n\n" +
+				$"var result = serializer.Deserialize<{typeof(T).Name}, Witness>(stream);\n\n" +
+				$"See https://aarnott.github.io/Nerdbank.MessagePack/docs/type-shapes.html for more information.",
+				ex);
+		}
+	}
+
+	/// <summary>
+	/// Resolves a type shape for a witness type, providing enhanced error messages for array types.
+	/// </summary>
+	/// <typeparam name="T">The type to resolve a shape for.</typeparam>
+	/// <typeparam name="TProvider">The witness type that provides the shape for <typeparamref name="T"/>.</typeparam>
+	/// <returns>The type shape.</returns>
+	/// <exception cref="NotSupportedException">
+	/// Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.
+	/// For array types, provides specific guidance on using witness types.
+	/// </exception>
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+	private static ITypeShape<T> ResolveTypeShapeOrThrow<T, TProvider>()
+	{
+		try
+		{
+			return TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>();
+		}
+		catch (NotSupportedException ex) when (typeof(T).IsArray)
+		{
+			throw new NotSupportedException(
+				$"The type '{typeof(T).FullName}' does not have a generated shape on the witness type '{typeof(TProvider).FullName}'. " +
+				$"To serialize or deserialize an array as a top-level type, ensure the witness type has a [GenerateShapeFor<{typeof(T).Name}>] attribute. " +
+				$"For example:\n\n" +
+				$"[GenerateShapeFor<{typeof(T).Name}>]\n" +
+				$"partial class {typeof(TProvider).Name};\n\n" +
+				$"See https://aarnott.github.io/Nerdbank.MessagePack/docs/type-shapes.html for more information.",
+				ex);
+		}
+	}
 }
