@@ -1,19 +1,11 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using Xunit.Abstractions;
-
 /// <summary>
 /// Tests for improved error messages when deserializing array types without proper witness types.
 /// </summary>
-public class ArrayTypeShapeErrorTests : MessagePackSerializerTestBase
+public partial class ArrayTypeShapeErrorTests : MessagePackSerializerTestBase
 {
-	public ArrayTypeShapeErrorTests(ITestOutputHelper logger)
-		: base(logger)
-	{
-	}
-
 	/// <summary>
 	/// Verifies that attempting to deserialize an array type without a witness type
 	/// throws a NotSupportedException with helpful guidance.
@@ -23,7 +15,7 @@ public class ArrayTypeShapeErrorTests : MessagePackSerializerTestBase
 	{
 		// Create some test data
 		var testData = new TestItem[] { new() { Name = "Test", Value = 42 } };
-		
+
 		// Serialize with witness type (this should work)
 		byte[] msgpack = this.Serializer.Serialize<TestItem[], Witness>(testData, TestContext.Current.CancellationToken);
 
@@ -69,18 +61,30 @@ public class ArrayTypeShapeErrorTests : MessagePackSerializerTestBase
 	public void ArrayWithWitness_Roundtrips()
 	{
 		var testData = new TestItem[] { new() { Name = "Test1", Value = 42 }, new() { Name = "Test2", Value = 84 } };
-		
-		// This should work with the witness type
-		this.AssertRoundtrip<TestItem[], Witness>(testData);
+
+		// Serialize with witness type
+		byte[] msgpack = this.Serializer.Serialize<TestItem[], Witness>(testData, TestContext.Current.CancellationToken);
+
+		// Deserialize with witness type
+		TestItem[]? result = this.Serializer.Deserialize<TestItem[], Witness>(msgpack, TestContext.Current.CancellationToken);
+
+		// Verify the results
+		Assert.NotNull(result);
+		Assert.Equal(2, result.Length);
+		Assert.Equal("Test1", result[0].Name);
+		Assert.Equal(42, result[0].Value);
+		Assert.Equal("Test2", result[1].Name);
+		Assert.Equal(84, result[1].Value);
 	}
 
 	[GenerateShape]
 	public partial class TestItem
 	{
 		public string? Name { get; set; }
+
 		public int Value { get; set; }
 	}
 
 	[GenerateShapeFor<TestItem[]>]
-	partial class Witness;
+	private partial class Witness;
 }
