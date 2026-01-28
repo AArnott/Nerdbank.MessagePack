@@ -44,8 +44,8 @@ void WriteClass(bool targetNET) {
     {
         (string genericTypeParameters, string genericTypeParametersWithElement, string typeConstraint, string getShape) = shapeSource switch
         {
-            ShapeSource.T => ("T","T, TElement", targetNET ? "T : IShapeable<T>" : null, targetNET ? "T.GetTypeShape()" : "TypeShapeResolver.ResolveDynamicOrThrow<T>()"),
-            ShapeSource.TProvider => ("T, TProvider","T, TElement, TProvider", targetNET ? "TProvider : IShapeable<T>" : null, targetNET ? "TProvider.GetTypeShape()" : "TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>()"),
+            ShapeSource.T => ("T","T, TElement", targetNET ? "T : IShapeable<T>" : null, targetNET ? "T.GetTypeShape()" : "ResolveTypeShapeOrThrow<T>()"),
+            ShapeSource.TProvider => ("T, TProvider","T, TElement, TProvider", targetNET ? "TProvider : IShapeable<T>" : null, targetNET ? "TProvider.GetTypeShape()" : "ResolveTypeShapeOrThrow<T, TProvider>()"),
             _ => throw new NotSupportedException(),
         };
         typeConstraint = typeConstraint is null ? "" : $"where {typeConstraint} ";
