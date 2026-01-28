@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 /// <summary>
-/// Tests for improved error messages when deserializing array types without proper witness types.
+/// Tests for improved error messages when serializing or deserializing array types without proper witness types.
 /// </summary>
 public partial class ArrayTypeShapeErrorTests : MessagePackSerializerTestBase
 {

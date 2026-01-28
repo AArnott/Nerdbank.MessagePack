@@ -1002,10 +1002,9 @@ public static partial class MessagePackSerializerExtensions
 		}
 		catch (NotSupportedException ex) when (typeof(T).IsArray)
 		{
-			Type elementType = typeof(T).GetElementType()!;
 			throw new NotSupportedException(
 				$"The type '{typeof(T).FullName}' does not have a generated shape. " +
-				$"To deserialize an array as a top-level type, use a witness type with the [GenerateShapeFor<{typeof(T).Name}>] attribute. " +
+				$"To serialize or deserialize an array as a top-level type, use a witness type with the [GenerateShapeFor<{typeof(T).Name}>] attribute. " +
 				$"For example:\n\n" +
 				$"[GenerateShapeFor<{typeof(T).Name}>]\n" +
 				$"partial class Witness;\n\n" +
@@ -1033,10 +1032,9 @@ public static partial class MessagePackSerializerExtensions
 		}
 		catch (NotSupportedException ex) when (typeof(T).IsArray)
 		{
-			Type elementType = typeof(T).GetElementType()!;
 			throw new NotSupportedException(
 				$"The type '{typeof(T).FullName}' does not have a generated shape on the witness type '{typeof(TProvider).FullName}'. " +
-				$"To deserialize an array as a top-level type, ensure the witness type has a [GenerateShapeFor<{typeof(T).Name}>] attribute. " +
+				$"To serialize or deserialize an array as a top-level type, ensure the witness type has a [GenerateShapeFor<{typeof(T).Name}>] attribute. " +
 				$"For example:\n\n" +
 				$"[GenerateShapeFor<{typeof(T).Name}>]\n" +
 				$"partial class {typeof(TProvider).Name};\n\n" +

@@ -87,7 +87,7 @@ Still another option to get your source generated data type to be serializable m
 Vogen is a source generator that wraps primitive types in custom structs that can add validation and another level of type safety to your data models.
 
 > [!IMPORTANT]
-> Use Vogen 8.0.3 or later, which emits PolyType marshalers so that data types are serialized without extranneous wrappers.
+> Use Vogen 8.0.3 or later, which emits PolyType marshalers so that data types are serialized without extraneous wrappers.
 
 With Vogen, you have the two options described in the above section, to either declare your data models in a separate project or use the reflection type shape provider.
 Here is what those two worlds look like:
