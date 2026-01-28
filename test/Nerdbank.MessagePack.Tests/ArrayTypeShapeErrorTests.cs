@@ -77,6 +77,28 @@ public partial class ArrayTypeShapeErrorTests : MessagePackSerializerTestBase
 		Assert.Equal(84, result[1].Value);
 	}
 
+	/// <summary>
+	/// Verifies that attempting to use a witness type that doesn't have the correct [GenerateShapeFor] attribute
+	/// throws a NotSupportedException with helpful guidance.
+	/// </summary>
+	[Fact]
+	public void ArrayWithIncorrectWitness_ThrowsHelpfulException()
+	{
+		var testData = new TestItem[] { new() { Name = "Test", Value = 42 } };
+
+		// Try to serialize with a witness type that doesn't have [GenerateShapeFor<TestItem[]>]
+		NotSupportedException ex = Assert.Throws<NotSupportedException>(() =>
+			this.Serializer.Serialize<TestItem[], IncompleteWitness>(testData, TestContext.Current.CancellationToken));
+
+		// Verify the error message contains helpful information
+		this.Logger.WriteLine(ex.Message);
+		Assert.Contains("does not have a generated shape", ex.Message);
+		Assert.Contains("witness", ex.Message, StringComparison.OrdinalIgnoreCase);
+		Assert.Contains("GenerateShapeFor", ex.Message);
+		Assert.Contains("IncompleteWitness", ex.Message);
+		Assert.Contains("https://aarnott.github.io/Nerdbank.MessagePack/docs/type-shapes.html", ex.Message);
+	}
+
 	[GenerateShape]
 	public partial class TestItem
 	{
@@ -87,4 +109,7 @@ public partial class ArrayTypeShapeErrorTests : MessagePackSerializerTestBase
 
 	[GenerateShapeFor<TestItem[]>]
 	private partial class Witness;
+
+	// Witness type that's missing the [GenerateShapeFor<TestItem[]>] attribute
+	private partial class IncompleteWitness;
 }
