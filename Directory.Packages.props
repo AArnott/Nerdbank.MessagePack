@@ -41,8 +41,8 @@
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)-unstable" />
     <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" />
     <PackageVersion Include="System.Memory.Data" Version="8.0.1" />
-    <PackageVersion Include="TUnit" Version="1.12.111" />
-    <PackageVersion Include="TUnit.Engine" Version="1.12.111" />
+    <PackageVersion Include="TUnit" Version="1.13.11" />
+    <PackageVersion Include="TUnit.Engine" Version="1.13.11" />
     <PackageVersion Include="Vogen" Version="8.0.4" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
     <PackageVersion Include="xunit.v3.assert" Version="3.2.2" />
