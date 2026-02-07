@@ -33,7 +33,7 @@ jobs:
             rid: win-x64
 
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
     - name: ⚙ Install prerequisites
@@ -190,11 +190,11 @@ jobs:
       security-events: write
 
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
     - name: 🔍 Initialize CodeQL
-      uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+      uses: github/codeql-action/init@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 # v4.32.2
       with:
         languages: csharp
     - name: ⚙ Install prerequisites
@@ -205,14 +205,14 @@ jobs:
     - name: 🛠 build
       run: dotnet pack --no-restore -c ${{ env.BUILDCONFIGURATION }}
     - name: 🔍 Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+      uses: github/codeql-action/analyze@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 # v4.32.2
 
   docs:
     name: 📃 Docs
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: 🔗 Markup Link Checker (mlc)
       uses: becheran/mlc@7ec24825cefe0c9c8c6bac48430e1f69e3ec356e # v1.2.0
       with:
-        args: --do-not-warn-for-redirect-to https://learn.microsoft.com*,https://dotnet.microsoft.com/*,https://dev.azure.com/*,https://app.codecov.io/* -p docfx -i https://www.npmjs.com/package/*,https://get.dot.net/ -i zcash:u1vv2ws6xhs72faugmlrasyeq298l05rrj6wfw8hr3r29y3czev5qt4ugp7kylz6suu04363ze92dfg8ftxf3237js0x9p5r82fgy47xkjnw75tqaevhfh0rnua72hurt22v3w3f7h8yt6mxaa0wpeeh9jcm359ww3rl6fj5ylqqv54uuwrs8q4gys9r3cxdm3yslsh3rt6p7wznzhky7
+        args: --do-not-warn-for-redirect-to https://learn.microsoft.com*,https://dotnet.microsoft.com/*,https://dev.azure.com/*,https://app.codecov.io/* -p docfx -i https://www.npmjs.com/package/*,https://get.dot.net/,https://dev.azure.com/andrewarnott/OSS/* -i zcash:u1vv2ws6xhs72faugmlrasyeq298l05rrj6wfw8hr3r29y3czev5qt4ugp7kylz6suu04363ze92dfg8ftxf3237js0x9p5r82fgy47xkjnw75tqaevhfh0rnua72hurt22v3w3f7h8yt6mxaa0wpeeh9jcm359ww3rl6fj5ylqqv54uuwrs8q4gys9r3cxdm3yslsh3rt6p7wznzhky7

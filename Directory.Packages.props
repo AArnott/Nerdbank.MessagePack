@@ -4,28 +4,28 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicrosoftTestingPlatformVersion>2.0.2</MicrosoftTestingPlatformVersion>
+    <MicrosoftTestingPlatformVersion>2.1.0</MicrosoftTestingPlatformVersion>
     <RoslynVersion>5.0.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25173.3</CodeAnalysisAnalyzerVersion>
-    <PolyTypeVersion>1.0.0</PolyTypeVersion>
+    <PolyTypeVersion>1.1.1</PolyTypeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.15.8" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="MessagePack" Version="3.1.3" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.22" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="8.0.22" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.22" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.22" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.23" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="8.0.23" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.23" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.23" />
     <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.3" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageVersion Include="Microsoft.NET.StringTools" Version="18.0.2" />
@@ -41,12 +41,12 @@
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)-unstable" />
     <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" />
     <PackageVersion Include="System.Memory.Data" Version="8.0.1" />
-    <PackageVersion Include="TUnit" Version="1.6.20" />
-    <PackageVersion Include="TUnit.Engine" Version="1.6.20" />
+    <PackageVersion Include="TUnit" Version="1.12.111" />
+    <PackageVersion Include="TUnit.Engine" Version="1.12.111" />
     <PackageVersion Include="Vogen" Version="8.0.4" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
-    <PackageVersion Include="xunit.v3.assert" Version="3.2.1" />
-    <PackageVersion Include="xunit.v3.assert.aot" Version="3.2.2-pre.8" />
+    <PackageVersion Include="xunit.v3.assert" Version="3.2.2" />
+    <PackageVersion Include="xunit.v3.assert.aot" Version="3.2.2" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
     <!-- The versions specified here should be the latest ones supported by the OLDEST .NET runtime version that is still supported
@@ -67,11 +67,11 @@
     <PackageVersion Update="System.Text.Json" Version="9.0.8" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.1.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.4.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="$(MicrosoftTestingPlatformVersion)" />
-    <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.1" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
   <ItemGroup>
     <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="$(CodeAnalysisAnalyzerVersion)" />

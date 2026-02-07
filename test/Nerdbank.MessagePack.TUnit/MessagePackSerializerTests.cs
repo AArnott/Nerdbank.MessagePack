@@ -189,6 +189,22 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public async Task ReadOnlyCollectionPropertiesWithCtor()
+	{
+		var testData = new ClassWithReadOnlyCollectionPropertiesAndCtor(["c"]);
+		this.AssertRoundtrip(testData);
+		await this.AssertRoundtripAsync(testData);
+	}
+
+	[Test]
+	public async Task ReadOnlyCollectionKeyedPropertiesWithCtor()
+	{
+		var testData = new ClassWithReadOnlyCollectionKeyedPropertiesAndCtor(["c"]);
+		this.AssertRoundtrip(testData);
+		await this.AssertRoundtripAsync(testData);
+	}
+
+	[Test]
 	public void ReadOnlyObjectProperty_IsNotSerialized()
 	{
 		ClassWithReadOnlyObjectProperty obj = new() { AgeAccessor = 15 };
@@ -226,6 +242,35 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 			writer.Flush();
 			return sequence;
 		}
+	}
+
+	[Test]
+	public void PropertiesWithCaseOnlySerializedNameDifferencesMutableCanRoundtrip()
+	{
+		RecordWithMutablePropertiesWithSerializedNamesUniqueOnlyInCapitalization original = new()
+		{
+			First = 1,
+			Second = 2,
+		};
+		this.AssertRoundtrip(original);
+	}
+
+	[Test]
+	public void PropertiesWithCaseOnlySerializedNameDifferencesCanRoundtrip()
+	{
+		RecordWithPropertiesWithSerializedNamesUniqueOnlyInCapitalization original = new()
+		{
+			First = 1,
+			Second = 2,
+		};
+		this.AssertRoundtrip(original);
+	}
+
+	[Test]
+	public void PropertiesWithCaseOnlySerializedNameDifferencesAndCtorCanRoundtrip()
+	{
+		RecordWithPropertiesWithSerializedNamesUniqueOnlyInCapitalizationAndCtor original = new(1, 2);
+		this.AssertRoundtrip(original);
 	}
 
 	[Test]
@@ -535,6 +580,35 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[GenerateShape]
+	public partial class ClassWithReadOnlyCollectionPropertiesAndCtor : IEquatable<ClassWithReadOnlyCollectionPropertiesAndCtor>
+	{
+		public ClassWithReadOnlyCollectionPropertiesAndCtor(IReadOnlyList<string> myList)
+		{
+			this.MyList = [.. myList];
+		}
+
+		public List<string> MyList { get; }
+
+		public bool Equals(ClassWithReadOnlyCollectionPropertiesAndCtor? other)
+			=> StructuralEquality.Equal(this.MyList, other?.MyList);
+	}
+
+	[GenerateShape]
+	public partial class ClassWithReadOnlyCollectionKeyedPropertiesAndCtor : IEquatable<ClassWithReadOnlyCollectionKeyedPropertiesAndCtor>
+	{
+		public ClassWithReadOnlyCollectionKeyedPropertiesAndCtor(IReadOnlyList<string> myList)
+		{
+			this.MyList = [.. myList];
+		}
+
+		[Key(0)]
+		public List<string> MyList { get; }
+
+		public bool Equals(ClassWithReadOnlyCollectionKeyedPropertiesAndCtor? other)
+			=> StructuralEquality.Equal(this.MyList, other?.MyList);
+	}
+
+	[GenerateShape]
 	public partial class ClassWithReadOnlyObjectProperty : IEquatable<ClassWithReadOnlyObjectProperty>
 	{
 		public int Age => this.AgeAccessor;
@@ -554,6 +628,42 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		internal int AgeAccessor { get; set; }
 
 		public bool Equals(ClassWithReadOnlyObjectPropertyAndCtorParam? other) => other is not null && this.Age == other.Age;
+	}
+
+	[GenerateShape]
+	public partial record RecordWithMutablePropertiesWithSerializedNamesUniqueOnlyInCapitalization
+	{
+		[PropertyShape(Name = "t")]
+		public int First { get; set; }
+
+		[PropertyShape(Name = "T")]
+		public int Second { get; set; }
+	}
+
+	[GenerateShape]
+	public partial record RecordWithPropertiesWithSerializedNamesUniqueOnlyInCapitalization
+	{
+		[PropertyShape(Name = "t")]
+		public int First { get; init; }
+
+		[PropertyShape(Name = "T")]
+		public int Second { get; init; }
+	}
+
+	[GenerateShape]
+	public partial record RecordWithPropertiesWithSerializedNamesUniqueOnlyInCapitalizationAndCtor
+	{
+		public RecordWithPropertiesWithSerializedNamesUniqueOnlyInCapitalizationAndCtor(int first, int second)
+		{
+			this.First = first;
+			this.Second = second;
+		}
+
+		[PropertyShape(Name = "t")]
+		public int First { get; init; }
+
+		[PropertyShape(Name = "T")]
+		public int Second { get; init; }
 	}
 
 	[GenerateShape]
