@@ -22,6 +22,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.24" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.24" />
     <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" />
+    <PackageVersion Include="Microsoft.CodeCoverage.MSBuild" Version="18.1.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
