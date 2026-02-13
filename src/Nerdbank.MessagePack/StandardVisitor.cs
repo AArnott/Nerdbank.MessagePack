@@ -864,16 +864,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return failure;
 		}
 
-		ConverterResult converter = ConverterResult.Ok(new SurrogateConverter<T, TSurrogate>(surrogateShape, (MessagePackConverter<TSurrogate>)surrogateConverter.Value));
-
-		// PolyType does not generate IUnionTypeShape for types that also have a marshaler,
-		// so we need to handle derived type unions here for surrogate types.
-		if (converter.Success && !typeof(T).IsValueType)
-		{
-			converter = this.WrapSurrogateWithUnion(surrogateShape, (MessagePackConverter<T>)converter.Value);
-		}
-
-		return converter;
+		return ConverterResult.Ok(new SurrogateConverter<T, TSurrogate>(surrogateShape, (MessagePackConverter<TSurrogate>)surrogateConverter.Value));
 	}
 
 	/// <inheritdoc/>
@@ -1099,49 +1090,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			defaultConstructor,
 			constructorShape.DeclaringType.Properties,
 			this.owner.SerializeDefaultValues));
-	}
-
-	[SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs", Justification = "Types from DerivedTypeShapeAttribute are known to the source generator, so their shapes are available.")]
-	private ConverterResult WrapSurrogateWithUnion<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, MessagePackConverter<T> baseTypeConverter)
-	{
-		// Check for runtime-registered unions first.
-		if (this.owner.TryGetDynamicUnion(surrogateShape.Type, out DerivedTypeUnion? union) && !union.Disabled)
-		{
-			return union switch
-			{
-				IDerivedTypeMapping mapping => this.CreateSubTypes(surrogateShape.Type, baseTypeConverter, mapping).MapResult(st => new UnionConverter<T>(baseTypeConverter, st)),
-				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, baseTypeConverter),
-				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
-			};
-		}
-
-		// Check for attribute-based unions (DerivedTypeShapeAttribute) that PolyType did not surface as IUnionTypeShape.
-		DerivedTypeShapeAttribute[] derivedTypeAttributes = surrogateShape.AttributeProvider.GetCustomAttributes<DerivedTypeShapeAttribute>(inherit: false).ToArray();
-		if (derivedTypeAttributes.Length > 0)
-		{
-			Dictionary<DerivedTypeIdentifier, ITypeShape> map = new();
-			int autoTag = 0;
-			foreach (DerivedTypeShapeAttribute attr in derivedTypeAttributes)
-			{
-				DerivedTypeIdentifier alias = attr.Tag >= 0 || this.owner.PerfOverSchemaStability
-					? new(attr.Tag >= 0 ? attr.Tag : autoTag)
-					: new(attr.Name);
-
-				ITypeShape? derivedShape = surrogateShape.Provider.GetTypeShape(attr.Type);
-				if (derivedShape is null)
-				{
-					return ConverterResult.Err(new NotSupportedException($"The type shape provider does not have a shape for derived type '{attr.Type.FullName}' declared on '{surrogateShape.Type.FullName}'."));
-				}
-
-				map.Add(alias, derivedShape);
-				autoTag++;
-			}
-
-			return this.CreateSubTypes(surrogateShape.Type, baseTypeConverter, new AttributeDerivedTypeMapping(map))
-				.MapResult(st => new UnionConverter<T>(baseTypeConverter, st));
-		}
-
-		return ConverterResult.Ok(baseTypeConverter);
 	}
 
 	private Result<SubTypes<TBaseType>, VisitorError> CreateSubTypes<TBaseType>(Type baseType, MessagePackConverter<TBaseType> baseTypeConverter, IDerivedTypeMapping mapping)
@@ -1385,14 +1333,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			return new VisitorError(new NotSupportedException($"Serializing dictionaries or hash sets with keys that are or contain empty types is not supported. {emptyType.FullName} is an empty type. Consider using a strong-typed key with properties, or using a custom (or null) MessagePackSerializer.ComparerProvider.", ex));
 		}
-	}
-
-	/// <summary>
-	/// A simple <see cref="IDerivedTypeMapping"/> implementation for attribute-based derived type mappings.
-	/// </summary>
-	private sealed class AttributeDerivedTypeMapping(IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape> mapping) : IDerivedTypeMapping
-	{
-		public IReadOnlyDictionary<DerivedTypeIdentifier, ITypeShape> GetDerivedTypesMapping() => mapping;
 	}
 
 	/// <summary>

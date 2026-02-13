@@ -362,16 +362,36 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		// the marshaler takes precedence and the union discriminator is NOT added
 		MarshaledDerivedType derived = new(99, "derived", 3.14);
 
-		// Roundtrip as base type - this should use the marshaler
+		// Roundtrip as base type - this should use the marshaler, which has no derived type attributes.
 		MarshaledBaseType? deserialized = this.Roundtrip<MarshaledBaseType>(derived);
 
 		// With the current behavior, the marshaler converts derived to base marshaled data
-		// So the result is a base type instance, not a derived type
+		// So the result is a base type instance, not a derived type.
 		Assert.NotNull(deserialized);
-		MarshaledDerivedType derivedBack = Assert.IsType<MarshaledDerivedType>(deserialized);
-		Assert.Equal(derived.Value, derivedBack.Value);
-		Assert.Equal(derived.Name, derivedBack.Name);
-		Assert.Equal(derived.ExtraProperty, derivedBack.ExtraProperty);
+		Assert.IsType<MarshaledBaseType>(deserialized);
+		Assert.Equal(derived.Value, deserialized.Value);
+		Assert.Equal(derived.Name, deserialized.Name);
+	}
+
+	[Fact]
+	[Trait("Surrogates", "true")]
+	public void MarshalerWithDerivedTypes_DerivedTypeAsBaseType_KeepsDerived()
+	{
+		// Test serializing a derived type through a base type reference
+		// This documents current behavior: when a type has a marshaler AND DerivedTypeShapeAttribute,
+		// the marshaler takes precedence and the union discriminator is NOT added
+		MarshaledDerivedType2 derived = new(99, "derived", 3.14);
+
+		// Roundtrip as base type - this should use the marshaler, which has no derived type attributes.
+		MarshaledBaseType2? deserialized = this.Roundtrip<MarshaledBaseType2>(derived);
+
+		// With the current behavior, the marshaler converts derived to base marshaled data
+		// So the result is a base type instance, not a derived type.
+		Assert.NotNull(deserialized);
+		MarshaledDerivedType2 back = Assert.IsType<MarshaledDerivedType2>(deserialized);
+		Assert.Equal(derived.Value, back.Value);
+		Assert.Equal(derived.Name, back.Name);
+		Assert.Equal(derived.ExtraProperty, back.ExtraProperty);
 	}
 
 	[GenerateShapeFor<DerivedGeneric<int>>]
@@ -597,6 +617,63 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 
 			public MarshaledDerivedType? Unmarshal(MarshaledDerivedData? surrogate)
 				=> surrogate.HasValue ? new MarshaledDerivedType(surrogate.Value.Value, surrogate.Value.Name, surrogate.Value.ExtraProperty) : null;
+		}
+	}
+
+	// Types for testing TypeShapeAttribute.Marshaler with DerivedTypeShapeAttribute
+	[GenerateShape]
+	[TypeShape(Marshaler = typeof(MarshaledBaseType2Marshaler))]
+	internal partial class MarshaledBaseType2
+	{
+		private readonly int value;
+		private readonly string name;
+
+		public MarshaledBaseType2(int value, string name)
+		{
+			this.value = value;
+			this.name = name;
+		}
+
+		public int Value => this.value;
+
+		public string Name => this.name;
+
+		[DerivedTypeShape(typeof(MarshaledDerivedType2.MarshaledDerivedData), Tag = 1)]
+		internal record class MarshaledData(int Value, string Name);
+
+		internal class MarshaledBaseType2Marshaler : IMarshaler<MarshaledBaseType2, MarshaledData?>
+		{
+			public MarshaledData? Marshal(MarshaledBaseType2? value)
+				=> value switch { null => null, MarshaledDerivedType2 d => new MarshaledDerivedType2.MarshaledDerivedType2Marshaler().Marshal(d), _ => new MarshaledData(value.Value, value.Name) };
+
+			public MarshaledBaseType2? Unmarshal(MarshaledData? surrogate)
+				=> surrogate switch { null => null, MarshaledDerivedType2.MarshaledDerivedData d => new MarshaledDerivedType2(d.Value, d.Name, d.ExtraProperty), _ => new MarshaledBaseType2(surrogate.Value, surrogate.Name) };
+		}
+	}
+
+	[GenerateShape]
+	[TypeShape(Marshaler = typeof(MarshaledDerivedType2Marshaler))]
+	internal partial class MarshaledDerivedType2 : MarshaledBaseType2
+	{
+		private readonly double extraProperty;
+
+		public MarshaledDerivedType2(int value, string name, double extraProperty)
+			: base(value, name)
+		{
+			this.extraProperty = extraProperty;
+		}
+
+		public double ExtraProperty => this.extraProperty;
+
+		internal record class MarshaledDerivedData(int Value, string Name, double ExtraProperty) : MarshaledData(Value, Name);
+
+		internal class MarshaledDerivedType2Marshaler : IMarshaler<MarshaledDerivedType2, MarshaledDerivedData?>
+		{
+			public MarshaledDerivedData? Marshal(MarshaledDerivedType2? value)
+				=> value is null ? null : new(value.Value, value.Name, value.extraProperty);
+
+			public MarshaledDerivedType2? Unmarshal(MarshaledDerivedData? surrogate)
+				=> surrogate is not null ? new MarshaledDerivedType2(surrogate.Value, surrogate.Name, surrogate.ExtraProperty) : null;
 		}
 	}
 }
