@@ -67,3 +67,11 @@ this data type can be closed and used from another data structure.
 It can also be used as the top-level structure by closing the generic on a Witness class.
 
 [!code-csharp[](../../samples/cs/SurrogateTypes.cs#ClosedGenericViaWitness)]
+
+## Mixing marshaled and union types
+
+Mixing <xref:PolyType.TypeShapeAttribute.Marshaler?displayProperty=nameWithType> with <xref:PolyType.DerivedTypeShapeAttribute> on the same type leads to the latter being ignored.
+
+Providing a marshaled (i.e. surrogate) type shifts focus entirely to the marshaled type, and that marshaled type is then where <xref:PolyType.DerivedTypeShapeAttribute> should be applied.
+
+Learn more [in this discussion](https://github.com/AArnott/Nerdbank.MessagePack/issues/884).
