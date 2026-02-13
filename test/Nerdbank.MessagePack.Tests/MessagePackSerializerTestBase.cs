@@ -33,6 +33,8 @@ public abstract partial class MessagePackSerializerTestBase
 
 	protected MessagePackSerializer Serializer { get; set; }
 
+	protected CancellationToken TimeoutToken => TestContext.Current.CancellationToken;
+
 	protected ITestOutputHelper Logger => TestContext.Current.TestOutputHelper ?? throw new InvalidOperationException("No logger available.");
 
 	public static string GetFullMessage(Exception ex)
@@ -113,6 +115,8 @@ public abstract partial class MessagePackSerializerTestBase
 
 		return schemaString;
 	}
+
+	protected void Log(string message) => this.Logger.WriteLine(message);
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
 #if NET
