@@ -44,6 +44,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			return default;
 		}
 
+		// Read header based on format (object vs array)
 		if (this.useDiscriminatorObjects)
 		{
 			// Object format: {"TypeName": {...}}
@@ -52,33 +53,6 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			{
 				throw new MessagePackSerializationException($"Expected a map with 1 property, but found {count}.");
 			}
-
-			// Read the discriminator key
-			if (reader.TryReadNil())
-			{
-				// The alias for the base type itself is nil
-				return this.baseConverter.Read(ref reader, context);
-			}
-
-			MessagePackConverter? converter;
-			if (reader.NextMessagePackType == MessagePackType.Integer)
-			{
-				int alias = reader.ReadInt32();
-				if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
-				{
-					throw new MessagePackSerializationException($"Unspecified alias {alias}.");
-				}
-			}
-			else
-			{
-				ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
-				if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
-				{
-					throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
-				}
-			}
-
-			return (TUnion?)converter.ReadObject(ref reader, context);
 		}
 		else
 		{
@@ -88,33 +62,34 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			{
 				throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
 			}
-
-			// The alias for the base type itself is simply nil.
-			if (reader.TryReadNil())
-			{
-				return this.baseConverter.Read(ref reader, context);
-			}
-
-			MessagePackConverter? converter;
-			if (reader.NextMessagePackType == MessagePackType.Integer)
-			{
-				int alias = reader.ReadInt32();
-				if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
-				{
-					throw new MessagePackSerializationException($"Unspecified alias {alias}.");
-				}
-			}
-			else
-			{
-				ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
-				if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
-				{
-					throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
-				}
-			}
-
-			return (TUnion?)converter.ReadObject(ref reader, context);
 		}
+
+		// The alias for the base type itself is simply nil.
+		if (reader.TryReadNil())
+		{
+			return this.baseConverter.Read(ref reader, context);
+		}
+
+		// Read the discriminator and find the converter (same for both formats after header)
+		MessagePackConverter? converter;
+		if (reader.NextMessagePackType == MessagePackType.Integer)
+		{
+			int alias = reader.ReadInt32();
+			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
+			{
+				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
+			}
+		}
+		else
+		{
+			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
+			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+			{
+				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+			}
+		}
+
+		return (TUnion?)converter.ReadObject(ref reader, context);
 	}
 
 	/// <inheritdoc/>
@@ -126,44 +101,32 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			return;
 		}
 
+		// Write header based on format (object vs array)
 		if (this.useDiscriminatorObjects)
 		{
 			// Object format: {"TypeName": {...}}
 			writer.WriteMapHeader(1);
-
-			MessagePackConverter converter;
-			if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
-			{
-				writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
-				converter = subtype.Converter;
-			}
-			else
-			{
-				writer.WriteNil();
-				converter = this.baseConverter;
-			}
-
-			converter.WriteObject(ref writer, value, context);
 		}
 		else
 		{
 			// Array format: ["TypeName", {...}]
 			writer.WriteArrayHeader(2);
-
-			MessagePackConverter converter;
-			if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
-			{
-				writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
-				converter = subtype.Converter;
-			}
-			else
-			{
-				writer.WriteNil();
-				converter = this.baseConverter;
-			}
-
-			converter.WriteObject(ref writer, value, context);
 		}
+
+		// Write discriminator and value (same for both formats after header)
+		MessagePackConverter converter;
+		if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+		{
+			writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
+			converter = subtype.Converter;
+		}
+		else
+		{
+			writer.WriteNil();
+			converter = this.baseConverter;
+		}
+
+		converter.WriteObject(ref writer, value, context);
 	}
 
 	/// <inheritdoc/>
@@ -182,6 +145,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			return default;
 		}
 
+		// Read header based on format (object vs array)
 		int count;
 		if (this.useDiscriminatorObjects)
 		{
@@ -210,6 +174,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			}
 		}
 
+		// Read discriminator and find converter (same for both formats after header)
 		// The alias for the base type itself is simply nil.
 		bool isNil;
 		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
