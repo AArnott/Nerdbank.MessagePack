@@ -170,6 +170,26 @@ Mixing identifier types for a given base type is allowed, as shown here:
 
 Note that while inferrence is the simplest syntax, it results in the serialized schema including the name of the type, which can break the schema if the type is renamed.
 
+## Union serialization format
+
+By default, unions are serialized as 2-element arrays, where the first element is the type identifier (discriminator) and the second element is the object data:
+
+```json
+["TypeName", {"property": "value"}]
+```
+
+For interoperability with other MessagePack libraries that use different union conventions, you can configure the serializer to use an object-based format instead:
+
+[!code-csharp[](../../samples/cs/Unions.cs#UseDiscriminatorObjects)]
+
+With this setting enabled, unions are serialized as objects with a single property, where the property name is the type identifier:
+
+```json
+{"TypeName": {"property": "value"}}
+```
+
+Both formats support string and integer discriminators. The setting affects both serialization and deserialization, so it must be consistently applied across all systems that communicate using the same MessagePack protocol.
+
 ## Generic derived types
 
 <xref:PolyType.DerivedTypeShapeAttribute> may reference generic derived types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
