@@ -15,18 +15,21 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 {
 	private readonly MessagePackConverter<TUnion> baseConverter;
 	private readonly SubTypes<TUnion> subTypes;
+	private readonly bool useDiscriminatorObjects;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="UnionConverter{TUnion}"/> class.
 	/// </summary>
 	/// <param name="baseConverter">The converter to use for the base type.</param>
 	/// <param name="subTypes">The map of subtypes and their converters.</param>
-	public UnionConverter(MessagePackConverter<TUnion> baseConverter, SubTypes<TUnion> subTypes)
+	/// <param name="useDiscriminatorObjects">Indicates whether to serialize as objects instead of arrays.</param>
+	public UnionConverter(MessagePackConverter<TUnion> baseConverter, SubTypes<TUnion> subTypes, bool useDiscriminatorObjects)
 	{
 		Requires.Argument(!subTypes.Disabled, nameof(subTypes), "This union is disabled.");
 
 		this.baseConverter = baseConverter;
 		this.subTypes = subTypes;
+		this.useDiscriminatorObjects = useDiscriminatorObjects;
 		this.PreferAsyncSerialization = baseConverter.PreferAsyncSerialization || subTypes.Serializers.Any(t => t.Converter.PreferAsyncSerialization);
 	}
 
@@ -41,37 +44,77 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			return default;
 		}
 
-		int count = reader.ReadArrayHeader();
-		if (count != 2)
+		if (this.useDiscriminatorObjects)
 		{
-			throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
-		}
-
-		// The alias for the base type itself is simply nil.
-		if (reader.TryReadNil())
-		{
-			return this.baseConverter.Read(ref reader, context);
-		}
-
-		MessagePackConverter? converter;
-		if (reader.NextMessagePackType == MessagePackType.Integer)
-		{
-			int alias = reader.ReadInt32();
-			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
+			// Object format: {"TypeName": {...}}
+			int count = reader.ReadMapHeader();
+			if (count != 1)
 			{
-				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
+				throw new MessagePackSerializationException($"Expected a map with 1 property, but found {count}.");
 			}
+
+			// Read the discriminator key
+			if (reader.TryReadNil())
+			{
+				// The alias for the base type itself is nil
+				return this.baseConverter.Read(ref reader, context);
+			}
+
+			MessagePackConverter? converter;
+			if (reader.NextMessagePackType == MessagePackType.Integer)
+			{
+				int alias = reader.ReadInt32();
+				if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
+				{
+					throw new MessagePackSerializationException($"Unspecified alias {alias}.");
+				}
+			}
+			else
+			{
+				ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
+				if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+				{
+					throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				}
+			}
+
+			return (TUnion?)converter.ReadObject(ref reader, context);
 		}
 		else
 		{
-			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
-			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+			// Array format: ["TypeName", {...}]
+			int count = reader.ReadArrayHeader();
+			if (count != 2)
 			{
-				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
 			}
-		}
 
-		return (TUnion?)converter.ReadObject(ref reader, context);
+			// The alias for the base type itself is simply nil.
+			if (reader.TryReadNil())
+			{
+				return this.baseConverter.Read(ref reader, context);
+			}
+
+			MessagePackConverter? converter;
+			if (reader.NextMessagePackType == MessagePackType.Integer)
+			{
+				int alias = reader.ReadInt32();
+				if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
+				{
+					throw new MessagePackSerializationException($"Unspecified alias {alias}.");
+				}
+			}
+			else
+			{
+				ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
+				if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
+				{
+					throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				}
+			}
+
+			return (TUnion?)converter.ReadObject(ref reader, context);
+		}
 	}
 
 	/// <inheritdoc/>
@@ -83,21 +126,44 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			return;
 		}
 
-		writer.WriteArrayHeader(2);
-
-		MessagePackConverter converter;
-		if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+		if (this.useDiscriminatorObjects)
 		{
-			writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
-			converter = subtype.Converter;
+			// Object format: {"TypeName": {...}}
+			writer.WriteMapHeader(1);
+
+			MessagePackConverter converter;
+			if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+			{
+				writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
+				converter = subtype.Converter;
+			}
+			else
+			{
+				writer.WriteNil();
+				converter = this.baseConverter;
+			}
+
+			converter.WriteObject(ref writer, value, context);
 		}
 		else
 		{
-			writer.WriteNil();
-			converter = this.baseConverter;
-		}
+			// Array format: ["TypeName", {...}]
+			writer.WriteArrayHeader(2);
 
-		converter.WriteObject(ref writer, value, context);
+			MessagePackConverter converter;
+			if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+			{
+				writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
+				converter = subtype.Converter;
+			}
+			else
+			{
+				writer.WriteNil();
+				converter = this.baseConverter;
+			}
+
+			converter.WriteObject(ref writer, value, context);
+		}
 	}
 
 	/// <inheritdoc/>
@@ -117,14 +183,31 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		}
 
 		int count;
-		while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+		if (this.useDiscriminatorObjects)
 		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-		}
+			// Object format: {"TypeName": {...}}
+			while (streamingReader.TryReadMapHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
 
-		if (count != 2)
+			if (count != 1)
+			{
+				throw new MessagePackSerializationException($"Expected a map with 1 property, but found {count}.");
+			}
+		}
+		else
 		{
-			throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
+			// Array format: ["TypeName", {...}]
+			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
+			{
+				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			if (count != 2)
+			{
+				throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
+			}
 		}
 
 		// The alias for the base type itself is simply nil.
@@ -196,7 +279,17 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		}
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
-		syncWriter.WriteArrayHeader(2);
+
+		if (this.useDiscriminatorObjects)
+		{
+			// Object format: {"TypeName": {...}}
+			syncWriter.WriteMapHeader(1);
+		}
+		else
+		{
+			// Array format: ["TypeName", {...}]
+			syncWriter.WriteArrayHeader(2);
+		}
 
 		MessagePackConverter converter;
 		if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
@@ -242,34 +335,67 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 
 		JsonObject CreateOneOfElement(DerivedTypeIdentifier? alias, JsonObject schema)
 		{
-			JsonObject aliasSchema = new()
+			if (this.useDiscriminatorObjects)
 			{
-				["type"] = alias switch
+				// Object format schema: {"TypeName": {...}}
+				string propertyName;
+				if (alias is null)
 				{
-					null => "null",
-					{ Type: DerivedTypeIdentifier.AliasType.Integer } => "integer",
-					{ Type: DerivedTypeIdentifier.AliasType.String } => "string",
-					_ => throw new NotImplementedException(),
-				},
-			};
-			if (alias is not null)
-			{
-				JsonNode enumValue = alias.Value.Type switch
+					propertyName = "null";
+				}
+				else
 				{
-					DerivedTypeIdentifier.AliasType.String => (JsonNode)alias.Value.StringAlias,
-					DerivedTypeIdentifier.AliasType.Integer => (JsonNode)alias.Value.IntAlias,
-					_ => throw new NotImplementedException(),
-				};
-				aliasSchema["enum"] = new JsonArray(enumValue);
-			}
+					propertyName = alias.Value.Type switch
+					{
+						DerivedTypeIdentifier.AliasType.String => alias.Value.StringAlias,
+						DerivedTypeIdentifier.AliasType.Integer => alias.Value.IntAlias.ToString(System.Globalization.CultureInfo.InvariantCulture),
+						_ => throw new NotImplementedException(),
+					};
+				}
 
-			return new()
+				return new()
+				{
+					["type"] = "object",
+					["properties"] = new JsonObject
+					{
+						[propertyName] = schema,
+					},
+					["required"] = new JsonArray((JsonNode)propertyName),
+					["additionalProperties"] = false,
+				};
+			}
+			else
 			{
-				["type"] = "array",
-				["minItems"] = 2,
-				["maxItems"] = 2,
-				["items"] = new JsonArray(aliasSchema, schema),
-			};
+				// Array format schema: ["TypeName", {...}]
+				JsonObject aliasSchema = new()
+				{
+					["type"] = alias switch
+					{
+						null => "null",
+						{ Type: DerivedTypeIdentifier.AliasType.Integer } => "integer",
+						{ Type: DerivedTypeIdentifier.AliasType.String } => "string",
+						_ => throw new NotImplementedException(),
+					},
+				};
+				if (alias is not null)
+				{
+					JsonNode enumValue = alias.Value.Type switch
+					{
+						DerivedTypeIdentifier.AliasType.String => (JsonNode)alias.Value.StringAlias,
+						DerivedTypeIdentifier.AliasType.Integer => (JsonNode)alias.Value.IntAlias,
+						_ => throw new NotImplementedException(),
+					};
+					aliasSchema["enum"] = new JsonArray(enumValue);
+				}
+
+				return new()
+				{
+					["type"] = "array",
+					["minItems"] = 2,
+					["maxItems"] = 2,
+					["items"] = new JsonArray(aliasSchema, schema),
+				};
+			}
 		}
 	}
 }

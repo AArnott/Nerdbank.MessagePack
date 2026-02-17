@@ -258,7 +258,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				{
 					converter = union switch
 					{
-						IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping).MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st)),
+						IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping).MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st, this.owner.UseDiscriminatorObjects)),
 						DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, (MessagePackConverter<T>)converter.Value),
 						_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
 					};
@@ -293,7 +293,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return union switch
 			{
 				{ Disabled: true } => baseTypeConverter,
-				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, (MessagePackConverter<TUnion>)baseTypeConverter.Value, mapping).MapResult(st => new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, st)),
+				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, (MessagePackConverter<TUnion>)baseTypeConverter.Value, mapping).MapResult(st => new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, st, this.owner.UseDiscriminatorObjects)),
 				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter(duckTyping, (MessagePackConverter<TUnion>)baseTypeConverter.Value),
 				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
 			};
@@ -327,7 +327,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			TryGetSerializer = (ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (serializers[idx].Alias, serializers[idx].Converter) : null,
 		};
 
-		return ConverterResult.Ok(new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, subTypes));
+		return ConverterResult.Ok(new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, subTypes, this.owner.UseDiscriminatorObjects));
 	}
 
 	/// <inheritdoc/>

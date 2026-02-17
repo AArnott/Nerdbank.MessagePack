@@ -66,6 +66,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <inheritdoc cref="SerializerConfiguration.DisableHardwareAcceleration"/>
 	internal bool DisableHardwareAcceleration => configuration.DisableHardwareAcceleration;
 
+	/// <inheritdoc cref="SerializerConfiguration.UseDiscriminatorObjects"/>
+	internal bool UseDiscriminatorObjects => configuration.UseDiscriminatorObjects;
+
 	/// <summary>
 	/// Gets all the converters this instance knows about so far.
 	/// </summary>

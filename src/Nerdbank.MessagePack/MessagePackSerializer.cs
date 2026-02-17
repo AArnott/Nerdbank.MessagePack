@@ -151,6 +151,13 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { DerivedTypeUnions = value };
 	}
 
+	/// <inheritdoc cref="SerializerConfiguration.UseDiscriminatorObjects"/>
+	public bool UseDiscriminatorObjects
+	{
+		get => this.configuration.UseDiscriminatorObjects;
+		init => this.configuration = this.configuration with { UseDiscriminatorObjects = value };
+	}
+
 	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
