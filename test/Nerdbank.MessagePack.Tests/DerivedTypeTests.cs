@@ -328,6 +328,119 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
 	}
 
+	[Theory, PairwiseData]
+	public async Task UseDiscriminatorObjects_BaseType(bool async)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+		BaseClass value = new() { BaseClassProperty = 5 };
+		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
+
+		// Assert that it's serialized as an object with a single property (discriminator)
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		reader.ReadNil(); // The key for base type is nil
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
+	}
+
+	[Theory, PairwiseData]
+	public async Task UseDiscriminatorObjects_DerivedType(bool async)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+		var value = new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 };
+		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync<BaseClass>(value) : this.AssertRoundtrip<BaseClass>(value);
+
+		// Assert that it's serialized as an object with discriminator as property name
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadInt32()); // The discriminator tag for DerivedA
+		Assert.Equal(2, reader.ReadMapHeader());
+		Assert.Equal(nameof(DerivedA.DerivedAProperty), reader.ReadString());
+		Assert.Equal(6, reader.ReadInt32());
+		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
+		Assert.Equal(5, reader.ReadInt32());
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_StringDiscriminator()
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>("A");
+		mapping.Add<DynamicallyRegisteredDerivedB>("B");
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.GeneratedTypeShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>("B", Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+
+		// Assert that it's serialized as an object with string discriminator
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal("A", reader.ReadString()); // String discriminator
+		Assert.Equal(0, reader.ReadMapHeader()); // DerivedA has no properties
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_IntegerDiscriminator()
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>(1);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2);
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.GeneratedTypeShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+
+		// Assert that it's serialized as an object with integer discriminator
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadInt32()); // Integer discriminator
+		Assert.Equal(0, reader.ReadMapHeader()); // DerivedA has no properties
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_Null()
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+		this.AssertRoundtrip<BaseClass>(null);
+
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.True(reader.TryReadNil());
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_MatchesExpectedFormat()
+	{
+		// Test the exact format from the issue: {"A":{"a":1}}
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>("A");
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		byte[] msgpack = this.Serializer.Serialize<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA(), TestContext.Current.CancellationToken);
+		string json = this.Serializer.ConvertToJson(msgpack);
+		this.Logger.WriteLine(json);
+
+		// The format should be {"A":{}} (with no properties in DerivedA)
+		Assert.Contains("\"A\"", json);
+	}
+
 	[GenerateShapeFor<DerivedGeneric<int>>]
 	internal partial class Witness;
 
