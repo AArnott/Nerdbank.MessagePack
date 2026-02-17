@@ -491,15 +491,15 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	public void MarshalerWithDerivedTypes_DerivedTypeAsBaseType_KeepsDerived()
 	{
 		// Test serializing a derived type through a base type reference
-		// This documents current behavior: when a type has a marshaler AND DerivedTypeShapeAttribute,
-		// the marshaler takes precedence and the union discriminator is NOT added
+		// This verifies behavior when a type uses both a marshaler and DerivedTypeShapeAttribute,
+		// where the surrogate includes a union discriminator so derived type information is preserved.
 		MarshaledDerivedType2 derived = new(99, "derived", 3.14);
 
-		// Roundtrip as base type - this should use the marshaler, which has no derived type attributes.
+		// Roundtrip as base type - this should use the marshaler, which ultimately preserves the derived type via the surrogate.
 		MarshaledBaseType2? deserialized = this.Roundtrip<MarshaledBaseType2>(derived);
 
-		// With the current behavior, the marshaler converts derived to base marshaled data
-		// So the result is a base type instance, not a derived type.
+		// With this configuration, the marshaled data retains the union discriminator for the derived type,
+		// so the result is a derived type instance, not just the base type.
 		Assert.NotNull(deserialized);
 		MarshaledDerivedType2 back = Assert.IsType<MarshaledDerivedType2>(deserialized);
 		Assert.Equal(derived.Value, back.Value);
