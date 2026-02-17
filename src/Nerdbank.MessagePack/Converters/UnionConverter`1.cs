@@ -304,9 +304,18 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			{
 				// Object format schema: {"TypeName": {...}}
 				string propertyName;
+				JsonObject schemaObject = new()
+				{
+					["type"] = "object",
+				};
+
 				if (alias is null)
 				{
 					propertyName = "null";
+
+					// The actual MessagePack representation uses a nil value as the map key, not the string "null".
+					// JSON Schema does not support nil keys, so we use the string "null" as a placeholder.
+					schemaObject["description"] = "The discriminator key is a MessagePack nil value, represented here as the string 'null' for JSON Schema compatibility.";
 				}
 				else
 				{
@@ -318,16 +327,14 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 					};
 				}
 
-				return new()
+				schemaObject["properties"] = new JsonObject
 				{
-					["type"] = "object",
-					["properties"] = new JsonObject
-					{
-						[propertyName] = schema,
-					},
-					["required"] = new JsonArray((JsonNode)propertyName),
-					["additionalProperties"] = false,
+					[propertyName] = schema,
 				};
+				schemaObject["required"] = new JsonArray((JsonNode)propertyName);
+				schemaObject["additionalProperties"] = false;
+
+				return schemaObject;
 			}
 			else
 			{

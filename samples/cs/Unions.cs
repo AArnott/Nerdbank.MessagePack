@@ -204,7 +204,7 @@ namespace RuntimeSubTypes
 
             // Serializes as: {"A":{"ValueA":1}}
             // Instead of default: ["A",{"ValueA":1}]
-            byte[] msgpack = serializer.Serialize(value, default);
+            byte[] msgpack = serializer.Serialize(value, CancellationToken.None);
         }
         #endregion
     }
