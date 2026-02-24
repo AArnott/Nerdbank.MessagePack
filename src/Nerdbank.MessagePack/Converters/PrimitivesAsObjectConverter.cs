@@ -41,6 +41,17 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 	/// </summary>
 	internal static readonly PrimitivesAsObjectConverter Instance = new();
 
+	private readonly ObjectConverterOptions options;
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="PrimitivesAsObjectConverter"/> class.
+	/// </summary>
+	/// <param name="options">The options for this converter.</param>
+	internal PrimitivesAsObjectConverter(ObjectConverterOptions options = default)
+	{
+		this.options = options;
+	}
+
 	/// <summary>Reads any one msgpack structure.</summary>
 	/// <param name="reader">The msgpack reader.</param>
 	/// <param name="context">The serialization context.</param>
@@ -52,7 +63,9 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 	/// </para>
 	/// <para>
 	/// Keep in mind when using integers that msgpack doesn't preserve integer length information.
-	/// This method deserializes all integers as <see cref="ulong"/> (or <see cref="long"/> if the value is negative).
+	/// This method deserializes all integers as <see cref="ulong"/> (or <see cref="long"/> if the value is negative)
+	/// unless <see cref="ObjectConverterOptions.PreserveIntegers"/> was set when constructing this converter,
+	/// in which case integers are deserialized based on their msgpack encoding.
 	/// Integer length stretching is automatically applied when using integers as keys in maps so that they can match.
 	/// </para>
 	/// <para>
@@ -73,6 +86,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 			=> reader.NextMessagePackType switch
 			{
 				MessagePackType.Nil => reader.ReadNil(),
+				MessagePackType.Integer when this.options.PreserveIntegers => ReadTypedInteger(ref reader),
 				MessagePackType.Integer => MessagePackCode.IsSignedInteger(reader.NextCode) ? NonNonNegativeSignedInt(reader.ReadInt64()) : reader.ReadUInt64(),
 				MessagePackType.Boolean => reader.ReadBoolean(),
 				MessagePackType.Float => reader.NextCode == MessagePackCode.Float32 ? reader.ReadSingle() : (dynamic)reader.ReadDouble(),
@@ -86,6 +100,20 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 			};
 
 		static object NonNonNegativeSignedInt(long value) => value < 0 ? value : (ulong)value;
+
+		static object ReadTypedInteger(ref MessagePackReader reader)
+			=> reader.NextCode switch
+			{
+				MessagePackCode.UInt8 => (object)reader.ReadByte(),
+				MessagePackCode.UInt16 => (object)reader.ReadUInt16(),
+				MessagePackCode.UInt32 => (object)reader.ReadUInt32(),
+				MessagePackCode.UInt64 => (object)reader.ReadUInt64(),
+				MessagePackCode.Int8 => (object)reader.ReadSByte(),
+				MessagePackCode.Int16 => (object)reader.ReadInt16(),
+				MessagePackCode.Int32 => (object)reader.ReadInt32(),
+				MessagePackCode.Int64 => (object)reader.ReadInt64(),
+				_ => NonNonNegativeSignedInt(reader.ReadInt64()),
+			};
 
 		static bool TryReadExtension(ref MessagePackReader reader, SerializationContext context, out object? value)
 		{
@@ -187,28 +215,92 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 				context.GetConverter<DateTime>(null).Write(ref writer, v, context);
 				break;
 			case byte v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteUInt8(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case ushort v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteUInt16(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case uint v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteUInt32(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case ulong v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteUInt64(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case sbyte v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteInt8(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case short v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteInt16(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case int v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteInt32(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case long v:
-				writer.Write(v);
+				if (this.options.PreserveIntegers)
+				{
+					writer.WriteInt64(v);
+				}
+				else
+				{
+					writer.Write(v);
+				}
+
 				break;
 			case double v:
 				writer.Write(v);
