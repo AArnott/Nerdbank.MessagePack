@@ -248,28 +248,8 @@ public static class OptionalConverters
 		};
 	}
 
-	/// <summary>
-	/// Adds a converter to the specified serializer
-	/// that can write objects with a declared type of <see cref="object"/> based on their runtime type
-	/// (provided a type shape is available for the runtime type),
-	/// and can deserialize them based on their msgpack token types into primitives, dictionaries and arrays.
-	/// </summary>
-	/// <param name="serializer">The serializer to add converters to.</param>
-	/// <returns>The modified serializer.</returns>
-	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="object"/> has already been added.</exception>
-	/// <inheritdoc cref="PrimitivesAsObjectConverter" path="/remarks"/>
-	/// <seealso cref="WithDynamicObjectConverter(MessagePackSerializer)"/>
-	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer)
-	{
-		Requires.NotNull(serializer, nameof(serializer));
-		return serializer with
-		{
-			Converters = [
-				..serializer.Converters,
-				new PrimitivesAsObjectConverter(),
-			],
-		};
-	}
+	/// <inheritdoc cref="WithObjectConverter(MessagePackSerializer, ObjectConverterOptions)"/>
+	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer) => WithObjectConverter(serializer, default);
 
 	/// <summary>
 	/// Adds a converter to the specified serializer

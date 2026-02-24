@@ -64,7 +64,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 	/// <para>
 	/// Keep in mind when using integers that msgpack doesn't preserve integer length information.
 	/// This method deserializes all integers as <see cref="ulong"/> (or <see cref="long"/> if the value is negative)
-	/// unless <see cref="ObjectConverterOptions.PreserveIntegers"/> was set when constructing this converter,
+	/// unless <see cref="ObjectConverterOptions.PreserveIntegerTypes"/> was set when constructing this converter,
 	/// in which case integers are deserialized based on their msgpack encoding.
 	/// Integer length stretching is automatically applied when using integers as keys in maps so that they can match.
 	/// </para>
@@ -86,7 +86,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 			=> reader.NextMessagePackType switch
 			{
 				MessagePackType.Nil => reader.ReadNil(),
-				MessagePackType.Integer when this.options.PreserveIntegers => ReadTypedInteger(ref reader),
+				MessagePackType.Integer when this.options.PreserveIntegerTypes => ReadTypedInteger(ref reader),
 				MessagePackType.Integer => MessagePackCode.IsSignedInteger(reader.NextCode) ? NonNonNegativeSignedInt(reader.ReadInt64()) : reader.ReadUInt64(),
 				MessagePackType.Boolean => reader.ReadBoolean(),
 				MessagePackType.Float => reader.NextCode == MessagePackCode.Float32 ? reader.ReadSingle() : (dynamic)reader.ReadDouble(),
@@ -215,7 +215,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 				context.GetConverter<DateTime>(null).Write(ref writer, v, context);
 				break;
 			case byte v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteUInt8(v);
 				}
@@ -226,7 +226,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 				break;
 			case ushort v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteUInt16(v);
 				}
@@ -237,7 +237,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 				break;
 			case uint v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteUInt32(v);
 				}
@@ -248,7 +248,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 				break;
 			case ulong v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteUInt64(v);
 				}
@@ -259,7 +259,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 				break;
 			case sbyte v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteInt8(v);
 				}
@@ -270,7 +270,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 				break;
 			case short v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteInt16(v);
 				}
@@ -281,7 +281,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 				break;
 			case int v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteInt32(v);
 				}
@@ -292,7 +292,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 
 				break;
 			case long v:
-				if (this.options.PreserveIntegers)
+				if (this.options.PreserveIntegerTypes)
 				{
 					writer.WriteInt64(v);
 				}

@@ -3,7 +3,7 @@
 
 [GenerateShapeFor<object[]>]
 [GenerateShapeFor<object>]
-public partial class PreserveIntegersTests : MessagePackSerializerTestBase
+public partial class PreserveIntegerTypesTests : MessagePackSerializerTestBase
 {
 	[Theory]
 	[InlineData((byte)40)]
@@ -20,10 +20,10 @@ public partial class PreserveIntegersTests : MessagePackSerializerTestBase
 	[InlineData((ulong)40UL)]
 	public void IntegerTypesPreserved(object value)
 	{
-		this.Serializer = this.Serializer.WithObjectConverter(new ObjectConverterOptions { PreserveIntegers = true });
+		this.Serializer = this.Serializer.WithObjectConverter(new ObjectConverterOptions { PreserveIntegerTypes = true });
 
 		object[] input = [value];
-		object[] output = this.Roundtrip<object[], PreserveIntegersTests>(input)!;
+		object[] output = this.Roundtrip<object[], PreserveIntegerTypesTests>(input)!;
 
 		Assert.Equal(value, output[0]);
 		Assert.Equal(value.GetType(), output[0]!.GetType());
@@ -36,12 +36,12 @@ public partial class PreserveIntegersTests : MessagePackSerializerTestBase
 	[InlineData((long)40L)]
 	[InlineData((long)-40L)]
 	[InlineData((ulong)40UL)]
-	public void WithoutPreserveIntegers_NonNegativeBecomesUlong(object value)
+	public void WithoutPreserveIntegerTypes_NonNegativeBecomesUlong(object value)
 	{
 		this.Serializer = this.Serializer.WithObjectConverter();
 
 		object[] input = [value];
-		object[] output = this.Roundtrip<object[], PreserveIntegersTests>(input)!;
+		object[] output = this.Roundtrip<object[], PreserveIntegerTypesTests>(input)!;
 
 		bool isNegative = value switch
 		{
@@ -50,7 +50,7 @@ public partial class PreserveIntegersTests : MessagePackSerializerTestBase
 			_ => false,
 		};
 
-		// Without PreserveIntegers, non-negative values are deserialized as ulong, negative as long
+		// Without PreserveIntegerTypes, non-negative values are deserialized as ulong, negative as long
 		Assert.IsType(isNegative ? typeof(long) : typeof(ulong), output[0]);
 	}
 }

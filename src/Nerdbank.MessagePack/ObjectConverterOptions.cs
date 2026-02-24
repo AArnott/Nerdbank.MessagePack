@@ -27,5 +27,5 @@ public struct ObjectConverterOptions
 	/// will be deserialized based on the encoding actually present in the msgpack data.
 	/// </para>
 	/// </remarks>
-	public bool PreserveIntegers { get; set; }
+	public bool PreserveIntegerTypes { get; set; }
 }
