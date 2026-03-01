@@ -2,6 +2,10 @@
 
 **ALWAYS follow these instructions first and only fallback to additional search and context gathering if the information here is incomplete or found to be in error.**
 
+* Review the `CONTRIBUTING.md` file for instructions to build and test the software.
+* Run the `.github\Prime-ForCopilot.ps1` script (once) before running any `dotnet` or `msbuild` commands.
+  If you see any build errors about not finding git objects or a shallow clone, it may be time to run this script again.
+
 ## Working Effectively
 
 ### Bootstrap and Build
@@ -19,11 +23,13 @@ export NBGV_GitEngine=Disabled
 **Build the repository** (takes 7-76 seconds depending on cache - do not cancel unless it exceeds 10-15 minutes, set timeout to 10-15 minutes):
 ```bash
 dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release
+```
 
 ### Testing
 **Run tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 5-10 minutes):
 ```bash
-dotnet test --no-build -c Release --filter "TestCategory!=FailsInCloudTest"
+dotnet test --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"
+```
 
 ### Code Quality
 **Verify code formatting** (takes ~71 seconds - NEVER CANCEL, set timeout to 90+ minutes):
@@ -162,7 +168,7 @@ dotnet run --no-build -c Release --framework net9.0 -- --list-tests
 
 ### After Making Changes
 1. **Build**: `dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release` (NEVER CANCEL - 7-76s)
-2. **Test**: `dotnet test --no-build -c Release --filter "TestCategory!=FailsInCloudTest"` (25s)
+2. **Test**: `dotnet test --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"` (25s)
 3. **Format**: `dotnet format --verify-no-changes --no-restore` (NEVER CANCEL - 71s)
 4. **Validate**: Run AOT console sample for functionality verification
 
@@ -177,7 +183,7 @@ dotnet docfx
 ### Troubleshooting
 - **Build fails**: Ensure `NBGV_GitEngine=Disabled` is set
 - **Long restore times**: Use `./init.ps1` to bootstrap dependencies first
-- **Test instability**: Always use the `TestCategory!=FailsInCloudTest` filter
+- **Test instability**: Always use `-- --filter-not-trait "TestCategory=FailsInCloudTest"`
 - **Format failures**: Run `dotnet format` (without `--verify-no-changes`) to fix automatically
 
 ## CRITICAL Timing Expectations
