@@ -3,7 +3,7 @@
 **ALWAYS follow these instructions first and only fallback to additional search and context gathering if the information here is incomplete or found to be in error.**
 
 * Review the `CONTRIBUTING.md` file for instructions to build and test the software.
-* Run the `.github\Prime-ForCopilot.ps1` script (once) before running any `dotnet` or `msbuild` commands.
+* Run the `.github/Prime-ForCopilot.ps1` script (once) before running any `dotnet` or `msbuild` commands.
   If you see any build errors about not finding git objects or a shallow clone, it may be time to run this script again.
 
 ## Working Effectively
