@@ -8,9 +8,9 @@ internal static class ReferencesHelper
 #if NET
 	internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net80;
 #else
-	internal static ReferenceAssemblies References = ReferenceAssemblies.NetStandard.NetStandard20
+	internal static ReferenceAssemblies References = ReferenceAssemblies.NetFramework.Net472.Default
 		.WithPackages([
-			new PackageIdentity("System.Memory", "4.6.0"),
+			new PackageIdentity("System.Memory", "4.6.3"),
 			new PackageIdentity("System.Text.Json", "9.0.0"),
 		]);
 #endif
