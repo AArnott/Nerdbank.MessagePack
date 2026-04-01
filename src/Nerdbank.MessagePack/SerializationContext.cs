@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
@@ -131,8 +132,12 @@ public record struct SerializationContext
 		this.CancellationToken.ThrowIfCancellationRequested();
 		if (--this.MaxDepth < 0)
 		{
-			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
+			Throw();
 		}
+
+		// Keep the throw helper method out of the main code path to improve inlining and reduce code size.
+		[DoesNotReturn]
+		static void Throw() => throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
 	}
 
 	/// <summary>
