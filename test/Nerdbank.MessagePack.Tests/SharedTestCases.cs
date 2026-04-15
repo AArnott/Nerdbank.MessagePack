@@ -117,11 +117,6 @@ public class SharedTestCases : MessagePackSerializerTestBase
 			return true;
 		}
 
-		if (testCase.HasOutConstructorParameters)
-		{
-			return false;
-		}
-
 		if (testCase.IsAbstract && !testCase.IsUnion && !typeof(System.Collections.IEnumerable).IsAssignableFrom(testCase.Type))
 		{
 			return false;
