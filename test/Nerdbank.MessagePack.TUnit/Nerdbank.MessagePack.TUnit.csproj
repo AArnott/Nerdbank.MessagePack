@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
+    <AotMsCodeCoverageInstrumentation>true</AotMsCodeCoverageInstrumentation>
   </PropertyGroup>
   <Import Project="../AOT.props" Condition="'$(TargetFramework)' != 'net472'" />
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
@@ -12,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
+    <PackageReference Include="Microsoft.CodeCoverage.MSBuild" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="PolyType.TestCases" />
     <PackageReference Include="TUnit.Engine" />
