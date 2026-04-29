@@ -370,9 +370,9 @@ internal partial class MessagePackHubProtocol
 
 	private HubMessage DeserializeStreamItemMessage(ref MessagePackReader reader, IInvocationBinder binder, int itemCount)
 	{
-		if (itemCount < 2)
+		if (itemCount < 3)
 		{
-			throw new MessagePackSerializationException("StreamItem message must have at least 2 items: headers and invocationId.");
+			throw new MessagePackSerializationException("StreamItem message must have at least 3 items: headers, invocationId, and item.");
 		}
 
 		IDictionary<string, string>? headers = ReadHeaders(ref reader);

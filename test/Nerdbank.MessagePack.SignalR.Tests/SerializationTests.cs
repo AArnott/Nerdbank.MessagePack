@@ -163,6 +163,24 @@ public partial class SerializationTests
 	}
 
 	[Fact]
+	public void StreamItemMessage_MissingItem_ThrowsInvalidData()
+	{
+		IHubProtocol protocol = this.CreateProtocol();
+		Sequence<byte> payload = new();
+		MessagePackWriter writer = new(payload);
+
+		// Write only 3 elements (messageType, headers, invocationId) - missing the item element
+		writer.WriteArrayHeader(3);
+		writer.Write(2); // StreamItemMessage
+		writer.WriteMapHeader(0);
+		writer.Write("789");
+		writer.Flush();
+
+		ReadOnlySequence<byte> serializedSequence = this.FrameHubMessage(payload);
+		Assert.Throws<InvalidDataException>(() => protocol.TryParseMessage(ref serializedSequence, new MockInvocationBinder(), out _));
+	}
+
+	[Fact]
 	public void CompletionMessage_WithResult_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
