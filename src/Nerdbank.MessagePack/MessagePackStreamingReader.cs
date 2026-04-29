@@ -1146,8 +1146,10 @@ public ref partial struct MessagePackStreamingReader
 				}
 			}
 #endif
-			this.Advance(bytesRead);
+			this.Advance(bytesRead, consumed: 0);
 		}
+
+		this.Advance(0);
 
 		value = new string(charArray, 0, initializedChars);
 		ArrayPool<char>.Shared.Return(charArray);
