@@ -11,6 +11,8 @@ namespace Nerdbank.MessagePack.SignalR;
 /// <content>Contains the deserialize methods of the class.</content>
 internal partial class MessagePackHubProtocol
 {
+	private static readonly SerializationContext EnvelopeSkipContext = new();
+
 	private static T ApplyHeaders<T>(IDictionary<string, string>? source, T destination)
 		where T : HubInvocationMessage
 	{
@@ -26,7 +28,7 @@ internal partial class MessagePackHubProtocol
 	{
 		for (int i = expected; i < actual; i++)
 		{
-			reader.Skip(default);
+			reader.Skip(EnvelopeSkipContext);
 		}
 	}
 
@@ -203,7 +205,7 @@ internal partial class MessagePackHubProtocol
 		MessagePackReader peekReader = reader.CreatePeekReader();
 		if (ReadMapLength(ref peekReader, "headers") == 0)
 		{
-			reader.Skip(default);
+			reader.Skip(EnvelopeSkipContext);
 			return null;
 		}
 
@@ -215,7 +217,7 @@ internal partial class MessagePackHubProtocol
 		MessagePackReader peekReader = reader.CreatePeekReader();
 		if (ReadArrayLength(ref peekReader, "streamIds") == 0)
 		{
-			reader.Skip(default);
+			reader.Skip(EnvelopeSkipContext);
 			return null;
 		}
 
@@ -253,7 +255,7 @@ internal partial class MessagePackHubProtocol
 			}
 			else
 			{
-				reader.Skip(default);
+				reader.Skip(EnvelopeSkipContext);
 			}
 		}
 
@@ -429,13 +431,13 @@ internal partial class MessagePackHubProtocol
 				Type? itemType = TryGetReturnType(binder, invocationId);
 				if (itemType is null)
 				{
-					reader.Skip(default);
+					reader.Skip(EnvelopeSkipContext);
 				}
 				else
 				{
 					if (itemType == typeof(RawResult))
 					{
-						result = new RawResult(reader.ReadRaw(default(SerializationContext)));
+						result = new RawResult(reader.ReadRaw(EnvelopeSkipContext));
 					}
 					else
 					{

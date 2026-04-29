@@ -5,6 +5,7 @@ using Microsoft;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Nerdbank.MessagePack;
 using Nerdbank.MessagePack.SignalR;
+using Nerdbank.Streams;
 using PolyType;
 using Xunit;
 
@@ -220,6 +221,31 @@ public partial class SerializationTests
 	}
 
 	[Fact]
+	[Trait("CWE", "1188")]
+	public void CancelInvocationMessage_WithExtraNestedField_SkipsRemainingPayload()
+	{
+		IHubProtocol protocol = this.CreateProtocol();
+		Sequence<byte> payload = new();
+		MessagePackWriter writer = new(payload);
+		writer.WriteArrayHeader(4);
+		writer.Write(5); // CancelInvocationMessage
+		writer.WriteMapHeader(0);
+		writer.Write("201");
+		writer.WriteArrayHeader(1);
+		writer.WriteArrayHeader(1);
+		writer.Write("extra");
+		writer.Flush();
+
+		ReadOnlySequence<byte> serializedSequence = this.FrameHubMessage(payload);
+		this.LogMsgPack(serializedSequence);
+		Assert.True(protocol.TryParseMessage(ref serializedSequence, new MockInvocationBinder(), out HubMessage? message));
+		Assert.True(serializedSequence.IsEmpty);
+
+		CancelInvocationMessage cancelInvocation = Assert.IsType<CancelInvocationMessage>(message);
+		Assert.Equal("201", cancelInvocation.InvocationId);
+	}
+
+	[Fact]
 	public void AckMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -261,6 +287,14 @@ public partial class SerializationTests
 	{
 		Assumes.True(BinaryMessageFormatter.TryParseMessage(ref payload, out ReadOnlySequence<byte> msgpack));
 		TestContext.Current.TestOutputHelper?.WriteLine(this.Serializer.ConvertToJson(msgpack));
+	}
+
+	private ReadOnlySequence<byte> FrameHubMessage(Sequence<byte> payload)
+	{
+		Sequence<byte> framedMessage = new();
+		BinaryMessageFormatter.WriteLengthPrefix(payload.Length, framedMessage);
+		framedMessage.Append(payload.AsReadOnlySequence.ToArray());
+		return framedMessage.AsReadOnlySequence;
 	}
 
 	private IHubProtocol CreateProtocol()
