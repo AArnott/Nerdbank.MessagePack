@@ -210,6 +210,26 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	public class HashCollisionResistant(ITestOutputHelper logger) : StructuralEqualityComparerTests(logger)
 	{
 		[Fact]
+		[Trait("CWE", "697")]
+		public void Dictionary()
+		{
+			Dictionary<string, int> forward = new()
+			{
+				["a"] = 1,
+				["b"] = 2,
+			};
+			Dictionary<string, int> reverse = new()
+			{
+				["b"] = 2,
+				["a"] = 1,
+			};
+
+			IEqualityComparer<Dictionary<string, int>> comparer = this.GetEqualityComparer<Dictionary<string, int>, Witness>();
+			Assert.True(comparer.Equals(forward, reverse));
+			Assert.Equal(comparer.GetHashCode(forward), comparer.GetHashCode(reverse));
+		}
+
+		[Fact]
 		public override void CustomHash()
 		{
 			CustomHasher obj = new();
@@ -222,6 +242,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 
 	[GenerateShapeFor<bool>]
 	[GenerateShapeFor<BigInteger>]
+	[GenerateShapeFor<Dictionary<string, int>>]
 	[GenerateShapeFor<CustomHasher>]
 	internal partial class Witness;
 
