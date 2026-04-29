@@ -250,7 +250,20 @@ internal static class HashCollisionResistantPrimitives
 		{
 		}
 
-		public override bool Equals(byte[]? x, byte[]? y) => ReferenceEquals(x, y) || (x is null || y is null) ? false : x.SequenceEqual(y);
+		public override bool Equals(byte[]? x, byte[]? y)
+		{
+			if (ReferenceEquals(x, y))
+			{
+				return true;
+			}
+
+			if (x is null || y is null)
+			{
+				return false;
+			}
+
+			return x.SequenceEqual(y);
+		}
 
 		public override long GetSecureHashCode([DisallowNull] byte[] obj) => SecureHash(obj);
 	}

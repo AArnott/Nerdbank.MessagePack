@@ -25,6 +25,14 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	public void BigInteger() => this.AssertEqualityComparerBehavior<BigInteger, Witness>([new BigInteger(5), new BigInteger(5)], [new BigInteger(10)]);
 
 	[Fact]
+	[Trait("CWE", "783")]
+	public void ByteArray()
+	{
+		byte[] shared = [1, 2];
+		this.AssertEqualityComparerBehavior<byte[], Witness>([shared, shared, [1, 2]], [[1, 3], [1, 2, 3]]);
+	}
+
+	[Fact]
 	public void CustomType_Tree() => this.AssertEqualityComparerBehavior(
 		[new Tree([new Fruit(3, "Red"), new Fruit(4, "Green")], 4, FruitKind.Apple), new Tree([new Fruit(3, "Red"), new Fruit(4, "Green")], 4, FruitKind.Apple)],
 		[
@@ -255,6 +263,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 
 	[GenerateShapeFor<bool>]
 	[GenerateShapeFor<BigInteger>]
+	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<Dictionary<string, int>>]
 	[GenerateShapeFor<CustomHasher>]
