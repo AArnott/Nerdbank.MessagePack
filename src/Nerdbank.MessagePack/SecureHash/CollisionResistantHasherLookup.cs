@@ -37,7 +37,7 @@ internal static class CollisionResistantHasherLookup
 	private static IEqualityComparer? _HashCollisionResistantPrimitives_StringEqualityComparer;
 	private static IEqualityComparer? _HashCollisionResistantPrimitives_BooleanEqualityComparer;
 	private static IEqualityComparer? _HashCollisionResistantPrimitives_VersionEqualityComparer;
-	private static IEqualityComparer? _HashCollisionResistantPrimitives_AlreadySecureEqualityComparer_Uri_;
+	private static IEqualityComparer? _HashCollisionResistantPrimitives_UriEqualityComparer;
 	private static IEqualityComparer? _HashCollisionResistantPrimitives_SingleEqualityComparer;
 	private static IEqualityComparer? _HashCollisionResistantPrimitives_DoubleEqualityComparer;
 	private static IEqualityComparer? _HashCollisionResistantPrimitives_DecimalEqualityComparer;
@@ -142,7 +142,7 @@ internal static class CollisionResistantHasherLookup
 
 		if (typeof(T) == typeof(Uri))
 		{
-			converter = (SecureEqualityComparer<T>)(_HashCollisionResistantPrimitives_AlreadySecureEqualityComparer_Uri_ ??= new HashCollisionResistantPrimitives.AlreadySecureEqualityComparer<Uri>());
+			converter = (SecureEqualityComparer<T>)(_HashCollisionResistantPrimitives_UriEqualityComparer ??= new HashCollisionResistantPrimitives.UriEqualityComparer());
 			return true;
 		}
 

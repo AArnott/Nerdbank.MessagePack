@@ -363,7 +363,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 			reader.ReturnReader(ref streamingReader);
 
-			collection = getCollection(state, count);
+			collection = getCollection(state, PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
 			int i = 0;
 			try
 			{
@@ -478,12 +478,13 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
+			TElement[] elements = ArrayPool<TElement>.Shared.Rent(PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
 			int? i = 0;
 			try
 			{
 				for (; i < count; i++)
 				{
+					elements = PolyTypeExtensions.EnsurePooledBufferSize(elements, i.Value, i.Value + 1, count);
 					elements[i.Value] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
 				}
 

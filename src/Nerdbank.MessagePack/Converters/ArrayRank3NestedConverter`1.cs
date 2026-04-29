@@ -34,6 +34,7 @@ internal class ArrayRank3NestedConverter<TElement>(MessagePackConverter<TElement
 
 		Span<int> dimensionLengths = stackalloc int[Rank];
 		ArrayConverterUtilities.PeekNestedDimensionsLength(reader, dimensionLengths);
+		ArrayConverterUtilities.VerifyNestedDimensionsFitInBuffer(reader, dimensionLengths);
 		var result = new TElement[dimensionLengths[0], dimensionLengths[1], dimensionLengths[2]];
 
 		int length0 = ArrayConverterUtilities.ReadArrayHeader(ref reader, dimensionLengths[0]);

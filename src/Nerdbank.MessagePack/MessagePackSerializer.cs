@@ -536,10 +536,17 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(jsonWriter);
 
-		WriteOneElement(ref reader, jsonWriter, options ?? new(), this.LibraryExtensionTypeCodes, 0);
+		SerializationContext context = this.StartingContext with { ExtensionTypeCodes = this.LibraryExtensionTypeCodes };
+		WriteOneElement(ref reader, jsonWriter, options ?? new(), context, 0);
 
-		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, LibraryReservedMessagePackExtensionTypeCode extensionTypeCodes, int indentationLevel)
+		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, SerializationContext context, int indentationLevel)
 		{
+			context.CancellationToken.ThrowIfCancellationRequested();
+			if (indentationLevel > context.MaxDepth)
+			{
+				throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
+			}
+
 			switch (reader.NextMessagePackType)
 			{
 				case MessagePackType.Nil:
@@ -591,7 +598,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, context, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -618,7 +625,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, context, indentationLevel + 1);
 							if (options.Indentation is null)
 							{
 								jsonWriter.Write(':');
@@ -628,7 +635,7 @@ public partial record MessagePackSerializer
 								jsonWriter.Write(": ");
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, context, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -647,12 +654,11 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Extension:
-					SerializationContext context = new() { ExtensionTypeCodes = extensionTypeCodes };
 					MessagePackReader peek = reader.CreatePeekReader();
 					ExtensionHeader extensionHeader = peek.ReadExtensionHeader();
 					if (!options.IgnoreKnownExtensions)
 					{
-						if (extensionHeader.TypeCode == extensionTypeCodes.Guid)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.Guid)
 						{
 							jsonWriter.Write('\"');
 							jsonWriter.Write(GuidAsBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
@@ -660,26 +666,26 @@ public partial record MessagePackSerializer
 							break;
 						}
 
-						if (extensionHeader.TypeCode == extensionTypeCodes.BigInteger)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.BigInteger)
 						{
 							jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
 							break;
 						}
 
-						if (extensionHeader.TypeCode == extensionTypeCodes.Decimal)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.Decimal)
 						{
 							jsonWriter.Write(MessagePack.Converters.DecimalConverter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
 							break;
 						}
 
 #if NET
-						if (extensionHeader.TypeCode == extensionTypeCodes.Int128)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.Int128)
 						{
 							jsonWriter.Write(MessagePack.Converters.Int128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
 							break;
 						}
 
-						if (extensionHeader.TypeCode == extensionTypeCodes.UInt128)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.UInt128)
 						{
 							jsonWriter.Write(MessagePack.Converters.UInt128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
 							break;

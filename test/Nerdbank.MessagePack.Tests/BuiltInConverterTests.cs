@@ -208,6 +208,27 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	[Trait("CWE", "789")]
+	[Trait("CWE", "674")]
+	public void BigIntegerDictionaryKey_LargeBin()
+	{
+		const int KeyByteCount = 2 * 1024 * 1024;
+
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(Enumerable.Repeat((byte)1, KeyByteCount).ToArray());
+		writer.Write(3);
+		writer.Flush();
+
+		Dictionary<BigInteger, int> result = this.Serializer.Deserialize<Dictionary<BigInteger, int>, Witness>(seq, TestContext.Current.CancellationToken)!;
+
+		KeyValuePair<BigInteger, int> entry = Assert.Single(result);
+		Assert.Equal(KeyByteCount, entry.Key.ToByteArray().Length);
+		Assert.Equal(3, entry.Value);
+	}
+
+	[Fact]
 	public void Guid()
 	{
 		// Test that Guid serialization works by default (using binary format)
@@ -383,6 +404,24 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	[Trait("CWE", "789")]
+	public void DateTime_BadHeaderLength()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasDateTime.Value));
+
+		// Allege that you're sending a very large DateTime extension that would blow the stack if allocated on it.
+		writer.Write(new ExtensionHeader(ReservedMessagePackExtensionTypeCode.DateTime, 0x800000));
+		writer.Flush();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<HasDateTime>(seq, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
 	public void DateTimeOffset()
 	{
 		this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now));
@@ -488,5 +527,6 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<CultureInfo>]
 	[GenerateShapeFor<EventArgs>]
 	[GenerateShapeFor<Encoding>]
+	[GenerateShapeFor<Dictionary<BigInteger, int>>]
 	private partial class Witness;
 }

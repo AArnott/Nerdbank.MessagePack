@@ -434,7 +434,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			collection = getCollection(state, count);
+			collection = getCollection(state, PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
 			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
@@ -540,11 +540,12 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		reader.ReturnReader(ref streamingReader);
 
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
+		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
+				entries = PolyTypeExtensions.EnsurePooledBufferSize(entries, i, i + 1, count);
 				entries[i] = await this.ReadEntryAsync(reader, context).ConfigureAwait(false);
 			}
 

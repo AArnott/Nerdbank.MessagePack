@@ -153,21 +153,26 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			TElement[] array = new TElement[count];
+			TElement[] elements = ArrayPool<TElement>.Shared.Rent(PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
 			int i = 0;
 			try
 			{
 				for (; i < count; i++)
 				{
-					array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
+					elements = PolyTypeExtensions.EnsurePooledBufferSize(elements, i, i + 1, count);
+					elements[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
 				}
+
+				return elements.AsSpan(0, count).ToArray();
 			}
 			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 			{
 				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
-
-			return array;
+			finally
+			{
+				ArrayPool<TElement>.Shared.Return(elements);
+			}
 		}
 		else
 		{

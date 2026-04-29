@@ -367,13 +367,19 @@ partial class MessagePackPrimitives
 	/// <returns>The result classification of the read operation.</returns>
 	public static DecodeResult TryRead(ReadOnlySpan<byte> source, ExtensionHeader header, out DateTime value, out int tokenSize)
 	{
-		tokenSize = checked((int)header.Length);
 		if (header.TypeCode != ReservedMessagePackExtensionTypeCode.DateTime)
 		{
 			value = default;
+			tokenSize = 0;
 			return DecodeResult.TokenMismatch;
 		}
 
+		if (header.Length is not (4 or 8 or 12))
+		{
+			throw new MessagePackSerializationException($"Invalid timestamp extension length: {header.Length}");
+		}
+
+		tokenSize = unchecked((int)header.Length);
 		if (source.Length < tokenSize)
 		{
 			value = default;

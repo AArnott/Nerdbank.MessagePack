@@ -41,20 +41,22 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 			throw new MessagePackSerializationException($"Expected array length of 2 but was {outerCount}.");
 		}
 
-		int rank = reader.ReadArrayHeader();
+		int rank = typeof(TArray).GetArrayRank();
+		int serializedRank = reader.ReadArrayHeader();
+		if (serializedRank != rank)
+		{
+			throw new MessagePackSerializationException($"Expected array rank of {rank} but was {serializedRank}.");
+		}
+
 		int[] dimensions = dimensionsReusable ??= new int[rank];
 		for (int i = 0; i < rank; i++)
 		{
 			dimensions[i] = reader.ReadInt32();
 		}
 
+		ArrayConverterUtilities.ReadFlattenedElementCount(ref reader, dimensions.AsSpan(0, rank));
 		Array array = Array.CreateInstance(typeof(TElement), dimensions);
 		Span<TElement> elements = AsSpan(array);
-		int elementCount = reader.ReadArrayHeader();
-		if (elementCount != elements.Length)
-		{
-			throw new MessagePackSerializationException($"Expected {elements.Length} elements but found {elementCount}.");
-		}
 
 		for (int i = 0; i < elements.Length; i++)
 		{
