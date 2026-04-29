@@ -62,6 +62,23 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	public void Dictionary_Null() => this.AssertRoundtrip(new ClassWithDictionary { StringInt = null });
 
 	[Fact]
+	[Trait("CWE", "190")]
+	public void Dictionary_ExcessivelyLarge()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(ClassWithDictionary.StringInt));
+		writer.WriteRaw([MessagePackCode.Map32, 0x40, 0x00, 0x00, 0x00]);
+		writer.Flush();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<ClassWithDictionary>(seq, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.ToString());
+		Assert.IsType<EndOfStreamException>(ex.GetBaseException());
+	}
+
+	[Fact]
 	public void ImmutableDictionary() => this.AssertRoundtrip(new ClassWithImmutableDictionary { StringInt = ImmutableDictionary<string, int>.Empty.Add("a", 1) });
 
 	[Fact]

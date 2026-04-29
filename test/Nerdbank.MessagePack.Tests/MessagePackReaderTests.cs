@@ -89,6 +89,19 @@ public partial class MessagePackReaderTests
 	}
 
 	[Fact]
+	[Trait("CWE", "190")]
+	public void ReadMapHeader_MitigatesLargeAllocations_WithOverflowingCount()
+	{
+		byte[] msgpack = [MessagePackCode.Map32, 0x40, 0x00, 0x00, 0x00];
+
+		Assert.Throws<EndOfStreamException>(() =>
+		{
+			var reader = new MessagePackReader(msgpack);
+			reader.ReadMapHeader();
+		});
+	}
+
+	[Fact]
 	public void TryReadMapHeader()
 	{
 		var sequence = new Sequence<byte>();

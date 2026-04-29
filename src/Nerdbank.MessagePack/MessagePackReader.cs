@@ -275,7 +275,7 @@ public ref partial struct MessagePackReader
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
 		// We allow for each primitive to be the minimal 1 byte in size, and we have a key=value map, so that's 2 bytes.
 		// Formatters that know each element is larger can optionally add a stronger check.
-		ThrowInsufficientBufferUnless(this.streamingReader.SequenceReader.Remaining >= count * 2);
+		ThrowInsufficientBufferUnless(this.streamingReader.SequenceReader.Remaining >= (long)count * 2);
 
 		return count;
 	}
