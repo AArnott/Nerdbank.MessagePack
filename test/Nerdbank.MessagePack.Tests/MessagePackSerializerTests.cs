@@ -139,6 +139,34 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	[Trait("CWE", "665")]
+	public void MultidimensionalArray2D_Flat_RejectsMismatchedRank()
+	{
+		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = MultiDimensionalArrayFormat.Flat };
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasByteMultiDimensionalArray.Array2D));
+		writer.WriteArrayHeader(2);
+		writer.WriteArrayHeader(3);
+		writer.Write(1);
+		writer.Write(1);
+		writer.Write(1);
+		writer.WriteArrayHeader(1);
+		writer.Write((byte)0);
+		writer.Flush();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<HasByteMultiDimensionalArray>(seq, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.ToString());
+		string exceptionMessage = ex.ToString();
+		Assert.True(
+			exceptionMessage.Contains("Expected array rank of 2 but was 3.", StringComparison.Ordinal) ||
+			exceptionMessage.Contains("Expected array length of 2 but was 3.", StringComparison.Ordinal),
+			exceptionMessage);
+	}
+
+	[Fact]
 	[Trait("CWE", "789")]
 	[Trait("CWE", "1284")]
 	public void MultidimensionalArray2D_Nested_ExcessivelyLargeDimensions()
