@@ -682,7 +682,7 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 			() => this.Serializer.Deserialize<HasByteMultiDimensionalArray>(seq, TestContext.Current.CancellationToken));
 		this.Logger.WriteLine(ex.ToString());
 
-		Assert.Contains($"Array dimensions require {expectedElementCount} elements", ex.ToString());
+		Assert.Contains($"Array dimensions declare {expectedElementCount} elements", ex.ToString());
 
 		long allocatedBytes = GC.GetTotalMemory(false) - before;
 		Assert.True(allocatedBytes < 64 * 1024 * 1024, $"Deserialization allocated {allocatedBytes:N0} bytes.");
