@@ -45,6 +45,7 @@ internal class ArrayWithNestedDimensionsConverter<TArray, TElement>(MessagePackC
 
 		int[] dimensions = dimensionsReusable ??= new int[rank];
 		ArrayConverterUtilities.PeekNestedDimensionsLength(reader, dimensions);
+		ArrayConverterUtilities.VerifyNestedDimensionsFitInBuffer(reader, dimensions.AsSpan(0, rank));
 		Array array = Array.CreateInstance(typeof(TElement), dimensions);
 		Span<TElement> elements = AsSpan(array);
 		this.ReadSubArray(ref reader, dimensions, elements, context);

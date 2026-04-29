@@ -24,6 +24,41 @@ internal static class ArrayConverterUtilities
 	}
 
 	/// <summary>
+	/// Verifies that the declared dimensions can fit in the available msgpack bytes.
+	/// </summary>
+	/// <param name="reader">The reader. This is <em>not</em> a <see langword="ref" /> so as to not impact the caller's read position.</param>
+	/// <param name="dimensions">The lengths of each dimension.</param>
+	/// <exception cref="MessagePackSerializationException">Thrown if the dimensions are invalid or cannot fit in the remaining bytes.</exception>
+#pragma warning disable NBMsgPack050 // use "ref MessagePackReader" for parameter type
+	internal static void VerifyNestedDimensionsFitInBuffer(MessagePackReader reader, scoped ReadOnlySpan<int> dimensions)
+#pragma warning restore NBMsgPack050 // use "ref MessagePackReader" for parameter type
+	{
+		long expected = 1;
+		try
+		{
+			foreach (int dimension in dimensions)
+			{
+				if (dimension < 0)
+				{
+					throw new MessagePackSerializationException("Array dimensions may not be negative.");
+				}
+
+				expected = checked(expected * dimension);
+			}
+		}
+		catch (OverflowException ex)
+		{
+			throw new MessagePackSerializationException("Array dimensions are too large.", ex);
+		}
+
+		long remainingBytes = reader.Sequence.Slice(reader.Position).Length;
+		if (expected > remainingBytes)
+		{
+			throw new MessagePackSerializationException($"Array dimensions require {expected} elements but only {remainingBytes} bytes remain.");
+		}
+	}
+
+	/// <summary>
 	/// Reads an array header and verifies that its length matches the expected length.
 	/// </summary>
 	/// <param name="reader">The reader.</param>

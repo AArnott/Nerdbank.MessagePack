@@ -139,6 +139,14 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	[Trait("CWE", "789")]
+	[Trait("CWE", "1284")]
+	public void MultidimensionalArray2D_Nested_ExcessivelyLargeDimensions()
+	{
+		this.AssertNestedMultidimensionalArrayDimensionsRejectedBeforeAllocation(nameof(HasByteMultiDimensionalArray.Array2D), [10_000, 10_000]);
+	}
+
+	[Fact]
 	public void MultidimensionalArray_Null()
 	{
 		try
@@ -615,6 +623,38 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 
 		MessagePackSerializationException rootException = Assert.IsType<MessagePackSerializationException>(ex.GetBaseException());
 		Assert.Equal($"Expected {expectedElementCount} elements but found 0.", rootException.Message);
+
+		long allocatedBytes = GC.GetTotalMemory(false) - before;
+		Assert.True(allocatedBytes < 64 * 1024 * 1024, $"Deserialization allocated {allocatedBytes:N0} bytes.");
+	}
+
+	private void AssertNestedMultidimensionalArrayDimensionsRejectedBeforeAllocation(string propertyName, int[] dimensions)
+	{
+		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested };
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(propertyName);
+		long expectedElementCount = 1;
+		foreach (int dimension in dimensions)
+		{
+			writer.WriteArrayHeader(dimension);
+			expectedElementCount *= dimension;
+		}
+
+		for (int i = 0; i < dimensions[^1]; i++)
+		{
+			writer.Write((byte)0);
+		}
+
+		writer.Flush();
+
+		long before = GC.GetTotalMemory(true);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<HasByteMultiDimensionalArray>(seq, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.ToString());
+
+		Assert.Contains($"Array dimensions require {expectedElementCount} elements", ex.ToString());
 
 		long allocatedBytes = GC.GetTotalMemory(false) - before;
 		Assert.True(allocatedBytes < 64 * 1024 * 1024, $"Deserialization allocated {allocatedBytes:N0} bytes.");
