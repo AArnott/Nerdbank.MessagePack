@@ -123,6 +123,15 @@ internal static class HashCollisionResistantPrimitives
 		public override long GetSecureHashCode([DisallowNull] T obj) => EqualityComparer<T>.Default.GetHashCode(obj);
 	}
 
+	internal class UriEqualityComparer : SecureEqualityComparer<Uri>
+	{
+		/// <inheritdoc/>
+		public override bool Equals(Uri? x, Uri? y) => EqualityComparer<Uri>.Default.Equals(x, y);
+
+		/// <inheritdoc/>
+		public override long GetSecureHashCode([DisallowNull] Uri obj) => StringEqualityComparer.Instance.GetSecureHashCode(obj.IsAbsoluteUri ? obj.AbsoluteUri : obj.OriginalString);
+	}
+
 	internal class BigIntegerEqualityComparer : SecureEqualityComparer<BigInteger>
 	{
 		private const int MaxStackAllocBytes = 256;

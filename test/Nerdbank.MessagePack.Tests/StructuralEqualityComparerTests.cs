@@ -251,6 +251,22 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		}
 
 		[Fact]
+		[Trait("CWE", "407")]
+		public void Uri()
+		{
+			IEqualityComparer<Uri> comparer = this.GetEqualityComparer<Uri, Witness>();
+			Uri first = new("https://example.com/path?query=value");
+			Uri second = new("https://example.com/path?query=value");
+			Uri relativeFirst = new("relative/path?query=value", UriKind.Relative);
+			Uri relativeSecond = new("relative/path?query=value", UriKind.Relative);
+
+			Assert.True(comparer.Equals(first, second));
+			Assert.Equal(comparer.GetHashCode(first), comparer.GetHashCode(second));
+			Assert.True(comparer.Equals(relativeFirst, relativeSecond));
+			Assert.Equal(comparer.GetHashCode(relativeFirst), comparer.GetHashCode(relativeSecond));
+		}
+
+		[Fact]
 		public override void CustomHash()
 		{
 			CustomHasher obj = new();
@@ -266,6 +282,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<Dictionary<string, int>>]
+	[GenerateShapeFor<Uri>]
 	[GenerateShapeFor<CustomHasher>]
 	internal partial class Witness;
 
