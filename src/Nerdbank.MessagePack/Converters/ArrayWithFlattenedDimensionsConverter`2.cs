@@ -48,13 +48,9 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 			dimensions[i] = reader.ReadInt32();
 		}
 
+		ArrayConverterUtilities.ReadFlattenedElementCount(ref reader, dimensions.AsSpan(0, rank));
 		Array array = Array.CreateInstance(typeof(TElement), dimensions);
 		Span<TElement> elements = AsSpan(array);
-		int elementCount = reader.ReadArrayHeader();
-		if (elementCount != elements.Length)
-		{
-			throw new MessagePackSerializationException($"Expected {elements.Length} elements but found {elementCount}.");
-		}
 
 		for (int i = 0; i < elements.Length; i++)
 		{

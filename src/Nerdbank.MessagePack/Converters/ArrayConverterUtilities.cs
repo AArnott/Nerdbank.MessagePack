@@ -40,4 +40,40 @@ internal static class ArrayConverterUtilities
 
 		return actual;
 	}
+
+	/// <summary>
+	/// Reads the flat element array header and verifies that its length matches the product of the declared dimensions.
+	/// </summary>
+	/// <param name="reader">The reader.</param>
+	/// <param name="dimensions">The lengths of each dimension.</param>
+	/// <returns>The expected element count.</returns>
+	/// <exception cref="MessagePackSerializationException">Thrown if the dimensions or flat element array length are invalid.</exception>
+	internal static int ReadFlattenedElementCount(ref MessagePackReader reader, scoped ReadOnlySpan<int> dimensions)
+	{
+		long expected = 1;
+		try
+		{
+			foreach (int dimension in dimensions)
+			{
+				if (dimension < 0)
+				{
+					throw new MessagePackSerializationException("Array dimensions may not be negative.");
+				}
+
+				expected = checked(expected * dimension);
+			}
+		}
+		catch (OverflowException ex)
+		{
+			throw new MessagePackSerializationException("Array dimensions are too large.", ex);
+		}
+
+		int actual = reader.ReadArrayHeader();
+		if (expected != actual)
+		{
+			throw new MessagePackSerializationException($"Expected {expected} elements but found {actual}.");
+		}
+
+		return actual;
+	}
 }
