@@ -390,7 +390,7 @@ internal partial class MessagePackHubProtocol
 			return new StreamBindingFailureMessage(invocationId, ExceptionDispatchInfo.Capture(ex));
 		}
 
-		SkipTheRest(ref reader, 5, itemCount);
+		SkipTheRest(ref reader, 3, itemCount);
 		return ApplyHeaders(headers, new StreamItemMessage(invocationId, value));
 	}
 
