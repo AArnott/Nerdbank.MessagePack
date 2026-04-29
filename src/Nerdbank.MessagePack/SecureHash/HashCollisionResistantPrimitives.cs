@@ -126,6 +126,8 @@ internal static class HashCollisionResistantPrimitives
 
 	internal class BigIntegerEqualityComparer : SecureEqualityComparer<BigInteger>
 	{
+		private const int MaxStackAllocBytes = 256;
+
 		/// <inheritdoc/>
 		public override bool Equals(BigInteger x, BigInteger y) => x.Equals(y);
 
@@ -133,9 +135,21 @@ internal static class HashCollisionResistantPrimitives
 		public override long GetSecureHashCode([DisallowNull] BigInteger obj)
 		{
 #if NET
-			Span<byte> bytes = stackalloc byte[obj.GetByteCount()];
-			Assumes.True(obj.TryWriteBytes(bytes, out _));
-			return SecureHash(bytes);
+			int byteCount = obj.GetByteCount();
+			byte[]? rented = byteCount > MaxStackAllocBytes ? ArrayPool<byte>.Shared.Rent(byteCount) : null;
+			Span<byte> bytes = rented is null ? stackalloc byte[byteCount] : rented.AsSpan(0, byteCount);
+			try
+			{
+				Assumes.True(obj.TryWriteBytes(bytes, out _));
+				return SecureHash(bytes);
+			}
+			finally
+			{
+				if (rented is not null)
+				{
+					ArrayPool<byte>.Shared.Return(rented);
+				}
+			}
 #else
 			return SecureHash(obj.ToByteArray());
 #endif
