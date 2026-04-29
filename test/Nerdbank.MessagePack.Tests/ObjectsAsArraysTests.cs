@@ -117,15 +117,19 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(new Person { FirstName = "A", LastName = "B" }, person);
 	}
 
+	[Trait("CWE", "129")]
 	[Theory, PairwiseData]
 	public async Task Person_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
 		MessagePackWriter writer = new(sequence);
-		writer.WriteMapHeader(3);
+		writer.WriteMapHeader(4);
 
 		writer.Write(0);
 		writer.Write("A");
+
+		writer.Write(-1);  // This should be ignored.
+		writer.Write("Z");
 
 		writer.Write(15);  // This should be ignored.
 		writer.Write("C");
@@ -200,15 +204,19 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 		Assert.Equal(new PersonWithDefaultConstructor { FirstName = "A", LastName = "B" }, person);
 	}
 
+	[Trait("CWE", "129")]
 	[Theory, PairwiseData]
 	public async Task PersonWithDefaultConstructor_UnknownIndexesInMap(bool async)
 	{
 		Sequence<byte> sequence = new();
 		MessagePackWriter writer = new(sequence);
-		writer.WriteMapHeader(3);
+		writer.WriteMapHeader(4);
 
 		writer.Write(0);
 		writer.Write("A");
+
+		writer.Write(-1);  // This should be ignored.
+		writer.Write("Z");
 
 		writer.Write(15);  // This should be ignored.
 		writer.Write("C");

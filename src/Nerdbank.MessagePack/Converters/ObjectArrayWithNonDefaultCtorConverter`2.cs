@@ -47,7 +47,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			for (int i = 0; i < count; i++)
 			{
 				int index = reader.ReadInt32();
-				if (properties.Length > index && parameters[index] is { } deserialize)
+				if (index >= 0 && index < properties.Length && parameters[index] is { } deserialize)
 				{
 					deserialize.Read(ref argState, ref reader, context);
 				}
@@ -147,7 +147,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					int propertyIndex = syncReader.ReadInt32();
-					if (propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
+					if (propertyIndex >= 0 && propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
 					{
 						deserialize(ref argState, ref syncReader, context);
 					}
@@ -172,7 +172,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					{
 						// The property name has already been buffered.
 						int propertyIndex = syncReader.ReadInt32();
-						if (propertyIndex < parameters.Length && parameters[propertyIndex] is { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync })
+						if (propertyIndex >= 0 && propertyIndex < parameters.Length && parameters[propertyIndex] is { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync })
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
 							reader.ReturnReader(ref syncReader);

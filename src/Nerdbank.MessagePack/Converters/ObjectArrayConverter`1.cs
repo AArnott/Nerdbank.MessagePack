@@ -67,7 +67,7 @@ internal class ObjectArrayConverter<T>(
 			for (int i = 0; i < count; i++)
 			{
 				int index = reader.ReadInt32();
-				if (properties.Length > index && properties.Span[index] is { MsgPackReaders: var (deserialize, _), Shape.Position: int propertyShapePosition })
+				if (index >= 0 && index < properties.Length && properties.Span[index] is { MsgPackReaders: var (deserialize, _), Shape.Position: int propertyShapePosition })
 				{
 					collisionDetection.MarkAsRead(propertyShapePosition);
 					deserialize(ref value, ref reader, context);
@@ -469,7 +469,7 @@ internal class ObjectArrayConverter<T>(
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					int propertyIndex = syncReader.ReadInt32();
-					if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { MsgPackReaders: { Deserialize: { } deserialize }, Shape.Position: int shapePosition })
+					if (propertyIndex >= 0 && propertyIndex < properties.Length && properties.Span[propertyIndex] is { MsgPackReaders: { Deserialize: { } deserialize }, Shape.Position: int shapePosition })
 					{
 						collisionDetection.MarkAsRead(shapePosition);
 						deserialize(ref value, ref syncReader, context);
@@ -495,7 +495,7 @@ internal class ObjectArrayConverter<T>(
 					{
 						// The property name has already been buffered.
 						int propertyIndex = syncReader.ReadInt32();
-						if (propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader, Shape.Position: int shapePosition })
+						if (propertyIndex >= 0 && propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader, Shape.Position: int shapePosition })
 						{
 							collisionDetection.MarkAsRead(shapePosition);
 
