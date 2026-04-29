@@ -383,6 +383,24 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	[Trait("CWE", "789")]
+	public void DateTime_BadHeaderLength()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasDateTime.Value));
+
+		// Allege that you're sending a very large DateTime extension that would blow the stack if allocated on it.
+		writer.Write(new ExtensionHeader(ReservedMessagePackExtensionTypeCode.DateTime, 0x800000));
+		writer.Flush();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<HasDateTime>(seq, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.Message);
+	}
+
+	[Fact]
 	public void DateTimeOffset()
 	{
 		this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now));
