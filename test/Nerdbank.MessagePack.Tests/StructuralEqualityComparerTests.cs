@@ -230,6 +230,19 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 		}
 
 		[Fact]
+		[Trait("CWE", "697")]
+		public void Decimal()
+		{
+			IEqualityComparer<decimal> comparer = this.GetEqualityComparer<decimal, Witness>();
+			Assert.True(comparer.Equals(1.0m, 1.00m));
+			Assert.Equal(comparer.GetHashCode(1.0m), comparer.GetHashCode(1.00m));
+			Assert.True(comparer.Equals(123.4500m, 123.45m));
+			Assert.Equal(comparer.GetHashCode(123.4500m), comparer.GetHashCode(123.45m));
+			Assert.True(comparer.Equals(0m, new decimal(0, 0, 0, isNegative: true, scale: 1)));
+			Assert.Equal(comparer.GetHashCode(0m), comparer.GetHashCode(new decimal(0, 0, 0, isNegative: true, scale: 1)));
+		}
+
+		[Fact]
 		public override void CustomHash()
 		{
 			CustomHasher obj = new();
@@ -242,6 +255,7 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 
 	[GenerateShapeFor<bool>]
 	[GenerateShapeFor<BigInteger>]
+	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<Dictionary<string, int>>]
 	[GenerateShapeFor<CustomHasher>]
 	internal partial class Witness;

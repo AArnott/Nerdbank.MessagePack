@@ -9,7 +9,6 @@
 #endif
 
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Microsoft;
@@ -158,6 +157,10 @@ internal static class HashCollisionResistantPrimitives
 
 	internal class DecimalEqualityComparer : SecureEqualityComparer<decimal>
 	{
+		private const int DecimalSignMask = unchecked((int)0x80000000);
+		private const int DecimalScaleMask = 0x00FF0000;
+		private const int DecimalScaleShift = 16;
+
 		/// <inheritdoc/>
 		public override bool Equals(decimal x, decimal y) => x.Equals(y);
 
@@ -165,16 +168,64 @@ internal static class HashCollisionResistantPrimitives
 		public override long GetSecureHashCode([DisallowNull] decimal obj)
 		{
 #if NET
-			Span<int> bytes = stackalloc int[500];
+			Span<int> bytes = stackalloc int[4];
 			if (!decimal.TryGetBits(obj, bytes, out int length))
 			{
 				throw new NotSupportedException("Decimal too long.");
 			}
 
+			NormalizeBits(bytes);
 			return SecureHash(MemoryMarshal.Cast<int, byte>(bytes[..length]));
 #else
-			return StringEqualityComparer.Instance.GetSecureHashCode(obj.ToString(CultureInfo.InvariantCulture));
+			int[] bytes = decimal.GetBits(obj);
+			NormalizeBits(bytes);
+			return SecureHash(MemoryMarshal.Cast<int, byte>(bytes.AsSpan()));
 #endif
+		}
+
+		private static void NormalizeBits(Span<int> bits)
+		{
+			int flags = bits[3];
+			int scale = (flags & DecimalScaleMask) >> DecimalScaleShift;
+			if ((bits[0] | bits[1] | bits[2]) == 0)
+			{
+				bits[3] = 0;
+				return;
+			}
+
+			while (scale > 0 && TryDivideBitsBy10(bits))
+			{
+				scale--;
+			}
+
+			bits[3] = (flags & DecimalSignMask) | (scale << DecimalScaleShift);
+		}
+
+		private static bool TryDivideBitsBy10(Span<int> bits)
+		{
+			ulong remainder = 0;
+
+			ulong high = (uint)bits[2];
+			ulong quotientHigh = high / 10;
+			remainder = high % 10;
+
+			ulong middle = (remainder << 32) | (uint)bits[1];
+			ulong quotientMiddle = middle / 10;
+			remainder = middle % 10;
+
+			ulong low = (remainder << 32) | (uint)bits[0];
+			ulong quotientLow = low / 10;
+			remainder = low % 10;
+
+			if (remainder != 0)
+			{
+				return false;
+			}
+
+			bits[2] = (int)(uint)quotientHigh;
+			bits[1] = (int)(uint)quotientMiddle;
+			bits[0] = (int)(uint)quotientLow;
+			return true;
 		}
 	}
 
