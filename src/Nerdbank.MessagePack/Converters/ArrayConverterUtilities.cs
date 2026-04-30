@@ -54,7 +54,7 @@ internal static class ArrayConverterUtilities
 		long remainingBytes = reader.Sequence.Slice(reader.Position).Length;
 		if (expected > remainingBytes)
 		{
-			throw new MessagePackSerializationException($"Array dimensions require {expected} elements but only {remainingBytes} bytes remain.");
+			throw new MessagePackSerializationException($"Array dimensions declare {expected} elements, which require at least {expected} bytes of MessagePack data, but only {remainingBytes} bytes remain.");
 		}
 	}
 
