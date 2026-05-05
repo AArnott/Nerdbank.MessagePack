@@ -133,6 +133,51 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.Equal("00-00-00-80-E7-03-00-00-18-FC-FF-FF-FF-FF-FF-FF", BitConverter.ToString(decimalEncoding.Data.ToArray()));
 	}
 
+	[Fact]
+	public void DecimalRejectsInvalidScale()
+	{
+		decimal invalidValue = DecimalFromRawBits([
+			0x001d0000, // scale 1d = 29, which exceeds the 28 maximum value for scale.
+			0x00000000,
+			0x00000000,
+			0x00000000,
+		]);
+
+		// We don't expect validation on serialization.
+		byte[] msgpack = this.Serializer.Serialize<decimal, Witness>(invalidValue, TestContext.Current.CancellationToken);
+
+		// But upon deserialization, we should reject it.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() =>
+			this.Serializer.Deserialize<decimal, Witness>(msgpack, TestContext.Current.CancellationToken));
+
+		this.Logger.WriteLine(ex.ToString());
+		Assert.IsType<ArgumentOutOfRangeException>(ex.GetBaseException());
+	}
+
+	[Theory]
+	[InlineData(0x10000000)]
+	[InlineData(0x01000000)]
+	[InlineData(0x00000001)]
+	public void DecimalRejectsInvalidFlags(int flags) // valid mask is 0x80FF0000
+	{
+		decimal originalValue = DecimalFromRawBits([
+			flags,
+			0x00000000,
+			0x00000001,
+			0x00000001,
+		]);
+
+		// We don't expect validation on serialization.
+		byte[] msgpack = this.Serializer.Serialize<decimal, Witness>(originalValue, TestContext.Current.CancellationToken);
+
+		// But upon deserialization, we should reject it.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() =>
+			this.Serializer.Deserialize<decimal, Witness>(msgpack, TestContext.Current.CancellationToken));
+
+		this.Logger.WriteLine(ex.ToString());
+		Assert.IsType<ArgumentOutOfRangeException>(ex.GetBaseException());
+	}
+
 	/// <summary>
 	/// Verifies that we can read <see cref="decimal"/> values that use the Bin header, which is what MessagePack-CSharp's "native" formatter uses.
 	/// </summary>
@@ -450,6 +495,12 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[Fact]
 	public void Extension() => this.AssertRoundtrip(new Extension(15, new byte[] { 1, 2, 3 }));
 
+	private static decimal DecimalFromRawBits(ReadOnlySpan<int> words)
+	{
+		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
+		return MemoryMarshal.Cast<int, decimal>(words)[0];
+	}
+
 	private (Guid Before, Guid After) RoundtripModifiedGuid(Func<string, string> modifier, MessagePackSerializer? serializer = null, MessagePackSerializer? deserializer = null)
 	{
 		serializer ??= this.Serializer;
@@ -520,6 +571,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public partial record HasDateTimeOffset(DateTimeOffset Value);
 
 	[GenerateShapeFor<string>]
+	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<Guid>]
 	[GenerateShapeFor<Point>]
 	[GenerateShapeFor<Color>]

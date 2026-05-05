@@ -332,16 +332,16 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 			throw new MessagePackSerializationException($"Expected {sizeof(decimal)} bytes but got {bytes.Length}.");
 		}
 
-		decimal result;
+		DECIMAL result;
 		if (bytes.IsSingleSegment)
 		{
-			result = MemoryMarshal.Read<decimal>(bytes.First.Span);
+			result = MemoryMarshal.Read<DECIMAL>(bytes.First.Span);
 		}
 		else
 		{
 			Span<byte> decimalBytes = stackalloc byte[sizeof(decimal)];
 			bytes.CopyTo(decimalBytes);
-			result = MemoryMarshal.Read<decimal>(decimalBytes);
+			result = MemoryMarshal.Read<DECIMAL>(decimalBytes);
 		}
 
 		if (!BitConverter.IsLittleEndian)
@@ -349,7 +349,8 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 			result = DECIMAL.ReverseEndianness(result);
 		}
 
-		return result;
+		// We want to construct the decimal via its constructor so that it throws if the value is invalid.
+		return result.ToDecimalAndValidate();
 	}
 
 	/// <inheritdoc/>
@@ -423,17 +424,23 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 	/// </summary>
 	private readonly struct DECIMAL
 	{
-		private readonly ushort wReserved;
-		private readonly byte scale;
-		private readonly byte sign;
+		// Sign mask for the flags field. A value of zero in this bit indicates a
+		// positive Decimal value, and a value of one in this bit indicates a
+		// negative Decimal value.
+		private const int SignMask = unchecked((int)0x80000000);
+
+		// Scale mask for the flags field. This byte in the flags field contains
+		// the power of 10 to divide the Decimal value by. The scale byte must
+		// contain a value between 0 and 28 inclusive.
+		private const int ScaleMask = 0x00FF0000;
+
+		private readonly int flags;
 		private readonly uint hi32;
 		private readonly ulong lo64;
 
-		internal DECIMAL(byte scale, byte sign, uint hi32, ulong lo64)
+		internal DECIMAL(int flags, uint hi32, ulong lo64)
 		{
-			this.wReserved = 0;
-			this.scale = scale;
-			this.sign = sign;
+			this.flags = flags;
 			this.hi32 = hi32;
 			this.lo64 = lo64;
 		}
@@ -442,7 +449,21 @@ internal class DecimalConverter : MessagePackConverter<decimal>
 
 		public static unsafe implicit operator decimal(DECIMAL value) => *(decimal*)&value;
 
-		internal static DECIMAL ReverseEndianness(in DECIMAL value) => new DECIMAL(value.scale, value.sign, BinaryPrimitives.ReverseEndianness(value.hi32), BinaryPrimitives.ReverseEndianness(value.lo64));
+		internal static DECIMAL ReverseEndianness(in DECIMAL value) => new DECIMAL(BinaryPrimitives.ReverseEndianness(value.flags), BinaryPrimitives.ReverseEndianness(value.hi32), BinaryPrimitives.ReverseEndianness(value.lo64));
+
+		/// <summary>
+		/// Initializes a new <see cref="decimal"/> value based on this <see cref="DECIMAL"/> value
+		/// using the <see cref="decimal(int, int, int, bool, byte)"/> constructor, which will throw if the value is invalid.
+		/// </summary>
+		/// <returns>The new <see cref="decimal"/> value.</returns>
+		/// <inheritdoc cref="decimal(int, int, int, bool, byte)" path="/exception" />
+		internal decimal ToDecimalAndValidate()
+		{
+			// Validate flags manually since we decipher it ourselves.
+			// We'll leave the scale value unchecked since the decimal constructor will throw if it's out of range.
+			Requires.Range((this.flags & ~(SignMask | ScaleMask)) == 0, null, "Flags included unexpected non-zero bits.");
+			return unchecked(new decimal((int)(this.lo64 & 0xFFFFFFFF), (int)(this.lo64 >> 32), (int)this.hi32, (this.flags & SignMask) != 0, (byte)((this.flags & ScaleMask) >> 16)));
+		}
 	}
 }
 
