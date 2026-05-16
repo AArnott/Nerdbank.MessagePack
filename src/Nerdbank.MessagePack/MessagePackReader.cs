@@ -725,6 +725,36 @@ public ref partial struct MessagePackReader
 		};
 	}
 
+	/// <inheritdoc cref="ReadArrayHeader()"/>
+	/// <param name="expected">The expected array length.</param>
+	/// <exception cref="MessagePackSerializationException">Thrown if the actual array length does not match the <paramref name="expected"/> value.</exception>
+	internal void ReadArrayHeader(int expected)
+	{
+		int count = this.ReadArrayHeader();
+		if (count != expected)
+		{
+			Throw(expected, count);
+		}
+
+		[DoesNotReturn]
+		static void Throw(int expected, int actual) => throw new MessagePackSerializationException($"Expected array of length {expected}, but got {actual}.");
+	}
+
+	/// <inheritdoc cref="ReadMapHeader()"/>
+	/// <param name="expected">The expected array length.</param>
+	/// <exception cref="MessagePackSerializationException">Thrown if the actual array length does not match the <paramref name="expected"/> value.</exception>
+	internal void ReadMapHeader(int expected)
+	{
+		int count = this.ReadMapHeader();
+		if (count != expected)
+		{
+			Throw(expected, count);
+		}
+
+		[DoesNotReturn]
+		static void Throw(int expected, int actual) => throw new MessagePackSerializationException($"Expected map of length {expected}, but got {actual}.");
+	}
+
 	/// <summary>
 	/// Reads an extension, asserting that it bears a particular type code.
 	/// </summary>

@@ -48,20 +48,12 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		if (this.useDiscriminatorObjects)
 		{
 			// Object format: {"TypeName": {...}}
-			int count = reader.ReadMapHeader();
-			if (count != 1)
-			{
-				throw new MessagePackSerializationException($"Expected a map with 1 property, but found {count}.");
-			}
+			reader.ReadMapHeader(1);
 		}
 		else
 		{
 			// Array format: ["TypeName", {...}]
-			int count = reader.ReadArrayHeader();
-			if (count != 2)
-			{
-				throw new MessagePackSerializationException($"Expected an array of 2 elements, but found {count}.");
-			}
+			reader.ReadArrayHeader(2);
 		}
 
 		// The alias for the base type itself is simply nil.
