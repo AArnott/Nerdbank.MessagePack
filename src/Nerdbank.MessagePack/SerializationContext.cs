@@ -45,6 +45,12 @@ public record struct SerializationContext
 	public int MaxDepth { get; set; } = 64;
 
 	/// <summary>
+	/// Gets or sets the security settings to apply to (de)serialization.
+	/// </summary>
+	/// <value>The default value is <see cref="SecuritySettings.UntrustedData"/>.</value>
+	public SecuritySettings Security { get; set; } = SecuritySettings.UntrustedData;
+
+	/// <summary>
 	/// Gets a hint as to the number of bytes to write into the buffer before serialization will flush the output.
 	/// </summary>
 	/// <value>The default value is 64KB.</value>
@@ -64,18 +70,6 @@ public record struct SerializationContext
 	/// Gets the type shape provider that applies to the serialization operation.
 	/// </summary>
 	public ITypeShapeProvider? TypeShapeProvider { get; internal init; }
-
-	/// <summary>
-	/// Gets or sets a value indicating whether the data to be serialized or deserialized
-	/// is trustworthy, such that certain security guards may be lowered in the interest
-	/// of greater performance.
-	/// </summary>
-	/// <value>The default value is <see langword="false" />.</value>
-	/// <devremarks>
-	/// If we make this public, search MessagePackReader.cs for "IsTrustedData" and activate
-	/// the doc comments that reference this property.
-	/// </devremarks>
-	internal bool IsTrustedData { get; set; }
 
 	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.

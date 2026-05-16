@@ -5,6 +5,20 @@ Vulnerabilities typically include denial of service attacks at the deserializer 
 
 In this topic, we will focus on the vulnerabilities that are specific to the deserialization layer.
 
+## Adjusting secure defaults
+
+In some cases secure defaults can impact required functionality.
+Adjusting these limits can be achieved through the <xref:Nerdbank.MessagePack.SecuritySettings> class.
+
+In this example, limits can be set to whatever level suits your application, balancing security with functionality:
+
+[!code-csharp[](../../samples/cs/Security.cs#SetSecuritySettings_Custom)]
+
+When you are dealing exclusively with trusted data, you can lift all limits like this:
+
+[!code-csharp[](../../samples/cs/Security.cs#SetSecuritySettings_TrustedData)]
+
+
 ## Stack overflows
 
 A very simple attack to carry out is crashing the deserializing process by forcing the deserializer to "stack overflow".
