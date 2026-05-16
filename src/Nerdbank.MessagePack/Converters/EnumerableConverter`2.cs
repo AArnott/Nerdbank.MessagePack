@@ -330,7 +330,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 	{
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
-		TEnumerable collection = getCollection(state, count);
+		TEnumerable collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 		int i = 0;
 		try
 		{
@@ -363,7 +363,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 			reader.ReturnReader(ref streamingReader);
 
-			collection = getCollection(state, PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 			int i = 0;
 			try
 			{
@@ -382,7 +382,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadArrayHeader();
-			collection = getCollection(state, count);
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 			int i = 0;
 			try
 			{
@@ -429,12 +429,13 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
-		TElement[] elements = ArrayPool<TElement>.Shared.Rent(count);
+		TElement[] elements = [];
 		int? i = 0;
 		try
 		{
 			for (; i < count; i++)
 			{
+				Grow(ref elements, i.Value, count, allowSlack: true, context);
 				elements[i.Value] = this.ReadElement(ref reader, context);
 			}
 
@@ -478,13 +479,13 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			TElement[] elements = ArrayPool<TElement>.Shared.Rent(PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
+			TElement[] elements = [];
 			int? i = 0;
 			try
 			{
 				for (; i < count; i++)
 				{
-					elements = PolyTypeExtensions.EnsurePooledBufferSize(elements, i.Value, i.Value + 1, count);
+					Grow(ref elements, i.Value, count, allowSlack: true, context);
 					elements[i.Value] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
 				}
 

@@ -410,7 +410,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	{
 		context.DepthStep();
 		int count = reader.ReadMapHeader();
-		TDictionary collection = getCollection(state, count);
+		TDictionary collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 		for (int i = 0; i < count; i++)
 		{
 			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
@@ -434,7 +434,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			collection = getCollection(state, PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
@@ -447,7 +447,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadMapHeader();
-			collection = getCollection(state, count);
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 			for (int i = 0; i < count; i++)
 			{
 				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
@@ -490,12 +490,13 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		context.DepthStep();
 		int count = reader.ReadMapHeader();
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
+		KeyValuePair<TKey, TValue>[] entries = [];
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
 				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
+				Grow(ref entries, i, count, allowSlack: true, context);
 				entries[i] = new(key, value);
 			}
 
@@ -540,12 +541,12 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		reader.ReturnReader(ref streamingReader);
 
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(PolyTypeExtensions.GetStreamingCollectionInitialCapacity(count));
+		KeyValuePair<TKey, TValue>[] entries = [];
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
-				entries = PolyTypeExtensions.EnsurePooledBufferSize(entries, i, i + 1, count);
+				Grow(ref entries, i, count, allowSlack: true, context);
 				entries[i] = await this.ReadEntryAsync(reader, context).ConfigureAwait(false);
 			}
 

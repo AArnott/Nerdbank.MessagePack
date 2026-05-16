@@ -217,6 +217,11 @@ public ref partial struct MessagePackReader
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an array header is encountered.</exception>
+	///// <remarks>
+	///// For better security, implementations of <see cref="MessagePackConverter.ReadObject(ref MessagePackReader, SerializationContext)"/>
+	///// should consider capping initial memory allocation when <see cref="SerializationContext.IsTrustedData"/> is <see langword="false" />,
+	///// allowing the memory to grow as data is actually encountered in the msgpack stream to avoid memory amplification vulnerabilities.
+	///// </remarks>
 	public int ReadArrayHeader()
 	{
 		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(out int count));
@@ -268,6 +273,11 @@ public ref partial struct MessagePackReader
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an map header is encountered.</exception>
+	///// <remarks>
+	///// For better security, implementations of <see cref="MessagePackConverter.ReadObject(ref MessagePackReader, SerializationContext)"/>
+	///// should consider capping initial memory allocation when <see cref="SerializationContext.IsTrustedData"/> is <see langword="false" />,
+	///// allowing the memory to grow as data is actually encountered in the msgpack stream to avoid memory amplification vulnerabilities.
+	///// </remarks>
 	public int ReadMapHeader()
 	{
 		ThrowInsufficientBufferUnless(this.TryReadMapHeader(out int count));
