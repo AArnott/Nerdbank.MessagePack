@@ -829,12 +829,7 @@ internal class HiFiDateTimeConverter : MessagePackConverter<DateTime>
 	{
 		if (reader.NextMessagePackType == MessagePackType.Array)
 		{
-			int len = reader.ReadArrayHeader();
-			if (len != 2)
-			{
-				throw new MessagePackSerializationException($"Reading hi-fi DateTime value expected array length 2 but was {len}.");
-			}
-
+			reader.ReadArrayHeader(2);
 			long ticks = reader.ReadInt64();
 			DateTimeKind kind = (DateTimeKind)reader.ReadByte();
 			return new DateTime(ticks, kind);
@@ -886,11 +881,7 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 	/// <inheritdoc/>
 	public override DateTimeOffset Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int count = reader.ReadArrayHeader();
-		if (count != 2)
-		{
-			throw new MessagePackSerializationException("Expected array of length 2.");
-		}
+		reader.ReadArrayHeader(2);
 
 		DateTime utcDateTime = reader.ReadDateTime();
 		short offsetMinutes = reader.ReadInt16();
