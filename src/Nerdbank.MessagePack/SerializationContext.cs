@@ -66,6 +66,18 @@ public record struct SerializationContext
 	public ITypeShapeProvider? TypeShapeProvider { get; internal init; }
 
 	/// <summary>
+	/// Gets or sets a value indicating whether the data to be serialized or deserialized
+	/// is trustworthy, such that certain security guards may be lowered in the interest
+	/// of greater performance.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />.</value>
+	/// <devremarks>
+	/// If we make this public, search MessagePackReader.cs for "IsTrustedData" and activate
+	/// the doc comments that reference this property.
+	/// </devremarks>
+	internal bool IsTrustedData { get; set; }
+
+	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.
 	/// </summary>
 	internal LibraryReservedMessagePackExtensionTypeCode ExtensionTypeCodes

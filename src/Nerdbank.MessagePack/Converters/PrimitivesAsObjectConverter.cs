@@ -162,10 +162,12 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 		object?[] ReadArray(ref MessagePackReader reader, SerializationContext context)
 		{
 			context.DepthStep();
-			object?[] array = new object?[reader.ReadArrayHeader()];
-			for (int i = 0; i < array.Length; i++)
+			int length = reader.ReadArrayHeader();
+			object?[] array = [];
+			for (int i = 0; i < length; i++)
 			{
 				context.CancellationToken.ThrowIfCancellationRequested();
+				Grow(ref array, i, length, allowSlack: false, context);
 				array[i] = ReadOneObject(ref reader, context);
 			}
 
@@ -176,7 +178,7 @@ internal class PrimitivesAsObjectConverter : MessagePackConverter<object?>
 		{
 			context.DepthStep();
 			int count = reader.ReadMapHeader();
-			Dictionary<object, object?> map = new(count);
+			Dictionary<object, object?> map = new(GetCollectionInitialCapacity(count, context));
 			for (int i = 0; i < count; i++)
 			{
 				context.CancellationToken.ThrowIfCancellationRequested();

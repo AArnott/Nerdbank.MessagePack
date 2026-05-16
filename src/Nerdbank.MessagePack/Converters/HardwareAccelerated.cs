@@ -729,6 +729,9 @@ internal static class HardwareAccelerated
 		}
 	}
 
+	/// <summary>
+	/// A hardware-accelerated converter for an array of <see cref="bool"/> values.
+	/// </summary>
 	private sealed class BoolArrayConverter<TEnumerable>(SpanConstructorKind spanConstructorKind) : MessagePackConverter<TEnumerable>
 	{
 		private readonly SpanConstructorKind spanConstructorKind = spanConstructorKind;
@@ -747,6 +750,9 @@ internal static class HardwareAccelerated
 				return GetEmptyEnumerable<TEnumerable, bool>(this.spanConstructorKind);
 			}
 
+			// We don't need to defensively allocate memory as we read more elements
+			// because ReadArrayHeader already ensures there are at least as many bytes as the count of elements returned,
+			// and msgpack encoding for bool is 1 byte.
 			TEnumerable enumerable;
 			Span<bool> span;
 			switch (this.spanConstructorKind)
@@ -842,7 +848,7 @@ internal static class HardwareAccelerated
 	}
 
 	/// <summary>
-	/// A hardware-accelerated converter for an array of <see cref="bool"/> values.
+	/// A hardware-accelerated converter for an array of unmanaged <typeparamref name="TElement"/> values.
 	/// </summary>
 	/// <typeparam name="TEnumerable">The type of the enumerable to be converted.</typeparam>
 	/// <typeparam name="TElement">The type of element to be converted.</typeparam>
@@ -877,6 +883,9 @@ internal static class HardwareAccelerated
 				return GetEmptyEnumerable<TEnumerable, TElement>(this.spanConstructorKind);
 			}
 
+			// We don't need to defensively allocate memory as we read more elements
+			// because ReadArrayHeader already ensures there are at least as many bytes as the count of elements returned,
+			// and msgpack encoding for each of these values can be as short as 1 byte each.
 			TEnumerable enumerable;
 			Span<TElement> span;
 			switch (this.spanConstructorKind)
