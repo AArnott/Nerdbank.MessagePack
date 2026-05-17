@@ -8,8 +8,10 @@ public class SecuritySettingsTests
 	{
 		SecuritySettings settings = new()
 		{
+			ExpandoObjectMaxPropertyCount = 512,
 			MaxCollectionPreallocation = 1024,
 		};
+		Assert.Equal(512, settings.ExpandoObjectMaxPropertyCount);
 		Assert.Equal(1024, settings.MaxCollectionPreallocation);
 	}
 
@@ -17,6 +19,23 @@ public class SecuritySettingsTests
 	public void DefaultCtorMatchesUntrustedData()
 	{
 		Assert.Equal(SecuritySettings.UntrustedData, new SecuritySettings());
+	}
+
+	[Fact]
+	public void ExpandoObjectMaxPropertyCount_RequiresPositiveValue()
+	{
+		SecuritySettings value = SecuritySettings.UntrustedData with
+		{
+			ExpandoObjectMaxPropertyCount = 1,
+		};
+		Assert.Throws<ArgumentOutOfRangeException>(() => SecuritySettings.UntrustedData with
+		{
+			ExpandoObjectMaxPropertyCount = 0,
+		});
+		Assert.Throws<ArgumentOutOfRangeException>(() => SecuritySettings.UntrustedData with
+		{
+			ExpandoObjectMaxPropertyCount = -1,
+		});
 	}
 
 	[Fact]

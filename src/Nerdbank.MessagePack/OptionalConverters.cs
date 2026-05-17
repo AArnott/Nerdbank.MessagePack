@@ -228,10 +228,11 @@ public static class OptionalConverters
 	/// <para>
 	/// This can only <em>serialize</em> an <see cref="ExpandoObject"/>
 	/// whose properties are values or objects whose runtime type
-	/// has a shape available as provided by <see cref="SerializationContext.TypeShapeProvider"/>.
+	/// has a shape available as provided by <see cref="SerializationContext.TypeShapeProvider"/>
+	/// and where the property count does not exceed <see cref="SecuritySettings.ExpandoObjectMaxPropertyCount"/>.
 	/// </para>
 	/// <para>
-	/// This can <em>deserialize</em> any msgpack map.
+	/// This can <em>deserialize</em> any msgpack map that does not exceed <see cref="SecuritySettings.ExpandoObjectMaxPropertyCount"/> properties.
 	/// Nested maps included in the deserialized graph will be deserialized as dictionaries that support C# <c>dynamic</c> access to their members,
 	/// similar to <see cref="ExpandoObject"/> but with read-only access.
 	/// </para>

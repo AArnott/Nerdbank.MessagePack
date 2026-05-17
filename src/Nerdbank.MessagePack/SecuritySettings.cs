@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Dynamic;
 using Microsoft;
 
 namespace Nerdbank.MessagePack;
@@ -32,6 +33,7 @@ public record class SecuritySettings
 	public static readonly SecuritySettings TrustedData = new()
 	{
 		MaxCollectionPreallocation = Array.MaxLength,
+		ExpandoObjectMaxPropertyCount = int.MaxValue,
 	};
 
 	/// <summary>
@@ -41,6 +43,7 @@ public record class SecuritySettings
 	public SecuritySettings()
 	{
 		this.MaxCollectionPreallocation = 4096;
+		this.ExpandoObjectMaxPropertyCount = 128;
 	}
 
 	/// <summary>
@@ -52,6 +55,29 @@ public record class SecuritySettings
 	/// which can help mitigate DoS attacks that attempt to cause excessive memory allocations using only small payloads.
 	/// </remarks>
 	public int MaxCollectionPreallocation
+	{
+		get => field;
+		init
+		{
+			Requires.Range(value > 0, nameof(value), "Value must be positive.");
+			field = value;
+		}
+	}
+
+	/// <summary>
+	/// Gets the maximum number of properties that an <see cref="ExpandoObject"/> may have during (de)serialization.
+	/// (when using <see cref="OptionalConverters.WithExpandoObjectConverter(MessagePackSerializer)"/>).
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This limit is important because deserializing an <see cref="ExpandoObject"/> is an
+	/// <c>O(n²)</c> operation where <c>n</c> is the number of properties on the object.
+	/// While <em>serializing</em> a large <see cref="ExpandoObject"/> is not a performance risk,
+	/// the setting is honored during both serialization and deserialization to allow early detection when
+	/// an object may fail to round-trip due to this limit.
+	/// </para>
+	/// </remarks>
+	public int ExpandoObjectMaxPropertyCount
 	{
 		get => field;
 		init

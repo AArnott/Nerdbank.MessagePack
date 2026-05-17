@@ -39,6 +39,7 @@ partial class Security
                 Security = new SecuritySettings
                 {
                     MaxCollectionPreallocation = 1000,
+                    ExpandoObjectMaxPropertyCount = 64,
                 },
             },
         };

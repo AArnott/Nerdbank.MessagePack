@@ -74,6 +74,13 @@ This implementation uses the SIP hash algorithm, which is known for its high per
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
 Please review the documentation for @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* for more information.
 
+## Excessive CPU use
+
+When deserializing into an <xref:System.Dynamic.ExpandoObject> using <xref:Nerdbank.MessagePack.OptionalConverters.WithExpandoObjectConverter*>, care must be taken because its <xref:System.Collections.Generic.IDictionary`2.Add(`0,`1)> method is implemented as an `O(n)` algorithm, meaning that overall deserialization of the object is an `O(n²)` algorithm.
+
+A conservative property count limit is set by default to mitigate this threat.
+This limit may be adjusted via the <xref:Nerdbank.MessagePack.SecuritySettings.ExpandoObjectMaxPropertyCount> property.
+
 ## Multiple values for the same property
 
 Attackers will sometimes attempt to exploit vulnerabilities in a system by providing multiple values for the same property.
