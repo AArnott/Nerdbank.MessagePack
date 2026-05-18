@@ -101,13 +101,14 @@ internal static partial class ArraysOfPrimitivesConverters
 				return spanConstructor is null ? (TEnumerable)(object)Array.Empty<TElement>() : spanConstructor(default);
 			}
 
-			TElement[] elements = spanConstructor is null ? new TElement[count] : ArrayPool<TElement>.Shared.Rent(count);
+			TElement[] elements = [];
 			try
 			{
 				// PERF: When the memory is contiguous, we could use MessagePackPrimitives and advance an offset manually
 				// to avoid calling some machinery within MessagePackReader to speed things up.
 				for (int i = 0; i < count; i++)
 				{
+					Grow(ref elements, i, count, allowSlack: spanConstructor is not null, context);
 					elements[i] = this.Read(ref reader);
 				}
 

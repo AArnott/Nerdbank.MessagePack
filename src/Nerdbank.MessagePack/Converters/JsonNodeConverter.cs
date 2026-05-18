@@ -32,9 +32,11 @@ internal class JsonNodeConverter : MessagePackConverter<JsonNode>
 		JsonNode ReadArray(ref MessagePackReader reader, SerializationContext context)
 		{
 			context.DepthStep();
-			JsonNode?[] array = new JsonNode[reader.ReadArrayHeader()];
-			for (int i = 0; i < array.Length; i++)
+			int length = reader.ReadArrayHeader();
+			JsonNode?[] array = [];
+			for (int i = 0; i < length; i++)
 			{
+				Grow(ref array, i, length, allowSlack: false, context);
 				array[i] = this.Read(ref reader, context);
 			}
 

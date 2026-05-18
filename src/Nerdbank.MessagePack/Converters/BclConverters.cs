@@ -33,12 +33,7 @@ internal class SystemDrawingPointConverter : MessagePackConverter<Point>
 {
 	public override Point Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int count = reader.ReadArrayHeader();
-		if (count != 2)
-		{
-			throw new MessagePackSerializationException($"Expected an array of 2 integers, but got {count}.");
-		}
-
+		reader.ReadArrayHeader(2);
 		return new(reader.ReadInt32(), reader.ReadInt32());
 	}
 

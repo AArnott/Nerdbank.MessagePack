@@ -217,6 +217,11 @@ public ref partial struct MessagePackReader
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an array header is encountered.</exception>
+	///// <remarks>
+	///// For better security, implementations of <see cref="MessagePackConverter.ReadObject(ref MessagePackReader, SerializationContext)"/>
+	///// should consider capping initial memory allocation when <see cref="SerializationContext.IsTrustedData"/> is <see langword="false" />,
+	///// allowing the memory to grow as data is actually encountered in the msgpack stream to avoid memory amplification vulnerabilities.
+	///// </remarks>
 	public int ReadArrayHeader()
 	{
 		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(out int count));
@@ -268,6 +273,11 @@ public ref partial struct MessagePackReader
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an map header is encountered.</exception>
+	///// <remarks>
+	///// For better security, implementations of <see cref="MessagePackConverter.ReadObject(ref MessagePackReader, SerializationContext)"/>
+	///// should consider capping initial memory allocation when <see cref="SerializationContext.IsTrustedData"/> is <see langword="false" />,
+	///// allowing the memory to grow as data is actually encountered in the msgpack stream to avoid memory amplification vulnerabilities.
+	///// </remarks>
 	public int ReadMapHeader()
 	{
 		ThrowInsufficientBufferUnless(this.TryReadMapHeader(out int count));
@@ -723,6 +733,36 @@ public ref partial struct MessagePackReader
 		{
 			Code = MessagePackSerializationException.ErrorCode.UnexpectedToken,
 		};
+	}
+
+	/// <inheritdoc cref="ReadArrayHeader()"/>
+	/// <param name="expected">The expected array length.</param>
+	/// <exception cref="MessagePackSerializationException">Thrown if the actual array length does not match the <paramref name="expected"/> value.</exception>
+	internal void ReadArrayHeader(int expected)
+	{
+		int count = this.ReadArrayHeader();
+		if (count != expected)
+		{
+			Throw(expected, count);
+		}
+
+		[DoesNotReturn]
+		static void Throw(int expected, int actual) => throw new MessagePackSerializationException($"Expected array of length {expected}, but got {actual}.");
+	}
+
+	/// <inheritdoc cref="ReadMapHeader()"/>
+	/// <param name="expected">The expected number of elements in the map.</param>
+	/// <exception cref="MessagePackSerializationException">Thrown if the actual map size does not match the <paramref name="expected"/> value.</exception>
+	internal void ReadMapHeader(int expected)
+	{
+		int count = this.ReadMapHeader();
+		if (count != expected)
+		{
+			Throw(expected, count);
+		}
+
+		[DoesNotReturn]
+		static void Throw(int expected, int actual) => throw new MessagePackSerializationException($"Expected map of length {expected}, but got {actual}.");
 	}
 
 	/// <summary>
