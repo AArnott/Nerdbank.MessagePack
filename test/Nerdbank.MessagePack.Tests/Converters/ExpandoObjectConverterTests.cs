@@ -41,6 +41,71 @@ public partial class ExpandoObjectConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void MaxPropertyCountHonoredOnSerialization()
+	{
+		this.Serializer = this.Serializer with
+		{
+			StartingContext = this.Serializer.StartingContext with
+			{
+				Security = this.Serializer.StartingContext.Security with
+				{
+					ExpandoObjectMaxPropertyCount = 2,
+				},
+			},
+		};
+
+		dynamic e = new ExpandoObject();
+		e.a = 1;
+		e.b = 2;
+		e.c = 3;
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Serialize<ExpandoObject, Witness>((ExpandoObject)e, TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.GetBaseException().Message);
+		Assert.Contains($"3 properties", ex.GetBaseException().Message);
+	}
+
+	[Fact]
+	public void MaxPropertyCountHonoredOnDeserialization()
+	{
+		const int MaxPropertyCount = 2;
+		this.Serializer = this.Serializer with
+		{
+			StartingContext = this.Serializer.StartingContext with
+			{
+				Security = this.Serializer.StartingContext.Security with
+				{
+					ExpandoObjectMaxPropertyCount = MaxPropertyCount,
+				},
+			},
+		};
+
+		dynamic? e = this.Serializer.Deserialize<ExpandoObject, Witness>(ConstructMap(MaxPropertyCount), TestContext.Current.CancellationToken);
+		Assert.Equal(1, (int)e?.A);
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<ExpandoObject, Witness>(ConstructMap(MaxPropertyCount + 1), TestContext.Current.CancellationToken));
+		this.Logger.WriteLine(ex.GetBaseException().Message);
+		Assert.Contains($"{MaxPropertyCount + 1} properties", ex.GetBaseException().Message);
+
+		ReadOnlySequence<byte> ConstructMap(int count)
+		{
+			Sequence<byte> msgpack = new();
+			MessagePackWriter writer = new(msgpack);
+			writer.WriteMapHeader(count);
+			for (int i = 0; i < count; i++)
+			{
+				writer.Write($"{(char)('A' + i)}");
+				writer.Write(i + 1);
+			}
+
+			writer.Flush();
+			this.LogMsgPack(msgpack);
+			return msgpack;
+		}
+	}
+
+	[Fact]
 	public void Null()
 	{
 		Assert.Null(this.Roundtrip<ExpandoObject, Witness>(null));

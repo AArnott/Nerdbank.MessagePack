@@ -32,6 +32,11 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 
 		ExpandoObject result = new();
 		int count = reader.ReadMapHeader();
+		if (count > context.Security.ExpandoObjectMaxPropertyCount)
+		{
+			throw new MessagePackSerializationException($"Security settings prohibit deserializing an {nameof(ExpandoObject)} with {count} properties.");
+		}
+
 		if (count > 0)
 		{
 			MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider);
@@ -65,6 +70,14 @@ internal class ExpandoObjectConverter : MessagePackConverter<ExpandoObject>
 
 		IDictionary<string, object?> expandoAsDictionary = value;
 		MessagePackConverter<string> keyFormatter = context.GetConverter<string>(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider);
+
+		if (expandoAsDictionary.Count > context.Security.ExpandoObjectMaxPropertyCount)
+		{
+			// Although it isn't a security risk to write an ExpandoObject with a large number of properties
+			// like it is to *read* one, we want to help the developer understand that this object won't roundtrip
+			// before it comes to deserializing the data.
+			throw new MessagePackSerializationException($"Security settings prohibit serializing an {nameof(ExpandoObject)} with {expandoAsDictionary.Count} properties.");
+		}
 
 		writer.WriteMapHeader(expandoAsDictionary.Count);
 		foreach (KeyValuePair<string, object?> item in expandoAsDictionary)

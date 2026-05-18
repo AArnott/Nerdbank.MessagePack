@@ -56,6 +56,11 @@ namespace Nerdbank.MessagePack
 	/// </content>
 	internal static partial class PolyfillExtensions
 	{
+		extension(Array)
+		{
+			public static int MaxLength => 0x7FEFFFFF; // The maximum array length in .NET, which is less than int.MaxValue to avoid overflow when calculating byte offsets.
+		}
+
 		internal static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> pair, out TKey key, out TValue value)
 			=> (key, value) = (pair.Key, pair.Value);
 

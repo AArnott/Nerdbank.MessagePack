@@ -13,17 +13,6 @@ namespace Nerdbank.MessagePack;
 public abstract class MessagePackConverter
 {
 	/// <summary>
-	/// The largest capacity that a collection should be precreated with based on untrusted or streaming data.
-	/// </summary>
-	private const int MaxUntrustedCollectionPreallocation = 4096;
-
-#if NET
-	private static readonly int ArrayMaxLength = Array.MaxLength;
-#else
-	private static readonly int ArrayMaxLength = int.MaxValue; // an approximation that still guards against int overflow.
-#endif
-
-	/// <summary>
 	/// Gets a value indicating whether callers should prefer the async methods on this object.
 	/// </summary>
 	/// <value>Unless overridden in a derived converter, this value is always <see langword="false"/>.</value>
@@ -196,7 +185,7 @@ public abstract class MessagePackConverter
 
 		// The buffer is too small. We need to return a new buffer that can hold at least one more element.
 		T[] newBuffer;
-		int nextStepSize = context.IsTrustedData ? finalLength : (int)Math.Max(Math.Min(ArrayMaxLength, (long)currentLength * 2), MaxUntrustedCollectionPreallocation);
+		int nextStepSize = Math.Max((int)Math.Min(Array.MaxLength, (long)currentLength * 2), context.Security.MaxCollectionPreallocation);
 		if (nextStepSize < finalLength)
 		{
 			// Our target next size is smaller than the final length, so we can rent a buffer from the pool.
@@ -232,6 +221,6 @@ public abstract class MessagePackConverter
 	/// </summary>
 	/// <param name="count">The element count declared by the messagepack header.</param>
 	/// <param name="context">The serialization context.</param>
-	/// <returns>A capacity that does not exceed <see cref="MaxUntrustedCollectionPreallocation" />.</returns>
-	private protected static int GetCollectionInitialCapacity(int count, in SerializationContext context) => context.IsTrustedData ? count : Math.Min(count, MaxUntrustedCollectionPreallocation);
+	/// <returns>A capacity that does not exceed <see cref="SecuritySettings.MaxCollectionPreallocation" />.</returns>
+	private protected static int GetCollectionInitialCapacity(int count, in SerializationContext context) => Math.Min(count, context.Security.MaxCollectionPreallocation);
 }

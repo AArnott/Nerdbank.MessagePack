@@ -5,6 +5,20 @@ Vulnerabilities typically include denial of service attacks at the deserializer 
 
 In this topic, we will focus on the vulnerabilities that are specific to the deserialization layer.
 
+## Adjusting secure defaults
+
+In some cases secure defaults can impact required functionality.
+Adjusting these limits can be achieved through the <xref:Nerdbank.MessagePack.SecuritySettings> class.
+
+In this example, limits can be set to whatever level suits your application, balancing security with functionality:
+
+[!code-csharp[](../../samples/cs/Security.cs#SetSecuritySettings_Custom)]
+
+When you are dealing exclusively with trusted data, you can lift all limits like this:
+
+[!code-csharp[](../../samples/cs/Security.cs#SetSecuritySettings_TrustedData)]
+
+
 ## Stack overflows
 
 A very simple attack to carry out is crashing the deserializing process by forcing the deserializer to "stack overflow".
@@ -59,6 +73,13 @@ In this example, we use @Nerdbank.MessagePack.StructuralEqualityComparer.GetHash
 This implementation uses the SIP hash algorithm, which is known for its high performance and collision resistance.
 While it will function for virtually any data type, its behavior is not correct in all cases and you may need to implement your own secure hash function.
 Please review the documentation for @Nerdbank.MessagePack.StructuralEqualityComparer.GetHashCollisionResistant* for more information.
+
+## Excessive CPU use
+
+When deserializing into an <xref:System.Dynamic.ExpandoObject> using <xref:Nerdbank.MessagePack.OptionalConverters.WithExpandoObjectConverter*>, care must be taken because its <xref:System.Collections.Generic.IDictionary`2.Add(`0,`1)> method is implemented as an `O(n)` algorithm, meaning that overall deserialization of the object is an `O(n²)` algorithm.
+
+A conservative property count limit is set by default to mitigate this threat.
+This limit may be adjusted via the <xref:Nerdbank.MessagePack.SecuritySettings.ExpandoObjectMaxPropertyCount> property.
 
 ## Multiple values for the same property
 

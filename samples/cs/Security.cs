@@ -16,6 +16,36 @@ partial class Security
         #endregion
     }
 
+    void SetSecuritySettings_TrustedData()
+    {
+        #region SetSecuritySettings_TrustedData
+        var serializer = new MessagePackSerializer
+        {
+            StartingContext = new SerializationContext
+            {
+                Security = SecuritySettings.TrustedData,
+            },
+        };
+        #endregion
+    }
+
+    void SetSecuritySettings_Custom()
+    {
+        #region SetSecuritySettings_Custom
+        var serializer = new MessagePackSerializer
+        {
+            StartingContext = new SerializationContext
+            {
+                Security = new SecuritySettings
+                {
+                    MaxCollectionPreallocation = 1000,
+                    ExpandoObjectMaxPropertyCount = 64,
+                },
+            },
+        };
+        #endregion
+    }
+
     #region SecureEqualityComparers
     [GenerateShape]
     public partial class HashCollisionResistance
