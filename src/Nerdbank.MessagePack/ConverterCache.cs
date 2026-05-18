@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using PolyType.Utilities;
@@ -100,6 +101,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		}
 	}
 
+	private ConcurrentDictionary<(Type Type, Type Provider), ITypeShape> CachedTypeShapes => field ??= new();
+
 	/// <summary>
 	/// Gets a converter for the given type shape.
 	/// An existing converter is reused if one is found in the cache.
@@ -142,6 +145,41 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <returns>A msgpack converter.</returns>
 	internal ConverterResult GetOrAddConverter(Type type, ITypeShapeProvider provider)
 		=> (ConverterResult)this.CachedConverters.GetOrAddOrThrow(type, provider);
+
+	/// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T}()"/>
+#if NET8_0
+	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
+#endif
+	internal ITypeShape<T> ResolveDynamicTypeShapeOrThrow<T>()
+	{
+		Type type = typeof(T);
+		(Type, Type) key = (type, type);
+		if (!this.CachedTypeShapes.TryGetValue(key, out ITypeShape? shape))
+		{
+			// We want to cache the result because TypeShapeResolver.ResolveDynamicOrThrow instantiates a new ITypeShapeProvider with each call,
+			// and we want to be alloc-free after the first call. See https://github.com/eiriktsarpalis/PolyType/pull/432/changes#r3260136940
+			shape = this.CachedTypeShapes.GetOrAdd(key, TypeShapeResolver.ResolveDynamicOrThrow<T>());
+		}
+
+		return (ITypeShape<T>)shape;
+	}
+
+	/// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T, TProvider}()"/>
+#if NET8_0
+	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
+#endif
+	internal ITypeShape<T> ResolveDynamicTypeShapeOrThrow<T, TProvider>()
+	{
+		(Type, Type) key = (typeof(T), typeof(TProvider));
+		if (!this.CachedTypeShapes.TryGetValue(key, out ITypeShape? shape))
+		{
+			// We want to cache the result because TypeShapeResolver.ResolveDynamicOrThrow instantiates a new ITypeShapeProvider with each call,
+			// and we want to be alloc-free after the first call. See https://github.com/eiriktsarpalis/PolyType/pull/432/changes#r3260136940
+			shape = this.CachedTypeShapes.GetOrAdd(key, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+		}
+
+		return (ITypeShape<T>)shape;
+	}
 
 	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available from
