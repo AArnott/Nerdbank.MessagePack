@@ -1,10 +1,10 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Nerdbank.MessagePack.SecureHash;
 
 namespace Nerdbank.MessagePack;
 
@@ -127,15 +127,10 @@ internal class StringInterning : IPoolableObject
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint CalculateHashCode(ReadOnlySpan<char> value)
 	{
-		return unchecked((uint)GetHashCodeOrdinal(value));
-	}
-
-	private static int GetHashCodeOrdinal(ReadOnlySpan<char> value)
-	{
 #if NET
-		return string.GetHashCode(value, StringComparison.Ordinal);
+		return unchecked((uint)string.GetHashCode(value, StringComparison.Ordinal));
 #else
-		return Marvin.ComputeHash32(value);
+		return unchecked((uint)SipHash.Default.Compute(MemoryMarshal.AsBytes(value)));
 #endif
 	}
 
@@ -343,159 +338,4 @@ internal class StringInterning : IPoolableObject
 			}
 		}
 	}
-
-#if !NET
-	private static class Marvin
-	{
-		private static ulong DefaultSeed { get; } = 42;
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		internal static int ComputeHash32(ReadOnlySpan<char> value) => ComputeHash32(value, DefaultSeed);
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static int ComputeHash32(ReadOnlySpan<char> value, ulong seed) => unchecked(ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(value)), (uint)value.Length * 2, (uint)seed, (uint)(seed >> 32)));
-
-		private static int ComputeHash32(ref byte data, uint count, uint p0, uint p1)
-		{
-			unchecked
-			{
-				if (count < 8)
-				{
-					if (count >= 4)
-					{
-						goto Between4And7BytesRemain;
-					}
-					else
-					{
-						goto InputTooSmallToEnterMainLoop;
-					}
-				}
-
-				uint loopCount = count / 8;
-				Debug.Assert(loopCount > 0, "Shouldn't reach this code path for small inputs.");
-
-				do
-				{
-					p0 += Unsafe.ReadUnaligned<uint>(ref data);
-					uint nextUInt32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, 4));
-					Block(ref p0, ref p1);
-					p0 += nextUInt32;
-					Block(ref p0, ref p1);
-
-					data = ref Unsafe.AddByteOffset(ref data, 8);
-				}
-				while (--loopCount > 0);
-
-				if ((count & 0b_0100) == 0)
-				{
-					goto DoFinalPartialRead;
-				}
-
-Between4And7BytesRemain:
-				Debug.Assert(count >= 4, "Only should've gotten here if the original count was >= 4.");
-
-				p0 += Unsafe.ReadUnaligned<uint>(ref data);
-				Block(ref p0, ref p1);
-
-DoFinalPartialRead:
-				Debug.Assert(count >= 4, "Only should've gotten here if the original count was >= 4.");
-
-				uint partialResult = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.AddByteOffset(ref data, (nuint)count & 7), -4));
-				count = ~count << 3;
-
-				if (BitConverter.IsLittleEndian)
-				{
-					partialResult >>= 8;
-					partialResult |= 0x8000_0000u;
-					partialResult >>= (int)count & 0x1F;
-				}
-				else
-				{
-					partialResult <<= 8;
-					partialResult |= 0x80u;
-					partialResult <<= (int)count & 0x1F;
-				}
-
-DoFinalRoundsAndReturn:
-				p0 += partialResult;
-				Block(ref p0, ref p1);
-				Block(ref p0, ref p1);
-
-				return (int)(p1 ^ p0);
-
-InputTooSmallToEnterMainLoop:
-				if (BitConverter.IsLittleEndian)
-				{
-					partialResult = 0x80u;
-				}
-				else
-				{
-					partialResult = 0x80000000u;
-				}
-
-				if ((count & 0b_0001) != 0)
-				{
-					partialResult = Unsafe.AddByteOffset(ref data, (nuint)count & 2);
-
-					if (BitConverter.IsLittleEndian)
-					{
-						partialResult |= 0x8000;
-					}
-					else
-					{
-						partialResult <<= 24;
-						partialResult |= 0x800000u;
-					}
-				}
-
-				if ((count & 0b_0010) != 0)
-				{
-					if (BitConverter.IsLittleEndian)
-					{
-						partialResult <<= 16;
-						partialResult |= Unsafe.ReadUnaligned<ushort>(ref data);
-					}
-					else
-					{
-						partialResult |= Unsafe.ReadUnaligned<ushort>(ref data);
-						partialResult = BitOperations.RotateLeft(partialResult, 16);
-					}
-				}
-
-				goto DoFinalRoundsAndReturn;
-			}
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void Block(ref uint rp0, ref uint rp1)
-		{
-			unchecked
-			{
-				uint p0 = rp0;
-				uint p1 = rp1;
-
-				p1 ^= p0;
-				p0 = BitOperations.RotateLeft(p0, 20);
-
-				p0 += p1;
-				p1 = BitOperations.RotateLeft(p1, 9);
-
-				p1 ^= p0;
-				p0 = BitOperations.RotateLeft(p0, 27);
-
-				p0 += p1;
-				p1 = BitOperations.RotateLeft(p1, 19);
-
-				rp0 = p0;
-				rp1 = p1;
-			}
-		}
-
-		private static class BitOperations
-		{
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			internal static uint RotateLeft(uint value, int offset) => unchecked((value << offset) | (value >> (32 - offset)));
-		}
-	}
-#endif
 }
