@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Nerdbank.MessagePack;
 
@@ -13,6 +14,10 @@ namespace Nerdbank.MessagePack;
 internal class StringInterning : IPoolableObject
 {
 	private const int InitialCapacity = 32;
+
+	// The actual stack space taken will be up to 2X this value, because we're converting UTF-8 to UTF-16.
+	private const int MaxStackStringByteLength = 4096;
+
 	private const int StartOfFreeList = -3;
 
 	private int[]? buckets;
@@ -56,6 +61,68 @@ internal class StringInterning : IPoolableObject
 	/// <param name="value">The characters for which an interned string is required.</param>
 	/// <returns>The interned string.</returns>
 	internal string Intern(ReadOnlySpan<char> value) => this.GetOrAdd(value, candidateValue: null);
+
+	/// <summary>
+	/// Returns an interned string for a given UTF-8 encoded byte span.
+	/// </summary>
+	/// <param name="value">The UTF-8 encoded bytes for which an interned string is required.</param>
+	/// <returns>The interned string.</returns>
+	internal string GetOrAddUtf8(ReadOnlySpan<byte> value)
+	{
+		if (value.IsEmpty)
+		{
+			return string.Empty;
+		}
+
+		char[]? charArray = value.Length > MaxStackStringByteLength ? ArrayPool<char>.Shared.Rent(value.Length) : null;
+		try
+		{
+			Span<char> chars = charArray ?? stackalloc char[value.Length];
+			int characterCount = StringEncoding.UTF8.GetChars(value, chars);
+			return this.Intern(chars[..characterCount]);
+		}
+		finally
+		{
+			if (charArray is not null)
+			{
+				ArrayPool<char>.Shared.Return(charArray);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Returns an interned string for a given UTF-8 encoded byte sequence.
+	/// </summary>
+	/// <param name="value">The UTF-8 encoded bytes for which an interned string is required.</param>
+	/// <returns>The interned string.</returns>
+	internal string GetOrAddUtf8(ReadOnlySequence<byte> value)
+	{
+		if (value.IsEmpty)
+		{
+			return string.Empty;
+		}
+
+		if (value.IsSingleSegment)
+		{
+			return this.GetOrAddUtf8(value.First.Span);
+		}
+
+		int byteLength = checked((int)value.Length);
+		char[]? charArray = byteLength > MaxStackStringByteLength ? ArrayPool<char>.Shared.Rent(byteLength) : null;
+		try
+		{
+			Span<char> chars = charArray ?? stackalloc char[byteLength];
+			int characterCount = StringEncoding.UTF8.GetChars(value, chars);
+			return this.Intern(chars[..characterCount]);
+		}
+		finally
+		{
+			if (charArray is not null)
+			{
+				ArrayPool<char>.Shared.Return(charArray);
+			}
+		}
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static uint CalculateHashCode(ReadOnlySpan<char> value)
