@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
-using Strings = Microsoft.NET.StringTools.Strings;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -126,6 +125,8 @@ internal class InterningStringConverter : MessagePackConverter<string>
 			return null;
 		}
 
+		Verify.Operation(context.StringInterningCache is not null, "String interning cache is required for this converter.");
+
 		ReadOnlySequence<byte> bytesSequence = default;
 		bool spanMode;
 		int byteLength;
@@ -153,12 +154,12 @@ internal class InterningStringConverter : MessagePackConverter<string>
 			if (spanMode)
 			{
 				int characterCount = StringEncoding.UTF8.GetChars(byteSpan, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
+				return context.StringInterningCache.Intern(stackSpan[..characterCount]);
 			}
 			else
 			{
 				int characterCount = StringEncoding.UTF8.GetChars(bytesSequence, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
+				return context.StringInterningCache.Intern(stackSpan[..characterCount]);
 			}
 		}
 		finally

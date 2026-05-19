@@ -86,6 +86,11 @@ public record struct SerializationContext
 	internal ConverterCache? Cache { get; private init; }
 
 	/// <summary>
+	/// Gets the string interning cache to use for this serialialization.
+	/// </summary>
+	internal StringInterning? StringInterningCache { get; private init; }
+
+	/// <summary>
 	/// Gets or sets the index of the object being deserialized in the reference equality tracker.
 	/// </summary>
 	internal int ReferenceIndex { get; set; } = -1;
@@ -288,14 +293,18 @@ public record struct SerializationContext
 	internal SerializationContext Start(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
-		return this with
+		SerializationContext result = this with
 		{
 			Cache = cache,
 			ExtensionTypeCodes = owner.LibraryExtensionTypeCodes,
 			ReferenceEqualityTracker = cache.PreserveReferences != ReferencePreservationMode.Off ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
+			StringInterningCache = cache.InternStrings ? ReusableObjectPool<StringInterning>.Take(owner) : null,
 			TypeShapeProvider = provider,
 			CancellationToken = cancellationToken,
 		};
+
+		result.ReferenceEqualityTracker?.SetSerializationContext(result);
+		return result;
 	}
 
 	/// <summary>
@@ -303,9 +312,7 @@ public record struct SerializationContext
 	/// </summary>
 	internal void End()
 	{
-		if (this.ReferenceEqualityTracker is not null)
-		{
-			ReusableObjectPool<ReferenceEqualityTracker>.Return(this.ReferenceEqualityTracker);
-		}
+		ReusableObjectPool<ReferenceEqualityTracker>.Return(this.ReferenceEqualityTracker);
+		ReusableObjectPool<StringInterning>.Return(this.StringInterningCache);
 	}
 }

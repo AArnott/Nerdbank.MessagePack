@@ -6,7 +6,7 @@ namespace Nerdbank.MessagePack.Utilities;
 /// <summary>
 /// Extension methods for the <see cref="ReadOnlySpan{T}"/> and <see cref="ReadOnlyMemory{T}"/> types.
 /// </summary>
-internal static class MemoryExtensions
+internal static class InternalMemoryExtensions
 {
 	/// <summary>
 	/// Allocates an array for a filtered result of a span.

@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
-using Microsoft.NET.StringTools;
 
 namespace Nerdbank.MessagePack;
 
@@ -16,6 +15,7 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	private readonly Dictionary<object, (int, bool)> serializedObjects = new(ReferenceEqualityComparer.Instance);
 	private readonly List<object?> deserializedObjects = new();
 	private MessagePackSerializer? owner;
+	private StringInterning? stringInterning;
 	private int serializingObjectCounter;
 	private sbyte objectReferenceTypeCode;
 
@@ -43,9 +43,19 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	/// <inheritdoc/>
 	void IPoolableObject.Recycle()
 	{
+		this.stringInterning = null;
 		this.serializingObjectCounter = 0;
 		this.serializedObjects.Clear();
 		this.deserializedObjects.Clear();
+	}
+
+	/// <summary>
+	/// Captures additional state from the in-progress serialization.
+	/// </summary>
+	/// <param name="serializationContext">The serialization context.</param>
+	internal void SetSerializationContext(SerializationContext serializationContext)
+	{
+		this.stringInterning = serializationContext.StringInterningCache;
 	}
 
 	/// <summary>
@@ -61,9 +71,9 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		Requires.NotNullAllowStructs(value);
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
-		if (this.Owner.InternStrings && value is string)
+		if (this.stringInterning is { } interning && value is string)
 		{
-			value = (T)(object)Strings.WeakIntern((string)(object)value);
+			value = (T)(object)interning.Intern((string)(object)value);
 		}
 
 		if (this.TryGetSerializedObject(value, out int referenceId))
@@ -96,9 +106,9 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		Requires.NotNullAllowStructs(value);
 		Verify.Operation(this.Owner is not null, $"{nameof(this.Owner)} must be set before use.");
 
-		if (this.Owner.InternStrings && value is string)
+		if (this.stringInterning is { } interning && value is string)
 		{
-			value = (T)(object)Strings.WeakIntern((string)(object)value);
+			value = (T)(object)interning.Intern((string)(object)value);
 		}
 
 		if (this.TryGetSerializedObject(value, out int referenceId))

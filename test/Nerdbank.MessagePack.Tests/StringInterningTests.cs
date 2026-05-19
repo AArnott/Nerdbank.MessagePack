@@ -29,9 +29,11 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized[0], deserialized[1]);
 
 		// Do it again, across deserializations.
+		// We do *not* expect interning to span deserializations
+		// because we use strong refs and we don't want to cause memory leaks.
 		string[]? deserialized2 = this.Roundtrip<string[], Witness>(["a", "a"]);
 		Assert.NotNull(deserialized2);
-		Assert.Same(deserialized[0], deserialized2[0]);
+		Assert.NotSame(deserialized[0], deserialized2[0]);
 	}
 
 	[Fact]
