@@ -15,7 +15,6 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 public struct ConverterContext
 {
-	private readonly ConverterCache cache;
 	private readonly bool preserveReferences;
 
 	/// <summary>
@@ -26,7 +25,7 @@ public struct ConverterContext
 	/// <param name="referencePreservationMode">The reference preservation mode.</param>
 	internal ConverterContext(ConverterCache converterCache, ITypeShapeProvider typeShapeProvider, ReferencePreservationMode referencePreservationMode)
 	{
-		this.cache = converterCache;
+		this.Cache = converterCache;
 		this.TypeShapeProvider = typeShapeProvider;
 		this.preserveReferences = referencePreservationMode != ReferencePreservationMode.Off;
 	}
@@ -35,6 +34,11 @@ public struct ConverterContext
 	/// Gets the <see cref="ITypeShapeProvider"/> that can provide shapes for given types.
 	/// </summary>
 	public ITypeShapeProvider TypeShapeProvider { get; }
+
+	/// <summary>
+	/// Gets the converter cache associated with this serializer.
+	/// </summary>
+	internal ConverterCache Cache { get; }
 
 #if NET
 	/// <summary>
@@ -45,8 +49,8 @@ public struct ConverterContext
 	public MessagePackConverter<T> GetConverter<T>()
 		where T : IShapeable<T>
 	{
-		Verify.Operation(this.cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.cache.GetOrAddConverter(T.GetTypeShape()).ValueOrThrow;
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter result = this.Cache.GetOrAddConverter(T.GetTypeShape()).ValueOrThrow;
 		return (MessagePackConverter<T>)(this.preserveReferences ? ((IMessagePackConverterInternal)result).WrapWithReferencePreservation() : result);
 	}
 
@@ -59,8 +63,8 @@ public struct ConverterContext
 	public MessagePackConverter<T> GetConverter<T, TProvider>()
 		where TProvider : IShapeable<T>
 	{
-		Verify.Operation(this.cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.cache.GetOrAddConverter(TProvider.GetTypeShape()).ValueOrThrow;
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter result = this.Cache.GetOrAddConverter(TProvider.GetTypeShape()).ValueOrThrow;
 		return (MessagePackConverter<T>)(this.preserveReferences ? ((IMessagePackConverterInternal)result).WrapWithReferencePreservation() : result);
 	}
 #endif
@@ -82,8 +86,8 @@ public struct ConverterContext
 	[OverloadResolutionPriority(1)] // for null values, prefer this method over the one that takes ITypeShape.
 	public MessagePackConverter<T> GetConverter<T>(ITypeShapeProvider? provider)
 	{
-		Verify.Operation(this.cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
 		return (MessagePackConverter<T>)(this.preserveReferences ? ((IMessagePackConverterInternal)result).WrapWithReferencePreservation() : result);
 	}
 
@@ -99,8 +103,8 @@ public struct ConverterContext
 	public MessagePackConverter GetConverter(ITypeShape typeShape)
 	{
 		Requires.NotNull(typeShape);
-		Verify.Operation(this.cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.cache.GetOrAddConverter(typeShape).ValueOrThrow;
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter result = this.Cache.GetOrAddConverter(typeShape).ValueOrThrow;
 		return this.preserveReferences ? ((IMessagePackConverterInternal)result).WrapWithReferencePreservation() : result;
 	}
 
@@ -117,8 +121,8 @@ public struct ConverterContext
 	public MessagePackConverter<T> GetConverter<T>(ITypeShape<T> typeShape)
 	{
 		Requires.NotNull(typeShape);
-		Verify.Operation(this.cache is not null, "No serialization operation is in progress.");
-		MessagePackConverter result = this.cache.GetOrAddConverter(typeShape).ValueOrThrow;
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		MessagePackConverter result = this.Cache.GetOrAddConverter(typeShape).ValueOrThrow;
 		return (MessagePackConverter<T>)(this.preserveReferences ? ((IMessagePackConverterInternal)result).WrapWithReferencePreservation() : result);
 	}
 
@@ -135,8 +139,8 @@ public struct ConverterContext
 	public MessagePackConverter GetConverter(Type type, ITypeShapeProvider? provider = null)
 	{
 		Requires.NotNull(type);
-		Verify.Operation(this.cache is not null, "No serialization operation is in progress.");
-		IMessagePackConverterInternal result = (IMessagePackConverterInternal)this.cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
+		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
+		IMessagePackConverterInternal result = (IMessagePackConverterInternal)this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
 		return this.preserveReferences ? result.WrapWithReferencePreservation() : (MessagePackConverter)result;
 	}
 }

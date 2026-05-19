@@ -54,7 +54,7 @@ public static partial class MessagePackSerializerExtensions
 	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static JsonObject GetJsonSchema<T>(this MessagePackSerializer self)
-		=> Requires.NotNull(self).GetJsonSchema(TypeShapeResolver.ResolveDynamicOrThrow<T>());
+		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T>(self.ConverterCache));
 
 	/// <summary>
 	/// <inheritdoc cref="MessagePackSerializer.GetJsonSchema(ITypeShape)" path="/summary"/>
@@ -77,7 +77,7 @@ public static partial class MessagePackSerializerExtensions
 	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static JsonObject GetJsonSchema<T, TProvider>(this MessagePackSerializer self)
-		=> Requires.NotNull(self).GetJsonSchema(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache));
 
 	/// <inheritdoc cref="SerializationContext.GetConverter{T}(ITypeShape{T})"/>
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
@@ -95,7 +95,7 @@ public static partial class MessagePackSerializerExtensions
 	[Obsolete("Use the SerializationContext.GetConverter<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T>(this SerializationContext context)
-		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
+		=> context.GetConverter(ResolveTypeShapeOrThrow<T>(context.Cache, contextualCall: true));
 
 	/// <inheritdoc cref="SerializationContext.GetConverter{T}(ITypeShape{T})"/>
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
@@ -112,7 +112,7 @@ public static partial class MessagePackSerializerExtensions
 	[Obsolete("Use the SerializationContext.GetConverter<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T, TProvider>(this SerializationContext context)
-		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+		=> context.GetConverter(ResolveTypeShapeOrThrow<T, TProvider>(context.Cache, contextualCall: true));
 
 	/// <inheritdoc cref="ConverterContext.GetConverter{T}(ITypeShape{T})"/>
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
@@ -130,7 +130,7 @@ public static partial class MessagePackSerializerExtensions
 	[Obsolete("Use the ConverterContext.GetConverter<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T>(this ConverterContext context)
-		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
+		=> context.GetConverter(ResolveTypeShapeOrThrow<T>(context.Cache, contextualCall: true));
 
 	/// <inheritdoc cref="SerializationContext.GetConverter{T}(ITypeShape{T})"/>
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
@@ -147,7 +147,7 @@ public static partial class MessagePackSerializerExtensions
 	[Obsolete("Use the ConverterContext.GetConverter<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static MessagePackConverter<T> GetConverter<T, TProvider>(this ConverterContext context)
-		=> context.GetConverter(TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+		=> context.GetConverter(ResolveTypeShapeOrThrow<T, TProvider>(context.Cache, contextualCall: true));
 
 	/// <summary>
 	/// Resolves a type shape, providing enhanced error messages for array types.
@@ -161,13 +161,13 @@ public static partial class MessagePackSerializerExtensions
 #if NET8_0
 	[RequiresDynamicCode(ResolveDynamicMessage)]
 #endif
-	private static ITypeShape<T> ResolveTypeShapeOrThrow<T>()
+	private static ITypeShape<T> ResolveTypeShapeOrThrow<T>(ConverterCache? cache, bool contextualCall = false)
 	{
 		try
 		{
-			return TypeShapeResolver.ResolveDynamicOrThrow<T>();
+			return cache is null ? TypeShapeResolver.ResolveDynamicOrThrow<T>() : cache.ResolveDynamicTypeShapeOrThrow<T>();
 		}
-		catch (NotSupportedException ex) when (typeof(T).IsArray)
+		catch (NotSupportedException ex) when (!contextualCall && typeof(T).IsArray)
 		{
 			throw new NotSupportedException(
 				$"The type '{typeof(T).FullName}' does not have a generated shape. " +
@@ -194,13 +194,13 @@ public static partial class MessagePackSerializerExtensions
 #if NET8_0
 	[RequiresDynamicCode(ResolveDynamicMessage)]
 #endif
-	private static ITypeShape<T> ResolveTypeShapeOrThrow<T, TProvider>()
+	private static ITypeShape<T> ResolveTypeShapeOrThrow<T, TProvider>(ConverterCache? cache, bool contextualCall = false)
 	{
 		try
 		{
-			return TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>();
+			return cache is null ? TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>() : cache.ResolveDynamicTypeShapeOrThrow<T, TProvider>();
 		}
-		catch (NotSupportedException ex) when (typeof(T).IsArray)
+		catch (NotSupportedException ex) when (!contextualCall && typeof(T).IsArray)
 		{
 			throw new NotSupportedException(
 				$"The type '{typeof(T).FullName}' does not have a generated shape on the witness type '{typeof(TProvider).FullName}'. " +
