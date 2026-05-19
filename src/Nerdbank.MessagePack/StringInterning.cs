@@ -1,8 +1,10 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Nerdbank.MessagePack.SecureHash;
 
@@ -19,9 +21,11 @@ internal class StringInterning : IPoolableObject
 	private const int MaxStackStringByteLength = 4096;
 
 	private const int StartOfFreeList = -3;
+	private const uint HashCollisionThreshold = 100;
 
 	private int[]? buckets;
 	private Entry[]? entries;
+	private bool useSecureHash;
 	private int count;
 	private int freeList;
 	private int freeCount;
@@ -40,8 +44,11 @@ internal class StringInterning : IPoolableObject
 		int count = this.count;
 		if (count > 0)
 		{
+			Entry[] entries = this.entries!;
 			Array.Clear(this.buckets!, 0, this.buckets!.Length);
-			Array.Clear(this.entries!, 0, count);
+
+			Array.Clear(entries, 0, count);
+			this.useSecureHash = false;
 			this.count = 0;
 			this.freeList = -1;
 			this.freeCount = 0;
@@ -125,12 +132,12 @@ internal class StringInterning : IPoolableObject
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint CalculateHashCode(ReadOnlySpan<char> value)
+	private static uint CalculateHashCode(ReadOnlySpan<char> value, bool secureHash)
 	{
 #if NET
 		return unchecked((uint)string.GetHashCode(value, StringComparison.Ordinal));
 #else
-		return unchecked((uint)SipHash.Default.Compute(MemoryMarshal.AsBytes(value)));
+		return secureHash ? unchecked((uint)SipHash.Default.Compute(MemoryMarshal.AsBytes(value))) : unchecked((uint)Marvin.ComputeHash32(value));
 #endif
 	}
 
@@ -144,7 +151,7 @@ internal class StringInterning : IPoolableObject
 			}
 
 			Entry[] entries = this.entries!;
-			uint hashCode = CalculateHashCode(value);
+			uint hashCode = CalculateHashCode(value, this.useSecureHash);
 			ref int bucket = ref this.GetBucket(hashCode);
 			uint collisionCount = 0;
 
@@ -159,6 +166,12 @@ internal class StringInterning : IPoolableObject
 				probeIndex = entry.Next;
 
 				collisionCount++;
+				if (!this.useSecureHash && collisionCount > HashCollisionThreshold)
+				{
+					this.SwitchToSecureHashing();
+					return this.GetOrAdd(value, candidateValue);
+				}
+
 				if (collisionCount > (uint)entries.Length)
 				{
 					throw new InvalidOperationException();
@@ -193,6 +206,27 @@ internal class StringInterning : IPoolableObject
 			newEntry.Value = interned;
 			bucket = index + 1;
 			return interned;
+		}
+	}
+
+	private void SwitchToSecureHashing()
+	{
+		Debug.Assert(!this.useSecureHash, "This method should only be called once.");
+		Debug.Assert(this.buckets is not null, "The cache should be initialized before switching hash strategies.");
+		Debug.Assert(this.entries is not null, "The cache should be initialized before switching hash strategies.");
+
+		this.useSecureHash = true;
+		int[] buckets = this.buckets!;
+		Entry[] entries = this.entries!;
+		Array.Clear(buckets, 0, buckets.Length);
+
+		for (int i = 0; i < this.count; i++)
+		{
+			ref Entry entry = ref entries[i];
+			entry.HashCode = CalculateHashCode(entry.Value.AsSpan(), secureHash: true);
+			uint bucket = (uint)(entry.HashCode % buckets.Length);
+			entry.Next = buckets[bucket] - 1;
+			buckets[bucket] = i + 1;
 		}
 	}
 
@@ -338,4 +372,167 @@ internal class StringInterning : IPoolableObject
 			}
 		}
 	}
+
+#if !NET
+	private static class Marvin
+	{
+		private static ulong DefaultSeed { get; } = CreateSeed();
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		internal static int ComputeHash32(ReadOnlySpan<char> value) => ComputeHash32(value, DefaultSeed);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static int ComputeHash32(ReadOnlySpan<char> value, ulong seed) => unchecked(ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(value)), (uint)value.Length * sizeof(char), (uint)seed, (uint)(seed >> 32)));
+
+		private static int ComputeHash32(ref byte data, uint count, uint p0, uint p1)
+		{
+			unchecked
+			{
+				if (count < 8)
+				{
+					if (count >= 4)
+					{
+						goto Between4And7BytesRemain;
+					}
+					else
+					{
+						goto InputTooSmallToEnterMainLoop;
+					}
+				}
+
+				uint loopCount = count / 8;
+				Debug.Assert(loopCount > 0, "Shouldn't reach this code path for small inputs.");
+
+				do
+				{
+					p0 += Unsafe.ReadUnaligned<uint>(ref data);
+					uint nextUInt32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, 4));
+					Block(ref p0, ref p1);
+					p0 += nextUInt32;
+					Block(ref p0, ref p1);
+
+					data = ref Unsafe.AddByteOffset(ref data, 8);
+				}
+				while (--loopCount > 0);
+
+				if ((count & 0b_0100) == 0)
+				{
+					goto DoFinalPartialRead;
+				}
+
+Between4And7BytesRemain:
+				Debug.Assert(count >= 4, "Only should've gotten here if the original count was >= 4.");
+
+				p0 += Unsafe.ReadUnaligned<uint>(ref data);
+				Block(ref p0, ref p1);
+
+DoFinalPartialRead:
+				Debug.Assert(count >= 4, "Only should've gotten here if the original count was >= 4.");
+
+				uint partialResult = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref Unsafe.AddByteOffset(ref data, (nuint)count & 7), -4));
+				count = ~count << 3;
+
+				if (BitConverter.IsLittleEndian)
+				{
+					partialResult >>= 8;
+					partialResult |= 0x8000_0000u;
+					partialResult >>= (int)count & 0x1F;
+				}
+				else
+				{
+					partialResult <<= 8;
+					partialResult |= 0x80u;
+					partialResult <<= (int)count & 0x1F;
+				}
+
+DoFinalRoundsAndReturn:
+				p0 += partialResult;
+				Block(ref p0, ref p1);
+				Block(ref p0, ref p1);
+
+				return (int)(p1 ^ p0);
+
+InputTooSmallToEnterMainLoop:
+				if (BitConverter.IsLittleEndian)
+				{
+					partialResult = 0x80u;
+				}
+				else
+				{
+					partialResult = 0x80000000u;
+				}
+
+				if ((count & 0b_0001) != 0)
+				{
+					partialResult = Unsafe.AddByteOffset(ref data, (nuint)count & 2);
+
+					if (BitConverter.IsLittleEndian)
+					{
+						partialResult |= 0x8000;
+					}
+					else
+					{
+						partialResult <<= 24;
+						partialResult |= 0x800000u;
+					}
+				}
+
+				if ((count & 0b_0010) != 0)
+				{
+					if (BitConverter.IsLittleEndian)
+					{
+						partialResult <<= 16;
+						partialResult |= Unsafe.ReadUnaligned<ushort>(ref data);
+					}
+					else
+					{
+						partialResult |= Unsafe.ReadUnaligned<ushort>(ref data);
+						partialResult = BitOperations.RotateLeft(partialResult, 16);
+					}
+				}
+
+				goto DoFinalRoundsAndReturn;
+			}
+		}
+
+		private static ulong CreateSeed()
+		{
+			byte[] seed = new byte[sizeof(ulong)];
+			using RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create();
+			randomNumberGenerator.GetBytes(seed);
+			return BitConverter.ToUInt64(seed, 0);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void Block(ref uint rp0, ref uint rp1)
+		{
+			unchecked
+			{
+				uint p0 = rp0;
+				uint p1 = rp1;
+
+				p1 ^= p0;
+				p0 = BitOperations.RotateLeft(p0, 20);
+
+				p0 += p1;
+				p1 = BitOperations.RotateLeft(p1, 9);
+
+				p1 ^= p0;
+				p0 = BitOperations.RotateLeft(p0, 27);
+
+				p0 += p1;
+				p1 = BitOperations.RotateLeft(p1, 19);
+
+				rp0 = p0;
+				rp1 = p1;
+			}
+		}
+
+		private static class BitOperations
+		{
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			internal static uint RotateLeft(uint value, int offset) => unchecked((value << offset) | (value >> (32 - offset)));
+		}
+	}
+#endif
 }
