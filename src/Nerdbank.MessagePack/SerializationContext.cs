@@ -86,7 +86,7 @@ public record struct SerializationContext
 	internal ConverterCache? Cache { get; private init; }
 
 	/// <summary>
-	/// Gets the string interning cache to use for this serialialization.
+	/// Gets the string interning cache to use for this serialization.
 	/// </summary>
 	internal StringInterning? StringInterningCache { get; private init; }
 

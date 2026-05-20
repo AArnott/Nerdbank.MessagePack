@@ -6,7 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+#if !NET
 using Nerdbank.MessagePack.SecureHash;
+#endif
 
 namespace Nerdbank.MessagePack;
 
