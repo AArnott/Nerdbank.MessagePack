@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft;
-using Strings = Microsoft.NET.StringTools.Strings;
 
 namespace Nerdbank.MessagePack.Converters;
 
@@ -115,9 +114,6 @@ internal class StringConverter : MessagePackConverter<string>
 /// </summary>
 internal class InterningStringConverter : MessagePackConverter<string>
 {
-	// The actual stack space taken will be up to 2X this value, because we're converting UTF-8 to UTF-16.
-	private const int MaxStackStringCharLength = 4096;
-
 	/// <inheritdoc/>
 	public override string? Read(ref MessagePackReader reader, SerializationContext context)
 	{
@@ -126,48 +122,14 @@ internal class InterningStringConverter : MessagePackConverter<string>
 			return null;
 		}
 
-		ReadOnlySequence<byte> bytesSequence = default;
-		bool spanMode;
-		int byteLength;
-		if (reader.TryReadStringSpan(out ReadOnlySpan<byte> byteSpan))
+		if (context.StringInterningCache is null)
 		{
-			if (byteSpan.IsEmpty)
-			{
-				return string.Empty;
-			}
-
-			spanMode = true;
-			byteLength = byteSpan.Length;
-		}
-		else
-		{
-			bytesSequence = reader.ReadStringSequence()!.Value;
-			spanMode = false;
-			byteLength = checked((int)bytesSequence.Length);
+			Verify.FailOperation("String interning cache is not configured for this deserialization context.");
 		}
 
-		char[]? charArray = byteLength > MaxStackStringCharLength ? ArrayPool<char>.Shared.Rent(byteLength) : null;
-		try
-		{
-			Span<char> stackSpan = charArray ?? stackalloc char[byteLength];
-			if (spanMode)
-			{
-				int characterCount = StringEncoding.UTF8.GetChars(byteSpan, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
-			}
-			else
-			{
-				int characterCount = StringEncoding.UTF8.GetChars(bytesSequence, stackSpan);
-				return Strings.WeakIntern(stackSpan[..characterCount]);
-			}
-		}
-		finally
-		{
-			if (charArray is not null)
-			{
-				ArrayPool<char>.Shared.Return(charArray);
-			}
-		}
+		return reader.TryReadStringSpan(out ReadOnlySpan<byte> byteSpan)
+			? context.StringInterningCache.GetOrAddUtf8(byteSpan)
+			: context.StringInterningCache.GetOrAddUtf8(reader.ReadStringSequence()!.Value);
 	}
 
 	/// <inheritdoc/>
