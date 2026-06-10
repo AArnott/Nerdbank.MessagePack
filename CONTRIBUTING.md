@@ -41,6 +41,12 @@ Building, testing, and packing this repository can be done by using the standard
 
 [pwsh]: https://learn.microsoft.com/powershell/scripting/install/installing-powershell
 
+## Testing
+
+You can use `dotnet test` to build and/or test the repo.
+
+There may be tests that are known to be unstable or have special requirements. These can be avoided by running tests using the [dotnet-test-cloud.ps1](tools/dotnet-test-cloud.ps1) script *after* running `dotnet build`.
+
 ## Releases
 
 Use `nbgv tag` to create a tag for a particular commit that you mean to release.
