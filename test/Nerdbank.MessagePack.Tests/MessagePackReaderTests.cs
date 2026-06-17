@@ -74,75 +74,6 @@ public partial class MessagePackReaderTests
 		Assert.Equal(expectedCount, actualCount);
 	}
 
-	[Theory, PairwiseData]
-	public void TryReadArrayHeader_LargeValue_Int32(bool fragmented)
-	{
-		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
-		writer.WriteArrayHeader(int.MaxValue);
-		writer.Flush();
-
-		ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
-
-		MessagePackReader reader = new(ros);
-		Assert.True(reader.TryReadArrayHeader(out int actualCount));
-		Assert.Equal(int.MaxValue, actualCount);
-	}
-
-	[Theory, PairwiseData]
-	public void TryReadArrayHeader_LargeValue_UInt32(bool fragmented)
-	{
-		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
-		writer.WriteArrayHeader(uint.MaxValue);
-		writer.Flush();
-
-		ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
-
-		MessagePackReader reader = new(ros);
-		Assert.True(reader.TryReadArrayHeader(out uint actualCount));
-		Assert.Equal(uint.MaxValue, actualCount);
-
-		reader = new(ros);
-		try
-		{
-			reader.TryReadArrayHeader(out int _);
-			Assert.Fail("Expected an OverflowException to be thrown.");
-		}
-		catch (OverflowException)
-		{
-		}
-
-		Assert.Equal(0, reader.Consumed);
-	}
-
-	[Theory, PairwiseData]
-	public void ReadArrayHeader_LargeValue_UInt32(bool fragmented)
-	{
-		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
-		writer.WriteArrayHeader(uint.MaxValue);
-		writer.Flush();
-		AddFiller(sequence, uint.MaxValue);
-
-		ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
-
-		MessagePackReader reader = new(ros);
-		Assert.Equal(uint.MaxValue, reader.ReadArrayHeaderUInt32());
-
-		reader = new(ros);
-		try
-		{
-			reader.ReadArrayHeader();
-			Assert.Fail("Expected an OverflowException to be thrown.");
-		}
-		catch (OverflowException)
-		{
-		}
-
-		Assert.Equal(0, reader.Consumed);
-	}
-
 	[Fact]
 	public void ReadMapHeader_MitigatesLargeAllocations()
 	{
@@ -186,76 +117,6 @@ public partial class MessagePackReaderTests
 		reader = new MessagePackReader(sequence);
 		Assert.True(reader.TryReadMapHeader(out int actualCount));
 		Assert.Equal(expectedCount, actualCount);
-	}
-
-	[Theory, PairwiseData]
-	public void TryReadMapHeader_LargeValue_Int32(bool fragmented)
-	{
-		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
-		writer.WriteMapHeader(int.MaxValue);
-		writer.Flush();
-
-		ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
-
-		MessagePackReader reader = new(ros);
-		Assert.True(reader.TryReadMapHeader(out int actualCount));
-		Assert.Equal(int.MaxValue, actualCount);
-	}
-
-	[Theory, PairwiseData]
-	public void TryReadMapHeader_LargeValue_UInt32(bool fragmented)
-	{
-		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
-		writer.WriteMapHeader(uint.MaxValue);
-		writer.Flush();
-
-		ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
-
-		MessagePackReader reader = new(ros);
-		Assert.True(reader.TryReadMapHeader(out uint actualCount));
-		Assert.Equal(uint.MaxValue, actualCount);
-
-		reader = new(ros);
-		try
-		{
-			reader.TryReadMapHeader(out int _);
-			Assert.Fail("Expected an OverflowException to be thrown.");
-		}
-		catch (OverflowException)
-		{
-		}
-
-		Assert.Equal(0, reader.Consumed);
-	}
-
-	[Theory, PairwiseData]
-	public void ReadMapHeader_LargeValue_UInt32(bool fragmented)
-	{
-		Sequence<byte> sequence = new();
-		MessagePackWriter writer = new(sequence);
-		writer.WriteMapHeader(uint.MaxValue);
-		writer.Flush();
-		AddFiller(sequence, 2UL * uint.MaxValue);
-
-		ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
-
-		MessagePackReader reader = new(ros);
-		Assert.Equal(uint.MaxValue, reader.ReadMapHeaderUInt32());
-
-		reader = new(ros);
-		try
-		{
-			reader.ReadMapHeader();
-
-			Assert.Fail("Expected an OverflowException to be thrown.");
-		}
-		catch (OverflowException)
-		{
-		}
-
-		Assert.Equal(0, reader.Consumed);
 	}
 
 	[Fact]
@@ -735,6 +596,146 @@ public partial class MessagePackReaderTests
 		public MySequenceReader(ReadOnlySequence<byte> seq)
 		{
 			this.reader = new MessagePackReader(seq);
+		}
+	}
+
+	[Collection(MemorySensitiveTestCollection.Name)]
+	[Trait("TestCategory", "FailsInCloudTest")] // allocates too much memory for github runners
+	public class LargeValue
+	{
+		[Theory, PairwiseData]
+		public void TryReadArrayHeader_Int32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteArrayHeader(int.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadArrayHeader(out int actualCount));
+			Assert.Equal(int.MaxValue, actualCount);
+		}
+
+		[Theory, PairwiseData]
+		public void TryReadArrayHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteArrayHeader(uint.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadArrayHeader(out uint actualCount));
+			Assert.Equal(uint.MaxValue, actualCount);
+
+			reader = new(ros);
+			try
+			{
+				reader.TryReadArrayHeader(out int _);
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
+		}
+
+		[Theory, PairwiseData]
+		public void ReadArrayHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteArrayHeader(uint.MaxValue);
+			writer.Flush();
+			AddFiller(sequence, uint.MaxValue);
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+			MessagePackReader reader = new(ros);
+			Assert.Equal(uint.MaxValue, reader.ReadArrayHeaderUInt32());
+
+			reader = new(ros);
+			try
+			{
+				reader.ReadArrayHeader();
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
+		}
+
+		[Theory, PairwiseData]
+		public void TryReadMapHeader_Int32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteMapHeader(int.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadMapHeader(out int actualCount));
+			Assert.Equal(int.MaxValue, actualCount);
+		}
+
+		[Theory, PairwiseData]
+		public void TryReadMapHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteMapHeader(uint.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadMapHeader(out uint actualCount));
+			Assert.Equal(uint.MaxValue, actualCount);
+
+			reader = new(ros);
+			try
+			{
+				reader.TryReadMapHeader(out int _);
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
+		}
+
+		[Theory, PairwiseData]
+		public void ReadMapHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteMapHeader(uint.MaxValue);
+			writer.Flush();
+			AddFiller(sequence, 2UL * uint.MaxValue);
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+			MessagePackReader reader = new(ros);
+			Assert.Equal(uint.MaxValue, reader.ReadMapHeaderUInt32());
+
+			reader = new(ros);
+			try
+			{
+				reader.ReadMapHeader();
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
 		}
 	}
 
