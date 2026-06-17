@@ -123,22 +123,6 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 #pragma warning restore SA1500 // Braces for multi-line statements should not share line
 
 	[Fact]
-	[Trait("CWE", "789")]
-	[Trait("CWE", "1284")]
-	public void MultidimensionalArray2D_Flat_ExcessivelyLargeDimensions()
-	{
-		this.AssertFlatMultidimensionalArrayDimensionsRejectedBeforeAllocation(nameof(HasByteMultiDimensionalArray.Array2D), [10_000, 10_000]);
-	}
-
-	[Fact]
-	[Trait("CWE", "789")]
-	[Trait("CWE", "1284")]
-	public void MultidimensionalArray3D_Flat_ExcessivelyLargeDimensions()
-	{
-		this.AssertFlatMultidimensionalArrayDimensionsRejectedBeforeAllocation(nameof(HasByteMultiDimensionalArray.Array3D), [1_000, 1_000, 100]);
-	}
-
-	[Fact]
 	[Trait("CWE", "665")]
 	public void MultidimensionalArray2D_Flat_RejectsMismatchedRank()
 	{
@@ -164,14 +148,6 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 			exceptionMessage.Contains("Expected array rank of 2 but was 3.", StringComparison.Ordinal) ||
 			exceptionMessage.Contains("Expected array length of 2 but was 3.", StringComparison.Ordinal),
 			exceptionMessage);
-	}
-
-	[Fact]
-	[Trait("CWE", "789")]
-	[Trait("CWE", "1284")]
-	public void MultidimensionalArray2D_Nested_ExcessivelyLargeDimensions()
-	{
-		this.AssertNestedMultidimensionalArrayDimensionsRejectedBeforeAllocation(nameof(HasByteMultiDimensionalArray.Array2D), [10_000, 10_000]);
 	}
 
 	[Fact]
@@ -625,67 +601,95 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 		return sequence;
 	}
 
-	private void AssertFlatMultidimensionalArrayDimensionsRejectedBeforeAllocation(string propertyName, int[] dimensions)
+	[Collection(MemorySensitiveTestCollection.Name)]
+	public class MultidimensionalArrayAllocationTests : MessagePackSerializerTestBase
 	{
-		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = MultiDimensionalArrayFormat.Flat };
-		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
-		writer.WriteMapHeader(1);
-		writer.Write(propertyName);
-		writer.WriteArrayHeader(2);
-		writer.WriteArrayHeader(dimensions.Length);
-		long expectedElementCount = 1;
-		foreach (int dimension in dimensions)
+		[Fact]
+		[Trait("CWE", "789")]
+		[Trait("CWE", "1284")]
+		public void MultidimensionalArray2D_Flat_ExcessivelyLargeDimensions()
 		{
-			writer.Write(dimension);
-			expectedElementCount *= dimension;
+			this.AssertFlatMultidimensionalArrayDimensionsRejectedBeforeAllocation(nameof(HasByteMultiDimensionalArray.Array2D), [10_000, 10_000]);
 		}
 
-		writer.WriteArrayHeader(0);
-		writer.Flush();
-
-		long before = GC.GetTotalMemory(true);
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Deserialize<HasByteMultiDimensionalArray>(seq, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.ToString());
-
-		MessagePackSerializationException rootException = Assert.IsType<MessagePackSerializationException>(ex.GetBaseException());
-		Assert.Equal($"Expected {expectedElementCount} elements but found 0.", rootException.Message);
-
-		long allocatedBytes = GC.GetTotalMemory(false) - before;
-		Assert.True(allocatedBytes < 64 * 1024 * 1024, $"Deserialization allocated {allocatedBytes:N0} bytes.");
-	}
-
-	private void AssertNestedMultidimensionalArrayDimensionsRejectedBeforeAllocation(string propertyName, int[] dimensions)
-	{
-		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested };
-		Sequence<byte> seq = new();
-		MessagePackWriter writer = new(seq);
-		writer.WriteMapHeader(1);
-		writer.Write(propertyName);
-		long expectedElementCount = 1;
-		foreach (int dimension in dimensions)
+		[Fact]
+		[Trait("CWE", "789")]
+		[Trait("CWE", "1284")]
+		public void MultidimensionalArray3D_Flat_ExcessivelyLargeDimensions()
 		{
-			writer.WriteArrayHeader(dimension);
-			expectedElementCount *= dimension;
+			this.AssertFlatMultidimensionalArrayDimensionsRejectedBeforeAllocation(nameof(HasByteMultiDimensionalArray.Array3D), [1_000, 1_000, 100]);
 		}
 
-		for (int i = 0; i < dimensions[^1]; i++)
+		[Fact]
+		[Trait("CWE", "789")]
+		[Trait("CWE", "1284")]
+		public void MultidimensionalArray2D_Nested_ExcessivelyLargeDimensions()
 		{
-			writer.Write((byte)0);
+			this.AssertNestedMultidimensionalArrayDimensionsRejectedBeforeAllocation(nameof(HasByteMultiDimensionalArray.Array2D), [10_000, 10_000]);
 		}
 
-		writer.Flush();
+		private void AssertFlatMultidimensionalArrayDimensionsRejectedBeforeAllocation(string propertyName, int[] dimensions)
+		{
+			this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = MultiDimensionalArrayFormat.Flat };
+			Sequence<byte> seq = new();
+			MessagePackWriter writer = new(seq);
+			writer.WriteMapHeader(1);
+			writer.Write(propertyName);
+			writer.WriteArrayHeader(2);
+			writer.WriteArrayHeader(dimensions.Length);
+			long expectedElementCount = 1;
+			foreach (int dimension in dimensions)
+			{
+				writer.Write(dimension);
+				expectedElementCount *= dimension;
+			}
 
-		long before = GC.GetTotalMemory(true);
-		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Deserialize<HasByteMultiDimensionalArray>(seq, TestContext.Current.CancellationToken));
-		this.Logger.WriteLine(ex.ToString());
+			writer.WriteArrayHeader(0);
+			writer.Flush();
 
-		Assert.Contains($"Array dimensions declare {expectedElementCount} elements", ex.ToString());
+			long before = GC.GetTotalMemory(true);
+			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+				() => this.Serializer.Deserialize<HasByteMultiDimensionalArray>(seq, TestContext.Current.CancellationToken));
+			this.Logger.WriteLine(ex.ToString());
 
-		long allocatedBytes = GC.GetTotalMemory(false) - before;
-		Assert.True(allocatedBytes < 64 * 1024 * 1024, $"Deserialization allocated {allocatedBytes:N0} bytes.");
+			MessagePackSerializationException rootException = Assert.IsType<MessagePackSerializationException>(ex.GetBaseException());
+			Assert.Equal($"Expected {expectedElementCount} elements but found 0.", rootException.Message);
+
+			long allocatedBytes = GC.GetTotalMemory(false) - before;
+			Assert.True(allocatedBytes < 64 * 1024 * 1024, $"Deserialization allocated {allocatedBytes:N0} bytes.");
+		}
+
+		private void AssertNestedMultidimensionalArrayDimensionsRejectedBeforeAllocation(string propertyName, int[] dimensions)
+		{
+			this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested };
+			Sequence<byte> seq = new();
+			MessagePackWriter writer = new(seq);
+			writer.WriteMapHeader(1);
+			writer.Write(propertyName);
+			long expectedElementCount = 1;
+			foreach (int dimension in dimensions)
+			{
+				writer.WriteArrayHeader(dimension);
+				expectedElementCount *= dimension;
+			}
+
+			for (int i = 0; i < dimensions[^1]; i++)
+			{
+				writer.Write((byte)0);
+			}
+
+			writer.Flush();
+
+			long before = GC.GetTotalMemory(true);
+			MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+				() => this.Serializer.Deserialize<HasByteMultiDimensionalArray>(seq, TestContext.Current.CancellationToken));
+			this.Logger.WriteLine(ex.ToString());
+
+			Assert.Contains($"Array dimensions declare {expectedElementCount} elements", ex.ToString());
+
+			long allocatedBytes = GC.GetTotalMemory(false) - before;
+			Assert.True(allocatedBytes < 64 * 1024 * 1024, $"Deserialization allocated {allocatedBytes:N0} bytes.");
+		}
 	}
 
 	[GenerateShape]

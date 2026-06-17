@@ -26,7 +26,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	private bool readerReturned = true;
 
 	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
-	private uint expectedRemainingStructures;
+	private ulong expectedRemainingStructures;
 
 	/// <summary>
 	/// Gets a cancellation token to consider for calls into this object.
