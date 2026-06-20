@@ -18,7 +18,7 @@ internal class JsonNodeConverter : MessagePackConverter<JsonNode>
 		return reader.NextMessagePackType switch
 		{
 			MessagePackType.Integer => MessagePackCode.IsSignedInteger(reader.NextCode) ? JsonValue.Create(reader.ReadInt64()) : JsonValue.Create(reader.ReadUInt64()),
-			MessagePackType.Nil => JsonValue.Create((string?)null),
+			MessagePackType.Nil => ReadNil(ref reader),
 			MessagePackType.Boolean => JsonValue.Create(reader.ReadBoolean()),
 			MessagePackType.Float => JsonValue.Create(reader.ReadDouble()),
 			MessagePackType.String => JsonValue.Create(reader.ReadString()),
@@ -28,6 +28,12 @@ internal class JsonNodeConverter : MessagePackConverter<JsonNode>
 			MessagePackType.Extension => throw new NotSupportedException("msgpack extensions cannot be represented in JSON."),
 			_ => throw new NotSupportedException("Unsupported msgpack token."),
 		};
+
+		JsonNode? ReadNil(ref MessagePackReader reader)
+		{
+			reader.ReadNil();
+			return JsonValue.Create((string?)null);
+		}
 
 		JsonNode ReadArray(ref MessagePackReader reader, SerializationContext context)
 		{

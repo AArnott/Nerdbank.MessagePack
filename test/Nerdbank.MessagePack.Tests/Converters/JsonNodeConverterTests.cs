@@ -28,6 +28,19 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void Roundtrip_JsonNode_WithNullFollowedByValue()
+	{
+		JsonNode node = JsonNode.Parse("""
+			[null,true,1]
+			""")!;
+		JsonNode? deserialized = this.Roundtrip<JsonNode, Witness>(node);
+		Assert.NotNull(deserialized);
+		Assert.Null(deserialized[0]);
+		Assert.True(deserialized[1]?.GetValue<bool>());
+		Assert.Equal(1ul, deserialized[2]?.GetValue<ulong>());
+	}
+
+	[Fact]
 	public void Roundtrip_JsonNode_WithFloatingPoint()
 	{
 		JsonNode node = JsonNode.Parse("""
