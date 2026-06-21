@@ -90,6 +90,13 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 		Assert.Null(deserialized.Message);
 	}
 
+	[Fact]
+	public void CtorWithRequiredPropertyAsParameter_CanRoundTrip()
+	{
+		CtorWithRequiredPropertyAsParameter original = new("test") { Name = "test" };
+		this.AssertRoundtrip(original);
+	}
+
 	private static ReadOnlySequence<byte> CreateNullMessageObject()
 	{
 		Sequence<byte> seq = new();
@@ -153,4 +160,15 @@ public partial class DeserializeDefaultValueTests : MessagePackSerializerTestBas
 
 	[GenerateShape]
 	public partial record OptionalNonNullProperty(string Message = "");
+
+	[GenerateShape]
+	public partial record CtorWithRequiredPropertyAsParameter
+	{
+		public CtorWithRequiredPropertyAsParameter(string name)
+		{
+			this.Name = name;
+		}
+
+		public required string Name { get; init; }
+	}
 }
