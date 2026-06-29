@@ -64,18 +64,19 @@ void WriteClass(bool targetNET) {
             	[EditorBrowsable(EditorBrowsableState.Never)]
             #endif
             """;
-        string sourceGenRequiredDocs = targetNET ? "" : shapeSource switch
+        string thisParameterDocId = targetNET ? "" : "MessagePackSerializer, ";
+        Func<string, string> sourceGenRequiredDocs = targetNET ? _ => "" : shapeSource switch
         {
-            ShapeSource.T => $$"""
+            ShapeSource.T => tproviderCref => $$"""
 
             	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
             	/// <remarks>
             	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-            	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+            	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="{{tproviderCref}}"/> instead,
             	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
             	/// </remarks>
             """,
-            ShapeSource.TProvider => $$"""
+            ShapeSource.TProvider => _ => $$"""
 
             	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
             	/// <remarks>
@@ -99,7 +100,7 @@ void WriteClass(bool targetNET) {
             AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>Serialize{T}(<#=firstParameterDocId#>in T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs($"Serialize{{T, TProvider}}({thisParameterDocId}{firstParameterDocId}in T, CancellationToken)") #>
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
 	public <#= staticModifier #><#= returnType #> Serialize<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>in T? value, CancellationToken cancellationToken = default)
 		<#=typeConstraint#>=> <#= thisKeyword #>.Serialize(<#=firstArg#>value, <#=getShape#>, cancellationToken);
@@ -119,7 +120,7 @@ void WriteClass(bool targetNET) {
             AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>Deserialize{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs($"Deserialize{{T, TProvider}}({thisParameterDocId}{firstParameterDocId}CancellationToken)") #>
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
 	public <#= staticModifier #>T? Deserialize<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, CancellationToken cancellationToken = default)
 		<#=typeConstraint#>=> <#= thisKeyword #>.Deserialize(<#=firstArg#>, <#=getShape#>, cancellationToken);
@@ -138,21 +139,21 @@ void WriteClass(bool targetNET) {
             AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs($"DeserializeAsync{{T, TProvider}}({thisParameterDocId}{firstParameterDocId}CancellationToken)") #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
 	public <#= staticModifier #>ValueTask<T?> DeserializeAsync<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializeAsync(<#=firstArg#>, <#=getShape#>, cancellationToken);
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeEnumerableAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializeEnumerableAsync{T}(<#=firstParameterDocId#>ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs($"DeserializeEnumerableAsync{{T, TProvider}}({thisParameterDocId}{firstParameterDocId}CancellationToken)") #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
 	public <#= staticModifier #>IAsyncEnumerable<T?> DeserializeEnumerableAsync<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializeEnumerableAsync(<#=firstArg#>, <#=getShape#>, cancellationToken);
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePathEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, <#=serializerClassQualifier#>StreamingEnumerationOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePathEnumerableAsync{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, <#=serializerClassQualifier#>StreamingEnumerationOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs($"DeserializePathEnumerableAsync{{T, TElement, TProvider}}({thisParameterDocId}{firstParameterDocId}{serializerClassQualifier}StreamingEnumerationOptions{{T, TElement}}, CancellationToken)") #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
 	public <#= staticModifier #>IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#>, <#=serializerClassQualifier#>StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
@@ -174,7 +175,7 @@ void WriteClass(bool targetNET) {
             AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, true, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePath{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, in <#=serializerClassQualifier#>DeserializePathOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>DeserializePath{T, TElement}(<#=firstParameterDocId#>ITypeShape{T}, in <#=serializerClassQualifier#>DeserializePathOptions{T, TElement}, CancellationToken)" /><#= sourceGenRequiredDocs($"DeserializePath{{T, TElement, TProvider}}({thisParameterDocId}{firstParameterDocId}in {serializerClassQualifier}DeserializePathOptions{{T, TElement}}, CancellationToken)") #>
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
 	public <#= staticModifier #>TElement? DeserializePath<<#=genericTypeParametersWithElement#>>(<#=thisParameter#><#=firstParameter#>in <#=serializerClassQualifier#>DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		<#=typeConstraint#>=> <#= thisKeyword #>.DeserializePath(<#=firstArg#><#=getShape#>, options, cancellationToken);
@@ -193,7 +194,7 @@ void WriteClass(bool targetNET) {
             AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
 #>
 
-	/// <inheritdoc cref="<#=serializerClassQualifier#>SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs #>
+	/// <inheritdoc cref="<#=serializerClassQualifier#>SerializeAsync{T}(<#=firstParameterDocId#>T, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs($"SerializeAsync{{T, TProvider}}({thisParameterDocId}{firstParameterDocId}in T, CancellationToken)") #>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]<#= methodAttributes #>
 	public <#= staticModifier #>ValueTask SerializeAsync<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, in T? value, CancellationToken cancellationToken = default)

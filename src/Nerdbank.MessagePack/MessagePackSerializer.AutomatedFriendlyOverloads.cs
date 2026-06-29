@@ -257,7 +257,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Serialize{T, TProvider}(MessagePackSerializer, ref MessagePackWriter, in T, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -275,7 +275,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Serialize{T, TProvider}(MessagePackSerializer, in T, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -293,7 +293,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Serialize{T, TProvider}(MessagePackSerializer, IBufferWriter{byte}, in T, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -311,7 +311,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Serialize{T, TProvider}(MessagePackSerializer, Stream, in T, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -329,7 +329,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Deserialize{T, TProvider}(MessagePackSerializer, ref MessagePackReader, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -347,7 +347,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Deserialize{T, TProvider}(MessagePackSerializer, ReadOnlyMemory{byte}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -365,7 +365,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Deserialize{T, TProvider}(MessagePackSerializer, in ReadOnlySequence{byte}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -383,7 +383,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="Deserialize{T, TProvider}(MessagePackSerializer, Stream, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -401,7 +401,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializeAsync{T, TProvider}(MessagePackSerializer, PipeReader, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -421,7 +421,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializeEnumerableAsync{T, TProvider}(MessagePackSerializer, PipeReader, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -441,7 +441,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializePathEnumerableAsync{T, TElement, TProvider}(MessagePackSerializer, PipeReader, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -461,7 +461,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializeAsync{T, TProvider}(MessagePackSerializer, Stream, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -481,7 +481,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializeEnumerableAsync{T, TProvider}(MessagePackSerializer, Stream, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -501,7 +501,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializePathEnumerableAsync{T, TElement, TProvider}(MessagePackSerializer, Stream, MessagePackSerializer.StreamingEnumerationOptions{T, TElement}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -521,7 +521,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializePath{T, TElement, TProvider}(MessagePackSerializer, ref MessagePackReader, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -539,7 +539,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializePath{T, TElement, TProvider}(MessagePackSerializer, ReadOnlyMemory{byte}, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -557,7 +557,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializePath{T, TElement, TProvider}(MessagePackSerializer, in ReadOnlySequence{byte}, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -575,7 +575,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="DeserializePath{T, TElement, TProvider}(MessagePackSerializer, Stream, in MessagePackSerializer.DeserializePathOptions{T, TElement}, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 	[ExcludeFromCodeCoverage]
@@ -593,7 +593,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="SerializeAsync{T, TProvider}(MessagePackSerializer, PipeWriter, in T, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
@@ -613,7 +613,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="SerializeAsync{T, TProvider}(MessagePackSerializer, Stream, in T, CancellationToken)"/> instead,
 	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
