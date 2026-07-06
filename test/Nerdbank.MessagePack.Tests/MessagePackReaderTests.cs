@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
+using static SequenceBuilder;
 
 public partial class MessagePackReaderTests
 {
@@ -186,9 +187,7 @@ public partial class MessagePackReaderTests
 		byte[] expected = [0x1, 0x2, 0x3];
 		writer.WriteString(expected);
 		writer.Flush();
-		ReadOnlySequence<byte> fragmentedSequence = SequenceBuilder.Create(
-			contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
-			contiguousSequence.AsReadOnlySequence.First.Slice(2));
+		ReadOnlySequence<byte> fragmentedSequence = InsertFragmentBreak(contiguousSequence.AsReadOnlySequence, 2);
 
 		var reader = new MessagePackReader(fragmentedSequence);
 		Assert.False(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
@@ -253,9 +252,7 @@ public partial class MessagePackReaderTests
 		byte[] expected = [0x1, 0x2, 0x3];
 		writer.WriteString(expected);
 		writer.Flush();
-		ReadOnlySequence<byte> fragmentedSequence = SequenceBuilder.Create(
-			contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
-			contiguousSequence.AsReadOnlySequence.First.Slice(2));
+		ReadOnlySequence<byte> fragmentedSequence = InsertFragmentBreak(contiguousSequence.AsReadOnlySequence, 2);
 
 		var reader = new MessagePackReader(fragmentedSequence);
 		ReadOnlySpan<byte> span = reader.ReadStringSpan();
@@ -453,6 +450,27 @@ public partial class MessagePackReaderTests
 		return sequence.AsReadOnlySequence;
 	}
 
+	/// <summary>
+	/// Extend a sequence by a given number of bytes.
+	/// </summary>
+	/// <param name="seq">The sequence to extend.</param>
+	/// <param name="bytes">The number of bytes to append.</param>
+	/// <remarks>
+	/// This can be useful to exercise code paths beyond a minimal length remaining check.
+	/// This method may allocate large amounts of memory and should be used only when there are no alternatives
+	/// to exercise the code paths of interest.
+	/// </remarks>
+	private static void AddFiller(Sequence<byte> seq, ulong bytes)
+	{
+		while (bytes > 0)
+		{
+			int len = bytes > int.MaxValue ? Array.MaxLength : Math.Min((int)bytes, Array.MaxLength);
+			byte[] buffer = new byte[len];
+			seq.Append(buffer);
+			bytes -= (ulong)len;
+		}
+	}
+
 	private void AssertCodeRange(RangeChecker predicate, Func<byte, bool> isOneByteRepresentation, Func<byte, bool> isIntroductoryByte)
 	{
 		bool mismatch = false;
@@ -519,6 +537,146 @@ public partial class MessagePackReaderTests
 		public MySequenceReader(ReadOnlySequence<byte> seq)
 		{
 			this.reader = new MessagePackReader(seq);
+		}
+	}
+
+	[Collection(MemorySensitiveTestCollection.Name)]
+	[Trait("TestCategory", "FailsInCloudTest")] // allocates too much memory for github runners
+	public class LargeValue
+	{
+		[Theory, PairwiseData]
+		public void TryReadArrayHeader_Int32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteArrayHeader(int.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadArrayHeader(out int actualCount));
+			Assert.Equal(int.MaxValue, actualCount);
+		}
+
+		[Theory, PairwiseData]
+		public void TryReadArrayHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteArrayHeader(uint.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadArrayHeader(out uint actualCount));
+			Assert.Equal(uint.MaxValue, actualCount);
+
+			reader = new(ros);
+			try
+			{
+				reader.TryReadArrayHeader(out int _);
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
+		}
+
+		[Theory, PairwiseData]
+		public void ReadArrayHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteArrayHeader(uint.MaxValue);
+			writer.Flush();
+			AddFiller(sequence, uint.MaxValue);
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+			MessagePackReader reader = new(ros);
+			Assert.Equal(uint.MaxValue, reader.ReadArrayHeaderUInt32());
+
+			reader = new(ros);
+			try
+			{
+				reader.ReadArrayHeader();
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
+		}
+
+		[Theory, PairwiseData]
+		public void TryReadMapHeader_Int32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteMapHeader(int.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadMapHeader(out int actualCount));
+			Assert.Equal(int.MaxValue, actualCount);
+		}
+
+		[Theory, PairwiseData]
+		public void TryReadMapHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteMapHeader(uint.MaxValue);
+			writer.Flush();
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+			MessagePackReader reader = new(ros);
+			Assert.True(reader.TryReadMapHeader(out uint actualCount));
+			Assert.Equal(uint.MaxValue, actualCount);
+
+			reader = new(ros);
+			try
+			{
+				reader.TryReadMapHeader(out int _);
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
+		}
+
+		[Theory, PairwiseData]
+		public void ReadMapHeader_UInt32(bool fragmented)
+		{
+			Sequence<byte> sequence = new();
+			MessagePackWriter writer = new(sequence);
+			writer.WriteMapHeader(uint.MaxValue);
+			writer.Flush();
+			AddFiller(sequence, 2UL * uint.MaxValue);
+
+			ReadOnlySequence<byte> ros = fragmented ? InsertFragmentBreak<byte>(sequence, 2) : sequence;
+			MessagePackReader reader = new(ros);
+			Assert.Equal(uint.MaxValue, reader.ReadMapHeaderUInt32());
+
+			reader = new(ros);
+			try
+			{
+				reader.ReadMapHeader();
+				Assert.Fail("Expected an OverflowException to be thrown.");
+			}
+			catch (OverflowException)
+			{
+			}
+
+			Assert.Equal(0, reader.Consumed);
 		}
 	}
 

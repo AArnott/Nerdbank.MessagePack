@@ -3,7 +3,6 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
@@ -267,7 +266,7 @@ public class ConverterAnalyzers : DiagnosticAnalyzer
 					{
 						return i.TargetMethod.Name switch
 						{
-							"ReadArrayHeader" or "ReadMapHeader" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
+							"ReadArrayHeader" or "ReadMapHeader" or "ReadArrayHeaderUInt32" or "ReadMapHeaderUInt32" => (null, true), // Advanced case, which we'll just assume they're doing correctly.
 							"TryReadArrayHeader" or "TryReadMapHeader" => (null, false), // Advanced case, which we'll just assume they're doing correctly.
 							"TryReadNil" => (1, false),
 							"TryReadStringSpan" => (1, false),

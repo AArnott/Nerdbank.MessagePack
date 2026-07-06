@@ -76,7 +76,7 @@ public partial class MessagePackReaderTests
 
 #if NET
 	[UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_ExpectedRemainingStructures")]
-	private static extern uint GetExpectedRemainingStructures(ref MessagePackReader reader);
+	private static extern ulong GetExpectedRemainingStructures(ref MessagePackReader reader);
 #endif
 
 }
