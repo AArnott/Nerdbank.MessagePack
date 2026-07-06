@@ -90,6 +90,11 @@ namespace Nerdbank.MessagePack
 
 		internal static unsafe int GetChars(this Encoding encoding, ReadOnlySequence<byte> source, Span<char> destination)
 		{
+			if (source.IsEmpty)
+			{
+				return 0;
+			}
+
 			if (source.IsSingleSegment)
 			{
 				return GetChars(encoding, source.First.Span, destination);
@@ -100,6 +105,11 @@ namespace Nerdbank.MessagePack
 			bool completed = true;
 			foreach (ReadOnlyMemory<byte> sourceSegment in source)
 			{
+				if (sourceSegment.IsEmpty)
+				{
+					continue;
+				}
+
 				fixed (byte* pSource = sourceSegment.Span)
 				{
 					fixed (char* pDestination = destination)
