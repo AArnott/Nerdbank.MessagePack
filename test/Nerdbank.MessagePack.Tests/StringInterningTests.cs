@@ -56,6 +56,15 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		Assert.Equal("abc", deserialized);
 	}
 
+	[Fact]
+	public void FragmentedWithEmptySegment()
+	{
+		ReadOnlyMemory<byte> buffer = this.Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken);
+		ReadOnlySequence<byte> sequence = SequenceBuilder.Create(buffer[..2], ReadOnlyMemory<byte>.Empty, buffer[2..^1], buffer[^1..]);
+		string? deserialized = this.Serializer.Deserialize<string, Witness>(sequence, TestContext.Current.CancellationToken);
+		Assert.Equal("abc", deserialized);
+	}
+
 	[GenerateShapeFor<string>]
 	[GenerateShapeFor<string[]>]
 	private partial class Witness;

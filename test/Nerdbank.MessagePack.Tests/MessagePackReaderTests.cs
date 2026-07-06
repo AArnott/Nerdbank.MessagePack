@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
-using Microsoft;
+using static SequenceBuilder;
 
 public partial class MessagePackReaderTests
 {
@@ -469,65 +469,6 @@ public partial class MessagePackReaderTests
 			seq.Append(buffer);
 			bytes -= (ulong)len;
 		}
-	}
-
-	private static ReadOnlySequence<T> InsertFragmentBreak<T>(ReadOnlySequence<T> sequence, ulong fragmentPosition)
-	{
-		Requires.Range(fragmentPosition <= (ulong)sequence.Length, nameof(fragmentPosition), "Must not be greater than the length of the sequence.");
-		ulong priorBytes = 0;
-
-		BufferSegment<T>? first = null, last = null;
-
-		if (fragmentPosition == 0)
-		{
-			Append(default);
-		}
-
-		foreach (ReadOnlyMemory<T> segment in sequence)
-		{
-			// If the fragment position is within this segment, split it into two segments.
-			if (fragmentPosition > priorBytes && fragmentPosition < priorBytes + (ulong)segment.Length)
-			{
-				int fragmentWithinSegment = (int)(fragmentPosition - priorBytes);
-				Append(segment[..fragmentWithinSegment]);
-				Append(segment[fragmentWithinSegment..]);
-			}
-			else
-			{
-				Append(segment);
-			}
-
-			priorBytes += (ulong)segment.Length;
-		}
-
-		if (fragmentPosition == (ulong)sequence.Length)
-		{
-			Append(default);
-		}
-
-		Assumes.NotNull(first);
-		Assumes.NotNull(last);
-
-		return new ReadOnlySequence<T>(first, 0, last, last.Memory.Length);
-
-		void Append(ReadOnlyMemory<T> buffer) => last = last is null ? (first = new(buffer)) : last.Append(buffer);
-	}
-
-	private static ReadOnlySequence<T> BuildSequence<T>(params T[][] segmentContents)
-	{
-		if (segmentContents.Length == 1)
-		{
-			return new ReadOnlySequence<T>(segmentContents[0].AsMemory());
-		}
-
-		BufferSegment<T> bufferSegment = new(segmentContents[0].AsMemory());
-		BufferSegment<T>? last = default;
-		for (var i = 1; i < segmentContents.Length; i++)
-		{
-			last = bufferSegment.Append(segmentContents[i]);
-		}
-
-		return new ReadOnlySequence<T>(bufferSegment, 0, last!, last!.Memory.Length);
 	}
 
 	private void AssertCodeRange(RangeChecker predicate, Func<byte, bool> isOneByteRepresentation, Func<byte, bool> isIntroductoryByte)
