@@ -186,9 +186,9 @@ public partial class MessagePackReaderTests
 		byte[] expected = [0x1, 0x2, 0x3];
 		writer.WriteString(expected);
 		writer.Flush();
-		ReadOnlySequence<byte> fragmentedSequence = BuildSequence(
-		   contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
-		   contiguousSequence.AsReadOnlySequence.First.Slice(2));
+		ReadOnlySequence<byte> fragmentedSequence = SequenceBuilder.Create(
+			contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
+			contiguousSequence.AsReadOnlySequence.First.Slice(2));
 
 		var reader = new MessagePackReader(fragmentedSequence);
 		Assert.False(reader.TryReadStringSpan(out ReadOnlySpan<byte> span));
@@ -253,9 +253,9 @@ public partial class MessagePackReaderTests
 		byte[] expected = [0x1, 0x2, 0x3];
 		writer.WriteString(expected);
 		writer.Flush();
-		ReadOnlySequence<byte> fragmentedSequence = BuildSequence(
-		   contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
-		   contiguousSequence.AsReadOnlySequence.First.Slice(2));
+		ReadOnlySequence<byte> fragmentedSequence = SequenceBuilder.Create(
+			contiguousSequence.AsReadOnlySequence.First.Slice(0, 2),
+			contiguousSequence.AsReadOnlySequence.First.Slice(2));
 
 		var reader = new MessagePackReader(fragmentedSequence);
 		ReadOnlySpan<byte> span = reader.ReadStringSpan();
@@ -451,22 +451,6 @@ public partial class MessagePackReaderTests
 		cb(ref writer);
 		writer.Flush();
 		return sequence.AsReadOnlySequence;
-	}
-
-	private static ReadOnlySequence<T> BuildSequence<T>(params ReadOnlyMemory<T>[] memoryChunks)
-	{
-		var sequence = new Sequence<T>(new ExactArrayPool<T>())
-		{
-			MinimumSpanLength = -1,
-		};
-		foreach (ReadOnlyMemory<T> chunk in memoryChunks)
-		{
-			Span<T> span = sequence.GetSpan(chunk.Length);
-			chunk.Span.CopyTo(span);
-			sequence.Advance(chunk.Length);
-		}
-
-		return sequence;
 	}
 
 	private void AssertCodeRange(RangeChecker predicate, Func<byte, bool> isOneByteRepresentation, Func<byte, bool> isIntroductoryByte)
