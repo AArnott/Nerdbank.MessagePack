@@ -16,7 +16,7 @@
     <PackageReference Include="MessagePack" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="System.Collections.Immutable" VersionOverride="9.0.0" />
+    <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
 
   <ItemGroup>
