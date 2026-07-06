@@ -61,7 +61,12 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 
 	[Fact]
 	public void ReadOnlySequenceOfByte() => this.AssertEqualityComparerBehavior(
-		[new HaveReadOnlySequenceOfByte(new([1, 2])), new HaveReadOnlySequenceOfByte(new([1, 2]))],
+		[
+			new HaveReadOnlySequenceOfByte(new([1, 2])),
+			new HaveReadOnlySequenceOfByte(new([1, 2])),
+			new HaveReadOnlySequenceOfByte(SequenceBuilder.Create(new byte[] { 1 }, new byte[] { 2 })),
+			new HaveReadOnlySequenceOfByte(SequenceBuilder.Create(new byte[] { 1 }, ReadOnlyMemory<byte>.Empty, new byte[] { 2 })),
+		],
 		[new HaveReadOnlySequenceOfByte(new([1, 3])), new HaveReadOnlySequenceOfByte(new([1, 2, 3]))]);
 
 	[Fact]
@@ -264,6 +269,20 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 			Assert.Equal(comparer.GetHashCode(first), comparer.GetHashCode(second));
 			Assert.True(comparer.Equals(relativeFirst, relativeSecond));
 			Assert.Equal(comparer.GetHashCode(relativeFirst), comparer.GetHashCode(relativeSecond));
+		}
+
+		[Fact]
+		public void Extension_IgnoresSegmentBoundaries()
+		{
+			IEqualityComparer<Extension> comparer = this.GetEqualityComparer<Extension>();
+			Extension contiguous = new(5, new byte[] { 1, 2 });
+			Extension segmented = new(5, SequenceBuilder.Create(new byte[] { 1 }, new byte[] { 2 }));
+			Extension segmentedWithEmpty = new(5, SequenceBuilder.Create(new byte[] { 1 }, ReadOnlyMemory<byte>.Empty, new byte[] { 2 }));
+
+			Assert.True(comparer.Equals(contiguous, segmented));
+			Assert.Equal(comparer.GetHashCode(contiguous), comparer.GetHashCode(segmented));
+			Assert.True(comparer.Equals(contiguous, segmentedWithEmpty));
+			Assert.Equal(comparer.GetHashCode(contiguous), comparer.GetHashCode(segmentedWithEmpty));
 		}
 
 		[Fact]

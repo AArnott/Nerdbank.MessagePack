@@ -287,42 +287,7 @@ internal static class HashCollisionResistantPrimitives
 
 		public override bool Equals(ReadOnlySequence<byte> x, ReadOnlySequence<byte> y) => x.SequenceEqual(y);
 
-		public override long GetSecureHashCode([DisallowNull] ReadOnlySequence<byte> obj)
-		{
-			int segmentCount = 0;
-			foreach (ReadOnlyMemory<byte> segment in obj)
-			{
-				if (++segmentCount > 64)
-				{
-					break;
-				}
-			}
-
-			if (segmentCount <= 64)
-			{
-				Span<long> hashesSpan = stackalloc long[segmentCount];
-				int i = 0;
-				foreach (ReadOnlyMemory<byte> segment in obj)
-				{
-					hashesSpan[i++] = SecureHash(segment.Span);
-				}
-
-				return SipHash.Default.Compute(MemoryMarshal.Cast<long, byte>(hashesSpan));
-			}
-
-			List<long> hashes = [];
-			foreach (ReadOnlyMemory<byte> segment in obj)
-			{
-				hashes.Add(SecureHash(segment.Span));
-			}
-
-#if NET
-			Span<long> span = CollectionsMarshal.AsSpan(hashes);
-#else
-			Span<long> span = hashes.ToArray();
-#endif
-			return SipHash.Default.Compute(MemoryMarshal.Cast<long, byte>(span));
-		}
+		public override long GetSecureHashCode([DisallowNull] ReadOnlySequence<byte> obj) => SipHash.Default.Compute(obj);
 	}
 
 	internal class CollisionResistantEnumHasher<TEnum, TUnderlying>(SecureEqualityComparer<TUnderlying> equalityComparer) : SecureEqualityComparer<TEnum>
