@@ -11,7 +11,7 @@ internal static class ReferencesHelper
 	internal static ReferenceAssemblies References = ReferenceAssemblies.NetFramework.Net472.Default
 		.WithPackages([
 			new PackageIdentity("System.Memory", "4.6.3"),
-			new PackageIdentity("System.Text.Json", "10.0.8"),
+			new PackageIdentity("System.Text.Json", "8.0.6"),
 		]);
 #endif
 
