@@ -678,7 +678,7 @@ public ref struct MessagePackWriter
 		{
 			int byteCount;
 #if NET
-			byteCount = StringEncoding.UTF8.GetBytes(value.AsSpan(), new Span<byte>(pBuffer + useOffset, bufferSize - useOffset));
+			byteCount = StringEncoding.UTF8.GetBytes(value, new Span<byte>(pBuffer + useOffset, bufferSize - useOffset));
 #else
 			fixed (char* pValue = value)
 			{
