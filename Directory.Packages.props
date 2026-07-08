@@ -38,7 +38,7 @@
     <PackageVersion Include="OneOf" Version="3.0.271" />
     <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)-unstable" />
-    <PackageVersion Include="System.IO.Pipelines" Version="10.0.8" />
+    <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" />
     <PackageVersion Include="System.Memory.Data" Version="8.0.1" />
     <PackageVersion Include="TUnit" Version="1.58.0" />
     <PackageVersion Include="TUnit.Engine" Version="1.58.0" />
@@ -53,7 +53,7 @@
          dependency than they were expecting or needlessly bring in a 9.0 assembly to an 8.0 runtime. -->
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="10.0.8" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.6" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
     <PackageVersion Update="System.Collections.Immutable" Version="8.0.0" />
