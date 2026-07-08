@@ -674,13 +674,18 @@ public ref struct MessagePackWriter
 		}
 
 		ref byte buffer = ref this.WriteString_PrepareSpan(value.Length, out int bufferSize, out int useOffset);
-		fixed (char* pValue = value)
+		fixed (byte* pBuffer = &buffer)
 		{
-			fixed (byte* pBuffer = &buffer)
+			int byteCount;
+#if NET
+			byteCount = StringEncoding.UTF8.GetBytes(value.AsSpan(), new Span<byte>(pBuffer + useOffset, bufferSize - useOffset));
+#else
+			fixed (char* pValue = value)
 			{
-				int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
-				this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
+				byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
 			}
+#endif
+			this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
 		}
 	}
 
@@ -695,13 +700,18 @@ public ref struct MessagePackWriter
 	public unsafe void Write(scoped ReadOnlySpan<char> value)
 	{
 		ref byte buffer = ref this.WriteString_PrepareSpan(value.Length, out int bufferSize, out int useOffset);
-		fixed (char* pValue = value)
+		fixed (byte* pBuffer = &buffer)
 		{
-			fixed (byte* pBuffer = &buffer)
+			int byteCount;
+#if NET
+			byteCount = StringEncoding.UTF8.GetBytes(value, new Span<byte>(pBuffer + useOffset, bufferSize - useOffset));
+#else
+			fixed (char* pValue = value)
 			{
-				int byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
-				this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
+				byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBuffer + useOffset, bufferSize);
 			}
+#endif
+			this.WriteString_PostEncoding(pBuffer, useOffset, byteCount);
 		}
 	}
 
