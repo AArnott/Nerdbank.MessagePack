@@ -61,7 +61,7 @@
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsTestProject)'=='true' or '$(MSBuildProjectName)'=='Benchmarks'">
-    <PackageVersion Update="System.Collections.Immutable" Version="10.0.1" />
+    <PackageVersion Update="System.Collections.Immutable" Version="10.0.5" />
     <PackageVersion Update="System.IO.Pipelines" Version="10.0.8" />
     <PackageVersion Update="System.Text.Json" Version="10.0.8" />
   </ItemGroup>
