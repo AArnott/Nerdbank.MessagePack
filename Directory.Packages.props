@@ -8,7 +8,7 @@
     <RoslynVersion>5.6.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26226.5</CodeAnalysisAnalyzerVersion>
-    <PolyTypeVersion>1.3.1</PolyTypeVersion>
+    <PolyTypeVersion>1.4.1</PolyTypeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
