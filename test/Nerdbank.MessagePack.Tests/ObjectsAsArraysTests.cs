@@ -21,6 +21,81 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	public void PersonWithDefaultConstructor_Roundtrip() => this.AssertRoundtrip(new PersonWithDefaultConstructor { FirstName = "Andrew", LastName = "Arnott" });
 
 	[Fact]
+	public void DensePrimitiveProperties_Roundtrip()
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
+		DensePrimitiveProperties value = new() { Number = 42, Text = "Hello, World!" };
+
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(value);
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(value.Number, reader.ReadInt32());
+		Assert.Equal(value.Text, reader.ReadString());
+		Assert.True(reader.End);
+	}
+
+	[Fact]
+	public void DensePrimitiveProperties_UseCustomConverter()
+	{
+		OffsetInt32Converter converter = new();
+		this.Serializer = this.Serializer with
+		{
+			Converters = [converter],
+			SerializeDefaultValues = SerializeDefaultValuesPolicy.Always,
+		};
+
+		DensePrimitiveProperties value = new() { Number = 42, Text = "Hello, World!" };
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(value);
+		Assert.Equal(1, converter.ReadCount);
+		Assert.Equal(1, converter.WriteCount);
+
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(value.Number + 1, reader.ReadInt32());
+		Assert.Equal(value.Text, reader.ReadString());
+		Assert.True(reader.End);
+	}
+
+	[Fact]
+	public void DensePrimitiveProperties_SerializationCallbacks()
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
+		DensePrimitivePropertiesWithCallbacks value = new() { Number = 42, Text = "Hello, World!" };
+
+		this.Serializer.Serialize(value, TestContext.Current.CancellationToken);
+
+		Assert.Equal(1, value.OnBeforeSerializeCount);
+		Assert.Equal(1, value.OnAfterSerializeCount);
+	}
+
+	[Fact]
+	public void DensePrimitiveProperties_DerivedSerializationCallbacks()
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
+		DensePrimitiveProperties value = new DerivedDensePrimitiveProperties { Number = 42, Text = "Hello, World!" };
+
+		this.Serializer.Serialize(value, TestContext.Current.CancellationToken);
+
+		DerivedDensePrimitiveProperties derivedValue = Assert.IsType<DerivedDensePrimitiveProperties>(value);
+		Assert.Equal(1, derivedValue.OnBeforeSerializeCount);
+		Assert.Equal(1, derivedValue.OnAfterSerializeCount);
+	}
+
+	[Fact]
+	public void DensePrimitiveProperties_GetterExceptionIdentifiesProperty()
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
+		ThrowingDensePrimitiveProperties value = new() { Text = "Hello, World!" };
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Serialize(value, TestContext.Current.CancellationToken));
+
+		MessagePackSerializationException propertyException = Assert.IsType<MessagePackSerializationException>(ex.InnerException);
+		Assert.Contains("'Number' property", propertyException.Message, StringComparison.Ordinal);
+		Assert.IsType<InvalidOperationException>(propertyException.InnerException);
+	}
+
+	[Fact]
 	public void Null() => this.AssertRoundtrip<Person>(null);
 
 	[Fact]
@@ -398,6 +473,75 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 	private partial class Witness;
 
 	[GenerateShape]
+	public partial record DensePrimitiveProperties
+	{
+		[Key(0)]
+		public int Number { get; set; }
+
+		[Key(1)]
+		public string? Text { get; set; }
+	}
+
+	[GenerateShape]
+	public partial record DensePrimitivePropertiesWithCallbacks : IMessagePackSerializationCallbacks
+	{
+		[Key(0)]
+		public int Number { get; set; }
+
+		[Key(1)]
+		public string? Text { get; set; }
+
+		internal int OnBeforeSerializeCount { get; private set; }
+
+		internal int OnAfterSerializeCount { get; private set; }
+
+		void IMessagePackSerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCount++;
+
+		void IMessagePackSerializationCallbacks.OnAfterSerialize() => this.OnAfterSerializeCount++;
+
+		void IMessagePackSerializationCallbacks.OnBeforeDeserialize()
+		{
+		}
+
+		void IMessagePackSerializationCallbacks.OnAfterDeserialize()
+		{
+		}
+	}
+
+	public partial record DerivedDensePrimitiveProperties : DensePrimitiveProperties, IMessagePackSerializationCallbacks
+	{
+		internal int OnBeforeSerializeCount { get; private set; }
+
+		internal int OnAfterSerializeCount { get; private set; }
+
+		void IMessagePackSerializationCallbacks.OnBeforeSerialize() => this.OnBeforeSerializeCount++;
+
+		void IMessagePackSerializationCallbacks.OnAfterSerialize() => this.OnAfterSerializeCount++;
+
+		void IMessagePackSerializationCallbacks.OnBeforeDeserialize()
+		{
+		}
+
+		void IMessagePackSerializationCallbacks.OnAfterDeserialize()
+		{
+		}
+	}
+
+	[GenerateShape]
+	public partial record ThrowingDensePrimitiveProperties
+	{
+		[Key(0)]
+		public int Number
+		{
+			get => throw new InvalidOperationException();
+			set { }
+		}
+
+		[Key(1)]
+		public string? Text { get; set; }
+	}
+
+	[GenerateShape]
 	public partial record Person
 	{
 		[Key(0)]
@@ -492,5 +636,23 @@ public partial class ObjectsAsArraysTests : MessagePackSerializerTestBase
 
 		[Key(0)]
 		public bool Value { get; set; }
+	}
+
+	private sealed class OffsetInt32Converter : MessagePackConverter<int>
+	{
+		internal int ReadCount;
+		internal int WriteCount;
+
+		public override int Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			this.ReadCount++;
+			return reader.ReadInt32() - 1;
+		}
+
+		public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context)
+		{
+			this.WriteCount++;
+			writer.Write(value + 1);
+		}
 	}
 }

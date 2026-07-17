@@ -68,7 +68,7 @@ internal class ObjectMapConverter<T>(
 
 		callbacks?.OnAfterSerialize();
 
-		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty, SerializationContext context)
+		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty, in SerializationContext context)
 		{
 			UnusedDataPacket.Map? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
 			writer.WriteMapHeader(properties.Length + (unused?.Count ?? 0));
