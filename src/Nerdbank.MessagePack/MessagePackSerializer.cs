@@ -246,8 +246,6 @@ public partial record MessagePackSerializer
 	/// <param name="value">The value to serialize.</param>
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
-	// Large converter implementations otherwise inline into this operation-setup path and increase its stack frame.
-	[MethodImpl(MethodImplOptions.NoInlining)]
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
@@ -374,8 +372,6 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	// Large converter implementations otherwise inline into this operation-setup path and increase its stack frame.
-	[MethodImpl(MethodImplOptions.NoInlining)]
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
