@@ -349,7 +349,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
 		ConverterResult converter = this.GetConverterForMemberOrParameter(propertyShape.PropertyType, propertyShape.AttributeProvider);
-		MessagePackConverter<TPropertyType>? typedConverter = converter.Value as MessagePackConverter<TPropertyType>;
+		MessagePackConverter<TPropertyType>? typedConverter = (MessagePackConverter<TPropertyType>?)converter.Value;
 
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
@@ -384,22 +384,26 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 
 				SerializeProperty<TDeclaringType> serialize;
-				if (typedConverter is not null && DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
+				if (typedConverter is null)
+				{
+					serialize = (in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) => converter.Error!.ThrowException();
+				}
+				else if (DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
 				{
 					// Inlining primitive codecs here expands each containing object converter enough to make its hot loop slower.
 					serialize =
 						[MethodImpl(MethodImplOptions.NoInlining)]
 					(in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) =>
-					{
-						try
 						{
-							DirectPrimitiveConverter<TPropertyType>.Write(ref writer, getter(ref Unsafe.AsRef(in container)));
-						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-						{
-							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-						}
-					};
+							try
+							{
+								DirectPrimitiveConverter<TPropertyType>.Write(ref writer, getter(ref Unsafe.AsRef(in container)));
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+							}
+						};
 				}
 				else
 				{
@@ -410,7 +414,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
 						try
 						{
-							typedConverter!.Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
+							typedConverter.Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
 						}
 						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 						{
@@ -419,17 +423,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					};
 				}
 
-				SerializePropertyAsync<TDeclaringType> serializeAsync = async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
-				{
-					try
+				SerializePropertyAsync<TDeclaringType> serializeAsync =
+					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) => throw converter.Error!.ThrowException() :
+					async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
 					{
-						await typedConverter!.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-					{
-						throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-					}
-				};
+						try
+						{
+							await typedConverter.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+						}
+					};
 				msgpackWriters = (serialize, serializeAsync);
 			}
 		}
@@ -443,22 +449,26 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			{
 				Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
 				DeserializeProperty<TDeclaringType> deserialize;
-				if (typedConverter is not null && DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
+				if (typedConverter is null)
+				{
+					deserialize = (ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) => converter.Error!.ThrowException();
+				}
+				else if (DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
 				{
 					// Inlining primitive codecs here expands each containing object converter enough to make its hot loop slower.
 					deserialize =
 						[MethodImpl(MethodImplOptions.NoInlining)]
 					(ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) =>
-					{
-						try
 						{
-							setter(ref container, DirectPrimitiveConverter<TPropertyType>.Read(ref reader)!);
-						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-						{
-							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-						}
-					};
+							try
+							{
+								setter(ref container, DirectPrimitiveConverter<TPropertyType>.Read(ref reader)!);
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+							}
+						};
 				}
 				else
 				{
@@ -466,7 +476,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					{
 						try
 						{
-							setter(ref container, typedConverter!.Read(ref reader, context)!);
+							setter(ref container, typedConverter.Read(ref reader, context)!);
 						}
 						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
 						{
@@ -475,18 +485,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					};
 				}
 
-				DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
-				{
-					try
+				DeserializePropertyAsync<TDeclaringType> deserializeAsync =
+					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) => throw converter.Error!.ThrowException() :
+					async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 					{
-						setter(ref container, (await typedConverter!.ReadAsync(reader, context).ConfigureAwait(false))!);
-						return container;
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-					{
-						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-					}
-				};
+						try
+						{
+							setter(ref container, (await typedConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
+							return container;
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+						}
+					};
 				msgpackReaders = (deserialize, deserializeAsync);
 				suppressIfNoConstructorParameter = false;
 			}
