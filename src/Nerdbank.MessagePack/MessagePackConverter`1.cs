@@ -180,9 +180,18 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 	MessagePackConverter IMessagePackConverterInternal.UnwrapReferencePreservation() => this.UnwrapReferencePreservation();
 
 	/// <inheritdoc cref="Write"/>
+	/// <devremarks>
+	/// See devremarks in <see cref="ReadCore" />.
+	/// </devremarks>
 	internal virtual void WriteCore(ref MessagePackWriter writer, in T? value, ref SerializationContext context) => this.Write(ref writer, value, context);
 
 	/// <inheritdoc cref="Read"/>
+	/// <devremarks>
+	/// This method is like the <see cref="Write" /> method except that it takes the <paramref name="context" /> parameter by <see langword="ref" />.
+	/// Care must be taken when overriding this method then so that the <paramref name="context" /> is not modified in a way that breaks the caller.
+	/// Typically this should only be overridden by implementations that are simple pass-throughs to other methods, so that <see cref="SerializationContext"/>
+	/// is copied before it is mutated by a callee.
+	/// </devremarks>
 	internal virtual T? ReadCore(ref MessagePackReader reader, ref SerializationContext context) => this.Read(ref reader, context);
 
 	/// <inheritdoc cref="IMessagePackConverterInternal.WrapWithReferencePreservation" />

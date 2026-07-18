@@ -326,6 +326,9 @@ public record struct SerializationContext
 	/// Initializes this context for a new serialization operation.
 	/// </summary>
 	/// <inheritdoc cref="Start(MessagePackSerializer, ConverterCache, ITypeShapeProvider, CancellationToken)"/>
+	/// <remarks>
+	/// This method is like <see cref="Start" /> except that it doesn't require copying the return value (a large struct).
+	/// </remarks>
 	internal void Initialize(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
 		cancellationToken.ThrowIfCancellationRequested();
