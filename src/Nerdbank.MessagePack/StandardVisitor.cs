@@ -349,6 +349,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
 		ConverterResult converter = this.GetConverterForMemberOrParameter(propertyShape.PropertyType, propertyShape.AttributeProvider);
+		MessagePackConverter<TPropertyType>? typedConverter = (MessagePackConverter<TPropertyType>?)converter.Value;
 
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
@@ -382,31 +383,59 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					}
 				}
 
-				SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
+				SerializeProperty<TDeclaringType> serialize;
+				if (typedConverter is null)
 				{
-					// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
-					// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
-					// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
-					try
-					{
-						((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-					{
-						throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-					}
-				};
-				SerializePropertyAsync<TDeclaringType> serializeAsync = async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
+					serialize = (in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) => converter.Error!.ThrowException();
+				}
+				else if (DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
 				{
-					try
+					// Inlining primitive codecs here expands each containing object converter enough to make its hot loop slower.
+					serialize =
+						[MethodImpl(MethodImplOptions.NoInlining)]
+					(in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) =>
+						{
+							try
+							{
+								DirectPrimitiveConverter<TPropertyType>.Write(ref writer, getter(ref Unsafe.AsRef(in container)));
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+							}
+						};
+				}
+				else
+				{
+					serialize = (in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) =>
 					{
-						await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
+						// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
+						// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
+						try
+						{
+							typedConverter.Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+						}
+					};
+				}
+
+				SerializePropertyAsync<TDeclaringType> serializeAsync =
+					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) => throw converter.Error!.ThrowException() :
+					async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
 					{
-						throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-					}
-				};
+						try
+						{
+							await typedConverter.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+						}
+					};
 				msgpackWriters = (serialize, serializeAsync);
 			}
 		}
@@ -419,29 +448,57 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			void SetterHelper()
 			{
 				Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+				DeserializeProperty<TDeclaringType> deserialize;
+				if (typedConverter is null)
 				{
-					try
-					{
-						setter(ref container, ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Read(ref reader, context)!);
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-					{
-						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-					}
-				};
-				DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
+					deserialize = (ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) => converter.Error!.ThrowException();
+				}
+				else if (DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
 				{
-					try
+					// Inlining primitive codecs here expands each containing object converter enough to make its hot loop slower.
+					deserialize =
+						[MethodImpl(MethodImplOptions.NoInlining)]
+					(ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) =>
+						{
+							try
+							{
+								setter(ref container, DirectPrimitiveConverter<TPropertyType>.Read(ref reader)!);
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+							}
+						};
+				}
+				else
+				{
+					deserialize = (ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) =>
 					{
-						setter(ref container, (await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).ReadAsync(reader, context).ConfigureAwait(false))!);
-						return container;
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						try
+						{
+							setter(ref container, typedConverter.Read(ref reader, context)!);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+						}
+					};
+				}
+
+				DeserializePropertyAsync<TDeclaringType> deserializeAsync =
+					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) => throw converter.Error!.ThrowException() :
+					async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 					{
-						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-					}
-				};
+						try
+						{
+							setter(ref container, (await typedConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
+							return container;
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+						}
+					};
 				msgpackReaders = (deserialize, deserializeAsync);
 				suppressIfNoConstructorParameter = false;
 			}
@@ -456,7 +513,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				// and we'll just deserialize into it.
 				suppressIfNoConstructorParameter = false;
 				Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
-				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) =>
 				{
 					if (reader.TryReadNil())
 					{
@@ -606,7 +663,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			ThrowingHelper();
 			void ThrowingHelper()
 			{
-				read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+				read = (ref TArgumentState state, ref MessagePackReader reader, in SerializationContext context) =>
 				{
 					try
 					{
@@ -638,7 +695,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			NonThrowingHelper();
 			void NonThrowingHelper()
 			{
-				read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+				read = (ref TArgumentState state, ref MessagePackReader reader, in SerializationContext context) =>
 				{
 					try
 					{
@@ -1332,6 +1389,47 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		catch (Exception ex) when (SecureVisitor.TryGetEmptyTypeFailure(ex.GetBaseException(), out Type? emptyType))
 		{
 			return new VisitorError(new NotSupportedException($"Serializing dictionaries or hash sets with keys that are or contain empty types is not supported. {emptyType.FullName} is an empty type. Consider using a strong-typed key with properties, or using a custom (or null) MessagePackSerializer.ComparerProvider.", ex));
+		}
+	}
+
+	private static class DirectPrimitiveConverter<T>
+	{
+		internal static bool IsSupported(MessagePackConverter<T> converter)
+			=> (typeof(T) == typeof(int) && converter.GetType() == typeof(Int32Converter))
+				|| (typeof(T) == typeof(string) && converter.GetType() == typeof(Converters.StringConverter));
+
+		internal static T? Read(ref MessagePackReader reader)
+		{
+			if (typeof(T) == typeof(int))
+			{
+				int value = reader.ReadInt32();
+				return Unsafe.As<int, T>(ref value);
+			}
+
+			if (typeof(T) == typeof(string))
+			{
+				string? value = reader.ReadString();
+				return Unsafe.As<string?, T?>(ref value);
+			}
+
+			throw new UnreachableException();
+		}
+
+		internal static void Write(ref MessagePackWriter writer, in T? value)
+		{
+			if (typeof(T) == typeof(int))
+			{
+				writer.Write(Unsafe.As<T?, int>(ref Unsafe.AsRef(in value)));
+				return;
+			}
+
+			if (typeof(T) == typeof(string))
+			{
+				writer.Write(Unsafe.As<T?, string?>(ref Unsafe.AsRef(in value)));
+				return;
+			}
+
+			throw new UnreachableException();
 		}
 	}
 

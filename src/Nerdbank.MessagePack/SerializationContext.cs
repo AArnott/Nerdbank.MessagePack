@@ -25,7 +25,12 @@ namespace Nerdbank.MessagePack;
 public record struct SerializationContext
 {
 	private ImmutableDictionary<object, object?> specialState = ImmutableDictionary<object, object?>.Empty;
+	private ConverterCache? cache;
+	private CancellationToken cancellationToken;
 	private LibraryReservedMessagePackExtensionTypeCode? extensionTypeCodes;
+	private ReferenceEqualityTracker? referenceEqualityTracker;
+	private StringInterning? stringInterningCache;
+	private ITypeShapeProvider? typeShapeProvider;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SerializationContext"/> struct.
@@ -62,14 +67,22 @@ public record struct SerializationContext
 	/// <remarks>
 	/// In <see cref="MessagePackConverter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext)" />
 	/// or <see cref="MessagePackConverter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext)"/> methods,
-	/// this will tend to be equivalent to the <c>cancellationToken</c> parameter passed to those methods.
+	/// this will tend to be equivalent to the cancellation token argument passed to those methods.
 	/// </remarks>
-	public CancellationToken CancellationToken { get; init; }
+	public CancellationToken CancellationToken
+	{
+		get => this.cancellationToken;
+		init => this.cancellationToken = value;
+	}
 
 	/// <summary>
 	/// Gets the type shape provider that applies to the serialization operation.
 	/// </summary>
-	public ITypeShapeProvider? TypeShapeProvider { get; internal init; }
+	public ITypeShapeProvider? TypeShapeProvider
+	{
+		get => this.typeShapeProvider;
+		internal init => this.typeShapeProvider = value;
+	}
 
 	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.
@@ -83,12 +96,20 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
 	/// </summary>
-	internal ConverterCache? Cache { get; private init; }
+	internal ConverterCache? Cache
+	{
+		get => this.cache;
+		private init => this.cache = value;
+	}
 
 	/// <summary>
 	/// Gets the string interning cache to use for this serialization.
 	/// </summary>
-	internal StringInterning? StringInterningCache { get; private init; }
+	internal StringInterning? StringInterningCache
+	{
+		get => this.stringInterningCache;
+		private init => this.stringInterningCache = value;
+	}
 
 	/// <summary>
 	/// Gets or sets the index of the object being deserialized in the reference equality tracker.
@@ -98,7 +119,11 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets the reference equality tracker for this serialization operation.
 	/// </summary>
-	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
+	internal ReferenceEqualityTracker? ReferenceEqualityTracker
+	{
+		get => this.referenceEqualityTracker;
+		private init => this.referenceEqualityTracker = value;
+	}
 
 	/// <summary>
 	/// Gets or sets the number of elements that must still be skipped to complete a skip operation.
@@ -292,19 +317,28 @@ public record struct SerializationContext
 	/// <returns>The new context for the operation.</returns>
 	internal SerializationContext Start(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
-		cancellationToken.ThrowIfCancellationRequested();
-		SerializationContext result = this with
-		{
-			Cache = cache,
-			ExtensionTypeCodes = owner.LibraryExtensionTypeCodes,
-			ReferenceEqualityTracker = cache.PreserveReferences != ReferencePreservationMode.Off ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
-			StringInterningCache = cache.InternStrings ? ReusableObjectPool<StringInterning>.Take(owner) : null,
-			TypeShapeProvider = provider,
-			CancellationToken = cancellationToken,
-		};
-
-		result.ReferenceEqualityTracker?.SetSerializationContext(result);
+		SerializationContext result = this;
+		result.Initialize(owner, cache, provider, cancellationToken);
 		return result;
+	}
+
+	/// <summary>
+	/// Initializes this context for a new serialization operation.
+	/// </summary>
+	/// <inheritdoc cref="Start(MessagePackSerializer, ConverterCache, ITypeShapeProvider, CancellationToken)"/>
+	/// <remarks>
+	/// This method is like <see cref="Start" /> except that it doesn't require copying the return value (a large struct).
+	/// </remarks>
+	internal void Initialize(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		this.cache = cache;
+		this.extensionTypeCodes = owner.LibraryExtensionTypeCodes;
+		this.referenceEqualityTracker = cache.PreserveReferences != ReferencePreservationMode.Off ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null;
+		this.stringInterningCache = cache.InternStrings ? ReusableObjectPool<StringInterning>.Take(owner) : null;
+		this.typeShapeProvider = provider;
+		this.cancellationToken = cancellationToken;
+		this.referenceEqualityTracker?.SetSerializationContext(this);
 	}
 
 	/// <summary>

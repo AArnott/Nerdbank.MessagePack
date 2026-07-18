@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Microsoft;
 
+#pragma warning disable SA1202, SA1204 // Keep public entry points adjacent to their optimized implementations.
+
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
@@ -25,6 +27,9 @@ internal class ObjectArrayConverter<T>(
 	IReadOnlyList<IPropertyShape> propertyShapes,
 	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
 {
+	private readonly DeserializeProperty<T>[]? denseReaders = unusedDataProperty is null ? GetDenseReaders(properties.Span) : null;
+	private readonly SerializeProperty<T>[]? denseWriters = unusedDataProperty is null && defaultValuesPolicy == SerializeDefaultValuesPolicy.Always ? GetDenseWriters(properties.Span) : null;
+
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
 
@@ -34,7 +39,12 @@ internal class ObjectArrayConverter<T>(
 	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
 
 	/// <inheritdoc/>
-	public override T? Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning disable NBMsgPack031 // The core implementation consumes exactly one structure.
+	public override T? Read(ref MessagePackReader reader, SerializationContext context) => this.ReadCore(ref reader, ref context);
+#pragma warning restore NBMsgPack031
+
+	/// <inheritdoc/>
+	internal override T? ReadCore(ref MessagePackReader reader, ref SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -60,47 +70,27 @@ internal class ObjectArrayConverter<T>(
 
 		if (reader.NextMessagePackType == MessagePackType.Map)
 		{
-			PropertyCollisionDetection collisionDetection = new(propertyShapes);
-
-			// The indexes we have are the keys in the map rather than indexes into the array.
-			int count = reader.ReadMapHeader();
-			for (int i = 0; i < count; i++)
-			{
-				int index = reader.ReadInt32();
-				if (index >= 0 && index < properties.Length && properties.Span[index] is { MsgPackReaders: var (deserialize, _), Shape.Position: int propertyShapePosition })
-				{
-					collisionDetection.MarkAsRead(propertyShapePosition);
-					deserialize(ref value, ref reader, context);
-				}
-				else if (unusedDataProperty?.Setter is not null)
-				{
-					unused ??= new();
-					unused.Add(index, reader.ReadRaw(context));
-				}
-				else
-				{
-					reader.Skip(context);
-				}
-			}
+			this.ReadMap(ref value, ref reader, ref unused, in context);
 		}
 		else
 		{
 			int count = reader.ReadArrayHeader();
-			for (int i = 0; i < count; i++)
+			if (this.denseReaders is { } readers)
 			{
-				if (properties.Length > i && properties.Span[i]?.MsgPackReaders is var (deserialize, _))
+				int readableCount = Math.Min(count, readers.Length);
+				for (int i = 0; i < readableCount; i++)
 				{
-					deserialize(ref value, ref reader, context);
+					readers[i](ref value, ref reader, in context);
 				}
-				else if (unusedDataProperty?.Setter is not null)
-				{
-					unused ??= new();
-					unused.Add(i, reader.ReadRaw(context));
-				}
-				else
+
+				for (int i = readableCount; i < count; i++)
 				{
 					reader.Skip(context);
 				}
+			}
+			else
+			{
+				this.ReadSparseArray(ref value, ref reader, count, ref unused, in context);
 			}
 		}
 
@@ -114,10 +104,62 @@ internal class ObjectArrayConverter<T>(
 		return value;
 	}
 
+	// Keep uncommon representations out of the dense array implementation that the JIT inlines into the serializer.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void ReadMap(ref T value, ref MessagePackReader reader, ref UnusedDataPacket.Array? unused, in SerializationContext context)
+	{
+		PropertyCollisionDetection collisionDetection = new(propertyShapes);
+
+		// The indexes we have are the keys in the map rather than indexes into the array.
+		int count = reader.ReadMapHeader();
+		for (int i = 0; i < count; i++)
+		{
+			int index = reader.ReadInt32();
+			if (index >= 0 && index < properties.Length && properties.Span[index] is { MsgPackReaders: var (deserialize, _), Shape.Position: int propertyShapePosition })
+			{
+				collisionDetection.MarkAsRead(propertyShapePosition);
+				deserialize(ref value, ref reader, in context);
+			}
+			else if (unusedDataProperty?.Setter is not null)
+			{
+				unused ??= new();
+				unused.Add(index, reader.ReadRaw(context));
+			}
+			else
+			{
+				reader.Skip(context);
+			}
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void ReadSparseArray(ref T value, ref MessagePackReader reader, int count, ref UnusedDataPacket.Array? unused, in SerializationContext context)
+	{
+		for (int i = 0; i < count; i++)
+		{
+			if (properties.Length > i && properties.Span[i]?.MsgPackReaders is var (deserialize, _))
+			{
+				deserialize(ref value, ref reader, in context);
+			}
+			else if (unusedDataProperty?.Setter is not null)
+			{
+				unused ??= new();
+				unused.Add(i, reader.ReadRaw(context));
+			}
+			else
+			{
+				reader.Skip(context);
+			}
+		}
+	}
+
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
-	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context)
+	public override void Write(ref MessagePackWriter writer, in T? value, SerializationContext context) => this.WriteCore(ref writer, value, ref context);
 #pragma warning restore NBMsgPack031
+
+	/// <inheritdoc/>
+	internal override void WriteCore(ref MessagePackWriter writer, in T? value, ref SerializationContext context)
 	{
 		if (value is null)
 		{
@@ -129,6 +171,27 @@ internal class ObjectArrayConverter<T>(
 		callbacks?.OnBeforeSerialize();
 
 		context.DepthStep();
+
+		if (this.denseWriters is { } writers)
+		{
+			writer.WriteArrayHeader(writers.Length);
+			for (int i = 0; i < writers.Length; i++)
+			{
+				writers[i](value, ref writer, in context);
+			}
+
+			callbacks?.OnAfterSerialize();
+			return;
+		}
+
+		this.WriteNonDense(ref writer, value, in context);
+		callbacks?.OnAfterSerialize();
+	}
+
+	// Keep default-value and unused-data handling out of the dense writer's stack frame.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void WriteNonDense(ref MessagePackWriter writer, in T value, in SerializationContext context)
+	{
 		UnusedDataPacket.Array? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Array;
 
 		if (defaultValuesPolicy != SerializeDefaultValuesPolicy.Always && properties.Length > 0)
@@ -187,9 +250,7 @@ internal class ObjectArrayConverter<T>(
 			WriteArray(ref writer, value, unused, properties.Span, context);
 		}
 
-		callbacks?.OnAfterSerialize();
-
-		static void WriteArray(ref MessagePackWriter writer, in T value, UnusedDataPacket.Array? unused, ReadOnlySpan<PropertyAccessors<T>?> properties, SerializationContext context)
+		static void WriteArray(ref MessagePackWriter writer, in T value, UnusedDataPacket.Array? unused, ReadOnlySpan<PropertyAccessors<T>?> properties, in SerializationContext context)
 		{
 			int maxCount = Math.Max(properties.Length, (unused?.MaxIndex + 1) ?? 0);
 			writer.WriteArrayHeader(maxCount);
@@ -209,6 +270,44 @@ internal class ObjectArrayConverter<T>(
 				}
 			}
 		}
+	}
+
+	private static DeserializeProperty<T>[]? GetDenseReaders(ReadOnlySpan<PropertyAccessors<T>?> properties)
+	{
+		for (int i = 0; i < properties.Length; i++)
+		{
+			if (properties[i]?.MsgPackReaders is null)
+			{
+				return null;
+			}
+		}
+
+		DeserializeProperty<T>[] readers = new DeserializeProperty<T>[properties.Length];
+		for (int i = 0; i < properties.Length; i++)
+		{
+			readers[i] = properties[i]!.MsgPackReaders!.Value.Deserialize;
+		}
+
+		return readers;
+	}
+
+	private static SerializeProperty<T>[]? GetDenseWriters(ReadOnlySpan<PropertyAccessors<T>?> properties)
+	{
+		for (int i = 0; i < properties.Length; i++)
+		{
+			if (properties[i]?.MsgPackWriters is null)
+			{
+				return null;
+			}
+		}
+
+		SerializeProperty<T>[] writers = new SerializeProperty<T>[properties.Length];
+		for (int i = 0; i < properties.Length; i++)
+		{
+			writers[i] = properties[i]!.MsgPackWriters!.Value.Serialize;
+		}
+
+		return writers;
 	}
 
 	/// <inheritdoc/>

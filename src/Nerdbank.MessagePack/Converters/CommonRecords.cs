@@ -14,7 +14,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="writer">The means by which msgpack should be written.</param>
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Write" path="/param[@name='context']"/></param>
-internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context);
+internal delegate void SerializeProperty<TDeclaringType>(in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context);
 
 /// <summary>
 /// A delegate that can asynchronously serialize a property to a <see cref="MessagePackAsyncWriter"/>.
@@ -33,7 +33,7 @@ internal delegate ValueTask SerializePropertyAsync<TDeclaringType>(TDeclaringTyp
 /// <param name="container">The instance of the data type to be serialized.</param>
 /// <param name="reader">The means by which msgpack should be read.</param>
 /// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Read" path="/param[@name='context']"/></param>
-internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context);
+internal delegate void DeserializeProperty<TDeclaringType>(ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context);
 
 /// <summary>
 /// A delegate that can asynchronously deserialize the value from a <see cref="MessagePackAsyncReader"/> and assign it to a property.

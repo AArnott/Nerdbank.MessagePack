@@ -221,8 +221,16 @@ public partial record MessagePackSerializer
 
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObject(ref writer, value, context.Value);
+			SerializationContext context = this.StartingContext;
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObject(ref writer, value, context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -244,8 +252,16 @@ public partial record MessagePackSerializer
 
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			((MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow).Write(ref writer, value, context.Value);
+			SerializationContext context = this.StartingContext;
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				this.ConverterCache.GetOrAddConverterValue(shape).WriteCore(ref writer, value, ref context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -269,8 +285,16 @@ public partial record MessagePackSerializer
 
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			return this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.ReadObject(ref reader, context.Value);
+			SerializationContext context = this.StartingContext;
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				return this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.ReadObject(ref reader, context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -351,10 +375,18 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		SerializationContext context = this.StartingContext;
+		context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
 		try
 		{
-			return ((MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow).Read(ref reader, context.Value);
+			try
+			{
+				return this.ConverterCache.GetOrAddConverterValue(shape).ReadCore(ref reader, ref context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -380,7 +412,7 @@ public partial record MessagePackSerializer
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 			MessagePackAsyncWriter asyncWriter = new(writer);
-			await ((MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			await this.ConverterCache.GetOrAddConverterValue(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 			asyncWriter.Flush();
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
@@ -424,7 +456,7 @@ public partial record MessagePackSerializer
 		try
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			var converter = (MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow;
+			MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
 
 			// Buffer up to some threshold before starting deserialization.
 			// Only engage with the async code path (which is slower) if we reach our threshold
@@ -786,7 +818,7 @@ public partial record MessagePackSerializer
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 
-		var converter = (MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow;
+		MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		bool readMore = false;
 		while (!await asyncReader.GetIsEndOfStreamAsync(readMore).ConfigureAwait(false))
