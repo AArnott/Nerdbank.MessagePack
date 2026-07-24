@@ -4,6 +4,19 @@
 public class MessagePackPrimitivesTests
 {
 	[Theory]
+	[InlineData(-32, 0xe0)]
+	[InlineData(-1, 0xff)]
+	[InlineData(0, 0x00)]
+	[InlineData(127, 0x7f)]
+	public void TryWriteInt32FixInt(int value, int expectedCode)
+	{
+		Span<byte> encoded = stackalloc byte[1];
+		Assert.True(MessagePackPrimitives.TryWrite(encoded, value, out int bytesWritten));
+		Assert.Equal((byte)expectedCode, encoded[0]);
+		Assert.Equal(1, bytesWritten);
+	}
+
+	[Theory]
 	[InlineData(0x00, 0)]
 	[InlineData(0x7f, 127)]
 	[InlineData(0xe0, -32)]
