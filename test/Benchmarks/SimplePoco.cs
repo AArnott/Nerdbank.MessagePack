@@ -13,6 +13,7 @@ using STJ = System.Text.Json;
 public partial class SimplePoco
 {
 	private readonly MessagePackSerializer serializer = new() { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
+	private readonly MessagePackSerializer defaultSerializer = new();
 	private readonly ArrayBufferWriter<byte> buffer = new();
 
 	[Benchmark]
@@ -45,6 +46,14 @@ public partial class SimplePoco
 		this.buffer.Clear();
 	}
 
+	[Benchmark]
+	[BenchmarkCategory("map-defaults", "Serialize")]
+	public void SerializeMap_DefaultSettings()
+	{
+		this.defaultSerializer.Serialize(this.buffer, Data.PocoMap.Single);
+		this.buffer.Clear();
+	}
+
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("map", "Serialize")]
 	public void SerializeMap_MsgPackCSharp()
@@ -66,6 +75,13 @@ public partial class SimplePoco
 	public void DeserializeMap()
 	{
 		this.serializer.Deserialize<PocoMap>(Data.PocoMap.SingleMsgpack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("map-defaults", "Deserialize")]
+	public void DeserializeMap_DefaultSettings()
+	{
+		this.defaultSerializer.Deserialize<PocoMap>(Data.PocoMap.SingleMsgpack);
 	}
 
 	[Benchmark(Baseline = true)]
@@ -91,6 +107,14 @@ public partial class SimplePoco
 		this.buffer.Clear();
 	}
 
+	[Benchmark]
+	[BenchmarkCategory("array-defaults", "Serialize")]
+	public void SerializeAsArray_DefaultSettings()
+	{
+		this.defaultSerializer.Serialize(this.buffer, Data.PocoAsArray.Single);
+		this.buffer.Clear();
+	}
+
 	[Benchmark(Baseline = true)]
 	[BenchmarkCategory("array", "Serialize")]
 	public void SerializeAsArray_MsgPackCSharp()
@@ -104,6 +128,13 @@ public partial class SimplePoco
 	public void DeserializeAsArray()
 	{
 		this.serializer.Deserialize<PocoAsArray>(Data.PocoAsArray.SingleMsgpack);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("array-defaults", "Deserialize")]
+	public void DeserializeAsArray_DefaultSettings()
+	{
+		this.defaultSerializer.Deserialize<PocoAsArray>(Data.PocoAsArray.SingleMsgpack);
 	}
 
 	[Benchmark(Baseline = true)]

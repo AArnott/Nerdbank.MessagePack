@@ -194,9 +194,34 @@ partial class MessagePackPrimitives
 	{
 		if (source.Length > 0)
 		{
-			DecodeResult result = Decoders.Int64JumpTable[source[0]].Read(source, out long longValue, out tokenSize);
-			value = checked((Int32)longValue);
-			return result;
+			// Perf optimized hot-path
+			byte code = source[0];
+			if (unchecked((byte)(code - MessagePackRange.MinFixNegativeInt)) <= MessagePackRange.MaxFixPositiveInt - MessagePackRange.MinFixNegativeInt)
+			{
+				tokenSize = 1;
+				value = unchecked((sbyte)code);
+				return DecodeResult.Success;
+			}
+
+			if (code is MessagePackCode.UInt32 or MessagePackCode.Int32)
+			{
+				tokenSize = 5;
+				if (!TryReadBigEndian(source.Slice(1), out uint encodedValue))
+				{
+					value = 0;
+					return DecodeResult.InsufficientBuffer;
+				}
+
+				if (code == MessagePackCode.UInt32 && encodedValue > int.MaxValue)
+				{
+					throw new OverflowException();
+				}
+
+				value = unchecked((int)encodedValue);
+				return DecodeResult.Success;
+			}
+
+			return TryReadInt32Fallback(source, code, out value, out tokenSize);
 		}
 		else
 		{
@@ -347,6 +372,14 @@ partial class MessagePackPrimitives
 				value = default;
 				return DecodeResult.TokenMismatch;
 		}
+	}
+
+	[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+	private static DecodeResult TryReadInt32Fallback(ReadOnlySpan<byte> source, byte code, out int value, out int tokenSize)
+	{
+		DecodeResult result = Decoders.Int64JumpTable[code].Read(source, out long longValue, out tokenSize);
+		value = checked((int)longValue);
+		return result;
 	}
 
 	static partial class Decoders

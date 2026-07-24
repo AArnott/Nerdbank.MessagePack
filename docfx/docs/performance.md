@@ -60,7 +60,8 @@ Note when targeting .NET, using serialization overloads that neither <xref:PolyT
 ## Comparison to MessagePack-CSharp
 
 Perf isn't everything, but it can be important in some scenarios.
-Nerdbank.MessagePack is very fast, but not quite as fast as MessagePack-CSharp v3 with source generation turned on.
+Nerdbank.MessagePack and MessagePack-CSharp v3 with source generation are in the same range for steady-state throughput.
+In the small-object benchmarks below, MessagePack-CSharp is slightly faster for map-encoded round trips, while Nerdbank.MessagePack is faster for array-encoded round trips.
 
 Features and ease of use are also important.
 Nerdbank.MessagePack is much simpler to use, and comes [loaded with features](features.md#feature-comparison) that MessagePack-CSharp does not have.
