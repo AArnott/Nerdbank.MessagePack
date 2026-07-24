@@ -238,7 +238,7 @@ public static partial class MessagePackPrimitives
 	{
 		if (unchecked((uint)(value - MessagePackRange.MinFixNegativeInt)) <= MessagePackRange.MaxFixPositiveInt - MessagePackRange.MinFixNegativeInt)
 		{
-			return TryWriteFixIntUnsafe(destination, unchecked((byte)value), out bytesWritten);
+			return TryWriteFixIntCodeUnsafe(destination, unchecked((byte)value), out bytesWritten);
 		}
 
 		if (value >= 0)
@@ -428,7 +428,7 @@ public static partial class MessagePackPrimitives
 		switch (value)
 		{
 			case <= MessagePackRange.MaxFixPositiveInt:
-				return TryWriteFixIntUnsafe(destination, value, out bytesWritten);
+				return TryWriteFixIntCodeUnsafe(destination, value, out bytesWritten);
 			default:
 				return TryWriteUInt8(destination, value, out bytesWritten);
 		}
@@ -456,7 +456,7 @@ public static partial class MessagePackPrimitives
 		switch (value)
 		{
 			case <= MessagePackRange.MaxFixPositiveInt:
-				return TryWriteFixIntUnsafe(destination, unchecked((byte)value), out bytesWritten);
+				return TryWriteFixIntCodeUnsafe(destination, unchecked((byte)value), out bytesWritten);
 			case <= byte.MaxValue:
 				return TryWriteUInt8(destination, unchecked((byte)value), out bytesWritten);
 			default:
@@ -487,7 +487,7 @@ public static partial class MessagePackPrimitives
 		switch (value)
 		{
 			case <= MessagePackRange.MaxFixPositiveInt:
-				return TryWriteFixIntUnsafe(destination, unchecked((byte)value), out bytesWritten);
+				return TryWriteFixIntCodeUnsafe(destination, unchecked((byte)value), out bytesWritten);
 			case <= byte.MaxValue:
 				return TryWriteUInt8(destination, unchecked((byte)value), out bytesWritten);
 			case <= ushort.MaxValue:
@@ -520,7 +520,7 @@ public static partial class MessagePackPrimitives
 	{
 		if (value <= MessagePackRange.MaxFixPositiveInt)
 		{
-			return TryWriteFixIntUnsafe(destination, unchecked((byte)value), out bytesWritten);
+			return TryWriteFixIntCodeUnsafe(destination, unchecked((byte)value), out bytesWritten);
 		}
 
 		return SlowPath(destination, value, out bytesWritten);
@@ -1069,18 +1069,18 @@ public static partial class MessagePackPrimitives
 	}
 
 	/// <summary>
-	/// Writes a very small integer into just one byte of msgpack data.
-	/// This method does *not* ensure that the value is within the range of a fixint.
-	/// The caller must ensure that the value is less than or equal to <see cref="MessagePackCode.MaxFixInt"/>.
+	/// Writes a fixint code into one byte of msgpack data.
+	/// This method does *not* ensure that <paramref name="value"/> is a fixint code.
+	/// The caller must ensure that the value is a positive or negative fixint code.
 	/// </summary>
-	/// <param name="destination">The buffer to write to. This should be at least 5 bytes in length to ensure success.</param>
-	/// <param name="value">The single-precision floating-point value to write.</param>
+	/// <param name="destination">The buffer to write to. This should be at least 1 byte in length to ensure success.</param>
+	/// <param name="value">The MessagePack fixint code to write.</param>
 	/// <param name="bytesWritten">The number of bytes required to write the value, whether successful or not.</param>
 	/// <returns>
 	/// <see langword="true" /> if <paramref name="destination"/> was large enough and the value written; otherwise, <see langword="false" />.
 	/// When <see langword="false"/>, the value of <paramref name="bytesWritten"/> indicates how many bytes are required to write the value successfully.
 	/// </returns>
-	private static bool TryWriteFixIntUnsafe(Span<byte> destination, byte value, out int bytesWritten)
+	private static bool TryWriteFixIntCodeUnsafe(Span<byte> destination, byte value, out int bytesWritten)
 	{
 		ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
 		bytesWritten = 1;
