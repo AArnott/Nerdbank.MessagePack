@@ -3,6 +3,7 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -111,6 +112,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	}
 
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // The concrete collection helper writes exactly one array.
 	public override void Write(ref MessagePackWriter writer, in TEnumerable? value, SerializationContext context)
 	{
 		if (getEnumerable is null)
@@ -126,7 +128,11 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 
 		context.DepthStep();
 		IEnumerable<TElement> enumerable = getEnumerable(value);
-		if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
+		if (enumerable is List<TElement> list)
+		{
+			this.WriteList(ref writer, list, context);
+		}
+		else if (PolyfillExtensions.TryGetNonEnumeratedCount(enumerable, out int count))
 		{
 			writer.WriteArrayHeader(count);
 			int index = 0;
@@ -161,6 +167,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			}
 		}
 	}
+#pragma warning restore NBMsgPack031
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
@@ -256,6 +263,26 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 	/// <returns>The element.</returns>
 	protected ValueTask<TElement> ReadElementAsync(MessagePackAsyncReader reader, SerializationContext context)
 		=> elementConverter.ReadAsync(reader, context)!;
+
+	// Keep the concrete collection implementation out of the general enumerable path.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void WriteList(ref MessagePackWriter writer, List<TElement> list, SerializationContext context)
+	{
+		int count = list.Count;
+		writer.WriteArrayHeader(count);
+		int i = 0;
+		try
+		{
+			for (; i < count; i++)
+			{
+				elementConverter.Write(ref writer, list[i], context);
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
+		}
+	}
 }
 
 /// <summary>

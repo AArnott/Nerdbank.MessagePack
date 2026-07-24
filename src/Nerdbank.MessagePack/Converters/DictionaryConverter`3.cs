@@ -3,6 +3,7 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -55,14 +56,21 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 		bool writingKey = true;
 		try
 		{
-			foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+			if (dictionary is Dictionary<TKey, TValue> concreteDictionary)
 			{
-				entryKey = pair.Key;
-				writingKey = true;
-				keyConverter.Write(ref writer, entryKey, context);
+				this.WriteDictionary(ref writer, concreteDictionary, context, ref entryKey, ref writingKey);
+			}
+			else
+			{
+				foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+				{
+					entryKey = pair.Key;
+					writingKey = true;
+					keyConverter.Write(ref writer, entryKey, context);
 
-				writingKey = false;
-				valueConverter.Write(ref writer, pair.Value, context);
+					writingKey = false;
+					valueConverter.Write(ref writer, pair.Value, context);
+				}
 			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
@@ -333,6 +341,21 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <returns>The exception message.</returns>
 	private protected static string CreateReadValueFailMessage(in TKey? key)
 		=> $"An error occurred while deserializing value for key '{key}' for {typeof(TDictionary).FullName}.";
+
+	// Keep the concrete collection implementation out of the general dictionary path.
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private void WriteDictionary(ref MessagePackWriter writer, Dictionary<TKey, TValue> dictionary, SerializationContext context, ref TKey? entryKey, ref bool writingKey)
+	{
+		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+		{
+			entryKey = pair.Key;
+			writingKey = true;
+			keyConverter.Write(ref writer, entryKey, context);
+
+			writingKey = false;
+			valueConverter.Write(ref writer, pair.Value, context);
+		}
+	}
 }
 
 /// <summary>
