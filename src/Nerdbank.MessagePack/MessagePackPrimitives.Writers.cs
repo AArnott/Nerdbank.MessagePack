@@ -236,6 +236,11 @@ public static partial class MessagePackPrimitives
 	/// </remarks>
 	public static bool TryWrite(Span<byte> destination, int value, out int bytesWritten)
 	{
+		if (unchecked((uint)(value - MessagePackRange.MinFixNegativeInt)) <= MessagePackRange.MaxFixPositiveInt - MessagePackRange.MinFixNegativeInt)
+		{
+			return TryWriteFixIntUnsafe(destination, unchecked((byte)value), out bytesWritten);
+		}
+
 		if (value >= 0)
 		{
 			return TryWrite(destination, unchecked((uint)value), out bytesWritten);
@@ -243,7 +248,6 @@ public static partial class MessagePackPrimitives
 
 		switch (value)
 		{
-			case >= MessagePackRange.MinFixNegativeInt: return TryWriteNegativeFixIntUnsafe(destination, unchecked((sbyte)value), out bytesWritten);
 			case >= sbyte.MinValue: return TryWriteInt8(destination, unchecked((sbyte)value), out bytesWritten);
 			case >= short.MinValue: return TryWriteInt16(destination, unchecked((short)value), out bytesWritten);
 			default: return TryWriteInt32(destination, value, out bytesWritten);
