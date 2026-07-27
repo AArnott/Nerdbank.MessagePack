@@ -335,9 +335,17 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	private protected static string CreateReadValueFailMessage(in TKey? key)
 		=> $"An error occurred while deserializing value for key '{key}' for {typeof(TDictionary).FullName}.";
 
-	// Keep the concrete collection implementation out of the general dictionary path.
+	/// <summary>
+	/// Writes entries from a concrete dictionary.
+	/// </summary>
+	/// <param name="writer">The writer.</param>
+	/// <param name="dictionary">The dictionary whose entries are to be written.</param>
+	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Write" path="/param[@name='context']"/></param>
+	/// <param name="entryKey">The key of the entry currently being written.</param>
+	/// <param name="writingKey">A value indicating whether the current entry key is being written.</param>
+	/// <remarks>Keep the concrete collection implementation out of the general dictionary path.</remarks>
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	protected void WriteDictionary(ref MessagePackWriter writer, Dictionary<TKey, TValue> dictionary, SerializationContext context, ref TKey? entryKey, ref bool writingKey)
+	private protected void WriteDictionary(ref MessagePackWriter writer, Dictionary<TKey, TValue> dictionary, SerializationContext context, ref TKey? entryKey, ref bool writingKey)
 	{
 		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
 		{
