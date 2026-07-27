@@ -56,21 +56,14 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 		bool writingKey = true;
 		try
 		{
-			if (dictionary is Dictionary<TKey, TValue> concreteDictionary)
+			foreach (KeyValuePair<TKey, TValue> pair in dictionary)
 			{
-				this.WriteDictionary(ref writer, concreteDictionary, context, ref entryKey, ref writingKey);
-			}
-			else
-			{
-				foreach (KeyValuePair<TKey, TValue> pair in dictionary)
-				{
-					entryKey = pair.Key;
-					writingKey = true;
-					keyConverter.Write(ref writer, entryKey, context);
+				entryKey = pair.Key;
+				writingKey = true;
+				keyConverter.Write(ref writer, entryKey, context);
 
-					writingKey = false;
-					valueConverter.Write(ref writer, pair.Value, context);
-				}
+				writingKey = false;
+				valueConverter.Write(ref writer, pair.Value, context);
 			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
@@ -344,7 +337,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 
 	// Keep the concrete collection implementation out of the general dictionary path.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private void WriteDictionary(ref MessagePackWriter writer, Dictionary<TKey, TValue> dictionary, SerializationContext context, ref TKey? entryKey, ref bool writingKey)
+	protected void WriteDictionary(ref MessagePackWriter writer, Dictionary<TKey, TValue> dictionary, SerializationContext context, ref TKey? entryKey, ref bool writingKey)
 	{
 		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
 		{
@@ -354,6 +347,48 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 
 			writingKey = false;
 			valueConverter.Write(ref writer, pair.Value, context);
+		}
+	}
+}
+
+/// <summary>
+/// Serializes and deserializes a <see cref="Dictionary{TKey, TValue}"/>.
+/// </summary>
+/// <inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}"/>
+/// <param name="keyConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='keyConverter']"/></param>
+/// <param name="valueConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='valueConverter']"/></param>
+/// <param name="addEntry"><inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='addEntry']"/></param>
+/// <param name="ctor"><inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='ctor']"/></param>
+/// <param name="collectionConstructionOptions"><inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='collectionConstructionOptions']"/></param>
+internal sealed class DictionaryConverter<TKey, TValue>(
+	MessagePackConverter<TKey> keyConverter,
+	MessagePackConverter<TValue> valueConverter,
+	DictionaryInserter<Dictionary<TKey, TValue>, TKey, TValue> addEntry,
+	MutableCollectionConstructor<TKey, Dictionary<TKey, TValue>> ctor,
+	Result<CollectionConstructionOptions<TKey>, VisitorError> collectionConstructionOptions)
+	: MutableDictionaryConverter<Dictionary<TKey, TValue>, TKey, TValue>(static dictionary => dictionary, keyConverter, valueConverter, addEntry, ctor, collectionConstructionOptions)
+	where TKey : notnull
+{
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in Dictionary<TKey, TValue>? value, SerializationContext context)
+	{
+		if (value is null)
+		{
+			writer.WriteNil();
+			return;
+		}
+
+		context.DepthStep();
+		writer.WriteMapHeader(value.Count);
+		TKey? entryKey = default;
+		bool writingKey = true;
+		try
+		{
+			this.WriteDictionary(ref writer, value, context, ref entryKey, ref writingKey);
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(writingKey ? CreateWriteKeyFailMessage(entryKey) : CreateWriteValueFailMessage(entryKey), ex);
 		}
 	}
 }
