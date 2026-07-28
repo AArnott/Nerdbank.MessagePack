@@ -5,9 +5,7 @@ It supports Godot projects targeting .NET 8 or later and is compatible with Nati
 
 ## Installation
 
-Install the NuGet package:
-
-[![Nerdbank.MessagePack.Godot NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.Godot.svg?label=Nerdbank.MessagePack.Godot)](https://www.nuget.org/packages/Nerdbank.MessagePack.Godot)
+Install the `Nerdbank.MessagePack.Godot` NuGet package.
 
 ## Configuration
 
