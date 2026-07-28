@@ -12,10 +12,10 @@ namespace Nerdbank.MessagePack.Godot;
 public static class GodotMessagePackSerializerExtensions
 {
 	/// <summary>
-	/// Creates a copy of a serializer configured to serialize Godot Engine value types.
+	/// Configures a serializer to serialize Godot Engine value types.
 	/// </summary>
 	/// <param name="serializer">The serializer to configure.</param>
-	/// <returns>A serializer configured with converters for Godot Engine value types.</returns>
+	/// <returns>A serializer configured with converters for Godot Engine value types, or the original serializer when it is already configured.</returns>
 	public static MessagePackSerializer WithGodotConverters(this MessagePackSerializer serializer)
 	{
 		ArgumentNullException.ThrowIfNull(serializer);
