@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <PackageDescription>MessagePack converters for Godot Engine value types.</PackageDescription>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>MsgPack MessagePack Serialization Godot Game Engine</PackageTags>
+    <PackageProjectUrl>https://aarnott.github.io/Nerdbank.MessagePack/docs/godot.html</PackageProjectUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\Nerdbank.MessagePack\icon.png" Pack="true" PackagePath="" />
+    <None Update="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="GodotSharp" />
+  </ItemGroup>
+</Project>

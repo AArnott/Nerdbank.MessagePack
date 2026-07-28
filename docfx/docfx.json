@@ -7,6 +7,7 @@
 					"files": [
 						"Nerdbank.MessagePack/*.csproj",
 						"Nerdbank.MessagePack.AspNetCoreMvcFormatter/*.csproj",
+						"Nerdbank.MessagePack.Godot/*.csproj",
 						"Nerdbank.MessagePack.SignalR/*.csproj"
 					]
 				}
