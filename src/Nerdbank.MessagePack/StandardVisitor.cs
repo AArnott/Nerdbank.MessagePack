@@ -779,10 +779,29 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return dictionaryShape.ConstructionStrategy switch
 			{
 				CollectionConstructionStrategy.None => ConverterResult.Ok(new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)),
-				CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
+				CollectionConstructionStrategy.Mutable => CreateMutable(),
 				CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
 				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}")),
 			};
+
+			ConverterResult CreateMutable()
+			{
+				DictionaryInserter<TDictionary, TKey, TValue> addEntry = dictionaryShape.GetInserter(DictionaryInsertionMode.Throw);
+				MutableCollectionConstructor<TKey, TDictionary> ctor = dictionaryShape.GetDefaultConstructor();
+				Result<CollectionConstructionOptions<TKey>, VisitorError> collectionConstructionOptions = this.GetCollectionOptions(dictionaryShape, memberInfluence);
+
+				if (typeof(TDictionary) == typeof(Dictionary<TKey, TValue>))
+				{
+					return ConverterResult.Ok((MessagePackConverter<TDictionary>)(object)new DictionaryConverter<TKey, TValue>(
+						keyConverter,
+						valueConverter,
+						(DictionaryInserter<Dictionary<TKey, TValue>, TKey, TValue>)(object)addEntry,
+						(MutableCollectionConstructor<TKey, Dictionary<TKey, TValue>>)(object)ctor,
+						collectionConstructionOptions));
+				}
+
+				return ConverterResult.Ok(new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addEntry, ctor, collectionConstructionOptions));
+			}
 		}
 	}
 
