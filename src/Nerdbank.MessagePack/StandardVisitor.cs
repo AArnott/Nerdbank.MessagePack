@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Text;
 using Microsoft;
 using Nerdbank.MessagePack.SecureHash;
@@ -26,6 +27,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 #endif
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
+	private static readonly object KnownTypeUnionCaseSentinel = new();
 
 	private readonly ConverterCache owner;
 	private readonly TypeGenerationContext context;
@@ -254,14 +256,22 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			// does not have to generate a SubTypes<T> for value types which will never be used.
 			if (converter.Success && !typeof(T).IsValueType)
 			{
-				if (this.owner.TryGetDynamicUnion(objectShape.Type, out DerivedTypeUnion? union) && !union.Disabled)
+				if (this.owner.TryGetDynamicUnion(objectShape.Type, out DerivedTypeUnion? union))
 				{
-					converter = union switch
+					if (!union.Disabled)
 					{
-						IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping).MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st, this.owner.UseDiscriminatorObjects)),
-						DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, (MessagePackConverter<T>)converter.Value),
-						_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
-					};
+						converter = union switch
+						{
+							IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping).MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st, this.owner.UseDiscriminatorObjects)),
+							DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, (MessagePackConverter<T>)converter.Value),
+							_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
+						};
+					}
+				}
+				else if (!ReferenceEquals(state, KnownTypeUnionCaseSentinel) && this.TryCreateKnownTypeMapping(objectShape, out DerivedTypeMapping<T>? mapping))
+				{
+					converter = this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping, suppressKnownTypeFallbackForCases: true)
+						.MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st, this.owner.UseDiscriminatorObjects));
 				}
 			}
 
@@ -1168,7 +1178,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			this.owner.SerializeDefaultValues));
 	}
 
-	private Result<SubTypes<TBaseType>, VisitorError> CreateSubTypes<TBaseType>(Type baseType, MessagePackConverter<TBaseType> baseTypeConverter, IDerivedTypeMapping mapping)
+	private Result<SubTypes<TBaseType>, VisitorError> CreateSubTypes<TBaseType>(Type baseType, MessagePackConverter<TBaseType> baseTypeConverter, IDerivedTypeMapping mapping, bool suppressKnownTypeFallbackForCases = false)
 	{
 		if (mapping is DerivedTypeUnion { Disabled: true })
 		{
@@ -1193,7 +1203,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			}
 			else
 			{
-				ConverterResult subtypeConverter = this.GetConverterByAccept(shape);
+				ConverterResult subtypeConverter = this.GetConverterByAccept(shape, suppressKnownTypeFallbackForCases ? KnownTypeUnionCaseSentinel : null);
 				if (subtypeConverter.TryPrepareFailPath(pair.Value, out ConverterResult? failureResult))
 				{
 					return failureResult.Error!;
@@ -1244,6 +1254,36 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				return null;
 			},
 		};
+	}
+
+	private bool TryCreateKnownTypeMapping<T>(IObjectTypeShape<T> objectShape, [NotNullWhen(true)] out DerivedTypeMapping<T>? mapping)
+	{
+		mapping = null;
+		HashSet<Type>? knownTypes = null;
+		foreach (KnownTypeAttribute attribute in objectShape.AttributeProvider.GetCustomAttributes<KnownTypeAttribute>(inherit: true))
+		{
+			Type? knownType = attribute.Type;
+			if (knownType is null || knownType == objectShape.Type || !objectShape.Type.IsAssignableFrom(knownType))
+			{
+				continue;
+			}
+
+			if (knownTypes is not null && !knownTypes.Add(knownType))
+			{
+				continue;
+			}
+
+			knownTypes ??= [knownType];
+			mapping ??= new(objectShape.Provider);
+			mapping.Add(new(knownType.FullName ?? knownType.Name), knownType);
+		}
+
+		if (mapping is not null)
+		{
+			mapping.Freeze();
+		}
+
+		return mapping is not null;
 	}
 
 	/// <summary>
