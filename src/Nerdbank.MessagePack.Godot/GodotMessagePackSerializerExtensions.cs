@@ -1,9 +1,6 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#pragma warning disable SA1402 // File may only contain a single type
-#pragma warning disable SA1600 // Elements should be documented
-
 using Godot;
 using PolyType;
 
@@ -24,28 +21,28 @@ public static class GodotMessagePackSerializerExtensions
 		ArgumentNullException.ThrowIfNull(serializer);
 		return serializer with { ConverterFactories = [.. serializer.ConverterFactories, GodotConverterFactory.Instance] };
 	}
-}
 
-internal sealed class GodotConverterFactory : IMessagePackConverterFactory
-{
-	internal static readonly GodotConverterFactory Instance = new();
+	private sealed class GodotConverterFactory : IMessagePackConverterFactory
+	{
+		internal static readonly GodotConverterFactory Instance = new();
 
-	public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
-		=> type == typeof(Aabb) ? AabbConverter.Instance
-		: type == typeof(Basis) ? BasisConverter.Instance
-		: type == typeof(Color) ? ColorConverter.Instance
-		: type == typeof(Plane) ? PlaneConverter.Instance
-		: type == typeof(Projection) ? ProjectionConverter.Instance
-		: type == typeof(Quaternion) ? QuaternionConverter.Instance
-		: type == typeof(Rect2) ? Rect2Converter.Instance
-		: type == typeof(Rect2I) ? Rect2IConverter.Instance
-		: type == typeof(Transform2D) ? Transform2DConverter.Instance
-		: type == typeof(Transform3D) ? Transform3DConverter.Instance
-		: type == typeof(Vector2) ? Vector2Converter.Instance
-		: type == typeof(Vector2I) ? Vector2IConverter.Instance
-		: type == typeof(Vector3) ? Vector3Converter.Instance
-		: type == typeof(Vector3I) ? Vector3IConverter.Instance
-		: type == typeof(Vector4) ? Vector4Converter.Instance
-		: type == typeof(Vector4I) ? Vector4IConverter.Instance
-		: null;
+		public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
+			=> type == typeof(Aabb) ? AabbConverter.Instance
+			: type == typeof(Basis) ? BasisConverter.Instance
+			: type == typeof(Color) ? ColorConverter.Instance
+			: type == typeof(Plane) ? PlaneConverter.Instance
+			: type == typeof(Projection) ? ProjectionConverter.Instance
+			: type == typeof(Quaternion) ? QuaternionConverter.Instance
+			: type == typeof(Rect2) ? Rect2Converter.Instance
+			: type == typeof(Rect2I) ? Rect2IConverter.Instance
+			: type == typeof(Transform2D) ? Transform2DConverter.Instance
+			: type == typeof(Transform3D) ? Transform3DConverter.Instance
+			: type == typeof(Vector2) ? Vector2Converter.Instance
+			: type == typeof(Vector2I) ? Vector2IConverter.Instance
+			: type == typeof(Vector3) ? Vector3Converter.Instance
+			: type == typeof(Vector3I) ? Vector3IConverter.Instance
+			: type == typeof(Vector4) ? Vector4Converter.Instance
+			: type == typeof(Vector4I) ? Vector4IConverter.Instance
+			: null;
+	}
 }
