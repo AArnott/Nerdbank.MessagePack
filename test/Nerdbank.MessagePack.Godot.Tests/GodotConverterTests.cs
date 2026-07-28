@@ -5,7 +5,6 @@ using Godot;
 using Nerdbank.MessagePack;
 using Nerdbank.MessagePack.Godot;
 using PolyType;
-using PolyType.ReflectionProvider;
 using Xunit;
 
 public partial class GodotConverterTests
@@ -94,8 +93,9 @@ public partial class GodotConverterTests
 
 	private static T RoundTrip<T>(T value)
 	{
-		ITypeShape<T> shape = ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<T>();
-		return Serializer.Deserialize(Serializer.Serialize(value, shape, TestContext.Current.CancellationToken), shape, TestContext.Current.CancellationToken)!;
+		return Serializer.Deserialize<T, GodotShapes>(
+			Serializer.Serialize<T, GodotShapes>(value, TestContext.Current.CancellationToken),
+			TestContext.Current.CancellationToken)!;
 	}
 
 	[GenerateShapeFor<Aabb>]
