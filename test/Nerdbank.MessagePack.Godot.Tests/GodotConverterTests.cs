@@ -85,6 +85,13 @@ public partial class GodotConverterTests
 			() => Serializer.Deserialize<Vector2, GodotShapes>(new byte[] { 0x91, 0xca, 0x3f, 0x80, 0x00, 0x00 }, TestContext.Current.CancellationToken));
 	}
 
+	[Fact]
+	public void WithGodotConverters_IsIdempotent()
+	{
+		MessagePackSerializer serializer = new MessagePackSerializer().WithGodotConverters();
+		Assert.Same(serializer, serializer.WithGodotConverters());
+	}
+
 	private static T RoundTrip<T>(T value)
 	{
 		ITypeShape<T> shape = ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<T>();

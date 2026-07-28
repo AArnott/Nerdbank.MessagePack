@@ -1,10 +1,7 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#pragma warning disable SA1107 // Code should not contain multiple statements on one line
-#pragma warning disable SA1137 // Elements should have the same indentation
 #pragma warning disable SA1402 // File may only contain a single type
-#pragma warning disable SA1503 // Braces should not be omitted
 #pragma warning disable SA1600 // Elements should be documented
 #pragma warning disable SA1649 // File name should match first type name
 
@@ -87,7 +84,11 @@ internal sealed class Vector2Converter : GodotConverter<Vector2>
 		float x = default, y = default;
 		for (int i = 0; i < Math.Min(length, 2); i++)
 		{
-			if (i == 0) x = reader.ReadSingle(); else y = reader.ReadSingle();
+			switch (i)
+			{
+				case 0: x = reader.ReadSingle(); break;
+				case 1: y = reader.ReadSingle(); break;
+			}
 		}
 
 		SkipAdditionalElements(ref reader, context, length, 2);
@@ -114,7 +115,11 @@ internal sealed class Vector2IConverter : GodotConverter<Vector2I>
 		int x = default, y = default;
 		for (int i = 0; i < Math.Min(length, 2); i++)
 		{
-			if (i == 0) x = reader.ReadInt32(); else y = reader.ReadInt32();
+			switch (i)
+			{
+				case 0: x = reader.ReadInt32(); break;
+				case 1: y = reader.ReadInt32(); break;
+			}
 		}
 
 		SkipAdditionalElements(ref reader, context, length, 2);
@@ -580,10 +585,22 @@ internal sealed class ProjectionConverter : GodotConverter<Projection>
 	{
 		context.DepthStep();
 		writer.WriteArrayHeader(16);
-		writer.Write(value.X.X); writer.Write(value.X.Y); writer.Write(value.X.Z); writer.Write(value.X.W);
-		writer.Write(value.Y.X); writer.Write(value.Y.Y); writer.Write(value.Y.Z); writer.Write(value.Y.W);
-		writer.Write(value.Z.X); writer.Write(value.Z.Y); writer.Write(value.Z.Z); writer.Write(value.Z.W);
-		writer.Write(value.W.X); writer.Write(value.W.Y); writer.Write(value.W.Z); writer.Write(value.W.W);
+		writer.Write(value.X.X);
+		writer.Write(value.X.Y);
+		writer.Write(value.X.Z);
+		writer.Write(value.X.W);
+		writer.Write(value.Y.X);
+		writer.Write(value.Y.Y);
+		writer.Write(value.Y.Z);
+		writer.Write(value.Y.W);
+		writer.Write(value.Z.X);
+		writer.Write(value.Z.Y);
+		writer.Write(value.Z.Z);
+		writer.Write(value.Z.W);
+		writer.Write(value.W.X);
+		writer.Write(value.W.Y);
+		writer.Write(value.W.Z);
+		writer.Write(value.W.W);
 	}
 
 	public override Projection Read(ref MessagePackReader reader, SerializationContext context)

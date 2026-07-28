@@ -19,6 +19,11 @@ public static class GodotMessagePackSerializerExtensions
 	public static MessagePackSerializer WithGodotConverters(this MessagePackSerializer serializer)
 	{
 		ArgumentNullException.ThrowIfNull(serializer);
+		if (serializer.ConverterFactories.Contains(GodotConverterFactory.Instance))
+		{
+			return serializer;
+		}
+
 		return serializer with { ConverterFactories = [.. serializer.ConverterFactories, GodotConverterFactory.Instance] };
 	}
 
