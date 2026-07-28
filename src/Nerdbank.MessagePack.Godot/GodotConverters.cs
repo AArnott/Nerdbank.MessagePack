@@ -14,8 +14,13 @@ namespace Nerdbank.MessagePack.Godot;
 
 internal abstract class GodotConverter<T> : MessagePackConverter<T>
 {
-	protected static void SkipRemaining(ref MessagePackReader reader, SerializationContext context, int actualLength, int expectedLength)
+	protected static void SkipAdditionalElements(ref MessagePackReader reader, SerializationContext context, int actualLength, int expectedLength)
 	{
+		if (actualLength < expectedLength)
+		{
+			throw new MessagePackSerializationException($"Expected array length of at least {expectedLength} but was {actualLength}.");
+		}
+
 		for (int i = expectedLength; i < actualLength; i++)
 		{
 			reader.Skip(context);
@@ -53,7 +58,7 @@ internal sealed class ColorConverter : GodotConverter<Color>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 4);
+		SkipAdditionalElements(ref reader, context, length, 4);
 		return new(r, g, b, a);
 	}
 }
@@ -80,7 +85,7 @@ internal sealed class Vector2Converter : GodotConverter<Vector2>
 			if (i == 0) x = reader.ReadSingle(); else y = reader.ReadSingle();
 		}
 
-		SkipRemaining(ref reader, context, length, 2);
+		SkipAdditionalElements(ref reader, context, length, 2);
 		return new(x, y);
 	}
 }
@@ -107,7 +112,7 @@ internal sealed class Vector2IConverter : GodotConverter<Vector2I>
 			if (i == 0) x = reader.ReadInt32(); else y = reader.ReadInt32();
 		}
 
-		SkipRemaining(ref reader, context, length, 2);
+		SkipAdditionalElements(ref reader, context, length, 2);
 		return new(x, y);
 	}
 }
@@ -140,7 +145,7 @@ internal sealed class Vector3Converter : GodotConverter<Vector3>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 3);
+		SkipAdditionalElements(ref reader, context, length, 3);
 		return new(x, y, z);
 	}
 }
@@ -173,7 +178,7 @@ internal sealed class Vector3IConverter : GodotConverter<Vector3I>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 3);
+		SkipAdditionalElements(ref reader, context, length, 3);
 		return new(x, y, z);
 	}
 }
@@ -208,7 +213,7 @@ internal sealed class Vector4Converter : GodotConverter<Vector4>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 4);
+		SkipAdditionalElements(ref reader, context, length, 4);
 		return new(x, y, z, w);
 	}
 }
@@ -243,7 +248,7 @@ internal sealed class Vector4IConverter : GodotConverter<Vector4I>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 4);
+		SkipAdditionalElements(ref reader, context, length, 4);
 		return new(x, y, z, w);
 	}
 }
@@ -278,7 +283,7 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 4);
+		SkipAdditionalElements(ref reader, context, length, 4);
 		return new(x, y, width, height);
 	}
 }
@@ -313,7 +318,7 @@ internal sealed class Rect2IConverter : GodotConverter<Rect2I>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 4);
+		SkipAdditionalElements(ref reader, context, length, 4);
 		return new(x, y, width, height);
 	}
 }
@@ -348,7 +353,7 @@ internal sealed class QuaternionConverter : GodotConverter<Quaternion>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 4);
+		SkipAdditionalElements(ref reader, context, length, 4);
 		return new(x, y, z, w);
 	}
 }
@@ -383,7 +388,7 @@ internal sealed class PlaneConverter : GodotConverter<Plane>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 4);
+		SkipAdditionalElements(ref reader, context, length, 4);
 		return new(x, y, z, d);
 	}
 }
@@ -422,7 +427,7 @@ internal sealed class AabbConverter : GodotConverter<Aabb>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 6);
+		SkipAdditionalElements(ref reader, context, length, 6);
 		return new(new Vector3(px, py, pz), new Vector3(sx, sy, sz));
 	}
 }
@@ -461,7 +466,7 @@ internal sealed class Transform2DConverter : GodotConverter<Transform2D>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 6);
+		SkipAdditionalElements(ref reader, context, length, 6);
 		return new(xx, xy, yx, yy, ox, oy);
 	}
 }
@@ -506,7 +511,7 @@ internal sealed class BasisConverter : GodotConverter<Basis>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 9);
+		SkipAdditionalElements(ref reader, context, length, 9);
 		return new(new Vector3(xx, xy, xz), new Vector3(yx, yy, yz), new Vector3(zx, zy, zz));
 	}
 }
@@ -557,7 +562,7 @@ internal sealed class Transform3DConverter : GodotConverter<Transform3D>
 			}
 		}
 
-		SkipRemaining(ref reader, context, length, 12);
+		SkipAdditionalElements(ref reader, context, length, 12);
 		return new(new Basis(new Vector3(xx, xy, xz), new Vector3(yx, yy, yz), new Vector3(zx, zy, zz)), new Vector3(ox, oy, oz));
 	}
 }
@@ -586,7 +591,7 @@ internal sealed class ProjectionConverter : GodotConverter<Projection>
 			values[i] = reader.ReadSingle();
 		}
 
-		SkipRemaining(ref reader, context, length, values.Length);
+		SkipAdditionalElements(ref reader, context, length, values.Length);
 		return new(new Vector4(values[0], values[1], values[2], values[3]), new Vector4(values[4], values[5], values[6], values[7]), new Vector4(values[8], values[9], values[10], values[11]), new Vector4(values[12], values[13], values[14], values[15]));
 	}
 }

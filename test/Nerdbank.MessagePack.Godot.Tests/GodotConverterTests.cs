@@ -78,6 +78,13 @@ public partial class GodotConverterTests
 		Assert.Equal(new Vector2(1, 2), result);
 	}
 
+	[Fact]
+	public void Vector2_RejectsMissingArrayElements()
+	{
+		Assert.Throws<MessagePackSerializationException>(
+			() => Serializer.Deserialize<Vector2, GodotShapes>(new byte[] { 0x91, 0xca, 0x3f, 0x80, 0x00, 0x00 }, TestContext.Current.CancellationToken));
+	}
+
 	private static T RoundTrip<T>(T value)
 	{
 		ITypeShape<T> shape = ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<T>();
