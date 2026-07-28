@@ -18,13 +18,17 @@ internal abstract class GodotConverter<T> : MessagePackConverter<T>
 	{
 		if (actualLength < expectedLength)
 		{
-			throw new MessagePackSerializationException($"Expected array length of at least {expectedLength} but was {actualLength}.");
+			ThrowInvalidArrayLength(actualLength, expectedLength);
 		}
 
 		for (int i = expectedLength; i < actualLength; i++)
 		{
 			reader.Skip(context);
 		}
+
+		[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+		static void ThrowInvalidArrayLength(int actualLength, int expectedLength) =>
+			throw new MessagePackSerializationException($"Expected array length of at least {expectedLength} but was {actualLength}.");
 	}
 }
 
