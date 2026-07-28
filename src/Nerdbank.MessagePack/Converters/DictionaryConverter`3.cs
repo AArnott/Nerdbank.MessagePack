@@ -3,7 +3,6 @@
 
 #pragma warning disable SA1402 // File may only contain a single type
 
-using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -28,6 +27,16 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// Gets a value indicating whether the key or value converters prefer async serialization.
 	/// </summary>
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
+
+	/// <summary>
+	/// Gets the converter for the dictionary's keys.
+	/// </summary>
+	protected MessagePackConverter<TKey> KeyConverter => keyConverter;
+
+	/// <summary>
+	/// Gets the converter for the dictionary's values.
+	/// </summary>
+	protected MessagePackConverter<TValue> ValueConverter => valueConverter;
 
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
@@ -334,29 +343,6 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// <returns>The exception message.</returns>
 	private protected static string CreateReadValueFailMessage(in TKey? key)
 		=> $"An error occurred while deserializing value for key '{key}' for {typeof(TDictionary).FullName}.";
-
-	/// <summary>
-	/// Writes entries from a concrete dictionary.
-	/// </summary>
-	/// <param name="writer">The writer.</param>
-	/// <param name="dictionary">The dictionary whose entries are to be written.</param>
-	/// <param name="context"><inheritdoc cref="MessagePackConverter{T}.Write" path="/param[@name='context']"/></param>
-	/// <param name="entryKey">The key of the entry currently being written.</param>
-	/// <param name="writingKey">A value indicating whether the current entry key is being written.</param>
-	/// <remarks>Keep the concrete collection implementation out of the general dictionary path.</remarks>
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private protected void WriteDictionary(ref MessagePackWriter writer, Dictionary<TKey, TValue> dictionary, SerializationContext context, ref TKey? entryKey, ref bool writingKey)
-	{
-		foreach (KeyValuePair<TKey, TValue> pair in dictionary)
-		{
-			entryKey = pair.Key;
-			writingKey = true;
-			keyConverter.Write(ref writer, entryKey, context);
-
-			writingKey = false;
-			valueConverter.Write(ref writer, pair.Value, context);
-		}
-	}
 }
 
 /// <summary>
@@ -392,7 +378,15 @@ internal sealed class DictionaryConverter<TKey, TValue>(
 		bool writingKey = true;
 		try
 		{
-			this.WriteDictionary(ref writer, value, context, ref entryKey, ref writingKey);
+			foreach (KeyValuePair<TKey, TValue> pair in value)
+			{
+				entryKey = pair.Key;
+				writingKey = true;
+				this.KeyConverter.Write(ref writer, entryKey, context);
+
+				writingKey = false;
+				this.ValueConverter.Write(ref writer, pair.Value, context);
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 		{
