@@ -14,18 +14,6 @@ namespace Nerdbank.MessagePack.Godot;
 
 internal abstract class GodotConverter<T> : MessagePackConverter<T>
 {
-	protected static void WriteArrayHeader(ref MessagePackWriter writer, SerializationContext context, int length)
-	{
-		context.DepthStep();
-		writer.WriteArrayHeader(length);
-	}
-
-	protected static int ReadArrayHeader(ref MessagePackReader reader, SerializationContext context)
-	{
-		context.DepthStep();
-		return reader.ReadArrayHeader();
-	}
-
 	protected static void SkipRemaining(ref MessagePackReader reader, SerializationContext context, int actualLength, int expectedLength)
 	{
 		for (int i = expectedLength; i < actualLength; i++)
@@ -41,7 +29,8 @@ internal sealed class ColorConverter : GodotConverter<Color>
 
 	public override void Write(ref MessagePackWriter writer, in Color value, SerializationContext context)
 	{
-		WriteArrayHeader(ref writer, context, 4);
+		context.DepthStep();
+		writer.WriteArrayHeader(4);
 		writer.Write(value.R);
 		writer.Write(value.G);
 		writer.Write(value.B);
@@ -50,7 +39,8 @@ internal sealed class ColorConverter : GodotConverter<Color>
 
 	public override Color Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int length = ReadArrayHeader(ref reader, context);
+		context.DepthStep();
+		int length = reader.ReadArrayHeader();
 		float r = default, g = default, b = default, a = default;
 		for (int i = 0; i < Math.Min(length, 4); i++)
 		{
@@ -74,14 +64,16 @@ internal sealed class Vector2Converter : GodotConverter<Vector2>
 
 	public override void Write(ref MessagePackWriter writer, in Vector2 value, SerializationContext context)
 	{
-		WriteArrayHeader(ref writer, context, 2);
+		context.DepthStep();
+		writer.WriteArrayHeader(2);
 		writer.Write(value.X);
 		writer.Write(value.Y);
 	}
 
 	public override Vector2 Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int length = ReadArrayHeader(ref reader, context);
+		context.DepthStep();
+		int length = reader.ReadArrayHeader();
 		float x = default, y = default;
 		for (int i = 0; i < Math.Min(length, 2); i++)
 		{
@@ -99,14 +91,16 @@ internal sealed class Vector2IConverter : GodotConverter<Vector2I>
 
 	public override void Write(ref MessagePackWriter writer, in Vector2I value, SerializationContext context)
 	{
-		WriteArrayHeader(ref writer, context, 2);
+		context.DepthStep();
+		writer.WriteArrayHeader(2);
 		writer.Write(value.X);
 		writer.Write(value.Y);
 	}
 
 	public override Vector2I Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int length = ReadArrayHeader(ref reader, context);
+		context.DepthStep();
+		int length = reader.ReadArrayHeader();
 		int x = default, y = default;
 		for (int i = 0; i < Math.Min(length, 2); i++)
 		{
@@ -124,7 +118,8 @@ internal sealed class Vector3Converter : GodotConverter<Vector3>
 
 	public override void Write(ref MessagePackWriter writer, in Vector3 value, SerializationContext context)
 	{
-		WriteArrayHeader(ref writer, context, 3);
+		context.DepthStep();
+		writer.WriteArrayHeader(3);
 		writer.Write(value.X);
 		writer.Write(value.Y);
 		writer.Write(value.Z);
@@ -132,7 +127,8 @@ internal sealed class Vector3Converter : GodotConverter<Vector3>
 
 	public override Vector3 Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int length = ReadArrayHeader(ref reader, context);
+		context.DepthStep();
+		int length = reader.ReadArrayHeader();
 		float x = default, y = default, z = default;
 		for (int i = 0; i < Math.Min(length, 3); i++)
 		{
@@ -155,7 +151,8 @@ internal sealed class Vector3IConverter : GodotConverter<Vector3I>
 
 	public override void Write(ref MessagePackWriter writer, in Vector3I value, SerializationContext context)
 	{
-		WriteArrayHeader(ref writer, context, 3);
+		context.DepthStep();
+		writer.WriteArrayHeader(3);
 		writer.Write(value.X);
 		writer.Write(value.Y);
 		writer.Write(value.Z);
@@ -163,7 +160,8 @@ internal sealed class Vector3IConverter : GodotConverter<Vector3I>
 
 	public override Vector3I Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int length = ReadArrayHeader(ref reader, context);
+		context.DepthStep();
+		int length = reader.ReadArrayHeader();
 		int x = default, y = default, z = default;
 		for (int i = 0; i < Math.Min(length, 3); i++)
 		{
@@ -186,7 +184,8 @@ internal sealed class Vector4Converter : GodotConverter<Vector4>
 
 	public override void Write(ref MessagePackWriter writer, in Vector4 value, SerializationContext context)
 	{
-		WriteArrayHeader(ref writer, context, 4);
+		context.DepthStep();
+		writer.WriteArrayHeader(4);
 		writer.Write(value.X);
 		writer.Write(value.Y);
 		writer.Write(value.Z);
@@ -195,7 +194,8 @@ internal sealed class Vector4Converter : GodotConverter<Vector4>
 
 	public override Vector4 Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int length = ReadArrayHeader(ref reader, context);
+		context.DepthStep();
+		int length = reader.ReadArrayHeader();
 		float x = default, y = default, z = default, w = default;
 		for (int i = 0; i < Math.Min(length, 4); i++)
 		{
@@ -219,7 +219,8 @@ internal sealed class Vector4IConverter : GodotConverter<Vector4I>
 
 	public override void Write(ref MessagePackWriter writer, in Vector4I value, SerializationContext context)
 	{
-		WriteArrayHeader(ref writer, context, 4);
+		context.DepthStep();
+		writer.WriteArrayHeader(4);
 		writer.Write(value.X);
 		writer.Write(value.Y);
 		writer.Write(value.Z);
@@ -228,7 +229,8 @@ internal sealed class Vector4IConverter : GodotConverter<Vector4I>
 
 	public override Vector4I Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		int length = ReadArrayHeader(ref reader, context);
+		context.DepthStep();
+		int length = reader.ReadArrayHeader();
 		int x = default, y = default, z = default, w = default;
 		for (int i = 0; i < Math.Min(length, 4); i++)
 		{
@@ -252,7 +254,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override void Write(ref MessagePackWriter writer, in Rect2 value, SerializationContext context)
 			{
-				WriteArrayHeader(ref writer, context, 4);
+				context.DepthStep();
+				writer.WriteArrayHeader(4);
 				writer.Write(value.Position.X);
 				writer.Write(value.Position.Y);
 				writer.Write(value.Size.X);
@@ -261,7 +264,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override Rect2 Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				int length = ReadArrayHeader(ref reader, context);
+				context.DepthStep();
+				int length = reader.ReadArrayHeader();
 				float x = default, y = default, width = default, height = default;
 				for (int i = 0; i < Math.Min(length, 4); i++)
 				{
@@ -285,7 +289,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override void Write(ref MessagePackWriter writer, in Rect2I value, SerializationContext context)
 			{
-				WriteArrayHeader(ref writer, context, 4);
+				context.DepthStep();
+				writer.WriteArrayHeader(4);
 				writer.Write(value.Position.X);
 				writer.Write(value.Position.Y);
 				writer.Write(value.Size.X);
@@ -294,7 +299,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override Rect2I Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				int length = ReadArrayHeader(ref reader, context);
+				context.DepthStep();
+				int length = reader.ReadArrayHeader();
 				int x = default, y = default, width = default, height = default;
 				for (int i = 0; i < Math.Min(length, 4); i++)
 				{
@@ -318,7 +324,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override void Write(ref MessagePackWriter writer, in Quaternion value, SerializationContext context)
 			{
-				WriteArrayHeader(ref writer, context, 4);
+				context.DepthStep();
+				writer.WriteArrayHeader(4);
 				writer.Write(value.X);
 				writer.Write(value.Y);
 				writer.Write(value.Z);
@@ -327,7 +334,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override Quaternion Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				int length = ReadArrayHeader(ref reader, context);
+				context.DepthStep();
+				int length = reader.ReadArrayHeader();
 				float x = default, y = default, z = default, w = default;
 				for (int i = 0; i < Math.Min(length, 4); i++)
 				{
@@ -351,7 +359,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override void Write(ref MessagePackWriter writer, in Plane value, SerializationContext context)
 			{
-				WriteArrayHeader(ref writer, context, 4);
+				context.DepthStep();
+				writer.WriteArrayHeader(4);
 				writer.Write(value.Normal.X);
 				writer.Write(value.Normal.Y);
 				writer.Write(value.Normal.Z);
@@ -360,7 +369,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override Plane Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				int length = ReadArrayHeader(ref reader, context);
+				context.DepthStep();
+				int length = reader.ReadArrayHeader();
 				float x = default, y = default, z = default, d = default;
 				for (int i = 0; i < Math.Min(length, 4); i++)
 				{
@@ -384,7 +394,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override void Write(ref MessagePackWriter writer, in Aabb value, SerializationContext context)
 			{
-				WriteArrayHeader(ref writer, context, 6);
+				context.DepthStep();
+				writer.WriteArrayHeader(6);
 				writer.Write(value.Position.X);
 				writer.Write(value.Position.Y);
 				writer.Write(value.Position.Z);
@@ -395,7 +406,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override Aabb Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				int length = ReadArrayHeader(ref reader, context);
+				context.DepthStep();
+				int length = reader.ReadArrayHeader();
 				float px = default, py = default, pz = default, sx = default, sy = default, sz = default;
 				for (int i = 0; i < Math.Min(length, 6); i++)
 				{
@@ -421,7 +433,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override void Write(ref MessagePackWriter writer, in Transform2D value, SerializationContext context)
 			{
-				WriteArrayHeader(ref writer, context, 6);
+				context.DepthStep();
+				writer.WriteArrayHeader(6);
 				writer.Write(value.X.X);
 				writer.Write(value.X.Y);
 				writer.Write(value.Y.X);
@@ -432,7 +445,8 @@ internal sealed class Rect2Converter : GodotConverter<Rect2>
 
 			public override Transform2D Read(ref MessagePackReader reader, SerializationContext context)
 			{
-				int length = ReadArrayHeader(ref reader, context);
+				context.DepthStep();
+				int length = reader.ReadArrayHeader();
 				float xx = default, xy = default, yx = default, yy = default, ox = default, oy = default;
 				for (int i = 0; i < Math.Min(length, 6); i++)
 				{
@@ -458,7 +472,8 @@ internal sealed class BasisConverter : GodotConverter<Basis>
 
 					public override void Write(ref MessagePackWriter writer, in Basis value, SerializationContext context)
 					{
-						WriteArrayHeader(ref writer, context, 9);
+						context.DepthStep();
+						writer.WriteArrayHeader(9);
 						writer.Write(value.X.X);
 						writer.Write(value.X.Y);
 						writer.Write(value.X.Z);
@@ -472,7 +487,8 @@ internal sealed class BasisConverter : GodotConverter<Basis>
 
 					public override Basis Read(ref MessagePackReader reader, SerializationContext context)
 					{
-						int length = ReadArrayHeader(ref reader, context);
+						context.DepthStep();
+						int length = reader.ReadArrayHeader();
 						float xx = default, xy = default, xz = default, yx = default, yy = default, yz = default, zx = default, zy = default, zz = default;
 						for (int i = 0; i < Math.Min(length, 9); i++)
 						{
@@ -501,7 +517,8 @@ internal sealed class BasisConverter : GodotConverter<Basis>
 
 					public override void Write(ref MessagePackWriter writer, in Transform3D value, SerializationContext context)
 					{
-						WriteArrayHeader(ref writer, context, 12);
+						context.DepthStep();
+						writer.WriteArrayHeader(12);
 						writer.Write(value.Basis.X.X);
 						writer.Write(value.Basis.X.Y);
 						writer.Write(value.Basis.X.Z);
@@ -518,7 +535,8 @@ internal sealed class BasisConverter : GodotConverter<Basis>
 
 					public override Transform3D Read(ref MessagePackReader reader, SerializationContext context)
 					{
-						int length = ReadArrayHeader(ref reader, context);
+						context.DepthStep();
+						int length = reader.ReadArrayHeader();
 						float xx = default, xy = default, xz = default, yx = default, yy = default, yz = default, zx = default, zy = default, zz = default, ox = default, oy = default, oz = default;
 						for (int i = 0; i < Math.Min(length, 12); i++)
 						{
@@ -550,7 +568,8 @@ internal sealed class BasisConverter : GodotConverter<Basis>
 
 					public override void Write(ref MessagePackWriter writer, in Projection value, SerializationContext context)
 					{
-						WriteArrayHeader(ref writer, context, 16);
+						context.DepthStep();
+						writer.WriteArrayHeader(16);
 						writer.Write(value.X.X); writer.Write(value.X.Y); writer.Write(value.X.Z); writer.Write(value.X.W);
 						writer.Write(value.Y.X); writer.Write(value.Y.Y); writer.Write(value.Y.Z); writer.Write(value.Y.W);
 						writer.Write(value.Z.X); writer.Write(value.Z.Y); writer.Write(value.Z.Z); writer.Write(value.Z.W);
@@ -559,7 +578,8 @@ internal sealed class BasisConverter : GodotConverter<Basis>
 
 					public override Projection Read(ref MessagePackReader reader, SerializationContext context)
 					{
-						int length = ReadArrayHeader(ref reader, context);
+						context.DepthStep();
+						int length = reader.ReadArrayHeader();
 						Span<float> values = stackalloc float[16];
 						for (int i = 0; i < Math.Min(length, values.Length); i++)
 						{
