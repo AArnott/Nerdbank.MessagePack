@@ -475,10 +475,14 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now.ToOffset(TimeSpan.FromHours(4))));
 	}
 
-	[Fact]
-	public void ByteArrayWithOldSpec()
+	[Theory]
+	[InlineData(3, 0xa3)]
+	[InlineData(32, MessagePackCode.Str16)]
+	[InlineData(255, MessagePackCode.Str16)]
+	[InlineData(256, MessagePackCode.Str16)]
+	public void ByteArrayWithOldSpec(int length, byte expectedHeader)
 	{
-		byte[] original = [1, 2, 3];
+		byte[] original = new byte[length];
 		Sequence<byte> seq = new();
 		MessagePackWriter writer = new(seq) { OldSpec = true };
 		this.Serializer.Serialize<byte[], Witness>(ref writer, original, TestContext.Current.CancellationToken);
@@ -487,9 +491,34 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		// Verify that the test is doing what we think it is.
 		MessagePackReader reader = new(seq);
 		Assert.Equal(MessagePackType.String, reader.NextMessagePackType);
+		Assert.Equal(expectedHeader, seq.AsReadOnlySequence.FirstSpan[0]);
 
 		byte[]? deserialized = this.Serializer.Deserialize<byte[], Witness>(seq, TestContext.Current.CancellationToken);
 		Assert.Equal(original, deserialized);
+	}
+
+	[Theory]
+	[InlineData(32)]
+	[InlineData(255)]
+	public void WriteStringHeaderWithOldSpec(int length)
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq) { OldSpec = true };
+		writer.WriteString(new byte[length]);
+		writer.Flush();
+
+		Assert.Equal(MessagePackCode.Str16, seq.AsReadOnlySequence.FirstSpan[0]);
+	}
+
+	[Fact]
+	public void ExtensionWithOldSpecIsNotSupported()
+	{
+		Assert.Throws<NotSupportedException>(() =>
+		{
+			Sequence<byte> seq = new();
+			MessagePackWriter writer = new(seq) { OldSpec = true };
+			writer.Write(new ExtensionHeader(15, 1));
+		});
 	}
 
 	[Fact]
