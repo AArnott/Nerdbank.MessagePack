@@ -531,7 +531,7 @@ public ref struct MessagePackWriter
 	/// Use <see cref="MessagePackReader.ReadBytes"/> to read the bytes back.
 	/// </para>
 	/// <para>
-	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
+	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.MinFixStr"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
 	/// </para>
 	/// </remarks>
 	public void Write(scoped ReadOnlySpan<byte> src)
@@ -555,7 +555,7 @@ public ref struct MessagePackWriter
 	/// Use <see cref="MessagePackReader.ReadBytes"/> to read the bytes back.
 	/// </para>
 	/// <para>
-	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
+	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.MinFixStr"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
 	/// </para>
 	/// </remarks>
 	public void Write(in ReadOnlySequence<byte> src)
@@ -581,7 +581,7 @@ public ref struct MessagePackWriter
 	/// Alternatively a single call to <see cref="Write(ReadOnlySpan{byte})"/> or <see cref="Write(in ReadOnlySequence{byte})"/> will take care of the header and content in one call.
 	/// </para>
 	/// <para>
-	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.Str8"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
+	/// When <see cref="OldSpec"/> is <see langword="true"/>, the msgpack code used is <see cref="MessagePackCode.MinFixStr"/>, <see cref="MessagePackCode.Str16"/> or <see cref="MessagePackCode.Str32"/> instead.
 	/// </para>
 	/// </remarks>
 	public void WriteBinHeader(int length)
@@ -651,6 +651,15 @@ public ref struct MessagePackWriter
 		// When we write the header, we'll ask for all the space we need for the payload as well
 		// as that may help ensure we only allocate a buffer once.
 		Span<byte> span = this.writer.GetSpan(byteCount + 5);
+		if (this.OldSpec && byteCount is > MessagePackRange.MaxFixStringLength and <= byte.MaxValue)
+		{
+			span[0] = MessagePackCode.Str16;
+			span[1] = 0;
+			span[2] = (byte)byteCount;
+			this.writer.Advance(3);
+			return;
+		}
+
 		Assumes.True(MessagePackPrimitives.TryWriteStringHeader(span, (uint)byteCount, out int written));
 		this.writer.Advance(written);
 	}
@@ -733,8 +742,14 @@ public ref struct MessagePackWriter
 	/// <see cref="MessagePackCode.Ext32"/>.
 	/// </summary>
 	/// <param name="extensionHeader">The extension header.</param>
+	/// <exception cref="NotSupportedException">Thrown when <see cref="OldSpec"/> is true because the old spec does not define extension formats.</exception>
 	public void Write(ExtensionHeader extensionHeader)
 	{
+		if (this.OldSpec)
+		{
+			throw new NotSupportedException($"The MsgPack old spec does not define extension formats. Turn off {nameof(this.OldSpec)} mode.");
+		}
+
 		// When we write the header, we'll ask for all the space we need for the payload as well
 		// as that may help ensure we only allocate a buffer once.
 		Span<byte> span = this.writer.GetSpan((int)(extensionHeader.Length + 6));
