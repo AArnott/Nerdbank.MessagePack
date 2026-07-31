@@ -491,7 +491,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		// Verify that the test is doing what we think it is.
 		MessagePackReader reader = new(seq);
 		Assert.Equal(MessagePackType.String, reader.NextMessagePackType);
-		Assert.Equal(expectedHeader, seq.AsReadOnlySequence.FirstSpan[0]);
+		Assert.Equal(expectedHeader, seq.AsReadOnlySequence.First.Span[0]);
 
 		byte[]? deserialized = this.Serializer.Deserialize<byte[], Witness>(seq, TestContext.Current.CancellationToken);
 		Assert.Equal(original, deserialized);
@@ -507,7 +507,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		writer.WriteString(new byte[length]);
 		writer.Flush();
 
-		Assert.Equal(MessagePackCode.Str16, seq.AsReadOnlySequence.FirstSpan[0]);
+		Assert.Equal(MessagePackCode.Str16, seq.AsReadOnlySequence.First.Span[0]);
 	}
 
 	[Fact]
