@@ -133,14 +133,15 @@ This simpler serialized form comes at the cost of maintaining a list of attribut
 
 ## Unknown derived types
 
-When a derived type is not listed on its base union type, its nearest listed base type is recognized instead.
+When serializing a derived type that is not listed on its base union type, the nearest listed base type is selected as its union case instead.
 For example, consider our flattened `Animal` class definition given earlier, where `Horse` and its two derived types are documented via attributes on the `Animal` class.
 Now suppose we declare a new `Horse`-derived type called `Arabian`, but we omit adding an attribute for that derived type on `Animal`.
 When an `Arabian` object is seen in the `Animals` collection, it qualifies both as an `Animal` (base type) and as a `Horse` (the known types by the attributes).
 Since `Horse` is the more derived type, an `Arabian` will be serialized as a `Horse`.
-When deserialized, this object will be rehydrated as a `Horse` rather than as its more specific `Arabian` type.
+The serialized discriminator identifies `Horse`, so deserialization creates a `Horse` rather than the more specific `Arabian` type.
+Deserialization cannot infer an unregistered runtime type from this payload.
 
-If a `Cat` type is declared that derives directly from `Animal`, it will serialize as an `Animal` and deserialize into an `Animal` object until the `Cat` derived type is added to the attribte list on `Animal`.
+If a `Cat` type is declared that derives directly from `Animal`, it will serialize as an `Animal` and deserialize into an `Animal` object until the `Cat` derived type is added to the attribute list on `Animal`.
 
 ## Union case identifiers
 
@@ -155,6 +156,11 @@ This can be useful to maintain backward compatibility with previously serialized
 Integers can also be assigned as identifiers, which improves performance and reduces the payload size.
 
 String type identifiers are case sensitive.
+
+### Unrecognized identifiers
+
+When deserializing a union, the discriminator must match a registered union case identifier.
+An unrecognized discriminator causes a <xref:Nerdbank.MessagePack.MessagePackSerializationException>; the serializer does not fall back to the base type.
 
 The following example shows explicitly choosing the string identifiers:
 
