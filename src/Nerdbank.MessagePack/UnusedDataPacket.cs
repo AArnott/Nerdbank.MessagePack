@@ -17,9 +17,17 @@ namespace Nerdbank.MessagePack;
 public abstract class UnusedDataPacket
 {
 	/// <summary>
-	/// A stub method to ensure that no one outside this assembly can derive from this class.
+	/// Initializes a new instance of the <see cref="UnusedDataPacket"/> class.
 	/// </summary>
-	private protected abstract void NoExternalDerivation();
+	/// <devremarks>
+	/// This is declared to prevent a default public constructor, thereby preventing
+	/// external assemblies from deriving from this type.
+	/// When we update to C# 15, we can use the <c>permits</c> keyword to specify
+	/// which types are allowed to derive from this class instead.
+	/// </devremarks>
+	private protected UnusedDataPacket()
+	{
+	}
 
 	/// <summary>
 	/// Stores the data from deserializing an object that was serialized as a map of property names to values, specifically for the unrecognized property names.
@@ -71,9 +79,6 @@ public abstract class UnusedDataPacket
 				writer.WriteRaw(kvp.Value);
 			}
 		}
-
-		/// <inheritdoc/>
-		private protected override void NoExternalDerivation() => throw new NotImplementedException();
 	}
 
 	/// <summary>
@@ -139,8 +144,5 @@ public abstract class UnusedDataPacket
 				writer.WriteRaw(kvp.Value);
 			}
 		}
-
-		/// <inheritdoc/>
-		private protected override void NoExternalDerivation() => throw new NotImplementedException();
 	}
 }
