@@ -127,6 +127,138 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		this.Logger.WriteLine(ex.Message);
 	}
 
+	[Theory, PairwiseData]
+	public async Task UnrecognizedAlias_PreservesDiscriminatorAndData(bool async, bool useDiscriminatorObjects, bool useStringAlias)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = useDiscriminatorObjects };
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		if (useDiscriminatorObjects)
+		{
+			writer.WriteMapHeader(1);
+		}
+		else
+		{
+			writer.WriteArrayHeader(2);
+		}
+
+		if (useStringAlias)
+		{
+			writer.Write("NewType");
+		}
+		else
+		{
+			writer.Write(100);
+		}
+
+		writer.WriteMapHeader(2);
+		writer.Write(nameof(VersionTolerantBase.BaseProperty));
+		writer.Write(1);
+		writer.Write("NewProperty");
+		writer.Write(2);
+		writer.Flush();
+
+		VersionTolerantBase? value = async
+			? await this.Serializer.DeserializeAsync<VersionTolerantBase>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<VersionTolerantBase>(sequence, TestContext.Current.CancellationToken);
+		Assert.NotNull(value);
+		Assert.Equal(1, value.BaseProperty);
+
+		value.BaseProperty = 3;
+		byte[] roundtripped;
+		if (async)
+		{
+			using MemoryStream stream = new();
+			await this.Serializer.SerializeAsync<VersionTolerantBase>(stream, value, TestContext.Current.CancellationToken);
+			roundtripped = stream.ToArray();
+		}
+		else
+		{
+			roundtripped = this.Serializer.Serialize<VersionTolerantBase>(value, TestContext.Current.CancellationToken);
+		}
+
+		MessagePackReader reader = new(roundtripped);
+		if (useDiscriminatorObjects)
+		{
+			Assert.Equal(1, reader.ReadMapHeader());
+		}
+		else
+		{
+			Assert.Equal(2, reader.ReadArrayHeader());
+		}
+
+		if (useStringAlias)
+		{
+			Assert.Equal("NewType", reader.ReadString());
+		}
+		else
+		{
+			Assert.Equal(100, reader.ReadInt32());
+		}
+
+		Assert.Equal(2, reader.ReadMapHeader());
+		Assert.Equal(nameof(VersionTolerantBase.BaseProperty), reader.ReadString());
+		Assert.Equal(3, reader.ReadInt32());
+		Assert.Equal("NewProperty", reader.ReadString());
+		Assert.Equal(2, reader.ReadInt32());
+	}
+
+	[Fact]
+	public void UnrecognizedAlias_PreservedDataIsRecognizedByNewerMapping()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(2);
+		writer.Write(100);
+		writer.WriteMapHeader(2);
+		writer.Write(nameof(VersionTolerantBase.BaseProperty));
+		writer.Write(1);
+		writer.Write(nameof(VersionTolerantNewDerived.NewProperty));
+		writer.Write(2);
+		writer.Flush();
+
+		VersionTolerantBase? oldVersionValue = this.Serializer.Deserialize<VersionTolerantBase>(sequence, TestContext.Current.CancellationToken);
+		Assert.NotNull(oldVersionValue);
+
+		byte[] preservedData = this.Serializer.Serialize<VersionTolerantBase>(oldVersionValue, TestContext.Current.CancellationToken);
+		DerivedShapeMapping<VersionTolerantBase> mapping = new();
+#if NET
+		mapping.Add<VersionTolerantNewDerived>(100);
+#else
+		mapping.Add<VersionTolerantNewDerived>(100, Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		VersionTolerantNewDerived? newerVersionValue = Assert.IsType<VersionTolerantNewDerived>(this.Serializer.Deserialize<VersionTolerantBase>(preservedData, TestContext.Current.CancellationToken));
+		Assert.Equal(1, newerVersionValue.BaseProperty);
+		Assert.Equal(2, newerVersionValue.NewProperty);
+	}
+
+	[Fact]
+	public void UnrecognizedAlias_PreservesArrayPayload()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(2);
+		writer.Write(100);
+		writer.WriteArrayHeader(2);
+		writer.Write(1);
+		writer.Write(2);
+		writer.Flush();
+
+		VersionTolerantArrayBase? value = this.Serializer.Deserialize<VersionTolerantArrayBase>(sequence, TestContext.Current.CancellationToken);
+		Assert.NotNull(value);
+		Assert.Equal(1, value.BaseProperty);
+
+		byte[] roundtripped = this.Serializer.Serialize<VersionTolerantArrayBase>(value, TestContext.Current.CancellationToken);
+		MessagePackReader reader = new(roundtripped);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(100, reader.ReadInt32());
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+		Assert.Equal(2, reader.ReadInt32());
+	}
+
 	[Fact]
 	public void UnrecognizedArraySize()
 	{
@@ -555,6 +687,39 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	}
 
 	public record UnknownDerived : BaseClass;
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(VersionTolerantKnownDerived), Tag = 1)]
+	public partial class VersionTolerantBase
+	{
+		public int BaseProperty { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class VersionTolerantKnownDerived : VersionTolerantBase;
+
+	[GenerateShape]
+	public partial class VersionTolerantNewDerived : VersionTolerantBase
+	{
+		public int NewProperty { get; set; }
+	}
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(VersionTolerantArrayKnownDerived), Tag = 1)]
+	public partial class VersionTolerantArrayBase
+	{
+		[Key(0)]
+		public int BaseProperty { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class VersionTolerantArrayKnownDerived : VersionTolerantArrayBase;
 
 	[GenerateShape]
 	[DerivedTypeShape(typeof(MixedAliasDerivedA), Name = "A")]

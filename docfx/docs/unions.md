@@ -157,11 +157,6 @@ Integers can also be assigned as identifiers, which improves performance and red
 
 String type identifiers are case sensitive.
 
-### Unrecognized identifiers
-
-When deserializing a union, the discriminator must match a registered union case identifier.
-An unrecognized discriminator causes a <xref:Nerdbank.MessagePack.MessagePackSerializationException>; the serializer does not fall back to the base type.
-
 The following example shows explicitly choosing the string identifiers:
 
 [!code-csharp[](../../samples/cs/Unions.cs#StringAliasTypes)]
@@ -175,6 +170,24 @@ Mixing identifier types for a given base type is allowed, as shown here:
 [!code-csharp[](../../samples/cs/Unions.cs#MixedAliasTypes)]
 
 Note that while inferrence is the simplest syntax, it results in the serialized schema including the name of the type, which can break the schema if the type is renamed.
+
+### Unrecognized identifiers
+
+By default, an unrecognized union discriminator causes a <xref:Nerdbank.MessagePack.MessagePackSerializationException> during deserialization.
+
+You can opt in to preserving an unrecognized union case when the union base type is concrete and declares a readable and writable <xref:Nerdbank.MessagePack.UnusedDataPacket> member.
+In that case, the payload is deserialized as the base type.
+The raw discriminator and properties that are not known on the base type are retained in the <xref:Nerdbank.MessagePack.UnusedDataPacket> so that reserializing the object writes them back out.
+This allows an older version to round-trip a newer union case without knowing or instantiating its derived CLR type.
+When a newer version that recognizes the discriminator deserializes the reserialized data, it can create the derived type normally.
+
+Note that a missing derived type *might* have had special behaviors even relating to properties declared on the base type.
+For example, if the derived type had business rules that forbade base property Foo from being set to `true` while derived property Bar was set to `true`, those rules would not be enforced when deserializing as the base type.
+This potentially allows the business rules to be violated when the older process changes the base property to `true` while the derived property remains `true`.
+As always, when deserializing data from an untrusted source, exercise caution and validate the data appropriately.
+
+This preserves the discriminator and unrecognized properties, but is not a byte-for-byte guarantee: properties known to the base type are reserialized using the local serializer configuration.
+For more information about <xref:Nerdbank.MessagePack.UnusedDataPacket>, see [customizing serialization](customizing-serialization.md).
 
 ## Union serialization format
 

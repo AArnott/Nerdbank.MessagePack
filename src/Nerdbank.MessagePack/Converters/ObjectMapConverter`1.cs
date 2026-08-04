@@ -23,15 +23,44 @@ internal class ObjectMapConverter<T>(
 	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
 	IReadOnlyList<IPropertyShape> propertyShapes,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>, IUnknownUnionCaseFallback<T>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
+
+	/// <inheritdoc/>
+	bool IUnknownUnionCaseFallback<T>.CanPreserveUnknownUnionCase => unusedDataProperty is { Getter: not null, Setter: not null };
 
 	/// <summary>
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
 	/// </summary>
 	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
+
+	/// <inheritdoc/>
+	void IUnknownUnionCaseFallback<T>.SetUnknownUnionDiscriminator(ref T value, in RawMessagePack discriminator)
+	{
+		UnusedDataPacket? unused = unusedDataProperty!.Getter!.Invoke(ref value);
+		if (unused is null)
+		{
+			unused = new UnusedDataPacket.Map();
+			unusedDataProperty.Setter!.Invoke(ref value, unused);
+		}
+
+		unused.SetUnknownUnionDiscriminator(discriminator);
+	}
+
+	/// <inheritdoc/>
+	bool IUnknownUnionCaseFallback<T>.TryGetUnknownUnionDiscriminator(in T value, out RawMessagePack discriminator)
+	{
+		UnusedDataPacket? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value));
+		if (unused is not null)
+		{
+			return unused.TryGetUnknownUnionDiscriminator(out discriminator);
+		}
+
+		discriminator = default;
+		return false;
+	}
 
 	/// <inheritdoc/>
 #pragma warning disable NBMsgPack031 // Exactly one structure - this method is super complicated and beyond the analyzer
