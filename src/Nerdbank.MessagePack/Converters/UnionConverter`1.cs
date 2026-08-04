@@ -16,6 +16,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	private readonly MessagePackConverter<TUnion> baseConverter;
 	private readonly SubTypes<TUnion> subTypes;
 	private readonly bool useDiscriminatorObjects;
+	private readonly bool canPreserveUnknownUnionCase;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="UnionConverter{TUnion}"/> class.
@@ -31,6 +32,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		this.subTypes = subTypes;
 		this.useDiscriminatorObjects = useDiscriminatorObjects;
 		this.PreferAsyncSerialization = baseConverter.PreferAsyncSerialization || subTypes.Serializers.Any(t => t.Converter.PreferAsyncSerialization);
+		this.canPreserveUnknownUnionCase = this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true };
 	}
 
 	/// <inheritdoc/>
@@ -56,27 +58,40 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			reader.ReadArrayHeader(2);
 		}
 
+		RawMessagePack discriminator = reader.ReadRaw(context);
+		MessagePackReader discriminatorReader = new(discriminator.MsgPack);
+
 		// The alias for the base type itself is simply nil.
-		if (reader.TryReadNil())
+		if (discriminatorReader.TryReadNil())
 		{
 			return this.baseConverter.Read(ref reader, context);
 		}
 
 		// Read the discriminator and find the converter (same for both formats after header)
 		MessagePackConverter? converter;
-		if (reader.NextMessagePackType == MessagePackType.Integer)
+		if (discriminatorReader.NextMessagePackType == MessagePackType.Integer)
 		{
-			int alias = reader.ReadInt32();
+			int alias = discriminatorReader.ReadInt32();
 			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
+				if (this.TryReadUnknownUnionCase(ref reader, discriminator, context, out TUnion? result))
+				{
+					return result;
+				}
+
 				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
 			}
 		}
 		else
 		{
-			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref reader);
+			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref discriminatorReader);
 			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
+				if (this.TryReadUnknownUnionCase(ref reader, discriminator, context, out TUnion? result))
+				{
+					return result;
+				}
+
 				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
 		}
@@ -111,6 +126,11 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		{
 			writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
 			converter = subtype.Converter;
+		}
+		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(value, out RawMessagePack discriminator))
+		{
+			writer.WriteRaw(discriminator);
+			converter = this.baseConverter;
 		}
 		else
 		{
@@ -166,58 +186,47 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			}
 		}
 
-		// Read discriminator and find converter (same for both formats after header)
-		// The alias for the base type itself is simply nil.
-		bool isNil;
-		while (streamingReader.TryReadNil(out isNil).NeedsMoreBytes())
+		// Read discriminator and find converter (same for both formats after header).
+		RawMessagePack discriminator;
+		while (streamingReader.TryReadRaw(ref context, out discriminator).NeedsMoreBytes())
 		{
 			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 		}
 
-		if (isNil)
+		MessagePackReader discriminatorReader = new(discriminator.MsgPack);
+		if (discriminatorReader.TryReadNil())
 		{
 			reader.ReturnReader(ref streamingReader);
 			TUnion? result = await this.baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
 			return result;
 		}
 
-		MessagePackType nextMessagePackType;
-		if (streamingReader.TryPeekNextMessagePackType(out nextMessagePackType).NeedsMoreBytes())
-		{
-			streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-		}
-
 		MessagePackConverter? converter;
-		if (nextMessagePackType == MessagePackType.Integer)
+		if (discriminatorReader.NextMessagePackType == MessagePackType.Integer)
 		{
-			int alias;
-			while (streamingReader.TryRead(out alias).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
+			int alias = discriminatorReader.ReadInt32();
 			if (!this.subTypes.DeserializersByIntAlias.TryGetValue(alias, out converter))
 			{
+				reader.ReturnReader(ref streamingReader);
+				if (this.canPreserveUnknownUnionCase)
+				{
+					return await this.ReadUnknownUnionCaseAsync(reader, discriminator, context).ConfigureAwait(false);
+				}
+
 				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
 			}
 		}
 		else
 		{
-			ReadOnlySpan<byte> alias;
-			bool contiguous;
-			while (streamingReader.TryReadStringSpan(out contiguous, out alias).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
-			if (!contiguous)
-			{
-				Assumes.True(streamingReader.TryReadStringSequence(out ReadOnlySequence<byte> utf8Sequence) == MessagePackPrimitives.DecodeResult.Success);
-				alias = utf8Sequence.ToArray();
-			}
-
+			ReadOnlySpan<byte> alias = StringEncoding.ReadStringSpan(ref discriminatorReader);
 			if (!this.subTypes.DeserializersByStringAlias.TryGetValue(alias, out converter))
 			{
+				reader.ReturnReader(ref streamingReader);
+				if (this.canPreserveUnknownUnionCase)
+				{
+					return await this.ReadUnknownUnionCaseAsync(reader, discriminator, context).ConfigureAwait(false);
+				}
+
 				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
 			}
 		}
@@ -253,6 +262,11 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		{
 			syncWriter.WriteRaw(subtype.Alias.MsgPackAlias.Span);
 			converter = subtype.Converter;
+		}
+		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(value, out RawMessagePack discriminator))
+		{
+			syncWriter.WriteRaw(discriminator);
+			converter = this.baseConverter;
 		}
 		else
 		{
@@ -361,5 +375,36 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 				};
 			}
 		}
+	}
+
+	private bool TryReadUnknownUnionCase(ref MessagePackReader reader, in RawMessagePack discriminator, SerializationContext context, out TUnion? result)
+	{
+		if (this.baseConverter is not IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback)
+		{
+			result = default;
+			return false;
+		}
+
+		result = this.baseConverter.Read(ref reader, context);
+		if (result is not null)
+		{
+			fallback.SetUnknownUnionDiscriminator(ref result, discriminator);
+		}
+
+		return true;
+	}
+
+	private async ValueTask<TUnion?> ReadUnknownUnionCaseAsync(MessagePackAsyncReader reader, RawMessagePack discriminator, SerializationContext context)
+	{
+		var fallback = (IUnknownUnionCaseFallback<TUnion>)this.baseConverter;
+		Assumes.True(fallback.CanPreserveUnknownUnionCase);
+
+		TUnion? result = await this.baseConverter.ReadAsync(reader, context).ConfigureAwait(false);
+		if (result is not null)
+		{
+			fallback.SetUnknownUnionDiscriminator(ref result, discriminator);
+		}
+
+		return result;
 	}
 }

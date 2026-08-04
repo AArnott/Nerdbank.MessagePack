@@ -25,13 +25,16 @@ internal class ObjectArrayConverter<T>(
 	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
 	IReadOnlyList<IPropertyShape> propertyShapes,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>, IUnknownUnionCaseFallback<T>
 {
 	private readonly DeserializeProperty<T>[]? denseReaders = unusedDataProperty is null ? GetDenseReaders(properties.Span) : null;
 	private readonly SerializeProperty<T>[]? denseWriters = unusedDataProperty is null && defaultValuesPolicy == SerializeDefaultValuesPolicy.Always ? GetDenseWriters(properties.Span) : null;
 
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
+
+	/// <inheritdoc/>
+	bool IUnknownUnionCaseFallback<T>.CanPreserveUnknownUnionCase => unusedDataProperty is { Getter: not null, Setter: not null };
 
 	/// <summary>
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
@@ -42,6 +45,32 @@ internal class ObjectArrayConverter<T>(
 #pragma warning disable NBMsgPack031 // The core implementation consumes exactly one structure.
 	public override T? Read(ref MessagePackReader reader, SerializationContext context) => this.ReadCore(ref reader, ref context);
 #pragma warning restore NBMsgPack031
+
+	/// <inheritdoc/>
+	void IUnknownUnionCaseFallback<T>.SetUnknownUnionDiscriminator(ref T value, in RawMessagePack discriminator)
+	{
+		UnusedDataPacket? unused = unusedDataProperty!.Getter!.Invoke(ref value);
+		if (unused is null)
+		{
+			unused = new UnusedDataPacket.Array();
+			unusedDataProperty.Setter!.Invoke(ref value, unused);
+		}
+
+		unused.SetUnknownUnionDiscriminator(discriminator);
+	}
+
+	/// <inheritdoc/>
+	bool IUnknownUnionCaseFallback<T>.TryGetUnknownUnionDiscriminator(in T value, out RawMessagePack discriminator)
+	{
+		UnusedDataPacket? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value));
+		if (unused is not null)
+		{
+			return unused.TryGetUnknownUnionDiscriminator(out discriminator);
+		}
+
+		discriminator = default;
+		return false;
+	}
 
 	/// <inheritdoc/>
 	internal override T? ReadCore(ref MessagePackReader reader, ref SerializationContext context)
