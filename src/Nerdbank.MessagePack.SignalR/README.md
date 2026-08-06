@@ -12,3 +12,7 @@ This library provides a MessagePack-based Hub Protocol implementation for ASP.NE
 Add a call to [`AddMessagePackProtocol`](https://aarnott.github.io/Nerdbank.MessagePack/api/Nerdbank.MessagePack.SignalR.ServiceCollectionExtensions.html#Nerdbank_MessagePack_SignalR_ServiceCollectionExtensions_AddMessagePackProtocol_) to your builder class.
 
 See more samples and help [on our doc page](https://aarnott.github.io/Nerdbank.MessagePack/docs/signalr.html).
+
+## Code signing policy
+
+See the repository's [code signing policy](https://github.com/AArnott/Nerdbank.MessagePack#code-signing-policy).

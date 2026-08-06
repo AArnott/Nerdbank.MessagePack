@@ -1,6 +1,11 @@
 name: Publish artifacts
 description: Publish artifacts
 
+outputs:
+  deployables-artifact-id:
+    description: The GitHub artifact ID for the deployables artifact
+    value: ${{ steps.upload-deployables.outputs.artifact-id }}
+
 runs:
   using: composite
   steps:
@@ -53,6 +58,7 @@ runs:
       path: ${{ runner.temp }}/_artifacts/symbols
     continue-on-error: true
   - name: 📢 Upload deployables
+    id: upload-deployables
     uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
     with:
       name: deployables-${{ runner.os }}

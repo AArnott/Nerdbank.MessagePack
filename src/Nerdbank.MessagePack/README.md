@@ -26,3 +26,7 @@ As its natural successor, this library comes packed with features that its prede
 * Structural (i.e. deep, by-value) equality checking for arbitrary types, both with and without collision resistant hash functions.
 
 [See how these features and more compare with the leading MessagePack library](https://aarnott.github.io/Nerdbank.MessagePack/docs/features.html#feature-comparison).
+
+## Code signing policy
+
+See the repository's [code signing policy](https://github.com/AArnott/Nerdbank.MessagePack#code-signing-policy).
