@@ -67,7 +67,7 @@ After publishing the release, the `.github/workflows/release.yml` workflow will 
 
 ### Code signing
 
-NuGet packages are signed through [SignPath.io](https://docs.signpath.io/trusted-build-systems/github). Non-PR Linux builds submit the GitHub-hosted `deployables` artifact to the `test-signing` policy and retain the signing request ID. When a release is published, the release workflow accepts a successful build from `main` or a `v*.*` release branch and resubmits that exact signing request to the manually approved `release-signing` policy.
+NuGet packages are signed through [SignPath.io](https://docs.signpath.io/trusted-build-systems/github). Linux builds submit the GitHub-hosted `deployables` artifact to the `test-signing` policy, including pull requests whose branches belong to this repository. Fork pull requests cannot test signing because GitHub does not expose repository secrets to them. Non-PR builds retain the signing request ID. When a release is published, the release workflow accepts a successful build from `main` or a `v*.*` release branch and resubmits that exact signing request to the manually approved `release-signing` policy.
 
 Configure these GitHub repository settings before merging signing workflow changes:
 
