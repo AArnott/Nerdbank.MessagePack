@@ -46,7 +46,15 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" `
             $restApiRoot/git/ref/tags/${{ github.ref_name }} `
             | ConvertFrom-Json
-          $commitSha = $resolvedRef.object.sha
+          $tagTarget = $resolvedRef.object
+          while ($tagTarget.type -eq 'tag') {
+            $tagObject = gh api "$restApiRoot/git/tags/$($tagTarget.sha)" | ConvertFrom-Json
+            $tagTarget = $tagObject.object
+          }
+          if ($tagTarget.type -ne 'commit') {
+            throw "Release tag points to an unsupported $($tagTarget.type) object."
+          }
+          $commitSha = $tagTarget.sha
           Write-Host "Resolved ${{ github.ref_name }} to $commitSha"
 
           $releases = gh run list -R ${{ github.repository }} -c $commitSha -w .github/workflows/build.yml -s success --json databaseId,startedAt,event,headBranch `
