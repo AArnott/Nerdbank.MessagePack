@@ -136,14 +136,16 @@ jobs:
     - name: 🛡 Verify test-signed NuGet packages
       if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       run: |
-        $UnsignedPackages = @(Get-ChildItem '${{ runner.temp }}/_artifacts/deployables/*.nupkg')
-        $SignedPackages = @(Get-ChildItem '${{ runner.temp }}/_artifacts/test-signed-deployables/*.nupkg')
+        $UnsignedFiles = @(Get-ChildItem '${{ runner.temp }}/_artifacts/deployables' -File)
+        $SignedFiles = @(Get-ChildItem '${{ runner.temp }}/_artifacts/test-signed-deployables' -File)
+        $FileNameDifferences = Compare-Object $UnsignedFiles.Name $SignedFiles.Name
+        if ($FileNameDifferences) {
+          throw "The signed artifact does not contain the same files as the unsigned artifact:`n$($FileNameDifferences | Out-String)"
+        }
+        $UnsignedPackages = @($UnsignedFiles | Where-Object Extension -eq '.nupkg')
+        $SignedPackages = @($SignedFiles | Where-Object Extension -eq '.nupkg')
         if ($UnsignedPackages.Count -eq 0) {
           throw 'No unsigned NuGet packages were found.'
-        }
-        $PackageNameDifferences = Compare-Object $UnsignedPackages.Name $SignedPackages.Name
-        if ($PackageNameDifferences) {
-          throw "The signed package set does not match the unsigned package set:`n$($PackageNameDifferences | Out-String)"
         }
         foreach ($Package in $SignedPackages) {
           $Archive = [IO.Compression.ZipFile]::OpenRead($Package.FullName)
