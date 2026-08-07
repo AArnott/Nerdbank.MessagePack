@@ -32,10 +32,11 @@ jobs:
         if ('${{ inputs.ship_run_id }}') {
           $runid = '${{ inputs.ship_run_id }}'
           $run = gh api "$restApiRoot/actions/runs/$runid" | ConvertFrom-Json
+          $workflow = gh api "$restApiRoot/actions/workflows/$($run.workflow_id)" | ConvertFrom-Json
           if ($run.conclusion -ne 'success' `
               -or $run.event -ne 'push' `
               -or $run.head_branch -notmatch '^(?:main|v\d+(?:\.\d+)?)$' `
-              -or $run.path -notmatch '^\.github/workflows/build\.yml(?:@|$)') {
+              -or $workflow.path -ne '.github/workflows/build.yml') {
             throw "Run $runid is not a successful main or release-branch build from build.yml."
           }
           $commitSha = $run.head_sha
