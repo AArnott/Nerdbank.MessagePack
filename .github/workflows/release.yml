@@ -35,7 +35,7 @@ jobs:
           $workflow = gh api "$restApiRoot/actions/workflows/$($run.workflow_id)" | ConvertFrom-Json
           if ($run.conclusion -ne 'success' `
               -or $run.event -ne 'push' `
-              -or $run.head_branch -notmatch '^(?:main|v\d+(?:\.\d+)?)$' `
+              -or $run.head_branch -notmatch '^(?:main|v\d+(?:\.\d+)+)$' `
               -or $workflow.path -ne '.github/workflows/build.yml') {
             throw "Run $runid is not a successful main or release-branch build from build.yml."
           }
@@ -62,10 +62,10 @@ jobs:
             | ConvertFrom-Json | Sort-Object startedAt -Descending
 
           $eligibleBuilds = @($releases | Where-Object {
-            $_.event -eq 'push' -and $_.headBranch -match '^(?:main|v\d+(?:\.\d+)?)$'
+            $_.event -eq 'push' -and $_.headBranch -match '^(?:main|v\d+(?:\.\d+)+)$'
           })
           $releaseBranchBuilds = @($eligibleBuilds | Where-Object {
-            $_.headBranch -match '^v\d+(?:\.\d+)?$'
+            $_.headBranch -match '^v\d+(?:\.\d+)+$'
           })
 
           if ($releaseBranchBuilds.Count -gt 0) {
