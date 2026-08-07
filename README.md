@@ -87,6 +87,13 @@ There are two feeds you can use to acquire these packages:
 - [GitHub Packages](https://github.com/AArnott?tab=packages&repo_name=Nerdbank.MessagePack) (requires GitHub authentication)
 - [Azure Artifacts](https://dev.azure.com/andrewarnott/OSS/_artifacts/feed/PublicCI) (no authentication required)
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+* Committer, reviewer, and signing approver: [Andrew Arnott](https://github.com/AArnott)
+* Privacy: This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
+
 ## Sponsorships
 
 [GitHub Sponsors](https://github.com/sponsors/AArnott)

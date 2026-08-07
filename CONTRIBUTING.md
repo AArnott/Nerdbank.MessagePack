@@ -49,21 +49,39 @@ There may be tests that are known to be unstable or have special requirements. T
 
 ## Releases
 
-Use `nbgv tag` to create a tag for a particular commit that you mean to release.
-[Learn more about `nbgv` and its `tag` and `prepare-release` commands](https://dotnet.github.io/Nerdbank.GitVersioning/docs/nbgv-cli.html).
+For stable releases, use `nbgv prepare-release` to create and push the `v*.*` release branch, then wait for its build to complete. Pre-release packages may be released directly from a successful `main` build.
 
-Push the tag.
+Run the **Prepare release** workflow on the branch containing the commit to release. It uses `nbgv tag` to tag that commit and creates a draft GitHub Release. Review and publish the release. Publishing resubmits the build's test-signing request to the manually approved `release-signing` policy.
 
 ### GitHub Actions
 
 When your repo is hosted by GitHub and you are using GitHub Actions, you should create a GitHub Release using the standard GitHub UI.
-Having previously used `nbgv tag` and pushing the tag will help you identify the precise commit and name to use for this release.
+[Learn more about the `nbgv tag` and `prepare-release` commands](https://dotnet.github.io/Nerdbank.GitVersioning/docs/nbgv-cli.html).
 
 After publishing the release, the `.github/workflows/release.yml` workflow will be automatically triggered, which will:
 
 1. Find the most recent `.github/workflows/build.yml` GitHub workflow run of the tagged release.
-1. Upload the `deployables` artifact from that workflow run to your GitHub Release.
-1. If you have `NUGET_API_KEY` defined as a secret variable for your repo or org, any nuget packages in the `deployables` artifact will be pushed to nuget.org.
+1. Download the test-signing request metadata from that workflow run.
+1. Resubmit the exact tested artifact to SignPath's manually approved `release-signing` policy.
+1. Upload the release-signed packages to the GitHub Release and nuget.org.
+
+### Code signing
+
+NuGet packages are signed through [SignPath.io](https://docs.signpath.io/trusted-build-systems/github). Linux builds submit the GitHub-hosted `deployables` artifact to the `test-signing` policy, including pull requests whose branches belong to this repository. Fork pull requests cannot test signing because GitHub does not expose repository secrets to them. Non-PR builds retain the signing request ID. When a release is published, the release workflow accepts a successful build from `main` or a `v*.*` release branch and resubmits that exact signing request to the manually approved `release-signing` policy.
+
+Configure these GitHub repository settings before merging signing workflow changes:
+
+| Setting | Kind | Value |
+| --- | --- | --- |
+| `SIGNPATH_API_TOKEN` | Secret | Token for a SignPath CI user that can submit to both signing policies |
+| `SIGNPATH_ORGANIZATION_ID` | Variable | SignPath organization GUID |
+| `SIGNPATH_PROJECT_SLUG` | Variable | SignPath project slug |
+
+The SignPath project must use `https://github.com/AArnott/Nerdbank.MessagePack` as its repository URL and GitHub Actions as a trusted build system. Configure `test-signing` without approval so CI can exercise signing immediately. Configure `release-signing` with origin verification restricted to `main` and `v*.*` branches and manual approval, as required by the [SignPath Foundation terms](https://signpath.org/terms).
+
+The artifact configuration must use a `<zip-file>` root because GitHub's artifact action submits a ZIP. Upload a representative `deployables-Linux` artifact to SignPath to generate and review the configuration. It must sign every `*.nupkg` with `<nuget-sign>`, preserve the `*.snupkg` files, and enforce the product names and the `version` and `productVersion` parameters supplied by the workflow. The build verifies that every input NuGet package is returned with a signature.
+
+The artifact configuration slug is intentionally hardcoded in `.github/workflows/build.yml`. When the artifact structure changes, create a new versioned configuration in SignPath and update the slug in the same pull request. The pull request will validate the new configuration while builds from the default branch continue using the previous configuration.
 
 ### Azure Pipelines
 

@@ -10,3 +10,7 @@ MessagePackSerializer serializer = new MessagePackSerializer().WithGodotConverte
 ```
 
 See the repository's Godot documentation for installation, supported types, Native AOT guidance, and MessagePack-CSharp migration compatibility.
+
+## Code signing policy
+
+See the repository's [code signing policy](https://github.com/AArnott/Nerdbank.MessagePack#code-signing-policy).

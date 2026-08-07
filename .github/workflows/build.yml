@@ -20,6 +20,8 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     permissions:
+      actions: read
+      contents: read
       packages: write
     strategy:
       fail-fast: false
@@ -106,15 +108,85 @@ jobs:
       run: tools/variables/_define.ps1
       shell: pwsh
     - name: 📢 Publish artifacts
+      id: publish-artifacts
       uses: ./.github/actions/publish-artifacts
       if: cancelled() == false
+    - name: 🔢 Get package version
+      id: package-version
+      if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      run: |
+        "version=$(nbgv get-version -v NuGetPackageVersion)" >> $env:GITHUB_OUTPUT
+        "productVersion=$(nbgv get-version -v AssemblyInformationalVersion)" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+    - name: 🧪 Test-sign NuGet packages
+      id: test-sign
+      if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      uses: SignPath/github-action-submit-signing-request@b9d91eadd323de506c0c81cf0c7fe7438f3360fd # v2.2
+      with:
+        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+        organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+        signing-policy-slug: test-signing
+        artifact-configuration-slug: initial
+        github-artifact-id: ${{ steps.publish-artifacts.outputs.deployables-artifact-id }}
+        output-artifact-directory: ${{ runner.temp }}/_artifacts/test-signed-deployables
+        parameters: |
+          version: ${{ toJSON(steps.package-version.outputs.version) }}
+          productVersion: ${{ toJSON(steps.package-version.outputs.productVersion) }}
+    - name: 🛡 Verify test-signed NuGet packages
+      if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      run: |
+        $UnsignedFiles = @(Get-ChildItem '${{ runner.temp }}/_artifacts/deployables' -File)
+        $SignedFiles = @(Get-ChildItem '${{ runner.temp }}/_artifacts/test-signed-deployables' -File)
+        $FileNameDifferences = Compare-Object $UnsignedFiles.Name $SignedFiles.Name
+        if ($FileNameDifferences) {
+          throw "The signed artifact does not contain the same files as the unsigned artifact:`n$($FileNameDifferences | Out-String)"
+        }
+        $UnsignedPackages = @($UnsignedFiles | Where-Object Extension -eq '.nupkg')
+        $SignedPackages = @($SignedFiles | Where-Object Extension -eq '.nupkg')
+        if ($UnsignedPackages.Count -eq 0) {
+          throw 'No unsigned NuGet packages were found.'
+        }
+        foreach ($Package in $SignedPackages) {
+          $Archive = [IO.Compression.ZipFile]::OpenRead($Package.FullName)
+          try {
+            if ($Archive.Entries.FullName -notcontains '.signature.p7s') {
+              throw "No NuGet signature was found in $($Package.Name)."
+            }
+          } finally {
+            $Archive.Dispose()
+          }
+        }
+      shell: pwsh
+    - name: 📢 Upload test-signed deployables
+      if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: test-signed-deployables-${{ runner.os }}
+        path: ${{ runner.temp }}/_artifacts/test-signed-deployables
+    - name: 📝 Save signing request
+      if: success() && runner.os == 'Linux' && github.event_name != 'pull_request'
+      run: |
+        @{
+          signingRequestId = '${{ steps.test-sign.outputs.signing-request-id }}'
+          version = '${{ steps.package-version.outputs.version }}'
+          commit = '${{ github.sha }}'
+        } | ConvertTo-Json | Set-Content '${{ runner.temp }}/_artifacts/signing-request.json'
+      shell: pwsh
+    - name: 📢 Upload signing request
+      if: success() && runner.os == 'Linux' && github.event_name != 'pull_request'
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: signing-request-${{ runner.os }}
+        path: ${{ runner.temp }}/_artifacts/signing-request.json
     - name: 📦 Push CI package
       shell: pwsh
       run: |
-        dotnet nuget push ${{ runner.temp }}/_artifacts/deployables/*.nupkg -s https://nuget.pkg.github.com/aarnott/index.json -k ${{ secrets.GITHUB_TOKEN }}
+        $SignedDeployables = '${{ runner.temp }}/_artifacts/test-signed-deployables'
+        dotnet nuget push "$SignedDeployables/*.nupkg" -s https://nuget.pkg.github.com/aarnott/index.json -k ${{ secrets.GITHUB_TOKEN }}
         if ('${{ secrets.AZP_TOKEN }}') {
           dotnet nuget add source https://pkgs.dev.azure.com/andrewarnott/OSS/_packaging/PublicCI/nuget/v3/index.json -n publicCI -u andrewarnott -p ${{ secrets.AZP_TOKEN }} --store-password-in-clear-text
-          dotnet nuget push ${{ runner.temp }}/_artifacts/deployables/*.nupkg -s publicCI -k x
+          dotnet nuget push "$SignedDeployables/*.nupkg" -s publicCI -k x
         }
       if: success() && runner.os == 'Linux' && github.event_name != 'pull_request'
       continue-on-error: true
@@ -215,4 +287,4 @@ jobs:
     - name: 🔗 Markup Link Checker (mlc)
       uses: becheran/mlc@7ec24825cefe0c9c8c6bac48430e1f69e3ec356e # v1.2.0
       with:
-        args: --do-not-warn-for-redirect-to https://learn.microsoft.com*,https://dotnet.microsoft.com/*,https://dev.azure.com/*,https://app.codecov.io/* -p docfx -i https://www.npmjs.com/package/*,https://get.dot.net/,https://dev.azure.com/andrewarnott/OSS/* -i zcash:u1vv2ws6xhs72faugmlrasyeq298l05rrj6wfw8hr3r29y3czev5qt4ugp7kylz6suu04363ze92dfg8ftxf3237js0x9p5r82fgy47xkjnw75tqaevhfh0rnua72hurt22v3w3f7h8yt6mxaa0wpeeh9jcm359ww3rl6fj5ylqqv54uuwrs8q4gys9r3cxdm3yslsh3rt6p7wznzhky7
+        args: --do-not-warn-for-redirect-to https://learn.microsoft.com*,https://dotnet.microsoft.com/*,https://dev.azure.com/*,https://app.codecov.io/* -p docfx -i https://www.npmjs.com/package/*,https://get.dot.net/,https://dev.azure.com/andrewarnott/OSS/*,https://about.signpath.io,https://about.signpath.io/* -i zcash:u1vv2ws6xhs72faugmlrasyeq298l05rrj6wfw8hr3r29y3czev5qt4ugp7kylz6suu04363ze92dfg8ftxf3237js0x9p5r82fgy47xkjnw75tqaevhfh0rnua72hurt22v3w3f7h8yt6mxaa0wpeeh9jcm359ww3rl6fj5ylqqv54uuwrs8q4gys9r3cxdm3yslsh3rt6p7wznzhky7

@@ -10,3 +10,7 @@ This library provides MessagePack-based formatters for [ASP.NET MVC](https://git
 ## Usage
 
 Add [`MessagePackInputFormatter`](https://aarnott.github.io/Nerdbank.MessagePack/api/Nerdbank.MessagePack.AspNetCoreMvcFormatter.MessagePackInputFormatter.html) and/or [`MessagePackOutputFormatter`](https://aarnott.github.io/Nerdbank.MessagePack/api/Nerdbank.MessagePack.AspNetCoreMvcFormatter.MessagePackOutputFormatter.html) to your input and/or output formatter collections respectively, as demonstrated [on our doc page](https://aarnott.github.io/Nerdbank.MessagePack/docs/aspnetmvc.html).
+
+## Code signing policy
+
+See the repository's [code signing policy](https://github.com/AArnott/Nerdbank.MessagePack#code-signing-policy).
