@@ -114,7 +114,9 @@ jobs:
     - name: 🔢 Get package version
       id: package-version
       if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-      run: '"version=$(nbgv get-version -v NuGetPackageVersion)" >> $env:GITHUB_OUTPUT'
+      run: |
+        "version=$(nbgv get-version -v NuGetPackageVersion)" >> $env:GITHUB_OUTPUT
+        "productVersion=$(nbgv get-version -v AssemblyInformationalVersion)" >> $env:GITHUB_OUTPUT
       shell: pwsh
     - name: 🧪 Test-sign NuGet packages
       id: test-sign
@@ -125,11 +127,35 @@ jobs:
         organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
         project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
         signing-policy-slug: test-signing
-        artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+        artifact-configuration-slug: initial
         github-artifact-id: ${{ steps.publish-artifacts.outputs.deployables-artifact-id }}
         output-artifact-directory: ${{ runner.temp }}/_artifacts/test-signed-deployables
         parameters: |
           version: ${{ toJSON(steps.package-version.outputs.version) }}
+          productVersion: ${{ toJSON(steps.package-version.outputs.productVersion) }}
+    - name: 🛡 Verify test-signed NuGet packages
+      if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      run: |
+        $UnsignedPackages = @(Get-ChildItem '${{ runner.temp }}/_artifacts/deployables/*.nupkg')
+        $SignedPackages = @(Get-ChildItem '${{ runner.temp }}/_artifacts/test-signed-deployables/*.nupkg')
+        if ($UnsignedPackages.Count -eq 0) {
+          throw 'No unsigned NuGet packages were found.'
+        }
+        $PackageNameDifferences = Compare-Object $UnsignedPackages.Name $SignedPackages.Name
+        if ($PackageNameDifferences) {
+          throw "The signed package set does not match the unsigned package set:`n$($PackageNameDifferences | Out-String)"
+        }
+        foreach ($Package in $SignedPackages) {
+          $Archive = [IO.Compression.ZipFile]::OpenRead($Package.FullName)
+          try {
+            if ($Archive.Entries.FullName -notcontains '.signature.p7s') {
+              throw "No NuGet signature was found in $($Package.Name)."
+            }
+          } finally {
+            $Archive.Dispose()
+          }
+        }
+      shell: pwsh
     - name: 📢 Upload test-signed deployables
       if: success() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

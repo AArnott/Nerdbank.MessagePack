@@ -76,11 +76,12 @@ Configure these GitHub repository settings before merging signing workflow chang
 | `SIGNPATH_API_TOKEN` | Secret | Token for a SignPath CI user that can submit to both signing policies |
 | `SIGNPATH_ORGANIZATION_ID` | Variable | SignPath organization GUID |
 | `SIGNPATH_PROJECT_SLUG` | Variable | SignPath project slug |
-| `SIGNPATH_ARTIFACT_CONFIGURATION_SLUG` | Variable | Artifact configuration slug for the NuGet package bundle |
 
 The SignPath project must use `https://github.com/AArnott/Nerdbank.MessagePack` as its repository URL and GitHub Actions as a trusted build system. Configure `test-signing` without approval so CI can exercise signing immediately. Configure `release-signing` with origin verification restricted to `main` and `v*.*` branches and manual approval, as required by the [SignPath Foundation terms](https://signpath.org/terms).
 
-The artifact configuration must use a `<zip-file>` root because GitHub's artifact action submits a ZIP. Upload a representative `deployables-Linux` artifact to SignPath to generate and review the configuration. It must sign every `*.nupkg` with `<nuget-sign>`, preserve the `*.snupkg` files, enforce the project name and the `version` parameter supplied by the workflow, and reject unexpected files.
+The artifact configuration must use a `<zip-file>` root because GitHub's artifact action submits a ZIP. Upload a representative `deployables-Linux` artifact to SignPath to generate and review the configuration. It must sign every `*.nupkg` with `<nuget-sign>`, preserve the `*.snupkg` files, and enforce the product names and the `version` and `productVersion` parameters supplied by the workflow. The build verifies that every input NuGet package is returned with a signature.
+
+The artifact configuration slug is intentionally hardcoded in `.github/workflows/build.yml`. When the artifact structure changes, create a new versioned configuration in SignPath and update the slug in the same pull request. The pull request will validate the new configuration while builds from the default branch continue using the previous configuration.
 
 ### Azure Pipelines
 
