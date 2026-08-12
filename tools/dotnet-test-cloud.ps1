@@ -4,9 +4,9 @@
 .SYNOPSIS
     Runs tests as they are run in cloud test runs.
 .PARAMETER Configuration
-    The configuration within which to run tests.
+  The configuration within which to run tests.
 .PARAMETER IncludeNativeAOT
-    Whether to run the NativeAOT-compiled tests too.
+  Whether to run the NativeAOT-compiled tests too.
 .PARAMETER Agent
     The name of the agent. This is used in preparing test run titles.
 .PARAMETER PublishResults
@@ -15,15 +15,18 @@
     A switch to run the tests in an x86 process.
 .PARAMETER dotnet32
     The path to a 32-bit dotnet executable to use.
+.PARAMETER NoCoverage
+    A switch to skip code coverage collection.
 #>
 [CmdletBinding()]
 Param(
     [string]$Configuration='Debug',
-    [switch]$IncludeNativeAOT,
+  [switch]$IncludeNativeAOT,
     [string]$Agent='Local',
     [switch]$PublishResults,
     [switch]$x86,
-    [string]$dotnet32
+    [string]$dotnet32,
+    [switch]$NoCoverage
 )
 
 $RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
@@ -64,10 +67,12 @@ if ($isMTP) {
         ,'--hangdump'
         ,'--hangdump-timeout','120s'
         ,'--crashdump'
+        ,'--crashdump-type','Heap'
+        # The native crash report accompanies the dump and is often the only way to identify the
+        # faulting thread and instruction when a test host dies of an access violation on Linux.
+        ,'--crash-report-if-supported'
     )
     $mtpArgs = @(
-        ,'--coverage'
-        ,'--coverage-output-format','cobertura'
         ,'--diagnostic'
         ,'--diagnostic-output-directory',$testLogs
         ,'--diagnostic-verbosity','Information'
@@ -75,55 +80,69 @@ if ($isMTP) {
         ,'--report-trx'
     )
 
+    if (-not $NoCoverage) {
+        $mtpArgs += @(
+            ,'--coverage'
+            ,'--coverage-output-format','cobertura'
+            ,'--coverage-settings',"$PSScriptRoot/test.runsettings"
+        )
+    }
+
     & $dotnet test --solution $RepoRoot `
-        -p:Platform=NonTUnit `
+      -p:Platform=NonTUnit `
         --no-build `
         -c $Configuration `
-        -bl:"$testBinLogXunit" `
+      -bl:"$testBinLogXunit" `
         --filter-not-trait 'TestCategory=FailsInCloudTest' `
-        --coverage-settings "$PSScriptRoot/test.runsettings" `
         @mtpArgs `
         @dumpSwitches `
         @extraArgs
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 
     & $dotnet test --project $RepoRoot/test/Nerdbank.MessagePack.TUnit `
-        --no-build `
-        -c $Configuration `
-        -bl:"$testBinLogTUnit" `
-        --treenode-filter '/*/*/*/*[TestCategory!=FailsInCloudTest]' `
-        @mtpArgs `
-        @dumpSwitches `
-        @extraArgs
+      --no-build `
+      -c $Configuration `
+      -bl:"$testBinLogTUnit" `
+      --treenode-filter '/*/*/*/*[TestCategory!=FailsInCloudTest]' `
+      @mtpArgs `
+      @dumpSwitches `
+      @extraArgs
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 
     if ($IncludeNativeAOT) {
-        $TestExecutableName = 'Nerdbank.MessagePack.TUnit'
-        $NativeAOTArgs = $mtpArgs
-        if (!($IsMacOS -or $IsLinux)) {
-            $TestExecutableName += '.exe'
-            $NativeAOTArgs += $dumpSwitches # dump-related switches only work on NativeAOT exe's on Windows.
-        }
-        Get-ChildItem "$RepoRoot/bin/Nerdbank.MessagePack.TUnit/$Configuration/*/*/publish/$TestExecutableName" |% {
-            & $_ @NativeAOTArgs @extraArgs
-            if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
-        }
+      $TestExecutableName = 'Nerdbank.MessagePack.TUnit'
+      $NativeAOTArgs = $mtpArgs
+      if (!($IsMacOS -or $IsLinux)) {
+        $TestExecutableName += '.exe'
+        $NativeAOTArgs += $dumpSwitches # dump-related switches only work on NativeAOT exe's on Windows.
+      }
+      Get-ChildItem "$RepoRoot/bin/Nerdbank.MessagePack.TUnit/$Configuration/*/*/publish/$TestExecutableName" |% {
+        & $_ @NativeAOTArgs @extraArgs
+        if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+      }
     }
 
     $trxFiles = Get-ChildItem -Recurse -Path $testLogs\*.trx
 } else {
     $testDiagLog = Join-Path $ArtifactStagingFolder (Join-Path test_logs diag.log)
+    $coverageArgs = @()
+    if (-not $NoCoverage) {
+        $coverageArgs = @(
+            ,'--collect','Code Coverage;Format=cobertura'
+            ,'--settings',"$PSScriptRoot/test.runsettings"
+        )
+    }
+
     & $dotnet test $RepoRoot `
         --no-build `
         -c $Configuration `
         --filter "TestCategory!=FailsInCloudTest" `
-        --collect "Code Coverage;Format=cobertura" `
-        --settings "$PSScriptRoot/test.runsettings" `
         --blame-hang-timeout 120s `
         --blame-crash `
         -bl:"$testBinLogXunit" `
         --diag "$testDiagLog;TraceLevel=info" `
         --logger trx `
+        @coverageArgs `
         @extraArgs
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 

@@ -125,7 +125,6 @@ jobs:
         }
       shell: pwsh
       timeout-minutes: 3
-      continue-on-error: true
 
   verify-aot-size:
     name: 👮🏼 NativeAOT image size guard
