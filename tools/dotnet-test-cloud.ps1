@@ -122,7 +122,7 @@ if ($isMTP) {
 
     if ($IncludeNativeAOT) {
       $TestExecutableName = 'Nerdbank.MessagePack.TUnit'
-      $NativeAOTArgs = $mtpArgs
+      $NativeAOTArgs = $tunitArgs
       if (!($IsMacOS -or $IsLinux)) {
         $TestExecutableName += '.exe'
         $NativeAOTArgs += $dumpSwitches # dump-related switches only work on NativeAOT exe's on Windows.
