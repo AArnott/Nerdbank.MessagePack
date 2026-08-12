@@ -52,7 +52,6 @@ if ($x86) {
 }
 
 $testBinLogXunit = Join-Path $ArtifactStagingFolder (Join-Path build_logs test-xunit.binlog)
-$testBinLogTUnit = Join-Path $ArtifactStagingFolder (Join-Path build_logs test-tunit.binlog)
 $testLogs = Join-Path $ArtifactStagingFolder test_logs
 
 $globalJson = Get-Content $PSScriptRoot/../global.json | ConvertFrom-Json
@@ -79,13 +78,17 @@ if ($isMTP) {
         ,'--results-directory',$testLogs
         ,'--report-trx'
     )
+    $tunitArgs = @($mtpArgs)
 
     if (-not $NoCoverage) {
-        $mtpArgs += @(
+        $coverageArgs = @(
             ,'--coverage'
             ,'--coverage-output-format','cobertura'
+        )
+        $mtpArgs += $coverageArgs + @(
             ,'--coverage-settings',"$PSScriptRoot/test.runsettings"
         )
+        $tunitArgs += $coverageArgs
     }
 
     & $dotnet test --solution $RepoRoot `
@@ -99,15 +102,23 @@ if ($isMTP) {
         @extraArgs
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 
-    & $dotnet test --project $RepoRoot/test/Nerdbank.MessagePack.TUnit `
-      --no-build `
-      -c $Configuration `
-      -bl:"$testBinLogTUnit" `
-      --treenode-filter '/*/*/*/*[TestCategory!=FailsInCloudTest]' `
-      @mtpArgs `
-      @dumpSwitches `
-      @extraArgs
-    if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+    $targetFrameworks = @('net8.0', 'net9.0', 'net10.0')
+    if ($IsWindows) {
+        $targetFrameworks += 'net472'
+    }
+
+    foreach ($framework in $targetFrameworks) {
+        & $dotnet run --project $RepoRoot/test/Nerdbank.MessagePack.TUnit `
+            --framework $framework `
+            --no-build `
+            -c $Configuration `
+            -- `
+            '--treenode-filter=/*/*/*/*[TestCategory!=FailsInCloudTest]' `
+            @tunitArgs `
+            @dumpSwitches `
+            @extraArgs
+        if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+    }
 
     if ($IncludeNativeAOT) {
       $TestExecutableName = 'Nerdbank.MessagePack.TUnit'
