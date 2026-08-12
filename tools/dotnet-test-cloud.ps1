@@ -91,11 +91,12 @@ if ($isMTP) {
         $tunitArgs += $coverageArgs
     }
 
-    & $dotnet test --solution $RepoRoot `
+    & $dotnet test "$RepoRoot/Nerdbank.MessagePack.slnx" `
       -p:Platform=NonTUnit `
         --no-build `
         -c $Configuration `
       -bl:"$testBinLogXunit" `
+        -- `
         --filter-not-trait 'TestCategory=FailsInCloudTest' `
         @mtpArgs `
         @dumpSwitches `
