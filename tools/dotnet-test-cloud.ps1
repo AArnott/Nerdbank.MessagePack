@@ -21,7 +21,7 @@
 [CmdletBinding()]
 Param(
     [string]$Configuration='Debug',
-  [switch]$IncludeNativeAOT,
+    [switch]$IncludeNativeAOT,
     [string]$Agent='Local',
     [switch]$PublishResults,
     [switch]$x86,
