@@ -64,7 +64,7 @@ if ($isMTP) {
 
     $dumpSwitches = @(
         ,'--hangdump'
-        ,'--hangdump-timeout','120s'
+        ,'--hangdump-timeout','5m'
         ,'--crashdump'
         ,'--crashdump-type','Heap'
         # The native crash report accompanies the dump and is often the only way to identify the
