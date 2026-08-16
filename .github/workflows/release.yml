@@ -17,14 +17,25 @@ jobs:
     environment: Publishing
     env:
       AZURE_CORE_OUTPUT: none
-      AZURE_KEY_VAULT_URL: https://ironpigeon.vault.azure.net/
-      AZURE_KEY_VAULT_CERTIFICATE: code-signing
     permissions:
       actions: read # Required to download artifacts
       contents: write # Upload artifacts to Release
       id-token: write # Required for Azure and NuGet OIDC authentication
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: ⚙ Install .NET SDK
+      shell: pwsh
+      run: |
+        ./tools/Install-DotNetSdk.ps1 -SdkOnly
+        if ($LASTEXITCODE -ne 0) {
+          throw "SDK installation failed."
+        }
+
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) {
+          throw "dotnet tool restore failed."
+        }
 
     - name: 🔎 Search for build of ${{ github.ref }}
       shell: pwsh
@@ -94,14 +105,15 @@ jobs:
 
     - name: ✍️ Sign NuGet packages
       shell: pwsh
-      env:
-        NBGV_GitEngine: Disabled
-      run: |
-        dotnet tool restore
-        ./tools/Sign-NuGetPackages.ps1 `
-          -Path '${{ runner.temp }}/deployables' `
-          -KeyVaultUrl $env:AZURE_KEY_VAULT_URL `
-          -CertificateName $env:AZURE_KEY_VAULT_CERTIFICATE
+      run: >
+        dotnet tool run sign -- code azure-key-vault
+        '*.nupkg'
+        --base-directory '${{ runner.temp }}/deployables'
+        --file-list '${{ github.workspace }}/.github/signfiles.txt'
+        --recurse-containers
+        --azure-key-vault-url '${{ vars.AZURE_KEY_VAULT_URL }}'
+        --azure-key-vault-certificate '${{ vars.AZURE_KEY_VAULT_CERTIFICATE }}'
+        --azure-credential-type azure-cli
 
     - name: 🪪 Authorize NuGet package push
       uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
@@ -110,7 +122,7 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
 
     - name: 🚀 Push NuGet packages
-      run: dotnet nuget push ${{ runner.temp }}\deployables\*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}'
+      run: dotnet nuget push ${{ runner.temp }}\deployables\*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}' --skip-duplicate
 
     - name: 💽 Upload artifacts to release
       shell: pwsh
