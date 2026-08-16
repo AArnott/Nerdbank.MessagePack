@@ -26,6 +26,10 @@ jobs:
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+    - name: ⚙ Install .NET SDK
+      shell: pwsh
+      run: ./tools/Install-DotNetSdk.ps1 -SdkOnly
+
     - name: 🔎 Search for build of ${{ github.ref }}
       shell: pwsh
       id: findrunid
@@ -98,6 +102,10 @@ jobs:
         NBGV_GitEngine: Disabled
       run: |
         dotnet tool restore
+        if ($LASTEXITCODE -ne 0) {
+          throw "dotnet tool restore failed."
+        }
+
         ./tools/Sign-NuGetPackages.ps1 `
           -Path '${{ runner.temp }}/deployables' `
           -KeyVaultUrl $env:AZURE_KEY_VAULT_URL `
