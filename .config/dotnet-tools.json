@@ -50,6 +50,20 @@
         "sizoscope"
       ],
       "rollForward": false
+    },
+    "azuresigntool": {
+      "version": "7.0.1",
+      "commands": [
+        "azuresigntool"
+      ],
+      "rollForward": false
+    },
+    "nugetkeyvaultsigntool": {
+      "version": "3.2.3",
+      "commands": [
+        "NuGetKeyVaultSignTool"
+      ],
+      "rollForward": false
     }
   }
 }

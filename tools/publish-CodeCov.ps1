@@ -21,10 +21,32 @@ Param (
 )
 
 $RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
+$codeCovTool = & "$PSScriptRoot/Get-CodeCovTool.ps1"
+$coverageFiles = @(Get-ChildItem -Recurse -LiteralPath $PathToCodeCoverage -Filter "*.cobertura.xml")
 
-Get-ChildItem -Recurse -LiteralPath $PathToCodeCoverage -Filter "*.cobertura.xml" | % {
-    $relativeFilePath = Resolve-Path -relative $_.FullName
-
+$arguments = @(
+    "upload-process",
+    "--disable-search",
+    "--fail-on-error",
+    "-t", $CodeCovToken,
+    "--network-root-folder", $RepoRoot
+)
+foreach ($coverageFile in $coverageFiles) {
+    $relativeFilePath = Resolve-Path -Relative $coverageFile.FullName
     Write-Host "Uploading: $relativeFilePath" -ForegroundColor Yellow
-    & (& "$PSScriptRoot/Get-CodeCovTool.ps1") -t $CodeCovToken -f $relativeFilePath -R $RepoRoot -F $Flags -n $Name
+    $arguments += @("-f", $relativeFilePath)
+}
+
+if ($Flags) {
+    $arguments += @("-F", $Flags)
+}
+
+if ($Name) {
+    $arguments += @("-n", $Name)
+}
+
+& $codeCovTool @arguments
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Codecov CLI failed with exit code $LASTEXITCODE."
+    exit $LASTEXITCODE
 }

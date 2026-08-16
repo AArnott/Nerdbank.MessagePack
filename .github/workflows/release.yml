@@ -13,13 +13,13 @@ run-name: ${{ github.ref_name }}
 
 jobs:
   release:
-    runs-on: ubuntu-24.04
+    runs-on: windows-2025
     timeout-minutes: 360
     environment: Publishing
     permissions:
       actions: read # Required to download artifacts
       contents: write # Upload artifacts to Release
-      id-token: write # Required for NuGet CLI Login
+      id-token: write # Required for NuGet OIDC authentication
     steps:
     - name: 🔎 Search for build of ${{ github.ref }}
       shell: pwsh
@@ -137,7 +137,7 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
 
     - name: 🚀 Push NuGet packages
-      run: dotnet nuget push ${{ runner.temp }}/deployables/*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}'
+      run: dotnet nuget push ${{ runner.temp }}\deployables\*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}'
 
     - name: 📝 Add code signing policy to release
       shell: pwsh
