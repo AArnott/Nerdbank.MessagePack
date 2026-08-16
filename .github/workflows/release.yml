@@ -116,7 +116,6 @@ jobs:
         --azure-key-vault-url $env:AZURE_KEY_VAULT_URL
         --azure-key-vault-certificate $env:AZURE_KEY_VAULT_CERTIFICATE
         --azure-credential-type azure-cli
-        --timestamp-url https://timestamp.sectigo.com
 
     - name: 🪪 Authorize NuGet package push
       uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
