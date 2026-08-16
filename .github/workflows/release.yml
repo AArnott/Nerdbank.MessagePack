@@ -118,7 +118,7 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
 
     - name: 🚀 Push NuGet packages
-      run: dotnet nuget push ${{ runner.temp }}\deployables\*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}'
+      run: dotnet nuget push ${{ runner.temp }}\deployables\*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}' --skip-duplicate
 
     - name: 💽 Upload artifacts to release
       shell: pwsh
