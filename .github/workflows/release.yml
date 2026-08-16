@@ -17,8 +17,6 @@ jobs:
     environment: Publishing
     env:
       AZURE_CORE_OUTPUT: none
-      AZURE_KEY_VAULT_URL: https://ironpigeon.vault.azure.net/
-      AZURE_KEY_VAULT_CERTIFICATE: code-signing
     permissions:
       actions: read # Required to download artifacts
       contents: write # Upload artifacts to Release
@@ -113,8 +111,8 @@ jobs:
         --base-directory '${{ runner.temp }}/deployables'
         --file-list '${{ github.workspace }}/.github/signfiles.txt'
         --recurse-containers
-        --azure-key-vault-url $env:AZURE_KEY_VAULT_URL
-        --azure-key-vault-certificate $env:AZURE_KEY_VAULT_CERTIFICATE
+        --azure-key-vault-url '${{ vars.AZURE_KEY_VAULT_URL }}'
+        --azure-key-vault-certificate '${{ vars.AZURE_KEY_VAULT_CERTIFICATE }}'
         --azure-credential-type azure-cli
 
     - name: 🪪 Authorize NuGet package push
