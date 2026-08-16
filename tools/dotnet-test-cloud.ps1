@@ -91,11 +91,17 @@ if ($isMTP) {
         $tunitArgs += $coverageArgs
     }
 
-    & $dotnet test "$RepoRoot/Nerdbank.MessagePack.slnx" `
-      -p:Platform=NonTUnit `
+    $solutionFiles = @(Get-ChildItem -LiteralPath $RepoRoot -File | Where-Object { $_.Extension -in '.sln', '.slnx' })
+    if ($solutionFiles.Count -ne 1) {
+        throw "Expected exactly one solution file in $RepoRoot, but found $($solutionFiles.Count)."
+    }
+
+    $solutionPath = $solutionFiles[0].FullName
+    & $dotnet test $solutionPath `
+        -p:Platform=NonTUnit `
         --no-build `
         -c $Configuration `
-      -bl:"$testBinLogXunit" `
+        -bl:"$testBinLogXunit" `
         -- `
         --filter-not-trait 'TestCategory=FailsInCloudTest' `
         @mtpArgs `

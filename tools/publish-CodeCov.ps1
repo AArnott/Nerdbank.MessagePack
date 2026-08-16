@@ -23,6 +23,9 @@ Param (
 $RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
 $codeCovTool = & "$PSScriptRoot/Get-CodeCovTool.ps1"
 $coverageFiles = @(Get-ChildItem -Recurse -LiteralPath $PathToCodeCoverage -Filter "*.cobertura.xml")
+if ($coverageFiles.Count -eq 0) {
+    return
+}
 
 $arguments = @(
     "upload-process",
