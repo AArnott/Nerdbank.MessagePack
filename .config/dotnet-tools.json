@@ -51,17 +51,10 @@
       ],
       "rollForward": false
     },
-    "azuresigntool": {
-      "version": "7.0.1",
+    "sign": {
+      "version": "0.9.1-beta.26371.2",
       "commands": [
-        "azuresigntool"
-      ],
-      "rollForward": false
-    },
-    "nugetkeyvaultsigntool": {
-      "version": "3.2.3",
-      "commands": [
-        "NuGetKeyVaultSignTool"
+        "sign"
       ],
       "rollForward": false
     }

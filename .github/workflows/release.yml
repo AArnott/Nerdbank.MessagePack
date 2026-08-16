@@ -28,7 +28,16 @@ jobs:
 
     - name: ⚙ Install .NET SDK
       shell: pwsh
-      run: ./tools/Install-DotNetSdk.ps1 -SdkOnly
+      run: |
+        ./tools/Install-DotNetSdk.ps1 -SdkOnly
+        if ($LASTEXITCODE -ne 0) {
+          throw "SDK installation failed."
+        }
+
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) {
+          throw "dotnet tool restore failed."
+        }
 
     - name: 🔎 Search for build of ${{ github.ref }}
       shell: pwsh
@@ -98,18 +107,16 @@ jobs:
 
     - name: ✍️ Sign NuGet packages
       shell: pwsh
-      env:
-        NBGV_GitEngine: Disabled
-      run: |
-        dotnet tool restore
-        if ($LASTEXITCODE -ne 0) {
-          throw "dotnet tool restore failed."
-        }
-
-        ./tools/Sign-NuGetPackages.ps1 `
-          -Path '${{ runner.temp }}/deployables' `
-          -KeyVaultUrl $env:AZURE_KEY_VAULT_URL `
-          -CertificateName $env:AZURE_KEY_VAULT_CERTIFICATE
+      run: >
+        dotnet tool run sign -- code azure-key-vault
+        '*.nupkg'
+        --base-directory '${{ runner.temp }}/deployables'
+        --file-list '${{ github.workspace }}/.github/signfiles.txt'
+        --recurse-containers
+        --azure-key-vault-url $env:AZURE_KEY_VAULT_URL
+        --azure-key-vault-certificate $env:AZURE_KEY_VAULT_CERTIFICATE
+        --azure-credential-type azure-cli
+        --timestamp-url https://timestamp.sectigo.com
 
     - name: 🪪 Authorize NuGet package push
       uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
