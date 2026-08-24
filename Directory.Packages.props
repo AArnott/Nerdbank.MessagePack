@@ -46,8 +46,8 @@
     <PackageVersion Include="TUnit.Engine" Version="1.63.0" />
     <PackageVersion Include="Vogen" Version="8.0.6" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
-    <PackageVersion Include="xunit.v3.assert" Version="3.2.2" />
-    <PackageVersion Include="xunit.v3.assert.aot" Version="3.2.2" />
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3.assert.aot" Version="4.0.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp' or '$(MSBuildProjectName)'=='Benchmarks'">
     <!-- The versions specified here should be the latest ones supported by the OLDEST .NET runtime version that is still supported
