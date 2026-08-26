@@ -56,6 +56,16 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		Assert.Equal("Name3", reader.ReadString());
 		Assert.Equal("Value3", reader.ReadString());
 		Assert.True(reader.End);
+		Assert.True(this.DataMatchesSchema(this.lastRoundtrippedMsgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<HasNameValueCollection>()));
+	}
+
+	[Fact]
+	public void NameValueCollection_Null()
+	{
+		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = null! });
+
+		Assert.NotNull(roundtripped);
+		Assert.Null(roundtripped.Values);
 	}
 
 	[Fact]
