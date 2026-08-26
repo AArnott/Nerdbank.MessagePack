@@ -80,8 +80,9 @@ internal static class PrimitiveConverterLookup
 	/// <typeparam name="T">The type to get a converter for.</typeparam>
 	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
 	/// <param name="converter">Receives the converter, if one is available.</param>
+	/// <param name="context">The context to supply to converters that require it.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
-	internal static bool TryGetPrimitiveConverter<T>(ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter)
+	internal static bool TryGetPrimitiveConverter<T>(ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter<T>? converter, ConverterContext? context = null)
 #else
 	/// <summary>
 	/// Gets a built-in converter for the given type, if one is available.
@@ -89,8 +90,9 @@ internal static class PrimitiveConverterLookup
 	/// <param name="type">The type to get a converter for.</param>
 	/// <param name="referencePreserving">Indicates whether a reference-preserving converter is requested.</param>
 	/// <param name="converter">Receives the converter, if one is available.</param>
+	/// <param name="context">The context to supply to converters that require it.</param>
 	/// <returns><see langword="true" /> if a converter was found; <see langword="false" /> otherwise.</returns>
-	internal static bool TryGetPrimitiveConverter(Type type, ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter? converter)
+	internal static bool TryGetPrimitiveConverter(Type type, ReferencePreservationMode referencePreserving, [NotNullWhen(true)] out MessagePackConverter? converter, ConverterContext? context = null)
 #endif
 	{
 #if NET
@@ -328,6 +330,35 @@ internal static class PrimitiveConverterLookup
 #else
 			converter = (MessagePackConverter)(_SystemGlobalizationCultureInfoConverter ??= new SystemGlobalizationCultureInfoConverter());
 #endif
+			return true;
+		}
+
+#if NET
+		if (typeof(T) == typeof(System.Collections.Specialized.NameValueCollection))
+#else
+		if (type == typeof(System.Collections.Specialized.NameValueCollection))
+#endif
+		{
+			if (context is null)
+			{
+				converter = null;
+				return false;
+			}
+
+#if NET
+			converter = (MessagePackConverter<T>)(MessagePackConverter)new NameValueCollectionConverter(context.Value);
+#else
+			converter = new NameValueCollectionConverter(context.Value);
+#endif
+			if (referencePreserving != ReferencePreservationMode.Off)
+			{
+#if NET
+				converter = (MessagePackConverter<T>)((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
+#else
+				converter = (MessagePackConverter)((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
+#endif
+			}
+
 			return true;
 		}
 

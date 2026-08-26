@@ -1312,10 +1312,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Check if the type has a built-in converter.
+		ConverterContext context = new(this.owner, shapeProvider, this.owner.PreserveReferences);
 #if NET
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? primitiveConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? primitiveConverter, context))
 #else
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(type, this.owner.PreserveReferences, out MessagePackConverter? primitiveConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(type, this.owner.PreserveReferences, out MessagePackConverter? primitiveConverter, context))
 #endif
 		{
 			converter = ConverterResult.Ok(primitiveConverter);
