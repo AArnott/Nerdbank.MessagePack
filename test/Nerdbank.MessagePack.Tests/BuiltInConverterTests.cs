@@ -81,6 +81,25 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void NameValueCollection_EmptyArrayPreservesKey()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasNameValueCollection.Values));
+		writer.WriteMapHeader(1);
+		writer.Write("Name");
+		writer.WriteArrayHeader(0);
+		writer.Flush();
+
+		HasNameValueCollection? result = this.Serializer.Deserialize<HasNameValueCollection>(sequence, TestContext.Current.CancellationToken);
+
+		Assert.NotNull(result);
+		Assert.Equal("Name", Assert.Single(result.Values.AllKeys));
+		Assert.Null(result.Values["Name"]);
+	}
+
+	[Fact]
 	public void NameValueCollection_StringInterning()
 	{
 		this.Serializer = this.Serializer with { InternStrings = true };

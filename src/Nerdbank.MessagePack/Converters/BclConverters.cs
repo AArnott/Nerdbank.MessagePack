@@ -131,6 +131,12 @@ internal partial class NameValueCollectionConverter : MessagePackConverter<NameV
 			SerializationContext valuesContext = context;
 			valuesContext.DepthStep();
 			int valueCount = reader.ReadArrayHeader();
+			if (valueCount == 0)
+			{
+				result.Add(key, null);
+				continue;
+			}
+
 			for (int j = 0; j < valueCount; j++)
 			{
 				result.Add(key, this.stringConverter.Read(ref reader, valuesContext));
