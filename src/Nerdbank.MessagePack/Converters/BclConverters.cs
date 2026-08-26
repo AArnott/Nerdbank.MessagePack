@@ -160,7 +160,7 @@ internal partial class NameValueCollectionConverter : MessagePackConverter<NameV
 		{
 			this.stringConverter.Write(ref writer, value.GetKey(i), context);
 			string?[]? values = value.GetValues(i);
-			if (values is null or [null])
+			if (values is null)
 			{
 				writer.WriteNil();
 				continue;
