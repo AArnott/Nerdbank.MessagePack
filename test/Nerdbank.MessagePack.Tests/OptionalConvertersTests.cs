@@ -10,6 +10,7 @@ public partial class OptionalConvertersTests : MessagePackSerializerTestBase
 	public void NullCheck()
 	{
 		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithSystemTextJsonConverters(null!));
+		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithNameValueCollectionConverter(null!));
 		Assert.Throws<ArgumentNullException>("serializer", () => OptionalConverters.WithGuidConverter(null!, OptionalConverters.GuidStringFormat.StringN));
 	}
 
@@ -18,6 +19,13 @@ public partial class OptionalConvertersTests : MessagePackSerializerTestBase
 	{
 		this.Serializer = this.Serializer.WithGuidConverter(OptionalConverters.GuidStringFormat.StringD);
 		Assert.Throws<ArgumentException>(() => this.Serializer.WithGuidConverter(OptionalConverters.GuidStringFormat.StringN));
+	}
+
+	[Fact]
+	public void NameValueCollection_DoubleAddThrows()
+	{
+		this.Serializer = this.Serializer.WithNameValueCollectionConverter();
+		Assert.Throws<ArgumentException>("serializer", () => this.Serializer.WithNameValueCollectionConverter());
 	}
 
 	[Fact]

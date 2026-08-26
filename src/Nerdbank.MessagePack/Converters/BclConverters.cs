@@ -197,7 +197,7 @@ internal partial class NameValueCollectionConverter : MessagePackConverter<NameV
 						["items"] = new JsonObject { ["type"] = "string" },
 					}),
 			},
-			["description"] = "A name/value collection represented as a map of strings or string arrays.",
+			["description"] = "A name/value collection represented as a map of nil, strings, or string arrays.",
 		};
 }
 

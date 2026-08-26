@@ -99,9 +99,14 @@ public static class OptionalConverters
 	/// </summary>
 	/// <param name="serializer">The serializer to add the converter to.</param>
 	/// <returns>The modified serializer.</returns>
+	/// <exception cref="ArgumentException">Thrown if this converter has already been added.</exception>
 	public static MessagePackSerializer WithNameValueCollectionConverter(this MessagePackSerializer serializer)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
+		Requires.Argument(
+			!serializer.ConverterFactories.Any(static factory => factory is NameValueCollectionConverterFactory),
+			nameof(serializer),
+			"The NameValueCollection converter has already been added.");
 		return serializer with
 		{
 			ConverterFactories = [
