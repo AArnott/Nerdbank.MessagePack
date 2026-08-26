@@ -101,9 +101,8 @@ public static class OptionalConverters
 	/// <returns>The modified serializer.</returns>
 	/// <remarks>
 	/// <para>
-	/// The converter is discovered automatically on runtimes with dynamic code support.
-	/// NativeAOT applications should call this method when they use <see cref="System.Collections.Specialized.NameValueCollection"/>
-	/// so that the converter and its globalization dependencies are included deliberately.
+	/// This method must be called on all runtimes that serialize <see cref="System.Collections.Specialized.NameValueCollection"/>.
+	/// Explicit registration ensures NativeAOT applications only include the converter and its globalization dependencies when requested.
 	/// </para>
 	/// </remarks>
 	public static MessagePackSerializer WithNameValueCollectionConverter(this MessagePackSerializer serializer)
