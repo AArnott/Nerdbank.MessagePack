@@ -1,6 +1,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Specialized;
+
 public partial class NativeAOTTests
 {
 	[Test]
@@ -29,6 +31,18 @@ public partial class NativeAOTTests
 		}
 	}
 
+	[Test]
+	public void NameValueCollectionExplicitConverter()
+	{
+		NameValueCollection value = new() { { "Name", "Value" } };
+		MessagePackSerializer serializer = new MessagePackSerializer().WithNameValueCollectionConverter();
+
+		byte[] msgpack = serializer.Serialize(value, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<NameValueCollection>());
+		NameValueCollection? roundtripped = serializer.Deserialize(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<NameValueCollection>());
+
+		Assert.Equal("Value", roundtripped?["Name"]);
+	}
+
 	[GenerateShape]
 	public partial class Tree
 	{
@@ -36,4 +50,7 @@ public partial class NativeAOTTests
 	}
 
 	public partial record Fruit(int Seeds);
+
+	[GenerateShapeFor<NameValueCollection>]
+	private partial class Witness;
 }
