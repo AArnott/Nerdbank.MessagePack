@@ -5,6 +5,7 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single type
 
+using System.Collections.Specialized;
 using System.Drawing;
 using System.Globalization;
 using System.Text;
@@ -87,4 +88,125 @@ internal class SystemTextEncodingConverter : MessagePackConverter<Encoding>
 			["type"] = "string",
 			["description"] = "An encoding name.",
 		};
+}
+
+/// <summary>
+/// A converter for <see cref="NameValueCollection"/>.
+/// </summary>
+[GenerateShapeFor<string>]
+internal partial class NameValueCollectionConverter : MessagePackConverter<NameValueCollection>
+{
+	private readonly MessagePackConverter<string> stringConverter;
+
+	internal NameValueCollectionConverter(ConverterContext context)
+	{
+		this.stringConverter = context.GetConverter<string>(GeneratedTypeShapeProvider);
+	}
+
+	public override NameValueCollection? Read(ref MessagePackReader reader, SerializationContext context)
+	{
+		if (reader.TryReadNil())
+		{
+			return null;
+		}
+
+		context.DepthStep();
+		int count = reader.ReadMapHeader();
+		NameValueCollection result = new(count);
+		for (int i = 0; i < count; i++)
+		{
+			string? key = this.stringConverter.Read(ref reader, context);
+			if (reader.TryReadNil())
+			{
+				result.Add(key, null);
+				continue;
+			}
+
+			if (reader.NextMessagePackType != MessagePackType.Array)
+			{
+				result.Add(key, this.stringConverter.Read(ref reader, context));
+				continue;
+			}
+
+			SerializationContext valuesContext = context;
+			valuesContext.DepthStep();
+			int valueCount = reader.ReadArrayHeader();
+			if (valueCount == 0)
+			{
+				result.Add(key, null);
+				continue;
+			}
+
+			for (int j = 0; j < valueCount; j++)
+			{
+				result.Add(key, this.stringConverter.Read(ref reader, valuesContext));
+			}
+		}
+
+		return result;
+	}
+
+	public override void Write(ref MessagePackWriter writer, in NameValueCollection? value, SerializationContext context)
+	{
+		if (value is null)
+		{
+			writer.WriteNil();
+			return;
+		}
+
+		context.DepthStep();
+		writer.WriteMapHeader(value.Count);
+		for (int i = 0; i < value.Count; i++)
+		{
+			this.stringConverter.Write(ref writer, value.GetKey(i), context);
+			string?[]? values = value.GetValues(i);
+			if (values is null)
+			{
+				writer.WriteNil();
+				continue;
+			}
+
+			if (values is [string singleValue])
+			{
+				this.stringConverter.Write(ref writer, singleValue, context);
+				continue;
+			}
+
+			SerializationContext valuesContext = context;
+			valuesContext.DepthStep();
+			writer.WriteArrayHeader(values.Length);
+			foreach (string? item in values)
+			{
+				this.stringConverter.Write(ref writer, item, valuesContext);
+			}
+		}
+	}
+
+	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
+		=> new()
+		{
+			["type"] = "object",
+			["additionalProperties"] = new JsonObject
+			{
+				["anyOf"] = new JsonArray(
+					new JsonObject { ["type"] = "null" },
+					new JsonObject { ["type"] = "string" },
+					new JsonObject
+					{
+						["type"] = "array",
+						["items"] = new JsonObject { ["type"] = "string" },
+					}),
+			},
+			["description"] = "A name/value collection represented as a map of nil, strings, or string arrays.",
+		};
+}
+
+/// <summary>
+/// Creates <see cref="NameValueCollectionConverter"/> instances when explicitly enabled.
+/// </summary>
+internal sealed class NameValueCollectionConverterFactory : IMessagePackConverterFactory
+{
+	/// <inheritdoc/>
+	public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
+		=> type == typeof(NameValueCollection) ? new NameValueCollectionConverter(context) : null;
 }
