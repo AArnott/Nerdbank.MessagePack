@@ -133,7 +133,7 @@ internal partial class NameValueCollectionConverter : MessagePackConverter<NameV
 			int valueCount = reader.ReadArrayHeader();
 			for (int j = 0; j < valueCount; j++)
 			{
-				result.Add(key, this.stringConverter.Read(ref reader, context));
+				result.Add(key, this.stringConverter.Read(ref reader, valuesContext));
 			}
 		}
 
@@ -171,7 +171,7 @@ internal partial class NameValueCollectionConverter : MessagePackConverter<NameV
 			writer.WriteArrayHeader(values.Length);
 			foreach (string? item in values)
 			{
-				this.stringConverter.Write(ref writer, item, context);
+				this.stringConverter.Write(ref writer, item, valuesContext);
 			}
 		}
 	}
