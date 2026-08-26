@@ -194,3 +194,13 @@ internal partial class NameValueCollectionConverter : MessagePackConverter<NameV
 			["description"] = "A name/value collection represented as a map of strings or string arrays.",
 		};
 }
+
+/// <summary>
+/// Creates <see cref="NameValueCollectionConverter"/> instances when explicitly enabled.
+/// </summary>
+internal sealed class NameValueCollectionConverterFactory : IMessagePackConverterFactory
+{
+	/// <inheritdoc/>
+	public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
+		=> type == typeof(NameValueCollection) ? new NameValueCollectionConverter(context) : null;
+}

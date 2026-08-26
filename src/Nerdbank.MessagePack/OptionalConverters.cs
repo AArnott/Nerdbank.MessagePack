@@ -95,6 +95,30 @@ public static class OptionalConverters
 	}
 
 	/// <summary>
+	/// Adds support for serializing <see cref="System.Collections.Specialized.NameValueCollection"/>.
+	/// </summary>
+	/// <param name="serializer">The serializer to add the converter to.</param>
+	/// <returns>The modified serializer.</returns>
+	/// <remarks>
+	/// <para>
+	/// The converter is discovered automatically on runtimes with dynamic code support.
+	/// NativeAOT applications should call this method when they use <see cref="System.Collections.Specialized.NameValueCollection"/>
+	/// so that the converter and its globalization dependencies are included deliberately.
+	/// </para>
+	/// </remarks>
+	public static MessagePackSerializer WithNameValueCollectionConverter(this MessagePackSerializer serializer)
+	{
+		Requires.NotNull(serializer, nameof(serializer));
+		return serializer with
+		{
+			ConverterFactories = [
+				..serializer.ConverterFactories,
+				new NameValueCollectionConverterFactory(),
+			],
+		};
+	}
+
+	/// <summary>
 	/// Adds a converter for <see cref="Guid"/> to the specified serializer that serializes GUIDs as strings.
 	/// </summary>
 	/// <param name="serializer">The serializer to add converters to.</param>

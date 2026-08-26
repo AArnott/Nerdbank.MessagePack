@@ -60,6 +60,18 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
+	public void NameValueCollection_ExplicitFactory()
+	{
+		this.Serializer = this.Serializer.WithNameValueCollectionConverter();
+		NameValueCollection values = new() { { "Name", "Value" } };
+
+		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = values });
+
+		Assert.NotNull(roundtripped);
+		Assert.Equal("Value", roundtripped.Values["Name"]);
+	}
+
+	[Fact]
 	public void NameValueCollection_Null()
 	{
 		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = null! });
