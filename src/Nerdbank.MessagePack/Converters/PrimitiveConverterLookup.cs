@@ -644,35 +644,6 @@ internal static class PrimitiveConverterLookup
 		}
 
 #if NET
-		if (RuntimeFeature.IsDynamicCodeSupported && primitiveTypeName == "NameValueCollection" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "System.Collections.Specialized")
-#else
-		if (primitiveTypeName == "NameValueCollection" && (primitiveTypeNamespace ??= type.Namespace) == "System.Collections.Specialized")
-#endif
-		{
-			if (context is null)
-			{
-				converter = null;
-				return false;
-			}
-
-#if NET
-			converter = (MessagePackConverter<T>?)CreateNameValueCollectionConverter<T>(context.Value);
-#else
-			converter = (MessagePackConverter?)CreateNameValueCollectionConverter(type, context.Value);
-#endif
-			if (converter is not null && referencePreserving != ReferencePreservationMode.Off)
-			{
-#if NET
-				converter = (MessagePackConverter<T>)((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
-#else
-				converter = (MessagePackConverter)((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
-#endif
-			}
-
-			return converter is not null;
-		}
-
-#if NET
 		if (primitiveTypeName == "Color" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "System.Drawing")
 #else
 		if (primitiveTypeName == "Color" && (primitiveTypeNamespace ??= type.Namespace) == "System.Drawing")
@@ -709,13 +680,6 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? CreateBigIntegerConverter<T>() => typeof(T) == typeof(System.Numerics.BigInteger) ? new BigIntegerConverter() : null;
 #else
 	private static IMessagePackConverterInternal? CreateBigIntegerConverter(Type type) => type == typeof(System.Numerics.BigInteger) ? new BigIntegerConverter() : null;
-#endif
-
-	[MethodImpl(MethodImplOptions.NoInlining)]
-#if NET
-	private static IMessagePackConverterInternal? CreateNameValueCollectionConverter<T>(ConverterContext context) => typeof(T) == typeof(System.Collections.Specialized.NameValueCollection) ? new NameValueCollectionConverter(context) : null;
-#else
-	private static IMessagePackConverterInternal? CreateNameValueCollectionConverter(Type type, ConverterContext context) => type == typeof(System.Collections.Specialized.NameValueCollection) ? new NameValueCollectionConverter(context) : null;
 #endif
 
 	[MethodImpl(MethodImplOptions.NoInlining)]

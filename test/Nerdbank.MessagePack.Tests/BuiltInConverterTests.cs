@@ -24,6 +24,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[Fact]
 	public void NameValueCollection()
 	{
+		this.Serializer = this.Serializer.WithNameValueCollectionConverter();
 		NameValueCollection values = new()
 		{
 			{ "Name1", "Value1" },
@@ -60,20 +61,9 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Fact]
-	public void NameValueCollection_ExplicitFactory()
-	{
-		this.Serializer = this.Serializer.WithNameValueCollectionConverter();
-		NameValueCollection values = new() { { "Name", "Value" } };
-
-		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = values });
-
-		Assert.NotNull(roundtripped);
-		Assert.Equal("Value", roundtripped.Values["Name"]);
-	}
-
-	[Fact]
 	public void NameValueCollection_Null()
 	{
+		this.Serializer = this.Serializer.WithNameValueCollectionConverter();
 		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = null! });
 
 		Assert.NotNull(roundtripped);
@@ -83,6 +73,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[Fact]
 	public void NameValueCollection_EmptyArrayPreservesKey()
 	{
+		this.Serializer = this.Serializer.WithNameValueCollectionConverter();
 		Sequence<byte> sequence = new();
 		MessagePackWriter writer = new(sequence);
 		writer.WriteMapHeader(1);
@@ -102,7 +93,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[Fact]
 	public void NameValueCollection_StringInterning()
 	{
-		this.Serializer = this.Serializer with { InternStrings = true };
+		this.Serializer = this.Serializer.WithNameValueCollectionConverter() with { InternStrings = true };
 		string firstValue = "RepeatedValue";
 		string secondValue = new StringBuilder().Append(firstValue).ToString();
 		Assert.NotSame(firstValue, secondValue);
