@@ -35,6 +35,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = values });
 
 		Assert.NotNull(roundtripped);
+		Assert.NotNull(roundtripped.Values);
 		Assert.Equal(values.AllKeys, roundtripped.Values.AllKeys);
 		for (int i = 0; i < values.Count; i++)
 		{
@@ -64,7 +65,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public void NameValueCollection_Null()
 	{
 		this.Serializer = this.Serializer.WithNameValueCollectionConverter();
-		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = null! });
+		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = null });
 
 		Assert.NotNull(roundtripped);
 		Assert.Null(roundtripped.Values);
@@ -86,6 +87,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		HasNameValueCollection? result = this.Serializer.Deserialize<HasNameValueCollection>(sequence, TestContext.Current.CancellationToken);
 
 		Assert.NotNull(result);
+		Assert.NotNull(result.Values);
 		Assert.Equal("Name", Assert.Single(result.Values.AllKeys));
 		Assert.Null(result.Values["Name"]);
 	}
@@ -106,6 +108,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		HasNameValueCollection? roundtripped = this.Roundtrip(new HasNameValueCollection { Values = values });
 
 		Assert.NotNull(roundtripped);
+		Assert.NotNull(roundtripped.Values);
 		Assert.Same(roundtripped.Values["Name1"], roundtripped.Values["Name2"]);
 	}
 
@@ -654,7 +657,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	public partial class HasNameValueCollection
 	{
-		public NameValueCollection Values { get; set; } = new();
+		public NameValueCollection? Values { get; set; } = new();
 	}
 
 #if NET
