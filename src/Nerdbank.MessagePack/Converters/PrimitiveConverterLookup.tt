@@ -42,7 +42,8 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("TimeOnly", "TimeOnlyConverter", "NET"),
 	new ConverterInfo("DateOnly", "DateOnlyConverter", "NET"),
 	new ConverterInfo("System.Globalization.CultureInfo", "SystemGlobalizationCultureInfoConverter"),
-	new ConverterInfo("System.Collections.Specialized.NameValueCollection", "NameValueCollectionConverter", IsRefType: true, RequiresContext: true),
+	// NativeAOT shares generic code for reference types, so a static reference here would root this type's globalization-heavy implementation even when unused.
+	new ConverterInfo("System.Collections.Specialized.NameValueCollection", "NameValueCollectionConverter", IsRefType: true, RequiresContext: true, RequiresDynamicCode: true) { LazyLoad = true },
 	new ConverterInfo("System.Text.Encoding", "SystemTextEncodingConverter"),
 	new ConverterInfo("System.Drawing.Color", "SystemDrawingColorConverter") { LazyLoad = true },
 	new ConverterInfo("System.Drawing.Point", "SystemDrawingPointConverter") { LazyLoad = true },
@@ -206,13 +207,37 @@ internal static class PrimitiveConverterLookup
 		string ns = converter.TypeName.Substring(0, converter.TypeName.LastIndexOf('.'));
 		string featureCondition = converter.Feature is not null ? $" && Features.{converter.Feature}" : string.Empty; #>
 #if NET
-		if (primitiveTypeName == "<#=leafName#>" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "<#=ns#>"<#=featureCondition#>)
+		if (<#=converter.RequiresDynamicCode ? "RuntimeFeature.IsDynamicCodeSupported && " : string.Empty#>primitiveTypeName == "<#=leafName#>" && (primitiveTypeNamespace ??= typeof(T).Namespace) == "<#=ns#>"<#=featureCondition#>)
 #else
 		if (primitiveTypeName == "<#=leafName#>" && (primitiveTypeNamespace ??= type.Namespace) == "<#=ns#>"<#=featureCondition#>)
 #endif
 		{
 <#
-	if (converter.IsRefType) {
+	if (converter.RequiresContext) {
+#>
+			if (context is null)
+			{
+				converter = null;
+				return false;
+			}
+
+#if NET
+			converter = (MessagePackConverter<T>?)Create<#=converter.ConverterName#><T>(context.Value);
+#else
+			converter = (MessagePackConverter?)Create<#=converter.ConverterName#>(type, context.Value);
+#endif
+<#		if (converter.IsRefType) { #>
+			if (converter is not null && referencePreserving != ReferencePreservationMode.Off)
+			{
+#if NET
+				converter = (MessagePackConverter<T>)((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
+#else
+				converter = (MessagePackConverter)((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
+#endif
+			}
+
+<#		}
+	} else if (converter.IsRefType) {
 #>
 			if (referencePreserving != ReferencePreservationMode.Off)
 			{
@@ -256,15 +281,23 @@ internal static class PrimitiveConverterLookup
 #>
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
+<#	if (converter.RequiresContext) { #>
+#if NET
+	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#><T>(ConverterContext context) => typeof(T) == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>(context) : null;
+#else
+	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#>(Type type, ConverterContext context) => type == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>(context) : null;
+#endif
+<#	} else { #>
 #if NET
 	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#><T>() => typeof(T) == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>() : null;
 #else
 	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#>(Type type) => type == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>() : null;
 #endif
+<#	} #>
 <# } #>
 }
 <#+
-record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false, string Feature = null, bool RequiresContext = false)
+record struct ConverterInfo(string TypeName, string ConverterName, string PreprocessorCondition = null, bool IsRefType = false, string Feature = null, bool RequiresContext = false, bool RequiresDynamicCode = false)
 {
 	internal string FieldName => $"_{ConverterName}";
 	internal string ReferencePreservingFieldName => $"{FieldName}ReferencePreserving";
