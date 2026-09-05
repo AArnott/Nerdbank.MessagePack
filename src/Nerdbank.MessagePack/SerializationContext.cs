@@ -44,8 +44,16 @@ public record struct SerializationContext
 	/// </summary>
 	/// <value>The default value is 64.</value>
 	/// <remarks>
+	/// <para>
 	/// Exceeding this depth will result in a <see cref="MessagePackSerializationException"/> being thrown
 	/// from <see cref="DepthStep"/>.
+	/// </para>
+	/// <para>
+	/// This limit also serves to keep converter recursion within the available stack.
+	/// Raising it substantially can allow a deeply nested payload to exhaust the stack, which terminates
+	/// the process and cannot be caught. On a default 1 MB stack, values beyond a few hundred should be
+	/// considered carefully, and should be accompanied by testing with representative deeply nested input.
+	/// </para>
 	/// </remarks>
 	public int MaxDepth { get; set; } = 64;
 

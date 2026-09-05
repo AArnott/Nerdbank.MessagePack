@@ -390,7 +390,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 
 			reader.ReturnReader(ref streamingReader);
 
-			collection = getCollection(state, GetCollectionInitialCapacity(count, context));
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context, countIsCorroborated: false));
 			int i = 0;
 			try
 			{
@@ -512,7 +512,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 			{
 				for (; i < count; i++)
 				{
-					Grow(ref elements, i.Value, count, allowSlack: true, context);
+					Grow(ref elements, i.Value, count, allowSlack: true, context, countIsCorroborated: false);
 					elements[i.Value] = await this.ReadElementAsync(reader, context).ConfigureAwait(false);
 				}
 

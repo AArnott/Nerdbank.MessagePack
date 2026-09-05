@@ -466,6 +466,11 @@ namespace System.Diagnostics
 			: base("This code path should be unreachable.")
 		{
 		}
+
+		internal UnreachableException(string message)
+			: base(message)
+		{
+		}
 	}
 }
 

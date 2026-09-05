@@ -19,7 +19,16 @@ internal static class ArrayConverterUtilities
 	{
 		for (int i = 0; i < dimensions.Length; i++)
 		{
-			dimensions[i] = reader.ReadArrayHeader();
+			// Deliberately use the non-allocating header read so that the reader's aggregate
+			// allocation guard does not preempt VerifyNestedDimensionsFitInBuffer, which applies
+			// a stronger check (the product of all dimensions) and a more descriptive error.
+			// This is a pure probe: no memory is allocated based on these counts.
+			if (!reader.TryReadArrayHeader(out int count))
+			{
+				throw new EndOfStreamException();
+			}
+
+			dimensions[i] = count;
 		}
 	}
 

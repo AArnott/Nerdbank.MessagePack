@@ -36,6 +36,18 @@ public ref partial struct MessagePackStreamingReader
 	private ulong expectedRemainingStructures;
 
 	/// <summary>
+	/// The minimum number of encoded child bytes promised by container headers that have already been
+	/// read but which have not yet been satisfied by actual consumption of the buffer.
+	/// </summary>
+	private long outstandingMinimumChildBytes;
+
+	/// <summary>
+	/// The value of <see cref="SequenceReader{T}.Consumed"/> when <see cref="outstandingMinimumChildBytes"/>
+	/// was last reconciled.
+	/// </summary>
+	private long childBytesAccountingCheckpoint;
+
+	/// <summary>
 	/// A value indicating whether no more bytes can be expected once we reach the end of the current buffer.
 	/// </summary>
 	private bool eof;
@@ -1042,6 +1054,74 @@ public ref partial struct MessagePackStreamingReader
 					return ThrowUnreachable();
 			}
 		}
+	}
+
+	/// <summary>
+	/// Reserves a minimum number of bytes that the buffer must still contain in order to satisfy
+	/// the contents of a container whose header was just read.
+	/// </summary>
+	/// <param name="requiredMinimumBytes">
+	/// The fewest bytes the container's contents can possibly occupy.
+	/// This is one byte per element for an array, and two bytes per entry for a map.
+	/// </param>
+	/// <returns>
+	/// <see langword="true" /> if the buffer contains enough bytes to satisfy this container
+	/// in addition to every container that is already outstanding; otherwise <see langword="false" />.
+	/// </returns>
+	/// <remarks>
+	/// <para>
+	/// Checking each container header against the unread byte count in isolation is not sufficient,
+	/// because nested containers would each count the same trailing bytes as evidence that their
+	/// elements exist. A small payload could then declare many large nested containers, each of which
+	/// would be allocated before the payload was discovered to be malformed.
+	/// </para>
+	/// <para>
+	/// This method instead tracks the aggregate obligation created by all containers read so far.
+	/// The obligation is retired only as bytes are actually consumed from the buffer, so a given byte
+	/// can only ever serve as evidence for one container's contents.
+	/// </para>
+	/// <para>
+	/// This must be called <em>after</em> the container's header has been consumed, so that the header's
+	/// own bytes count toward retiring its parent's obligation rather than its own.
+	/// </para>
+	/// </remarks>
+	internal bool TryReserveMinimumChildBytes(long requiredMinimumBytes)
+	{
+		// Retire the portion of the outstanding obligation that has been satisfied by bytes
+		// consumed since the last time we reconciled.
+		long consumed = this.reader.Consumed;
+
+		// This accounting requires that consumption never move backwards across a checkpoint.
+		// Reads that fail partway through do restore an earlier SequenceReader, but the copy they
+		// restore was captured after the most recent checkpoint, so the invariant holds.
+		// Fail loudly rather than silently forgiving the outstanding obligation if that ever changes:
+		// discarding the obligation is precisely what reopens the allocation amplification hole
+		// that this accounting exists to close. See SequenceReader{T}.Rewind.
+		if (consumed < this.childBytesAccountingCheckpoint)
+		{
+			throw new UnreachableException("The reader moved backwards across a container header, which invalidates allocation accounting.");
+		}
+
+		long outstanding = this.outstandingMinimumChildBytes - (consumed - this.childBytesAccountingCheckpoint);
+		if (outstanding < 0)
+		{
+			outstanding = 0;
+		}
+
+		this.childBytesAccountingCheckpoint = consumed;
+		this.outstandingMinimumChildBytes = outstanding;
+
+		// The bytes already committed to outstanding containers are not available to this one.
+		long unread = this.reader.Remaining;
+		if (requiredMinimumBytes < 0 || outstanding > unread || requiredMinimumBytes > unread - outstanding)
+		{
+			return false;
+		}
+
+		// No overflow check is required here: the tests above establish that
+		// requiredMinimumBytes <= unread - outstanding, so the sum cannot exceed the buffer length.
+		this.outstandingMinimumChildBytes = outstanding + requiredMinimumBytes;
+		return true;
 	}
 
 	[DoesNotReturn]

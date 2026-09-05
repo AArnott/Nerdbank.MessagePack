@@ -494,7 +494,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			collection = getCollection(state, GetCollectionInitialCapacity(count, context));
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context, countIsCorroborated: false));
 			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
@@ -606,7 +606,7 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 		{
 			for (int i = 0; i < count; i++)
 			{
-				Grow(ref entries, i, count, allowSlack: true, context);
+				Grow(ref entries, i, count, allowSlack: true, context, countIsCorroborated: false);
 				entries[i] = await this.ReadEntryAsync(reader, context).ConfigureAwait(false);
 			}
 
