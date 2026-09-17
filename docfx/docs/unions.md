@@ -211,11 +211,16 @@ Both formats support string and integer discriminators. The setting affects both
 
 ## Generic derived types
 
-<xref:PolyType.DerivedTypeShapeAttribute> may reference generic derived types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
-You may close the generic type several times, but each one needs a unique type identifier so the inferred type name will not work.
-You will have to explicitly specify them.
+<xref:PolyType.DerivedTypeShapeAttribute> may reference closed generic types, with all type arguments specified.
+Each union case must have a unique identifier, which can be assigned explicitly:
 
 [!code-csharp[](../../samples/cs/Unions.cs#ClosedGenericSubTypes)]
+
+Open generic types are also supported with PolyType 1.4.1 or later, provided their type arguments can be inferred from the base type:
+
+[!code-csharp[](../../samples/cs/Unions.cs#OpenGenericSubTypes)]
+
+For `Base<int>`, the registered union case resolves to `Derived<int>`.
 
 ## Runtime derived type registration
 

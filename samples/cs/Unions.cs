@@ -92,6 +92,16 @@ namespace GenericSubTypes
     record SolidHoof;
     record ClovenHoof;
     #endregion
+
+    #region OpenGenericSubTypes
+    [DerivedTypeShape(typeof(Derived<>), Tag = 1)]
+    record Base<T>;
+
+    record Derived<T>(T Value) : Base<T>;
+
+    [GenerateShapeFor<Base<int>>]
+    partial class Witness;
+    #endregion
 }
 
 namespace StringAliasTypes
