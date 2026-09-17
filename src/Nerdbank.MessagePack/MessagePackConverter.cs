@@ -13,6 +13,27 @@ namespace Nerdbank.MessagePack;
 public abstract class MessagePackConverter
 {
 	/// <summary>
+	/// The maximum number of elements that storage may be speculatively preallocated for when the
+	/// declared element count has <em>not</em> been corroborated by the bytes available to the reader.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// <see cref="MessagePackReader.ReadArrayHeader()"/> and <see cref="MessagePackReader.ReadMapHeader()"/>
+	/// verify that the buffer holds at least one byte per declared element, beyond the bytes already
+	/// promised to every enclosing container. Counts obtained that way are trustworthy enough to
+	/// preallocate up to <see cref="SecuritySettings.MaxCollectionPreallocation"/> elements.
+	/// </para>
+	/// <para>
+	/// Asynchronous deserialization reads container headers from a <see cref="MessagePackStreamingReader"/>
+	/// whose buffer may still be growing, so no such corroboration is possible. Preallocating from those
+	/// counts would let a tiny payload consisting only of nested container headers force an unbounded
+	/// amount of live memory to be allocated (CWE-1325). Such collections instead grow geometrically as
+	/// elements are actually decoded, so allocation stays proportional to the input consumed.
+	/// </para>
+	/// </remarks>
+	private protected const int UncorroboratedCountPreallocationLimit = 16;
+
+	/// <summary>
 	/// Gets a value indicating whether callers should prefer the async methods on this object.
 	/// </summary>
 	/// <value>Unless overridden in a derived converter, this value is always <see langword="false"/>.</value>
@@ -153,12 +174,19 @@ public abstract class MessagePackConverter
 	/// <param name="finalLength">The expected length of the final array when all elements are initialized.</param>
 	/// <param name="allowSlack"><see langword="true" /> to allow <paramref name="buffer"/> to be returned <em>larger</em> than <paramref name="finalLength"/>.</param>
 	/// <param name="context">The serialization context.</param>
+	/// <param name="countIsCorroborated">
+	/// <see langword="true" /> when <paramref name="finalLength"/> came from a container header read by
+	/// <see cref="MessagePackReader"/>, which verifies that the buffer holds at least one byte per declared
+	/// element beyond the obligations of every enclosing container;
+	/// <see langword="false" /> when it came from a streaming reader over a buffer that may still be growing.
+	/// See <see cref="UncorroboratedCountPreallocationLimit"/>.
+	/// </param>
 	/// <remarks>
 	/// When the returned array is smaller than <paramref name="finalLength"/>,
 	/// it will have come from a shared pool and will be returned to it when
 	/// the caller returns for a larger array.
 	/// </remarks>
-	private protected static void Grow<T>([NotNull] ref T[] buffer, int initializedLength, int finalLength, bool allowSlack, in SerializationContext context)
+	private protected static void Grow<T>([NotNull] ref T[] buffer, int initializedLength, int finalLength, bool allowSlack, in SerializationContext context, bool countIsCorroborated = true)
 	{
 		Debug.Assert(finalLength > initializedLength, "The final length must be greater than the number of initialized elements.");
 
@@ -185,7 +213,7 @@ public abstract class MessagePackConverter
 
 		// The buffer is too small. We need to return a new buffer that can hold at least one more element.
 		T[] newBuffer;
-		int nextStepSize = Math.Max((int)Math.Min(Array.MaxLength, (long)currentLength * 2), context.Security.MaxCollectionPreallocation);
+		int nextStepSize = Math.Max((int)Math.Min(Array.MaxLength, (long)currentLength * 2), GetPreallocationLimit(context, countIsCorroborated));
 		if (nextStepSize < finalLength)
 		{
 			// Our target next size is smaller than the final length, so we can rent a buffer from the pool.
@@ -221,6 +249,20 @@ public abstract class MessagePackConverter
 	/// </summary>
 	/// <param name="count">The element count declared by the messagepack header.</param>
 	/// <param name="context">The serialization context.</param>
+	/// <param name="countIsCorroborated"><inheritdoc cref="Grow" path="/param[@name='countIsCorroborated']"/></param>
 	/// <returns>A capacity that does not exceed <see cref="SecuritySettings.MaxCollectionPreallocation" />.</returns>
-	private protected static int GetCollectionInitialCapacity(int count, in SerializationContext context) => Math.Min(count, context.Security.MaxCollectionPreallocation);
+	private protected static int GetCollectionInitialCapacity(int count, in SerializationContext context, bool countIsCorroborated = true)
+		=> Math.Min(count, GetPreallocationLimit(context, countIsCorroborated));
+
+	/// <summary>
+	/// Gets the maximum number of elements that may be speculatively allocated storage
+	/// before the elements themselves have been decoded.
+	/// </summary>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="countIsCorroborated"><inheritdoc cref="Grow" path="/param[@name='countIsCorroborated']"/></param>
+	/// <returns>The maximum number of elements to preallocate.</returns>
+	private static int GetPreallocationLimit(in SerializationContext context, bool countIsCorroborated)
+		=> countIsCorroborated
+			? context.Security.MaxCollectionPreallocation
+			: Math.Min(context.Security.MaxCollectionPreallocation, UncorroboratedCountPreallocationLimit);
 }

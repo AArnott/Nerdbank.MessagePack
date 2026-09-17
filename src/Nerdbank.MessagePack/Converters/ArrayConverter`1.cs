@@ -160,7 +160,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			{
 				for (; i < count; i++)
 				{
-					Grow(ref elements, i, count, allowSlack: false, context);
+					Grow(ref elements, i, count, allowSlack: false, context, countIsCorroborated: false);
 					elements[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
 				}
 

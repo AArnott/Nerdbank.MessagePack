@@ -151,12 +151,13 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 
 	[Fact]
 	[Trait("CWE", "770")]
+	[Trait("CWE", "1325")]
 	public async Task AsyncEnumerableCapacityHintIsCapped()
 	{
 		CapacityTrackingPocoList.LastCapacity = -1;
 		using Sequence<byte> sequence = new();
 		MessagePackWriter writer = new(sequence);
-		writer.WriteArrayHeader(CapacityTrackingPocoList.MaxAcceptedCapacity + 1);
+		writer.WriteArrayHeader(100_000);
 		writer.Flush();
 
 		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(
@@ -168,12 +169,13 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 
 	[Fact]
 	[Trait("CWE", "770")]
+	[Trait("CWE", "1325")]
 	public async Task AsyncDictionaryCapacityHintIsCapped()
 	{
 		CapacityTrackingPocoDictionary.LastCapacity = -1;
 		using Sequence<byte> sequence = new();
 		MessagePackWriter writer = new(sequence);
-		writer.WriteMapHeader(CapacityTrackingPocoDictionary.MaxAcceptedCapacity + 1);
+		writer.WriteMapHeader(100_000);
 		writer.Flush();
 
 		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(
@@ -246,7 +248,16 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	[GenerateShape, TypeShape(Kind = TypeShapeKind.Enumerable)]
 	public partial class CapacityTrackingPocoList : List<Poco>
 	{
-		internal const int MaxAcceptedCapacity = 4096;
+		/// <summary>
+		/// The capacity hint the async deserialization path is expected to supply, regardless of the
+		/// element count declared by the msgpack header.
+		/// </summary>
+		/// <remarks>
+		/// The async path reads container headers from a streaming reader whose buffer may still be
+		/// growing, so the declared count cannot be corroborated against available bytes. It must
+		/// therefore preallocate very little and grow as elements actually arrive.
+		/// </remarks>
+		internal const int MaxAcceptedCapacity = 16;
 
 		public CapacityTrackingPocoList(int capacity)
 			: base(capacity)
@@ -261,7 +272,8 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 	[GenerateShape, TypeShape(Kind = TypeShapeKind.Dictionary)]
 	public partial class CapacityTrackingPocoDictionary : Dictionary<string, Poco>
 	{
-		internal const int MaxAcceptedCapacity = 4096;
+		/// <inheritdoc cref="CapacityTrackingPocoList.MaxAcceptedCapacity"/>
+		internal const int MaxAcceptedCapacity = 16;
 
 		public CapacityTrackingPocoDictionary(int capacity)
 			: base(capacity)
