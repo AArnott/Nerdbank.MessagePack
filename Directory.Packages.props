@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicrosoftTestingPlatformVersion>2.4.0</MicrosoftTestingPlatformVersion>
+    <MicrosoftTestingPlatformVersion>2.4.1</MicrosoftTestingPlatformVersion>
     <RoslynVersion>5.9.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26226.5</CodeAnalysisAnalyzerVersion>
@@ -46,8 +46,8 @@
     <PackageVersion Include="TUnit.Engine" Version="1.65.68" />
     <PackageVersion Include="Vogen" Version="8.0.6" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.1.41" />
-    <PackageVersion Include="xunit.v3.assert" Version="4.0.0" />
-    <PackageVersion Include="xunit.v3.assert.aot" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.assert.aot" Version="4.0.1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp' or '$(MSBuildProjectName)'=='Benchmarks'">
     <!-- The versions specified here should be the latest ones supported by the OLDEST .NET runtime version that is still supported
@@ -68,12 +68,13 @@
     <PackageVersion Update="System.Text.Json" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+    <PackageVersion Include="Microsoft.Testing.Platform" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.Telemetry" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="$(MicrosoftTestingPlatformVersion)" />
-    <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.0" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
   </ItemGroup>
   <ItemGroup>
     <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="$(CodeAnalysisAnalyzerVersion)" />
