@@ -5,8 +5,6 @@
     Runs tests as they are run in cloud test runs.
 .PARAMETER Configuration
   The configuration within which to run tests.
-.PARAMETER IncludeNativeAOT
-  Retained for compatibility. NativeAOT images are run whenever they are present.
 .PARAMETER Agent
     The name of the agent. This is used in preparing test run titles.
 .PARAMETER PublishResults
@@ -21,7 +19,6 @@
 [CmdletBinding()]
 Param(
     [string]$Configuration='Debug',
-    [switch]$IncludeNativeAOT,
     [string]$Agent='Local',
     [switch]$PublishResults,
     [switch]$x86,
