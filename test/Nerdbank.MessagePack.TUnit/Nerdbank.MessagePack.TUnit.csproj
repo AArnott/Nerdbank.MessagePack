@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="../AOT.props" Condition="'$(TargetFramework)' != 'net472'" />
+  <Import Project="../AOT.props" Condition="'$(TargetFramework)' != 'net472' and '$(NativeAOT)' == 'true'" />
+  <PropertyGroup Condition="'$(NativeAOT)' == 'true'">
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\nativeaot\</IntermediateOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\nativeaot\</OutputPath>
+    <PublishDir>$(BaseOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</PublishDir>
+  </PropertyGroup>
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>

@@ -91,18 +91,30 @@ public partial class MessagePackSerializerTests : MessagePackSerializerTestBase
 	public void MultidimensionalArray(MultiDimensionalArrayFormat format)
 	{
 		this.Serializer = this.Serializer with { MultiDimensionalArrayFormat = format };
+		int[,] array2D = new int[2, 3];
+		array2D[0, 0] = 1;
+		array2D[0, 1] = 2;
+		array2D[0, 2] = 5;
+		array2D[1, 0] = 3;
+		array2D[1, 1] = 4;
+		array2D[1, 2] = 6;
+
+		int[,,] array3D = new int[2, 3, 4];
+		for (int i = 0; i < array3D.GetLength(0); i++)
+		{
+			for (int j = 0; j < array3D.GetLength(1); j++)
+			{
+				for (int k = 0; k < array3D.GetLength(2); k++)
+				{
+					array3D[i, j, k] = 20 + (i * 20) + (j * 4) + k;
+				}
+			}
+		}
+
 		ReadOnlySequence<byte> mgpack = this.AssertRoundtrip(new HasMultiDimensionalArray
 		{
-			Array2D = new[,]
-			{
-				{ 1, 2, 5 },
-				{ 3, 4, 6 },
-			},
-			Array3D = new int[2, 3, 4]
-			{
-				{ { 20, 21, 22, 23 }, { 24, 25, 26, 27 }, { 28, 29, 30, 31 } },
-				{ { 40, 41, 42, 43 }, { 44, 45, 46, 47 }, { 48, 49, 50, 51 } },
-			},
+			Array2D = array2D,
+			Array3D = array3D,
 		});
 
 		string expected =
