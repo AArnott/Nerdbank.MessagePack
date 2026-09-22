@@ -6,6 +6,18 @@
     <InvariantGlobalization>false</InvariantGlobalization>
     <DefineConstants>$(DefineConstants);TUnit</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!--
+      Several third-party dependencies used only by tests (Newtonsoft.Json(.Schema), System.Data (via
+      DataSet/DataTable's IXmlSerializable support), FSharp.Core, and the dynamic (DLR) infrastructure in
+      Microsoft.CSharp/System.Linq.Expressions) are not trim/AOT safe. We don't rely on the offending members
+      ourselves (or we detect and skip at runtime where we do exercise them, e.g. ExpandoObject tests), so we
+      suppress the resulting whole-assembly trim/AOT analysis warnings here rather than in each consuming file.
+      IL3000 is additionally suppressed because NetArchTest.eNhancedEdition (used only by ArchitectureRules.cs)
+      calls Assembly.Location internally, which is a no-op warning under NativeAOT (its assemblies are compiled
+      into the native binary) that we do not otherwise rely on.
+    -->
+    <NoWarn>$(NoWarn);IL2026;IL2104;IL3053;IL3000</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
     <TargetFrameworks>$(TargetFrameworks);net472</TargetFrameworks>
@@ -14,11 +26,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DiffPlex" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="NetArchTest.eNhancedEdition" />
     <PackageReference Include="Newtonsoft.Json.Schema" />
     <PackageReference Include="PolyType.TestCases" />
     <PackageReference Include="TUnit.Engine" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net472'">
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="ResourcesPath">
+      <Value>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)','Resources','KnownGoodSchemas'))</Value>
+    </AssemblyMetadata>
   </ItemGroup>
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net9.0'))">
     <PackageReference Include="xunit.v3.assert.aot" />
@@ -34,8 +57,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
-    <Compile Include="..\Nerdbank.MessagePack.Tests\SequenceBuilder.cs" Link="SequenceBuilder.cs" />
-    <Compile Include="..\Nerdbank.MessagePack.Tests\PolyfillExtensions.cs" Link="PolyfillExtensions.cs" />
     <Compile Update="MessagePackReaderTests.ReadInt.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

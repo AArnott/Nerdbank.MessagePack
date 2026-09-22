@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
@@ -19,7 +19,7 @@ public partial class JsonElementConverterTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
 	}
 
-	[Fact]
+	[Test]
 	public void RoundtripDOM()
 	{
 		Utf8JsonReader reader = new(JsonUtf8.Span);
@@ -37,12 +37,12 @@ public partial class JsonElementConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(JsonValueKind.Null, deserialized.GetProperty("f").ValueKind);
 	}
 
-	[Fact]
+	[Test]
 	public void Write()
 	{
 		Utf8JsonReader reader = new(JsonUtf8.Span);
 		JsonElement el = JsonElement.ParseValue(ref reader);
-		byte[] msgpack = this.Serializer.Serialize<JsonElement, Witness>(el, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<JsonElement, Witness>(el, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		string converted = this.Serializer.ConvertToJson(msgpack);

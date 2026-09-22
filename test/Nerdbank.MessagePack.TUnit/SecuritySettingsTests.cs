@@ -1,9 +1,9 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 public class SecuritySettingsTests
 {
-	[Fact]
+	[Test]
 	public void CustomSettings()
 	{
 		SecuritySettings settings = new()
@@ -15,13 +15,13 @@ public class SecuritySettingsTests
 		Assert.Equal(1024, settings.MaxCollectionPreallocation);
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultCtorMatchesUntrustedData()
 	{
 		Assert.Equal(SecuritySettings.UntrustedData, new SecuritySettings());
 	}
 
-	[Fact]
+	[Test]
 	public void ExpandoObjectMaxPropertyCount_RequiresPositiveValue()
 	{
 		SecuritySettings value = SecuritySettings.UntrustedData with
@@ -38,7 +38,7 @@ public class SecuritySettingsTests
 		});
 	}
 
-	[Fact]
+	[Test]
 	public void MaxCollectionPreallocation_RequiresPositiveValue()
 	{
 		SecuritySettings value = SecuritySettings.UntrustedData with

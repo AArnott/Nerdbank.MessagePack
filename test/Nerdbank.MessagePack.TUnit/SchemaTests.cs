@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // Uncomment the following #define when adding or modifying tests, or intentionally changing the output of the schema generator.
@@ -22,7 +22,6 @@ using Microsoft;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
-[Trait("JsonSchema", "true")]
 public partial class SchemaTests : MessagePackSerializerTestBase
 {
 	private const bool RecordMode =
@@ -41,20 +40,20 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		Female,
 	}
 
-	[Fact]
+	[Test]
 	public void BasicObject_Map() => this.AssertSchema([new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
 
-	[Fact]
+	[Test]
 	public void BasicObject_Map_NamingPolicy()
 	{
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
 		this.AssertSchema([new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
 	}
 
-	[Fact]
+	[Test]
 	public void BasicObject_Key_AcceptsNull() => this.AssertSchema<ArrayOfValuesObject>([null], testName: "BasicObject_Key");
 
-	[Fact]
+	[Test]
 	public void BasicObject_Key_AcceptsArrays()
 	{
 		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
@@ -62,7 +61,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		// Force additional array elements to be denied to verify that the indexes are explicitly allowed by the schema.
 		DisallowAdditionalProperties(schema);
 
-		this.Logger.WriteLine("Modified schema:\n{0}", schema.ToString());
+		Console.WriteLine("Modified schema:\n{0}", schema.ToString());
 
 		JToken.Parse("""
 			["str1", null, true]
@@ -73,7 +72,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			""").Validate(schema);
 	}
 
-	[Fact]
+	[Test]
 	public void BasicObject_Key_AcceptsMaps()
 	{
 		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
@@ -89,7 +88,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			""").Validate(schema);
 	}
 
-	[Fact]
+	[Test]
 	public void BasicObject_Key_Required()
 	{
 		JSchema schema = this.AssertSchema<ArrayOfValuesWithRequired>();
@@ -121,17 +120,16 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			schema));
 	}
 
-	[Fact]
+	[Test]
 	public void Recursive() => this.AssertSchema([new RecursiveType { Child = new RecursiveType() }]);
 
-	[Fact]
-	[Trait("Surrogates", "true")]
+	[Test]
 	public void Surrogates()
 	{
 		this.AssertSchema<SurrogateTests.OriginalType>();
 	}
 
-	[Fact]
+	[Test]
 	public void Complex() => this.AssertSchema([
 		new Family
 		{
@@ -143,27 +141,27 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		},
 		]);
 
-	[Fact]
+	[Test]
 	public void DateTimeExtension() => this.AssertSchema([new HasDateTime { Timestamp = DateTime.Now }]);
 
-	[Fact]
+	[Test]
 	public void CustomConverterHasUndocumentedSchema() => this.AssertSchema([new TypeWithNonDocumentingCustomConverter()]);
 
-	[Fact]
+	[Test]
 	public void CustomConverterWithDocumentedSchema()
 	{
 		this.Serializer = this.Serializer with { Converters = [new DocumentingCustomConverter()] };
 		this.AssertSchema([new CustomType(), null]);
 	}
 
-	[Fact]
+	[Test]
 	public void SubTypeSchema() => this.AssertSchema([new BaseType { Message = "hi" }, new SubType { Message = "hi", Value = 5 }]);
 
 	/// <summary>
 	/// Verify that registering converters while <see cref="MessagePackSerializer.PreserveReferences"/>
 	/// is <see langword="true"/> does not mess up the schema generation after it is turned off.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void ReferencePreservationGraphReset()
 	{
 		this.Serializer = this.Serializer with
@@ -174,7 +172,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.Off };
 		JsonObject schema = this.Serializer.GetJsonSchema<CustomType>();
 		string schemaString = schema.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-		this.Logger.WriteLine(schemaString);
+		Console.WriteLine(schemaString);
 		Assert.DoesNotContain("ReferencePreservingConverter", schemaString);
 	}
 
@@ -219,7 +217,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 	{
 		foreach (ValidationError error in errors)
 		{
-			this.Logger.WriteLine(new string(' ', indent) + error.Message);
+			Console.WriteLine(new string(' ', indent) + error.Message);
 			this.LogValidationError(error.ChildErrors, indent + 2);
 		}
 	}
@@ -230,7 +228,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		string expected = File.ReadAllText(Path.Combine(KnownGoodSchemasPath, testName + ".schema.json"));
 		if (expected != actual)
 		{
-			this.Logger.WriteLine("Schema does not match the known good schema. The diff is shown below with expected as baseline.");
+			Console.WriteLine("Schema does not match the known good schema. The diff is shown below with expected as baseline.");
 
 			InlineDiffBuilder inlineBuilder = new(new Differ());
 			DiffPaneModel result = inlineBuilder.BuildDiffModel(expected, actual);
@@ -247,7 +245,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 						ChangeType.Deleted => "- ",
 						_ => "  ",
 					};
-					this.Logger.WriteLine(lineNumberPrefix + diffPrefix + line.Text);
+					Console.WriteLine(lineNumberPrefix + diffPrefix + line.Text);
 				}
 			}
 
@@ -271,7 +269,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		if (RecordMode)
 		{
 			// Log the schema in the test output and record it.
-			this.Logger.WriteLine(schemaString);
+			Console.WriteLine(schemaString);
 			Record(schema, testName);
 		}
 		else
@@ -279,7 +277,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			// Verify that the schema matches the LKG copy.
 			if (this.CheckMatchWithLKG(schema, testName))
 			{
-				this.Logger.WriteLine(schemaString);
+				Console.WriteLine(schemaString);
 			}
 			else
 			{
@@ -300,16 +298,16 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			{
 				byte[] msgpack = this.Serializer.Serialize(item);
 				string json = this.Serializer.ConvertToJson(msgpack);
-				this.Logger.WriteLine($"Sample data {++sampleCounter}:");
+				Console.WriteLine($"Sample data {++sampleCounter}:");
 				var parsed = JsonNode.Parse(json);
-				this.Logger.WriteLine(parsed is null ? "null" : parsed.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+				Console.WriteLine(parsed is null ? "null" : parsed.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 				try
 				{
 					JToken.Parse(json).Validate(parsedSchema);
 				}
 				catch (Exception ex)
 				{
-					this.Logger.WriteLine("Failed: {0}", ex);
+					Console.WriteLine("Failed: {0}", ex);
 					anyFailed = true;
 				}
 			}

@@ -5,19 +5,19 @@
 [GenerateShapeFor<object>]
 public partial class PreserveIntegerTypesTests : MessagePackSerializerTestBase
 {
-	[Theory]
-	[InlineData((byte)40)]
-	[InlineData((sbyte)40)]
-	[InlineData((sbyte)-40)]
-	[InlineData((short)40)]
-	[InlineData((short)-40)]
-	[InlineData((ushort)40)]
-	[InlineData((int)40)]
-	[InlineData((int)-40)]
-	[InlineData((uint)40u)]
-	[InlineData((long)40L)]
-	[InlineData((long)-40L)]
-	[InlineData((ulong)40UL)]
+	[Test]
+	[Arguments((byte)40)]
+	[Arguments((sbyte)40)]
+	[Arguments((sbyte)-40)]
+	[Arguments((short)40)]
+	[Arguments((short)-40)]
+	[Arguments((ushort)40)]
+	[Arguments((int)40)]
+	[Arguments((int)-40)]
+	[Arguments((uint)40u)]
+	[Arguments((long)40L)]
+	[Arguments((long)-40L)]
+	[Arguments((ulong)40UL)]
 	public void IntegerTypesPreserved(object value)
 	{
 		this.Serializer = this.Serializer.WithObjectConverter(new ObjectConverterOptions { PreserveIntegerTypes = true });
@@ -29,13 +29,13 @@ public partial class PreserveIntegerTypesTests : MessagePackSerializerTestBase
 		Assert.Equal(value.GetType(), output[0]!.GetType());
 	}
 
-	[Theory]
-	[InlineData((int)40)]
-	[InlineData((int)-40)]
-	[InlineData((uint)40u)]
-	[InlineData((long)40L)]
-	[InlineData((long)-40L)]
-	[InlineData((ulong)40UL)]
+	[Test]
+	[Arguments((int)40)]
+	[Arguments((int)-40)]
+	[Arguments((uint)40u)]
+	[Arguments((long)40L)]
+	[Arguments((long)-40L)]
+	[Arguments((ulong)40UL)]
 	public void WithoutPreserveIntegerTypes_NonNegativeBecomesUlong(object value)
 	{
 		this.Serializer = this.Serializer.WithObjectConverter();

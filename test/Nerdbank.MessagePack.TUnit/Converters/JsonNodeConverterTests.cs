@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text.Json.Nodes;
@@ -12,7 +12,7 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 		this.Serializer = this.Serializer.WithSystemTextJsonConverters();
 	}
 
-	[Fact]
+	[Test]
 	public void Roundtrip_JsonNode()
 	{
 		JsonNode node = JsonNode.Parse("""
@@ -27,7 +27,7 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 		Assert.Null(deserialized["f"]);
 	}
 
-	[Fact]
+	[Test]
 	public void Roundtrip_JsonNode_WithNullFollowedByValue()
 	{
 		JsonNode node = JsonNode.Parse("""
@@ -40,7 +40,7 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(1ul, deserialized[2]?.GetValue<ulong>());
 	}
 
-	[Fact]
+	[Test]
 	public void Roundtrip_JsonNode_WithFloatingPoint()
 	{
 		JsonNode node = JsonNode.Parse("""
@@ -55,12 +55,12 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 		Assert.Equal(1.23e10, deserialized["large"]?.GetValue<double>());
 	}
 
-	[Fact]
+	[Test]
 	public void Write_JsonNode_WithFloatingPoint()
 	{
 		// Test that we can serialize JsonNode containing floating point numbers
 		JsonNode node = JsonValue.Create(3.14);
-		byte[] msgpack = this.Serializer.Serialize<JsonNode, Witness>(node, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<JsonNode, Witness>(node, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		// Verify we can convert back to JSON
@@ -68,13 +68,13 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 		Assert.Equal("3.14", converted);
 	}
 
-	[Fact]
+	[Test]
 	public void Write_JsonNode_WithMixedNumbers()
 	{
 		JsonNode node = JsonNode.Parse("""
 			{"int":42,"uint":123,"float":3.14,"double":2.718281828}
 			""")!;
-		byte[] msgpack = this.Serializer.Serialize<JsonNode, Witness>(node, TestContext.Current.CancellationToken);
+		byte[] msgpack = this.Serializer.Serialize<JsonNode, Witness>(node, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
 		string converted = this.Serializer.ConvertToJson(msgpack);

@@ -103,7 +103,7 @@ public abstract partial class MessagePackSerializerTestBase
 	{
 		string schemaString = schema
 			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-			.Replace($"Nerdbank.MessagePack.Tests, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
+			.Replace($"Nerdbank.MessagePack.TUnit, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.TUnit, Version=x.x.x.x");
 
 #if NETFRAMEWORK
 		// Normalize from .NET Framework specific strings to .NET strings.

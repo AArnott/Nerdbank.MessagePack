@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if NETFRAMEWORK
@@ -9,31 +9,31 @@ using PolyType.ReflectionProvider;
 
 public partial class AssemblyLoadTests
 {
-	[Fact]
+	[Test]
 	public void SerializeCustomTypeUsingWitnessType()
 	{
 		Helper(driver => driver.SerializeSomethingSimple(), "System.Numerics");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeCustomTypeUsingDirectTypeShape()
 	{
 		Helper(driver => driver.SerializeSomethingSimpleUsingTypeShape(), "System.Numerics");
 	}
 
-	[Fact]
+	[Test]
 	public void PrimitiveConverterDoesNotLoadOtherAssemblies_SourceGenTypeShape()
 	{
 		Helper(driver => driver.SerializeRoundtripWithTypeShape(true), "System.Numerics", "System.Drawing");
 	}
 
-	[Fact]
+	[Test]
 	public void PrimitiveConverterDoesNotLoadOtherAssemblies_SourceGen()
 	{
 		Helper(driver => driver.SerializeRoundtripWithSourceGenProvider(true), "System.Numerics", "System.Drawing");
 	}
 
-	[Fact]
+	[Test]
 	public void PrimitiveConverterDoesNotLoadOtherAssemblies_Reflection()
 	{
 		Helper(driver => driver.SerializeRoundtripWithReflectionProvider(true), "System.Numerics", "System.Drawing");
@@ -64,7 +64,7 @@ public partial class AssemblyLoadTests
 	private static IEnumerable<string> PrintLoadedAssemblies(AppDomainTestDriver driver)
 	{
 		var assembliesLoaded = driver.GetLoadedAssemblyList();
-		TestContext.Current.TestOutputHelper?.WriteLine($"Loaded assemblies: {Environment.NewLine}{string.Join(Environment.NewLine, assembliesLoaded.OrderBy(s => s).Select(s => "   " + s))}");
+		Console.WriteLine($"Loaded assemblies: {Environment.NewLine}{string.Join(Environment.NewLine, assembliesLoaded.OrderBy(s => s).Select(s => "   " + s))}");
 		return assembliesLoaded;
 	}
 
@@ -113,14 +113,14 @@ public partial class AssemblyLoadTests
 		internal void SerializeSomethingSimpleUsingTypeShape()
 		{
 			MessagePackSerializer serializer = new();
-			serializer.Serialize(new SomeObject(42), PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default.SomeObject);
+			serializer.Serialize(new SomeObject(42), PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_TUnit.Default.SomeObject);
 		}
 
 		internal bool SerializeRoundtripWithTypeShape(bool value)
 		{
 			MessagePackSerializer serializer = new();
 
-			ITypeShape<bool> typeShape = PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default.Boolean;
+			ITypeShape<bool> typeShape = PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_TUnit.Default.Boolean;
 			byte[] buffer = serializer.Serialize(value, typeShape);
 			return serializer.Deserialize(buffer, typeShape);
 		}
@@ -138,7 +138,7 @@ public partial class AssemblyLoadTests
 		{
 			MessagePackSerializer serializer = new();
 
-			ITypeShapeProvider typeProvider = PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_Tests.Default;
+			ITypeShapeProvider typeProvider = PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_TUnit.Default;
 			byte[] buffer = serializer.Serialize(value, typeProvider.GetTypeShapeOrThrow<T>());
 			return serializer.Deserialize<T>(buffer, typeProvider.GetTypeShapeOrThrow<T>())!;
 		}

@@ -6,14 +6,119 @@
 #pragma warning disable CS8767 // null ref annotations
 #endif
 
+// These exhaustive tests use reflection (MakeGenericMethod/MakeGenericType) to dispatch across every type known to
+// PolyType's test case catalog, since TUnit does not support open generic test methods whose type arguments are
+// inferred from a dynamically-produced data source. This is not compatible with NativeAOT, but the tests detect
+// that failure at runtime and skip gracefully (see the try/catch blocks below), so the trim/AOT analysis warnings
+// are suppressed via [UnconditionalSuppressMessage] on the two affected test methods below.
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Numerics;
+using System.Reflection;
+using PolyType.Tests;
 
 public abstract partial class StructuralEqualityComparerTests
 {
+	private static readonly MethodInfo GetEqualityComparerOpenMethod = typeof(StructuralEqualityComparerTests)
+		.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+		.Single(m => m.Name == nameof(GetEqualityComparer) && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
+
 	internal enum FruitKind
 	{
 		Apple,
 		Banana,
+	}
+
+	/// <summary>
+	/// Exhaustively verifies <see cref="IEqualityComparer{T}.Equals(T, T)"/> for every test case type known to PolyType.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This test takes the non-generic <see cref="ITestCase"/> and dispatches to the generic
+	/// <see cref="GetEqualityComparer{T}(ITypeShape{T})"/> method via reflection, since TUnit does not support
+	/// open generic test methods whose type arguments are inferred from a dynamically-produced data source
+	/// (unlike xunit's <c>Theory</c>/<c>MemberData</c> combination, which this test used prior to migration).
+	/// </para>
+	/// <para>
+	/// Because this relies on <see cref="MethodInfo.MakeGenericMethod(Type[])"/> at runtime, it is not compatible
+	/// with NativeAOT and is skipped automatically when dynamic code generation is unavailable.
+	/// </para>
+	/// </remarks>
+	[Test]
+	[MethodDataSource(typeof(TestTypes), nameof(TestTypes.GetTestCases))]
+#if NET
+	[UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "Test detects and skips when dynamic code isn't supported.")]
+	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Test detects and skips when dynamic code isn't supported.")]
+#endif
+	public void Equals_Exhaustive(ITestCase testCase)
+	{
+		// We do not expect these cases to work.
+		Skip.When(testCase.Type == typeof(object), "T = object");
+
+		object equalityComparer;
+		try
+		{
+			equalityComparer = GetEqualityComparerOpenMethod.MakeGenericMethod(testCase.Type).Invoke(this, [testCase.DefaultShape])!;
+		}
+		catch (TargetInvocationException ex) when (ex.InnerException is NotSupportedException nse)
+		{
+			// We don't expect all types to be supported.
+			Skip.Test($"Unsupported: {nse.Message}");
+			return;
+		}
+		catch (Exception ex) when (ex is NotSupportedException or PlatformNotSupportedException)
+		{
+			// MakeGenericMethod requires runtime code generation, which is unavailable when published for NativeAOT.
+			Skip.Test($"This test requires runtime code generation, which is unavailable in this environment: {ex.Message}");
+			return;
+		}
+
+		MethodInfo equalsMethod = typeof(IEqualityComparer<>).MakeGenericType(testCase.Type).GetMethod(nameof(IEqualityComparer<object>.Equals))!;
+		Assert.True((bool)equalsMethod.Invoke(equalityComparer, [testCase.Value, testCase.Value])!);
+	}
+
+	/// <summary>
+	/// Exhaustively verifies <see cref="IEqualityComparer{T}.GetHashCode(T)"/> for every test case type known to PolyType.
+	/// </summary>
+	/// <remarks>
+	/// See remarks on <see cref="Equals_Exhaustive(ITestCase)"/> for why this uses reflection instead of an open generic test method.
+	/// </remarks>
+	[Test]
+	[MethodDataSource(typeof(TestTypes), nameof(TestTypes.GetTestCases))]
+#if NET
+	[UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "Test detects and skips when dynamic code isn't supported.")]
+	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Test detects and skips when dynamic code isn't supported.")]
+#endif
+	public void GetHashCode_Exhaustive(ITestCase testCase)
+	{
+		// We do not expect these cases to work.
+		Skip.When(testCase.Type == typeof(object), "T = object");
+
+		object equalityComparer;
+		try
+		{
+			equalityComparer = GetEqualityComparerOpenMethod.MakeGenericMethod(testCase.Type).Invoke(this, [testCase.DefaultShape])!;
+		}
+		catch (TargetInvocationException ex) when (ex.InnerException is NotSupportedException nse)
+		{
+			// We don't expect all types to be supported.
+			Skip.Test($"Unsupported: {nse.Message}");
+			return;
+		}
+		catch (Exception ex) when (ex is NotSupportedException or PlatformNotSupportedException)
+		{
+			// MakeGenericMethod requires runtime code generation, which is unavailable when published for NativeAOT.
+			Skip.Test($"This test requires runtime code generation, which is unavailable in this environment: {ex.Message}");
+			return;
+		}
+
+		// We don't really have anything useful to check the return value against, but
+		// at least verify it doesn't throw.
+		if (testCase.Value is not null)
+		{
+			MethodInfo getHashCodeMethod = typeof(IEqualityComparer<>).MakeGenericType(testCase.Type).GetMethod(nameof(IEqualityComparer<object>.GetHashCode))!;
+			getHashCodeMethod.Invoke(equalityComparer, [testCase.Value]);
+		}
 	}
 
 	[Test]
