@@ -5,6 +5,8 @@
     Runs tests as they are run in cloud test runs.
 .PARAMETER Configuration
   The configuration within which to run tests.
+.PARAMETER IncludeNativeAOT
+  Runs the NativeAOT-compiled tests and fails if an expected image is missing.
 .PARAMETER Agent
     The name of the agent. This is used in preparing test run titles.
 .PARAMETER PublishResults
@@ -19,6 +21,7 @@
 [CmdletBinding()]
 Param(
     [string]$Configuration='Debug',
+    [switch]$IncludeNativeAOT,
     [string]$Agent='Local',
     [switch]$PublishResults,
     [switch]$x86,
@@ -151,37 +154,33 @@ if ($isMTP) {
         if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
     }
 
-    $testExecutableName = if ($IsMacOS -or $IsLinux) { 'Nerdbank.MessagePack.TUnit' } else { 'Nerdbank.MessagePack.TUnit.exe' }
-    $nativeAotArgs = @($tunitArgs)
-    if ($IsWindows) {
-        $nativeAotArgs += $dumpSwitches # Dump-related switches only work on NativeAOT executables on Windows.
+    if ($IncludeNativeAOT) {
+        $testExecutableName = if ($IsMacOS -or $IsLinux) { 'Nerdbank.MessagePack.TUnit' } else { 'Nerdbank.MessagePack.TUnit.exe' }
+        $nativeAotArgs = @($tunitArgs)
+        if ($IsWindows) {
+            $nativeAotArgs += $dumpSwitches # Dump-related switches only work on NativeAOT executables on Windows.
+        }
+
+        foreach ($framework in @('net9.0', 'net10.0')) {
+            $nativeAotExecutables = @(
+                Get-ChildItem -Path (Join-Path $tunitOutputRoot "$framework/*/publish/$testExecutableName") -File -ErrorAction SilentlyContinue
+            )
+            if ($nativeAotExecutables.Count -ne 1) {
+                Write-Error "Expected exactly one NativeAOT TUnit test executable for $framework, but found $($nativeAotExecutables.Count)."
+                $failedTests += 1
+                continue
+            }
+
+            $nativeAotRunArgs = @($nativeAotArgs) + @('--report-trx-filename', "Nerdbank.MessagePack.TUnit_${framework}_NativeAOT_{arch}.trx")
+            if (-not $NoCoverage) {
+                $nativeAotRunArgs += @('--coverage-output', "Nerdbank.MessagePack.TUnit_${framework}_NativeAOT.cobertura.xml")
+            }
+
+            Write-Host "Running NativeAOT TUnit tests for $framework from '$($nativeAotExecutables[0].FullName)'." -ForegroundColor Cyan
+            & $nativeAotExecutables[0].FullName @nativeAotRunArgs @extraArgs
+            if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+        }
     }
-
-    foreach ($framework in @('net9.0', 'net10.0')) {
-        $nativeAotExecutables = @(
-            Get-ChildItem -Path (Join-Path $tunitOutputRoot "$framework/*/publish/$testExecutableName") -File -ErrorAction SilentlyContinue
-        )
-        if ($nativeAotExecutables.Count -eq 0) {
-            Write-Warning "NativeAOT TUnit test executable for $framework was not found and will be skipped."
-            continue
-        }
-
-        if ($nativeAotExecutables.Count -gt 1) {
-            Write-Error "Expected at most one NativeAOT TUnit test executable for $framework, but found $($nativeAotExecutables.Count)."
-            $failedTests += 1
-            continue
-        }
-
-        $nativeAotRunArgs = @($nativeAotArgs) + @('--report-trx-filename', "Nerdbank.MessagePack.TUnit_${framework}_NativeAOT_{arch}.trx")
-        if (-not $NoCoverage) {
-            $nativeAotRunArgs += @('--coverage-output', "Nerdbank.MessagePack.TUnit_${framework}_NativeAOT.cobertura.xml")
-        }
-
-        Write-Host "Running NativeAOT TUnit tests for $framework from '$($nativeAotExecutables[0].FullName)'." -ForegroundColor Cyan
-        & $nativeAotExecutables[0].FullName @nativeAotRunArgs @extraArgs
-        if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
-    }
-
     $trxFiles = Get-ChildItem -Recurse -Path $testLogs\*.trx
 } else {
     $testDiagLog = Join-Path $ArtifactStagingFolder (Join-Path test_logs diag.log)
