@@ -13,7 +13,7 @@ namespace Nerdbank.MessagePack;
 public partial record MessagePackSerializer
 {
 	private static readonly StreamPipeWriterOptions PipeWriterOptions = new(MemoryPool<byte>.Shared, leaveOpen: true);
-	private static readonly StreamPipeReaderOptions PipeReaderOptions = new(MemoryPool<byte>.Shared, leaveOpen: true);
+	private static readonly StreamPipeReaderOptions PipeReaderOptions = new(MemoryPool<byte>.Shared, bufferSize: 64 * 1024, leaveOpen: true);
 
 	/// <summary>
 	/// A thread-local, recyclable array that may be used for short bursts of code.
