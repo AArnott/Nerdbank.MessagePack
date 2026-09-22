@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.MessagePackConve
 
 public class MessagePackConverterAttributeAnalyzerTests
 {
-	[Fact]
+	[Test]
 	public async Task NoIssues()
 	{
 		string source = /* lang=c#-test */ """
@@ -33,7 +33,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_OpenGeneric()
 	{
 		string source = /* lang=c#-test */ """
@@ -67,7 +67,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MissingPublicDefaultCtor()
 	{
 		string source = /* lang=c#-test */ """
@@ -96,7 +96,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TypeDoesNotDeriveFromConverter()
 	{
 		string source = /* lang=c#-test */ """
@@ -124,7 +124,7 @@ public class MessagePackConverterAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TypeDoesNotDeriveFromConverterOfMatchingType()
 	{
 		string source = /* lang=c#-test */ """

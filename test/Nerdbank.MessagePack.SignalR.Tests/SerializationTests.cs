@@ -13,7 +13,7 @@ public partial class SerializationTests
 {
 	protected MessagePackSerializer Serializer { get; } = new();
 
-	[Fact]
+	[Test]
 	public void PingMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -28,7 +28,7 @@ public partial class SerializationTests
 		Assert.IsType<PingMessage>(message);
 	}
 
-	[Fact]
+	[Test]
 	public void CloseMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -45,7 +45,7 @@ public partial class SerializationTests
 		Assert.True(close.AllowReconnect);
 	}
 
-	[Fact]
+	[Test]
 	public void InvocationMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -74,7 +74,7 @@ public partial class SerializationTests
 		Assert.Equal(42, invocation.Arguments[1]);
 	}
 
-	[Fact]
+	[Test]
 	public void StreamInvocationMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -103,7 +103,7 @@ public partial class SerializationTests
 		Assert.Equal(123, streamInvocation.Arguments[1]);
 	}
 
-	[Fact]
+	[Test]
 	public void StreamItemMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -129,8 +129,8 @@ public partial class SerializationTests
 		Assert.Equal("stream item data", streamItem.Item);
 	}
 
-	[Fact]
-	[Trait("CWE", "682")]
+	[Test]
+	[Category("CWE:682")]
 	public void StreamItemMessage_WithExtraField_SkipsRemainingPayload()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -162,7 +162,7 @@ public partial class SerializationTests
 		Assert.Equal("stream item data", streamItem.Item);
 	}
 
-	[Fact]
+	[Test]
 	public void StreamItemMessage_MissingItem_ThrowsInvalidData()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -180,7 +180,7 @@ public partial class SerializationTests
 		Assert.Throws<InvalidDataException>(() => protocol.TryParseMessage(ref serializedSequence, new MockInvocationBinder(), out _));
 	}
 
-	[Fact]
+	[Test]
 	public void CompletionMessage_WithResult_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -208,7 +208,7 @@ public partial class SerializationTests
 		Assert.Null(completion.Error);
 	}
 
-	[Fact]
+	[Test]
 	public void CompletionMessage_WithError_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -230,7 +230,7 @@ public partial class SerializationTests
 		Assert.Equal("Something went wrong", completion.Error);
 	}
 
-	[Fact]
+	[Test]
 	public void CompletionMessage_Empty_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -252,7 +252,7 @@ public partial class SerializationTests
 		Assert.Null(completion.Error);
 	}
 
-	[Fact]
+	[Test]
 	public void CancelInvocationMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -271,8 +271,8 @@ public partial class SerializationTests
 		Assert.Equal("201", cancelInvocation.InvocationId);
 	}
 
-	[Fact]
-	[Trait("CWE", "1188")]
+	[Test]
+	[Category("CWE:1188")]
 	public void CancelInvocationMessage_WithExtraNestedField_SkipsRemainingPayload()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -296,7 +296,7 @@ public partial class SerializationTests
 		Assert.Equal("201", cancelInvocation.InvocationId);
 	}
 
-	[Fact]
+	[Test]
 	public void AckMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -315,7 +315,7 @@ public partial class SerializationTests
 		Assert.Equal(42, ack.SequenceId);
 	}
 
-	[Fact]
+	[Test]
 	public void SequenceMessage_Serialization()
 	{
 		IHubProtocol protocol = this.CreateProtocol();
@@ -337,7 +337,7 @@ public partial class SerializationTests
 	private void LogMsgPack(ReadOnlySequence<byte> payload)
 	{
 		Assumes.True(BinaryMessageFormatter.TryParseMessage(ref payload, out ReadOnlySequence<byte> msgpack));
-		TestContext.Current.TestOutputHelper?.WriteLine(this.Serializer.ConvertToJson(msgpack));
+		Console.WriteLine(this.Serializer.ConvertToJson(msgpack));
 	}
 
 	private ReadOnlySequence<byte> FrameHubMessage(Sequence<byte> payload)

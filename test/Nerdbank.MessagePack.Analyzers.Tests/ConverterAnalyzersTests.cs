@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.ConverterAnalyze
 
 public class ConverterAnalyzersTests
 {
-	[Fact]
+	[Test]
 	public async Task NoIssues()
 	{
 		string source = /* lang=c#-test */ """
@@ -25,7 +25,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_MultipleStructuresWithArrayHeader()
 	{
 		string source = /* lang=c#-test */ """
@@ -73,7 +73,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_MultipleStructuresWithArrayHeaderUInt32()
 	{
 		string source = /* lang=c#-test */ """
@@ -121,7 +121,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_MultipleStructuresWithMapHeader()
 	{
 		string source = /* lang=c#-test */ """
@@ -175,7 +175,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_MultipleStructuresWithMapHeaderUInt32()
 	{
 		string source = /* lang=c#-test */ """
@@ -229,7 +229,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_DeferToOtherConverter()
 	{
 		string source = /* lang=c#-test */ """
@@ -295,7 +295,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_DeferToOtherConverter_NonGeneric()
 	{
 		string source = /* lang=c#-test */ """
@@ -353,7 +353,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_StructureIsReadIntoReturnValueViaConstructor()
 	{
 		string source = /* lang=c#-test */ """
@@ -374,7 +374,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_StructureIsReadDirectlyIntoReturnValue()
 	{
 		string source = /* lang=c#-test */ """
@@ -395,7 +395,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_StructureIsReadWithinConditionalExpression()
 	{
 		string source = /* lang=c#-test */ """
@@ -416,7 +416,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_WriterUsesGetSpanAdvance()
 	{
 		string source = /* lang=c#-test */ """
@@ -442,7 +442,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_SkipRead()
 	{
 		string source = /* lang=c#-test */ """
@@ -467,7 +467,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_ReadHasAttribute()
 	{
 		string source = /* lang=c#-test */ """
@@ -495,7 +495,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_TryReadStringSpan()
 	{
 		string source = /* lang=c#-test */ """
@@ -540,7 +540,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_GetJsonSchema_NotOverriddenInAbstractClass()
 	{
 		string source = /* lang=c#-test */ """
@@ -559,7 +559,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_GetJsonSchema_OverrideInBaseClass()
 	{
 		string source = /* lang=c#-test */ """
@@ -583,7 +583,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreatesNewSerializer()
 	{
 		string source = /* lang=c#-test */ """
@@ -622,7 +622,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MultipleStructures()
 	{
 		string source = /* lang=c#-test */ """
@@ -653,7 +653,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ZeroStructures()
 	{
 		string source = /* lang=c#-test */ """
@@ -688,7 +688,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ConvertReadsStringInBinaryExpression()
 	{
 		string source = /* lang=c#-test */ """
@@ -709,7 +709,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ConvertReadsStringOnBothSidesOfBinaryExpression()
 	{
 		string source = /* lang=c#-test */ """
@@ -730,7 +730,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ShouldOverrideGetJsonSchema()
 	{
 		string source = /* lang=c#-test */ """
@@ -749,7 +749,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AsyncConverter_ShouldOverridePreferAsyncSerialization()
 	{
 		string source = /* lang=c#-test */ """
@@ -776,7 +776,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AsyncConverter_ReturnsReaderWriter()
 	{
 		string source = /* lang=c#-test */ """
@@ -832,7 +832,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AsyncConverter_UsesReaderWriterAfterReturn()
 	{
 		string source = /* lang=c#-test */ """
@@ -888,7 +888,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AsyncConverter_DoesNotReturnReaderWriter()
 	{
 		string source = /* lang=c#-test */ """
@@ -940,7 +940,7 @@ public class ConverterAnalyzersTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AsyncConverter_UsesAsyncIOWhileRentalIsCurrent()
 	{
 		string source = /* lang=c#-test */ """

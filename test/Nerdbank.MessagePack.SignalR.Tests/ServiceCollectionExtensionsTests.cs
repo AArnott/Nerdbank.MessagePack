@@ -10,7 +10,7 @@ namespace Nerdbank.MessagePack.SignalR.Tests;
 
 public partial class ServiceCollectionExtensionsTests
 {
-	[Fact]
+	[Test]
 	public void AddMessagePackProtocol_RegistersProtocol()
 	{
 		MockSignalRBuilder builder = new();
@@ -23,7 +23,7 @@ public partial class ServiceCollectionExtensionsTests
 		Assert.Contains(protocols, p => p.Name == "messagepack");
 	}
 
-	[Fact]
+	[Test]
 	public void AddMessagePackProtocol_WithSerializer_RegistersProtocol()
 	{
 		MockSignalRBuilder builder = new();

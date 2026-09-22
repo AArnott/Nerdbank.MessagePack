@@ -14,7 +14,7 @@ using Xunit;
 /// </summary>
 public partial class SimpleValidationTest
 {
-	[Fact]
+	[Test]
 	public void BasicInstantiation_Works()
 	{
 		IHubProtocol protocol = CreateProtocol();
@@ -24,7 +24,7 @@ public partial class SimpleValidationTest
 		Assert.Equal(TransferFormat.Binary, protocol.TransferFormat);
 	}
 
-	[Fact]
+	[Test]
 	public void ServiceRegistration_Works()
 	{
 		MockSignalRBuilder builder = new();

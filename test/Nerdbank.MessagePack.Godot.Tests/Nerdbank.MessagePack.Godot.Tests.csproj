@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\src\Nerdbank.MessagePack.Godot\Nerdbank.MessagePack.Godot.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="TUnit.Engine" />
+    <PackageReference Include="xunit.v3.assert" />
   </ItemGroup>
 </Project>

@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.UnusedDataPacket
 
 public class UnusedDataPacketAnalyzerTests
 {
-	[Fact]
+	[Test]
 	public async Task NoDiagnostics()
 	{
 		string source = /* lang=c#-test */ """
@@ -27,7 +27,7 @@ public class UnusedDataPacketAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ShouldHavePropertyShape()
 	{
 		string source = /* lang=c#-test */ """
@@ -54,7 +54,7 @@ public class UnusedDataPacketAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ShouldBePrivate()
 	{
 		string source = /* lang=c#-test */ """
@@ -75,7 +75,7 @@ public class UnusedDataPacketAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ShouldNotHaveKeyAttribute()
 	{
 		string source = /* lang=c#-test */ """

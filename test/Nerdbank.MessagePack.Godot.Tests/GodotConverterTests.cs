@@ -11,7 +11,7 @@ public partial class GodotConverterTests
 {
 	private static readonly MessagePackSerializer Serializer = new MessagePackSerializer().WithGodotConverters();
 
-	[Fact]
+	[Test]
 	public void ValueTypes_RoundTrip()
 	{
 		Assert.Equal(new Color(1, 2, 3, 4), RoundTrip(new Color(1, 2, 3, 4)));
@@ -36,28 +36,28 @@ public partial class GodotConverterTests
 		Assert.Equal(projection, RoundTrip(projection));
 	}
 
-	[Fact]
+	[Test]
 	public void Vector2_UsesMessagePackGodotWireFormat()
 	{
-		byte[] serialized = Serializer.Serialize<Vector2, GodotShapes>(new Vector2(1.5f, -2.5f), TestContext.Current.CancellationToken);
+		byte[] serialized = Serializer.Serialize<Vector2, GodotShapes>(new Vector2(1.5f, -2.5f), TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal([0x92, 0xca, 0x3f, 0xc0, 0x00, 0x00, 0xca, 0xc0, 0x20, 0x00, 0x00], serialized);
 	}
 
-	[Fact]
+	[Test]
 	public void Vector2I_UsesMessagePackGodotWireFormat()
 	{
-		byte[] serialized = Serializer.Serialize<Vector2I, GodotShapes>(new Vector2I(1, -2), TestContext.Current.CancellationToken);
+		byte[] serialized = Serializer.Serialize<Vector2I, GodotShapes>(new Vector2I(1, -2), TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal([0x92, 0x01, 0xfe], serialized);
 	}
 
-	[Fact]
+	[Test]
 	public void Transform3D_UsesMessagePackGodotWireFormat()
 	{
 		Transform3D value = new(
 			new Basis(new Vector3(1, 2, 3), new Vector3(4, 5, 6), new Vector3(7, 8, 9)),
 			new Vector3(10, 11, 12));
 
-		byte[] serialized = Serializer.Serialize<Transform3D, GodotShapes>(value, TestContext.Current.CancellationToken);
+		byte[] serialized = Serializer.Serialize<Transform3D, GodotShapes>(value, TestContext.Current!.Execution.CancellationToken);
 
 		Assert.Equal(
 		[
@@ -70,21 +70,21 @@ public partial class GodotConverterTests
 		serialized);
 	}
 
-	[Fact]
+	[Test]
 	public void Vector2_IgnoresAdditionalArrayElements()
 	{
-		Vector2 result = Serializer.Deserialize<Vector2, GodotShapes>(new byte[] { 0x93, 0xca, 0x3f, 0x80, 0x00, 0x00, 0xca, 0x40, 0x00, 0x00, 0x00, 42 }, TestContext.Current.CancellationToken);
+		Vector2 result = Serializer.Deserialize<Vector2, GodotShapes>(new byte[] { 0x93, 0xca, 0x3f, 0x80, 0x00, 0x00, 0xca, 0x40, 0x00, 0x00, 0x00, 42 }, TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal(new Vector2(1, 2), result);
 	}
 
-	[Fact]
+	[Test]
 	public void Vector2_RejectsMissingArrayElements()
 	{
 		Assert.Throws<MessagePackSerializationException>(
-			() => Serializer.Deserialize<Vector2, GodotShapes>(new byte[] { 0x91, 0xca, 0x3f, 0x80, 0x00, 0x00 }, TestContext.Current.CancellationToken));
+			() => Serializer.Deserialize<Vector2, GodotShapes>(new byte[] { 0x91, 0xca, 0x3f, 0x80, 0x00, 0x00 }, TestContext.Current!.Execution.CancellationToken));
 	}
 
-	[Fact]
+	[Test]
 	public void WithGodotConverters_IsIdempotent()
 	{
 		MessagePackSerializer serializer = new MessagePackSerializer().WithGodotConverters();
@@ -94,8 +94,8 @@ public partial class GodotConverterTests
 	private static T RoundTrip<T>(T value)
 	{
 		return Serializer.Deserialize<T, GodotShapes>(
-			Serializer.Serialize<T, GodotShapes>(value, TestContext.Current.CancellationToken),
-			TestContext.Current.CancellationToken)!;
+			Serializer.Serialize<T, GodotShapes>(value, TestContext.Current!.Execution.CancellationToken),
+			TestContext.Current!.Execution.CancellationToken)!;
 	}
 
 	[GenerateShapeFor<Aabb>]
