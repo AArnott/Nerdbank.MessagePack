@@ -26,4 +26,53 @@
   </ItemGroup>
 
   <Import Project="$(RepoRootPath)test/AnalyzerConsumer.targets" />
+
+  <!--
+    Microsoft.CodeCoverage.MSBuild instruments @(IlcCompileInput) and @(IlcReference) in place before
+    IlcCompile and restores them afterward. Most of those references are copies in this project's own
+    per-target-framework, per-RID output directory, but project references resolve to the referenced
+    project's output directory, which is shared. Nerdbank.MessagePack does not target net10.0, so the
+    net9.0 and net10.0 publishes of this project both rewrite the same Nerdbank.MessagePack.dll, which the
+    other NativeAOT projects and the pack targets are reading at the same time. That corrupts ILC input
+    (observed as BadImageFormatException and SIGBUS on macOS, and file locking errors on Windows) and can
+    leave an instrumented assembly in a packable location.
+    Compile against a private copy of those shared references so the originals are never mutated and the
+    AOT publishes can continue to build in parallel.
+
+    This is an elaborate workaround for what IMO is a bug, which I filed at:
+    https://dev.azure.com/devdiv/DevDiv/_workitems/edit/3067881
+  -->
+  <Target Name="PrivatizeCoverageInstrumentationInputs"
+          AfterTargets="PrepareForILCompilation"
+          BeforeTargets="AotStaticMsCodeCoverageInstrumentation"
+          Condition="'$(AotMsCodeCoverageInstrumentation)' == 'true'">
+    <PropertyGroup>
+      <!-- The package defaults this to a path shared by all target frameworks of this project. -->
+      <MsCodeCoverageFileLogPath>$(IntermediateOutputPath)codecoverage.out</MsCodeCoverageFileLogPath>
+      <_CoverageInstrumentationDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'coverage-references'))</_CoverageInstrumentationDir>
+      <_DotNetHostDir>$([System.IO.Path]::GetDirectoryName('$(DOTNET_HOST_PATH)'))</_DotNetHostDir>
+      <_CoverageOutDirFullPath>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutDir)'))</_CoverageOutDirFullPath>
+    </PropertyGroup>
+
+    <!-- Select only the references that live outside this project's own private output directories.
+         %(Identity) must stay unquoted for MSBuild to accept it inside a property function. -->
+    <ItemGroup>
+      <_CoverageSharedReference Include="@(IlcReference)"
+                                Condition="'$([System.String]::Copy(%(Identity)).StartsWith($(NuGetPackageRoot)))' == 'false' and '$([System.String]::Copy(%(Identity)).StartsWith([System.IO.Path]::GetDirectoryName($(DOTNET_HOST_PATH))))' == 'false' and '$([System.String]::Copy(%(Identity)).StartsWith($(_CoverageOutDirFullPath)))' == 'false'" />
+      <_CoverageSharedReferenceSymbols Include="@(_CoverageSharedReference->'%(RootDir)%(Directory)%(Filename).pdb')"
+                                       Condition="Exists('%(RootDir)%(Directory)%(Filename).pdb')" />
+    </ItemGroup>
+
+    <!-- Never skip unchanged files: the copy must start from a pristine, uninstrumented assembly. -->
+    <Copy SourceFiles="@(_CoverageSharedReference);@(_CoverageSharedReferenceSymbols)"
+          DestinationFolder="$(_CoverageInstrumentationDir)"
+          SkipUnchangedFiles="false">
+      <Output TaskParameter="CopiedFiles" ItemName="_CoverageSharedReferenceCopy" />
+    </Copy>
+
+    <ItemGroup>
+      <IlcReference Remove="@(_CoverageSharedReference)" />
+      <IlcReference Include="@(_CoverageSharedReferenceCopy)" Condition="'%(Extension)' == '.dll'" />
+    </ItemGroup>
+  </Target>
 </Project>
