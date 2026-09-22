@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
 using DecodeResult = Nerdbank.MessagePack.MessagePackPrimitives.DecodeResult;
 
 namespace Nerdbank.MessagePack;
@@ -32,7 +33,19 @@ public ref partial struct MessagePackStreamingReader
 	private readonly GetMoreBytesAsync? getMoreBytesAsync;
 	private readonly object? getMoreBytesState;
 	private SequenceReader<byte> reader;
-	private uint expectedRemainingStructures;
+	private ulong expectedRemainingStructures;
+
+	/// <summary>
+	/// The minimum number of encoded child bytes promised by container headers that have already been
+	/// read but which have not yet been satisfied by actual consumption of the buffer.
+	/// </summary>
+	private long outstandingMinimumChildBytes;
+
+	/// <summary>
+	/// The value of <see cref="SequenceReader{T}.Consumed"/> when <see cref="outstandingMinimumChildBytes"/>
+	/// was last reconciled.
+	/// </summary>
+	private long childBytesAccountingCheckpoint;
 
 	/// <summary>
 	/// A value indicating whether no more bytes can be expected once we reach the end of the current buffer.
@@ -118,7 +131,7 @@ public ref partial struct MessagePackStreamingReader
 	/// <remarks>
 	/// At any point, skipping this number of structures should advance the reader to the end of the top-level structure it started at.
 	/// </remarks>
-	internal uint ExpectedRemainingStructures
+	internal ulong ExpectedRemainingStructures
 	{
 		get => this.expectedRemainingStructures;
 		set => this.expectedRemainingStructures = value;
@@ -451,51 +464,30 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <inheritdoc cref="TryReadArrayHeader(out uint)"/>
+	/// <exception cref="OverflowException">Thrown if the value exceeds <see cref="int.MaxValue"/>.</exception>
+	public DecodeResult TryReadArrayHeader(out int count)
+	{
+		DecodeResult result = this.TryReadArrayHeader(signedCount: true, out uint uintCount);
+		count = checked((int)uintCount);
+		return result;
+	}
+
 	/// <summary>
 	/// Reads an array header from the msgpack stream.
 	/// </summary>
 	/// <param name="count">The number of elements in the array, if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
-	public DecodeResult TryReadArrayHeader(out int count)
+	[OverloadResolutionPriority(10)]
+	public DecodeResult TryReadArrayHeader(out uint count) => this.TryReadArrayHeader(signedCount: false, out count);
+
+	/// <inheritdoc cref="TryReadMapHeader(out uint)"/>
+	/// <exception cref="OverflowException">Thrown if the value exceeds <see cref="int.MaxValue"/>.</exception>
+	public DecodeResult TryReadMapHeader(out int count)
 	{
-		DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(this.reader.UnreadSpan, out uint uintCount, out int tokenSize);
+		DecodeResult result = this.TryReadMapHeader(signedCount: true, out uint uintCount);
 		count = checked((int)uintCount);
-		if (readResult == DecodeResult.Success)
-		{
-			this.Advance(tokenSize, added: uintCount);
-			return DecodeResult.Success;
-		}
-
-		return SlowPath(ref this, readResult, ref count, ref tokenSize);
-
-		static DecodeResult SlowPath(ref MessagePackStreamingReader self, DecodeResult readResult, ref int count, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case DecodeResult.Success:
-					self.Advance(tokenSize, added: unchecked((uint)count));
-					return DecodeResult.Success;
-				case DecodeResult.TokenMismatch:
-					return DecodeResult.TokenMismatch;
-				case DecodeResult.EmptyBuffer:
-				case DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryReadArrayHeader(buffer, out uint uintCount, out tokenSize);
-						count = checked((int)uintCount);
-						return SlowPath(ref self, readResult, ref count, ref tokenSize);
-					}
-					else
-					{
-						count = 0;
-						return self.InsufficientBytes;
-					}
-
-				default:
-					return ThrowUnreachable();
-			}
-		}
+		return result;
 	}
 
 	/// <summary>
@@ -503,47 +495,8 @@ public ref partial struct MessagePackStreamingReader
 	/// </summary>
 	/// <param name="count">The number of elements in the map, if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
-	public DecodeResult TryReadMapHeader(out int count)
-	{
-		DecodeResult readResult = MessagePackPrimitives.TryReadMapHeader(this.reader.UnreadSpan, out uint uintCount, out int tokenSize);
-		count = checked((int)uintCount);
-		if (readResult == DecodeResult.Success)
-		{
-			this.Advance(tokenSize, added: uintCount * 2);
-			return DecodeResult.Success;
-		}
-
-		return SlowPath(ref this, readResult, ref count, ref tokenSize);
-
-		static DecodeResult SlowPath(ref MessagePackStreamingReader self, DecodeResult readResult, ref int count, ref int tokenSize)
-		{
-			switch (readResult)
-			{
-				case DecodeResult.Success:
-					self.Advance(tokenSize, added: unchecked((uint)count) * 2);
-					return DecodeResult.Success;
-				case DecodeResult.TokenMismatch:
-					return DecodeResult.TokenMismatch;
-				case DecodeResult.EmptyBuffer:
-				case DecodeResult.InsufficientBuffer:
-					Span<byte> buffer = stackalloc byte[tokenSize];
-					if (self.reader.TryCopyTo(buffer))
-					{
-						readResult = MessagePackPrimitives.TryReadMapHeader(buffer, out uint uintCount, out tokenSize);
-						count = checked((int)uintCount);
-						return SlowPath(ref self, readResult, ref count, ref tokenSize);
-					}
-					else
-					{
-						count = 0;
-						return self.InsufficientBytes;
-					}
-
-				default:
-					return ThrowUnreachable();
-			}
-		}
-	}
+	[OverloadResolutionPriority(10)]
+	public DecodeResult TryReadMapHeader(out uint count) => this.TryReadMapHeader(signedCount: false, out count);
 
 	/// <summary>
 	/// Reads a given number of bytes from the msgpack stream without decoding them.
@@ -780,31 +733,31 @@ public ref partial struct MessagePackStreamingReader
 	/// </remarks>
 	public DecodeResult TrySkip(ref SerializationContext context)
 	{
-		uint originalCount = Math.Max(1, context.MidSkipRemainingCount);
-		uint count = originalCount;
+		ulong originalCount = Math.Max(1, context.MidSkipRemainingCount);
+		ulong count = originalCount;
 
 		// Skip as many structures as we have already predicted we must skip to complete this or a previously suspended skip operation.
-		for (uint i = 0; i < count; i++)
+		for (ulong i = 0; i < count; i++)
 		{
-			switch (TrySkipOne(ref this, out uint skipMore))
+			switch (TrySkipOne(ref this, out ulong skipMore))
 			{
 				case DecodeResult.Success:
 					count += skipMore;
 					break;
 				case DecodeResult.InsufficientBuffer:
 					context.MidSkipRemainingCount = count - i;
-					this.DecrementRemainingStructures((int)originalCount - (int)context.MidSkipRemainingCount);
+					this.DecrementRemainingStructures((long)originalCount - (long)context.MidSkipRemainingCount);
 					return DecodeResult.InsufficientBuffer;
 				case DecodeResult other:
 					return other;
 			}
 		}
 
-		this.DecrementRemainingStructures((int)originalCount);
+		this.DecrementRemainingStructures((long)originalCount);
 		context.MidSkipRemainingCount = 0;
 		return DecodeResult.Success;
 
-		static DecodeResult TrySkipOne(ref MessagePackStreamingReader self, out uint skipMore)
+		static DecodeResult TrySkipOne(ref MessagePackStreamingReader self, out ulong skipMore)
 		{
 			skipMore = 0;
 			DecodeResult result = self.TryPeekNextCode(out byte code);
@@ -837,10 +790,10 @@ public ref partial struct MessagePackStreamingReader
 				case byte x when MessagePackCode.IsFixMap(x):
 				case MessagePackCode.Map16:
 				case MessagePackCode.Map32:
-					result = self.TryReadMapHeader(out int count);
+					result = self.TryReadMapHeader(out uint count);
 					if (result == DecodeResult.Success)
 					{
-						skipMore = (uint)count * 2;
+						skipMore = 2UL * count;
 					}
 
 					return result;
@@ -850,7 +803,7 @@ public ref partial struct MessagePackStreamingReader
 					result = self.TryReadArrayHeader(out count);
 					if (result == DecodeResult.Success)
 					{
-						skipMore = (uint)count;
+						skipMore = count;
 					}
 
 					return result;
@@ -1103,8 +1056,191 @@ public ref partial struct MessagePackStreamingReader
 		}
 	}
 
+	/// <summary>
+	/// Reserves a minimum number of bytes that the buffer must still contain in order to satisfy
+	/// the contents of a container whose header was just read.
+	/// </summary>
+	/// <param name="requiredMinimumBytes">
+	/// The fewest bytes the container's contents can possibly occupy.
+	/// This is one byte per element for an array, and two bytes per entry for a map.
+	/// </param>
+	/// <returns>
+	/// <see langword="true" /> if the buffer contains enough bytes to satisfy this container
+	/// in addition to every container that is already outstanding; otherwise <see langword="false" />.
+	/// </returns>
+	/// <remarks>
+	/// <para>
+	/// Checking each container header against the unread byte count in isolation is not sufficient,
+	/// because nested containers would each count the same trailing bytes as evidence that their
+	/// elements exist. A small payload could then declare many large nested containers, each of which
+	/// would be allocated before the payload was discovered to be malformed.
+	/// </para>
+	/// <para>
+	/// This method instead tracks the aggregate obligation created by all containers read so far.
+	/// The obligation is retired only as bytes are actually consumed from the buffer, so a given byte
+	/// can only ever serve as evidence for one container's contents.
+	/// </para>
+	/// <para>
+	/// This must be called <em>after</em> the container's header has been consumed, so that the header's
+	/// own bytes count toward retiring its parent's obligation rather than its own.
+	/// </para>
+	/// </remarks>
+	internal bool TryReserveMinimumChildBytes(long requiredMinimumBytes)
+	{
+		// Retire the portion of the outstanding obligation that has been satisfied by bytes
+		// consumed since the last time we reconciled.
+		long consumed = this.reader.Consumed;
+
+		// This accounting requires that consumption never move backwards across a checkpoint.
+		// Reads that fail partway through do restore an earlier SequenceReader, but the copy they
+		// restore was captured after the most recent checkpoint, so the invariant holds.
+		// Fail loudly rather than silently forgiving the outstanding obligation if that ever changes:
+		// discarding the obligation is precisely what reopens the allocation amplification hole
+		// that this accounting exists to close. See SequenceReader{T}.Rewind.
+		if (consumed < this.childBytesAccountingCheckpoint)
+		{
+			throw new UnreachableException("The reader moved backwards across a container header, which invalidates allocation accounting.");
+		}
+
+		long outstanding = this.outstandingMinimumChildBytes - (consumed - this.childBytesAccountingCheckpoint);
+		if (outstanding < 0)
+		{
+			outstanding = 0;
+		}
+
+		this.childBytesAccountingCheckpoint = consumed;
+		this.outstandingMinimumChildBytes = outstanding;
+
+		// The bytes already committed to outstanding containers are not available to this one.
+		long unread = this.reader.Remaining;
+		if (requiredMinimumBytes < 0 || outstanding > unread || requiredMinimumBytes > unread - outstanding)
+		{
+			return false;
+		}
+
+		// No overflow check is required here: the tests above establish that
+		// requiredMinimumBytes <= unread - outstanding, so the sum cannot exceed the buffer length.
+		this.outstandingMinimumChildBytes = outstanding + requiredMinimumBytes;
+		return true;
+	}
+
 	[DoesNotReturn]
 	private static DecodeResult ThrowUnreachable() => throw new UnreachableException();
+
+	[DoesNotReturn]
+	private static void ThrowUnsignedIntegerOverflow(uint value) => throw new OverflowException($"The value {value} exceeds the allowable maximum of {int.MaxValue}.");
+
+	/// <summary>
+	/// Reads a map header from the msgpack stream.
+	/// </summary>
+	/// <param name="signedCount"><see langword="true" /> if the caller will interpret the count as a signed integer.</param>
+	/// <param name="count">The number of elements in the map, if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
+	private DecodeResult TryReadMapHeader(bool signedCount, out uint count)
+	{
+		DecodeResult readResult = MessagePackPrimitives.TryReadMapHeader(this.reader.UnreadSpan, out count, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			if (signedCount && count > int.MaxValue)
+			{
+				ThrowUnsignedIntegerOverflow(count);
+			}
+
+			this.Advance(tokenSize, added: 2UL * count);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref this, readResult, signedCount, ref count, ref tokenSize);
+
+		static DecodeResult SlowPath(ref MessagePackStreamingReader self, DecodeResult readResult, bool signedCount, ref uint count, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					if (signedCount && count > int.MaxValue)
+					{
+						ThrowUnsignedIntegerOverflow(count);
+					}
+
+					self.Advance(tokenSize, added: 2UL * count);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (self.reader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryReadMapHeader(buffer, out count, out tokenSize);
+						return SlowPath(ref self, readResult, signedCount, ref count, ref tokenSize);
+					}
+					else
+					{
+						count = 0;
+						return self.InsufficientBytes;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
+
+	/// <summary>
+	/// Reads an array header from the msgpack stream.
+	/// </summary>
+	/// <param name="signedCount"><see langword="true" /> if the caller will interpret the count as a signed integer.</param>
+	/// <param name="count">The number of elements in the array, if the read was successful.</param>
+	/// <returns>The success or error code.</returns>
+	private DecodeResult TryReadArrayHeader(bool signedCount, out uint count)
+	{
+		DecodeResult readResult = MessagePackPrimitives.TryReadArrayHeader(this.reader.UnreadSpan, out count, out int tokenSize);
+		if (readResult == DecodeResult.Success)
+		{
+			if (signedCount && count > int.MaxValue)
+			{
+				ThrowUnsignedIntegerOverflow(count);
+			}
+
+			this.Advance(tokenSize, added: count);
+			return DecodeResult.Success;
+		}
+
+		return SlowPath(ref this, readResult, signedCount, ref count, ref tokenSize);
+
+		static DecodeResult SlowPath(ref MessagePackStreamingReader self, DecodeResult readResult, bool signedCount, ref uint count, ref int tokenSize)
+		{
+			switch (readResult)
+			{
+				case DecodeResult.Success:
+					if (signedCount && count > int.MaxValue)
+					{
+						ThrowUnsignedIntegerOverflow(count);
+					}
+
+					self.Advance(tokenSize, added: count);
+					return DecodeResult.Success;
+				case DecodeResult.TokenMismatch:
+					return DecodeResult.TokenMismatch;
+				case DecodeResult.EmptyBuffer:
+				case DecodeResult.InsufficientBuffer:
+					Span<byte> buffer = stackalloc byte[tokenSize];
+					if (self.reader.TryCopyTo(buffer))
+					{
+						readResult = MessagePackPrimitives.TryReadArrayHeader(buffer, out count, out tokenSize);
+						return SlowPath(ref self, readResult, signedCount, ref count, ref tokenSize);
+					}
+					else
+					{
+						count = 0;
+						return self.InsufficientBytes;
+					}
+
+				default:
+					return ThrowUnreachable();
+			}
+		}
+	}
 
 	/// <summary>
 	/// Reads a string assuming that it is spread across multiple spans in the <see cref="ReadOnlySequence{T}"/>.
@@ -1146,8 +1282,10 @@ public ref partial struct MessagePackStreamingReader
 				}
 			}
 #endif
-			this.Advance(bytesRead);
+			this.Advance(bytesRead, consumed: 0);
 		}
+
+		this.Advance(0);
 
 		value = new string(charArray, 0, initializedChars);
 		ArrayPool<char>.Shared.Return(charArray);
@@ -1160,13 +1298,13 @@ public ref partial struct MessagePackStreamingReader
 	/// <param name="bytes">The number of bytes to advance.</param>
 	/// <param name="consumed">The number of msgpack structures that has been read. Typically 1, sometimes 0.</param>
 	/// <param name="added">The number of msgpack structures added to the expected count. Typically 0, but for array/map headers will be non-zero.</param>
-	private void Advance(long bytes, uint consumed = 1, uint added = 0)
+	private void Advance(long bytes, uint consumed = 1, ulong added = 0)
 	{
 		this.reader.Advance(bytes);
 
 		// Never let the expected remaining structures go negative.
 		// If we're reading simple top-level values, we start at 0 and should remain there.
-		uint expectedRemainingStructures = this.expectedRemainingStructures;
+		ulong expectedRemainingStructures = this.expectedRemainingStructures;
 		if (consumed > expectedRemainingStructures)
 		{
 			expectedRemainingStructures = 0;
@@ -1176,13 +1314,38 @@ public ref partial struct MessagePackStreamingReader
 			expectedRemainingStructures -= consumed;
 		}
 
-		this.expectedRemainingStructures = expectedRemainingStructures + added;
+		this.expectedRemainingStructures = checked(expectedRemainingStructures + added);
 	}
 
-	private void DecrementRemainingStructures(int count)
+	/// <summary>
+	/// Decrements the expected remaining structures by a given number.
+	/// </summary>
+	/// <param name="count">Any value to decrement by. Even negative numbers (to increment) are allowed.</param>
+	/// <remarks>
+	/// The <see cref="expectedRemainingStructures"/> field will never go below zero or be allowed to overflow, even if <paramref name="count"/> is larger than the current value.
+	/// In such a case, the field will be set to zero.
+	/// </remarks>
+	private void DecrementRemainingStructures(long count)
 	{
-		uint expectedRemainingStructures = this.expectedRemainingStructures;
-		this.expectedRemainingStructures = checked((uint)(expectedRemainingStructures > count ? expectedRemainingStructures - count : 0));
+		if (count < 0)
+		{
+			// Avoid -count overflow for long.MinValue.
+			ulong add = (ulong)(-(count + 1)) + 1;
+			this.expectedRemainingStructures = checked(this.expectedRemainingStructures + add);
+		}
+		else
+		{
+			// count >= 0
+			ulong countUL = (ulong)count;
+			if (this.expectedRemainingStructures > countUL)
+			{
+				this.expectedRemainingStructures -= countUL;
+			}
+			else
+			{
+				this.expectedRemainingStructures = 0;
+			}
+		}
 	}
 
 	/// <summary>

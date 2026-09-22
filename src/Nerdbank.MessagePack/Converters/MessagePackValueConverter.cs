@@ -33,9 +33,10 @@ internal class MessagePackValueConverter : MessagePackConverter<MessagePackValue
 			case MessagePackType.Array:
 				context.DepthStep();
 				int length = reader.ReadArrayHeader();
-				MessagePackValue[] array = new MessagePackValue[length];
+				MessagePackValue[] array = [];
 				for (int i = 0; i < length; i++)
 				{
+					Grow(ref array, i, length, allowSlack: false, context);
 					array[i] = this.Read(ref reader, context);
 				}
 
@@ -43,7 +44,7 @@ internal class MessagePackValueConverter : MessagePackConverter<MessagePackValue
 			case MessagePackType.Map:
 				context.DepthStep();
 				int count = reader.ReadMapHeader();
-				Dictionary<MessagePackValue, MessagePackValue> dict = new(count);
+				Dictionary<MessagePackValue, MessagePackValue> dict = new(GetCollectionInitialCapacity(count, context));
 				for (int i = 0; i < count; i++)
 				{
 					MessagePackValue key = this.Read(ref reader, context);

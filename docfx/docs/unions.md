@@ -133,14 +133,15 @@ This simpler serialized form comes at the cost of maintaining a list of attribut
 
 ## Unknown derived types
 
-When a derived type is not listed on its base union type, its nearest listed base type is recognized instead.
+When serializing a derived type that is not listed on its base union type, the nearest listed base type is selected as its union case instead.
 For example, consider our flattened `Animal` class definition given earlier, where `Horse` and its two derived types are documented via attributes on the `Animal` class.
 Now suppose we declare a new `Horse`-derived type called `Arabian`, but we omit adding an attribute for that derived type on `Animal`.
 When an `Arabian` object is seen in the `Animals` collection, it qualifies both as an `Animal` (base type) and as a `Horse` (the known types by the attributes).
 Since `Horse` is the more derived type, an `Arabian` will be serialized as a `Horse`.
-When deserialized, this object will be rehydrated as a `Horse` rather than as its more specific `Arabian` type.
+The serialized discriminator identifies `Horse`, so deserialization creates a `Horse` rather than the more specific `Arabian` type.
+Deserialization cannot infer an unregistered runtime type from this payload.
 
-If a `Cat` type is declared that derives directly from `Animal`, it will serialize as an `Animal` and deserialize into an `Animal` object until the `Cat` derived type is added to the attribte list on `Animal`.
+If a `Cat` type is declared that derives directly from `Animal`, it will serialize as an `Animal` and deserialize into an `Animal` object until the `Cat` derived type is added to the attribute list on `Animal`.
 
 ## Union case identifiers
 
@@ -170,13 +171,56 @@ Mixing identifier types for a given base type is allowed, as shown here:
 
 Note that while inferrence is the simplest syntax, it results in the serialized schema including the name of the type, which can break the schema if the type is renamed.
 
+### Unrecognized identifiers
+
+By default, an unrecognized union discriminator causes a <xref:Nerdbank.MessagePack.MessagePackSerializationException> during deserialization.
+
+You can opt in to preserving an unrecognized union case when the union base type is concrete and declares a readable and writable <xref:Nerdbank.MessagePack.UnusedDataPacket> member.
+In that case, the payload is deserialized as the base type.
+The raw discriminator and properties that are not known on the base type are retained in the <xref:Nerdbank.MessagePack.UnusedDataPacket> so that reserializing the object writes them back out.
+This allows an older version to round-trip a newer union case without knowing or instantiating its derived CLR type.
+When a newer version that recognizes the discriminator deserializes the reserialized data, it can create the derived type normally.
+
+Note that a missing derived type *might* have had special behaviors even relating to properties declared on the base type.
+For example, if the derived type had business rules that forbade base property Foo from being set to `true` while derived property Bar was set to `true`, those rules would not be enforced when deserializing as the base type.
+This potentially allows the business rules to be violated when the older process changes the base property to `true` while the derived property remains `true`.
+As always, when deserializing data from an untrusted source, exercise caution and validate the data appropriately.
+
+This preserves the discriminator and unrecognized properties, but is not a byte-for-byte guarantee: properties known to the base type are reserialized using the local serializer configuration.
+For more information about <xref:Nerdbank.MessagePack.UnusedDataPacket>, see [customizing serialization](customizing-serialization.md).
+
+## Union serialization format
+
+By default, unions are serialized as 2-element arrays, where the first element is the type identifier (discriminator) and the second element is the object data:
+
+```json
+["TypeName", {"property": "value"}]
+```
+
+For interoperability with other MessagePack libraries that use different union conventions, you can configure the serializer to use an object-based format instead:
+
+[!code-csharp[](../../samples/cs/Unions.cs#UseDiscriminatorObjects)]
+
+With this setting enabled, unions are serialized as objects with a single property, where the property name is the type identifier:
+
+```json
+{"TypeName": {"property": "value"}}
+```
+
+Both formats support string and integer discriminators. The setting affects both serialization and deserialization, so it must be consistently applied across all systems that communicate using the same MessagePack protocol.
+
 ## Generic derived types
 
-<xref:PolyType.DerivedTypeShapeAttribute> may reference generic derived types, but they must be *closed* generic types (i.e. all the generic type arguments must be specified).
-You may close the generic type several times, but each one needs a unique type identifier so the inferred type name will not work.
-You will have to explicitly specify them.
+<xref:PolyType.DerivedTypeShapeAttribute> may reference closed generic types, with all type arguments specified.
+Each union case must have a unique identifier, which can be assigned explicitly:
 
 [!code-csharp[](../../samples/cs/Unions.cs#ClosedGenericSubTypes)]
+
+Open generic types are also supported with PolyType 1.4.1 or later, provided their type arguments can be inferred from the base type:
+
+[!code-csharp[](../../samples/cs/Unions.cs#OpenGenericSubTypes)]
+
+For `Base<int>`, the registered union case resolves to `Derived<int>`.
 
 ## Runtime derived type registration
 

@@ -8,7 +8,7 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <typeparam name="T">The type of object to pool.</typeparam>
 internal static class ReusableObjectPool<T>
-	where T : IPoolableObject, new()
+	where T : class, IPoolableObject, new()
 {
 	/// <summary>
 	/// A pool of objects that can be reused to reduce allocations.
@@ -35,8 +35,13 @@ internal static class ReusableObjectPool<T>
 	/// Clears an object's state and returns it to the pool for reuse.
 	/// </summary>
 	/// <param name="item">The object to disown.</param>
-	internal static void Return(T item)
+	internal static void Return(T? item)
 	{
+		if (item is null)
+		{
+			return;
+		}
+
 		item.Recycle();
 		item.Owner = null;
 		Pool.Value!.Push(item);

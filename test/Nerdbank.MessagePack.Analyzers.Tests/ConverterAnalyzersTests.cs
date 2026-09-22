@@ -74,6 +74,54 @@ public class ConverterAnalyzersTests
 	}
 
 	[Fact]
+	public async Task NoIssues_MultipleStructuresWithArrayHeaderUInt32()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public class MyType { }
+
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				{
+					if (reader.TryReadNil())
+					{
+						return null;
+					}
+
+					uint count = reader.ReadArrayHeaderUInt32();
+					for (uint i = 0; i < count; i++)
+					{
+						reader.Skip(context);
+					}
+
+					return new MyType();
+				}
+
+				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
+				{
+					if (value is null)
+					{
+						writer.WriteNil();
+						return;
+					}
+
+					writer.WriteArrayHeader(3u);
+					writer.Write(1);
+					writer.Write(2);
+					writer.Write(3);
+				}
+
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
 	public async Task NoIssues_MultipleStructuresWithMapHeader()
 	{
 		string source = /* lang=c#-test */ """
@@ -112,6 +160,60 @@ public class ConverterAnalyzersTests
 					}
 
 					writer.WriteMapHeader(3);
+					writer.Write("p1");
+					writer.Write(1);
+					writer.Write("p2");
+					writer.Write(2);
+					writer.Write("p3");
+					writer.Write(3);
+				}
+
+				public override System.Text.Json.Nodes.JsonObject GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => throw new System.NotImplementedException();
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Fact]
+	public async Task NoIssues_MultipleStructuresWithMapHeaderUInt32()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public class MyType { }
+
+			public class MyTypeConverter : MessagePackConverter<MyType>
+			{
+				public override MyType Read(ref MessagePackReader reader, SerializationContext context)
+				{
+					if (!reader.TryReadNil())
+					{
+						uint count = reader.ReadMapHeaderUInt32();
+						for (uint i = 0; i < count; i++)
+						{
+							reader.Skip(context);
+							reader.Skip(context);
+						}
+
+						return new MyType();
+					}
+					else
+					{
+						return null;
+					}
+				}
+
+				public override void Write(ref MessagePackWriter writer, in MyType value, SerializationContext context)
+				{
+					if (value is null)
+					{
+						writer.WriteNil();
+						return;
+					}
+
+					writer.WriteMapHeader(3u);
 					writer.Write("p1");
 					writer.Write(1);
 					writer.Write("p2");

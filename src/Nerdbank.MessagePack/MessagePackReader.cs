@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // This file was originally derived from https://github.com/MessagePack-CSharp/MessagePack-CSharp/
@@ -91,7 +91,7 @@ public ref partial struct MessagePackReader
 	}
 
 	/// <inheritdoc cref="MessagePackStreamingReader.ExpectedRemainingStructures"/>
-	internal uint ExpectedRemainingStructures
+	internal ulong ExpectedRemainingStructures
 	{
 		get => this.streamingReader.ExpectedRemainingStructures;
 		set => this.streamingReader.ExpectedRemainingStructures = value;
@@ -205,6 +205,20 @@ public ref partial struct MessagePackReader
 		return (RawMessagePack)this.Sequence.Slice(initialPosition, this.Position);
 	}
 
+	/// <inheritdoc cref="ReadArrayHeaderUInt32"/>
+	/// <exception cref="OverflowException">Thrown if the value exceeds <see cref="int.MaxValue"/>.</exception>
+	public int ReadArrayHeader()
+	{
+		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(out int count));
+
+		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
+		// We allow for each element to be the minimal 1 byte in size, and require that the buffer still
+		// hold that many bytes beyond those already promised to containers we are nested within.
+		// Formatters that know each element is larger can optionally add a stronger check.
+		ThrowInsufficientBufferUnless(this.streamingReader.TryReserveMinimumChildBytes(count));
+		return count;
+	}
+
 	/// <summary>
 	/// Read an array header from
 	/// <see cref="MessagePackCode.Array16"/>,
@@ -217,28 +231,34 @@ public ref partial struct MessagePackReader
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an array header is encountered.</exception>
-	public int ReadArrayHeader()
+	/// <remarks>
+	/// <para>
+	/// The remaining-bytes check considers <em>all</em> containers whose headers have been read but whose
+	/// contents have not yet been consumed, so the same trailing bytes cannot serve as evidence that the
+	/// elements of several nested containers exist. This bounds the memory a malformed payload can cause
+	/// to be allocated by the size of the payload itself.
+	/// </para>
+	/// <para>
+	/// For better security, implementations of <see cref="MessagePackConverter.ReadObject(ref MessagePackReader, SerializationContext)"/>
+	/// should consider capping initial memory allocation to <see cref="SecuritySettings.MaxCollectionPreallocation"/>,
+	/// allowing the memory to grow as data is actually encountered in the msgpack stream to avoid memory amplification vulnerabilities.
+	/// </para>
+	/// </remarks>
+	public uint ReadArrayHeaderUInt32()
 	{
-		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(out int count));
+		ThrowInsufficientBufferUnless(this.TryReadArrayHeader(out uint count));
 
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
-		// We allow for each primitive to be the minimal 1 byte in size.
+		// We allow for each element to be the minimal 1 byte in size, and require that the buffer still
+		// hold that many bytes beyond those already promised to containers we are nested within.
 		// Formatters that know each element is larger can optionally add a stronger check.
-		ThrowInsufficientBufferUnless(this.streamingReader.SequenceReader.Remaining >= count);
+		ThrowInsufficientBufferUnless(this.streamingReader.TryReserveMinimumChildBytes(count));
 
 		return count;
 	}
 
-	/// <summary>
-	/// Reads an array header from
-	/// <see cref="MessagePackCode.Array16"/>,
-	/// <see cref="MessagePackCode.Array32"/>, or
-	/// some built-in code between <see cref="MessagePackCode.MinFixArray"/> and <see cref="MessagePackCode.MaxFixArray"/>
-	/// if there is sufficient buffer to read it.
-	/// </summary>
-	/// <param name="count">Receives the number of elements in the array if the entire array header could be read.</param>
-	/// <returns><see langword="true"/> if there was sufficient buffer and an array header was found; <see langword="false"/> if the buffer incompletely describes an array header.</returns>
-	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an array header is encountered.</exception>
+	/// <inheritdoc cref="TryReadArrayHeader(out uint)"/>
+	/// <exception cref="OverflowException">Thrown if the value exceeds <see cref="int.MaxValue"/>.</exception>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool TryReadArrayHeader(out int count)
 	{
@@ -257,6 +277,53 @@ public ref partial struct MessagePackReader
 	}
 
 	/// <summary>
+	/// Reads an array header from
+	/// <see cref="MessagePackCode.Array16"/>,
+	/// <see cref="MessagePackCode.Array32"/>, or
+	/// some built-in code between <see cref="MessagePackCode.MinFixArray"/> and <see cref="MessagePackCode.MaxFixArray"/>
+	/// if there is sufficient buffer to read it.
+	/// </summary>
+	/// <param name="count">Receives the number of elements in the array if the entire array header could be read.</param>
+	/// <returns><see langword="true"/> if there was sufficient buffer and an array header was found; <see langword="false"/> if the buffer incompletely describes an array header.</returns>
+	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an array header is encountered.</exception>
+	/// <remarks>
+	/// Unlike <see cref="ReadArrayHeader()"/>, this method does <em>not</em> verify that the buffer could possibly
+	/// contain the declared number of elements. Callers must not allocate storage proportional to
+	/// <paramref name="count"/>, since a small payload can declare an arbitrarily large count.
+	/// </remarks>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	[OverloadResolutionPriority(10)]
+	public bool TryReadArrayHeader(out uint count)
+	{
+		switch (this.streamingReader.TryReadArrayHeader(out count))
+		{
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				return false;
+			default:
+				throw ThrowUnreachable();
+		}
+	}
+
+	/// <inheritdoc cref="ReadMapHeaderUInt32"/>
+	/// <exception cref="OverflowException">Thrown if the value exceeds <see cref="int.MaxValue"/>.</exception>
+	public int ReadMapHeader()
+	{
+		ThrowInsufficientBufferUnless(this.TryReadMapHeader(out int count));
+
+		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
+		// We allow for each primitive to be the minimal 1 byte in size, and we have a key=value map, so that's 2 bytes.
+		// The buffer must still hold that many bytes beyond those already promised to containers we are nested within.
+		// Formatters that know each element is larger can optionally add a stronger check.
+		ThrowInsufficientBufferUnless(this.streamingReader.TryReserveMinimumChildBytes((long)count * 2));
+		return count;
+	}
+
+	/// <summary>
 	/// Read a map header from
 	/// <see cref="MessagePackCode.Map16"/>,
 	/// <see cref="MessagePackCode.Map32"/>, or
@@ -268,16 +335,48 @@ public ref partial struct MessagePackReader
 	/// or if it is clear that there are insufficient bytes remaining after the header to include all the elements the header claims to be there.
 	/// </exception>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an map header is encountered.</exception>
-	public int ReadMapHeader()
+	/// <remarks>
+	/// <para>
+	/// The remaining-bytes check considers <em>all</em> containers whose headers have been read but whose
+	/// contents have not yet been consumed, so the same trailing bytes cannot serve as evidence that the
+	/// elements of several nested containers exist. This bounds the memory a malformed payload can cause
+	/// to be allocated by the size of the payload itself.
+	/// </para>
+	/// <para>
+	/// For better security, implementations of <see cref="MessagePackConverter.ReadObject(ref MessagePackReader, SerializationContext)"/>
+	/// should consider capping initial memory allocation to <see cref="SecuritySettings.MaxCollectionPreallocation"/>,
+	/// allowing the memory to grow as data is actually encountered in the msgpack stream to avoid memory amplification vulnerabilities.
+	/// </para>
+	/// </remarks>
+	public uint ReadMapHeaderUInt32()
 	{
-		ThrowInsufficientBufferUnless(this.TryReadMapHeader(out int count));
+		ThrowInsufficientBufferUnless(this.TryReadMapHeader(out uint count));
 
 		// Protect against corrupted or mischievous data that may lead to allocating way too much memory.
 		// We allow for each primitive to be the minimal 1 byte in size, and we have a key=value map, so that's 2 bytes.
+		// The buffer must still hold that many bytes beyond those already promised to containers we are nested within.
 		// Formatters that know each element is larger can optionally add a stronger check.
-		ThrowInsufficientBufferUnless(this.streamingReader.SequenceReader.Remaining >= count * 2);
+		ThrowInsufficientBufferUnless(this.streamingReader.TryReserveMinimumChildBytes(2L * count));
 
 		return count;
+	}
+
+	/// <inheritdoc cref="TryReadMapHeader(out uint)"/>
+	/// <exception cref="OverflowException">Thrown if the value exceeds <see cref="int.MaxValue"/>.</exception>
+	public bool TryReadMapHeader(out int count)
+	{
+		switch (this.streamingReader.TryReadMapHeader(out count))
+		{
+			case MessagePackPrimitives.DecodeResult.Success:
+				return true;
+			case MessagePackPrimitives.DecodeResult.TokenMismatch:
+				throw ThrowInvalidCode(this.NextCode);
+			case MessagePackPrimitives.DecodeResult.EmptyBuffer:
+			case MessagePackPrimitives.DecodeResult.InsufficientBuffer:
+				return false;
+			default:
+				throw ThrowUnreachable();
+		}
 	}
 
 	/// <summary>
@@ -290,7 +389,13 @@ public ref partial struct MessagePackReader
 	/// <param name="count">Receives the number of key=value pairs in the map if the entire map header can be read.</param>
 	/// <returns><see langword="true"/> if there was sufficient buffer and a map header was found; <see langword="false"/> if the buffer incompletely describes an map header.</returns>
 	/// <exception cref="MessagePackSerializationException">Thrown if a code other than an map header is encountered.</exception>
-	public bool TryReadMapHeader(out int count)
+	/// <remarks>
+	/// Unlike <see cref="ReadMapHeader()"/>, this method does <em>not</em> verify that the buffer could possibly
+	/// contain the declared number of entries. Callers must not allocate storage proportional to
+	/// <paramref name="count"/>, since a small payload can declare an arbitrarily large count.
+	/// </remarks>
+	[OverloadResolutionPriority(10)]
+	public bool TryReadMapHeader(out uint count)
 	{
 		switch (this.streamingReader.TryReadMapHeader(out count))
 		{
@@ -723,6 +828,36 @@ public ref partial struct MessagePackReader
 		{
 			Code = MessagePackSerializationException.ErrorCode.UnexpectedToken,
 		};
+	}
+
+	/// <inheritdoc cref="ReadArrayHeader()"/>
+	/// <param name="expected">The expected array length.</param>
+	/// <exception cref="MessagePackSerializationException">Thrown if the actual array length does not match the <paramref name="expected"/> value.</exception>
+	internal void ReadArrayHeader(uint expected)
+	{
+		uint count = this.ReadArrayHeaderUInt32();
+		if (count != expected)
+		{
+			Throw(expected, count);
+		}
+
+		[DoesNotReturn]
+		static void Throw(uint expected, uint actual) => throw new MessagePackSerializationException($"Expected array of length {expected}, but got {actual}.");
+	}
+
+	/// <inheritdoc cref="ReadMapHeader()"/>
+	/// <param name="expected">The expected number of elements in the map.</param>
+	/// <exception cref="MessagePackSerializationException">Thrown if the actual map size does not match the <paramref name="expected"/> value.</exception>
+	internal void ReadMapHeader(uint expected)
+	{
+		uint count = this.ReadMapHeaderUInt32();
+		if (count != expected)
+		{
+			Throw(expected, count);
+		}
+
+		[DoesNotReturn]
+		static void Throw(uint expected, uint actual) => throw new MessagePackSerializationException($"Expected map of length {expected}, but got {actual}.");
 	}
 
 	/// <summary>

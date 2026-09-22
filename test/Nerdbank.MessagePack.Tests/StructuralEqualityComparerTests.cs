@@ -69,4 +69,16 @@ public abstract partial class StructuralEqualityComparerTests
 	}
 
 	protected abstract IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape);
+
+	public class DefaultStructural : StructuralEqualityComparerTests
+	{
+		protected override IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape)
+			=> StructuralEqualityComparer.GetDefault(shape);
+	}
+
+	public class HashCollisionResistant : StructuralEqualityComparerTests
+	{
+		protected override IEqualityComparer<T> GetEqualityComparer<T>(ITypeShape<T> shape)
+			=> StructuralEqualityComparer.GetHashCollisionResistant(shape);
+	}
 }

@@ -16,6 +16,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="Newtonsoft.Json.Schema" />
     <PackageReference Include="PolyType.TestCases" />
     <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
@@ -33,6 +34,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
+    <Compile Include="..\Nerdbank.MessagePack.Tests\SequenceBuilder.cs" Link="SequenceBuilder.cs" />
+    <Compile Include="..\Nerdbank.MessagePack.Tests\PolyfillExtensions.cs" Link="PolyfillExtensions.cs" />
     <Compile Update="MessagePackReaderTests.ReadInt.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

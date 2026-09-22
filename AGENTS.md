@@ -2,6 +2,10 @@
 
 **ALWAYS follow these instructions first and only fallback to additional search and context gathering if the information here is incomplete or found to be in error.**
 
+* Review the `CONTRIBUTING.md` file for instructions to build and test the software.
+* Run the `.github/Prime-ForCopilot.ps1` script (once) before running any `dotnet` or `msbuild` commands.
+  If you see any build errors about not finding git objects or a shallow clone, it may be time to run this script again.
+
 ## Working Effectively
 
 ### Bootstrap and Build
@@ -19,11 +23,13 @@ export NBGV_GitEngine=Disabled
 **Build the repository** (takes 7-76 seconds depending on cache - do not cancel unless it exceeds 10-15 minutes, set timeout to 10-15 minutes):
 ```bash
 dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release
+```
 
 ### Testing
 **Run tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 5-10 minutes):
 ```bash
-dotnet test --no-build -c Release --filter "TestCategory!=FailsInCloudTest"
+dotnet test --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"
+```
 
 ### Code Quality
 **Verify code formatting** (takes ~71 seconds - NEVER CANCEL, set timeout to 90+ minutes):
@@ -55,6 +61,18 @@ dotnet run --no-build -c Release
 ```
 Should start web server without errors (web UI testing limited in this environment).
 
+## Performance optimization
+
+* Establish a BenchmarkDotNet baseline before changing a hot path. For primitive integer encoding and decoding, run:
+  ```bash
+  dotnet run --project test/Benchmarks/Benchmarks.csproj -c Release -f net10.0 -- --filter "*IntegerPrimitives*" --job short
+  ```
+* Keep benchmark input distributions explicit and reproducible. `Small`, `Mixed`, and `Large` integer datasets exercise distinct MessagePack encodings and branch-prediction behavior; do not replace them with a single representative input.
+* For branch-sensitive work, use sufficiently large randomized datasets so a branch predictor cannot learn a short repeating sequence. Preserve the fixed random seed unless intentionally changing the workload.
+* Review allocation, generated assembly, branch instructions, and branch mispredictions alongside elapsed time. Hardware counters require an elevated Windows process; an unavailable counter is not evidence of zero misses.
+* Benchmark changes measure behavior; they do not prove correctness. Verify all MessagePack encoding boundaries and error behavior with the relevant tests before accepting an optimization.
+* Prefer narrowly targeted candidates and retain a simple, verified baseline until benchmark results and generated assembly demonstrate a repeatable improvement for the intended distributions.
+
 ## Repository Structure
 
 ### Key Projects (src/)
@@ -84,7 +102,7 @@ Should start web server without errors (web UI testing limited in this environme
 
 * There should generally be one test project (under the `test` directory) per shipping project (under the `src` directory). Test projects are named after the project being tested with a `.Tests` suffix.
 * Tests use xunit v3 with Microsoft.Testing.Platform (MTP v2). Traditional VSTest `--filter` syntax does NOT work.
-* Some tests are known to be unstable. When running tests, you should skip the unstable ones by using `-- --filter-not-trait "FailsInCloudTest=true"`.
+* Some tests are known to be unstable. When running tests, you should skip the unstable ones by using `-- --filter-not-trait "TestCategory=FailsInCloudTest"`.
 
 ### Running Tests
 
@@ -120,7 +138,7 @@ dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests
 
 **Exclude tests with a specific trait** (skip unstable tests):
 ```bash
-dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release -- --filter-not-trait "FailsInCloudTest=true"
+dotnet test --project test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"
 ```
 
 **Run tests for a specific framework only**:
@@ -162,7 +180,7 @@ dotnet run --no-build -c Release --framework net9.0 -- --list-tests
 
 ### After Making Changes
 1. **Build**: `dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release` (NEVER CANCEL - 7-76s)
-2. **Test**: `dotnet test --no-build -c Release --filter "TestCategory!=FailsInCloudTest"` (25s)
+2. **Test**: `dotnet test --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"` (25s)
 3. **Format**: `dotnet format --verify-no-changes --no-restore` (NEVER CANCEL - 71s)
 4. **Validate**: Run AOT console sample for functionality verification
 
@@ -177,7 +195,7 @@ dotnet docfx
 ### Troubleshooting
 - **Build fails**: Ensure `NBGV_GitEngine=Disabled` is set
 - **Long restore times**: Use `./init.ps1` to bootstrap dependencies first
-- **Test instability**: Always use the `TestCategory!=FailsInCloudTest` filter
+- **Test instability**: Always use `-- --filter-not-trait "TestCategory=FailsInCloudTest"`
 - **Format failures**: Run `dotnet format` (without `--verify-no-changes`) to fix automatically
 
 ## CRITICAL Timing Expectations

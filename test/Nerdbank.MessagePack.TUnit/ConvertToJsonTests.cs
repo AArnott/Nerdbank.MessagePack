@@ -25,6 +25,34 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 	public void Sequence() => Assert.Equal("null", this.Serializer.ConvertToJson(new([0xc0])));
 
 	[Test]
+	public void StackGuard_Array()
+	{
+		byte[] payload = this.FormatNestedArrays(this.Serializer.StartingContext.MaxDepth + 1);
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.ConvertToJson(payload));
+		Console.WriteLine(ex.ToString());
+	}
+
+	[Test]
+	public void StackGuard_Array_Streaming()
+	{
+		byte[] payload = this.FormatNestedArrays(this.Serializer.StartingContext.MaxDepth + 1);
+		using StringWriter jsonWriter = new();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.ConvertPayloadToJson(payload, jsonWriter));
+		Console.WriteLine(ex.ToString());
+	}
+
+	[Test]
+	public void StackGuard_Array_WithinLimit()
+	{
+		int depth = this.Serializer.StartingContext.MaxDepth;
+		byte[] payload = this.FormatNestedArrays(depth);
+
+		Assert.Equal(new string('[', depth) + "null" + new string(']', depth), this.Serializer.ConvertToJson(payload));
+	}
+
+	[Test]
 	public void Guid_LittleEndian()
 	{
 		Guid guid = Guid.NewGuid();
@@ -238,6 +266,14 @@ public partial class ConvertToJsonTests : MessagePackSerializerTestBase
 		MessagePackReader reader = new(sequence);
 		this.Serializer.ConvertToJson(ref reader, jsonWriter, options);
 		return jsonWriter.ToString();
+	}
+
+	private byte[] FormatNestedArrays(int depth) => Enumerable.Repeat((byte)0x91, depth).Append((byte)0xc0).ToArray();
+
+	private void ConvertPayloadToJson(byte[] payload, TextWriter jsonWriter)
+	{
+		MessagePackReader reader = new(payload);
+		this.Serializer.ConvertToJson(ref reader, jsonWriter);
 	}
 
 	[GenerateShape]

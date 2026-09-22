@@ -24,12 +24,13 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 		context.DepthStep();
 		int count = reader.ReadArrayHeader();
-		TElement[] array = new TElement[count];
+		TElement[] array = [];
 		int i = 0;
 		try
 		{
 			for (; i < count; i++)
 			{
+				Grow(ref array, i, count, allowSlack: false, context);
 				array[i] = elementConverter.Read(ref reader, context)!;
 			}
 		}
@@ -142,10 +143,10 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			return null;
 		}
 
-		context.DepthStep();
-
 		if (elementConverter.PreferAsyncSerialization)
 		{
+			context.DepthStep();
+
 			int count;
 			while (streamingReader.TryReadArrayHeader(out count).NeedsMoreBytes())
 			{
@@ -153,43 +154,29 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 			}
 
 			reader.ReturnReader(ref streamingReader);
-			TElement[] array = new TElement[count];
+			TElement[] elements = [];
 			int i = 0;
 			try
 			{
 				for (; i < count; i++)
 				{
-					array[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
+					Grow(ref elements, i, count, allowSlack: false, context, countIsCorroborated: false);
+					elements[i] = (await elementConverter.ReadAsync(reader, context).ConfigureAwait(false))!;
 				}
+
+				return elements;
 			}
 			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
 			{
 				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
-
-			return array;
 		}
 		else
 		{
 			reader.ReturnReader(ref streamingReader);
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
-
-			int count = syncReader.ReadArrayHeader();
-			TElement[] array = new TElement[count];
-			int i = 0;
-			try
-			{
-				for (; i < count; i++)
-				{
-					array[i] = elementConverter.Read(ref syncReader, context)!;
-				}
-			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
-			{
-				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
-			}
-
+			TElement[] array = this.Read(ref syncReader, context)!;
 			reader.ReturnReader(ref syncReader);
 			return array;
 		}

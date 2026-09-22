@@ -169,6 +169,51 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void DecimalRejectsInvalidScale()
+	{
+		decimal invalidValue = DecimalFromRawBits([
+			0x001d0000, // scale 1d = 29, which exceeds the 28 maximum value for scale.
+			0x00000000,
+			0x00000000,
+			0x00000000,
+		]);
+
+		// We don't expect validation on serialization.
+		byte[] msgpack = this.Serializer.Serialize<decimal, Witness>(invalidValue, this.TimeoutToken);
+
+		// But upon deserialization, we should reject it.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() =>
+			this.Serializer.Deserialize<decimal, Witness>(msgpack, this.TimeoutToken));
+
+		Console.WriteLine(ex.ToString());
+		Assert.IsType<ArgumentOutOfRangeException>(ex.GetBaseException());
+	}
+
+	[Test]
+	[Arguments(0x10000000)]
+	[Arguments(0x01000000)]
+	[Arguments(0x00000001)]
+	public void DecimalRejectsInvalidFlags(int flags) // valid mask is 0x80FF0000
+	{
+		decimal originalValue = DecimalFromRawBits([
+			flags,
+			0x00000000,
+			0x00000001,
+			0x00000001,
+		]);
+
+		// We don't expect validation on serialization.
+		byte[] msgpack = this.Serializer.Serialize<decimal, Witness>(originalValue, this.TimeoutToken);
+
+		// But upon deserialization, we should reject it.
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() =>
+			this.Serializer.Deserialize<decimal, Witness>(msgpack, this.TimeoutToken));
+
+		Console.WriteLine(ex.ToString());
+		Assert.IsType<ArgumentOutOfRangeException>(ex.GetBaseException());
+	}
+
+	[Test]
 	public void BigInteger()
 	{
 		this.AssertRoundtrip(new HasBigInteger(1));
@@ -208,6 +253,25 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void BigIntegerDictionaryKey_LargeBin()
+	{
+		const int KeyByteCount = 2 * 1024 * 1024;
+
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(Enumerable.Repeat((byte)1, KeyByteCount).ToArray());
+		writer.Write(3);
+		writer.Flush();
+
+		Dictionary<BigInteger, int> result = this.Serializer.Deserialize<Dictionary<BigInteger, int>, Witness>(seq, this.TimeoutToken)!;
+
+		KeyValuePair<BigInteger, int> entry = Assert.Single(result);
+		Assert.Equal(KeyByteCount, entry.Key.ToByteArray().Length);
+		Assert.Equal(3, entry.Value);
+	}
+
+	[Test]
 	public void CultureInfo_Roundtrips()
 	{
 		Assert.Equal("fr-FR", this.Roundtrip<CultureInfo, Witness>(CultureInfo.GetCultureInfo("fr-FR"))?.Name);
@@ -240,6 +304,26 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<Encoding, Witness>(Encoding.GetEncoding("utf-8"), this.TimeoutToken);
 		MessagePackReader reader = new(msgpack);
 		Assert.Equal("utf-8", reader.ReadString());
+	}
+
+	[Test]
+	public void Guid()
+	{
+		// Test that Guid serialization works by default (using binary format)
+		Guid value = System.Guid.NewGuid();
+		Console.WriteLine($"Randomly generated guid: {value}");
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
+		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<HasGuid>()));
+	}
+
+	[Test, MatrixDataSource]
+	public void Guid_StringFormats(OptionalConverters.GuidStringFormat format)
+	{
+		this.Serializer = this.Serializer.WithGuidConverter(format);
+		Guid value = System.Guid.NewGuid();
+		Console.WriteLine($"Randomly generated guid: {value}");
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip(new HasGuid(value));
+		Assert.True(this.DataMatchesSchema(msgpack, Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<HasGuid>()));
 	}
 
 	[Test, MatrixDataSource]
@@ -363,6 +447,23 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void DateTime_BadHeaderLength()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.WriteMapHeader(1);
+		writer.Write(nameof(HasDateTime.Value));
+
+		// Allege that you're sending a very large DateTime extension that would blow the stack if allocated on it.
+		writer.Write(new ExtensionHeader(ReservedMessagePackExtensionTypeCode.DateTime, 0x800000));
+		writer.Flush();
+
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(
+			() => this.Serializer.Deserialize<HasDateTime>(seq, this.TimeoutToken));
+		Console.WriteLine(ex.Message);
+	}
+
+	[Test]
 	public void DateTimeOffset()
 	{
 		this.AssertRoundtrip(new HasDateTimeOffset(System.DateTimeOffset.Now));
@@ -389,7 +490,37 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	[Arguments(32)]
+	[Arguments(255)]
+	public void WriteStringHeaderWithOldSpec(int length)
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq) { OldSpec = true };
+		writer.WriteString(new byte[length]);
+		writer.Flush();
+
+		Assert.Equal(MessagePackCode.Str16, seq.AsReadOnlySequence.First.Span[0]);
+	}
+
+	[Test]
+	public void ExtensionWithOldSpecIsNotSupported()
+	{
+		Assert.Throws<NotSupportedException>(() =>
+		{
+			Sequence<byte> seq = new();
+			MessagePackWriter writer = new(seq) { OldSpec = true };
+			writer.Write(new ExtensionHeader(15, 1));
+		});
+	}
+
+	[Test]
 	public void Extension() => this.AssertRoundtrip(new Extension(15, new byte[] { 1, 2, 3 }));
+
+	private static decimal DecimalFromRawBits(ReadOnlySpan<int> words)
+	{
+		Assert.SkipUnless(BitConverter.IsLittleEndian, "This test is written assuming little-endian.");
+		return MemoryMarshal.Cast<int, decimal>(words)[0];
+	}
 
 	private (Guid Before, Guid After) RoundtripModifiedGuid(Func<string, string> modifier, MessagePackSerializer? serializer = null, MessagePackSerializer? deserializer = null)
 	{
@@ -461,6 +592,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public partial record HasDateTimeOffset(DateTimeOffset Value);
 
 	[GenerateShapeFor<string>]
+	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<Guid>]
 	[GenerateShapeFor<Point>]
 	[GenerateShapeFor<Color>]
@@ -468,5 +600,6 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<CultureInfo>]
 	[GenerateShapeFor<EventArgs>]
 	[GenerateShapeFor<Encoding>]
+	[GenerateShapeFor<Dictionary<BigInteger, int>>]
 	private partial class Witness;
 }

@@ -103,7 +103,7 @@ public class SharedTestCases : MessagePackSerializerTestBase
 			}
 			else
 			{
-				Assert.IsType<PlatformNotSupportedException>(baseException);
+				Assert.IsAssignableFrom<NotSupportedException>(baseException);
 			}
 
 			throw SkipException.ForSkip(baseException.Message);
@@ -117,11 +117,6 @@ public class SharedTestCases : MessagePackSerializerTestBase
 			return true;
 		}
 
-		if (testCase.HasOutConstructorParameters)
-		{
-			return false;
-		}
-
 		if (testCase.IsAbstract && !testCase.IsUnion && !typeof(System.Collections.IEnumerable).IsAssignableFrom(testCase.Type))
 		{
 			return false;
@@ -129,7 +124,7 @@ public class SharedTestCases : MessagePackSerializerTestBase
 
 		if (testCase.IsUnion)
 		{
-			return !testCase.IsAbstract || FSharpType.IsUnion(testCase.Type, null);
+			return true;
 		}
 
 		if (testCase.CustomKind == TypeShapeKind.None)

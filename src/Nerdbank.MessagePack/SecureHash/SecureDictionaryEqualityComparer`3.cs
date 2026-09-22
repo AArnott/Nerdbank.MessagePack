@@ -57,15 +57,18 @@ internal class SecureDictionaryEqualityComparer<TDictionary, TKey, TValue>(
 	{
 		IReadOnlyDictionary<TKey, TValue> dict = getDictionary(obj);
 
-		// Ideally we could switch this to a SIP hash implementation that can process additional data in chunks with a constant amount of memory.
-		long[] hashes = new long[dict.Count * 2];
-		int index = 0;
+		long hash = 0;
+		Span<long> entryHashes = stackalloc long[2];
 		foreach (KeyValuePair<TKey, TValue> pair in dict)
 		{
-			hashes[index++] = pair.Key is null ? 0 : keyEqualityComparer.GetSecureHashCode(pair.Key);
-			hashes[index++] = pair.Value is null ? 0 : valueEqualityComparer.GetSecureHashCode(pair.Value);
+			entryHashes[0] = pair.Key is null ? 0 : keyEqualityComparer.GetSecureHashCode(pair.Key);
+			entryHashes[1] = pair.Value is null ? 0 : valueEqualityComparer.GetSecureHashCode(pair.Value);
+			hash ^= SipHash.Default.Compute(MemoryMarshal.Cast<long, byte>(entryHashes));
 		}
 
-		return SipHash.Default.Compute(MemoryMarshal.Cast<long, byte>(hashes));
+		Span<long> finalHashes = stackalloc long[2];
+		finalHashes[0] = dict.Count;
+		finalHashes[1] = hash;
+		return SipHash.Default.Compute(MemoryMarshal.Cast<long, byte>(finalHashes));
 	}
 }

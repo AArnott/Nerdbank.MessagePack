@@ -56,6 +56,11 @@ namespace Nerdbank.MessagePack
 	/// </content>
 	internal static partial class PolyfillExtensions
 	{
+		extension(Array)
+		{
+			public static int MaxLength => 0x7FEFFFFF; // The maximum array length in .NET, which is less than int.MaxValue to avoid overflow when calculating byte offsets.
+		}
+
 		internal static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> pair, out TKey key, out TValue value)
 			=> (key, value) = (pair.Key, pair.Value);
 
@@ -85,6 +90,11 @@ namespace Nerdbank.MessagePack
 
 		internal static unsafe int GetChars(this Encoding encoding, ReadOnlySequence<byte> source, Span<char> destination)
 		{
+			if (source.IsEmpty)
+			{
+				return 0;
+			}
+
 			if (source.IsSingleSegment)
 			{
 				return GetChars(encoding, source.First.Span, destination);
@@ -95,6 +105,11 @@ namespace Nerdbank.MessagePack
 			bool completed = true;
 			foreach (ReadOnlyMemory<byte> sourceSegment in source)
 			{
+				if (sourceSegment.IsEmpty)
+				{
+					continue;
+				}
+
 				fixed (byte* pSource = sourceSegment.Span)
 				{
 					fixed (char* pDestination = destination)
@@ -449,6 +464,11 @@ namespace System.Diagnostics
 	{
 		internal UnreachableException()
 			: base("This code path should be unreachable.")
+		{
+		}
+
+		internal UnreachableException(string message)
+			: base(message)
 		{
 		}
 	}

@@ -39,6 +39,16 @@ public partial class ArraysOfPrimitivesTests : MessagePackSerializerTestBase
 		this.Roundtrip<Memory<bool>, Witness>(values);
 	}
 
+	[Test]
+	public void BoolArray_FragmentedWithEmptySegment()
+	{
+		ReadOnlyMemory<byte> buffer = this.Serializer.Serialize<bool[], Witness>([true, false, true], this.TimeoutToken);
+		ReadOnlySequence<byte> sequence = SequenceBuilder.Create(buffer[..2], ReadOnlyMemory<byte>.Empty, buffer[2..]);
+		bool[]? deserialized = this.Serializer.Deserialize<bool[], Witness>(sequence, this.TimeoutToken);
+		Assert.NotNull(deserialized);
+		Assert.Equal([true, false, true], deserialized);
+	}
+
 	[Test, MethodDataSource(typeof(GetInterestingLengthsHelper<sbyte>), nameof(GetInterestingLengthsHelper<>.Helper))]
 	public void Int8(int length)
 		=> this.Roundtrip<Memory<sbyte>, Witness>(GetRandomValues<sbyte>(length));

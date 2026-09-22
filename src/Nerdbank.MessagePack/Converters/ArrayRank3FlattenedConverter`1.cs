@@ -44,10 +44,11 @@ internal class ArrayRank3FlattenedConverter<TElement>(MessagePackConverter<TElem
 			dimensionLengths[i] = reader.ReadInt32();
 		}
 
+		ArrayConverterUtilities.ReadFlattenedElementCount(ref reader, dimensionLengths);
+
 		// Now read in the data itself.
 		var result = new TElement[dimensionLengths[0], dimensionLengths[1], dimensionLengths[2]];
 
-		ArrayConverterUtilities.ReadArrayHeader(ref reader, dimensionLengths[0] * dimensionLengths[1] * dimensionLengths[2]);
 		for (int i = 0; i < dimensionLengths[0]; i++)
 		{
 			for (int j = 0; j < dimensionLengths[1]; j++)

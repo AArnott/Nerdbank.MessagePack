@@ -3,6 +3,8 @@
 
 namespace Nerdbank.MessagePack.Converters;
 
+#pragma warning disable SA1202 // Keep the public entry point adjacent to its optimized implementation.
+
 /// <summary>
 /// A <see cref="MessagePackConverter{T}"/> that writes objects as maps of property names to values.
 /// Data types with constructors and/or <see langword="init" /> properties may be deserialized.
@@ -29,7 +31,12 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 	where TArgumentState : IArgumentState
 {
 	/// <inheritdoc/>
-	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context)
+#pragma warning disable NBMsgPack031 // The core implementation consumes exactly one structure.
+	public override TDeclaringType? Read(ref MessagePackReader reader, SerializationContext context) => this.ReadCore(ref reader, ref context);
+#pragma warning restore NBMsgPack031
+
+	/// <inheritdoc/>
+	internal override TDeclaringType? ReadCore(ref MessagePackReader reader, ref SerializationContext context)
 	{
 		if (reader.TryReadNil())
 		{
@@ -47,7 +54,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 			for (int i = 0; i < count; i++)
 			{
 				int index = reader.ReadInt32();
-				if (properties.Length > index && parameters[index] is { } deserialize)
+				if (index >= 0 && index < properties.Length && parameters[index] is { } deserialize)
 				{
 					deserialize.Read(ref argState, ref reader, context);
 				}
@@ -147,7 +154,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					int propertyIndex = syncReader.ReadInt32();
-					if (propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
+					if (propertyIndex >= 0 && propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
 					{
 						deserialize(ref argState, ref syncReader, context);
 					}
@@ -172,7 +179,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					{
 						// The property name has already been buffered.
 						int propertyIndex = syncReader.ReadInt32();
-						if (propertyIndex < parameters.Length && parameters[propertyIndex] is { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync })
+						if (propertyIndex >= 0 && propertyIndex < parameters.Length && parameters[propertyIndex] is { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync })
 						{
 							// The next property value is async, so turn in our sync reader and read it asynchronously.
 							reader.ReturnReader(ref syncReader);

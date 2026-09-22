@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft;
 
@@ -24,7 +25,12 @@ namespace Nerdbank.MessagePack;
 public record struct SerializationContext
 {
 	private ImmutableDictionary<object, object?> specialState = ImmutableDictionary<object, object?>.Empty;
+	private ConverterCache? cache;
+	private CancellationToken cancellationToken;
 	private LibraryReservedMessagePackExtensionTypeCode? extensionTypeCodes;
+	private ReferenceEqualityTracker? referenceEqualityTracker;
+	private StringInterning? stringInterningCache;
+	private ITypeShapeProvider? typeShapeProvider;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SerializationContext"/> struct.
@@ -38,10 +44,24 @@ public record struct SerializationContext
 	/// </summary>
 	/// <value>The default value is 64.</value>
 	/// <remarks>
+	/// <para>
 	/// Exceeding this depth will result in a <see cref="MessagePackSerializationException"/> being thrown
 	/// from <see cref="DepthStep"/>.
+	/// </para>
+	/// <para>
+	/// This limit also serves to keep converter recursion within the available stack.
+	/// Raising it substantially can allow a deeply nested payload to exhaust the stack, which terminates
+	/// the process and cannot be caught. On a default 1 MB stack, values beyond a few hundred should be
+	/// considered carefully, and should be accompanied by testing with representative deeply nested input.
+	/// </para>
 	/// </remarks>
 	public int MaxDepth { get; set; } = 64;
+
+	/// <summary>
+	/// Gets or sets the security settings to apply to (de)serialization.
+	/// </summary>
+	/// <value>The default value is <see cref="SecuritySettings.UntrustedData"/>.</value>
+	public SecuritySettings Security { get; set; } = SecuritySettings.UntrustedData;
 
 	/// <summary>
 	/// Gets a hint as to the number of bytes to write into the buffer before serialization will flush the output.
@@ -55,14 +75,22 @@ public record struct SerializationContext
 	/// <remarks>
 	/// In <see cref="MessagePackConverter{T}.WriteAsync(MessagePackAsyncWriter, T, SerializationContext)" />
 	/// or <see cref="MessagePackConverter{T}.ReadAsync(MessagePackAsyncReader, SerializationContext)"/> methods,
-	/// this will tend to be equivalent to the <c>cancellationToken</c> parameter passed to those methods.
+	/// this will tend to be equivalent to the cancellation token argument passed to those methods.
 	/// </remarks>
-	public CancellationToken CancellationToken { get; init; }
+	public CancellationToken CancellationToken
+	{
+		get => this.cancellationToken;
+		init => this.cancellationToken = value;
+	}
 
 	/// <summary>
 	/// Gets the type shape provider that applies to the serialization operation.
 	/// </summary>
-	public ITypeShapeProvider? TypeShapeProvider { get; internal init; }
+	public ITypeShapeProvider? TypeShapeProvider
+	{
+		get => this.typeShapeProvider;
+		internal init => this.typeShapeProvider = value;
+	}
 
 	/// <summary>
 	/// Gets the extension type codes to use for library-reserved extension types.
@@ -76,7 +104,20 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets the <see cref="MessagePackSerializer"/> that owns this context.
 	/// </summary>
-	internal ConverterCache? Cache { get; private init; }
+	internal ConverterCache? Cache
+	{
+		get => this.cache;
+		private init => this.cache = value;
+	}
+
+	/// <summary>
+	/// Gets the string interning cache to use for this serialization.
+	/// </summary>
+	internal StringInterning? StringInterningCache
+	{
+		get => this.stringInterningCache;
+		private init => this.stringInterningCache = value;
+	}
 
 	/// <summary>
 	/// Gets or sets the index of the object being deserialized in the reference equality tracker.
@@ -86,13 +127,17 @@ public record struct SerializationContext
 	/// <summary>
 	/// Gets the reference equality tracker for this serialization operation.
 	/// </summary>
-	internal ReferenceEqualityTracker? ReferenceEqualityTracker { get; private init; }
+	internal ReferenceEqualityTracker? ReferenceEqualityTracker
+	{
+		get => this.referenceEqualityTracker;
+		private init => this.referenceEqualityTracker = value;
+	}
 
 	/// <summary>
 	/// Gets or sets the number of elements that must still be skipped to complete a skip operation.
 	/// </summary>
 	/// <value>0 when no skip operation was suspended and is still incomplete.</value>
-	internal uint MidSkipRemainingCount { get; set; }
+	internal ulong MidSkipRemainingCount { get; set; }
 
 	/// <summary>
 	/// Gets or sets special state to be exposed to converters during serialization.
@@ -131,8 +176,12 @@ public record struct SerializationContext
 		this.CancellationToken.ThrowIfCancellationRequested();
 		if (--this.MaxDepth < 0)
 		{
-			throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
+			Throw();
 		}
+
+		// Keep the throw helper method out of the main code path to improve inlining and reduce code size.
+		[DoesNotReturn]
+		static void Throw() => throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
 	}
 
 	/// <summary>
@@ -276,15 +325,28 @@ public record struct SerializationContext
 	/// <returns>The new context for the operation.</returns>
 	internal SerializationContext Start(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
 	{
+		SerializationContext result = this;
+		result.Initialize(owner, cache, provider, cancellationToken);
+		return result;
+	}
+
+	/// <summary>
+	/// Initializes this context for a new serialization operation.
+	/// </summary>
+	/// <inheritdoc cref="Start(MessagePackSerializer, ConverterCache, ITypeShapeProvider, CancellationToken)"/>
+	/// <remarks>
+	/// This method is like <see cref="Start" /> except that it doesn't require copying the return value (a large struct).
+	/// </remarks>
+	internal void Initialize(MessagePackSerializer owner, ConverterCache cache, ITypeShapeProvider provider, CancellationToken cancellationToken)
+	{
 		cancellationToken.ThrowIfCancellationRequested();
-		return this with
-		{
-			Cache = cache,
-			ExtensionTypeCodes = owner.LibraryExtensionTypeCodes,
-			ReferenceEqualityTracker = cache.PreserveReferences != ReferencePreservationMode.Off ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null,
-			TypeShapeProvider = provider,
-			CancellationToken = cancellationToken,
-		};
+		this.cache = cache;
+		this.extensionTypeCodes = owner.LibraryExtensionTypeCodes;
+		this.referenceEqualityTracker = cache.PreserveReferences != ReferencePreservationMode.Off ? ReusableObjectPool<ReferenceEqualityTracker>.Take(owner) : null;
+		this.stringInterningCache = cache.InternStrings ? ReusableObjectPool<StringInterning>.Take(owner) : null;
+		this.typeShapeProvider = provider;
+		this.cancellationToken = cancellationToken;
+		this.referenceEqualityTracker?.SetSerializationContext(this);
 	}
 
 	/// <summary>
@@ -292,9 +354,7 @@ public record struct SerializationContext
 	/// </summary>
 	internal void End()
 	{
-		if (this.ReferenceEqualityTracker is not null)
-		{
-			ReusableObjectPool<ReferenceEqualityTracker>.Return(this.ReferenceEqualityTracker);
-		}
+		ReusableObjectPool<ReferenceEqualityTracker>.Return(this.ReferenceEqualityTracker);
+		ReusableObjectPool<StringInterning>.Return(this.StringInterningCache);
 	}
 }

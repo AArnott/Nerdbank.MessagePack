@@ -196,13 +196,16 @@ MessagePack-CSharp | Nerdbank.MessagePack
 
 ## Encoding compatibility
 
-MessagePack-CSharp and Nerdbank.MessagePack both follow standard msgpack encodings [as specified here](https://github.com/msgpack/msgpack/blob/master/spec.md).
+MessagePack-CSharp and Nerdbank.MessagePack both follow standard msgpack encodings [as specified here](https://github.com/msgpack/msgpack/blob/master/spec.md), with the following exceptions:
+
+* <xref:System.DateTimeOffset>: MessagePack-CSharp encodes it improperly claiming the offset time is UTC time.
+  Nerdbank.MessagePack does not share this deviation from the spec and as a result, exchanging these values between the two libraries will result in data corruption.
 
 Data types that are *not* expressly specified in that spec may vary in their encodings, as described below:
 
 ### .NET primitives without a specified encoding
 
-The .NET "primitives" <xref:System.Guid>, <xref:System.Int128>, <xref:System.UInt128>, <xref:System.Decimal>, <xref:System.Numerics.BigInteger> have no specified encoding in msgpack.
+The .NET "primitives" <xref:System.Guid>, [Int128](https://learn.microsoft.com/dotnet/api/system.int128?view=net-10.0), [UInt128](https://learn.microsoft.com/dotnet/api/system.uint128?view=net-10.0), <xref:System.Decimal>, <xref:System.Numerics.BigInteger> have no specified encoding in msgpack.
 
 Nerdbank.MessagePack can *read* all these types as MessagePack-CSharp has written them, but it will default to writing with msgpack extensions for better interoperability.
 
@@ -216,8 +219,8 @@ LE and BE refer to Little Endian and Big Endian, respectively.
 Data type | MessagePack-CSharp | Nerdbank.MessagePack
 --|--|--
 <xref:System.Guid> | 16-byte bin LE or string | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Guid) BE or string
-<xref:System.Int128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Int128) BE
-<xref:System.UInt128> | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.UInt128) BE
+[Int128](https://learn.microsoft.com/dotnet/api/system.int128?view=net-10.0) | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Int128) BE
+[UInt128](https://learn.microsoft.com/dotnet/api/system.uint128?view=net-10.0) | 16-byte bin LE | int format if it fits, otherwise 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.UInt128) BE
 <xref:System.Decimal> | 16-byte bin LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d) | 16-byte [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.Decimal) LE, [MS-OAUT 2.2.26 DECIMAL](https://learn.microsoft.com/openspecs/windows_protocols/ms-oaut/b5493025-e447-4109-93a8-ac29c48d018d)
 <xref:System.Numerics.BigInteger> | Bin LE with twos-complement bytes, using the fewest number of bytes possible | int format if it fits, otherwise [Ext](xref:Nerdbank.MessagePack.LibraryReservedMessagePackExtensionTypeCode.BigInteger) BE with twos-complement bytes, using the fewest number of bytes possible
 

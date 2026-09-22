@@ -95,6 +95,28 @@ public static class OptionalConverters
 	}
 
 	/// <summary>
+	/// Adds support for serializing <see cref="System.Collections.Specialized.NameValueCollection"/>.
+	/// </summary>
+	/// <param name="serializer">The serializer to add the converter to.</param>
+	/// <returns>The modified serializer.</returns>
+	/// <exception cref="ArgumentException">Thrown if this converter has already been added.</exception>
+	public static MessagePackSerializer WithNameValueCollectionConverter(this MessagePackSerializer serializer)
+	{
+		Requires.NotNull(serializer, nameof(serializer));
+		Requires.Argument(
+			!serializer.ConverterFactories.Any(static factory => factory is NameValueCollectionConverterFactory),
+			nameof(serializer),
+			"The NameValueCollection converter has already been added.");
+		return serializer with
+		{
+			ConverterFactories = [
+				..serializer.ConverterFactories,
+				new NameValueCollectionConverterFactory(),
+			],
+		};
+	}
+
+	/// <summary>
 	/// Adds a converter for <see cref="Guid"/> to the specified serializer that serializes GUIDs as strings.
 	/// </summary>
 	/// <param name="serializer">The serializer to add converters to.</param>
@@ -228,10 +250,11 @@ public static class OptionalConverters
 	/// <para>
 	/// This can only <em>serialize</em> an <see cref="ExpandoObject"/>
 	/// whose properties are values or objects whose runtime type
-	/// has a shape available as provided by <see cref="SerializationContext.TypeShapeProvider"/>.
+	/// has a shape available as provided by <see cref="SerializationContext.TypeShapeProvider"/>
+	/// and where the property count does not exceed <see cref="SecuritySettings.ExpandoObjectMaxPropertyCount"/>.
 	/// </para>
 	/// <para>
-	/// This can <em>deserialize</em> any msgpack map.
+	/// This can <em>deserialize</em> any msgpack map that does not exceed <see cref="SecuritySettings.ExpandoObjectMaxPropertyCount"/> properties.
 	/// Nested maps included in the deserialized graph will be deserialized as dictionaries that support C# <c>dynamic</c> access to their members,
 	/// similar to <see cref="ExpandoObject"/> but with read-only access.
 	/// </para>
@@ -248,6 +271,9 @@ public static class OptionalConverters
 		};
 	}
 
+	/// <inheritdoc cref="WithObjectConverter(MessagePackSerializer, ObjectConverterOptions)"/>
+	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer) => WithObjectConverter(serializer, default);
+
 	/// <summary>
 	/// Adds a converter to the specified serializer
 	/// that can write objects with a declared type of <see cref="object"/> based on their runtime type
@@ -255,18 +281,19 @@ public static class OptionalConverters
 	/// and can deserialize them based on their msgpack token types into primitives, dictionaries and arrays.
 	/// </summary>
 	/// <param name="serializer">The serializer to add converters to.</param>
+	/// <param name="options">The options for the converter.</param>
 	/// <returns>The modified serializer.</returns>
 	/// <exception cref="ArgumentException">Thrown if a converter for <see cref="object"/> has already been added.</exception>
 	/// <inheritdoc cref="PrimitivesAsObjectConverter" path="/remarks"/>
 	/// <seealso cref="WithDynamicObjectConverter(MessagePackSerializer)"/>
-	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer)
+	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer, ObjectConverterOptions options)
 	{
 		Requires.NotNull(serializer, nameof(serializer));
 		return serializer with
 		{
 			Converters = [
 				..serializer.Converters,
-				new PrimitivesAsObjectConverter(),
+				new PrimitivesAsObjectConverter(options),
 			],
 		};
 	}

@@ -31,7 +31,7 @@ var convertersByType = new List<ConverterInfo>
 	new ConverterInfo("string", "HashCollisionResistantPrimitives.StringEqualityComparer"),
 	new ConverterInfo("bool", "HashCollisionResistantPrimitives.BooleanEqualityComparer"),
 	new ConverterInfo("Version", "HashCollisionResistantPrimitives.VersionEqualityComparer"),
-	new ConverterInfo("Uri", "HashCollisionResistantPrimitives.AlreadySecureEqualityComparer<Uri>"),
+	new ConverterInfo("Uri", "HashCollisionResistantPrimitives.UriEqualityComparer"),
 	new ConverterInfo("float", "HashCollisionResistantPrimitives.SingleEqualityComparer"),
 	new ConverterInfo("double", "HashCollisionResistantPrimitives.DoubleEqualityComparer"),
 	new ConverterInfo("decimal", "HashCollisionResistantPrimitives.DecimalEqualityComparer"),
