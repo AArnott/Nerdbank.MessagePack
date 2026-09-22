@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
     <ProjectReference Include="Benchmarks\Benchmarks.csproj" Publish="false" />
-    <ProjectReference Include="Nerdbank.MessagePack.Tests\Nerdbank.MessagePack.Tests.csproj" Publish="false" />
     <ProjectReference Include="Nerdbank.MessagePack.Analyzers.Tests\Nerdbank.MessagePack.Analyzers.Tests.csproj" Publish="false" />
     <ProjectReference Include="Nerdbank.MessagePack.SignalR.Tests\Nerdbank.MessagePack.SignalR.Tests.csproj" Publish="false" />
     <ProjectReference Include="Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests\Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests.csproj" Publish="false" />
@@ -14,7 +13,7 @@
          and also *publish* each individual target framework of the TUnit project. -->
     <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" Publish="false" />
     <!-- Don't target net8.0 until trimmer warning in MTP is fixed: https://github.com/microsoft/testfx/issues/7153 -->
-    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net9.0" />
-    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net10.0" />
+    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net9.0" AdditionalProperties="NativeAOT=true" />
+    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net10.0" AdditionalProperties="NativeAOT=true" />
   </ItemGroup>
 </Project>

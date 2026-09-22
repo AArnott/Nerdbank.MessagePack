@@ -11,8 +11,8 @@
     <ItemGroup>
       <!-- <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(RidOsPrefix)-x64" Test="$(TestX64Binaries)" />
       <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(RidOsPrefix)-arm64" Test="$(TestArm64Binaries)" /> -->
-      <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(DefaultRuntimeIdentifier)" Test="true" Condition="'%(MultiRIDProjectReference.TargetFramework)' == ''" />
-      <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(DefaultRuntimeIdentifier);TargetFramework=%(MultiRIDProjectReference.TargetFramework)" Test="true" Condition="'%(MultiRIDProjectReference.TargetFramework)' != ''" />
+      <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(DefaultRuntimeIdentifier);%(MultiRIDProjectReference.AdditionalProperties)" Test="true" Condition="'%(MultiRIDProjectReference.TargetFramework)' == ''" />
+      <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(DefaultRuntimeIdentifier);TargetFramework=%(MultiRIDProjectReference.TargetFramework);%(MultiRIDProjectReference.AdditionalProperties)" Test="true" Condition="'%(MultiRIDProjectReference.TargetFramework)' != ''" />
     </ItemGroup>
   </Target>
 </Project>

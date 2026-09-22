@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 
 public abstract partial class MessagePackSerializerTestBase
 {
@@ -101,7 +103,7 @@ public abstract partial class MessagePackSerializerTestBase
 	{
 		string schemaString = schema
 			.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-			.Replace($"Nerdbank.MessagePack.Tests, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.Tests, Version=x.x.x.x");
+			.Replace($"Nerdbank.MessagePack.TUnit, Version={ThisAssembly.AssemblyVersion}", "Nerdbank.MessagePack.TUnit, Version=x.x.x.x");
 
 #if NETFRAMEWORK
 		// Normalize from .NET Framework specific strings to .NET strings.
@@ -113,6 +115,31 @@ public abstract partial class MessagePackSerializerTestBase
 
 		return schemaString;
 	}
+
+	protected bool DataMatchesSchema(ReadOnlySequence<byte> msgpack, ITypeShape shape)
+	{
+		JsonObject schema = this.Serializer.GetJsonSchema(shape);
+		string schemaString = SchemaToString(schema);
+		JSchema parsedSchema = JSchema.Parse(schemaString);
+
+		// We ignore known extensions while writing to JSON because that's what will lead the emitted JSON
+		// to match the JSON schema, which really describes the msgpack schema.
+		string json = this.Serializer.ConvertToJson(msgpack, new() { IgnoreKnownExtensions = true });
+
+		var parsed = JsonNode.Parse(json);
+		try
+		{
+			JToken.Parse(json).Validate(parsedSchema);
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+			return false;
+		}
+	}
+
+	protected void Log(string message) => Console.WriteLine(message);
 
 	protected ReadOnlySequence<byte> AssertRoundtrip<T>(T? value)
 #if NET
