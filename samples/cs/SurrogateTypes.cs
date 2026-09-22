@@ -114,3 +114,75 @@ partial class CompleteSample
     private static readonly MessagePackSerializer Serializer = new();
     #endregion
 }
+
+namespace MixingMarshaledAndUnion
+{
+    #region MixingMarshaledAndUnion
+    [GenerateShape]
+    [TypeShape(Marshaler = typeof(MarshaledBaseTypeMarshaler))]
+    internal partial class MarshaledBaseType
+    {
+        private readonly int value;
+        private readonly string name;
+
+        public MarshaledBaseType(int value, string name)
+        {
+            this.value = value;
+            this.name = name;
+        }
+
+        public int Value => this.value;
+
+        public string Name => this.name;
+
+        [DerivedTypeShape(typeof(MarshaledDerivedType.MarshaledDerivedData), Tag = 1)]
+        internal record class MarshaledData(int Value, string Name);
+
+        internal class MarshaledBaseTypeMarshaler : IMarshaler<MarshaledBaseType, MarshaledData?>
+        {
+            public MarshaledData? Marshal(MarshaledBaseType? value)
+                => value switch
+                {
+                    null => null,
+                    MarshaledDerivedType d => MarshaledDerivedType.MarshaledDerivedTypeMarshaler.Instance.Marshal(d),
+                    _ => new MarshaledData(value.Value, value.Name),
+                };
+
+            public MarshaledBaseType? Unmarshal(MarshaledData? surrogate)
+                => surrogate switch
+                {
+                    null => null,
+                    MarshaledDerivedType.MarshaledDerivedData d => MarshaledDerivedType.MarshaledDerivedTypeMarshaler.Instance.Unmarshal(d),
+                    _ => new MarshaledBaseType(surrogate.Value, surrogate.Name),
+                };
+        }
+    }
+
+    [TypeShape(Marshaler = typeof(MarshaledDerivedTypeMarshaler))]
+    internal partial class MarshaledDerivedType : MarshaledBaseType
+    {
+        private readonly double extraProperty;
+
+        public MarshaledDerivedType(int value, string name, double extraProperty)
+            : base(value, name)
+        {
+            this.extraProperty = extraProperty;
+        }
+
+        public double ExtraProperty => this.extraProperty;
+
+        internal record class MarshaledDerivedData(int Value, string Name, double ExtraProperty) : MarshaledData(Value, Name);
+
+        internal class MarshaledDerivedTypeMarshaler : IMarshaler<MarshaledDerivedType, MarshaledDerivedData?>
+        {
+            internal static readonly MarshaledDerivedTypeMarshaler Instance = new();
+
+            public MarshaledDerivedData? Marshal(MarshaledDerivedType? value)
+                => value is null ? null : new(value.Value, value.Name, value.extraProperty);
+
+            public MarshaledDerivedType? Unmarshal(MarshaledDerivedData? surrogate)
+                => surrogate is null ? null : new MarshaledDerivedType(surrogate.Value, surrogate.Name, surrogate.ExtraProperty);
+        }
+    }
+    #endregion
+}

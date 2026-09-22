@@ -32,6 +32,7 @@ internal record SerializerConfiguration
 	private LibraryReservedMessagePackExtensionTypeCode libraryExtensionTypeCodes = LibraryReservedMessagePackExtensionTypeCode.Default;
 	private IComparerProvider? comparerProvider = SecureComparerProvider.Default;
 	private MultiDimensionalArrayFormat multiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested;
+	private bool useDiscriminatorObjects;
 
 	private SerializerConfiguration()
 	{
@@ -325,6 +326,30 @@ internal record SerializerConfiguration
 	{
 		get => this.comparerProvider;
 		init => this.ChangeSetting(ref this.comparerProvider, value);
+	}
+
+	/// <summary>
+	/// Gets a value indicating whether discriminated unions should be serialized as objects instead of arrays.
+	/// </summary>
+	/// <value>The default value is <see langword="false" />, which serializes unions as 2-element arrays.</value>
+	/// <remarks>
+	/// <para>
+	/// When <see langword="false"/> (the default), discriminated unions are serialized as 2-element arrays:
+	/// <c>["TypeName", {...object data...}]</c> or <c>[discriminator, {...object data...}]</c>.
+	/// </para>
+	/// <para>
+	/// When <see langword="true"/>, discriminated unions are serialized as objects with a single property:
+	/// <c>{"TypeName": {...object data...}}</c> or <c>{discriminator: {...object data...}}</c>.
+	/// </para>
+	/// <para>
+	/// This setting affects interoperability with other MessagePack libraries that may use different conventions
+	/// for encoding polymorphic types. Both serialization and deserialization must use the same setting.
+	/// </para>
+	/// </remarks>
+	public bool UseDiscriminatorObjects
+	{
+		get => this.useDiscriminatorObjects;
+		init => this.ChangeSetting(ref this.useDiscriminatorObjects, value);
 	}
 
 	/// <summary>

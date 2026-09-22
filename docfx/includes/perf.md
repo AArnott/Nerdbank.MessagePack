@@ -7,6 +7,8 @@ MsgPack-CS | MessagePack-CSharp
 Newtonsoft | Newtonsoft.Json
 STJ | System.Text.Json
 
+These measurements were produced by the checked-in `SimplePoco` BenchmarkDotNet suite on .NET 10.
+
 ### Object serialization comparisons
 
 Each stacked bar shows the time taken to serialize and deserialize an object.
@@ -19,26 +21,26 @@ Some libraries are absent from some comparisons because they don't support a par
 ```mermaid
 xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS", "STJ", "Newtonsoft"]
-     y-axis "Time (ns)" 0 --> 1000
+     y-axis "Time (ns)" 0 --> 600
      title "object as map"
-     bar "Serialize+Deserialize" [282.96,247.46,576.95,919.38]
-     bar "Serialize" [90.76,84.57,105.17,342.99]
+     bar "Serialize+Deserialize" [156.08,148.36,281.5,542.6]
+     bar "Serialize" [57.76,51.74,58.27,207.64]
  ```
  ```mermaid
 xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS", "STJ", "Newtonsoft"]
      y-axis "Allocated (bytes)" 0 --> 4200
      title "object as map"
-     bar "Serialize+Deserialize" [80,80,208,4112]
-     bar "Serialize" [0,0,128,1424]
+     bar "Serialize+Deserialize" [80,80,216,4120]
+     bar "Serialize" [0,0,136,1432]
  ```
  ```mermaid
 xychart-beta
      x-axis "Libraries" ["NB.MessagePack", "MsgPack-CS"]
-     y-axis "Time (ns)" 0 --> 300
+     y-axis "Time (ns)" 0 --> 200
      title "object as array"
-     bar "Serialize+Deserialize" [210.69,203.24]
-     bar "Serialize" [88.55,90.09]
+     bar "Serialize+Deserialize" [101.37,120.51]
+     bar "Serialize" [38.75,47.01]
  ```
  ```mermaid
 xychart-beta

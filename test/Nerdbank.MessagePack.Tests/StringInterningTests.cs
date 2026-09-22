@@ -29,9 +29,11 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		Assert.Same(deserialized[0], deserialized[1]);
 
 		// Do it again, across deserializations.
+		// We do *not* expect interning to span deserializations
+		// because we use strong refs and we don't want to cause memory leaks.
 		string[]? deserialized2 = this.Roundtrip<string[], Witness>(["a", "a"]);
 		Assert.NotNull(deserialized2);
-		Assert.Same(deserialized[0], deserialized2[0]);
+		Assert.NotSame(deserialized[0], deserialized2[0]);
 	}
 
 	[Fact]
@@ -51,6 +53,15 @@ public partial class StringInterningTests : MessagePackSerializerTestBase
 		seq.Append(buffer[..^1]);
 		seq.Append(buffer[^1..]);
 		string? deserialized = this.Serializer.Deserialize<string, Witness>(seq, TestContext.Current.CancellationToken);
+		Assert.Equal("abc", deserialized);
+	}
+
+	[Fact]
+	public void FragmentedWithEmptySegment()
+	{
+		ReadOnlyMemory<byte> buffer = this.Serializer.Serialize<string, Witness>("abc", TestContext.Current.CancellationToken);
+		ReadOnlySequence<byte> sequence = SequenceBuilder.Create(buffer[..2], ReadOnlyMemory<byte>.Empty, buffer[2..^1], buffer[^1..]);
+		string? deserialized = this.Serializer.Deserialize<string, Witness>(sequence, TestContext.Current.CancellationToken);
 		Assert.Equal("abc", deserialized);
 	}
 

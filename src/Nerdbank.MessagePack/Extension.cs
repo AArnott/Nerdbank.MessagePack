@@ -39,17 +39,5 @@ public partial record struct Extension(sbyte TypeCode, ReadOnlySequence<byte> Da
 
 	/// <inheritdoc/>
 	long IStructuralSecureEqualityComparer<Extension>.GetSecureHashCode()
-	{
-		// We don't have an incremental SipHash implementation, so we have to copy the data to a rented buffer.
-		byte[] rented = ArrayPool<byte>.Shared.Rent(checked((int)this.Data.Length));
-		try
-		{
-			this.Data.CopyTo(rented);
-			return SipHash.Default.Compute(rented.AsSpan(0, (int)this.Data.Length)) + this.TypeCode;
-		}
-		finally
-		{
-			ArrayPool<byte>.Shared.Return(rented);
-		}
-	}
+		=> SipHash.Default.Compute(this.Data) + this.TypeCode;
 }

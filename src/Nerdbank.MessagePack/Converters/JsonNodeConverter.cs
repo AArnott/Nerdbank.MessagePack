@@ -18,7 +18,7 @@ internal class JsonNodeConverter : MessagePackConverter<JsonNode>
 		return reader.NextMessagePackType switch
 		{
 			MessagePackType.Integer => MessagePackCode.IsSignedInteger(reader.NextCode) ? JsonValue.Create(reader.ReadInt64()) : JsonValue.Create(reader.ReadUInt64()),
-			MessagePackType.Nil => JsonValue.Create((string?)null),
+			MessagePackType.Nil => ReadNil(ref reader),
 			MessagePackType.Boolean => JsonValue.Create(reader.ReadBoolean()),
 			MessagePackType.Float => JsonValue.Create(reader.ReadDouble()),
 			MessagePackType.String => JsonValue.Create(reader.ReadString()),
@@ -29,12 +29,20 @@ internal class JsonNodeConverter : MessagePackConverter<JsonNode>
 			_ => throw new NotSupportedException("Unsupported msgpack token."),
 		};
 
+		JsonNode? ReadNil(ref MessagePackReader reader)
+		{
+			reader.ReadNil();
+			return JsonValue.Create((string?)null);
+		}
+
 		JsonNode ReadArray(ref MessagePackReader reader, SerializationContext context)
 		{
 			context.DepthStep();
-			JsonNode?[] array = new JsonNode[reader.ReadArrayHeader()];
-			for (int i = 0; i < array.Length; i++)
+			int length = reader.ReadArrayHeader();
+			JsonNode?[] array = [];
+			for (int i = 0; i < length; i++)
 			{
+				Grow(ref array, i, length, allowSlack: false, context);
 				array[i] = this.Read(ref reader, context);
 			}
 

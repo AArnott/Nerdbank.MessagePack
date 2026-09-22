@@ -41,6 +41,7 @@
     <Project Path="src/Nerdbank.MessagePack.Analyzers.CodeFixes/Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
     <Project Path="src/Nerdbank.MessagePack.Analyzers/Nerdbank.MessagePack.Analyzers.csproj" />
     <Project Path="src/Nerdbank.MessagePack.AspNetCoreMvcFormatter/Nerdbank.MessagePack.AspNetCoreMvcFormatter.csproj" Id="b1fb3f7e-01df-48c3-b606-2083a6ae3607" />
+    <Project Path="src/Nerdbank.MessagePack.Godot/Nerdbank.MessagePack.Godot.csproj" />
     <Project Path="src/Nerdbank.MessagePack.SignalR/Nerdbank.MessagePack.SignalR.csproj" />
     <Project Path="src/Nerdbank.MessagePack/Nerdbank.MessagePack.csproj" />
   </Folder>
@@ -50,6 +51,7 @@
     <Project Path="test/Benchmarks/Benchmarks.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Analyzers.Tests/Nerdbank.MessagePack.Analyzers.Tests.csproj" />
     <Project Path="test/Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests/Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests.csproj" Id="0b1a3684-c54e-40ba-8648-88cd8c6d6093" />
+    <Project Path="test/Nerdbank.MessagePack.Godot.Tests/Nerdbank.MessagePack.Godot.Tests.csproj" />
     <Project Path="test/Nerdbank.MessagePack.SignalR.Tests/Nerdbank.MessagePack.SignalR.Tests.csproj" />
     <Project Path="test/Nerdbank.MessagePack.Tests/Nerdbank.MessagePack.Tests.csproj" />
     <Project Path="test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj">

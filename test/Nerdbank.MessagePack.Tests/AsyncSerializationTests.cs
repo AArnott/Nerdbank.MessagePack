@@ -149,6 +149,42 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		Assert.Equal("a"u8, readResult.Buffer.ToArray());
 	}
 
+	[Fact]
+	[Trait("CWE", "770")]
+	[Trait("CWE", "1325")]
+	public async Task AsyncEnumerableCapacityHintIsCapped()
+	{
+		CapacityTrackingPocoList.LastCapacity = -1;
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(100_000);
+		writer.Flush();
+
+		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(
+			async () => await this.Serializer.DeserializeAsync<CapacityTrackingPocoList>(PipeReader.Create(sequence), TestContext.Current.CancellationToken));
+
+		this.Logger.WriteLine(ex.Message);
+		Assert.Equal(CapacityTrackingPocoList.MaxAcceptedCapacity, CapacityTrackingPocoList.LastCapacity);
+	}
+
+	[Fact]
+	[Trait("CWE", "770")]
+	[Trait("CWE", "1325")]
+	public async Task AsyncDictionaryCapacityHintIsCapped()
+	{
+		CapacityTrackingPocoDictionary.LastCapacity = -1;
+		using Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteMapHeader(100_000);
+		writer.Flush();
+
+		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(
+			async () => await this.Serializer.DeserializeAsync<CapacityTrackingPocoDictionary>(PipeReader.Create(sequence), TestContext.Current.CancellationToken));
+
+		this.Logger.WriteLine(ex.Message);
+		Assert.Equal(CapacityTrackingPocoDictionary.MaxAcceptedCapacity, CapacityTrackingPocoDictionary.LastCapacity);
+	}
+
 	[GenerateShapeFor<string>]
 	[GenerateShapeFor<int>]
 	private partial class Witness;
@@ -207,6 +243,46 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		public List<Poco>? Pocos => pocos;
 
 		public bool Equals(ListOfPocos? other) => other is not null && StructuralEquality.Equal(this.Pocos, other.Pocos);
+	}
+
+	[GenerateShape, TypeShape(Kind = TypeShapeKind.Enumerable)]
+	public partial class CapacityTrackingPocoList : List<Poco>
+	{
+		/// <summary>
+		/// The capacity hint the async deserialization path is expected to supply, regardless of the
+		/// element count declared by the msgpack header.
+		/// </summary>
+		/// <remarks>
+		/// The async path reads container headers from a streaming reader whose buffer may still be
+		/// growing, so the declared count cannot be corroborated against available bytes. It must
+		/// therefore preallocate very little and grow as elements actually arrive.
+		/// </remarks>
+		internal const int MaxAcceptedCapacity = 16;
+
+		public CapacityTrackingPocoList(int capacity)
+			: base(capacity)
+		{
+			LastCapacity = capacity;
+			Assert.True(capacity <= MaxAcceptedCapacity);
+		}
+
+		internal static int LastCapacity { get; set; }
+	}
+
+	[GenerateShape, TypeShape(Kind = TypeShapeKind.Dictionary)]
+	public partial class CapacityTrackingPocoDictionary : Dictionary<string, Poco>
+	{
+		/// <inheritdoc cref="CapacityTrackingPocoList.MaxAcceptedCapacity"/>
+		internal const int MaxAcceptedCapacity = 16;
+
+		public CapacityTrackingPocoDictionary(int capacity)
+			: base(capacity)
+		{
+			LastCapacity = capacity;
+			Assert.True(capacity <= MaxAcceptedCapacity);
+		}
+
+		internal static int LastCapacity { get; set; }
 	}
 
 	[GenerateShape]

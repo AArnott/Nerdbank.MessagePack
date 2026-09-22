@@ -75,6 +75,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			IConstructorShape? ctorShape = objectShape.Constructor;
 
 			Dictionary<string, IParameterShape>? ctorParametersByName = ctorShape is not null ? PrepareCtorParametersByName(ctorShape) : null;
+			Dictionary<string, IParameterShape?>? ctorParametersByNameIgnoreCase = null;
 
 			List<SerializableProperty<T>>? serializable = null;
 			List<DeserializableProperty<T>>? deserializable = null;
@@ -101,7 +102,17 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 
 				IParameterShape? matchingConstructorParameter = null;
-				ctorParametersByName?.TryGetValue(property.Name, out matchingConstructorParameter);
+
+				// Try exact match first, then case-insensitive fallback for camelCase/PascalCase matching (e.g., myList → MyList).
+				// The fallback lookup is cached and treats case-only duplicates as ambiguous (no match) to preserve scenarios like "t" and "T".
+				if (ctorParametersByName is not null && !ctorParametersByName.TryGetValue(property.Name, out matchingConstructorParameter))
+				{
+					ctorParametersByNameIgnoreCase ??= CreateCaseInsensitiveParameterLookup(ctorParametersByName);
+					if (!ctorParametersByNameIgnoreCase.TryGetValue(property.Name, out matchingConstructorParameter) || matchingConstructorParameter is null)
+					{
+						matchingConstructorParameter = null;
+					}
+				}
 
 				switch (property.Accept(this, matchingConstructorParameter))
 				{
@@ -247,7 +258,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				{
 					converter = union switch
 					{
-						IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping).MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st)),
+						IDerivedTypeMapping mapping => this.CreateSubTypes(objectShape.Type, (MessagePackConverter<T>)converter.Value, mapping).MapResult(st => new UnionConverter<T>((MessagePackConverter<T>)converter.Value, st, this.owner.UseDiscriminatorObjects)),
 						DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter<T>(duckTyping, (MessagePackConverter<T>)converter.Value),
 						_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
 					};
@@ -282,7 +293,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return union switch
 			{
 				{ Disabled: true } => baseTypeConverter,
-				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, (MessagePackConverter<TUnion>)baseTypeConverter.Value, mapping).MapResult(st => new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, st)),
+				IDerivedTypeMapping mapping => this.CreateSubTypes(baseType, (MessagePackConverter<TUnion>)baseTypeConverter.Value, mapping).MapResult(st => new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, st, this.owner.UseDiscriminatorObjects)),
 				DerivedTypeDuckTyping duckTyping => this.CreateDuckTypingUnionConverter(duckTyping, (MessagePackConverter<TUnion>)baseTypeConverter.Value),
 				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized union type: {union.GetType().Name}")),
 			};
@@ -316,7 +327,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			TryGetSerializer = (ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (serializers[idx].Alias, serializers[idx].Converter) : null,
 		};
 
-		return ConverterResult.Ok(new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, subTypes));
+		return ConverterResult.Ok(new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, subTypes, this.owner.UseDiscriminatorObjects));
 	}
 
 	/// <inheritdoc/>
@@ -338,6 +349,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		IParameterShape? constructorParameterShape = (IParameterShape?)state;
 
 		ConverterResult converter = this.GetConverterForMemberOrParameter(propertyShape.PropertyType, propertyShape.AttributeProvider);
+		MessagePackConverter<TPropertyType>? typedConverter = (MessagePackConverter<TPropertyType>?)converter.Value;
 
 		(SerializeProperty<TDeclaringType>, SerializePropertyAsync<TDeclaringType>)? msgpackWriters = null;
 		Func<TDeclaringType, bool>? shouldSerialize = null;
@@ -371,31 +383,59 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					}
 				}
 
-				SerializeProperty<TDeclaringType> serialize = (in TDeclaringType container, ref MessagePackWriter writer, SerializationContext context) =>
+				SerializeProperty<TDeclaringType> serialize;
+				if (typedConverter is null)
 				{
-					// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
-					// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
-					// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
-					try
-					{
-						((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-					{
-						throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-					}
-				};
-				SerializePropertyAsync<TDeclaringType> serializeAsync = async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
+					serialize = (in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) => converter.Error!.ThrowException();
+				}
+				else if (DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
 				{
-					try
+					// Inlining primitive codecs here expands each containing object converter enough to make its hot loop slower.
+					serialize =
+						[MethodImpl(MethodImplOptions.NoInlining)]
+					(in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) =>
+						{
+							try
+							{
+								DirectPrimitiveConverter<TPropertyType>.Write(ref writer, getter(ref Unsafe.AsRef(in container)));
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+							}
+						};
+				}
+				else
+				{
+					serialize = (in TDeclaringType container, ref MessagePackWriter writer, in SerializationContext context) =>
 					{
-						await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						// Workaround https://github.com/eiriktsarpalis/PolyType/issues/46.
+						// We get significantly improved usability in the API if we use the `in` modifier on the Serialize method
+						// instead of `ref`. And since serialization should fundamentally be a read-only operation, this *should* be safe.
+						try
+						{
+							typedConverter.Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+						}
+					};
+				}
+
+				SerializePropertyAsync<TDeclaringType> serializeAsync =
+					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) => throw converter.Error!.ThrowException() :
+					async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
 					{
-						throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-					}
-				};
+						try
+						{
+							await typedConverter.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+						}
+					};
 				msgpackWriters = (serialize, serializeAsync);
 			}
 		}
@@ -408,29 +448,57 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			void SetterHelper()
 			{
 				Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+				DeserializeProperty<TDeclaringType> deserialize;
+				if (typedConverter is null)
 				{
-					try
-					{
-						setter(ref container, ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).Read(ref reader, context)!);
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-					{
-						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-					}
-				};
-				DeserializePropertyAsync<TDeclaringType> deserializeAsync = async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
+					deserialize = (ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) => converter.Error!.ThrowException();
+				}
+				else if (DirectPrimitiveConverter<TPropertyType>.IsSupported(typedConverter))
 				{
-					try
+					// Inlining primitive codecs here expands each containing object converter enough to make its hot loop slower.
+					deserialize =
+						[MethodImpl(MethodImplOptions.NoInlining)]
+					(ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) =>
+						{
+							try
+							{
+								setter(ref container, DirectPrimitiveConverter<TPropertyType>.Read(ref reader)!);
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+							}
+						};
+				}
+				else
+				{
+					deserialize = (ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) =>
 					{
-						setter(ref container, (await ((MessagePackConverter<TPropertyType>)converter.ValueOrThrow).ReadAsync(reader, context).ConfigureAwait(false))!);
-						return container;
-					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						try
+						{
+							setter(ref container, typedConverter.Read(ref reader, context)!);
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+						}
+					};
+				}
+
+				DeserializePropertyAsync<TDeclaringType> deserializeAsync =
+					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) => throw converter.Error!.ThrowException() :
+					async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 					{
-						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-					}
-				};
+						try
+						{
+							setter(ref container, (await typedConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
+							return container;
+						}
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						{
+							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+						}
+					};
 				msgpackReaders = (deserialize, deserializeAsync);
 				suppressIfNoConstructorParameter = false;
 			}
@@ -445,7 +513,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				// and we'll just deserialize into it.
 				suppressIfNoConstructorParameter = false;
 				Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
-				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, SerializationContext context) =>
+				DeserializeProperty<TDeclaringType> deserialize = (ref TDeclaringType container, ref MessagePackReader reader, in SerializationContext context) =>
 				{
 					if (reader.TryReadNil())
 					{
@@ -595,7 +663,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			ThrowingHelper();
 			void ThrowingHelper()
 			{
-				read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+				read = (ref TArgumentState state, ref MessagePackReader reader, in SerializationContext context) =>
 				{
 					try
 					{
@@ -627,7 +695,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			NonThrowingHelper();
 			void NonThrowingHelper()
 			{
-				read = (ref TArgumentState state, ref MessagePackReader reader, SerializationContext context) =>
+				read = (ref TArgumentState state, ref MessagePackReader reader, in SerializationContext context) =>
 				{
 					try
 					{
@@ -711,10 +779,29 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return dictionaryShape.ConstructionStrategy switch
 			{
 				CollectionConstructionStrategy.None => ConverterResult.Ok(new DictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter)),
-				CollectionConstructionStrategy.Mutable => ConverterResult.Ok(new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetInserter(DictionaryInsertionMode.Throw), dictionaryShape.GetDefaultConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
+				CollectionConstructionStrategy.Mutable => CreateMutable(),
 				CollectionConstructionStrategy.Parameterized => ConverterResult.Ok(new ImmutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, dictionaryShape.GetParameterizedConstructor(), this.GetCollectionOptions(dictionaryShape, memberInfluence))),
 				_ => ConverterResult.Err(new NotSupportedException($"Unrecognized dictionary pattern: {typeof(TDictionary).Name}")),
 			};
+
+			ConverterResult CreateMutable()
+			{
+				DictionaryInserter<TDictionary, TKey, TValue> addEntry = dictionaryShape.GetInserter(DictionaryInsertionMode.Throw);
+				MutableCollectionConstructor<TKey, TDictionary> ctor = dictionaryShape.GetDefaultConstructor();
+				Result<CollectionConstructionOptions<TKey>, VisitorError> collectionConstructionOptions = this.GetCollectionOptions(dictionaryShape, memberInfluence);
+
+				if (typeof(TDictionary) == typeof(Dictionary<TKey, TValue>))
+				{
+					return ConverterResult.Ok((MessagePackConverter<TDictionary>)(object)new DictionaryConverter<TKey, TValue>(
+						keyConverter,
+						valueConverter,
+						(DictionaryInserter<Dictionary<TKey, TValue>, TKey, TValue>)(object)addEntry,
+						(MutableCollectionConstructor<TKey, Dictionary<TKey, TValue>>)(object)ctor,
+						collectionConstructionOptions));
+				}
+
+				return ConverterResult.Ok(new MutableDictionaryConverter<TDictionary, TKey, TValue>(getReadable, keyConverter, valueConverter, addEntry, ctor, collectionConstructionOptions));
+			}
 		}
 	}
 
@@ -947,6 +1034,44 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return ctorParametersByName;
 	}
 
+	private static Dictionary<string, IParameterShape?> CreateCaseInsensitiveParameterLookup(Dictionary<string, IParameterShape> source)
+	{
+		Dictionary<string, IParameterShape?> result = new(source.Count, StringComparer.OrdinalIgnoreCase);
+		foreach (KeyValuePair<string, IParameterShape> kvp in source)
+		{
+			if (result.ContainsKey(kvp.Key))
+			{
+				// Multiple entries that differ only by case are treated as ambiguous.
+				result[kvp.Key] = null;
+			}
+			else
+			{
+				result.Add(kvp.Key, kvp.Value);
+			}
+		}
+
+		return result;
+	}
+
+	private static Dictionary<string, int?> CreateCaseInsensitiveIndexLookup(Dictionary<string, int> source)
+	{
+		Dictionary<string, int?> result = new(source.Count, StringComparer.OrdinalIgnoreCase);
+		foreach (KeyValuePair<string, int> kvp in source)
+		{
+			if (result.ContainsKey(kvp.Key))
+			{
+				// Multiple entries that differ only by case are treated as ambiguous.
+				result[kvp.Key] = null;
+			}
+			else
+			{
+				result.Add(kvp.Key, kvp.Value);
+			}
+		}
+
+		return result;
+	}
+
 	private static Exception NewDisallowedDeserializedNullValueException(IParameterShape parameter) => new MessagePackSerializationException($"The parameter '{parameter.Name}' is non-nullable, but the deserialized value was null.") { Code = MessagePackSerializationException.ErrorCode.DisallowedNullValue };
 
 	private static string CreateReadFailMessage(IParameterShape parameterShape, IConstructorShape constructorShape) => $"Failed to deserialize value for '{parameterShape.Name}' parameter on {constructorShape.DeclaringType.Type.FullName}.";
@@ -970,14 +1095,18 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		int i = 0;
 		foreach (KeyValuePair<string, IParameterShape> p in inputs.ParametersByName)
 		{
-			IGenericCustomAttributeProvider? propertyAttributeProvider = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)?.AttributeProvider;
+			// Try exact match first, then case-insensitive fallback for camelCase/PascalCase matching (e.g., myList → MyList).
+			IPropertyShape? matchingProperty = constructorShape.DeclaringType.Properties.FirstOrDefault(prop => prop.Name == p.Value.Name)
+				?? constructorShape.DeclaringType.Properties.FirstOrDefault(prop => string.Equals(prop.Name, p.Value.Name, StringComparison.OrdinalIgnoreCase));
 			object parameterResult = p.Value.Accept(this, constructorShape)!;
 			if (parameterResult is ConverterResult converterResult && converterResult.TryPrepareFailPath(p.Value, out ConverterResult? failureResult))
 			{
 				return failureResult;
 			}
 
-			string name = this.owner.GetSerializedPropertyName(p.Value.Name, propertyAttributeProvider);
+			string name = matchingProperty is not null
+				? this.owner.GetSerializedPropertyName(matchingProperty.Name, matchingProperty.AttributeProvider)
+				: p.Value.Name;
 			handler(Encoding.UTF8.GetBytes(name), i++, parameterResult);
 		}
 
@@ -987,6 +1116,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private ConverterResult? VisitConstructor_TryPerParameterArray(IConstructorShape constructorShape, IArrayConstructorVisitorInputs inputs, object?[] results)
 	{
 		Dictionary<string, int> propertyIndexesByName = new(inputs.Count, StringComparer.Ordinal);
+		Dictionary<string, int?>? propertyIndexesByNameIgnoreCase = null;
 		for (int i = 0; i < inputs.Count; i++)
 		{
 			if (inputs.GetPropertyNameByIndex(i) is string name)
@@ -1002,9 +1132,17 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				continue;
 			}
 
+			// Try exact match first, then case-insensitive fallback for camelCase/PascalCase matching (e.g., myList → MyList).
+			// The fallback lookup is cached and treats case-only duplicates as ambiguous (no match).
 			if (!propertyIndexesByName.TryGetValue(parameter.Name, out int index))
 			{
-				return ConverterResult.Err(new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type."));
+				propertyIndexesByNameIgnoreCase ??= CreateCaseInsensitiveIndexLookup(propertyIndexesByName);
+				if (!propertyIndexesByNameIgnoreCase.TryGetValue(parameter.Name, out int? fallbackIndex) || fallbackIndex is null)
+				{
+					return ConverterResult.Err(new NotSupportedException($"{constructorShape.DeclaringType.Type.FullName} has a constructor parameter named '{parameter.Name}' that does not match any property on the type, even allowing for camelCase to PascalCase conversion. This is not supported. Adjust the parameters and/or properties or write a custom converter for this type."));
+				}
+
+				index = fallbackIndex.Value;
 			}
 
 			object result = parameter.Accept(this, constructorShape)!;
@@ -1174,10 +1312,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		}
 
 		// Check if the type has a built-in converter.
+		ConverterContext context = new(this.owner, shapeProvider, this.owner.PreserveReferences);
 #if NET
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? primitiveConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(this.owner.PreserveReferences, out MessagePackConverter<T>? primitiveConverter, context))
 #else
-		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(type, this.owner.PreserveReferences, out MessagePackConverter? primitiveConverter))
+		if (PrimitiveConverterLookup.TryGetPrimitiveConverter(type, this.owner.PreserveReferences, out MessagePackConverter? primitiveConverter, context))
 #endif
 		{
 			converter = ConverterResult.Ok(primitiveConverter);
@@ -1270,6 +1409,47 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		catch (Exception ex) when (SecureVisitor.TryGetEmptyTypeFailure(ex.GetBaseException(), out Type? emptyType))
 		{
 			return new VisitorError(new NotSupportedException($"Serializing dictionaries or hash sets with keys that are or contain empty types is not supported. {emptyType.FullName} is an empty type. Consider using a strong-typed key with properties, or using a custom (or null) MessagePackSerializer.ComparerProvider.", ex));
+		}
+	}
+
+	private static class DirectPrimitiveConverter<T>
+	{
+		internal static bool IsSupported(MessagePackConverter<T> converter)
+			=> (typeof(T) == typeof(int) && converter.GetType() == typeof(Int32Converter))
+				|| (typeof(T) == typeof(string) && converter.GetType() == typeof(Converters.StringConverter));
+
+		internal static T? Read(ref MessagePackReader reader)
+		{
+			if (typeof(T) == typeof(int))
+			{
+				int value = reader.ReadInt32();
+				return Unsafe.As<int, T>(ref value);
+			}
+
+			if (typeof(T) == typeof(string))
+			{
+				string? value = reader.ReadString();
+				return Unsafe.As<string?, T?>(ref value);
+			}
+
+			throw new UnreachableException();
+		}
+
+		internal static void Write(ref MessagePackWriter writer, in T? value)
+		{
+			if (typeof(T) == typeof(int))
+			{
+				writer.Write(Unsafe.As<T?, int>(ref Unsafe.AsRef(in value)));
+				return;
+			}
+
+			if (typeof(T) == typeof(string))
+			{
+				writer.Write(Unsafe.As<T?, string?>(ref Unsafe.AsRef(in value)));
+				return;
+			}
+
+			throw new UnreachableException();
 		}
 	}
 

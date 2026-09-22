@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using PolyType.Utilities;
 
 namespace Nerdbank.MessagePack;
@@ -29,7 +31,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// An optimization that avoids the dictionary lookup to start serialization
 	/// when the caller repeatedly serializes the same type.
 	/// </summary>
-	private object? lastConverter;
+	private LastConverterCacheEntry? lastConverter;
 
 	private MultiProviderTypeCache? cachedConverters;
 
@@ -66,6 +68,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <inheritdoc cref="SerializerConfiguration.DisableHardwareAcceleration"/>
 	internal bool DisableHardwareAcceleration => configuration.DisableHardwareAcceleration;
 
+	/// <inheritdoc cref="SerializerConfiguration.UseDiscriminatorObjects"/>
+	internal bool UseDiscriminatorObjects => configuration.UseDiscriminatorObjects;
+
 	/// <summary>
 	/// Gets all the converters this instance knows about so far.
 	/// </summary>
@@ -97,6 +102,8 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		}
 	}
 
+	private ConcurrentDictionary<(Type Type, Type Provider), ITypeShape> CachedTypeShapes => field ??= new();
+
 	/// <summary>
 	/// Gets a converter for the given type shape.
 	/// An existing converter is reused if one is found in the cache.
@@ -106,7 +113,38 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <param name="shape">The shape of the type to convert.</param>
 	/// <returns>A msgpack converter.</returns>
 	internal ConverterResult GetOrAddConverter<T>(ITypeShape<T> shape)
-		=> (ConverterResult)(this.lastConverter is MessagePackConverter<T> lastConverter ? lastConverter : (this.lastConverter = this.CachedConverters.GetOrAdd(shape)!));
+	{
+		LastConverterCacheEntry? lastConverter = this.lastConverter;
+		if (lastConverter is not null && ReferenceEquals(lastConverter.Shape, shape))
+		{
+			return lastConverter.Converter;
+		}
+
+		ConverterResult converter = (ConverterResult)this.CachedConverters.GetOrAdd(shape)!;
+		this.lastConverter = new(shape, converter);
+		return converter;
+	}
+
+	/// <summary>
+	/// Gets a successfully constructed converter for the given type shape.
+	/// </summary>
+	/// <typeparam name="T">The data type to convert.</typeparam>
+	/// <param name="shape">The shape of the type to convert.</param>
+	/// <returns>A msgpack converter.</returns>
+	/// <exception cref="MessagePackSerializationException">Thrown if converter construction failed.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal MessagePackConverter<T> GetOrAddConverterValue<T>(ITypeShape<T> shape)
+	{
+		LastConverterCacheEntry? lastConverter = this.lastConverter;
+		if (lastConverter is not null && ReferenceEquals(lastConverter.Shape, shape))
+		{
+			return lastConverter.ConverterValue is { } converter
+				? (MessagePackConverter<T>)converter
+				: ThrowConverterError<T>(lastConverter.Converter);
+		}
+
+		return this.GetOrAddConverterValueSlow(shape);
+	}
 
 	/// <summary>
 	/// Gets a converter for the given type shape.
@@ -139,6 +177,41 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <returns>A msgpack converter.</returns>
 	internal ConverterResult GetOrAddConverter(Type type, ITypeShapeProvider provider)
 		=> (ConverterResult)this.CachedConverters.GetOrAddOrThrow(type, provider);
+
+	/// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T}()"/>
+#if NET8_0
+	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
+#endif
+	internal ITypeShape<T> ResolveDynamicTypeShapeOrThrow<T>()
+	{
+		Type type = typeof(T);
+		(Type, Type) key = (type, type);
+		if (!this.CachedTypeShapes.TryGetValue(key, out ITypeShape? shape))
+		{
+			// We want to cache the result because TypeShapeResolver.ResolveDynamicOrThrow instantiates a new ITypeShapeProvider with each call,
+			// and we want to be alloc-free after the first call. See https://github.com/eiriktsarpalis/PolyType/pull/432/changes#r3260136940
+			shape = this.CachedTypeShapes.GetOrAdd(key, TypeShapeResolver.ResolveDynamicOrThrow<T>());
+		}
+
+		return (ITypeShape<T>)shape;
+	}
+
+	/// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T, TProvider}()"/>
+#if NET8_0
+	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
+#endif
+	internal ITypeShape<T> ResolveDynamicTypeShapeOrThrow<T, TProvider>()
+	{
+		(Type, Type) key = (typeof(T), typeof(TProvider));
+		if (!this.CachedTypeShapes.TryGetValue(key, out ITypeShape? shape))
+		{
+			// We want to cache the result because TypeShapeResolver.ResolveDynamicOrThrow instantiates a new ITypeShapeProvider with each call,
+			// and we want to be alloc-free after the first call. See https://github.com/eiriktsarpalis/PolyType/pull/432/changes#r3260136940
+			shape = this.CachedTypeShapes.GetOrAdd(key, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+		}
+
+		return (ITypeShape<T>)shape;
+	}
 
 	/// <summary>
 	/// Gets a user-defined converter for the specified type if one is available from
@@ -236,5 +309,29 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		}
 
 		return this.PropertyNamingPolicy.ConvertName(name);
+	}
+
+	[DoesNotReturn]
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static MessagePackConverter<T> ThrowConverterError<T>(ConverterResult converter)
+		=> throw converter.Error!.ThrowException();
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private MessagePackConverter<T> GetOrAddConverterValueSlow<T>(ITypeShape<T> shape)
+	{
+		ConverterResult converter = (ConverterResult)this.CachedConverters.GetOrAdd(shape)!;
+		this.lastConverter = new(shape, converter);
+		return (MessagePackConverter<T>)converter.ValueOrThrow;
+	}
+
+	private sealed class LastConverterCacheEntry(ITypeShape shape, ConverterResult converter)
+	{
+		private readonly MessagePackConverter? converterValue = converter.Value;
+
+		internal ITypeShape Shape => shape;
+
+		internal ConverterResult Converter => converter;
+
+		internal MessagePackConverter? ConverterValue => this.converterValue;
 	}
 }

@@ -92,6 +92,16 @@ namespace GenericSubTypes
     record SolidHoof;
     record ClovenHoof;
     #endregion
+
+    #region OpenGenericSubTypes
+    [DerivedTypeShape(typeof(Derived<>), Tag = 1)]
+    record Base<T>;
+
+    record Derived<T>(T Value) : Base<T>;
+
+    [GenerateShapeFor<Base<int>>]
+    partial class Witness;
+    #endregion
 }
 
 namespace StringAliasTypes
@@ -177,6 +187,37 @@ namespace RuntimeSubTypes
     }
     #endregion
 #endif
+
+    partial class UseDiscriminatorObjectsSample
+    {
+        #region UseDiscriminatorObjects
+        [GenerateShape]
+        [DerivedTypeShape(typeof(A), Name = "A")]
+        [DerivedTypeShape(typeof(B), Name = "B")]
+        public partial record Base;
+
+        [GenerateShape]
+        public partial record A(int ValueA) : Base;
+
+        [GenerateShape]
+        public partial record B(int ValueB) : Base;
+
+        void SerializeWithObjectFormat()
+        {
+            // Create a serializer with UseDiscriminatorObjects enabled
+            var serializer = new MessagePackSerializer
+            {
+                UseDiscriminatorObjects = true,
+            };
+
+            Base value = new A(1);
+
+            // Serializes as: {"A":{"ValueA":1}}
+            // Instead of default: ["A",{"ValueA":1}]
+            byte[] msgpack = serializer.Serialize(value, CancellationToken.None);
+        }
+        #endregion
+    }
 
     class RuntimeSubTypesDisabler
     {

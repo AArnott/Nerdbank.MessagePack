@@ -243,6 +243,25 @@ internal ref struct SequenceReader<T>
 	/// Move the reader back the specified number of items.
 	/// </summary>
 	/// <param name="count">The number of elements to move the reader backwards.</param>
+	/// <remarks>
+	/// <para>
+	/// Do not use this method. <see cref="MessagePackStreamingReader"/> tracks the minimum number of
+	/// bytes owed to container headers it has already read, and retires that obligation as bytes are
+	/// consumed. Rewinding past a container header would make consumption non-monotonic and cause the
+	/// obligation to be miscounted, which is the flaw that allows a small payload of nested container
+	/// headers to force disproportionate memory allocation.
+	/// </para>
+	/// <para>
+	/// To speculatively read ahead, copy the <see cref="SequenceReader{T}"/> by value and either keep
+	/// or discard the copy. That is how the rest of this library backs out of an incomplete read.
+	/// </para>
+	/// <para>
+	/// This member is declared only for down-level target frameworks; the .NET builds bind to
+	/// <c>System.Buffers.SequenceReader&lt;T&gt;</c> instead. Building for all target frameworks
+	/// therefore surfaces any new use of it.
+	/// </para>
+	/// </remarks>
+	[Obsolete("Rewinding invalidates the allocation accounting in MessagePackStreamingReader. Copy the SequenceReader by value to read ahead instead.", error: true)]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Rewind(long count)
 	{

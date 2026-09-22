@@ -151,6 +151,13 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { DerivedTypeUnions = value };
 	}
 
+	/// <inheritdoc cref="SerializerConfiguration.UseDiscriminatorObjects"/>
+	public bool UseDiscriminatorObjects
+	{
+		get => this.configuration.UseDiscriminatorObjects;
+		init => this.configuration = this.configuration with { UseDiscriminatorObjects = value };
+	}
+
 	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
@@ -214,8 +221,16 @@ public partial record MessagePackSerializer
 
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObject(ref writer, value, context.Value);
+			SerializationContext context = this.StartingContext;
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObject(ref writer, value, context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -237,8 +252,16 @@ public partial record MessagePackSerializer
 
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			((MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow).Write(ref writer, value, context.Value);
+			SerializationContext context = this.StartingContext;
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				this.ConverterCache.GetOrAddConverterValue(shape).WriteCore(ref writer, value, ref context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -262,8 +285,16 @@ public partial record MessagePackSerializer
 
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			return this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.ReadObject(ref reader, context.Value);
+			SerializationContext context = this.StartingContext;
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				return this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.ReadObject(ref reader, context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -344,10 +375,18 @@ public partial record MessagePackSerializer
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
 		Requires.NotNull(shape);
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		SerializationContext context = this.StartingContext;
+		context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
 		try
 		{
-			return ((MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow).Read(ref reader, context.Value);
+			try
+			{
+				return this.ConverterCache.GetOrAddConverterValue(shape).ReadCore(ref reader, ref context);
+			}
+			finally
+			{
+				context.End();
+			}
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 		{
@@ -373,7 +412,7 @@ public partial record MessagePackSerializer
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 			MessagePackAsyncWriter asyncWriter = new(writer);
-			await ((MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			await this.ConverterCache.GetOrAddConverterValue(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
 			asyncWriter.Flush();
 		}
 		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
@@ -417,7 +456,7 @@ public partial record MessagePackSerializer
 		try
 		{
 			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			var converter = (MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow;
+			MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
 
 			// Buffer up to some threshold before starting deserialization.
 			// Only engage with the async code path (which is slower) if we reach our threshold
@@ -529,10 +568,17 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(jsonWriter);
 
-		WriteOneElement(ref reader, jsonWriter, options ?? new(), this.LibraryExtensionTypeCodes, 0);
+		SerializationContext context = this.StartingContext with { ExtensionTypeCodes = this.LibraryExtensionTypeCodes };
+		WriteOneElement(ref reader, jsonWriter, options ?? new(), context, 0);
 
-		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, LibraryReservedMessagePackExtensionTypeCode extensionTypeCodes, int indentationLevel)
+		static void WriteOneElement(ref MessagePackReader reader, TextWriter jsonWriter, JsonOptions options, SerializationContext context, int indentationLevel)
 		{
+			context.CancellationToken.ThrowIfCancellationRequested();
+			if (indentationLevel > context.MaxDepth)
+			{
+				throw new MessagePackSerializationException("Exceeded maximum depth of object graph.");
+			}
+
 			switch (reader.NextMessagePackType)
 			{
 				case MessagePackType.Nil:
@@ -584,7 +630,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, context, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -611,7 +657,7 @@ public partial record MessagePackSerializer
 								NewLine(jsonWriter, options, indentationLevel + 1);
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, context, indentationLevel + 1);
 							if (options.Indentation is null)
 							{
 								jsonWriter.Write(':');
@@ -621,7 +667,7 @@ public partial record MessagePackSerializer
 								jsonWriter.Write(": ");
 							}
 
-							WriteOneElement(ref reader, jsonWriter, options, extensionTypeCodes, indentationLevel + 1);
+							WriteOneElement(ref reader, jsonWriter, options, context, indentationLevel + 1);
 						}
 
 						if (options.TrailingCommas && options.Indentation is not null && count > 0)
@@ -640,12 +686,11 @@ public partial record MessagePackSerializer
 					jsonWriter.Write('\"');
 					break;
 				case MessagePackType.Extension:
-					SerializationContext context = new() { ExtensionTypeCodes = extensionTypeCodes };
 					MessagePackReader peek = reader.CreatePeekReader();
 					ExtensionHeader extensionHeader = peek.ReadExtensionHeader();
 					if (!options.IgnoreKnownExtensions)
 					{
-						if (extensionHeader.TypeCode == extensionTypeCodes.Guid)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.Guid)
 						{
 							jsonWriter.Write('\"');
 							jsonWriter.Write(GuidAsBinaryConverter.Instance.Read(ref reader, context).ToString("D"));
@@ -653,26 +698,26 @@ public partial record MessagePackSerializer
 							break;
 						}
 
-						if (extensionHeader.TypeCode == extensionTypeCodes.BigInteger)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.BigInteger)
 						{
 							jsonWriter.Write(BigIntegerConverter.Instance.Read(ref reader, context).ToString());
 							break;
 						}
 
-						if (extensionHeader.TypeCode == extensionTypeCodes.Decimal)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.Decimal)
 						{
 							jsonWriter.Write(MessagePack.Converters.DecimalConverter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
 							break;
 						}
 
 #if NET
-						if (extensionHeader.TypeCode == extensionTypeCodes.Int128)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.Int128)
 						{
 							jsonWriter.Write(MessagePack.Converters.Int128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
 							break;
 						}
 
-						if (extensionHeader.TypeCode == extensionTypeCodes.UInt128)
+						if (extensionHeader.TypeCode == context.ExtensionTypeCodes.UInt128)
 						{
 							jsonWriter.Write(MessagePack.Converters.UInt128Converter.Instance.Read(ref reader, context).ToString(CultureInfo.InvariantCulture));
 							break;
@@ -773,7 +818,7 @@ public partial record MessagePackSerializer
 
 		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
 
-		var converter = (MessagePackConverter<T>)this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow;
+		MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		bool readMore = false;
 		while (!await asyncReader.GetIsEndOfStreamAsync(readMore).ConfigureAwait(false))

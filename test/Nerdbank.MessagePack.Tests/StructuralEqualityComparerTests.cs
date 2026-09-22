@@ -25,6 +25,14 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	public void BigInteger() => this.AssertEqualityComparerBehavior<BigInteger, Witness>([new BigInteger(5), new BigInteger(5)], [new BigInteger(10)]);
 
 	[Fact]
+	[Trait("CWE", "783")]
+	public void ByteArray()
+	{
+		byte[] shared = [1, 2];
+		this.AssertEqualityComparerBehavior<byte[], Witness>([shared, shared, [1, 2]], [[1, 3], [1, 2, 3]]);
+	}
+
+	[Fact]
 	public void CustomType_Tree() => this.AssertEqualityComparerBehavior(
 		[new Tree([new Fruit(3, "Red"), new Fruit(4, "Green")], 4, FruitKind.Apple), new Tree([new Fruit(3, "Red"), new Fruit(4, "Green")], 4, FruitKind.Apple)],
 		[
@@ -53,7 +61,12 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 
 	[Fact]
 	public void ReadOnlySequenceOfByte() => this.AssertEqualityComparerBehavior(
-		[new HaveReadOnlySequenceOfByte(new([1, 2])), new HaveReadOnlySequenceOfByte(new([1, 2]))],
+		[
+			new HaveReadOnlySequenceOfByte(new([1, 2])),
+			new HaveReadOnlySequenceOfByte(new([1, 2])),
+			new HaveReadOnlySequenceOfByte(SequenceBuilder.Create(new byte[] { 1 }, new byte[] { 2 })),
+			new HaveReadOnlySequenceOfByte(SequenceBuilder.Create(new byte[] { 1 }, ReadOnlyMemory<byte>.Empty, new byte[] { 2 })),
+		],
 		[new HaveReadOnlySequenceOfByte(new([1, 3])), new HaveReadOnlySequenceOfByte(new([1, 2, 3]))]);
 
 	[Fact]
@@ -210,6 +223,69 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 	public class HashCollisionResistant(ITestOutputHelper logger) : StructuralEqualityComparerTests(logger)
 	{
 		[Fact]
+		[Trait("CWE", "697")]
+		public void Dictionary()
+		{
+			Dictionary<string, int> forward = new()
+			{
+				["a"] = 1,
+				["b"] = 2,
+			};
+			Dictionary<string, int> reverse = new()
+			{
+				["b"] = 2,
+				["a"] = 1,
+			};
+
+			IEqualityComparer<Dictionary<string, int>> comparer = this.GetEqualityComparer<Dictionary<string, int>, Witness>();
+			Assert.True(comparer.Equals(forward, reverse));
+			Assert.Equal(comparer.GetHashCode(forward), comparer.GetHashCode(reverse));
+		}
+
+		[Fact]
+		[Trait("CWE", "697")]
+		public void Decimal()
+		{
+			IEqualityComparer<decimal> comparer = this.GetEqualityComparer<decimal, Witness>();
+			Assert.True(comparer.Equals(1.0m, 1.00m));
+			Assert.Equal(comparer.GetHashCode(1.0m), comparer.GetHashCode(1.00m));
+			Assert.True(comparer.Equals(123.4500m, 123.45m));
+			Assert.Equal(comparer.GetHashCode(123.4500m), comparer.GetHashCode(123.45m));
+			Assert.True(comparer.Equals(0m, new decimal(0, 0, 0, isNegative: true, scale: 1)));
+			Assert.Equal(comparer.GetHashCode(0m), comparer.GetHashCode(new decimal(0, 0, 0, isNegative: true, scale: 1)));
+		}
+
+		[Fact]
+		[Trait("CWE", "407")]
+		public void Uri()
+		{
+			IEqualityComparer<Uri> comparer = this.GetEqualityComparer<Uri, Witness>();
+			Uri first = new("https://example.com/path?query=value");
+			Uri second = new("https://example.com/path?query=value");
+			Uri relativeFirst = new("relative/path?query=value", UriKind.Relative);
+			Uri relativeSecond = new("relative/path?query=value", UriKind.Relative);
+
+			Assert.True(comparer.Equals(first, second));
+			Assert.Equal(comparer.GetHashCode(first), comparer.GetHashCode(second));
+			Assert.True(comparer.Equals(relativeFirst, relativeSecond));
+			Assert.Equal(comparer.GetHashCode(relativeFirst), comparer.GetHashCode(relativeSecond));
+		}
+
+		[Fact]
+		public void Extension_IgnoresSegmentBoundaries()
+		{
+			IEqualityComparer<Extension> comparer = this.GetEqualityComparer<Extension>();
+			Extension contiguous = new(5, new byte[] { 1, 2 });
+			Extension segmented = new(5, SequenceBuilder.Create(new byte[] { 1 }, new byte[] { 2 }));
+			Extension segmentedWithEmpty = new(5, SequenceBuilder.Create(new byte[] { 1 }, ReadOnlyMemory<byte>.Empty, new byte[] { 2 }));
+
+			Assert.True(comparer.Equals(contiguous, segmented));
+			Assert.Equal(comparer.GetHashCode(contiguous), comparer.GetHashCode(segmented));
+			Assert.True(comparer.Equals(contiguous, segmentedWithEmpty));
+			Assert.Equal(comparer.GetHashCode(contiguous), comparer.GetHashCode(segmentedWithEmpty));
+		}
+
+		[Fact]
 		public override void CustomHash()
 		{
 			CustomHasher obj = new();
@@ -222,6 +298,10 @@ public abstract partial class StructuralEqualityComparerTests(ITestOutputHelper 
 
 	[GenerateShapeFor<bool>]
 	[GenerateShapeFor<BigInteger>]
+	[GenerateShapeFor<byte[]>]
+	[GenerateShapeFor<decimal>]
+	[GenerateShapeFor<Dictionary<string, int>>]
+	[GenerateShapeFor<Uri>]
 	[GenerateShapeFor<CustomHasher>]
 	internal partial class Witness;
 

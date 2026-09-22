@@ -25,6 +25,46 @@ It is typical (but not required) for an assembly to have at most one witness cla
 
 You do _not_ need a witness class for an external type to reference that type from a graph that is already rooted in a type that _is_ attributed.
 
+### Serializing arrays as top-level types
+
+When you need to serialize or deserialize an array as the top-level type (not as a property of another object), you must use a witness type with the <xref:PolyType.GenerateShapeForAttribute`1> attribute, even if the element type itself is already annotated with <xref:PolyType.GenerateShapeAttribute>.
+
+This is because arrays themselves are not types you can annotate directly - they're runtime-constructed generic types.
+
+For example, suppose you have a `ScenarioInput` class that's properly annotated:
+
+```csharp
+[GenerateShape]
+public partial class ScenarioInput
+{
+    public string Name { get; set; }
+    public int Value { get; set; }
+}
+```
+
+To serialize or deserialize a `ScenarioInput[]` array as the top-level type, define a witness type:
+
+```csharp
+[GenerateShapeFor<ScenarioInput[]>]
+partial class Witness;
+```
+
+Then use the witness type when calling serialize/deserialize methods:
+
+```csharp
+var serializer = new MessagePackSerializer();
+
+// Serialization
+ScenarioInput[] data = [ new() { Name = "Test", Value = 42 } ];
+byte[] msgpack = serializer.Serialize<ScenarioInput[], Witness>(data);
+
+// Deserialization
+ScenarioInput[] result = serializer.Deserialize<ScenarioInput[], Witness>(msgpack);
+```
+
+> [!NOTE]
+> If you're deserializing data serialized by the older MessagePack-CSharp library, the format is the same. Simply define your data model classes with <xref:PolyType.GenerateShapeAttribute> (instead of the old `MessagePackObjectAttribute`), create a witness type for the array, and deserialize as shown above.
+
 ## Fallback configuration
 
 In the unlikely event that you have a need to serialize a type that does _not_ have a shape source-generated for it, you can use the conventional reflection approach of serialization with Nerdbank.MessagePack, if you do not need to run in a trimmed app.
@@ -47,7 +87,7 @@ Still another option to get your source generated data type to be serializable m
 Vogen is a source generator that wraps primitive types in custom structs that can add validation and another level of type safety to your data models.
 
 > [!IMPORTANT]
-> Use Vogen 8.0.3 or later, which emits PolyType marshalers so that data types are serialized without extranneous wrappers.
+> Use Vogen 8.0.3 or later, which emits PolyType marshalers so that data types are serialized without extraneous wrappers.
 
 With Vogen, you have the two options described in the above section, to either declare your data models in a separate project or use the reflection type shape provider.
 Here is what those two worlds look like:

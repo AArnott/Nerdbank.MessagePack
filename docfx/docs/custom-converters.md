@@ -252,7 +252,7 @@ But these converters are easily defined in your own application if/when you have
 
 Remember to [register](#register-your-custom-converter) any of these user-defined converters of externally-defined data types.
 
-### <xref:System.BinaryData?displayProperty=fullName>
+### [System.BinaryData](https://learn.microsoft.com/dotnet/api/system.binarydata?view=net-10.0-pp)
 
 [!code-csharp[](../../samples/cs/Converters/BinaryDataConverter.cs#Converter)]
 

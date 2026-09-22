@@ -28,6 +28,16 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 	/// </summary>
 	protected bool ElementPrefersAsyncSerialization => keyConverter.PreferAsyncSerialization || valueConverter.PreferAsyncSerialization;
 
+	/// <summary>
+	/// Gets the converter for the dictionary's keys.
+	/// </summary>
+	protected MessagePackConverter<TKey> KeyConverter => keyConverter;
+
+	/// <summary>
+	/// Gets the converter for the dictionary's values.
+	/// </summary>
+	protected MessagePackConverter<TValue> ValueConverter => valueConverter;
+
 	/// <inheritdoc/>
 	public override TDictionary? Read(ref MessagePackReader reader, SerializationContext context)
 	{
@@ -336,6 +346,56 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 }
 
 /// <summary>
+/// Serializes and deserializes a <see cref="Dictionary{TKey, TValue}"/>.
+/// </summary>
+/// <inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}"/>
+/// <param name="keyConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='keyConverter']"/></param>
+/// <param name="valueConverter"><inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='valueConverter']"/></param>
+/// <param name="addEntry"><inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='addEntry']"/></param>
+/// <param name="ctor"><inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='ctor']"/></param>
+/// <param name="collectionConstructionOptions"><inheritdoc cref="MutableDictionaryConverter{TDictionary, TKey, TValue}" path="/param[@name='collectionConstructionOptions']"/></param>
+internal sealed class DictionaryConverter<TKey, TValue>(
+	MessagePackConverter<TKey> keyConverter,
+	MessagePackConverter<TValue> valueConverter,
+	DictionaryInserter<Dictionary<TKey, TValue>, TKey, TValue> addEntry,
+	MutableCollectionConstructor<TKey, Dictionary<TKey, TValue>> ctor,
+	Result<CollectionConstructionOptions<TKey>, VisitorError> collectionConstructionOptions)
+	: MutableDictionaryConverter<Dictionary<TKey, TValue>, TKey, TValue>(static dictionary => dictionary, keyConverter, valueConverter, addEntry, ctor, collectionConstructionOptions)
+	where TKey : notnull
+{
+	/// <inheritdoc/>
+	public override void Write(ref MessagePackWriter writer, in Dictionary<TKey, TValue>? value, SerializationContext context)
+	{
+		if (value is null)
+		{
+			writer.WriteNil();
+			return;
+		}
+
+		context.DepthStep();
+		writer.WriteMapHeader(value.Count);
+		TKey? entryKey = default;
+		bool writingKey = true;
+		try
+		{
+			foreach (KeyValuePair<TKey, TValue> pair in value)
+			{
+				entryKey = pair.Key;
+				writingKey = true;
+				this.KeyConverter.Write(ref writer, entryKey, context);
+
+				writingKey = false;
+				this.ValueConverter.Write(ref writer, pair.Value, context);
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		{
+			throw new MessagePackSerializationException(writingKey ? CreateWriteKeyFailMessage(entryKey) : CreateWriteValueFailMessage(entryKey), ex);
+		}
+	}
+}
+
+/// <summary>
 /// Serializes and deserializes an mutable dictionary.
 /// </summary>
 /// <inheritdoc cref="DictionaryConverter{TDictionary, TKey, TValue}"/>
@@ -410,7 +470,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 	{
 		context.DepthStep();
 		int count = reader.ReadMapHeader();
-		TDictionary collection = getCollection(state, count);
+		TDictionary collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 		for (int i = 0; i < count; i++)
 		{
 			this.ReadEntry(ref reader, context, out TKey key, out TValue value);
@@ -434,7 +494,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 			}
 
-			collection = getCollection(state, count);
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context, countIsCorroborated: false));
 			reader.ReturnReader(ref streamingReader);
 			for (int i = 0; i < count; i++)
 			{
@@ -447,7 +507,7 @@ internal class MutableDictionaryConverter<TDictionary, TKey, TValue>(
 			await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
 			MessagePackReader syncReader = reader.CreateBufferedReader();
 			int count = syncReader.ReadMapHeader();
-			collection = getCollection(state, count);
+			collection = getCollection(state, GetCollectionInitialCapacity(count, context));
 			for (int i = 0; i < count; i++)
 			{
 				this.ReadEntry(ref syncReader, context, out TKey key, out TValue value);
@@ -490,12 +550,13 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		context.DepthStep();
 		int count = reader.ReadMapHeader();
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
+		KeyValuePair<TKey, TValue>[] entries = [];
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
 				this.ReadEntry(ref reader, context, out TKey key, out TValue value);
+				Grow(ref entries, i, count, allowSlack: true, context);
 				entries[i] = new(key, value);
 			}
 
@@ -540,11 +601,12 @@ internal class ImmutableDictionaryConverter<TDictionary, TKey, TValue>(
 
 		reader.ReturnReader(ref streamingReader);
 
-		KeyValuePair<TKey, TValue>[] entries = ArrayPool<KeyValuePair<TKey, TValue>>.Shared.Rent(count);
+		KeyValuePair<TKey, TValue>[] entries = [];
 		try
 		{
 			for (int i = 0; i < count; i++)
 			{
+				Grow(ref entries, i, count, allowSlack: true, context, countIsCorroborated: false);
 				entries[i] = await this.ReadEntryAsync(reader, context).ConfigureAwait(false);
 			}
 

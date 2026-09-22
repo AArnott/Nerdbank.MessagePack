@@ -127,6 +127,138 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		this.Logger.WriteLine(ex.Message);
 	}
 
+	[Theory, PairwiseData]
+	public async Task UnrecognizedAlias_PreservesDiscriminatorAndData(bool async, bool useDiscriminatorObjects, bool useStringAlias)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = useDiscriminatorObjects };
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		if (useDiscriminatorObjects)
+		{
+			writer.WriteMapHeader(1);
+		}
+		else
+		{
+			writer.WriteArrayHeader(2);
+		}
+
+		if (useStringAlias)
+		{
+			writer.Write("NewType");
+		}
+		else
+		{
+			writer.Write(100);
+		}
+
+		writer.WriteMapHeader(2);
+		writer.Write(nameof(VersionTolerantBase.BaseProperty));
+		writer.Write(1);
+		writer.Write("NewProperty");
+		writer.Write(2);
+		writer.Flush();
+
+		VersionTolerantBase? value = async
+			? await this.Serializer.DeserializeAsync<VersionTolerantBase>(PipeReader.Create(sequence), TestContext.Current.CancellationToken)
+			: this.Serializer.Deserialize<VersionTolerantBase>(sequence, TestContext.Current.CancellationToken);
+		Assert.NotNull(value);
+		Assert.Equal(1, value.BaseProperty);
+
+		value.BaseProperty = 3;
+		byte[] roundtripped;
+		if (async)
+		{
+			using MemoryStream stream = new();
+			await this.Serializer.SerializeAsync<VersionTolerantBase>(stream, value, TestContext.Current.CancellationToken);
+			roundtripped = stream.ToArray();
+		}
+		else
+		{
+			roundtripped = this.Serializer.Serialize<VersionTolerantBase>(value, TestContext.Current.CancellationToken);
+		}
+
+		MessagePackReader reader = new(roundtripped);
+		if (useDiscriminatorObjects)
+		{
+			Assert.Equal(1, reader.ReadMapHeader());
+		}
+		else
+		{
+			Assert.Equal(2, reader.ReadArrayHeader());
+		}
+
+		if (useStringAlias)
+		{
+			Assert.Equal("NewType", reader.ReadString());
+		}
+		else
+		{
+			Assert.Equal(100, reader.ReadInt32());
+		}
+
+		Assert.Equal(2, reader.ReadMapHeader());
+		Assert.Equal(nameof(VersionTolerantBase.BaseProperty), reader.ReadString());
+		Assert.Equal(3, reader.ReadInt32());
+		Assert.Equal("NewProperty", reader.ReadString());
+		Assert.Equal(2, reader.ReadInt32());
+	}
+
+	[Fact]
+	public void UnrecognizedAlias_PreservedDataIsRecognizedByNewerMapping()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(2);
+		writer.Write(100);
+		writer.WriteMapHeader(2);
+		writer.Write(nameof(VersionTolerantBase.BaseProperty));
+		writer.Write(1);
+		writer.Write(nameof(VersionTolerantNewDerived.NewProperty));
+		writer.Write(2);
+		writer.Flush();
+
+		VersionTolerantBase? oldVersionValue = this.Serializer.Deserialize<VersionTolerantBase>(sequence, TestContext.Current.CancellationToken);
+		Assert.NotNull(oldVersionValue);
+
+		byte[] preservedData = this.Serializer.Serialize<VersionTolerantBase>(oldVersionValue, TestContext.Current.CancellationToken);
+		DerivedShapeMapping<VersionTolerantBase> mapping = new();
+#if NET
+		mapping.Add<VersionTolerantNewDerived>(100);
+#else
+		mapping.Add<VersionTolerantNewDerived>(100, Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		VersionTolerantNewDerived? newerVersionValue = Assert.IsType<VersionTolerantNewDerived>(this.Serializer.Deserialize<VersionTolerantBase>(preservedData, TestContext.Current.CancellationToken));
+		Assert.Equal(1, newerVersionValue.BaseProperty);
+		Assert.Equal(2, newerVersionValue.NewProperty);
+	}
+
+	[Fact]
+	public void UnrecognizedAlias_PreservesArrayPayload()
+	{
+		Sequence<byte> sequence = new();
+		MessagePackWriter writer = new(sequence);
+		writer.WriteArrayHeader(2);
+		writer.Write(100);
+		writer.WriteArrayHeader(2);
+		writer.Write(1);
+		writer.Write(2);
+		writer.Flush();
+
+		VersionTolerantArrayBase? value = this.Serializer.Deserialize<VersionTolerantArrayBase>(sequence, TestContext.Current.CancellationToken);
+		Assert.NotNull(value);
+		Assert.Equal(1, value.BaseProperty);
+
+		byte[] roundtripped = this.Serializer.Serialize<VersionTolerantArrayBase>(value, TestContext.Current.CancellationToken);
+		MessagePackReader reader = new(roundtripped);
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(100, reader.ReadInt32());
+		Assert.Equal(2, reader.ReadArrayHeader());
+		Assert.Equal(1, reader.ReadInt32());
+		Assert.Equal(2, reader.ReadInt32());
+	}
+
 	[Fact]
 	public void UnrecognizedArraySize()
 	{
@@ -328,6 +460,185 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
 	}
 
+	[Theory, PairwiseData]
+	public async Task UseDiscriminatorObjects_BaseType(bool async)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+		BaseClass value = new() { BaseClassProperty = 5 };
+		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync(value) : this.AssertRoundtrip(value);
+
+		// Assert that it's serialized as an object with a single property (discriminator)
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		reader.ReadNil(); // The key for base type is nil
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
+	}
+
+	[Theory, PairwiseData]
+	public async Task UseDiscriminatorObjects_DerivedType(bool async)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+		var value = new DerivedA { BaseClassProperty = 5, DerivedAProperty = 6 };
+		ReadOnlySequence<byte> msgpack = async ? await this.AssertRoundtripAsync<BaseClass>(value) : this.AssertRoundtrip<BaseClass>(value);
+
+		// Assert that it's serialized as an object with discriminator as property name
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadInt32()); // The discriminator tag for DerivedA
+		Assert.Equal(2, reader.ReadMapHeader());
+		Assert.Equal(nameof(DerivedA.DerivedAProperty), reader.ReadString());
+		Assert.Equal(6, reader.ReadInt32());
+		Assert.Equal(nameof(BaseClass.BaseClassProperty), reader.ReadString());
+		Assert.Equal(5, reader.ReadInt32());
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_StringDiscriminator()
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>("A");
+		mapping.Add<DynamicallyRegisteredDerivedB>("B");
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.GeneratedTypeShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>("B", Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+
+		// Assert that it's serialized as an object with string discriminator
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal("A", reader.ReadString()); // String discriminator
+		Assert.Equal(0, reader.ReadMapHeader()); // DerivedA has no properties
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_IntegerDiscriminator()
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>(1);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2);
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>(1, Witness.GeneratedTypeShapeProvider);
+		mapping.Add<DynamicallyRegisteredDerivedB>(2, Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA());
+
+		// Assert that it's serialized as an object with integer discriminator
+		MessagePackReader reader = new(msgpack);
+		Assert.Equal(1, reader.ReadMapHeader());
+		Assert.Equal(1, reader.ReadInt32()); // Integer discriminator
+		Assert.Equal(0, reader.ReadMapHeader()); // DerivedA has no properties
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_Null()
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+		this.AssertRoundtrip<BaseClass>(null);
+
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.True(reader.TryReadNil());
+	}
+
+	[Fact]
+	public void UseDiscriminatorObjects_MatchesExpectedFormat()
+	{
+		// Test the exact format from the issue: {"A":{"a":1}}
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = true };
+
+		DerivedShapeMapping<DynamicallyRegisteredBase> mapping = new();
+#if NET
+		mapping.Add<DynamicallyRegisteredDerivedA>("A");
+#else
+		mapping.Add<DynamicallyRegisteredDerivedA>("A", Witness.GeneratedTypeShapeProvider);
+#endif
+		this.Serializer = this.Serializer with { DerivedTypeUnions = [mapping] };
+
+		byte[] msgpack = this.Serializer.Serialize<DynamicallyRegisteredBase>(new DynamicallyRegisteredDerivedA(), TestContext.Current.CancellationToken);
+		string json = this.Serializer.ConvertToJson(msgpack);
+		this.Logger.WriteLine(json);
+
+		// The format should be {"A":{}} (with no properties in DerivedA)
+		Assert.Contains("\"A\"", json);
+	}
+
+	[Fact]
+	[Trait("Surrogates", "true")]
+	public void MarshalerWithDerivedTypes_BaseOnly()
+	{
+		// Test that base type with marshaler can round-trip
+		MarshaledBaseType original = new(42, "base");
+		MarshaledBaseType? deserialized = this.Roundtrip(original);
+		Assert.NotNull(deserialized);
+		Assert.Equal(original.Value, deserialized.Value);
+		Assert.Equal(original.Name, deserialized.Name);
+	}
+
+	[Fact]
+	[Trait("Surrogates", "true")]
+	public void MarshalerWithDerivedTypes_DerivedOnly()
+	{
+		// Test that derived type with its own marshaler can round-trip
+		MarshaledDerivedType original = new(99, "derived", 3.14);
+		MarshaledDerivedType? deserialized = this.Roundtrip(original);
+		Assert.NotNull(deserialized);
+		Assert.Equal(original.Value, deserialized.Value);
+		Assert.Equal(original.Name, deserialized.Name);
+		Assert.Equal(original.ExtraProperty, deserialized.ExtraProperty);
+	}
+
+	[Fact]
+	[Trait("Surrogates", "true")]
+	public void MarshalerWithDerivedTypes_DerivedTypeAsBaseType()
+	{
+		// Test serializing a derived type through a base type reference
+		// This documents current behavior: when a type has a marshaler AND DerivedTypeShapeAttribute,
+		// the marshaler takes precedence and the union discriminator is NOT added
+		MarshaledDerivedType derived = new(99, "derived", 3.14);
+
+		// Roundtrip as base type - this should use the marshaler, which has no derived type attributes.
+		MarshaledBaseType? deserialized = this.Roundtrip<MarshaledBaseType>(derived);
+
+		// With the current behavior, the marshaler converts derived to base marshaled data
+		// So the result is a base type instance, not a derived type.
+		Assert.NotNull(deserialized);
+		Assert.IsType<MarshaledBaseType>(deserialized);
+		Assert.Equal(derived.Value, deserialized.Value);
+		Assert.Equal(derived.Name, deserialized.Name);
+	}
+
+	[Fact]
+	[Trait("Surrogates", "true")]
+	public void MarshalerWithDerivedTypes_DerivedTypeAsBaseType_KeepsDerived()
+	{
+		// Test serializing a derived type through a base type reference
+		// This verifies behavior when a type uses both a marshaler and DerivedTypeShapeAttribute,
+		// where the surrogate includes a union discriminator so derived type information is preserved.
+		MarshaledDerivedType2 derived = new(99, "derived", 3.14);
+
+		// Roundtrip as base type - this should use the marshaler, which ultimately preserves the derived type via the surrogate.
+		MarshaledBaseType2? deserialized = this.Roundtrip<MarshaledBaseType2>(derived);
+
+		// With this configuration, the marshaled data retains the union discriminator for the derived type,
+		// so the result is a derived type instance, not just the base type.
+		Assert.NotNull(deserialized);
+		MarshaledDerivedType2 back = Assert.IsType<MarshaledDerivedType2>(deserialized);
+		Assert.Equal(derived.Value, back.Value);
+		Assert.Equal(derived.Name, back.Name);
+		Assert.Equal(derived.ExtraProperty, back.ExtraProperty);
+	}
+
 	[GenerateShapeFor<DerivedGeneric<int>>]
 	internal partial class Witness;
 
@@ -376,6 +687,39 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 	}
 
 	public record UnknownDerived : BaseClass;
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(VersionTolerantKnownDerived), Tag = 1)]
+	public partial class VersionTolerantBase
+	{
+		public int BaseProperty { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class VersionTolerantKnownDerived : VersionTolerantBase;
+
+	[GenerateShape]
+	public partial class VersionTolerantNewDerived : VersionTolerantBase
+	{
+		public int NewProperty { get; set; }
+	}
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(VersionTolerantArrayKnownDerived), Tag = 1)]
+	public partial class VersionTolerantArrayBase
+	{
+		[Key(0)]
+		public int BaseProperty { get; set; }
+
+		[PropertyShape]
+		private UnusedDataPacket? UnusedData { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class VersionTolerantArrayKnownDerived : VersionTolerantArrayBase;
 
 	[GenerateShape]
 	[DerivedTypeShape(typeof(MixedAliasDerivedA), Name = "A")]
@@ -492,6 +836,131 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 
 			writer.WriteArrayHeader(1);
 			writer.Write(value.BaseClassProperty);
+		}
+	}
+
+	// Types for testing TypeShapeAttribute.Marshaler with DerivedTypeShapeAttribute
+	[GenerateShape]
+	[TypeShape(Marshaler = typeof(MarshaledBaseTypeMarshaler))]
+	[DerivedTypeShape(typeof(MarshaledDerivedType), Tag = 1)]
+	internal partial class MarshaledBaseType
+	{
+		private readonly int value;
+		private readonly string name;
+
+		public MarshaledBaseType(int value, string name)
+		{
+			this.value = value;
+			this.name = name;
+		}
+
+		public int Value => this.value;
+
+		public string Name => this.name;
+
+		internal record struct MarshaledData(int Value, string Name);
+
+		internal class MarshaledBaseTypeMarshaler : IMarshaler<MarshaledBaseType, MarshaledData?>
+		{
+			public MarshaledData? Marshal(MarshaledBaseType? value)
+				=> value is null ? null : new(value.value, value.name);
+
+			public MarshaledBaseType? Unmarshal(MarshaledData? surrogate)
+				=> surrogate.HasValue ? new MarshaledBaseType(surrogate.Value.Value, surrogate.Value.Name) : null;
+		}
+	}
+
+	[GenerateShape]
+	[TypeShape(Marshaler = typeof(MarshaledDerivedTypeMarshaler))]
+	internal partial class MarshaledDerivedType : MarshaledBaseType
+	{
+		private readonly double extraProperty;
+
+		public MarshaledDerivedType(int value, string name, double extraProperty)
+			: base(value, name)
+		{
+			this.extraProperty = extraProperty;
+		}
+
+		public double ExtraProperty => this.extraProperty;
+
+		internal record struct MarshaledDerivedData(int Value, string Name, double ExtraProperty);
+
+		internal class MarshaledDerivedTypeMarshaler : IMarshaler<MarshaledDerivedType, MarshaledDerivedData?>
+		{
+			public MarshaledDerivedData? Marshal(MarshaledDerivedType? value)
+				=> value is null ? null : new(value.Value, value.Name, value.extraProperty);
+
+			public MarshaledDerivedType? Unmarshal(MarshaledDerivedData? surrogate)
+				=> surrogate.HasValue ? new MarshaledDerivedType(surrogate.Value.Value, surrogate.Value.Name, surrogate.Value.ExtraProperty) : null;
+		}
+	}
+
+	// Types for testing TypeShapeAttribute.Marshaler with DerivedTypeShapeAttribute
+	[GenerateShape]
+	[TypeShape(Marshaler = typeof(MarshaledBaseType2Marshaler))]
+	internal partial class MarshaledBaseType2
+	{
+		private readonly int value;
+		private readonly string name;
+
+		public MarshaledBaseType2(int value, string name)
+		{
+			this.value = value;
+			this.name = name;
+		}
+
+		public int Value => this.value;
+
+		public string Name => this.name;
+
+		[DerivedTypeShape(typeof(MarshaledDerivedType2.MarshaledDerivedData), Tag = 1)]
+		internal record class MarshaledData(int Value, string Name);
+
+		internal class MarshaledBaseType2Marshaler : IMarshaler<MarshaledBaseType2, MarshaledData?>
+		{
+			public MarshaledData? Marshal(MarshaledBaseType2? value)
+			  => value switch
+			  {
+				  null => null,
+				  MarshaledDerivedType2 d => MarshaledDerivedType2.MarshaledDerivedType2Marshaler.Instance.Marshal(d),
+				  _ => new MarshaledData(value.Value, value.Name),
+			  };
+
+			public MarshaledBaseType2? Unmarshal(MarshaledData? surrogate)
+				=> surrogate switch
+				{
+					null => null,
+					MarshaledDerivedType2.MarshaledDerivedData d => MarshaledDerivedType2.MarshaledDerivedType2Marshaler.Instance.Unmarshal(d),
+					_ => new MarshaledBaseType2(surrogate.Value, surrogate.Name),
+				};
+		}
+	}
+
+	[TypeShape(Marshaler = typeof(MarshaledDerivedType2Marshaler))]
+	internal partial class MarshaledDerivedType2 : MarshaledBaseType2
+	{
+		private readonly double extraProperty;
+
+		public MarshaledDerivedType2(int value, string name, double extraProperty)
+			: base(value, name)
+		{
+			this.extraProperty = extraProperty;
+		}
+
+		public double ExtraProperty => this.extraProperty;
+
+		internal record class MarshaledDerivedData(int Value, string Name, double ExtraProperty) : MarshaledData(Value, Name);
+
+		internal class MarshaledDerivedType2Marshaler : IMarshaler<MarshaledDerivedType2, MarshaledDerivedData?>
+		{
+			internal static readonly MarshaledDerivedType2Marshaler Instance = new();
+
+			public MarshaledDerivedData? Marshal(MarshaledDerivedType2? value)
+				=> value is null ? null : new(value.Value, value.Name, value.extraProperty);
+
+			public MarshaledDerivedType2? Unmarshal(MarshaledDerivedData? surrogate)
+				=> surrogate is null ? null : new MarshaledDerivedType2(surrogate.Value, surrogate.Name, surrogate.ExtraProperty);
 		}
 	}
 }

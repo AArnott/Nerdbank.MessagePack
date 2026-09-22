@@ -13,19 +13,39 @@ run-name: ${{ github.ref_name }}
 
 jobs:
   release:
-    runs-on: ubuntu-24.04
+    runs-on: windows-2025
     environment: Publishing
+    env:
+      AZURE_CORE_OUTPUT: none
     permissions:
       actions: read # Required to download artifacts
       contents: write # Upload artifacts to Release
-      id-token: write # Required for NuGet CLI Login
+      id-token: write # Required for Azure and NuGet OIDC authentication
     steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: ⚙ Install .NET SDK
+      shell: pwsh
+      run: |
+        ./tools/Install-DotNetSdk.ps1 -SdkOnly
+        if ($LASTEXITCODE -ne 0) {
+          throw "SDK installation failed."
+        }
+
+        dotnet tool restore
+        if ($LASTEXITCODE -ne 0) {
+          throw "dotnet tool restore failed."
+        }
+
     - name: 🔎 Search for build of ${{ github.ref }}
       shell: pwsh
       id: findrunid
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
+        $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
+
         if ('${{ inputs.ship_run_id }}') {
           $runid = '${{ inputs.ship_run_id }}'
         } else {
@@ -41,16 +61,30 @@ jobs:
 
           Write-Host "Resolved ${{ github.ref_name }} to $commitSha"
 
-          $releases = gh run list -R ${{ github.repository }} -c $commitSha -w .github/workflows/build.yml -s success --json databaseId,startedAt `
-            | ConvertFrom-Json | Sort-Object startedAt -Descending
+          $releases = @(gh run list -R ${{ github.repository }} -c $commitSha -w .github/workflows/build.yml -s success --json databaseId,startedAt,event,headBranch `
+            | ConvertFrom-Json | Sort-Object startedAt -Descending)
+
+          $preferredReleases = $releases | Where-Object {
+            $_.event -eq 'push' -and ($_.headBranch -eq 'main' -or $_.headBranch -match '^v\d+(?:\.\d+)?$')
+          }
 
           if ($releases.length -eq 0) {
             Write-Error "No successful builds found for ${{ github.ref }}."
-          } elseif ($releases.length -gt 1) {
-            Write-Warning "More than one successful run found for ${{ github.ref }}. Artifacts from the most recent successful run will ship."
-          }
+          } else {
+            if ($preferredReleases.length -gt 0) {
+              $selectedReleases = $preferredReleases
+              $multipleRunsWarning = "More than one successful run found for ${{ github.ref }}. Preferring the most recent push build from a public-release branch."
+            } else {
+              $selectedReleases = $releases
+              $multipleRunsWarning = "More than one successful run found for ${{ github.ref }} and none were from a public-release branch. Artifacts from the most recent successful run will ship."
+            }
 
-          $runid = $releases[0].databaseId
+            if ($releases.length -gt 1) {
+              Write-Warning $multipleRunsWarning
+            }
+
+            $runid = $selectedReleases[0].databaseId
+          }
         }
 
         Write-Host "Using artifacts from run-id: $runid"
@@ -58,21 +92,40 @@ jobs:
         Echo "runid=$runid" >> $env:GITHUB_OUTPUT
 
     - name: 🔻 Download deployables artifacts
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: deployables-Linux
         path: ${{ runner.temp }}/deployables
         run-id: ${{ steps.findrunid.outputs.runid }}
         github-token: ${{ github.token }}
 
+    - name: 🔐 Authenticate to Azure
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: ✍️ Sign NuGet packages
+      shell: pwsh
+      run: >
+        dotnet tool run sign -- code azure-key-vault
+        '*.nupkg'
+        --base-directory '${{ runner.temp }}/deployables'
+        --file-list '${{ github.workspace }}/.github/signfiles.txt'
+        --recurse-containers
+        --azure-key-vault-url '${{ vars.AZURE_KEY_VAULT_URL }}'
+        --azure-key-vault-certificate '${{ vars.AZURE_KEY_VAULT_CERTIFICATE }}'
+        --azure-credential-type azure-cli
+
     - name: 🪪 Authorize NuGet package push
-      uses: NuGet/login@d22cc5f58ff5b88bf9bd452535b4335137e24544 # v1.1.0
+      uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
       id: nuget-login
       with:
         user: ${{ secrets.NUGET_USER }}
 
     - name: 🚀 Push NuGet packages
-      run: dotnet nuget push ${{ runner.temp }}/deployables/*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}'
+      run: dotnet nuget push ${{ runner.temp }}\deployables\*.nupkg --source https://api.nuget.org/v3/index.json -k '${{ steps.nuget-login.outputs.NUGET_API_KEY }}' --skip-duplicate
 
     - name: 💽 Upload artifacts to release
       shell: pwsh
@@ -80,6 +133,9 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
+        $ErrorActionPreference = 'Stop'
+        $PSNativeCommandUseErrorActionPreference = $true
+
         Get-ChildItem '${{ runner.temp }}/deployables' -File -Recurse |% {
           Write-Host "Uploading $($_.Name) to release..."
           gh release -R ${{ github.repository }} upload "${{ github.ref_name }}" $_.FullName

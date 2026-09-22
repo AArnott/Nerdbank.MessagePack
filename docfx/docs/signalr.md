@@ -104,3 +104,27 @@ Migration is straightforward and requires minimal code changes:
 4. No changes needed to your Hub methods or client method calls
 
 Both server and clients must use the same protocol for communication.
+
+## NativeAOT compatibility
+
+This package is fully NativeAOT compatible, however depending on other code or dependencies in your application, you might see trim warnings like these:
+
+>    ILC : Trim analysis warning IL2070: System.Windows.Input.CommandConverter.ConvertFromHelper(Type,String): 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicProperties' in call to 'System.Type.GetProperty(String,BindingFlags)'. The parameter 'ownerType' of method 'System.Windows.Input.CommandConverter.ConvertFromHelper(Type,String)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
+
+`Nerdbank.MessagePack.SignalR` has a transitive dependency on WPF through its `Nerdbank.Streams` dependency.
+This normally trims entirely away, but code in your app or other dependencies you have might lead the trimmer to root parts of WPF, leading to warnings like the one above.
+
+If your app doesn't use WPF, you can forcibly remove it from your application by adding this to your app's project file:
+
+```xml
+<Target Name="RemoveWPF" BeforeTargets="ResolveLockFileReferences">
+  <ItemGroup>
+    <FrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
+  </ItemGroup>
+</Target>
+```
+
+Note this must be added to the final application's project file.
+It is not effective when adding it to some intermediate library project.
+
+Learn more about this from [this discussion](https://github.com/AArnott/Nerdbank.MessagePack/issues/926).
