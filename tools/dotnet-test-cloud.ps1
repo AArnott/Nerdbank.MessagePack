@@ -102,11 +102,12 @@ if ($isMTP) {
     $solutionPath = $solutionFiles[0].FullName
     $testProjects = @(Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'test') -Recurse -Filter '*.csproj')
     $nonTUnitProjects = @(
-        $testProjects |
-            Where-Object {
-                (Select-String -LiteralPath $_.FullName -Pattern '<IsTestProject>true</IsTestProject>' -Quiet) -and
-                -not (Select-String -LiteralPath $_.FullName -Pattern 'PackageReference Include="TUnit.Engine"' -Quiet)
+        foreach ($testProject in $testProjects) {
+            $isTestProject = (& $dotnet msbuild $testProject.FullName -getProperty:IsTestProject -nologo).Trim()
+            if ($isTestProject -eq 'true' -and -not (Select-String -LiteralPath $testProject.FullName -Pattern 'PackageReference Include="TUnit.Engine"' -Quiet)) {
+                $testProject
             }
+        }
     )
     if ($nonTUnitProjects.Count -gt 0) {
         & $dotnet test $solutionPath `
@@ -129,7 +130,7 @@ if ($isMTP) {
     $tunitProjects = @(
         Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'test') -Recurse -Filter '*.csproj' |
             Where-Object {
-                $_.FullName -notlike '*\Nerdbank.MessagePack.TUnit\*' -and
+                $_.BaseName -ne 'Nerdbank.MessagePack.TUnit' -and
                 (Select-String -LiteralPath $_.FullName -Pattern 'PackageReference Include="TUnit.Engine"' -Quiet)
             }
     )
