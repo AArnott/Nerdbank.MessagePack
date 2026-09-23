@@ -146,21 +146,13 @@ public partial class IntegrationTests
 	[Test]
 	public async Task SendAsync_VoidMethod_Success()
 	{
-		bool messageReceived = false;
-		string? receivedMessage = null;
+		TaskCompletionSource<string> messageReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-		this.Client.On<string>("ReceiveMessage", (message) =>
-		{
-			receivedMessage = message;
-			messageReceived = true;
-		});
+		this.Client.On<string>("ReceiveMessage", messageReceived.SetResult);
 
 		await this.Client.SendAsync("SendMessage", "Hello from test", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		// Wait a bit for the message to be processed
-		await Task.Delay(100, TestContext.Current!.Execution.CancellationToken);
-
-		Assert.True(messageReceived);
+		string receivedMessage = await messageReceived.Task.WaitAsync(TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal("Hello from test", receivedMessage);
 	}
 
