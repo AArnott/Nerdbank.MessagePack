@@ -27,7 +27,7 @@ public partial class AspNetCoreMvcFormatterTest
 	private readonly MessagePackOutputFormatter formatter = new(Witness.GeneratedTypeShapeProvider);
 	private readonly MessagePackInputFormatter deformatter = new(Witness.GeneratedTypeShapeProvider);
 
-	[Fact]
+	[Test]
 	public async Task MessagePackFormatter()
 	{
 		var person = new User
@@ -38,7 +38,7 @@ public partial class AspNetCoreMvcFormatterTest
 			Description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
 		};
 
-		byte[] messagePackBinary = this.serializer.Serialize(person, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_AspNetCoreMvcFormatter_Tests.Default.User, TestContext.Current.CancellationToken);
+		byte[] messagePackBinary = this.serializer.Serialize(person, PolyType.SourceGenerator.TypeShapeProvider_Nerdbank_MessagePack_AspNetCoreMvcFormatter_Tests.Default.User, TestContext.Current!.Execution.CancellationToken);
 
 		// OutputFormatter
 		OutputFormatterWriteContext outputFormatterContext = GetOutputFormatterContext(person, typeof(User), MsgPackContentType);
@@ -54,7 +54,7 @@ public partial class AspNetCoreMvcFormatterTest
 
 		using (var ms = new MemoryStream())
 		{
-			await body.CopyToAsync(ms, TestContext.Current.CancellationToken);
+			await body.CopyToAsync(ms, TestContext.Current!.Execution.CancellationToken);
 			Assert.Equal(messagePackBinary, ms.ToArray());
 		}
 
@@ -76,7 +76,7 @@ public partial class AspNetCoreMvcFormatterTest
 		Assert.Equal(userModel, person, StructuralEqualityComparer.GetDefault<User, Witness>());
 	}
 
-	[Fact]
+	[Test]
 	public void MessagePackFormatterCanNotRead()
 	{
 		var person = new User();
@@ -97,25 +97,25 @@ public partial class AspNetCoreMvcFormatterTest
 		Assert.False(this.deformatter.CanRead(inputFormatterContext));
 	}
 
-	[Fact]
+	[Test]
 	public void MessagePackOutputFormatterSupportsXMsgPack()
 	{
 		Assert.Equal(MsgPackContentType, this.formatter.SupportedMediaTypes.Single());
 	}
 
-	[Fact]
+	[Test]
 	public void MessagePackInputFormatterSupportsXMsgPack()
 	{
 		Assert.Equal(MsgPackContentType, this.deformatter.SupportedMediaTypes.Single());
 	}
 
-	[Fact]
+	[Test]
 	public void MessagePackInputFormatterExceptionPolicyIsMalformedInputExceptions()
 	{
 		Assert.Equal(InputFormatterExceptionPolicy.MalformedInputExceptions, ((IInputFormatterExceptionPolicy)this.deformatter).ExceptionPolicy);
 	}
 
-	[Fact]
+	[Test]
 	public async Task MessagePackInputFormatterReturnsFailureOnMalformedInput()
 	{
 		// Create malformed MessagePack data - we'll send data that would be a string where we expect an integer

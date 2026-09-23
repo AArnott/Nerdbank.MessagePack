@@ -4,15 +4,7 @@
 using System.Collections;
 using System.Numerics;
 
-#if !TUnit
-using TestAttribute = Xunit.FactAttribute;
-#endif
-
-public
-#if !TUnit
-	abstract
-#endif
-	partial class PrimitivesDerializationTests : MessagePackSerializerTestBase
+public partial class PrimitivesDerializationTests : MessagePackSerializerTestBase
 {
 #if NET
 	protected static readonly ReadOnlyMemory<object> ExpectedKeys = new object[] { "Prop1", "Prop2", "nestedArray", 45UL, -45L, "nestedObject", "decimal", "bigint", "guid", "i128", "u128" };

@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.UseComparerAttri
 
 public class UseComparerAttributeAnalyzerTests
 {
-	[Fact]
+	[Test]
 	public async Task NoIssues_ValidComparer()
 	{
 		string source = /* lang=c#-test */ """
@@ -31,7 +31,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_ValidComparerWithMember()
 	{
 		string source = /* lang=c#-test */ """
@@ -51,7 +51,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoIssues_ValidHashSetComparer()
 	{
 		string source = /* lang=c#-test */ """
@@ -71,7 +71,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task OpenGenericType_ReportsError()
 	{
 		string source = /* lang=c#-test */ """
@@ -96,7 +96,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task InvalidMemberName_ReportsError()
 	{
 		string source = /* lang=c#-test */ """
@@ -116,7 +116,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrivateMemberName_ReportsError()
 	{
 		string source = /* lang=c#-test */ """
@@ -141,7 +141,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task IncompatibleComparerType_ReportsError()
 	{
 		string source = /* lang=c#-test */ """
@@ -164,7 +164,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task WrongComparerElementType_ReportsError()
 	{
 		string source = /* lang=c#-test */ """
@@ -189,7 +189,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidCustomComparer()
 	{
 		string source = /* lang=c#-test */ """
@@ -214,7 +214,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidOnParameter()
 	{
 		string source = /* lang=c#-test */ """
@@ -238,7 +238,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidOnField()
 	{
 		string source = /* lang=c#-test */ """
@@ -258,7 +258,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AbstractType_ReportsError()
 	{
 		string source = /* lang=c#-test */ """
@@ -283,7 +283,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AbstractTypeWithStaticMember_NoError()
 	{
 		string source = /* lang=c#-test */ """
@@ -308,7 +308,7 @@ public class UseComparerAttributeAnalyzerTests
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AbstractTypeWithInstanceMember_ReportsError()
 	{
 		string source = /* lang=c#-test */ """

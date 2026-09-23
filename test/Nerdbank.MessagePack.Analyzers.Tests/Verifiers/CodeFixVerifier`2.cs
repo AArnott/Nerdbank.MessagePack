@@ -81,9 +81,9 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 			this.TestState.AdditionalFilesFactories.Add(() =>
 			{
 				const string additionalFilePrefix = "AdditionalFiles.";
-				return from resourceName in Assembly.GetExecutingAssembly().GetManifestResourceNames()
+				return from resourceName in System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceNames()
 					   where resourceName.StartsWith(additionalFilePrefix, StringComparison.Ordinal)
-					   let content = ReadManifestResource(Assembly.GetExecutingAssembly(), resourceName)
+					   let content = ReadManifestResource(System.Reflection.Assembly.GetExecutingAssembly(), resourceName)
 					   select (filename: resourceName.Substring(additionalFilePrefix.Length), SourceText.From(content));
 			});
 		}

@@ -100,17 +100,51 @@ if ($isMTP) {
     }
 
     $solutionPath = $solutionFiles[0].FullName
-    & $dotnet test $solutionPath `
-        -p:Platform=NonTUnit `
-        --no-build `
-        -c $Configuration `
-        -bl:"$testBinLogXunit" `
-        -- `
-        --filter-not-trait 'TestCategory=FailsInCloudTest' `
-        @mtpArgs `
-        @dumpSwitches `
-        @extraArgs
-    if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+    $testProjects = @(Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'test') -Recurse -Filter '*.csproj')
+    $nonTUnitProjects = @(
+        foreach ($testProject in $testProjects) {
+            $isTestProject = (& $dotnet msbuild $testProject.FullName -getProperty:IsTestProject -nologo).Trim()
+            if ($isTestProject -eq 'true' -and -not (Select-String -LiteralPath $testProject.FullName -Pattern 'PackageReference Include="TUnit.Engine"' -Quiet)) {
+                $testProject
+            }
+        }
+    )
+    if ($nonTUnitProjects.Count -gt 0) {
+        & $dotnet test $solutionPath `
+            -p:Platform=NonTUnit `
+            --no-build `
+            -c $Configuration `
+            -bl:"$testBinLogXunit" `
+            -- `
+            --filter-not-trait 'TestCategory=FailsInCloudTest' `
+            @mtpArgs `
+            @dumpSwitches `
+            @extraArgs
+        if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+    }
+
+    # TUnit projects cannot use the xUnit-compatible trait filter above: because their tests do not
+    # carry xUnit traits, Microsoft.Testing.Platform reports zero tests. Run the migrated TUnit
+    # projects separately without that filter. The main TUnit project has custom IL/NativeAOT
+    # handling below, so exclude it here.
+    $tunitProjects = @(
+        Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'test') -Recurse -Filter '*.csproj' |
+            Where-Object {
+                $_.BaseName -ne 'Nerdbank.MessagePack.TUnit' -and
+                (Select-String -LiteralPath $_.FullName -Pattern 'PackageReference Include="TUnit.Engine"' -Quiet)
+            }
+    )
+    foreach ($tunitProject in $tunitProjects) {
+        Write-Host "Running TUnit project '$($tunitProject.FullName)'." -ForegroundColor Cyan
+        & $dotnet test $tunitProject.FullName `
+            --no-build `
+            -c $Configuration `
+            -- `
+            @mtpArgs `
+            @dumpSwitches `
+            @extraArgs
+        if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+    }
 
     $tunitOutputRoot = Join-Path $RepoRoot "bin/Nerdbank.MessagePack.TUnit/$Configuration"
     $targetFrameworks = @('net8.0', 'net9.0', 'net10.0')

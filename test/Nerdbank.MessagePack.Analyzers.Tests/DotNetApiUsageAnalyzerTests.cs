@@ -5,7 +5,7 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.DotNetApiUsageAn
 
 public class DotNetApiUsageAnalyzerTests
 {
-	[Fact]
+	[Test]
 	public async Task SerializeOverload_Unconstrained()
 	{
 #if NET
@@ -65,7 +65,7 @@ public class DotNetApiUsageAnalyzerTests
 	}
 
 #if NET
-	[Fact]
+	[Test]
 	public async Task SerializeOverload_Constrained()
 	{
 		string source = /* lang=c#-test */ """

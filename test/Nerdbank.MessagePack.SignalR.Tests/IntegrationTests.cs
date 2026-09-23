@@ -11,36 +11,55 @@ using Xunit;
 /// <summary>
 /// Integration tests that involve a real Kestrel server and .NET SignalR client.
 /// </summary>
-[Collection("IntegrationTestCollection")]
-public partial class IntegrationTests(IntegrationTestFixture fixture)
+public partial class IntegrationTests
 {
+	private HostedSignalR? hosted;
+
+	private HubConnection Client => this.hosted?.Client ?? throw new InvalidOperationException("Test connection is not initialized.");
+
+	[Before(Test)]
+	public async ValueTask InitializeAsync()
+	{
+		this.hosted = await HostedSignalR.CreateAsync(IntegrationTestWitness.GeneratedTypeShapeProvider);
+	}
+
+	[After(Test)]
+	public async ValueTask DisposeAsync()
+	{
+		if (this.hosted is not null)
+		{
+			await this.hosted.DisposeAsync();
+			this.hosted = null;
+		}
+	}
+
 	/// <summary>
 	/// Test basic method invocation that returns a value.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task InvokeMethod_ReturnsValue_Success()
 	{
 		// Test string echo
-		string result = await fixture.Client.InvokeAsync<string>("Echo", "Hello World", cancellationToken: TestContext.Current.CancellationToken);
+		string result = await this.Client.InvokeAsync<string>("Echo", "Hello World", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal("Echo: Hello World", result);
 
 		// Test integer addition
-		int sum = await fixture.Client.InvokeAsync<int>("Add", 5, 3, cancellationToken: TestContext.Current.CancellationToken);
+		int sum = await this.Client.InvokeAsync<int>("Add", 5, 3, cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal(8, sum);
 
 		// Test boolean
-		bool isEven = await fixture.Client.InvokeAsync<bool>("IsEven", 4, cancellationToken: TestContext.Current.CancellationToken);
+		bool isEven = await this.Client.InvokeAsync<bool>("IsEven", 4, cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.True(isEven);
 	}
 
 	/// <summary>
 	/// Test method invocation with custom types.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task InvokeMethod_CustomTypes_Success()
 	{
 		// Test creating a user
-		TestUser user = await fixture.Client.InvokeAsync<TestUser>("CreateUser", "Alice", 30, "alice@example.com", cancellationToken: TestContext.Current.CancellationToken);
+		TestUser user = await this.Client.InvokeAsync<TestUser>("CreateUser", "Alice", 30, "alice@example.com", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal("Alice", user.Name);
 		Assert.Equal(30, user.Age);
 		Assert.Equal("alice@example.com", user.Email);
@@ -53,7 +72,7 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 			Tags = new List<string> { "test", "integration" },
 		};
 
-		TestMessage processedMessage = await fixture.Client.InvokeAsync<TestMessage>("ProcessMessage", message, cancellationToken: TestContext.Current.CancellationToken);
+		TestMessage processedMessage = await this.Client.InvokeAsync<TestMessage>("ProcessMessage", message, cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal("Processed: Test message", processedMessage.Content);
 		Assert.Equal(user.Name, processedMessage.Sender.Name);
 	}
@@ -61,10 +80,10 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	/// <summary>
 	/// Test method invocation that returns collections.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task InvokeMethod_Collections_Success()
 	{
-		List<TestUser> users = await fixture.Client.InvokeAsync<List<TestUser>>("GetUsers", cancellationToken: TestContext.Current.CancellationToken);
+		List<TestUser> users = await this.Client.InvokeAsync<List<TestUser>>("GetUsers", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal(3, users.Count);
 		Assert.Contains(users, u => u.Name == "Alice");
 		Assert.Contains(users, u => u.Name == "Bob");
@@ -74,32 +93,32 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	/// <summary>
 	/// Test method invocation with nullable return types.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task InvokeMethod_NullableTypes_Success()
 	{
 		// Test finding existing user
-		TestUser? alice = await fixture.Client.InvokeAsync<TestUser?>("FindUser", "alice", cancellationToken: TestContext.Current.CancellationToken);
+		TestUser? alice = await this.Client.InvokeAsync<TestUser?>("FindUser", "alice", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.NotNull(alice);
 		Assert.Equal("Alice", alice!.Name);
 
 		// Test finding non-existing user
-		TestUser? notFound = await fixture.Client.InvokeAsync<TestUser?>("FindUser", "nonexistent", cancellationToken: TestContext.Current.CancellationToken);
+		TestUser? notFound = await this.Client.InvokeAsync<TestUser?>("FindUser", "nonexistent", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Null(notFound);
 	}
 
 	/// <summary>
 	/// Test method invocation with enums and value types.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task InvokeMethod_EnumsAndValueTypes_Success()
 	{
 		// Test enum
-		TestStatus status = await fixture.Client.InvokeAsync<TestStatus>("GetStatus", "test", cancellationToken: TestContext.Current.CancellationToken);
+		TestStatus status = await this.Client.InvokeAsync<TestStatus>("GetStatus", "test", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal(TestStatus.Pending, status); // "test".Length % 3 == 1
 
 		// Test value type (struct)
 		var point = new TestPoint(10, 20);
-		TestPoint movedPoint = await fixture.Client.InvokeAsync<TestPoint>("MovePoint", point, 5, -3, cancellationToken: TestContext.Current.CancellationToken);
+		TestPoint movedPoint = await this.Client.InvokeAsync<TestPoint>("MovePoint", point, 5, -3, cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal(15, movedPoint.X);
 		Assert.Equal(17, movedPoint.Y);
 	}
@@ -107,53 +126,45 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	/// <summary>
 	/// Test method invocation that throws exceptions.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task InvokeMethod_ThrowsException_PropagatesCorrectly()
 	{
 		// Test ArgumentException - SignalR masks detailed error info for security
 		HubException ex1 = await Assert.ThrowsAsync<HubException>(
-			() => fixture.Client.InvokeAsync<string>("ThrowError", "ArgumentException", cancellationToken: TestContext.Current.CancellationToken));
+			() => this.Client.InvokeAsync<string>("ThrowError", "ArgumentException", cancellationToken: TestContext.Current!.Execution.CancellationToken));
 		Assert.Contains("An unexpected error occurred invoking 'ThrowError'", ex1.Message);
 
 		// Test InvalidOperationException
 		HubException ex2 = await Assert.ThrowsAsync<HubException>(
-			() => fixture.Client.InvokeAsync<string>("ThrowError", "InvalidOperationException", cancellationToken: TestContext.Current.CancellationToken));
+			() => this.Client.InvokeAsync<string>("ThrowError", "InvalidOperationException", cancellationToken: TestContext.Current!.Execution.CancellationToken));
 		Assert.Contains("An unexpected error occurred invoking 'ThrowError'", ex2.Message);
 	}
 
 	/// <summary>
 	/// Test void method invocation (SendAsync).
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task SendAsync_VoidMethod_Success()
 	{
-		bool messageReceived = false;
-		string? receivedMessage = null;
+		TaskCompletionSource<string> messageReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-		fixture.Client.On<string>("ReceiveMessage", (message) =>
-		{
-			receivedMessage = message;
-			messageReceived = true;
-		});
+		this.Client.On<string>("ReceiveMessage", messageReceived.SetResult);
 
-		await fixture.Client.SendAsync("SendMessage", "Hello from test", cancellationToken: TestContext.Current.CancellationToken);
+		await this.Client.SendAsync("SendMessage", "Hello from test", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		// Wait a bit for the message to be processed
-		await Task.Delay(100, TestContext.Current.CancellationToken);
-
-		Assert.True(messageReceived);
+		string receivedMessage = await messageReceived.Task.WaitAsync(TestContext.Current!.Execution.CancellationToken);
 		Assert.Equal("Hello from test", receivedMessage);
 	}
 
 	/// <summary>
 	/// Test streaming method with primitive types.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task StreamAsync_PrimitiveTypes_Success()
 	{
 		var receivedNumbers = new List<int>();
 
-		await foreach (int number in fixture.Client.StreamAsync<int>("StreamNumbers", 5, cancellationToken: TestContext.Current.CancellationToken))
+		await foreach (int number in this.Client.StreamAsync<int>("StreamNumbers", 5, cancellationToken: TestContext.Current!.Execution.CancellationToken))
 		{
 			receivedNumbers.Add(number);
 		}
@@ -164,12 +175,12 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	/// <summary>
 	/// Test streaming method with complex types.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task StreamAsync_ComplexTypes_Success()
 	{
 		var receivedMessages = new List<TestMessage>();
 
-		await foreach (TestMessage message in fixture.Client.StreamAsync<TestMessage>("StreamMessages", "Test", 3, cancellationToken: TestContext.Current.CancellationToken))
+		await foreach (TestMessage message in this.Client.StreamAsync<TestMessage>("StreamMessages", "Test", 3, cancellationToken: TestContext.Current!.Execution.CancellationToken))
 		{
 			receivedMessages.Add(message);
 		}
@@ -182,14 +193,14 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	/// <summary>
 	/// Test streaming cancellation.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task StreamAsync_Cancellation_Success()
 	{
 		using var cts = new CancellationTokenSource();
 		var receivedNumbers = new List<int>();
 
 		// Cancel after receiving first item
-		IAsyncEnumerable<int> stream = fixture.Client.StreamAsync<int>("StreamNumbers", 10, cts.Token);
+		IAsyncEnumerable<int> stream = this.Client.StreamAsync<int>("StreamNumbers", 10, cts.Token);
 
 		try
 		{
@@ -213,11 +224,15 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	/// <summary>
 	/// Test compatibility between MessagePack-CSharp and Nerdbank.MessagePack implementations.
 	/// </summary>
-	[Theory, PairwiseData]
+	[Test]
+	[Arguments(false, false)]
+	[Arguments(false, true)]
+	[Arguments(true, false)]
+	[Arguments(true, true)]
 	public async Task ProtocolInterop_NerdbankVsCSharp(bool nerdbankClient, bool nerdbankServer)
 	{
 		await using HostedSignalR hosted = await HostedSignalR.CreateAsync(IntegrationTestWitness.GeneratedTypeShapeProvider, useNerdbankMessagePackForClient: nerdbankClient, useNerdbankMessagePackForServer: nerdbankServer);
-		string messagePackResult = await hosted.Client.InvokeAsync<string>("Echo", "test", cancellationToken: TestContext.Current.CancellationToken);
+		string messagePackResult = await hosted.Client.InvokeAsync<string>("Echo", "test", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		Assert.Equal("Echo: test", messagePackResult);
 	}
@@ -225,7 +240,7 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 	/// <summary>
 	/// Test connection events.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task ConnectionEvents_Work()
 	{
 		// Set up the server and client, but register the event handler before starting
@@ -238,7 +253,7 @@ public partial class IntegrationTests(IntegrationTestFixture fixture)
 			});
 		});
 
-		string connectionId = await connectionIdSource.Task.WaitAsync(TestContext.Current.CancellationToken);
+		string connectionId = await connectionIdSource.Task.WaitAsync(TestContext.Current!.Execution.CancellationToken);
 		Assert.NotNull(connectionId);
 	}
 

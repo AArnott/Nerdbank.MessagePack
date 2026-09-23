@@ -17,7 +17,7 @@ public partial class MessagePackHubProtocolTests
 		this.protocol = CreateProtocol();
 	}
 
-	[Fact]
+	[Test]
 	public void Constructor_CreatesInstance()
 	{
 		Assert.NotNull(this.protocol);
@@ -26,7 +26,7 @@ public partial class MessagePackHubProtocolTests
 		Assert.Equal(TransferFormat.Binary, this.protocol.TransferFormat);
 	}
 
-	[Fact]
+	[Test]
 	public void Constructor_WithSerializer_CreatesInstance()
 	{
 		var serializer = new MessagePackSerializer();
@@ -36,16 +36,16 @@ public partial class MessagePackHubProtocolTests
 		Assert.Equal("messagepack", protocol.Name);
 	}
 
-	[Theory]
-	[InlineData(1, true)]
-	[InlineData(2, true)]
-	[InlineData(3, false)]
+	[Test]
+	[Arguments(1, true)]
+	[Arguments(2, true)]
+	[Arguments(3, false)]
 	public void IsVersionSupported_ReturnsCorrectResult(int version, bool expected)
 	{
 		Assert.Equal(expected, this.protocol.IsVersionSupported(version));
 	}
 
-	[Fact]
+	[Test]
 	public void GetMessageBytes_PingMessage_ReturnsValidBytes()
 	{
 		PingMessage message = PingMessage.Instance;
@@ -55,7 +55,7 @@ public partial class MessagePackHubProtocolTests
 		Assert.True(bytes.Length > 0);
 	}
 
-	[Fact]
+	[Test]
 	public void WriteMessage_PingMessage_WritesToOutput()
 	{
 		PingMessage message = PingMessage.Instance;
@@ -66,7 +66,7 @@ public partial class MessagePackHubProtocolTests
 		Assert.NotEqual(0, buffer.Length);
 	}
 
-	[Fact]
+	[Test]
 	public void GetMessageBytes_CloseMessage_ReturnsValidBytes()
 	{
 		var message = new CloseMessage("Test error", false);
@@ -76,7 +76,7 @@ public partial class MessagePackHubProtocolTests
 		Assert.True(bytes.Length > 0);
 	}
 
-	[Fact]
+	[Test]
 	public void GetMessageBytes_InvocationMessage_ReturnsValidBytes()
 	{
 		var message = new InvocationMessage("123", "TestMethod", new object[] { "arg1", 42 });
@@ -86,7 +86,7 @@ public partial class MessagePackHubProtocolTests
 		Assert.True(bytes.Length > 0);
 	}
 
-	[Fact]
+	[Test]
 	public void GetMessageBytes_CompletionMessage_ReturnsValidBytes()
 	{
 		var message = CompletionMessage.WithResult("123", "test result");
@@ -96,7 +96,7 @@ public partial class MessagePackHubProtocolTests
 		Assert.True(bytes.Length > 0);
 	}
 
-	[Fact]
+	[Test]
 	public void GetMessageBytes_StreamItemMessage_ReturnsValidBytes()
 	{
 		var message = new StreamItemMessage("123", "test item");
@@ -106,7 +106,7 @@ public partial class MessagePackHubProtocolTests
 		Assert.True(bytes.Length > 0);
 	}
 
-	[Fact]
+	[Test]
 	public void GetMessageBytes_CancelInvocationMessage_ReturnsValidBytes()
 	{
 		var message = new CancelInvocationMessage("123");
