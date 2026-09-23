@@ -45,6 +45,7 @@ public partial class DerivedTypeDuckTypingTests : MessagePackSerializerTestBase
 	[GenerateShape]
 	public partial record IdenticalTypeBase;
 
+#pragma warning disable NBMsgPack110 // These initializers keep the duck-typing fixtures structurally identical.
 	[GenerateShape]
 	public partial record IdenticalType1 : IdenticalTypeBase
 	{
@@ -56,6 +57,7 @@ public partial class DerivedTypeDuckTypingTests : MessagePackSerializerTestBase
 	{
 		public string CommonProperty { get; init; } = string.Empty;
 	}
+#pragma warning restore NBMsgPack110
 
 	[GenerateShapeFor<Animal>]
 	[GenerateShapeFor<Dog>]

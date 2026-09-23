@@ -3,6 +3,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="PolyType.Roslyn" />
   </ItemGroup>
 
 </Project>

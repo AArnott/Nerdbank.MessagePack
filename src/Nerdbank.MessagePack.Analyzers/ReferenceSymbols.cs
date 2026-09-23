@@ -17,6 +17,8 @@ public record ReferenceSymbols(
 	INamedTypeSymbol UnusedDataPacket,
 	INamedTypeSymbol DerivedTypeShapeAttribute,
 	INamedTypeSymbol GenerateShapeAttribute,
+	INamedTypeSymbol GenerateShapeForAttribute,
+	INamedTypeSymbol GenerateShapeForGenericAttribute,
 	INamedTypeSymbol PropertyShapeAttribute,
 	INamedTypeSymbol ConstructorShapeAttribute,
 	INamedTypeSymbol UseComparerAttribute)
@@ -125,6 +127,20 @@ public record ReferenceSymbols(
 			return false;
 		}
 
+		INamedTypeSymbol? generateShapeForAttribute = polytypeAssembly.GetTypeByMetadataName("PolyType.GenerateShapeForAttribute");
+		if (generateShapeForAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
+		INamedTypeSymbol? generateShapeForGenericAttribute = polytypeAssembly.GetTypeByMetadataName("PolyType.GenerateShapeForAttribute`1")?.ConstructUnboundGenericType();
+		if (generateShapeForGenericAttribute is null)
+		{
+			referenceSymbols = null;
+			return false;
+		}
+
 		INamedTypeSymbol? propertyShapeAttribute = polytypeAssembly.GetTypeByMetadataName("PolyType.PropertyShapeAttribute");
 		if (propertyShapeAttribute is null)
 		{
@@ -158,6 +174,8 @@ public record ReferenceSymbols(
 			unusedDataPacket,
 			derivedTypeShapeAttribute,
 			generateShapeAttribute,
+			generateShapeForAttribute,
+			generateShapeForGenericAttribute,
 			propertyShapeAttribute,
 			constructorShapeAttribute,
 			useComparerAttribute);

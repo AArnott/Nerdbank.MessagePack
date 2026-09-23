@@ -1,5 +1,6 @@
 <Project>
   <ItemGroup>
+    <PackageDownload Include="PolyType.Roslyn" Version="[$(PolyTypeVersion)-unstable]" />
     <ProjectReference Include="$(RepoRootPath)src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
     <ProjectReference Include="$(RepoRootPath)src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -9,5 +10,8 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeVersion)-unstable\lib\netstandard2.0\PolyType.Roslyn.dll" />
   </ItemGroup>
 </Project>
