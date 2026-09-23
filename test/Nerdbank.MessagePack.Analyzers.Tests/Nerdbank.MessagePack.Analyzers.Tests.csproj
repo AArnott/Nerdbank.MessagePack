@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="PolyType" />
+    <PackageReference Include="PolyType.Roslyn" />
     <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
 

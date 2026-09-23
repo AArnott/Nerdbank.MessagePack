@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+    <PackageDownload Include="PolyType.Roslyn" Version="[$(PolyTypeVersion)-unstable]" />
   </ItemGroup>
   <ItemGroup>
     <AnalyzerProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
@@ -22,6 +23,7 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>
+    <Analyzer Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeVersion)-unstable\lib\netstandard2.0\PolyType.Roslyn.dll" />
   </ItemGroup>
 
 </Project>
