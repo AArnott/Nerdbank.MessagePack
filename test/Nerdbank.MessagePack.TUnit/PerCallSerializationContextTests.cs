@@ -201,7 +201,7 @@ public partial class PerCallSerializationContextTests : MessagePackSerializerTes
 	[Test]
 	public void StartingContextWithCapturedContextIsStillAccepted()
 	{
-		// Preserve prior behavior: an in-flight context assigned to StartingContext was never validated.
+		// Preserve prior behavior: an already-initialized context assigned to StartingContext was never validated.
 		SerializationContext captured = this.CaptureInFlightContext();
 		this.Serializer = this.Serializer with { StartingContext = captured };
 

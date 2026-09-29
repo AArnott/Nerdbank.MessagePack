@@ -186,7 +186,7 @@ Modify state on an existing @Nerdbank.MessagePack.MessagePackSerializer by captu
 
 #### Per-call state
 
-When the state varies from one call to the next (e.g. per RPC message rather than per connection), creating a new @Nerdbank.MessagePack.MessagePackSerializer for each call is unnecessary.
+When the state varies from one call to the next (e.g. per RPC message rather than per connection), creating a new <xref:Nerdbank.MessagePack.MessagePackSerializer> for each call is unnecessary.
 Instead, pass a <xref:Nerdbank.MessagePack.SerializationContext> directly to one of the overloads that accepts one, such as <xref:Nerdbank.MessagePack.MessagePackSerializer.Serialize``1(Nerdbank.MessagePack.MessagePackWriter@,``0@,PolyType.ITypeShape{``0},Nerdbank.MessagePack.SerializationContext)>.
 These overloads use the supplied context instead of <xref:Nerdbank.MessagePack.MessagePackSerializer.StartingContext>, and take their cancellation token from its <xref:Nerdbank.MessagePack.SerializationContext.CancellationToken> property.
 The context is typically derived from <xref:Nerdbank.MessagePack.MessagePackSerializer.StartingContext> so that it retains any other settings on it:

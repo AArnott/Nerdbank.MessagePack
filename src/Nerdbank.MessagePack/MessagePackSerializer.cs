@@ -236,7 +236,7 @@ public partial record MessagePackSerializer
 	/// Its <see cref="SerializationContext.CancellationToken"/> is used to cancel the operation.
 	/// This is typically derived from <see cref="StartingContext"/> using a <see langword="with" /> expression.
 	/// </param>
-	/// <exception cref="ArgumentException">Thrown if <paramref name="startingContext"/> belongs to a serialization operation that is already in progress, such as the context given to a converter.</exception>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="startingContext"/> has already been initialized for a serialization operation and cannot be used as a starting context.</exception>
 	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
 	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, SerializationContext startingContext)
 	{

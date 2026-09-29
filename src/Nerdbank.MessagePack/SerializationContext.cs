@@ -359,9 +359,8 @@ public record struct SerializationContext
 	/// <param name="paramName">The name of the parameter that supplied this context.</param>
 	/// <exception cref="ArgumentException">Thrown if this context has already been initialized for a serialization operation.</exception>
 	/// <remarks>
-	/// A context that a converter receives has been initialized for an in-progress operation.
-	/// Passing such a context to a top-level serializer method would start a new operation that
-	/// shares nothing with the original one (e.g. reference preservation), which is almost certainly a bug.
+	/// A context that a converter receives has already been initialized and cannot be used to start another operation.
+	/// Converters should use <see cref="GetConverter{T}(ITypeShapeProvider?)"/> to (de)serialize nested values, passing along the context they received.
 	/// </remarks>
 	internal readonly void ThrowIfInitialized(string paramName)
 	{
@@ -372,7 +371,7 @@ public record struct SerializationContext
 
 		[DoesNotReturn]
 		static void Throw(string paramName) => throw new ArgumentException(
-			"This context belongs to a serialization operation that is already in progress. Custom converters should never call top-level serializer methods. Instead, use the converter returned by SerializationContext.GetConverter to (de)serialize nested values, passing along the context it was given.",
+			"This context has already been initialized for a serialization operation and cannot be used as a starting context. Custom converters should use SerializationContext.GetConverter to (de)serialize nested values, passing along the context they were given.",
 			paramName);
 	}
 
