@@ -28,10 +28,32 @@ namespace Nerdbank.MessagePack;
 internal class ConverterCache(SerializerConfiguration configuration)
 {
 	/// <summary>
-	/// An optimization that avoids the dictionary lookup to start serialization
-	/// when the caller repeatedly serializes the same type.
+	/// The number of direct-mapped slots in <see cref="lastConverters"/>. Must be a power of two.
 	/// </summary>
-	private LastConverterCacheEntry? lastConverter;
+	private const int LastConverterSlotCount = 16;
+
+	/// <summary>
+	/// Assigns each type that is (de)serialized through this library a slot in <see cref="lastConverters"/>.
+	/// </summary>
+	private static int nextSlot = -1;
+
+	/// <summary>
+	/// An optimization that avoids the dictionary lookup to start serialization
+	/// when the caller repeatedly serializes a small set of types.
+	/// </summary>
+	/// <remarks>
+	/// Each element is either <see langword="null" /> or a converter result that the
+	/// <see cref="ConverterResult.Shape"/> property identifies. Since each element is a reference,
+	/// reads and writes are atomic, making this cache thread-safe without locks <em>and</em> without
+	/// allocating a wrapper object on each cache miss.
+	/// </remarks>
+	private readonly ConverterResult?[] lastConverters = new ConverterResult?[LastConverterSlotCount];
+
+	/// <summary>
+	/// The most recently used converter result, which allows the extremely common case of
+	/// repeatedly (de)serializing one type to skip even the slot computation.
+	/// </summary>
+	private ConverterResult? lastConverter;
 
 	private MultiProviderTypeCache? cachedConverters;
 
@@ -114,15 +136,20 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <returns>A msgpack converter.</returns>
 	internal ConverterResult GetOrAddConverter<T>(ITypeShape<T> shape)
 	{
-		LastConverterCacheEntry? lastConverter = this.lastConverter;
+		ConverterResult? lastConverter = this.lastConverter;
 		if (lastConverter is not null && ReferenceEquals(lastConverter.Shape, shape))
 		{
-			return lastConverter.Converter;
+			return lastConverter;
 		}
 
-		ConverterResult converter = (ConverterResult)this.CachedConverters.GetOrAdd(shape)!;
-		this.lastConverter = new(shape, converter);
-		return converter;
+		lastConverter = this.lastConverters[TypeSlot<T>.Index];
+		if (lastConverter is not null && ReferenceEquals(lastConverter.Shape, shape))
+		{
+			this.lastConverter = lastConverter;
+			return lastConverter;
+		}
+
+		return this.AddConverter(shape);
 	}
 
 	/// <summary>
@@ -135,12 +162,12 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal MessagePackConverter<T> GetOrAddConverterValue<T>(ITypeShape<T> shape)
 	{
-		LastConverterCacheEntry? lastConverter = this.lastConverter;
+		ConverterResult? lastConverter = this.lastConverter;
 		if (lastConverter is not null && ReferenceEquals(lastConverter.Shape, shape))
 		{
-			return lastConverter.ConverterValue is { } converter
+			return lastConverter.Value is { } converter
 				? (MessagePackConverter<T>)converter
-				: ThrowConverterError<T>(lastConverter.Converter);
+				: ThrowConverterError<T>(lastConverter);
 		}
 
 		return this.GetOrAddConverterValueSlow(shape);
@@ -319,19 +346,47 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private MessagePackConverter<T> GetOrAddConverterValueSlow<T>(ITypeShape<T> shape)
 	{
-		ConverterResult converter = (ConverterResult)this.CachedConverters.GetOrAdd(shape)!;
-		this.lastConverter = new(shape, converter);
+		ConverterResult converter = this.GetOrAddConverter(shape);
 		return (MessagePackConverter<T>)converter.ValueOrThrow;
 	}
 
-	private sealed class LastConverterCacheEntry(ITypeShape shape, ConverterResult converter)
+	/// <summary>
+	/// Looks up (and caches) the converter for a shape that was not found in either level of the last-converter cache.
+	/// </summary>
+	/// <typeparam name="T">The data type to convert.</typeparam>
+	/// <param name="shape">The shape of the type to convert.</param>
+	/// <returns>The converter result.</returns>
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private ConverterResult AddConverter<T>(ITypeShape<T> shape)
 	{
-		private readonly MessagePackConverter? converterValue = converter.Value;
+		ConverterResult converter = (ConverterResult)this.CachedConverters.GetOrAdd(shape)!;
 
-		internal ITypeShape Shape => shape;
+		// Only successful results may be cached by shape association, because failure results
+		// may be shared instances (e.g. static singletons) that serve more than one shape or cache.
+		if (converter.Success)
+		{
+			converter.Shape = shape;
+			this.lastConverters[TypeSlot<T>.Index] = converter;
+			this.lastConverter = converter;
+		}
 
-		internal ConverterResult Converter => converter;
+		return converter;
+	}
 
-		internal MessagePackConverter? ConverterValue => this.converterValue;
+	/// <summary>
+	/// Assigns a stable <see cref="lastConverters"/> slot to each data type.
+	/// </summary>
+	/// <typeparam name="T">The data type to be converted.</typeparam>
+	/// <remarks>
+	/// Slots are handed out by a monotonically increasing counter so that the types an application
+	/// actually uses tend to land in distinct slots rather than colliding as hash codes may.
+	/// A collision is harmless; it merely reduces the cache to a slower (but still correct) lookup.
+	/// </remarks>
+	private static class TypeSlot<T>
+	{
+		/// <summary>
+		/// The index into <see cref="lastConverters"/> reserved for <typeparamref name="T"/>.
+		/// </summary>
+		internal static readonly int Index = (int)((uint)Interlocked.Increment(ref nextSlot) & (LastConverterSlotCount - 1));
 	}
 }
