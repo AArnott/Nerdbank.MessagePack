@@ -21,6 +21,10 @@ namespace Nerdbank.MessagePack;
 /// <para>To modify the starting context on an existing serializer, you can use the with keyword to create a new serializer with the updated context.</para>
 /// <code source="../../samples/cs/ApplyingSerializationContext.cs" region="ModifyingStartingContext" lang="C#" />
 /// </example>
+/// <remarks>
+/// A context may also be supplied for an individual (de)serialization operation by passing it to an overload that accepts one,
+/// such as <see cref="MessagePackSerializer.Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, SerializationContext)"/>.
+/// </remarks>
 [DebuggerDisplay($"Depth remaining = {{{nameof(MaxDepth)}}}")]
 public record struct SerializationContext
 {
@@ -347,6 +351,29 @@ public record struct SerializationContext
 		this.typeShapeProvider = provider;
 		this.cancellationToken = cancellationToken;
 		this.referenceEqualityTracker?.SetSerializationContext(this);
+	}
+
+	/// <summary>
+	/// Throws if this context belongs to a serialization operation that has already started.
+	/// </summary>
+	/// <param name="paramName">The name of the parameter that supplied this context.</param>
+	/// <exception cref="ArgumentException">Thrown if this context has already been initialized for a serialization operation.</exception>
+	/// <remarks>
+	/// A context that a converter receives has been initialized for an in-progress operation.
+	/// Passing such a context to a top-level serializer method would start a new operation that
+	/// shares nothing with the original one (e.g. reference preservation), which is almost certainly a bug.
+	/// </remarks>
+	internal readonly void ThrowIfInitialized(string paramName)
+	{
+		if (this.cache is not null || this.typeShapeProvider is not null || this.referenceEqualityTracker is not null || this.stringInterningCache is not null || this.MidSkipRemainingCount != 0)
+		{
+			Throw(paramName);
+		}
+
+		[DoesNotReturn]
+		static void Throw(string paramName) => throw new ArgumentException(
+			"This context belongs to a serialization operation that is already in progress. Custom converters should never call top-level serializer methods. Instead, use the converter returned by SerializationContext.GetConverter to (de)serialize nested values, passing along the context it was given.",
+			paramName);
 	}
 
 	/// <summary>
