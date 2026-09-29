@@ -1,4 +1,4 @@
-﻿﻿# Nerdbank.MessagePack
+# Nerdbank.MessagePack
 
 ***A modern, fast and NativeAOT-compatible MessagePack serialization library***
 
