@@ -37,6 +37,25 @@ internal class ConverterResult
 	}
 
 	/// <summary>
+	/// Gets or sets the type shape that this result was most recently produced for.
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// This serves as a back-reference that allows <see cref="ConverterCache"/> to cache this result
+	/// directly (rather than in a wrapper object that would have to be allocated on each cache miss)
+	/// while still being able to verify that a cached result belongs to a given shape.
+	/// </para>
+	/// <para>
+	/// A result is only ever associated with a shape that the converter cache produced it for,
+	/// and only successful results are ever associated (failure results may be shared singletons).
+	/// In the rare case that one result object serves multiple shapes, concurrent writers may
+	/// overwrite each other's value. That is benign: it can only cost a cache miss, never correctness.
+	/// Reference field assignment is atomic, so readers never observe a torn value.
+	/// </para>
+	/// </remarks>
+	internal ITypeShape? Shape { get; set; }
+
+	/// <summary>
 	/// Gets a value indicating whether the converter was created.
 	/// </summary>
 	[MemberNotNullWhen(true, nameof(Value))]
