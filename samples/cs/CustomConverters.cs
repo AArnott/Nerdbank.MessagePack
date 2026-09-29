@@ -475,6 +475,21 @@ namespace Stateful
             return serializer;
         }
     }
+
+    class PerCallState
+    {
+        void Serialize(MessagePackSerializer serializer, System.Buffers.IBufferWriter<byte> bufferWriter, SpecialType value, CancellationToken cancellationToken)
+        {
+            #region PerCallState
+            SerializationContext context = serializer.StartingContext with { CancellationToken = cancellationToken };
+            context["ValueMultiplier"] = 5;
+
+            MessagePackWriter writer = new(bufferWriter);
+            serializer.Serialize(ref writer, value, TypeShapeResolver.ResolveDynamicOrThrow<SpecialType>(), context);
+            writer.Flush();
+            #endregion
+        }
+    }
 }
 
 namespace CustomConverterFactory

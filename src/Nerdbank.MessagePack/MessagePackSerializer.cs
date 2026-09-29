@@ -161,6 +161,10 @@ public partial record MessagePackSerializer
 	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
+	/// <remarks>
+	/// Overloads that accept a <see cref="SerializationContext"/> parameter (e.g. <see cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, SerializationContext)"/>)
+	/// use that context instead of this one, to support per-call state or settings.
+	/// </remarks>
 	public SerializationContext StartingContext { get; init; } = new();
 
 	/// <summary>
@@ -217,25 +221,27 @@ public partial record MessagePackSerializer
 	/// </example>
 	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
 	{
-		Requires.NotNull(shape);
+		SerializationContext context = this.StartingContext;
+		this.SerializeObjectCore(ref writer, value, shape, ref context, cancellationToken);
+	}
 
-		try
-		{
-			SerializationContext context = this.StartingContext;
-			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
-			try
-			{
-				this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObject(ref writer, value, context);
-			}
-			finally
-			{
-				context.End();
-			}
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
-		}
+	/// <summary>
+	/// Serializes an untyped value using a caller-supplied starting context.
+	/// </summary>
+	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="shape">The shape of the value to serialize.</param>
+	/// <param name="startingContext">
+	/// The context to start this operation with, used instead of <see cref="StartingContext"/>.
+	/// Its <see cref="SerializationContext.CancellationToken"/> is used to cancel the operation.
+	/// This is typically derived from <see cref="StartingContext"/> using a <see langword="with" /> expression.
+	/// </param>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="startingContext"/> has already been initialized for a serialization operation and cannot be used as a starting context.</exception>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public void SerializeObject(ref MessagePackWriter writer, object? value, ITypeShape shape, SerializationContext startingContext)
+	{
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		this.SerializeObjectCore(ref writer, value, shape, ref startingContext, startingContext.CancellationToken);
 	}
 
 	/// <summary>
@@ -248,25 +254,24 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken">A cancellation token.</param>
 	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		Requires.NotNull(shape);
+		SerializationContext context = this.StartingContext;
+		this.SerializeCore(ref writer, value, shape, ref context, cancellationToken);
+	}
 
-		try
-		{
-			SerializationContext context = this.StartingContext;
-			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
-			try
-			{
-				this.ConverterCache.GetOrAddConverterValue(shape).WriteCore(ref writer, value, ref context);
-			}
-			finally
-			{
-				context.End();
-			}
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
-		}
+	/// <summary>
+	/// Serializes a value using a caller-supplied starting context.
+	/// </summary>
+	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <param name="writer">The msgpack writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
+	/// <param name="startingContext"><inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/param[@name='startingContext']"/></param>
+	/// <inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/exception"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public void Serialize<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, SerializationContext startingContext)
+	{
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		this.SerializeCore(ref writer, value, shape, ref startingContext, startingContext.CancellationToken);
 	}
 
 	/// <summary>
@@ -281,25 +286,23 @@ public partial record MessagePackSerializer
 	/// </example>
 	public object? DeserializeObject(ref MessagePackReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
 	{
-		Requires.NotNull(shape);
+		SerializationContext context = this.StartingContext;
+		return this.DeserializeObjectCore(ref reader, shape, ref context, cancellationToken);
+	}
 
-		try
-		{
-			SerializationContext context = this.StartingContext;
-			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
-			try
-			{
-				return this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.ReadObject(ref reader, context);
-			}
-			finally
-			{
-				context.End();
-			}
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
-		}
+	/// <summary>
+	/// Deserializes an untyped value using a caller-supplied starting context.
+	/// </summary>
+	/// <param name="reader">The msgpack reader to deserialize from.</param>
+	/// <param name="shape">The shape of the value to deserialize.</param>
+	/// <param name="startingContext"><inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/param[@name='startingContext']"/></param>
+	/// <returns>The deserialized value.</returns>
+	/// <inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/exception"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public object? DeserializeObject(ref MessagePackReader reader, ITypeShape shape, SerializationContext startingContext)
+	{
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		return this.DeserializeObjectCore(ref reader, shape, ref startingContext, startingContext.CancellationToken);
 	}
 
 	/// <summary>
@@ -327,7 +330,7 @@ public partial record MessagePackSerializer
 	/// </example>
 	public dynamic? DeserializeDynamicPrimitives(ref MessagePackReader reader, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContextCore(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider, this.StartingContext, cancellationToken);
 		try
 		{
 			return PrimitivesAsDynamicConverter.Instance.Read(ref reader, context.Value);
@@ -353,7 +356,7 @@ public partial record MessagePackSerializer
 	/// </example>
 	public object? DeserializePrimitives(ref MessagePackReader reader, CancellationToken cancellationToken = default)
 	{
-		using DisposableSerializationContext context = this.CreateSerializationContext(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContextCore(MsgPackPrimitivesWitness.GeneratedTypeShapeProvider, this.StartingContext, cancellationToken);
 		try
 		{
 			return PrimitivesAsObjectConverter.Instance.Read(ref reader, context.Value);
@@ -374,24 +377,24 @@ public partial record MessagePackSerializer
 	/// <returns>The deserialized value.</returns>
 	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
 	{
-		Requires.NotNull(shape);
 		SerializationContext context = this.StartingContext;
-		context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
-		try
-		{
-			try
-			{
-				return this.ConverterCache.GetOrAddConverterValue(shape).ReadCore(ref reader, ref context);
-			}
-			finally
-			{
-				context.End();
-			}
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
-		}
+		return this.DeserializeCore(ref reader, shape, ref context, cancellationToken);
+	}
+
+	/// <summary>
+	/// Deserializes a value using a caller-supplied starting context.
+	/// </summary>
+	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <param name="reader">The msgpack reader to deserialize from.</param>
+	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
+	/// <param name="startingContext"><inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/param[@name='startingContext']"/></param>
+	/// <returns>The deserialized value.</returns>
+	/// <inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/exception"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public T? Deserialize<T>(ref MessagePackReader reader, ITypeShape<T> shape, SerializationContext startingContext)
+	{
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		return this.DeserializeCore(ref reader, shape, ref startingContext, startingContext.CancellationToken);
 	}
 
 	/// <summary>
@@ -403,41 +406,36 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>A task that tracks the async serialization.</returns>
-	public async ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
-	{
-		Requires.NotNull(writer);
-		Requires.NotNull(shape);
+	public ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+		=> this.SerializeCoreAsync(writer, value, shape, this.StartingContext, cancellationToken);
 
-		try
-		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			MessagePackAsyncWriter asyncWriter = new(writer);
-			await this.ConverterCache.GetOrAddConverterValue(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
-			asyncWriter.Flush();
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
-		}
+	/// <summary>
+	/// Serializes a value using the given <see cref="PipeWriter"/> and a caller-supplied starting context.
+	/// </summary>
+	/// <typeparam name="T">The type to be serialized.</typeparam>
+	/// <param name="writer">The writer to use.</param>
+	/// <param name="value">The value to serialize.</param>
+	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
+	/// <param name="startingContext"><inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/param[@name='startingContext']"/></param>
+	/// <returns>A task that tracks the async serialization.</returns>
+	/// <inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/exception"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public ValueTask SerializeAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, SerializationContext startingContext)
+	{
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		return this.SerializeCoreAsync(writer, value, shape, startingContext, startingContext.CancellationToken);
 	}
 
 	/// <inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/>
-	public async ValueTask SerializeObjectAsync(PipeWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
-	{
-		Requires.NotNull(writer);
-		Requires.NotNull(shape);
+	public ValueTask SerializeObjectAsync(PipeWriter writer, object? value, ITypeShape shape, CancellationToken cancellationToken = default)
+		=> this.SerializeObjectCoreAsync(writer, value, shape, this.StartingContext, cancellationToken);
 
-		try
-		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			MessagePackAsyncWriter asyncWriter = new(writer);
-			await this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObjectAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
-			asyncWriter.Flush();
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
-		}
+	/// <inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, SerializationContext)"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public ValueTask SerializeObjectAsync(PipeWriter writer, object? value, ITypeShape shape, SerializationContext startingContext)
+	{
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		return this.SerializeObjectCoreAsync(writer, value, shape, startingContext, startingContext.CancellationToken);
 	}
 
 	/// <summary>
@@ -448,87 +446,35 @@ public partial record MessagePackSerializer
 	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
 	/// <param name="cancellationToken">A cancellation token.</param>
 	/// <returns>The deserialized value.</returns>
-	public async ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, CancellationToken cancellationToken = default)
+		=> this.DeserializeCoreAsync(reader, shape, this.StartingContext, cancellationToken);
+
+	/// <summary>
+	/// Deserializes a value from a <see cref="PipeReader"/> using a caller-supplied starting context.
+	/// </summary>
+	/// <typeparam name="T">The type of value to deserialize.</typeparam>
+	/// <param name="reader"><inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='reader']"/></param>
+	/// <param name="shape">The shape of the type, as obtained from an <see cref="ITypeShapeProvider"/>.</param>
+	/// <param name="startingContext"><inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/param[@name='startingContext']"/></param>
+	/// <returns>The deserialized value.</returns>
+	/// <inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/exception"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public ValueTask<T?> DeserializeAsync<T>(PipeReader reader, ITypeShape<T> shape, SerializationContext startingContext)
 	{
-		Requires.NotNull(reader);
-		Requires.NotNull(shape);
-
-		try
-		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
-
-			// Buffer up to some threshold before starting deserialization.
-			// Only engage with the async code path (which is slower) if we reach our threshold
-			// and more bytes are still to come.
-			if (this.MaxAsyncBuffer > 0)
-			{
-				ReadResult readResult = await reader.ReadAtLeastNoLOHAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
-				if (readResult.IsCompleted)
-				{
-					MessagePackReader msgpackReader = new(readResult.Buffer);
-					T? result = converter.Read(ref msgpackReader, context.Value);
-					reader.AdvanceTo(msgpackReader.Position);
-					return result;
-				}
-				else
-				{
-					reader.AdvanceTo(readResult.Buffer.Start);
-				}
-			}
-
-			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
-			await asyncReader.ReadAsync().ConfigureAwait(false);
-			T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
-			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
-			return result2;
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
-		}
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		return this.DeserializeCoreAsync(reader, shape, startingContext, startingContext.CancellationToken);
 	}
 
 	/// <inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>
-	public async ValueTask<object?> DeserializeObjectAsync(PipeReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
+	public ValueTask<object?> DeserializeObjectAsync(PipeReader reader, ITypeShape shape, CancellationToken cancellationToken = default)
+		=> this.DeserializeObjectCoreAsync(reader, shape, this.StartingContext, cancellationToken);
+
+	/// <inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, SerializationContext)"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	public ValueTask<object?> DeserializeObjectAsync(PipeReader reader, ITypeShape shape, SerializationContext startingContext)
 	{
-		Requires.NotNull(reader);
-		Requires.NotNull(shape);
-
-		try
-		{
-			using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
-			MessagePackConverter converter = this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow;
-
-			// Buffer up to some threshold before starting deserialization.
-			// Only engage with the async code path (which is slower) if we reach our threshold
-			// and more bytes are still to come.
-			if (this.MaxAsyncBuffer > 0)
-			{
-				ReadResult readResult = await reader.ReadAtLeastNoLOHAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
-				if (readResult.IsCompleted)
-				{
-					MessagePackReader msgpackReader = new(readResult.Buffer);
-					object? result = converter.ReadObject(ref msgpackReader, context.Value);
-					reader.AdvanceTo(msgpackReader.Position);
-					return result;
-				}
-				else
-				{
-					reader.AdvanceTo(readResult.Buffer.Start);
-				}
-			}
-
-			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
-			await asyncReader.ReadAsync().ConfigureAwait(false);
-			object? result2 = await converter.ReadObjectAsync(asyncReader, context.Value).ConfigureAwait(false);
-			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
-			return result2;
-		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-		{
-			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
-		}
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		return this.DeserializeObjectCoreAsync(reader, shape, startingContext, startingContext.CancellationToken);
 	}
 
 	/// <inheritdoc cref="ConvertToJson(in ReadOnlySequence{byte}, JsonOptions?)"/>
@@ -816,7 +762,7 @@ public partial record MessagePackSerializer
 		Requires.NotNull(shape);
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, this.StartingContext, cancellationToken);
 
 		MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
@@ -889,12 +835,33 @@ public partial record MessagePackSerializer
 	/// <param name="cancellationToken">A cancellation token for the operation.</param>
 	/// <returns>The serialization context.</returns>
 	/// <remarks>
+	/// <para>
+	/// The returned context is based on <see cref="StartingContext"/>.
+	/// To start from a caller-supplied context instead (e.g. to support per-call state), use <see cref="CreateSerializationContext(ITypeShapeProvider, SerializationContext)"/>.
+	/// </para>
+	/// <para>
 	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
+	/// </para>
 	/// </remarks>
 	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, CancellationToken cancellationToken = default)
+		=> this.CreateSerializationContextCore(Requires.NotNull(provider), this.StartingContext, cancellationToken);
+
+	/// <summary>
+	/// Creates a new serialization context that is ready to process a serialization job, based on a caller-supplied starting context.
+	/// </summary>
+	/// <param name="provider"><inheritdoc cref="CreateSerializationContext(ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="startingContext"><inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/param[@name='startingContext']"/></param>
+	/// <returns>The serialization context.</returns>
+	/// <remarks>
+	/// Callers should be sure to always call <see cref="DisposableSerializationContext.Dispose"/> when done with the context.
+	/// </remarks>
+	/// <inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/exception"/>
+	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
+	protected DisposableSerializationContext CreateSerializationContext(ITypeShapeProvider provider, SerializationContext startingContext)
 	{
 		Requires.NotNull(provider);
-		return new(this.StartingContext.Start(this, this.ConverterCache, provider, cancellationToken));
+		startingContext.ThrowIfInitialized(nameof(startingContext));
+		return this.CreateSerializationContextCore(provider, startingContext, startingContext.CancellationToken);
 	}
 
 	/// <summary>
@@ -923,7 +890,7 @@ public partial record MessagePackSerializer
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, this.StartingContext, cancellationToken);
 
 		MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
 		await asyncReader.ReadAsync().ConfigureAwait(false);
@@ -945,7 +912,7 @@ public partial record MessagePackSerializer
 	{
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
-		using DisposableSerializationContext context = this.CreateSerializationContext(shape.Provider, cancellationToken);
+		using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, this.StartingContext, cancellationToken);
 
 		SkipToPathViaExpression skipper = new(this, shape, context.Value);
 		return skipper.NavigateToMember(ref reader, options.Path) switch
@@ -953,6 +920,253 @@ public partial record MessagePackSerializer
 			{ Success: false, Error: { } unreachable } => options.DefaultForUndiscoverablePath ? default : throw SkipToPathViaExpression.IncompletePathException(unreachable),
 			{ Success: true, Value: { } leafShape } => this.Deserialize(ref reader, (ITypeShape<TElement>)leafShape, cancellationToken),
 		};
+	}
+
+	/// <summary>
+	/// Starts a serialization job based on the given starting context.
+	/// </summary>
+	/// <param name="provider"><inheritdoc cref="CreateSerializationContext(ITypeShapeProvider, CancellationToken)" path="/param[@name='provider']"/></param>
+	/// <param name="startingContext">The context to base the job on.</param>
+	/// <param name="cancellationToken">The cancellation token for the job.</param>
+	/// <returns>The serialization context.</returns>
+	private DisposableSerializationContext CreateSerializationContextCore(ITypeShapeProvider provider, in SerializationContext startingContext, CancellationToken cancellationToken)
+		=> new(startingContext.Start(this, this.ConverterCache, provider, cancellationToken));
+
+	/// <summary>
+	/// Serializes a value, initializing the given context in place to avoid copying it.
+	/// </summary>
+	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)"/>
+	/// <param name="context">The starting context, which is initialized in place.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	private void SerializeCore<T>(ref MessagePackWriter writer, in T? value, ITypeShape<T> shape, ref SerializationContext context, CancellationToken cancellationToken)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(shape);
+
+		try
+		{
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				this.ConverterCache.GetOrAddConverterValue(shape).WriteCore(ref writer, value, ref context);
+			}
+			finally
+			{
+				context.End();
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
+	}
+
+	/// <inheritdoc cref="SerializeCore{T}(ref MessagePackWriter, in T, ITypeShape{T}, ref SerializationContext, CancellationToken)"/>
+	private void SerializeObjectCore(ref MessagePackWriter writer, object? value, ITypeShape shape, ref SerializationContext context, CancellationToken cancellationToken)
+	{
+		Requires.NotNull(shape);
+
+		try
+		{
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObject(ref writer, value, context);
+			}
+			finally
+			{
+				context.End();
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
+	}
+
+	/// <summary>
+	/// Deserializes a value, initializing the given context in place to avoid copying it.
+	/// </summary>
+	/// <inheritdoc cref="Deserialize{T}(ref MessagePackReader, ITypeShape{T}, CancellationToken)"/>
+	/// <param name="context">The starting context, which is initialized in place.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	private T? DeserializeCore<T>(ref MessagePackReader reader, ITypeShape<T> shape, ref SerializationContext context, CancellationToken cancellationToken)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(shape);
+		context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+		try
+		{
+			try
+			{
+				return this.ConverterCache.GetOrAddConverterValue(shape).ReadCore(ref reader, ref context);
+			}
+			finally
+			{
+				context.End();
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
+	}
+
+	/// <summary>
+	/// Deserializes an untyped value, initializing the given context in place to avoid copying it.
+	/// </summary>
+	/// <inheritdoc cref="DeserializeObject(ref MessagePackReader, ITypeShape, CancellationToken)"/>
+	/// <param name="context">The starting context, which is initialized in place.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	private object? DeserializeObjectCore(ref MessagePackReader reader, ITypeShape shape, ref SerializationContext context, CancellationToken cancellationToken)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(shape);
+
+		try
+		{
+			context.Initialize(this, this.ConverterCache, shape.Provider, cancellationToken);
+			try
+			{
+				return this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.ReadObject(ref reader, context);
+			}
+			finally
+			{
+				context.End();
+			}
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
+	}
+
+	/// <inheritdoc cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/>
+	/// <param name="startingContext">The context to base the job on.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	private async ValueTask SerializeCoreAsync<T>(PipeWriter writer, T? value, ITypeShape<T> shape, SerializationContext startingContext, CancellationToken cancellationToken)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(writer);
+		Requires.NotNull(shape);
+
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
+			MessagePackAsyncWriter asyncWriter = new(writer);
+			await this.ConverterCache.GetOrAddConverterValue(shape).WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			asyncWriter.Flush();
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
+	}
+
+	/// <inheritdoc cref="SerializeCoreAsync{T}(PipeWriter, T, ITypeShape{T}, SerializationContext, CancellationToken)"/>
+	private async ValueTask SerializeObjectCoreAsync(PipeWriter writer, object? value, ITypeShape shape, SerializationContext startingContext, CancellationToken cancellationToken)
+	{
+		Requires.NotNull(writer);
+		Requires.NotNull(shape);
+
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
+			MessagePackAsyncWriter asyncWriter = new(writer);
+			await this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow.WriteObjectAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+			asyncWriter.Flush();
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+		}
+	}
+
+	/// <inheritdoc cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>
+	/// <param name="startingContext">The context to base the job on.</param>
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	private async ValueTask<T?> DeserializeCoreAsync<T>(PipeReader reader, ITypeShape<T> shape, SerializationContext startingContext, CancellationToken cancellationToken)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+	{
+		Requires.NotNull(reader);
+		Requires.NotNull(shape);
+
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
+			MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
+
+			// Buffer up to some threshold before starting deserialization.
+			// Only engage with the async code path (which is slower) if we reach our threshold
+			// and more bytes are still to come.
+			if (this.MaxAsyncBuffer > 0)
+			{
+				ReadResult readResult = await reader.ReadAtLeastNoLOHAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
+				if (readResult.IsCompleted)
+				{
+					MessagePackReader msgpackReader = new(readResult.Buffer);
+					T? result = converter.Read(ref msgpackReader, context.Value);
+					reader.AdvanceTo(msgpackReader.Position);
+					return result;
+				}
+				else
+				{
+					reader.AdvanceTo(readResult.Buffer.Start);
+				}
+			}
+
+			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+			await asyncReader.ReadAsync().ConfigureAwait(false);
+			T? result2 = await converter.ReadAsync(asyncReader, context.Value).ConfigureAwait(false);
+			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
+			return result2;
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
+	}
+
+	/// <inheritdoc cref="DeserializeCoreAsync{T}(PipeReader, ITypeShape{T}, SerializationContext, CancellationToken)"/>
+	private async ValueTask<object?> DeserializeObjectCoreAsync(PipeReader reader, ITypeShape shape, SerializationContext startingContext, CancellationToken cancellationToken)
+	{
+		Requires.NotNull(reader);
+		Requires.NotNull(shape);
+
+		try
+		{
+			using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
+			MessagePackConverter converter = this.ConverterCache.GetOrAddConverter(shape).ValueOrThrow;
+
+			// Buffer up to some threshold before starting deserialization.
+			// Only engage with the async code path (which is slower) if we reach our threshold
+			// and more bytes are still to come.
+			if (this.MaxAsyncBuffer > 0)
+			{
+				ReadResult readResult = await reader.ReadAtLeastNoLOHAsync(this.MaxAsyncBuffer, cancellationToken).ConfigureAwait(false);
+				if (readResult.IsCompleted)
+				{
+					MessagePackReader msgpackReader = new(readResult.Buffer);
+					object? result = converter.ReadObject(ref msgpackReader, context.Value);
+					reader.AdvanceTo(msgpackReader.Position);
+					return result;
+				}
+				else
+				{
+					reader.AdvanceTo(readResult.Buffer.Start);
+				}
+			}
+
+			MessagePackAsyncReader asyncReader = new(reader) { CancellationToken = cancellationToken };
+			await asyncReader.ReadAsync().ConfigureAwait(false);
+			object? result2 = await converter.ReadObjectAsync(asyncReader, context.Value).ConfigureAwait(false);
+			asyncReader.Dispose(); // only dispose this on success paths, since on exception it may throw (again) and conceal the original exception.
+			return result2;
+		}
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		{
+			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
+		}
 	}
 
 	/// <exception cref="NotSupportedException">Thrown if <see cref="PreserveReferences"/> is not <see cref="ReferencePreservationMode.Off"/>.</exception>

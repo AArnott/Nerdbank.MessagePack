@@ -184,6 +184,22 @@ Modify state on an existing @Nerdbank.MessagePack.MessagePackSerializer by captu
 
 [!code-csharp[](../../samples/cs/CustomConverters.cs#ModifyStateOnSerializer)]
 
+#### Per-call state
+
+When the state varies from one call to the next (e.g. per RPC message rather than per connection), creating a new <xref:Nerdbank.MessagePack.MessagePackSerializer> for each call is unnecessary.
+Instead, pass a <xref:Nerdbank.MessagePack.SerializationContext> directly to one of the overloads that accepts one, such as <xref:Nerdbank.MessagePack.MessagePackSerializer.Serialize``1(Nerdbank.MessagePack.MessagePackWriter@,``0@,PolyType.ITypeShape{``0},Nerdbank.MessagePack.SerializationContext)>.
+These overloads use the supplied context instead of <xref:Nerdbank.MessagePack.MessagePackSerializer.StartingContext>, and take their cancellation token from its <xref:Nerdbank.MessagePack.SerializationContext.CancellationToken> property.
+The context is typically derived from <xref:Nerdbank.MessagePack.MessagePackSerializer.StartingContext> so that it retains any other settings on it:
+
+[!code-csharp[](../../samples/cs/CustomConverters.cs#PerCallState)]
+
+These overloads are available for <xref:Nerdbank.MessagePack.MessagePackWriter>, <xref:Nerdbank.MessagePack.MessagePackReader>, <xref:System.IO.Pipelines.PipeWriter> and <xref:System.IO.Pipelines.PipeReader>, for both generic and untyped (`*Object`) (de)serialization.
+To (de)serialize with other inputs or outputs (e.g. a `byte[]` or <xref:System.IO.Stream>), wrap them in one of these types first.
+
+A converter must never pass its own <xref:Nerdbank.MessagePack.SerializationContext> to these top-level methods.
+Doing so throws an <xref:System.ArgumentException>.
+Use <xref:Nerdbank.MessagePack.SerializationContext.GetConverter*> to (de)serialize nested values instead.
+
 ### Async converters
 
 @Nerdbank.MessagePack.MessagePackConverter`1 is an abstract class that requires a derived converter to implement synchronous @Nerdbank.MessagePack.MessagePackConverter`1.Write* and @Nerdbank.MessagePack.MessagePackConverter`1.Read* methods.
