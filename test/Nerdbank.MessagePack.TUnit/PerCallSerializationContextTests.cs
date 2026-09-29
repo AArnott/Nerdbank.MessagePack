@@ -8,8 +8,8 @@ public partial class PerCallSerializationContextTests : MessagePackSerializerTes
 {
 	private const string MultiplierKey = "PerCallSerializationContextTests.Multiplier";
 
-	private static readonly ITypeShape<Scaled> ScaledShape = TypeShapeResolver.ResolveDynamicOrThrow<Scaled, Witness>();
-	private static readonly ITypeShape<Outer> OuterShape = TypeShapeResolver.ResolveDynamicOrThrow<Outer, Witness>();
+	private static readonly ITypeShape<Scaled> ScaledShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<Scaled>();
+	private static readonly ITypeShape<Outer> OuterShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<Outer>();
 
 	[Test]
 	public void Serialize_Deserialize_Generic()
