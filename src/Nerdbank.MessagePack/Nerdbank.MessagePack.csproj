@@ -18,7 +18,8 @@ Also features an automatic structural equality API.</PackageDescription>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
+    <!-- NetWasm POC: PrivateAssets="compile" removed because NetWasm.Sdk pack rejects partially-private dependencies (NWPK007). -->
+    <PackageReference Include="Microsoft.VisualStudio.Validation" />
     <PackageReference Include="PolyType" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'!='netwasm0.1'">
@@ -94,6 +95,7 @@ Also features an automatic structural equality API.</PackageDescription>
     <ProjectReference Include="@(AnalyzerProjectReference)">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>AnalyzerAssembly</OutputItemType>
+      <PrivateAssets>all</PrivateAssets>
       <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
