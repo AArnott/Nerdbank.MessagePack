@@ -75,7 +75,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 				valueConverter.Write(ref writer, pair.Value, context);
 			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(writingKey ? CreateWriteKeyFailMessage(entryKey) : CreateWriteValueFailMessage(entryKey), ex);
 		}
@@ -102,7 +102,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 				{
 					await keyConverter.WriteAsync(writer, entryKey, context).ConfigureAwait(false);
 				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 				{
 					throw new MessagePackSerializationException(CreateWriteKeyFailMessage(entryKey), ex);
 				}
@@ -111,7 +111,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 				{
 					await valueConverter.WriteAsync(writer, entryValue, context).ConfigureAwait(false);
 				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 				{
 					throw new MessagePackSerializationException(CreateWriteValueFailMessage(entryKey), ex);
 				}
@@ -143,7 +143,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 					}
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(writingKey ? CreateWriteKeyFailMessage(entryKey) : CreateWriteValueFailMessage(entryKey), ex);
 			}
@@ -284,7 +284,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			readingKey = false;
 			value = valueConverter.Read(ref reader, context)!;
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(readingKey ? CreateReadKeyFailMessage() : CreateReadValueFailMessage(key), ex);
 		}
@@ -307,7 +307,7 @@ internal class DictionaryConverter<TDictionary, TKey, TValue>(Func<TDictionary, 
 			TValue? value = await valueConverter.ReadAsync(reader, context).ConfigureAwait(false);
 			return new(key!, value!);
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(readingKey ? CreateReadKeyFailMessage() : CreateReadValueFailMessage(key), ex);
 		}
@@ -388,7 +388,7 @@ internal sealed class DictionaryConverter<TKey, TValue>(
 				this.ValueConverter.Write(ref writer, pair.Value, context);
 			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(writingKey ? CreateWriteKeyFailMessage(entryKey) : CreateWriteValueFailMessage(entryKey), ex);
 		}

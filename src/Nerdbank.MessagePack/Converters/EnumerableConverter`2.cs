@@ -74,7 +74,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 					await elementConverter.WriteAsync(writer, elements[i], context).ConfigureAwait(false);
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
@@ -93,7 +93,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 						elementConverter.Write(ref syncWriter, elements[i], context);
 					}
 				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 				{
 					throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 				}
@@ -144,7 +144,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 					index++;
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), index), ex);
 			}
@@ -161,7 +161,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 					elementConverter.Write(ref writer, array[i], context);
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
@@ -278,7 +278,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 				elementConverter.Write(ref writer, list[i], context);
 			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 		}
@@ -366,7 +366,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 				addElement(ref collection, this.ReadElement(ref reader, context));
 			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 		}
@@ -399,7 +399,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 					addElement(ref collection, await this.ReadElementAsync(reader, context).ConfigureAwait(false));
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
@@ -418,7 +418,7 @@ internal class MutableEnumerableConverter<TEnumerable, TElement>(
 					addElement(ref collection, this.ReadElement(ref syncReader, context));
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}
@@ -469,7 +469,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 			i = null;
 			return ctor(elements.AsSpan(0, count), options);
 		}
-		catch (Exception ex) when (i is not null && ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (i is not null && ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i.Value), ex);
 		}
@@ -519,7 +519,7 @@ internal class SpanEnumerableConverter<TEnumerable, TElement>(
 				i = null;
 				return ctor(elements.AsSpan(0, count));
 			}
-			catch (Exception ex) when (i is not null && ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (i is not null && ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i.Value), ex);
 			}

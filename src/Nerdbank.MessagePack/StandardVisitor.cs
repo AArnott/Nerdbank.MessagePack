@@ -399,7 +399,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							{
 								DirectPrimitiveConverter<TPropertyType>.Write(ref writer, getter(ref Unsafe.AsRef(in container)));
 							}
-							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 							{
 								throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
 							}
@@ -416,7 +416,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						{
 							typedConverter.Write(ref writer, getter(ref Unsafe.AsRef(in container)), context);
 						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 						{
 							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
 						}
@@ -431,7 +431,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						{
 							await typedConverter.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
 						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 						{
 							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
 						}
@@ -464,7 +464,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							{
 								setter(ref container, DirectPrimitiveConverter<TPropertyType>.Read(ref reader)!);
 							}
-							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 							{
 								throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
 							}
@@ -478,7 +478,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						{
 							setter(ref container, typedConverter.Read(ref reader, context)!);
 						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 						{
 							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
 						}
@@ -494,7 +494,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							setter(ref container, (await typedConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
 							return container;
 						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 						{
 							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
 						}
@@ -526,7 +526,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						TPropertyType collection = getter(ref container);
 						inflater.DeserializeInto(ref reader, ref collection, context);
 					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 					{
 						throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
 					}
@@ -547,7 +547,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							TPropertyType collection = propertyShape.GetGetter()(ref container);
 							await inflater.DeserializeIntoAsync(reader, collection, context).ConfigureAwait(false);
 						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 						{
 							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
 						}
@@ -670,7 +670,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
 						setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
 					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 					{
 						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
 					}
@@ -683,7 +683,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false)) ?? throw NewDisallowedDeserializedNullValueException(parameterShape));
 						return state;
 					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 					{
 						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
 					}
@@ -702,7 +702,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						ThrowIfAlreadyAssigned(state, parameterShape.Position, parameterShape.Name);
 						setter(ref state, ((MessagePackConverter<TParameterType>)converter.Value).Read(ref reader, context)!);
 					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 					{
 						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
 					}
@@ -715,7 +715,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 						setter(ref state, (await ((MessagePackConverter<TParameterType>)converter.Value).ReadAsync(reader, context).ConfigureAwait(false))!);
 						return state;
 					}
-					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+					catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context))
 					{
 						throw new MessagePackSerializationException(CreateReadFailMessage(parameterShape, constructorShape), ex);
 					}
@@ -840,7 +840,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					MessagePackConverter<TEnumerable>? converter;
 					if (enumerableShape.Rank > 1)
 					{
-#if NET
+#if NETWASM
+						// NetWasm cannot compile multi-dimensional array accessors (NW1003).
+						return ConverterResult.Err(new PlatformNotSupportedException("Multi-dimensional arrays are not supported on NetWasm."));
+#elif NET
 						return this.owner.MultiDimensionalArrayFormat switch
 						{
 							MultiDimensionalArrayFormat.Nested => ConverterResult.Ok(new ArrayWithNestedDimensionsConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank)),

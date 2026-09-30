@@ -134,8 +134,19 @@ public abstract class MessagePackConverter
 	/// In other words, the only time we allow any exception to escape is when the operation was cancelled, because
 	/// that is the intended behavior of cancellation tokens.
 	/// </remarks>
-	internal static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
+	internal static bool ShouldWrapSerializationException(Exception ex, in CancellationToken cancellationToken)
 		=> ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
+
+	/// <inheritdoc cref="ShouldWrapSerializationException(Exception, in CancellationToken)"/>
+	/// <param name="ex">The exception.</param>
+	/// <param name="context">The serialization context, whose <see cref="SerializationContext.CancellationToken"/> is checked.</param>
+	/// <remarks>
+	/// Parameters are passed by <see langword="in"/> reference and this overload exists so that exception filters never copy a struct
+	/// (by loading a struct field or calling a struct-returning getter), which crashes the NetWasm 0.5.0 compiler
+	/// (KeyNotFoundException in DirectCallEmitter while emitting filter funclets).
+	/// </remarks>
+	internal static bool ShouldWrapSerializationException(Exception ex, in SerializationContext context)
+		=> ShouldWrapSerializationException(ex, context.CancellationToken);
 
 	/// <summary>
 	/// Creates a type-specific error message for deserialization failures.

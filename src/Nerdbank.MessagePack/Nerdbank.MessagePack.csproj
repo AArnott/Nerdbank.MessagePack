@@ -41,7 +41,7 @@ Also features an automatic structural equality API.</PackageDescription>
     <PackageReference Include="NetWasm.System.Memory" />
     <PackageReference Include="NetWasm.System.Text.Json" />
     <Using Remove="System.Net.Http" />
-    <Compile Remove="DynamicMsgPackDictionary.cs;SkipToPathViaExpression.cs;StreamingDeserializer`1.cs;Converters/ExpandoObjectConverter.cs;Converters/PrimitivesAsDynamicConverter.cs" />
+    <Compile Remove="DynamicMsgPackDictionary.cs;SkipToPathViaExpression.cs;StreamingDeserializer`1.cs;Converters/ExpandoObjectConverter.cs;Converters/PrimitivesAsDynamicConverter.cs;Converters/ArrayRank*.cs;Converters/ArrayWith*DimensionsConverter`2.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Download PolyType.Roslyn for analyzer loading without letting its compiler dependencies affect target framework asset selection. -->

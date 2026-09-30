@@ -34,7 +34,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 				array[i] = elementConverter.Read(ref reader, context)!;
 			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 		}
@@ -61,7 +61,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 				elementConverter.Write(ref writer, value[i], context);
 			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+		catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 		{
 			throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 		}
@@ -89,7 +89,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 					await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
 				}
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), i), ex);
 			}
@@ -109,7 +109,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 						context.CancellationToken.ThrowIfCancellationRequested();
 					}
 				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+				catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 				{
 					throw new MessagePackSerializationException(CreateFailWritingValueAtIndex(typeof(TElement), progress), ex);
 				}
@@ -166,7 +166,7 @@ internal class ArrayConverter<TElement>(MessagePackConverter<TElement> elementCo
 
 				return elements;
 			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, context.CancellationToken))
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, context))
 			{
 				throw new MessagePackSerializationException(CreateFailReadingValueAtIndex(typeof(TElement), i), ex);
 			}

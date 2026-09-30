@@ -1190,8 +1190,8 @@ public partial record MessagePackSerializer
 		}
 	}
 
-	/// <inheritdoc cref="MessagePackConverter.ShouldWrapSerializationException(Exception, CancellationToken)"/>
-	private static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
+	/// <inheritdoc cref="MessagePackConverter.ShouldWrapSerializationException(Exception, in CancellationToken)"/>
+	private static bool ShouldWrapSerializationException(Exception ex, in CancellationToken cancellationToken)
 		=> MessagePackConverter.ShouldWrapSerializationException(ex, cancellationToken);
 
 	/// <summary>
