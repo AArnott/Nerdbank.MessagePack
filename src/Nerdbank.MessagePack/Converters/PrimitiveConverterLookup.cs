@@ -622,6 +622,7 @@ internal static class PrimitiveConverterLookup
 
 #endif
 
+#if !NETWASM // NetWasm has no runtime type names; name-matched primitives (BigInteger, System.Drawing) are unsupported.
 #if NET
 		string primitiveTypeName = typeof(T).Name;
 #else
@@ -671,6 +672,7 @@ internal static class PrimitiveConverterLookup
 			return converter is not null;
 		}
 
+#endif
 		converter = null;
 		return false;
 	}
@@ -682,17 +684,21 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? CreateBigIntegerConverter(Type type) => type == typeof(System.Numerics.BigInteger) ? new BigIntegerConverter() : null;
 #endif
 
+#if !NETWASM
 	[MethodImpl(MethodImplOptions.NoInlining)]
 #if NET
 	private static IMessagePackConverterInternal? CreateSystemDrawingColorConverter<T>() => typeof(T) == typeof(System.Drawing.Color) ? new SystemDrawingColorConverter() : null;
 #else
 	private static IMessagePackConverterInternal? CreateSystemDrawingColorConverter(Type type) => type == typeof(System.Drawing.Color) ? new SystemDrawingColorConverter() : null;
 #endif
+#endif
 
+#if !NETWASM
 	[MethodImpl(MethodImplOptions.NoInlining)]
 #if NET
 	private static IMessagePackConverterInternal? CreateSystemDrawingPointConverter<T>() => typeof(T) == typeof(System.Drawing.Point) ? new SystemDrawingPointConverter() : null;
 #else
 	private static IMessagePackConverterInternal? CreateSystemDrawingPointConverter(Type type) => type == typeof(System.Drawing.Point) ? new SystemDrawingPointConverter() : null;
+#endif
 #endif
 }

@@ -500,8 +500,12 @@ InputTooSmallToEnterMainLoop:
 		private static ulong CreateSeed()
 		{
 			byte[] seed = new byte[sizeof(ulong)];
+#if NETWASM
+			Random.Shared.NextBytes(seed); // NetWasm: no RandomNumberGenerator; System.Random is not cryptographically secure.
+#else
 			using RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create();
 			randomNumberGenerator.GetBytes(seed);
+#endif
 			return BitConverter.ToUInt64(seed, 0);
 		}
 

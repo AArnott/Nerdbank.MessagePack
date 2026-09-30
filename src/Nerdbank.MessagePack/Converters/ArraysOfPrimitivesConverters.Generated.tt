@@ -43,7 +43,18 @@ internal static partial class ArraysOfPrimitivesConverters
 		// T[], Memory<T>, ReadOnlyMemory<T>, and possibly more types are all satisfiable by T[].
 		// So we avoid allocating or borrowing a temporary array only to copy from it to the span constructor
 		// for these types by just allocating an array up-front and returning it directly.
+#if NETWASM
+		// NetWasm: Type.IsAssignableTo is unavailable, so enumerate the types an array is assignable to.
+		object? spanConstructorToUse =
+			typeof(TEnumerable) == typeof(TElement[]) ||
+			typeof(TEnumerable) == typeof(IEnumerable<TElement>) ||
+			typeof(TEnumerable) == typeof(ICollection<TElement>) ||
+			typeof(TEnumerable) == typeof(IList<TElement>) ||
+			typeof(TEnumerable) == typeof(IReadOnlyCollection<TElement>) ||
+			typeof(TEnumerable) == typeof(IReadOnlyList<TElement>) ? null : spanConstructor;
+#else
 		object? spanConstructorToUse = typeof(TElement[]).IsAssignableTo(typeof(TEnumerable)) ? null : spanConstructor;
+#endif
 
 <#
 	foreach (string primitive in primitiveTypeNames)

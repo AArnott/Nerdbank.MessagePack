@@ -336,6 +336,7 @@ public partial record MessagePackSerializer
 		await pipeReader.CompleteAsync().ConfigureAwait(false);
 	}
 
+#if !NETWASM
 	/// <summary><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/summary"/></summary>
 	/// <typeparam name="T"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
 	/// <typeparam name="TElement"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/typeparam[@name='TElement']"/></typeparam>
@@ -355,7 +356,9 @@ public partial record MessagePackSerializer
 
 		await pipeReader.CompleteAsync().ConfigureAwait(false);
 	}
+#endif
 
+#if !NETWASM
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
@@ -365,7 +368,9 @@ public partial record MessagePackSerializer
 		MessagePackReader reader = new(buffer);
 		return this.DeserializePath(ref reader, shape, options, cancellationToken);
 	}
+#endif
 
+#if !NETWASM
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="buffer">The msgpack to deserialize from.</param>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
@@ -375,7 +380,9 @@ public partial record MessagePackSerializer
 		MessagePackReader reader = new(buffer);
 		return this.DeserializePath(ref reader, shape, options, cancellationToken);
 	}
+#endif
 
+#if !NETWASM
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	/// <param name="stream">The stream to deserialize from. If this stream contains more than one top-level msgpack structure, it may be positioned beyond its end after deserialization due to buffering.</param>
 	/// <inheritdoc cref="Deserialize{T}(Stream, ITypeShape{T}, CancellationToken)" path="/remarks" />
@@ -407,4 +414,5 @@ public partial record MessagePackSerializer
 			return this.DeserializePath(rental.Value, shape, options, cancellationToken);
 		}
 	}
+#endif
 }

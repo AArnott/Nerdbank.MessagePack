@@ -27,7 +27,9 @@ public class DerivedTypeMapping<TBase>(ITypeShapeProvider provider) : DerivedSha
 		get => this.Get(alias).Type;
 		set
 		{
+#if !NETWASM // NetWasm: Type.IsAssignableFrom is unavailable.
 			Requires.Argument(typeof(TBase).IsAssignableFrom(value), nameof(value), $"Type must be assignable to {typeof(TBase).Name}.");
+#endif
 			this.ThrowIfFrozen();
 
 			this.Set(alias, provider.GetTypeShapeOrThrow(value));
@@ -44,7 +46,9 @@ public class DerivedTypeMapping<TBase>(ITypeShapeProvider provider) : DerivedSha
 	/// </remarks>
 	public void Add(DerivedTypeIdentifier alias, Type type)
 	{
+#if !NETWASM // NetWasm: Type.IsAssignableFrom is unavailable.
 		Requires.Argument(typeof(TBase).IsAssignableFrom(type), nameof(type), $"Type must be assignable to {typeof(TBase).Name}.");
+#endif
 		this.ThrowIfFrozen();
 
 		this.Add(alias, provider.GetTypeShapeOrThrow(type));

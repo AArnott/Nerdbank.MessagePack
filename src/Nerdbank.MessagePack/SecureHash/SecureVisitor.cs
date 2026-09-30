@@ -49,7 +49,12 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 				return HashCollisionResistantPrimitives.ReadOnlySequenceOfBytesEqualityComparer.Default;
 			}
 
+#if NETWASM
+			// NetWasm: Type.IsAssignableFrom is unavailable, so custom IStructuralSecureEqualityComparer<T> implementations are not detected.
+			if (false)
+#else
 			if (typeof(IStructuralSecureEqualityComparer<T>).IsAssignableFrom(objectShape.Type))
+#endif
 			{
 				return SecureCustomEqualityComparer<T>.Default;
 			}
@@ -114,7 +119,13 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 			throw new NotSupportedException("IAsyncEnumerable<T> cannot be effectively compared by value.");
 		}
 
-		return typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable)) ? new SecureIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType)) :
+		return
+#if NETWASM
+			false ? // NetWasm: Type.IsAssignableFrom is unavailable; always use the IEnumerable-based comparer.
+#else
+			typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable)) ?
+#endif
+			new SecureIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType)) :
 			new SecureEnumerableEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType), enumerableShape.GetGetEnumerable());
 	}
 

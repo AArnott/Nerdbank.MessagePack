@@ -6,7 +6,9 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO.Pipelines;
+#if !NETWASM
 using System.Linq.Expressions;
+#endif
 using System.Runtime.CompilerServices;
 using Microsoft;
 
@@ -305,6 +307,7 @@ public partial record MessagePackSerializer
 		return this.DeserializeObjectCore(ref reader, shape, ref startingContext, startingContext.CancellationToken);
 	}
 
+#if !NETWASM
 	/// <summary>
 	/// Deserializes msgpack into primitive values, maps and arrays,
 	/// where the maps are specially implemented to play nicely with the C# <c>dynamic</c> keyword.
@@ -340,6 +343,7 @@ public partial record MessagePackSerializer
 			throw new MessagePackSerializationException("An error occurred during deserialization.", ex);
 		}
 	}
+#endif
 
 	/// <summary>
 	/// Deserializes msgpack into primitive values, maps and arrays.
@@ -805,6 +809,7 @@ public partial record MessagePackSerializer
 		await reader.CompleteAsync().ConfigureAwait(false);
 	}
 
+#if !NETWASM
 	/// <inheritdoc cref="DeserializePathEnumerableCoreAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 	public IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<T, TElement>(PipeReader reader, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, CancellationToken cancellationToken = default)
@@ -814,6 +819,7 @@ public partial record MessagePackSerializer
 	/// <inheritdoc cref="DeserializePathCore{T, TElement}(ref MessagePackReader, ITypeShape{T}, DeserializePathOptions{T, TElement}, CancellationToken)"/>
 	public TElement? DeserializePath<T, TElement>(ref MessagePackReader reader, ITypeShape<T> shape, in DeserializePathOptions<T, TElement> options, CancellationToken cancellationToken = default)
 		=> this.DeserializePathCore(ref reader, Requires.NotNull(shape), options, cancellationToken);
+#endif
 
 	/// <summary>
 	/// Gets a converter for a given type shape.
@@ -864,6 +870,7 @@ public partial record MessagePackSerializer
 		return this.CreateSerializationContextCore(provider, startingContext, startingContext.CancellationToken);
 	}
 
+#if !NETWASM
 	/// <summary>
 	/// Deserializes a sequence of values in a larger msgpack structure such that each element is produced individually.
 	/// </summary>
@@ -921,6 +928,7 @@ public partial record MessagePackSerializer
 			{ Success: true, Value: { } leafShape } => this.Deserialize(ref reader, (ITypeShape<TElement>)leafShape, cancellationToken),
 		};
 	}
+#endif
 
 	/// <summary>
 	/// Starts a serialization job based on the given starting context.
@@ -1251,6 +1259,7 @@ public partial record MessagePackSerializer
 		public bool IgnoreKnownExtensions { get; set; }
 	}
 
+#if !NETWASM
 	/// <summary>
 	/// Specifies options for deserializing a value from a MessagePack-encoded object graph using a provided property path
 	/// expression.
@@ -1301,4 +1310,5 @@ public partial record MessagePackSerializer
 		/// </remarks>
 		public bool EmptySequenceForUndiscoverablePath { get; init; }
 	}
+#endif
 }

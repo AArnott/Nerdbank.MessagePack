@@ -40,6 +40,13 @@ public class ConverterTypeCollection : IReadOnlyCollection<ConverterType>
 	{
 		Dictionary<Type, ConverterType> map = [];
 
+#if NETWASM
+		// NetWasm's System.Type has no BaseType/IsGenericType/GetGenericArguments, so the data type cannot be discovered.
+		if (!converterTypes.IsEmpty)
+		{
+			throw new PlatformNotSupportedException("ConverterTypeCollection is not supported on NetWasm. Use Converters or ConverterFactories instead.");
+		}
+#else
 		foreach (Type converterType in converterTypes)
 		{
 			Requires.Argument(converterType is not null, nameof(converterTypes), "Null elements are not allowed.");
@@ -63,6 +70,7 @@ public class ConverterTypeCollection : IReadOnlyCollection<ConverterType>
 
 			map[dataType] = converterType;
 		}
+#endif
 
 		return new(map.ToFrozenDictionary());
 	}

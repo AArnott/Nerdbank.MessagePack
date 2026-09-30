@@ -32,17 +32,21 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" />
-    <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.13.22" />
+    <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="18.7.0-netwasm-0001" />
     <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="Nerdbank.Streams" Version="2.14.354" />
     <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="Newtonsoft.Json.Schema" Version="4.0.2" />
     <PackageVersion Include="OneOf" Version="3.0.271" />
-    <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
+    <PackageVersion Include="PolyType" Version="1.5.3-netwasm" />
     <PackageVersion Include="PolyType.Roslyn" Version="$(PolyTypeVersion)-unstable" />
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeVersion)-unstable" />
     <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" />
+    <PackageVersion Include="NetWasm.System.IO.Pipelines" Version="0.5.0" />
+    <PackageVersion Include="NetWasm.System.Linq" Version="0.5.0" />
+    <PackageVersion Include="NetWasm.System.Memory" Version="0.5.0" />
+    <PackageVersion Include="NetWasm.System.Text.Json" Version="0.5.0" />
     <PackageVersion Include="System.Memory.Data" Version="8.0.1" />
     <PackageVersion Include="TUnit" Version="1.65.68" />
     <PackageVersion Include="TUnit.Engine" Version="1.65.68" />

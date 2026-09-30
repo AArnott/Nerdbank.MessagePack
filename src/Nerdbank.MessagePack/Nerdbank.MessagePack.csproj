@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="NetWasm.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net472;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net472;netstandard2.0;netwasm0.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">true</IsAotCompatible>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -20,20 +20,40 @@ Also features an automatic structural equality API.</PackageDescription>
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" PrivateAssets="compile" />
     <PackageReference Include="PolyType" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'!='netwasm0.1'">
     <PackageReference Include="System.IO.Pipelines" />
+  </ItemGroup>
+
+  <!-- NetWasm (netwasm0.1) proof of concept. -->
+  <PropertyGroup Condition="'$(TargetFramework)'=='netwasm0.1'">
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- NetWasm reference assemblies are not strong-named (CS8002). -->
+    <SignAssembly>false</SignAssembly>
+    <!-- The public API analyzer baselines are per-TFM. -->
+    <NoWarn>$(NoWarn);RS0016;RS0017;RS0026;RS0027;RS0036;RS0037;RS0041;CS1574;CS0162;CS0169;CS0436</NoWarn>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='netwasm0.1'">
+    <PackageReference Include="NetWasm.System.IO.Pipelines" />
+    <PackageReference Include="NetWasm.System.Linq" />
+    <PackageReference Include="NetWasm.System.Memory" />
+    <PackageReference Include="NetWasm.System.Text.Json" />
+    <Using Remove="System.Net.Http" />
+    <Compile Remove="DynamicMsgPackDictionary.cs;SkipToPathViaExpression.cs;StreamingDeserializer`1.cs;Converters/ExpandoObjectConverter.cs;Converters/PrimitivesAsDynamicConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Download PolyType.Roslyn for analyzer loading without letting its compiler dependencies affect target framework asset selection. -->
     <PackageDownload Include="PolyType.Roslyn" Version="[$(PolyTypeVersion)-unstable]" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp' and '$(TargetFramework)'!='netwasm0.1'">
     <PackageReference Include="Microsoft.Bcl.HashCode" />
     <PackageReference Include="System.Collections.Immutable" />
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="BannedSymbols.txt" />
-    <None Include="icon.png" Pack="true" PackagePath="" />
+    <None Include="icon.png" Pack="true" PackagePath="icon.png" />
     <None Update="Converters\ArraysOfPrimitivesConverters.Generated.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ArraysOfPrimitivesConverters.Generated.cs</LastGenOutput>
@@ -66,7 +86,7 @@ Also features an automatic structural equality API.</PackageDescription>
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CollisionResistantHasherLookup.cs</LastGenOutput>
     </None>
-    <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="" />
+    <None Include="$(RepoRootPath)THIRD-PARTY-NOTICES.TXT" Pack="true" PackagePath="THIRD-PARTY-NOTICES.TXT" />
   </ItemGroup>
   <ItemGroup>
     <AnalyzerProjectReference Include="..\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
@@ -74,6 +94,8 @@ Also features an automatic structural equality API.</PackageDescription>
     <ProjectReference Include="@(AnalyzerProjectReference)">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>AnalyzerAssembly</OutputItemType>
+      <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -133,8 +155,23 @@ Also features an automatic structural equality API.</PackageDescription>
   </Target>
   <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup" Condition="'$(TargetFramework)'=='net8.0'">
     <ItemGroup>
-      <TfmSpecificPackageFile Include="%(AnalyzerAssembly.Identity)" PackagePath="analyzers\cs\" />
-      <TfmSpecificPackageFile Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeVersion)-unstable\lib\netstandard2.0\PolyType.Roslyn.dll" PackagePath="analyzers\cs\" />
+      <TfmSpecificPackageFile Include="%(AnalyzerAssembly.Identity)" PackagePath="analyzers\cs\%(AnalyzerAssembly.Filename)%(AnalyzerAssembly.Extension)" />
+      <TfmSpecificPackageFile Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeVersion)-unstable\lib\netstandard2.0\PolyType.Roslyn.dll" PackagePath="analyzers\cs\PolyType.Roslyn.dll" />
+    </ItemGroup>
+  </Target>
+  <!--
+    NetWasm proof of concept workaround: NetWasm.Sdk 0.5.0's pack reads %(PackageReference.Version) directly,
+    which is empty under Central Package Management (NWPK006). Copy the central versions onto the references.
+  -->
+  <Target Name="NetWasmPocApplyCentralPackageVersions" BeforeTargets="NetWasmSdkCollectInnerPackageReferences" Condition="'$(ManagePackageVersionsCentrally)'=='true'">
+    <ItemGroup>
+      <_NetWasmPocPackageReferenceCross Include="@(PackageReference)">
+        <CentralId>%(PackageVersion.Identity)</CentralId>
+        <CentralVersion>%(PackageVersion.Version)</CentralVersion>
+      </_NetWasmPocPackageReferenceCross>
+      <_NetWasmPocPackageReferenceCross Remove="@(_NetWasmPocPackageReferenceCross)" Condition="'%(_NetWasmPocPackageReferenceCross.Identity)'!='%(_NetWasmPocPackageReferenceCross.CentralId)' or '%(_NetWasmPocPackageReferenceCross.Version)'!=''" />
+      <PackageReference Remove="@(_NetWasmPocPackageReferenceCross)" />
+      <PackageReference Include="@(_NetWasmPocPackageReferenceCross)" Version="%(_NetWasmPocPackageReferenceCross.CentralVersion)" />
     </ItemGroup>
   </Target>
 </Project>

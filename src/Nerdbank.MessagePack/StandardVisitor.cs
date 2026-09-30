@@ -252,7 +252,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			// Test IsValueType before considering unions so that the native compiler
 			// does not have to generate a SubTypes<T> for value types which will never be used.
-			if (converter.Success && !typeof(T).IsValueType)
+			if (converter.Success && !TypeTraits.IsValueType<T>())
 			{
 				if (this.owner.TryGetDynamicUnion(objectShape.Type, out DerivedTypeUnion? union) && !union.Disabled)
 				{
@@ -363,7 +363,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter();
 				EqualityComparer<TPropertyType> eq = EqualityComparer<TPropertyType>.Default;
 
-				if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always && !this.ShouldAlwaysSerializeParameter(typeof(TPropertyType), constructorParameterShape))
+				if (this.owner.SerializeDefaultValues != SerializeDefaultValuesPolicy.Always && !this.ShouldAlwaysSerializeParameter<TPropertyType>(constructorParameterShape))
 				{
 					NotAlwaysHelper();
 					void NotAlwaysHelper()
@@ -655,7 +655,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		bool throwOnNull =
 			(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties
 			&& parameterShape.IsNonNullable
-			&& !typeof(TParameterType).IsValueType;
+			&& !TypeTraits.IsValueType<TParameterType>();
 
 		// We use local functions to avoid JITting both paths of the if/else for a given parameter.
 		if (throwOnNull)
@@ -827,7 +827,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 			var elementConverter = (MessagePackConverter<TElement>)elementConverterResult.Value;
 
+#if NETWASM
+			// NetWasm: Type.IsArray is unavailable. Only single-dimension arrays are recognized.
+			if (typeof(TEnumerable) == typeof(TElement[]))
+#else
 			if (enumerableShape.Type.IsArray)
+#endif
 			{
 				return ArrayHelper();
 				ConverterResult ArrayHelper()
@@ -1080,9 +1085,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 	private static string CreateWriteFailMessage(IPropertyShape propertyShape) => $"Failed to serialize '{propertyShape.Name}' property on {propertyShape.DeclaringType.Type.FullName}.";
 
-	private bool ShouldAlwaysSerializeParameter(Type propertyType, IParameterShape? constructorParameterShape)
-		=> ((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && propertyType.IsValueType) ||
-			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !propertyType.IsValueType) ||
+	private bool ShouldAlwaysSerializeParameter<TPropertyType>(IParameterShape? constructorParameterShape)
+		=> ((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ValueTypes) == SerializeDefaultValuesPolicy.ValueTypes && TypeTraits.IsValueType<TPropertyType>()) ||
+			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.ReferenceTypes) == SerializeDefaultValuesPolicy.ReferenceTypes && !TypeTraits.IsValueType<TPropertyType>()) ||
 			((this.owner.SerializeDefaultValues & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required && constructorParameterShape is { IsRequired: true });
 
 	private object? VisitConstructor_ArrayHelperEmptyCtor<TDeclaringType>(IConstructorShape constructorShape, ArrayConstructorVisitorInputs<TDeclaringType> inputs, Func<TDeclaringType> defaultConstructor)
@@ -1235,7 +1240,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 				foreach ((DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape) pair in sortedTypes)
 				{
+#if NETWASM
+					// NetWasm: Type.IsAssignableFrom is unavailable; only exact runtime type matches are recognized.
+					if (pair.Shape.Type == v.GetType())
+#else
 					if (pair.Shape.Type.IsAssignableFrom(v.GetType()))
+#endif
 					{
 						return (pair.Alias, pair.Converter);
 					}
@@ -1258,10 +1268,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length);
 		foreach (ITypeShape shape in duckTyping.DerivedShapes.Span)
 		{
+#if !NETWASM
 			if (!typeof(TBase).IsAssignableFrom(shape.Type))
 			{
 				throw new ArgumentException($"Type '{shape.Type}' is not assignable to base type '{typeof(TBase)}'.", nameof(duckTyping));
 			}
+#endif
 
 			ConverterResult converter = this.GetConverterByAccept(shape);
 			if (converter.TryPrepareFailPath(shape, out ConverterResult? failureResult))
@@ -1373,6 +1385,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return true;
 		}
 
+#if NETWASM
+		throw new MessagePackSerializationException($"{type} has {typeof(MessagePackConverterAttribute)} but the converter type has no shape-provided default constructor, and NetWasm cannot activate it via reflection. Associate the converter type with the data type via [TypeShape(AssociatedTypes)] or [assembly: TypeShapeExtension].");
+#else
 		if (converterType.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
 		{
 			throw new MessagePackSerializationException($"{type.FullName} has {typeof(MessagePackConverterAttribute)} that refers to {customConverterAttribute.ConverterType.FullName} but that converter has no default constructor.");
@@ -1380,6 +1395,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		converter = ConverterResult.Ok((MessagePackConverter)ctor.Invoke(Array.Empty<object?>()));
 		return true;
+#endif
 	}
 
 	private Result<CollectionConstructionOptions<TKey>, VisitorError> GetCollectionOptions<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, MemberConverterInfluence? memberInfluence)
@@ -1470,10 +1486,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			Requires.NotNull(x!);
 			Requires.NotNull(y!);
 
+#if NETWASM
+			return 0; // NetWasm: Type.IsAssignableFrom is unavailable; union matching is exact-type only.
+#else
 			return
 				x.IsAssignableFrom(y) ? 1 :
 				y.IsAssignableFrom(x) ? -1 :
 				0;
+#endif
 		}
 	}
 
@@ -1518,6 +1538,9 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		private object ActivateComparer()
 		{
 			Verify.Operation(this.ComparerSource is not null, "Comparer source is not specified.");
+#if NETWASM
+			throw new PlatformNotSupportedException("Comparer sources require reflection, which NetWasm does not support.");
+#else
 
 			MethodInfo? propertyGetter = null;
 			if (this.ComparerSourceMemberName is not null)
@@ -1541,6 +1564,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return propertyGetter is null ? instance : propertyGetter.Invoke(instance, null) ?? CreateNullPropertyValueError();
 
 			InvalidOperationException CreateNullPropertyValueError() => new InvalidOperationException($"{this.ComparerSource.FullName}.{this.ComparerSourceMemberName} produced a null value.");
+#endif
 		}
 	}
 }

@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if !NETWASM
 using System.Dynamic;
+#endif
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft;
@@ -94,6 +96,7 @@ public static class OptionalConverters
 		};
 	}
 
+#if !NETWASM
 	/// <summary>
 	/// Adds support for serializing <see cref="System.Collections.Specialized.NameValueCollection"/>.
 	/// </summary>
@@ -115,6 +118,7 @@ public static class OptionalConverters
 			],
 		};
 	}
+#endif
 
 	/// <summary>
 	/// Adds a converter for <see cref="Guid"/> to the specified serializer that serializes GUIDs as strings.
@@ -240,6 +244,7 @@ public static class OptionalConverters
 		};
 	}
 
+#if !NETWASM
 	/// <summary>
 	/// Adds a converter for <see cref="ExpandoObject"/> to the specified serializer.
 	/// </summary>
@@ -270,6 +275,7 @@ public static class OptionalConverters
 			],
 		};
 	}
+#endif
 
 	/// <inheritdoc cref="WithObjectConverter(MessagePackSerializer, ObjectConverterOptions)"/>
 	public static MessagePackSerializer WithObjectConverter(this MessagePackSerializer serializer) => WithObjectConverter(serializer, default);
@@ -298,6 +304,7 @@ public static class OptionalConverters
 		};
 	}
 
+#if !NETWASM
 	/// <summary>
 	/// Adds a converter to the specified serializer
 	/// that can write objects with a declared type of <see cref="object"/> based on their runtime type
@@ -323,4 +330,5 @@ public static class OptionalConverters
 			],
 		};
 	}
+#endif
 }

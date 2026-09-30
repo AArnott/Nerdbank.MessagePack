@@ -5,14 +5,17 @@
 #pragma warning disable SA1649 // File name should match first type name
 #pragma warning disable SA1402 // File may only contain a single type
 
+#if !NETWASM
 using System.Collections.Specialized;
 using System.Drawing;
+#endif
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
 
+#if !NETWASM // NetWasm: not available
 internal class SystemDrawingColorConverter : MessagePackConverter<Color>
 {
 	public override Color Read(ref MessagePackReader reader, SerializationContext context)
@@ -29,7 +32,9 @@ internal class SystemDrawingColorConverter : MessagePackConverter<Color>
 			["description"] = "An ARGB color value.",
 		};
 }
+#endif
 
+#if !NETWASM // NetWasm: not available
 internal class SystemDrawingPointConverter : MessagePackConverter<Point>
 {
 	public override Point Read(ref MessagePackReader reader, SerializationContext context)
@@ -57,11 +62,16 @@ internal class SystemDrawingPointConverter : MessagePackConverter<Point>
 			["description"] = "A point represented by two integers.",
 		};
 }
+#endif
 
 internal class SystemGlobalizationCultureInfoConverter : MessagePackConverter<CultureInfo>
 {
 	public override CultureInfo? Read(ref MessagePackReader reader, SerializationContext context)
+#if NETWASM
+		=> reader.ReadString() is string name ? new CultureInfo(name) : null; // NetWasm: no CultureInfo.GetCultureInfo.
+#else
 		=> reader.ReadString() is string name ? CultureInfo.GetCultureInfo(name) : null;
+#endif
 
 	public override void Write(ref MessagePackWriter writer, in CultureInfo? value, SerializationContext context)
 		=> writer.Write(value?.Name);
@@ -90,6 +100,7 @@ internal class SystemTextEncodingConverter : MessagePackConverter<Encoding>
 		};
 }
 
+#if !NETWASM // NetWasm: not available
 /// <summary>
 /// A converter for <see cref="NameValueCollection"/>.
 /// </summary>
@@ -200,7 +211,9 @@ internal partial class NameValueCollectionConverter : MessagePackConverter<NameV
 			["description"] = "A name/value collection represented as a map of nil, strings, or string arrays.",
 		};
 }
+#endif
 
+#if !NETWASM // NetWasm: not available
 /// <summary>
 /// Creates <see cref="NameValueCollectionConverter"/> instances when explicitly enabled.
 /// </summary>
@@ -210,3 +223,4 @@ internal sealed class NameValueCollectionConverterFactory : IMessagePackConverte
 	public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
 		=> type == typeof(NameValueCollection) ? new NameValueCollectionConverter(context) : null;
 }
+#endif

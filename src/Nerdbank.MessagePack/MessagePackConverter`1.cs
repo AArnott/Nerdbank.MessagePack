@@ -195,7 +195,7 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 	internal virtual T? ReadCore(ref MessagePackReader reader, ref SerializationContext context) => this.Read(ref reader, context);
 
 	/// <inheritdoc cref="IMessagePackConverterInternal.WrapWithReferencePreservation" />
-	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => typeof(T).IsValueType ? this : new ReferencePreservingConverter<T>(this);
+	internal virtual MessagePackConverter<T> WrapWithReferencePreservation() => TypeTraits.IsValueType<T>() ? this : new ReferencePreservingConverter<T>(this);
 
 	/// <inheritdoc cref="IMessagePackConverterInternal.UnwrapReferencePreservation" />
 	internal virtual MessagePackConverter<T> UnwrapReferencePreservation() => this;

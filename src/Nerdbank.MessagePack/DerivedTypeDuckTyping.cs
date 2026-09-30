@@ -49,14 +49,21 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 		this.derivedTypeShapes = derivedTypeShapes.ToArray();
 
 		this.typeToShapeMap = new(derivedTypeShapes.Length + 1);
+#if NETWASM
+		// NetWasm: Type.IsAbstract/IsInterface are unavailable; use whether PolyType can construct the base type.
+		if ((baseShape as IObjectTypeShape)?.Constructor is not null)
+#else
 		if (baseShape.Type is { IsAbstract: false, IsInterface: false })
+#endif
 		{
 			this.typeToShapeMap.Add(baseShape.Type, baseShape);
 		}
 
 		foreach (ITypeShape derivedTypeShape in derivedTypeShapes)
 		{
+#if !NETWASM
 			Requires.Argument(derivedTypeShape.Type is { IsAbstract: false, IsInterface: false }, nameof(derivedTypeShape), $"Derived types must be concrete, but {derivedTypeShape.Type.FullName} is not.");
+#endif
 			this.typeToShapeMap.Add(derivedTypeShape.Type, derivedTypeShape);
 		}
 

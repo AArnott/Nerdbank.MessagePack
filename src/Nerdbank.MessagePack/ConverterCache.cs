@@ -265,13 +265,19 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		converter = null;
 		if (!configuration.Converters.TryGetConverter(type, out converter))
 		{
+#if NETWASM
+			// NetWasm: no Type.IsGenericType/GetGenericTypeDefinition or reflection activation; only exact matches with a shape-provided default ctor are supported.
+			if (configuration.ConverterTypes.TryGetConverterType(type, out Type? converterType))
+#else
 			if (configuration.ConverterTypes.TryGetConverterType(type, out Type? converterType) ||
 				(type.IsGenericType && configuration.ConverterTypes.TryGetConverterType(type.GetGenericTypeDefinition(), out converterType)))
+#endif
 			{
 				if ((typeShape?.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor() is Func<object> factory)
 				{
 					converter = (MessagePackConverter)factory();
 				}
+#if !NETWASM
 				else if (!converterType.IsGenericTypeDefinition)
 				{
 					// Try to find a constructor that takes a ConverterContext parameter
@@ -287,6 +293,7 @@ internal class ConverterCache(SerializerConfiguration configuration)
 						converter = (MessagePackConverter)Activator.CreateInstance(converterType)!;
 					}
 				}
+#endif
 				else
 				{
 					throw new MessagePackSerializationException($"Unable to activate converter {converterType} for {type}. Did you forget to define the attribute [assembly: {nameof(TypeShapeExtensionAttribute)}({nameof(TypeShapeExtensionAttribute.AssociatedTypes)} = [typeof(dataType<>), typeof(converterType<>)])]?");
@@ -387,6 +394,11 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		/// <summary>
 		/// The index into <see cref="lastConverters"/> reserved for <typeparamref name="T"/>.
 		/// </summary>
-		internal static readonly int Index = (int)((uint)Interlocked.Increment(ref nextSlot) & (LastConverterSlotCount - 1));
+		internal static readonly int Index =
+#if NETWASM
+			(int)((uint)(++nextSlot) & (LastConverterSlotCount - 1)); // NetWasm is single-threaded and lacks Interlocked.Increment.
+#else
+			(int)((uint)Interlocked.Increment(ref nextSlot) & (LastConverterSlotCount - 1));
+#endif
 	}
 }

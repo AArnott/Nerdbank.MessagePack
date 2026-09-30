@@ -92,7 +92,7 @@ internal class ObjectArrayConverter<T>(
 
 		UnusedDataPacket.Array? unused = null;
 
-		if (!typeof(T).IsValueType)
+		if (!TypeTraits.IsValueType<T>())
 		{
 			context.ReportObjectConstructed(value);
 		}
@@ -564,7 +564,7 @@ internal class ObjectArrayConverter<T>(
 		callbacks?.OnBeforeDeserialize();
 		UnusedDataPacket.Array? unused = null;
 
-		if (!typeof(T).IsValueType)
+		if (!TypeTraits.IsValueType<T>())
 		{
 			context.ReportObjectConstructed(value);
 		}

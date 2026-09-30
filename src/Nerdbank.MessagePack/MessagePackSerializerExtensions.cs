@@ -167,7 +167,12 @@ public static partial class MessagePackSerializerExtensions
 		{
 			return cache is null ? TypeShapeResolver.ResolveDynamicOrThrow<T>() : cache.ResolveDynamicTypeShapeOrThrow<T>();
 		}
-		catch (NotSupportedException ex) when (!contextualCall && typeof(T).IsArray)
+		catch (NotSupportedException ex) when (!contextualCall &&
+#if NETWASM
+			false)
+#else
+			typeof(T).IsArray)
+#endif
 		{
 			throw new NotSupportedException(
 				$"The type '{typeof(T).FullName}' does not have a generated shape. " +
@@ -200,7 +205,12 @@ public static partial class MessagePackSerializerExtensions
 		{
 			return cache is null ? TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>() : cache.ResolveDynamicTypeShapeOrThrow<T, TProvider>();
 		}
-		catch (NotSupportedException ex) when (!contextualCall && typeof(T).IsArray)
+		catch (NotSupportedException ex) when (!contextualCall &&
+#if NETWASM
+			false)
+#else
+			typeof(T).IsArray)
+#endif
 		{
 			throw new NotSupportedException(
 				$"The type '{typeof(T).FullName}' does not have a generated shape on the witness type '{typeof(TProvider).FullName}'. " +

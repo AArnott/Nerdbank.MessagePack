@@ -29,7 +29,9 @@ internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConvert
 		JsonObject schema = new JsonObject { ["type"] = "integer" };
 
 		StringBuilder description = new();
-#if NET
+#if NETWASM
+		Array enumValuesUntyped = Enum.GetValuesAsUnderlyingType(typeof(TEnum));
+#elif NET
 		Array enumValuesUntyped = typeof(TEnum).GetEnumValuesAsUnderlyingType();
 #else
 		Array enumValuesUntyped = typeof(TEnum).GetEnumValues();

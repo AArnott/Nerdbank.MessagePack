@@ -5,7 +5,7 @@
     <PackageReadmeFile Condition="Exists('README.md')">README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
-    <None Condition="Exists('README.md')" Include="README.md" Pack="true" PackagePath="" />
+    <None Condition="Exists('README.md')" Include="README.md" Pack="true" PackagePath="README.md" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />

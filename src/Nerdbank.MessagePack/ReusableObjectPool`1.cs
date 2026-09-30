@@ -13,7 +13,11 @@ internal static class ReusableObjectPool<T>
 	/// <summary>
 	/// A pool of objects that can be reused to reduce allocations.
 	/// </summary>
+#if NETWASM
+	private static readonly SingleThreadedPool Pool = new();
+#else
 	private static readonly ThreadLocal<Stack<T>> Pool = new(() => new Stack<T>());
+#endif
 
 	/// <summary>
 	/// Retrieves an object from the pool, or creates a new one if the pool is empty.
@@ -46,4 +50,12 @@ internal static class ReusableObjectPool<T>
 		item.Owner = null;
 		Pool.Value!.Push(item);
 	}
+
+#if NETWASM
+	/// <summary>NetWasm is single-threaded and has no <see cref="ThreadLocal{T}"/>.</summary>
+	private sealed class SingleThreadedPool
+	{
+		internal Stack<T>? Value { get; } = new();
+	}
+#endif
 }

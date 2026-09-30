@@ -185,6 +185,7 @@ internal static class PrimitiveConverterLookup
 <#   }
 } #>
 
+#if !NETWASM // NetWasm has no runtime type names; name-matched primitives (BigInteger, System.Drawing) are unsupported.
 #if NET
 		string primitiveTypeName = typeof(T).Name;
 #else
@@ -269,6 +270,7 @@ internal static class PrimitiveConverterLookup
 #endif
 <#   }
 } #>
+#endif
 		converter = null;
 		return false;
 	}
@@ -278,6 +280,9 @@ internal static class PrimitiveConverterLookup
     // does not trim based on string comparisons.
 #>
 
+<#	if (converter.TypeName.StartsWith("System.Drawing.")) { #>
+#if !NETWASM
+<#	} #>
 	[MethodImpl(MethodImplOptions.NoInlining)]
 <#	if (converter.RequiresContext) { #>
 #if NET
@@ -290,6 +295,9 @@ internal static class PrimitiveConverterLookup
 	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#><T>() => typeof(T) == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>() : null;
 #else
 	private static IMessagePackConverterInternal? Create<#=converter.ConverterName#>(Type type) => type == typeof(<#=converter.TypeName#>) ? new <#=converter.ConverterName#>() : null;
+#endif
+<#	} #>
+<#	if (converter.TypeName.StartsWith("System.Drawing.")) { #>
 #endif
 <#	} #>
 <# } #>

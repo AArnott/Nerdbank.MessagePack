@@ -428,7 +428,9 @@ namespace Nerdbank.MessagePack
 			return true;
 		}
 
-		internal static bool IsAssignableTo(this Type left, Type right) => right.IsAssignableFrom(left);
+#if !NETWASM
+	internal static bool IsAssignableTo(this Type left, Type right) => right.IsAssignableFrom(left);
+#endif
 
 		internal static bool TryAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
 		{

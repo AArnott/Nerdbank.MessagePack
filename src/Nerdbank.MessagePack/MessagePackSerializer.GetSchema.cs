@@ -80,6 +80,11 @@ public partial record MessagePackSerializer
 			return schema;
 		}
 
-		private static bool IsNullableType(Type type) => !type.IsValueType || Nullable.GetUnderlyingType(type) is not null;
+		private static bool IsNullableType(Type type) =>
+#if NETWASM
+		true; // NetWasm: Type.IsValueType is unavailable; conservatively assume nullable in schemas.
+#else
+		!type.IsValueType || Nullable.GetUnderlyingType(type) is not null;
+#endif
 	}
 }

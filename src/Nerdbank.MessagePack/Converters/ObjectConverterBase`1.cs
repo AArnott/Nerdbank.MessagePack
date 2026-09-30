@@ -22,6 +22,13 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	protected static void ApplyDescription(IGenericCustomAttributeProvider attributeProvider, JsonObject schema, string? namePrefix = null)
 	{
 		string? description;
+#if NETWASM
+		// NetWasm: System.ComponentModel.DescriptionAttribute is not available.
+		if (false)
+		{
+			description = null;
+		}
+#else
 		if (attributeProvider.GetCustomAttribute<DescriptionAttribute>() is DescriptionAttribute descriptionAttribute)
 		{
 			description = descriptionAttribute.Description;
@@ -30,6 +37,7 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 				description = $"{namePrefix}: {description}";
 			}
 		}
+#endif
 		else
 		{
 			description = namePrefix;

@@ -37,11 +37,17 @@ internal class SipHash
 	/// <summary>Initializes a new instance of the <see cref="SipHash"/> class using a random key.</summary>
 	public SipHash()
 	{
+#if NETWASM
+		// NetWasm: RandomNumberGenerator is not available. System.Random is NOT cryptographically secure,
+		// which weakens hash-flooding resistance.
+		Span<byte> key = stackalloc byte[16];
+		Random.Shared.NextBytes(key);
+#elif NET
 		using var rng = RandomNumberGenerator.Create();
-#if NET
 		Span<byte> key = stackalloc byte[16];
 		rng.GetBytes(key);
 #else
+		using var rng = RandomNumberGenerator.Create();
 		byte[] buffer = ArrayPool<byte>.Shared.Rent(16);
 		rng.GetBytes(buffer, 0, 16);
 		Span<byte> key = buffer;
@@ -50,7 +56,7 @@ internal class SipHash
 		this.initialState0 = 0x736f6d6570736575UL ^ BinaryPrimitives.ReadUInt64LittleEndian(key);
 		this.initialState1 = 0x646f72616e646f6dUL ^ BinaryPrimitives.ReadUInt64LittleEndian(key.Slice(sizeof(ulong)));
 
-#if !NET
+#if !NET && !NETWASM
 		ArrayPool<byte>.Shared.Return(buffer);
 #endif
 	}

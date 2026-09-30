@@ -207,7 +207,7 @@ internal class ObjectMapConverter<T>(
 		PropertyCollisionDetection collisionDetection = new(propertyShapes);
 		UnusedDataPacket.Map? unused = null;
 
-		if (!typeof(T).IsValueType)
+		if (!TypeTraits.IsValueType<T>())
 		{
 			context.ReportObjectConstructed(value);
 		}
@@ -278,7 +278,7 @@ internal class ObjectMapConverter<T>(
 		PropertyCollisionDetection collisionDetection = new(propertyShapes);
 		UnusedDataPacket.Map? unused = null;
 
-		if (!typeof(T).IsValueType)
+		if (!TypeTraits.IsValueType<T>())
 		{
 			context.ReportObjectConstructed(value);
 		}
