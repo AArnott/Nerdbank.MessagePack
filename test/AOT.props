@@ -2,6 +2,17 @@
   <PropertyGroup>
     <PublishAot>true</PublishAot>
     <RuntimeIdentifiers>$(AvailableRuntimeIdentifiers)</RuntimeIdentifiers>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <!-- Non-test AOT apps (AotNativeConsole, AotCompatibilityTest): match pre-merge RID/SelfContained. -->
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
+    <OutputType>Exe</OutputType>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>$(DefaultRuntimeIdentifier)</RuntimeIdentifier>
+    <DynamicCodeSupport>false</DynamicCodeSupport>
+    <StartupHookSupport>false</StartupHookSupport>
+    <EventSourceSupport>false</EventSourceSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <!-- Preserve managed coverage in the build output; native compilation overrides these at publish time. -->
@@ -9,16 +20,7 @@
     <StartupHookSupport>true</StartupHookSupport>
     <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
-    <DynamicCodeSupport>false</DynamicCodeSupport>
-    <StartupHookSupport>false</StartupHookSupport>
-    <EventSourceSupport>false</EventSourceSupport>
-  </PropertyGroup>
-  <PropertyGroup>
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(RuntimeIdentifier)' != ''">
     <SelfContained>true</SelfContained>
   </PropertyGroup>
   <ItemDefinitionGroup>
@@ -36,7 +38,6 @@
       <EventSourceSupport>false</EventSourceSupport>
     </PropertyGroup>
     <ItemGroup>
-      <!-- Inside targets, select items with metadata conditions, not Update. ILC reads these without rewriting the managed runtimeconfig. -->
       <RuntimeHostConfigurationOption>
         <Value Condition="'%(RuntimeHostConfigurationOption.Identity)' == 'System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported' or '%(RuntimeHostConfigurationOption.Identity)' == 'System.StartupHookProvider.IsSupported' or '%(RuntimeHostConfigurationOption.Identity)' == 'System.Diagnostics.Tracing.EventSource.IsSupported'">false</Value>
       </RuntimeHostConfigurationOption>

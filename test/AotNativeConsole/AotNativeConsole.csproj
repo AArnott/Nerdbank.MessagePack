@@ -2,10 +2,9 @@
   <PropertyGroup>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
-  <Import Project="../AOT.props" />
+  <Import Project="..\AOT.props" />
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <OutputType>Exe</OutputType>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
@@ -16,10 +15,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TrimmerRootAssembly Include="Nerdbank.MessagePack" />
+    <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+    <PackageDownload Include="PolyType.Roslyn" Version="[$(PolyTypeVersion)-unstable]" />
+  </ItemGroup>
+  <ItemGroup>
+    <AnalyzerProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
+    <AnalyzerProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj" />
+    <Compile Include="..\Benchmarks\DataModels\LargeDataModel.cs" Link="Models\LargeDataModel.cs" />
+    <ProjectReference Include="@(AnalyzerProjectReference)">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+    <Analyzer Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeVersion)-unstable\lib\netstandard2.0\PolyType.Roslyn.dll" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
-  </ItemGroup>
 </Project>
