@@ -16,8 +16,6 @@
 
     <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/apicompat/package-validation/overview -->
     <EnablePackageValidation>true</EnablePackageValidation>
-    <!-- The SDK only downloads this baseline for packable projects; traversal projects are excluded here. -->
-    <PackageValidationBaselineVersion Condition="'$(MSBuildProjectExtension)' != '.proj'">1.3.88</PackageValidationBaselineVersion>
 
     <!-- https://github.com/dotnet/msbuild/blob/main/documentation/ProjectReference-Protocol.md#setplatform-negotiation -->
     <EnableDynamicPlatformResolution>true</EnableDynamicPlatformResolution>
