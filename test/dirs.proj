@@ -1,19 +1,23 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
-    <ProjectReference Include="Benchmarks\Benchmarks.csproj" Publish="false" />
-    <ProjectReference Include="Nerdbank.MessagePack.Analyzers.Tests\Nerdbank.MessagePack.Analyzers.Tests.csproj" Publish="false" />
-    <ProjectReference Include="Nerdbank.MessagePack.SignalR.Tests\Nerdbank.MessagePack.SignalR.Tests.csproj" Publish="false" />
-    <ProjectReference Include="Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests\Nerdbank.MessagePack.AspNetCoreMvcFormatter.Tests.csproj" Publish="false" />
-    <ProjectReference Include="Nerdbank.MessagePack.Godot.Tests\Nerdbank.MessagePack.Godot.Tests.csproj" Publish="false" />
-
-    <MultiRIDProjectReference Include="AotCompatibilityTest\AotCompatibilityTest.csproj" />
-    <MultiRIDProjectReference Include="AotNativeConsole\AotNativeConsole.csproj" />
-
-    <!-- We want to build all target frameworks of the TUnit project,
-         and also *publish* each individual target framework of the TUnit project. -->
-    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" Publish="false" />
-    <!-- Don't target net8.0 until trimmer warning in MTP is fixed: https://github.com/microsoft/testfx/issues/7153 -->
-    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net9.0" AdditionalProperties="NativeAOT=true" />
-    <MultiRIDProjectReference Include="Nerdbank.MessagePack.TUnit\Nerdbank.MessagePack.TUnit.csproj" TargetFramework="net10.0" AdditionalProperties="NativeAOT=true" />
+    <ProjectReference Include="**\*.csproj" Publish="false" />
+    <!-- This project validates the shipping assembly by running the NativeAOT compiler, so CI must publish it. -->
+    <ProjectReference Update="AotCompatibilityTest\AotCompatibilityTest.csproj" Publish="true" />
   </ItemGroup>
+
+  <Target Name="GetNativeAOTTests" Returns="@(_NativeAOTTest)">
+    <MSBuild Projects="@(ProjectReference)" Targets="GetNativeAOTTestVariants" BuildInParallel="true">
+      <Output TaskParameter="TargetOutputs" ItemName="_NativeAOTTest" />
+    </MSBuild>
+    <ItemGroup>
+      <!-- MSBuild copies reference metadata to returned items; native publishes must retain _IsPublishing. -->
+      <_NativeAOTTest Update="@(_NativeAOTTest)" UndefineProperties="" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishNativeAOTTests" AfterTargets="Publish" DependsOnTargets="GetNativeAOTTests">
+    <MSBuild Projects="@(_NativeAOTTest)" Targets="Publish"
+             Properties="NativeAOT=true;TargetFramework=%(_NativeAOTTest.TargetFramework);_IsPublishing=true"
+             BuildInParallel="true" />
+  </Target>
 </Project>

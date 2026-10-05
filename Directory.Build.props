@@ -23,24 +23,24 @@
     <!-- Opt in till https://github.com/NuGet/Home/issues/9803 makes this the default. -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
 
+    <!-- This entire repo has just one version.json file, so compute the version once and share with all projects in a large build. -->
+    <GitVersionBaseDirectory>$(MSBuildThisFileDirectory)</GitVersionBaseDirectory>
+
     <!-- Local builds should embed PDBs so we never lose them when a subsequent build occurs. -->
     <DebugType Condition=" '$(CI)' != 'true' and '$(TF_BUILD)' != 'true' ">embedded</DebugType>
 
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)strongname.snk</AssemblyOriginatorKeyFile>
 
-    <PackageProjectUrl>https://aarnott.github.io/Nerdbank.MessagePack/</PackageProjectUrl>
-    <Company>Andrew Arnott</Company>
-    <Authors>Andrew Arnott</Authors>
-    <Copyright>© Andrew Arnott. All rights reserved.</Copyright>
+    <!-- <PackageProjectUrl>https://github.com/ORG/REPO</PackageProjectUrl> -->
+    <Company>COMPANY-PLACEHOLDER</Company>
+    <Authors>COMPANY-PLACEHOLDER</Authors>
+    <Copyright>© COMPANY-PLACEHOLDER. All rights reserved.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols Condition=" '$(DebugType)' != 'embedded' ">true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
-    <!-- Workaround https://github.com/dotnet/docfx/issues/10808 -->
-    <DefineConstants Condition="'$(DocFx)'=='true'">$(DefineConstants);DOCFX</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -57,7 +57,6 @@
     <RidOsArchitecture Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'ARM64'">arm64</RidOsArchitecture>
 
     <DefaultRuntimeIdentifier>$(RidOsPrefix)-$(RidOsArchitecture)</DefaultRuntimeIdentifier>
-    <!-- <AvailableRuntimeIdentifiers>$(RidOsPrefix)-arm64;$(RidOsPrefix)-x64</AvailableRuntimeIdentifiers> -->
     <AvailableRuntimeIdentifiers>$(DefaultRuntimeIdentifier)</AvailableRuntimeIdentifiers>
   </PropertyGroup>
 
@@ -66,6 +65,11 @@
   </ItemGroup>
 
   <ItemDefinitionGroup>
+    <ProjectReference>
+      <!-- Keep referenced builds identical to the traversal's managed builds. -->
+      <GlobalPropertiesToRemove>_IsPublishing</GlobalPropertiesToRemove>
+      <UndefineProperties Condition="'$(UsingMicrosoftTraversalSdk)' == 'true'">_IsPublishing</UndefineProperties>
+    </ProjectReference>
     <!-- We always want MSBuild properties generated that point at the restored location of each package. -->
     <PackageReference GeneratePathProperty="true" />
   </ItemDefinitionGroup>

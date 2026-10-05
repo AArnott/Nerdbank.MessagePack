@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             rid: linux-x64
           - os: macos-15
             rid: osx-arm64
@@ -142,7 +142,7 @@ jobs:
 
           # Define the expected combinations
           $Combinations = @(
-            @{ OS = "ubuntu-24.04"; RID = "linux-x64" },
+            @{ OS = "ubuntu-26.04"; RID = "linux-x64" },
             @{ OS = "macos-15"; RID = "osx-arm64" },
             @{ OS = "windows-2025"; RID = "win-x64" }
           )
