@@ -2,6 +2,7 @@
   <Import Project="..\AOT.props" />
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 

@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
-    <PublishNativeAOTTests>true</PublishNativeAOTTests>
+    <PublishNativeAOTTests>false</PublishNativeAOTTests>
     <IsPackable>false</IsPackable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
