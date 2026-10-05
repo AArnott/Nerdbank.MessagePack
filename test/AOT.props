@@ -9,6 +9,11 @@
     <StartupHookSupport>true</StartupHookSupport>
     <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
+    <DynamicCodeSupport>false</DynamicCodeSupport>
+    <StartupHookSupport>false</StartupHookSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+  </PropertyGroup>
   <PropertyGroup>
     <InvariantGlobalization>true</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
