@@ -8,6 +8,8 @@
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
+  <!-- Size-baseline app: do NOT add TrimmerRootAssembly (that belongs on AotCompatibilityTest).
+       Rooting Nerdbank.MessagePack here ~doubled the NativeAOT image (7.08→15.61 MB). -->
   <!-- Used by sizoscope -->
   <PropertyGroup>
     <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
