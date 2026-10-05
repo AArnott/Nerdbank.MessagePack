@@ -123,7 +123,7 @@ dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit
 
 **Run all tests in a test class**:
 ```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release -- --filter-class ClassName
+dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release -- --treenode-filter "/*/*/ClassName/*"
 ```
 
 **Run tests with wildcard matching** (supports wildcards at beginning and/or end):
