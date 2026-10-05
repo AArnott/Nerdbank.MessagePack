@@ -32,15 +32,18 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)strongname.snk</AssemblyOriginatorKeyFile>
 
-    <!-- <PackageProjectUrl>https://github.com/ORG/REPO</PackageProjectUrl> -->
-    <Company>COMPANY-PLACEHOLDER</Company>
-    <Authors>COMPANY-PLACEHOLDER</Authors>
-    <Copyright>© COMPANY-PLACEHOLDER. All rights reserved.</Copyright>
+    <PackageProjectUrl>https://aarnott.github.io/Nerdbank.MessagePack/</PackageProjectUrl>
+    <Company>Andrew Arnott</Company>
+    <Authors>Andrew Arnott</Authors>
+    <Copyright>© Andrew Arnott. All rights reserved.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols Condition=" '$(DebugType)' != 'embedded' ">true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Workaround https://github.com/dotnet/docfx/issues/10808 -->
+    <DefineConstants Condition="'$(DocFx)'=='true'">$(DefineConstants);DOCFX</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
