@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Sample1
@@ -261,3 +261,38 @@ namespace DuckTyping
     }
     #endregion
 }
+
+#if NET11_0_OR_GREATER
+namespace CSharpUnions
+{
+    #region CSharpUnion
+    [GenerateShape]
+    public partial union Pet(Cat, Dog);
+
+    public record Cat(string Name, int MeowPitch);
+
+    public record Dog(string Name, int BarkVolume);
+    #endregion
+
+    class Usage
+    {
+        void Roundtrip()
+        {
+            #region CSharpUnionUsage
+            MessagePackSerializer serializer = new();
+            Pet pet = new Dog("Rover", 10);
+            byte[] msgpack = serializer.Serialize(pet);
+
+            // Prints: ["Dog",{"Name":"Rover","BarkVolume":10}]
+            Console.WriteLine(serializer.ConvertToJson(msgpack));
+
+            Pet deserialized = serializer.Deserialize<Pet>(msgpack);
+            if (deserialized is Dog dog)
+            {
+                Console.WriteLine($"{dog.Name} barks at volume {dog.BarkVolume}.");
+            }
+            #endregion
+        }
+    }
+}
+#endif

@@ -7,7 +7,7 @@
 * Works *great* in your **NativeAOT**, trimmed, **SignalR** or **ASP.NET Core MVC** applications or [**Unity**](unity.md) games.
 * Many [C# analyzers](../analyzers/index.md) to help you avoid common mistakes.
 * [Great security](security.md) for deserializing untrusted data.
-* [Polymorphic deserialization](unions.md) lets you deserialize derived types.
+* [Polymorphic deserialization](unions.md) lets you deserialize derived types, F# unions and [C# unions](unions.md#c-union-types).
 * True async and [streaming deserialization](streaming-deserialization.md) for large or over-time sequences keeps your apps responsive and memory pressure low.
 * Deserialize [just the fragment you require](targeted-deserialization.md) with intuitive LINQ expressions.
 * [Preserve reference equality](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) across serialization/deserialization (optional).
@@ -32,6 +32,7 @@ Attributed data types     | [✅](customizing-serialization.md) | [✅](https://
 Polymorphic serialization | [✅](unions.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#union)[^4] | [✅](https://serdedotnet.github.io/data-model.html)
 Duck-typed polymorphic serialization | [✅](unions.md#duck-typing) | ❌ | ❌ |
 F# union type support     | [✅](fsharp.md) | ❌ | ❌ |
+C# union type support     | [✅](unions.md#c-union-types) | ❌ | ❌ |
 Typeless serialization    | [✅](xref:Nerdbank.MessagePack.OptionalConverters.WithObjectConverter*) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#typeless) | ❌ |
 `dynamic` serialization    | [✅](getting-started.md#untyped-deserialization) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/blob/master/doc/ExpandoObject.md) | ❌ |
 Forward compatible data retention | [✅](customizing-serialization.md#retaining-unrecognized-data) | ❌ | ❌ |

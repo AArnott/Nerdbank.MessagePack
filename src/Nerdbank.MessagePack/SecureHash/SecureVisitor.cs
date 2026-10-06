@@ -15,6 +15,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	private const string EmptyTypeCannotHashKey = "ObjectTarget";
 
 	private static readonly object IsUnionSentinel = new();
+	private static readonly object IsCSharpUnionCaseSentinel = new();
 
 	/// <inheritdoc/>
 	object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
@@ -80,7 +81,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 		SecureEqualityComparer<TUnion> baseComparer = (SecureEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this, IsUnionSentinel)!;
 		SecureEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
-			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this, IsUnionSentinel)!)];
+			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this, unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? IsCSharpUnionCaseSentinel : IsUnionSentinel)!)];
 		return new SecureUnionEqualityComparer<TUnion>(
 			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}
@@ -88,8 +89,11 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	/// <inheritdoc/>
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
-		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseComparer = (SecureEqualityComparer<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this, IsUnionSentinel)!;
+		// C# union cases describe ordinary payload shapes (possibly the union itself, recursively), so they must be resolved through the generation context.
+		// Type hierarchy and F# union cases describe a view of the union value itself, so we bypass the cache.
+		SecureEqualityComparer<TUnionCase> caseComparer = state == IsCSharpUnionCaseSentinel
+			? this.GetEqualityComparer(unionCaseShape.UnionCaseType)
+			: (SecureEqualityComparer<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this, IsUnionSentinel)!;
 		return new SecureUnionCaseEqualityComparer<TUnionCase, TUnion>(caseComparer, unionCaseShape.Marshaler);
 	}
 

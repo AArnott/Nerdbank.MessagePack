@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net472;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net10.0;net472;netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">true</IsAotCompatible>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -24,7 +24,7 @@ Also features an automatic structural equality API.</PackageDescription>
   </ItemGroup>
   <ItemGroup>
     <!-- Download PolyType.Roslyn for analyzer loading without letting its compiler dependencies affect target framework asset selection. -->
-    <PackageDownload Include="PolyType.Roslyn" Version="[$(PolyTypeVersion)-unstable]" />
+    <PackageDownload Include="PolyType.Roslyn" Version="[$(PolyTypeUnstableVersion)]" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
     <PackageReference Include="Microsoft.Bcl.HashCode" />
@@ -128,13 +128,13 @@ Also features an automatic structural equality API.</PackageDescription>
   <Target Name="ConsumeAnalyzersDirectly" AfterTargets="ResolveProjectReferences">
     <ItemGroup>
       <Analyzer Include="%(AnalyzerAssembly.Identity)" />
-      <Analyzer Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeVersion)-unstable\lib\netstandard2.0\PolyType.Roslyn.dll" />
+      <Analyzer Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeUnstableVersion)\lib\netstandard2.0\PolyType.Roslyn.dll" />
     </ItemGroup>
   </Target>
-  <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup" Condition="'$(TargetFramework)'=='net8.0'">
+  <Target Name="PackAnalyzers" DependsOnTargets="ResolveProjectReferences;DebugSymbolsProjectOutputGroup" Condition="'$(TargetFramework)'=='net10.0'">
     <ItemGroup>
       <TfmSpecificPackageFile Include="%(AnalyzerAssembly.Identity)" PackagePath="analyzers\cs\" />
-      <TfmSpecificPackageFile Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeVersion)-unstable\lib\netstandard2.0\PolyType.Roslyn.dll" PackagePath="analyzers\cs\" />
+      <TfmSpecificPackageFile Include="$(NuGetPackageRoot)\polytype.roslyn\$(PolyTypeUnstableVersion)\lib\netstandard2.0\PolyType.Roslyn.dll" PackagePath="analyzers\cs\" />
     </ItemGroup>
   </Target>
 </Project>

@@ -32,7 +32,7 @@ internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnu
 			return default;
 		}
 
-		throw new NotImplementedException();
+		throw new NotSupportedException($"The type {typeof(TEnumerable)} has no supported collection construction strategy and cannot be deserialized.");
 	}
 
 	/// <inheritdoc/>

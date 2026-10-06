@@ -6,7 +6,7 @@
     <PublishDir>$(BaseOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</PublishDir>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <AotMsCodeCoverageInstrumentation>true</AotMsCodeCoverageInstrumentation>
     <InvariantGlobalization>false</InvariantGlobalization>
@@ -50,10 +50,10 @@
       <Value>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)','Resources','KnownGoodSchemas'))</Value>
     </AssemblyMetadata>
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net9.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETCoreApp'">
     <PackageReference Include="xunit.v3.assert.aot" />
   </ItemGroup>
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net9.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp'">
     <PackageReference Include="xunit.v3.assert" />
   </ItemGroup>
   <ItemGroup>
@@ -80,9 +80,9 @@
     Microsoft.CodeCoverage.MSBuild instruments @(IlcCompileInput) and @(IlcReference) in place before
     IlcCompile and restores them afterward. Most of those references are copies in this project's own
     per-target-framework, per-RID output directory, but project references resolve to the referenced
-    project's output directory, which is shared. Nerdbank.MessagePack does not target net10.0, so the
-    net9.0 and net10.0 publishes of this project both rewrite the same Nerdbank.MessagePack.dll, which the
-    other NativeAOT projects and the pack targets are reading at the same time. That corrupts ILC input
+    project's output directory, which is shared. Concurrent publishes and pack targets can access the
+    same Nerdbank.MessagePack.dll while it is being instrumented. The
+    concurrent reads and writes can corrupt ILC input
     (observed as BadImageFormatException and SIGBUS on macOS, and file locking errors on Windows) and can
     leave an instrumented assembly in a packable location.
     Compile against a private copy of those shared references so the originals are never mutated and the

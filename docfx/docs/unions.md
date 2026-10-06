@@ -222,6 +222,34 @@ Open generic types are also supported with PolyType 1.4.1 or later, provided the
 
 For `Base<int>`, the registered union case resolves to `Derived<int>`.
 
+## C# union types
+
+C# 15 introduces [union types](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-15.0/unions.md), which allow a value to be exactly one of a closed set of case types, even when those types do not share a common base type.
+Nerdbank.MessagePack serializes C# union types with no additional attributes beyond those that you already use to generate type shapes:
+
+[!code-csharp[](../../samples/cs/Unions.cs#CSharpUnion)]
+
+A `Pet` round-trips like any other type, using the same union schema described above:
+
+[!code-csharp[](../../samples/cs/Unions.cs#CSharpUnionUsage)]
+
+C# union types have a few characteristics that differ from type hierarchies:
+
+* Each union case is identified by the name of its case type (e.g. `Int32`, `String` or `Dog`).
+  C# unions offer no way to specify an explicit identifier, so renaming a case type changes the serialized schema.
+  When <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability> is set to `true`, integer identifiers are inferred from the order in which the cases are declared.
+  Reordering or inserting cases changes these identifiers.
+* A union whose payload is `null` is serialized as the first case that accepts `null`.
+  For example, `union Result(int, string?)` holding `null` serializes as `["String", null]`.
+* A union value that doesn't match any case (such as `default` for a struct union with no nullable case) cannot be serialized.
+* Union types can be recursive, such as `union Tree(int, Tree[])`.
+* The [union serialization format](#union-serialization-format) options apply to C# unions as well.
+
+Types that implement the C# union member pattern without using the `union` keyword are also supported.
+
+> [!NOTE]
+> The `union` samples above require C# 15 and target .NET 11 or later.
+
 ## Runtime derived type registration
 
 Static registration via attributes is not always possible.

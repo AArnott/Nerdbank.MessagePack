@@ -27,6 +27,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
 
+	/// <summary>
+	/// A sentinel state object passed to <see cref="VisitUnionCase{TUnionCase, TUnion}"/> for cases of a C# union.
+	/// </summary>
+	private static readonly object CSharpUnionCaseSentinel = new();
+
 	private readonly ConverterCache owner;
 	private readonly TypeGenerationContext context;
 
@@ -302,11 +307,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 		Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
 		List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
+		object? unionCaseState = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? CSharpUnionCaseSentinel : null;
 		foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
 		{
 			bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
 			DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
-			ConverterResult caseConverter = (ConverterResult)unionCase.Accept(this, null)!;
+			ConverterResult caseConverter = (ConverterResult)unionCase.Accept(this, unionCaseState)!;
 			if (caseConverter.TryPrepareFailPath(unionCase, out failureResult))
 			{
 				return failureResult;
@@ -333,8 +339,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
 	{
-		// NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-		var caseConverter = (ConverterResult)unionCaseShape.UnionCaseType.Accept(this)!;
+		// C# union cases describe ordinary payload shapes (possibly the union itself, recursively),
+		// so they must be resolved through the generation context.
+		// Type hierarchy and F# union cases describe a view of the union value itself, so we bypass the cache
+		// (and the reference preservation wrapper, which the union converter already applies).
+		ConverterResult caseConverter = state == CSharpUnionCaseSentinel
+			? this.GetConverter(unionCaseShape.UnionCaseType)
+			: (ConverterResult)unionCaseShape.UnionCaseType.Accept(this)!;
 		if (caseConverter.TryPrepareFailPath(unionCaseShape, out ConverterResult? failureResult))
 		{
 			return failureResult;

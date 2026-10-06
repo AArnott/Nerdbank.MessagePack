@@ -147,7 +147,7 @@ if ($isMTP) {
     }
 
     $tunitOutputRoot = Join-Path $RepoRoot "bin/Nerdbank.MessagePack.TUnit/$Configuration"
-    $targetFrameworks = @('net8.0', 'net9.0', 'net10.0')
+    $targetFrameworks = @('net10.0', 'net11.0')
     if ($IsWindows) {
         $targetFrameworks += 'net472'
     }
@@ -195,7 +195,7 @@ if ($isMTP) {
             $nativeAotArgs += $dumpSwitches # Dump-related switches only work on NativeAOT executables on Windows.
         }
 
-        foreach ($framework in @('net9.0', 'net10.0')) {
+        foreach ($framework in @('net10.0', 'net11.0')) {
             $nativeAotExecutables = @(
                 Get-ChildItem -Path (Join-Path $tunitOutputRoot "$framework/*/publish/$testExecutableName") -File -ErrorAction SilentlyContinue
             )
