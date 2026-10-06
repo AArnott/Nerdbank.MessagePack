@@ -6,4 +6,8 @@
   </ItemGroup>
 
   <Import Project="Directory.Traversal.targets" Condition="'$(IsTraversal)'=='true'" />
+
+  <!-- Returns the AssemblyVersion that Nerdbank.GitVersioning computes for this project.
+       test/Directory.Build.targets uses it to verify that projects with their own version.json get the version it specifies. -->
+  <Target Name="GetNBGVAssemblyVersion" DependsOnTargets="GetBuildVersion" Returns="$(AssemblyVersion)" />
 </Project>
