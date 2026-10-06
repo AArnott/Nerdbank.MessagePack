@@ -12,9 +12,15 @@
 
   <ItemGroup>
     <TrimmerRootAssembly Include="Nerdbank.MessagePack" />
+    <TrimmerRootAssembly Include="Nerdbank.MessagePack.AspNetCoreMvcFormatter" />
+    <TrimmerRootAssembly Include="Nerdbank.MessagePack.Godot" />
+    <TrimmerRootAssembly Include="Nerdbank.MessagePack.SignalR" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.AspNetCoreMvcFormatter\Nerdbank.MessagePack.AspNetCoreMvcFormatter.csproj" />
+    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.Godot\Nerdbank.MessagePack.Godot.csproj" />
+    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.SignalR\Nerdbank.MessagePack.SignalR.csproj" />
   </ItemGroup>
 </Project>
