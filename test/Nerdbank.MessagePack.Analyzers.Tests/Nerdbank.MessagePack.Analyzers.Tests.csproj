@@ -24,9 +24,4 @@
     <Reference Include="$(PkgPolyType)\analyzers\dotnet\cs\PolyType.SourceGenerator.dll" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Projects with their own version.json. AssemblyVersionTests verifies that it (not the root version.json) determines their assembly version. -->
-    <NestedVersionJsonProject Include="..\..\src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj" />
-    <NestedVersionJsonProject Include="..\..\src\Nerdbank.MessagePack.Analyzers.CodeFixes\Nerdbank.MessagePack.Analyzers.CodeFixes.csproj" />
-  </ItemGroup>
 </Project>

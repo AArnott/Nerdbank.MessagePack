@@ -44,27 +44,4 @@
       </_NativeAOTTestExecutable>
     </ItemGroup>
   </Target>
-
-  <!--
-    A project listed as a NestedVersionJsonProject item has its own version.json, which (rather than the repo root's version.json)
-    must determine its assembly version. For each one, this records the AssemblyVersion that Nerdbank.GitVersioning computes when
-    GitVersionBaseDirectory is that project's own directory as [assembly: AssemblyMetadata("ExpectedAssemblyVersion:<project name>", "<version>")]
-    on the test assembly, so a test can compare it with the version that assembly was actually built with.
-    GitVersionBaseDirectory is passed as a global property, so a GitVersionBaseDirectory set in a Directory.Build.props
-    (which would make the project get the root version.json's version instead) cannot change the expectation.
-  -->
-  <Target Name="AddNestedVersionJsonAssemblyVersionExpectations" BeforeTargets="GetAssemblyAttributes" Condition="'@(NestedVersionJsonProject)' != ''">
-    <MSBuild Projects="@(NestedVersionJsonProject)"
-             Targets="GetNBGVAssemblyVersion"
-             Properties="GitVersionBaseDirectory=%(NestedVersionJsonProject.RootDir)%(NestedVersionJsonProject.Directory)"
-             RemoveProperties="TargetFramework;RuntimeIdentifier">
-      <Output TaskParameter="TargetOutputs" ItemName="_NestedVersionJsonAssemblyVersion" />
-    </MSBuild>
-    <ItemGroup>
-      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
-        <_Parameter1>ExpectedAssemblyVersion:$([System.IO.Path]::GetFileNameWithoutExtension('%(_NestedVersionJsonAssemblyVersion.MSBuildSourceProjectFile)'))</_Parameter1>
-        <_Parameter2>%(_NestedVersionJsonAssemblyVersion.Identity)</_Parameter2>
-      </AssemblyAttribute>
-    </ItemGroup>
-  </Target>
 </Project>
