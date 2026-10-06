@@ -47,6 +47,21 @@ You can use `dotnet test` to build and/or test the repo.
 
 There may be tests that are known to be unstable or have special requirements. These can be avoided by running tests using the [dotnet-test-cloud.ps1](tools/dotnet-test-cloud.ps1) script *after* running `dotnet build`.
 
+To build both managed and NativeAOT tests, run `dotnet build tools/dirs.proj -t:build,pack,publish -c Release`.
+Then run `./tools/dotnet-test-cloud.ps1 -Configuration Release -IncludeNativeAOT`.
+This repo publishes its NativeAOT tests through the `MultiRIDProjectReference` items in `test/dirs.proj`, which publish `Nerdbank.MessagePack.TUnit` with `NativeAOT=true` for `net9.0` and `net10.0` (not `net8.0` until microsoft/testfx#7153 is fixed).
+The template's per-project NativeAOT test discovery is therefore disabled repo-wide with `<PublishNativeAOTTests>false</PublishNativeAOTTests>` in `test/Directory.Build.props`, so those tests are not published twice.
+Keep test projects in the solution as well: managed test runs use the solution and the TUnit project.
+To publish the NativeAOT tests for a single framework and RID, run `dotnet publish test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj -c Release -f net10.0 -r <RID> -p:NativeAOT=true`.
+NativeAOT builds of the TUnit project use separate `nativeaot` intermediate and output directories, so they do not disturb the managed build.
+Test builds keep dynamic code, startup hooks, and event tracing enabled for managed code coverage.
+The `ConfigureNativeAOTTestFeatures` target disables those features only in the native compiler's publish-time inputs, without rewriting the managed runtime configuration.
+Shipping libraries targeting .NET 8 or later opt into NativeAOT compatibility analysis with `IsAotCompatible`.
+The `test/AotCompatibilityTest` project complements those analyzers by rooting the shipping assembly and passing it through the NativeAOT compiler during every traversal publish.
+Add each shipping assembly that must be validated as a `TrimmerRootAssembly` there, and keep this project publishable in `test/dirs.proj`.
+Do not add `TrimmerRootAssembly` to `test/AotNativeConsole`: it is the NativeAOT image size guard, and rooting the library there inflates the image.
+Root `Directory.Build.props` supplies project-reference defaults for both traversal and SDK projects that remove the `_IsPublishing` global property for managed dependencies, avoiding duplicate project instances that write to the same outputs during parallel publishing.
+
 ## Releases
 
 Use `nbgv tag` to create a tag for a particular commit that you mean to release.

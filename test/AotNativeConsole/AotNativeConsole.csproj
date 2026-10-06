@@ -1,10 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
   <Import Project="..\AOT.props" />
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
+  <!-- Size-baseline app: do NOT add TrimmerRootAssembly (that belongs on AotCompatibilityTest).
+       Rooting Nerdbank.MessagePack here ~doubled the NativeAOT image (7.08→15.61 MB). -->
   <!-- Used by sizoscope -->
   <PropertyGroup>
     <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
