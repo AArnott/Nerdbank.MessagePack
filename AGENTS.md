@@ -102,7 +102,7 @@ Should start web server without errors (web UI testing limited in this environme
 
 * There should generally be one test project (under the `test` directory) per shipping project (under the `src` directory). Test projects are named after the project being tested with a `.Tests` suffix.
 * Tests are written with TUnit (`[Test]`, `[Arguments(...)]`, etc.). Assertions use the `xunit.v3.assert` / `xunit.v3.assert.aot` packages.
-* Some tests are known to be unstable. When running tests, you should skip the unstable ones by using `-- --treenode-filter "/*/*/*/*[TestCategory!=FailsInCloudTest]`.
+* Some tests are known to be unstable. When running tests, you should skip the unstable ones by using `-- --treenode-filter "/*/*/*/*[TestCategory!=FailsInCloudTest]"`.
 
 ### Running Tests
 

@@ -2,8 +2,8 @@
   <PropertyGroup>
     <PublishAot>true</PublishAot>
     <RuntimeIdentifiers>$(AvailableRuntimeIdentifiers)</RuntimeIdentifiers>
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+    <SatelliteResourceLanguages Condition="'$(SatelliteResourceLanguages)' == ''">en</SatelliteResourceLanguages>
   </PropertyGroup>
   <!-- Non-test AOT apps (AotNativeConsole, AotCompatibilityTest): match pre-merge RID/SelfContained. -->
   <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
