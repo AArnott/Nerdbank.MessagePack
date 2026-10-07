@@ -14,6 +14,8 @@ public class JsonSchemaContext
 {
 	private readonly ConverterCache cache;
 	private readonly Dictionary<Type, string> schemaReferences = new();
+	private readonly Dictionary<Type, string> definitionNames = new();
+	private readonly HashSet<string> reservedDefinitionNames = new(StringComparer.Ordinal);
 	private readonly Dictionary<string, JsonObject> schemaDefinitions = new(StringComparer.Ordinal);
 	private readonly HashSet<Type> recursionGuard = new();
 
@@ -115,7 +117,20 @@ public class JsonSchemaContext
 			return CreateReference(referenceId);
 		}
 
-		string definitionName = GetAssemblyIndependentTypeName(type);
+		if (!this.definitionNames.TryGetValue(type, out string? definitionName))
+		{
+			string baseName = GetAssemblyIndependentTypeName(type);
+			definitionName = baseName;
+			int suffix = 0;
+			while (!this.reservedDefinitionNames.Add(definitionName))
+			{
+				definitionName = $"{baseName}#{++suffix}";
+			}
+
+			// Reserve the name before visiting children so recursive references use the same name.
+			this.definitionNames.Add(type, definitionName);
+		}
+
 		string qualifiedReference = $"#/{this.DefinitionsKeyword}/{EscapeJsonPointerToken(definitionName)}";
 		if (!this.recursionGuard.Add(type))
 		{

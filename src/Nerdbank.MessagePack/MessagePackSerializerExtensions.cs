@@ -75,7 +75,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
-	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T>(JsonSchemaOptions) instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static JsonObject GetJsonSchema<T>(this MessagePackSerializer self, JsonSchemaOptions options)
 		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T>(self.ConverterCache), options);
@@ -122,7 +122,7 @@ public static partial class MessagePackSerializerExtensions
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
-	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T, TProvider>(JsonSchemaOptions) instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
 	public static JsonObject GetJsonSchema<T, TProvider>(this MessagePackSerializer self, JsonSchemaOptions options)
 		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache), options);

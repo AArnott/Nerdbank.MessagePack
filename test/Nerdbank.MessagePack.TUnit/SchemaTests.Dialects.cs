@@ -1,7 +1,10 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Text.Json.Nodes;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
@@ -79,6 +82,57 @@ public partial class SchemaTests
 				Children = [new Person { Name = "Child", Sex = Sex.Female }],
 			},
 			dialect);
+	}
+
+	[Test, MatrixDataSource]
+#if NET
+	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Test detects and skips when dynamic code isn't supported.")]
+#endif
+	public void DialectOptions_DefinitionNameCollisions(JsonSchemaDialect dialect)
+	{
+#if NET
+		if (!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled)
+		{
+			Skip.Test("This test requires runtime code generation, which is not available under NativeAOT.");
+		}
+#endif
+
+		Type first = CreateNode("SchemaCollisionFirst", typeof(int));
+		Type second = CreateNode("SchemaCollisionSecond", typeof(string));
+		Assert.Equal(first.FullName, second.FullName);
+		Type firstList = typeof(List<>).MakeGenericType(first);
+		Type secondList = typeof(List<>).MakeGenericType(second);
+		ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("SchemaCollisionRoot"), AssemblyBuilderAccess.Run).DefineDynamicModule("Main");
+		TypeBuilder root = module.DefineType("SchemaCollision.Root", TypeAttributes.Public);
+		root.DefineDefaultConstructor(MethodAttributes.Public);
+		root.DefineField("First", firstList, FieldAttributes.Public);
+		root.DefineField("Second", secondList, FieldAttributes.Public);
+		root.DefineField("Repeat", firstList, FieldAttributes.Public);
+		ITypeShapeProvider provider = PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default;
+		JsonObject schema = this.Serializer.GetJsonSchema(provider.GetTypeShape(root.CreateTypeInfo()!.AsType())!, new JsonSchemaOptions { Dialect = dialect });
+		string definitionsKeyword = dialect == JsonSchemaDialect.Draft4 ? "definitions" : "$defs";
+		JsonObject definitions = schema[definitionsKeyword]!.AsObject();
+		Assert.Equal(5, definitions.Count);
+		Assert.DoesNotContain("Version=", schema.ToJsonString());
+		Assert.DoesNotContain("SchemaCollisionFirst", schema.ToJsonString());
+		Assert.DoesNotContain("SchemaCollisionSecond", schema.ToJsonString());
+		JSchema parsed = JSchema.Parse(schema.ToJsonString());
+		JToken.Parse("""
+			{"First":[{"Value":1,"Next":{"Value":2}}],"Second":[{"Value":"a","Next":{"Value":"b"}}],"Repeat":[{"Value":3}]}
+			""").Validate(parsed);
+		Assert.False(JToken.Parse("""{"First":[{"Value":"bad"}]}""").IsValid(parsed));
+		Assert.False(JToken.Parse("""{"Second":[{"Value":1}]}""").IsValid(parsed));
+		Assert.False(JToken.Parse("""{"Repeat":[{"Value":"bad"}]}""").IsValid(parsed));
+
+		static Type CreateNode(string assemblyName, Type valueType)
+		{
+			ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Run).DefineDynamicModule("Main");
+			TypeBuilder node = module.DefineType("SchemaCollision.Node", TypeAttributes.Public);
+			node.DefineDefaultConstructor(MethodAttributes.Public);
+			node.DefineField("Value", valueType, FieldAttributes.Public);
+			node.DefineField("Next", node, FieldAttributes.Public);
+			return node.CreateTypeInfo()!.AsType();
+		}
 	}
 
 	[Test, MatrixDataSource]
