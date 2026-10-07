@@ -16,17 +16,27 @@ namespace Nerdbank.MessagePack.Converters;
 internal class SystemDrawingColorConverter : MessagePackConverter<Color>
 {
 	public override Color Read(ref MessagePackReader reader, SerializationContext context)
-		=> Color.FromArgb(reader.ReadInt32());
+		=> reader.TryReadNil() ? Color.Empty : Color.FromArgb(reader.ReadInt32());
 
 	public override void Write(ref MessagePackWriter writer, in Color value, SerializationContext context)
-		=> writer.Write(value.ToArgb());
+	{
+		if (value.IsEmpty)
+		{
+			writer.WriteNil();
+		}
+		else
+		{
+			writer.Write(value.ToArgb());
+		}
+	}
 
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 		=> new()
 		{
-			["type"] = "integer",
-			["format"] = "int32",
-			["description"] = "An ARGB color value.",
+			["anyOf"] = new JsonArray(
+				new JsonObject { ["type"] = "null" },
+				new JsonObject { ["type"] = "integer", ["format"] = "int32" }),
+			["description"] = "An ARGB color value, or nil for Color.Empty.",
 		};
 }
 
