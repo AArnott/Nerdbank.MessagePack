@@ -49,6 +49,17 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void SystemDrawingColor_RejectsTrue()
+	{
+		Sequence<byte> seq = new();
+		MessagePackWriter writer = new(seq);
+		writer.Write(true);
+		writer.Flush();
+
+		Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize<Color, Witness>(seq, this.TimeoutToken));
+	}
+
+	[Test]
 	public void SystemDrawingPoint() => this.AssertRoundtrip<Point, Witness>(new Point(1, 1));
 
 	[Test]
