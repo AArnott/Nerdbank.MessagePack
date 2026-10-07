@@ -18,7 +18,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	public void SystemDrawingColor_Empty()
 	{
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<Color, Witness>(Color.Empty);
-		Assert.Equal(MessagePackType.Nil, new MessagePackReader(msgpack).NextMessagePackType);
+		Assert.Equal(MessagePackType.Boolean, new MessagePackReader(msgpack).NextMessagePackType);
 		Assert.True(this.Serializer.Deserialize<Color, Witness>(msgpack, this.TimeoutToken).IsEmpty);
 	}
 
@@ -29,6 +29,23 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<Color, Witness>(transparentBlack);
 		Assert.Equal(MessagePackType.Integer, new MessagePackReader(msgpack).NextMessagePackType);
 		Assert.False(this.Serializer.Deserialize<Color, Witness>(msgpack, this.TimeoutToken).IsEmpty);
+	}
+
+	[Test]
+	public void NullableSystemDrawingColor_Null()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<Color?, Witness>(null);
+		Assert.Equal(MessagePackType.Nil, new MessagePackReader(msgpack).NextMessagePackType);
+		Assert.Null(this.Serializer.Deserialize<Color?, Witness>(msgpack, this.TimeoutToken));
+	}
+
+	[Test]
+	public void NullableSystemDrawingColor_Empty()
+	{
+		ReadOnlySequence<byte> msgpack = this.AssertRoundtrip<Color?, Witness>(Color.Empty);
+		Color? result = this.Serializer.Deserialize<Color?, Witness>(msgpack, this.TimeoutToken);
+		Assert.True(result.HasValue);
+		Assert.True(result.Value.IsEmpty);
 	}
 
 	[Test]
@@ -613,6 +630,7 @@ public partial class BuiltInConverterTests : MessagePackSerializerTestBase
 	[GenerateShapeFor<Guid>]
 	[GenerateShapeFor<Point>]
 	[GenerateShapeFor<Color>]
+	[GenerateShapeFor<Color?>]
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<CultureInfo>]
 	[GenerateShapeFor<EventArgs>]

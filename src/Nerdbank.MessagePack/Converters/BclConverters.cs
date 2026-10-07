@@ -16,13 +16,25 @@ namespace Nerdbank.MessagePack.Converters;
 internal class SystemDrawingColorConverter : MessagePackConverter<Color>
 {
 	public override Color Read(ref MessagePackReader reader, SerializationContext context)
-		=> reader.TryReadNil() ? Color.Empty : Color.FromArgb(reader.ReadInt32());
+	{
+		if (reader.NextMessagePackType == MessagePackType.Boolean)
+		{
+			if (!reader.ReadBoolean())
+			{
+				return Color.Empty;
+			}
+
+			throw new MessagePackSerializationException("Unexpected true value while deserializing System.Drawing.Color.");
+		}
+
+		return Color.FromArgb(reader.ReadInt32());
+	}
 
 	public override void Write(ref MessagePackWriter writer, in Color value, SerializationContext context)
 	{
 		if (value.IsEmpty)
 		{
-			writer.WriteNil();
+			writer.Write(false);
 		}
 		else
 		{
@@ -34,9 +46,9 @@ internal class SystemDrawingColorConverter : MessagePackConverter<Color>
 		=> new()
 		{
 			["anyOf"] = new JsonArray(
-				new JsonObject { ["type"] = "null" },
+				new JsonObject { ["type"] = "boolean", ["enum"] = new JsonArray(false) },
 				new JsonObject { ["type"] = "integer", ["format"] = "int32" }),
-			["description"] = "An ARGB color value, or nil for Color.Empty.",
+			["description"] = "An ARGB color value, or false for Color.Empty.",
 		};
 }
 

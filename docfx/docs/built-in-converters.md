@@ -44,7 +44,7 @@ Enums, arrays and various dictionary types that utilize these types are implicit
 ## Other
 
 - @System.Boolean
-- <xref:System.Drawing.Color> - represented by an ARGB integer, or nil for `Color.Empty`.
+- <xref:System.Drawing.Color> - represented by an ARGB integer, or the boolean `false` for `Color.Empty`.
 - @System.Globalization.CultureInfo
 - @System.Text.Encoding
 - @System.EventArgs
