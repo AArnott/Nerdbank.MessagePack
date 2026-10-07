@@ -10,7 +10,7 @@
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' != '.proj'">
     <!-- Keep this at the most recently published stable NuGet version. The SDK only downloads it for packable projects. -->
-    <PackageValidationBaselineVersion>1.3.88</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion>1.4.80</PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />
