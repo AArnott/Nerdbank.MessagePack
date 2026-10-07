@@ -301,6 +301,18 @@ public abstract partial class StructuralEqualityComparerTests
 		}
 
 		[Test]
+		public void DateTimeOffsetEquality()
+		{
+			IEqualityComparer<DateTimeOffset> comparer = this.GetEqualityComparer<DateTimeOffset, Witness>();
+			DateTimeOffset maxValue = DateTimeOffset.MaxValue;
+			DateTimeOffset sameInstantWithDifferentOffset = maxValue.ToOffset(TimeSpan.FromHours(-1));
+
+			Assert.True(comparer.Equals(maxValue, maxValue));
+			Assert.True(comparer.Equals(maxValue, sameInstantWithDifferentOffset));
+			Assert.Equal(comparer.GetHashCode(maxValue), comparer.GetHashCode(sameInstantWithDifferentOffset));
+		}
+
+		[Test]
 		public void Uri()
 		{
 			IEqualityComparer<Uri> comparer = this.GetEqualityComparer<Uri, Witness>();
@@ -345,6 +357,7 @@ public abstract partial class StructuralEqualityComparerTests
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<Dictionary<string, int>>]
+	[GenerateShapeFor<DateTimeOffset>]
 	[GenerateShapeFor<Uri>]
 	[GenerateShapeFor<CustomHasher>]
 	internal partial class Witness;
