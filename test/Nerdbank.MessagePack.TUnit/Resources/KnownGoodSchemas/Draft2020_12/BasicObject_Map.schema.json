@@ -1,13 +1,13 @@
 ﻿{
   "oneOf": [
     {
-      "$ref": "#/definitions/SchemaTests\u002BBasicObject"
+      "$ref": "#/$defs/SchemaTests\u002BBasicObject"
     },
     {
       "type": "null"
     }
   ],
-  "definitions": {
+  "$defs": {
     "SchemaTests\u002BBasicObject": {
       "type": "object",
       "properties": {
@@ -24,5 +24,5 @@
       }
     }
   },
-  "$schema": "http://json-schema.org/draft-04/schema"
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

@@ -1,0 +1,88 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SchemaTests\u002BFamily"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "$defs": {
+    "SchemaTests\u002BSex": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "description": "0 = Male, 1 = Female"
+    },
+    "System.Collections.Generic.Dictionary\u00602[System.String,System.Int32]": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "SchemaTests\u002BPerson": {
+      "type": "object",
+      "properties": {
+        "Name": {
+          "type": "string",
+          "description": "The name of the person."
+        },
+        "Sex": {
+          "$ref": "#/$defs/SchemaTests\u002BSex"
+        },
+        "Age": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": 18
+        },
+        "PetsAndAges": {
+          "$ref": "#/$defs/System.Collections.Generic.Dictionary%602%5BSystem.String,System.Int32%5D"
+        }
+      },
+      "required": [
+        "Name"
+      ],
+      "description": "A human person."
+    },
+    "System.Collections.Generic.List\u00601[SchemaTests\u002BPerson]": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SchemaTests\u002BPerson"
+      }
+    },
+    "SchemaTests\u002BFamily": {
+      "type": "object",
+      "properties": {
+        "Mother": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SchemaTests\u002BPerson"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "Father": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SchemaTests\u002BPerson",
+              "description": "The father."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "progeny": {
+          "$ref": "#/$defs/System.Collections.Generic.List%601%5BSchemaTests\u002BPerson%5D"
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

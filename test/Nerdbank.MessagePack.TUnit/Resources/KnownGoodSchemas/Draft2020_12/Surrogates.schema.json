@@ -3,7 +3,7 @@
     {
       "oneOf": [
         {
-          "$ref": "#/definitions/SurrogateTests\u002BOriginalType\u002BMarshaledType"
+          "$ref": "#/$defs/SurrogateTests\u002BOriginalType\u002BMarshaledType"
         },
         {
           "type": "null"
@@ -14,7 +14,7 @@
       "type": "null"
     }
   ],
-  "definitions": {
+  "$defs": {
     "SurrogateTests\u002BOriginalType\u002BMarshaledType": {
       "type": "object",
       "properties": {
@@ -31,5 +31,5 @@
       ]
     }
   },
-  "$schema": "http://json-schema.org/draft-04/schema"
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

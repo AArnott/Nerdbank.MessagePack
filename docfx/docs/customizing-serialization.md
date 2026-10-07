@@ -255,18 +255,30 @@ If these conflict with extensions that your application defines or that other li
 ## Understanding the schema
 
 It can be useful to periodically audit your data type graph to ensure that it is serializing what you expect.
-One way to do this is serialize an actual object graph and convert the msgpack to JSON using the @Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson*?displayProperty=nameWithType method.
+One way to do this is serialize an actual object graph and convert the msgpack to JSON using the <xref:Nerdbank.MessagePack.MessagePackSerializer.ConvertToJson*> method.
 This will show you the serialized form of your object graph and help you understand how it is being serialized.
 But this approach will only show you data that actually got serialized.
 Optional values left to their default values may *not* be serialized, giving you an incomplete idea of what *might* be serialized.
 
-To see a full description of what will or might be serialized, use the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType method.
+To see a full description of what will or might be serialized, use the <xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*> method.
 Obtaining a JSON schema can be useful for aiding in publishing a formal spec for your data type for interoperability with other systems that may need to redefine the types in their native syntax.
+
+The generated schema defaults to JSON Schema Draft 2020-12.
+This default is fixed: adding support for future dialects will not change it.
+To select a dialect explicitly, pass <xref:Nerdbank.MessagePack.JsonSchemaOptions> to an overload of <xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*>.
+<xref:Nerdbank.MessagePack.JsonSchemaDialect> supports Draft 2020-12 and Draft 4, the dialect previously emitted by this library.
+
+[!code-csharp[](../../samples/cs/JsonSchemaExport.cs#SelectDialect)]
+
+Draft 4 uses `definitions` and array-valued `items` for positional arrays; Draft 2020-12 uses `$defs` and `prefixItems`.
+Selecting a dialect does not change the MessagePack serialization format.
+Unsupported dialect values are rejected rather than silently replaced with another version.
 
 Consider that custom converters registered with an @Nerdbank.MessagePack.MessagePackSerializer instance and properties set on it can affect the schema.
 Be sure to set these properties before calling @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*.
 
-The schema generator has no insight into custom converters, so a warning will be included in the schema at locations where custom converters would be used, but the schema will attempt to represent what would typically be serialized without a custom converter.
+Custom converters that override <xref:Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*> must honor <xref:Nerdbank.MessagePack.JsonSchemaContext.Dialect> and may use the context's dialect-aware helpers.
+Converters that do not provide a schema produce an unconstrained fragment with a description explaining that the schema is unknown.
 
 ## Retaining unrecognized data
 

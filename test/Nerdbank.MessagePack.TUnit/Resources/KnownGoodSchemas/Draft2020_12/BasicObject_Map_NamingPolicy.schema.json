@@ -1,0 +1,28 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SchemaTests\u002BBasicObject"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "$defs": {
+    "SchemaTests\u002BBasicObject": {
+      "type": "object",
+      "properties": {
+        "stringProperty": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "intProperty": {
+          "type": "integer",
+          "default": 5
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
