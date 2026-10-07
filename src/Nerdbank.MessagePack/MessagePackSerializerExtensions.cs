@@ -42,7 +42,7 @@ public static partial class MessagePackSerializerExtensions
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
 	/// <remarks>
 	/// This overload should only be used when <typeparamref name="T"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
-	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}"/> instead,
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}(MessagePackSerializer)"/> instead,
 	/// or use <see cref="MessagePackSerializer.GetJsonSchema{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
 	/// </remarks>
 #if NET8_0
@@ -55,6 +55,30 @@ public static partial class MessagePackSerializerExtensions
 #endif
 	public static JsonObject GetJsonSchema<T>(this MessagePackSerializer self)
 		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T>(self.ConverterCache));
+
+	/// <summary>
+	/// <inheritdoc cref="MessagePackSerializer.GetJsonSchema(ITypeShape, JsonSchemaOptions)" path="/summary"/>
+	/// </summary>
+	/// <typeparam name="T">The self-describing type whose schema should be produced.</typeparam>
+	/// <param name="self">The serializer.</param>
+	/// <param name="options">The schema generation options.</param>
+	/// <returns><inheritdoc cref="MessagePackSerializer.GetJsonSchema(ITypeShape, JsonSchemaOptions)" path="/returns"/></returns>
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with a <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}(MessagePackSerializer)"/> instead,
+	/// or use <see cref="MessagePackSerializer.GetJsonSchema{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
+	/// </remarks>
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+#endif
+	public static JsonObject GetJsonSchema<T>(this MessagePackSerializer self, JsonSchemaOptions options)
+		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T>(self.ConverterCache), options);
 
 	/// <summary>
 	/// <inheritdoc cref="MessagePackSerializer.GetJsonSchema(ITypeShape)" path="/summary"/>
@@ -78,6 +102,30 @@ public static partial class MessagePackSerializerExtensions
 #endif
 	public static JsonObject GetJsonSchema<T, TProvider>(this MessagePackSerializer self)
 		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache));
+
+	/// <summary>
+	/// <inheritdoc cref="MessagePackSerializer.GetJsonSchema(ITypeShape, JsonSchemaOptions)" path="/summary"/>
+	/// </summary>
+	/// <typeparam name="T">The type whose schema should be produced.</typeparam>
+	/// <typeparam name="TProvider">The witness type that provides the shape for <typeparamref name="T"/>.</typeparam>
+	/// <param name="self">The serializer.</param>
+	/// <param name="options">The schema generation options.</param>
+	/// <returns><inheritdoc cref="MessagePackSerializer.GetJsonSchema(ITypeShape, JsonSchemaOptions)" path="/returns"/></returns>
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use <see cref="MessagePackSerializer.GetJsonSchema{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
+	/// </remarks>
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	[Obsolete("Use the MessagePackSerializer.GetJsonSchema<T, TProvider>() instance method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+#endif
+	public static JsonObject GetJsonSchema<T, TProvider>(this MessagePackSerializer self, JsonSchemaOptions options)
+		=> Requires.NotNull(self).GetJsonSchema(ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache), options);
 
 	/// <inheritdoc cref="SerializationContext.GetConverter{T}(ITypeShape{T})"/>
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>

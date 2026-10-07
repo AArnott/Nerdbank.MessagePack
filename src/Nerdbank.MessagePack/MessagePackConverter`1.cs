@@ -123,6 +123,12 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 	/// <returns>The fragment of JSON schema that describes the value written by this converter, or <see langword="null" /> if this method has not been overridden.</returns>
 	/// <remarks>
 	/// <para>
+	/// Implementations must honor <see cref="JsonSchemaContext.Dialect"/>. Use <see cref="JsonSchemaContext.CreateTupleSchema"/>
+	/// or <see cref="JsonSchemaContext.ApplyTupleSchema"/> for positional arrays and <see cref="JsonSchemaContext.GetJsonSchema"/> for references.
+	/// Throw <see cref="NotSupportedException"/> if the converter cannot describe its data in the requested dialect.
+	/// Arbitrary custom schema fragments are not automatically translated between dialects.
+	/// </para>
+	/// <para>
 	/// Implementations should return a new instance of <see cref="JsonObject"/> that represents the JSON schema fragment for every caller.
 	/// A shared instance <em>may</em> be used to call <see cref="JsonNode.DeepClone"/> and the result returned.
 	/// </para>

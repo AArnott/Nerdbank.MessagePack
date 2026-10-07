@@ -789,7 +789,7 @@ internal class ObjectArrayConverter<T>(
 			}
 
 			schema["properties"] = propertiesObject;
-			schema["items"] = items;
+			context.ApplyTupleSchema(schema, items);
 
 			// Only describe the properties as required if we guarantee that we'll write them.
 			if ((defaultValuesPolicy & SerializeDefaultValuesPolicy.Required) == SerializeDefaultValuesPolicy.Required)
