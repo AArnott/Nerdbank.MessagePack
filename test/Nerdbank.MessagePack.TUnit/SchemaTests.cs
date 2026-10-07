@@ -46,10 +46,8 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 	[Test, MatrixDataSource]
 	public void NullableColorSchema(JsonSchemaDialect dialect)
 	{
-		JsonObject schema = this.Serializer.GetJsonSchema<HasNullableColors>(new JsonSchemaOptions { Dialect = dialect });
-		JSchema parsedSchema = JSchema.Parse(SchemaToString(schema));
-		JToken.Parse("""{"Color":null,"Colors":[null,false,0]}""").Validate(parsedSchema);
-		Assert.False(JToken.Parse("""{"Color":true,"Colors":[]}""").IsValid(parsedSchema));
+		JSchema schema = this.AssertSchema(dialect, [new HasNullableColors(null, [null, Color.Empty, Color.FromArgb(0)])]);
+		Assert.False(JToken.Parse("""{"Color":true,"Colors":[]}""").IsValid(schema));
 	}
 
 	[Test, MatrixDataSource]
