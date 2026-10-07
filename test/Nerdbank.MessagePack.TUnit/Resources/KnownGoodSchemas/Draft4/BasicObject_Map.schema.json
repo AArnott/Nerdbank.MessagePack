@@ -11,18 +11,18 @@
     "SchemaTests\u002BBasicObject": {
       "type": "object",
       "properties": {
-        "stringProperty": {
+        "StringProperty": {
           "type": [
             "string",
             "null"
           ]
         },
-        "intProperty": {
+        "IntProperty": {
           "type": "integer",
           "default": 5
         }
       }
     }
   },
-  "$schema": "http://json-schema.org/draft-04/schema"
+  "$schema": "http://json-schema.org/draft-04/schema#"
 }

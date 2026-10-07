@@ -34,29 +34,31 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 
 	private static readonly string KnownGoodSchemasPath = typeof(SchemaTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "ResourcesPath").Value!;
 
+	private static readonly object RecordingLock = new();
+
 	internal enum Sex
 	{
 		Male,
 		Female,
 	}
 
-	[Test]
-	public void BasicObject_Map() => this.AssertSchema([new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
+	[Test, MatrixDataSource]
+	public void BasicObject_Map(JsonSchemaDialect dialect) => this.AssertSchema(dialect, [new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
 
-	[Test]
-	public void BasicObject_Map_NamingPolicy()
+	[Test, MatrixDataSource]
+	public void BasicObject_Map_NamingPolicy(JsonSchemaDialect dialect)
 	{
 		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
-		this.AssertSchema([new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
+		this.AssertSchema(dialect, [new BasicObject { IntProperty = 3, StringProperty = "hi" }]);
 	}
 
-	[Test]
-	public void BasicObject_Key_AcceptsNull() => this.AssertSchema<ArrayOfValuesObject>([null], testName: "BasicObject_Key");
+	[Test, MatrixDataSource]
+	public void BasicObject_Key_AcceptsNull(JsonSchemaDialect dialect) => this.AssertSchema<ArrayOfValuesObject>(dialect, [null], testName: "BasicObject_Key");
 
-	[Test]
-	public void BasicObject_Key_AcceptsArrays()
+	[Test, MatrixDataSource]
+	public void BasicObject_Key_AcceptsArrays(JsonSchemaDialect dialect)
 	{
-		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
+		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(dialect, testName: "BasicObject_Key");
 
 		// Force additional array elements to be denied to verify that the indexes are explicitly allowed by the schema.
 		DisallowAdditionalProperties(schema);
@@ -72,10 +74,10 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			""").Validate(schema);
 	}
 
-	[Test]
-	public void BasicObject_Key_AcceptsMaps()
+	[Test, MatrixDataSource]
+	public void BasicObject_Key_AcceptsMaps(JsonSchemaDialect dialect)
 	{
-		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(testName: "BasicObject_Key");
+		JSchema schema = this.AssertSchema<ArrayOfValuesObject>(dialect, testName: "BasicObject_Key");
 
 		// Force additional properties to be denied to verify that the indexes are explicitly allowed by the schema.
 		DisallowAdditionalProperties(schema);
@@ -88,10 +90,10 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			""").Validate(schema);
 	}
 
-	[Test]
-	public void BasicObject_Key_Required()
+	[Test, MatrixDataSource]
+	public void BasicObject_Key_Required(JsonSchemaDialect dialect)
 	{
-		JSchema schema = this.AssertSchema<ArrayOfValuesWithRequired>();
+		JSchema schema = this.AssertSchema<ArrayOfValuesWithRequired>(dialect);
 
 		// Force additional properties to be denied to verify that the indexes are explicitly allowed by the schema.
 		DisallowAdditionalProperties(schema);
@@ -121,16 +123,37 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
-	public void Recursive() => this.AssertSchema([new RecursiveType { Child = new RecursiveType() }]);
-
-	[Test]
-	public void Surrogates()
+	public void Draft2020_12DialectAndDefinitions()
 	{
-		this.AssertSchema<SurrogateTests.OriginalType>();
+		JsonObject schema = this.Serializer.GetJsonSchema<RecursiveType>();
+		string schemaString = schema.ToJsonString();
+		Assert.Equal("https://json-schema.org/draft/2020-12/schema", schema["$schema"]?.GetValue<string>());
+		Assert.NotNull(schema["$defs"]);
+		Assert.Contains("#/$defs/", schemaString);
+		Assert.DoesNotContain("definitions", schemaString);
 	}
 
 	[Test]
-	public void Complex() => this.AssertSchema([
+	public void GenericDefinitionsDoNotContainAssemblyQualifiedArguments()
+	{
+		JsonObject schema = this.Serializer.GetJsonSchema<Family>();
+		string schemaString = schema.ToJsonString();
+		Assert.DoesNotContain("Version=", schemaString);
+		Assert.DoesNotContain("PublicKeyToken", schemaString);
+		Assert.Contains(schema["$defs"]!.AsObject().Select(definition => definition.Key), name => name.Contains("System.Collections.Generic.Dictionary`2[System.String,System.Int32]", StringComparison.Ordinal));
+	}
+
+	[Test, MatrixDataSource]
+	public void Recursive(JsonSchemaDialect dialect) => this.AssertSchema(dialect, [new RecursiveType { Child = new RecursiveType() }]);
+
+	[Test, MatrixDataSource]
+	public void Surrogates(JsonSchemaDialect dialect)
+	{
+		this.AssertSchema<SurrogateTests.OriginalType>(dialect);
+	}
+
+	[Test, MatrixDataSource]
+	public void Complex(JsonSchemaDialect dialect) => this.AssertSchema(dialect, [
 		new Family
 		{
 			Father = new Person { Name = "Dad", Sex = Sex.Male },
@@ -141,21 +164,21 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		},
 		]);
 
-	[Test]
-	public void DateTimeExtension() => this.AssertSchema([new HasDateTime { Timestamp = DateTime.Now }]);
+	[Test, MatrixDataSource]
+	public void DateTimeExtension(JsonSchemaDialect dialect) => this.AssertSchema(dialect, [new HasDateTime { Timestamp = DateTime.Now }]);
 
-	[Test]
-	public void CustomConverterHasUndocumentedSchema() => this.AssertSchema([new TypeWithNonDocumentingCustomConverter()]);
+	[Test, MatrixDataSource]
+	public void CustomConverterHasUndocumentedSchema(JsonSchemaDialect dialect) => this.AssertSchema(dialect, [new TypeWithNonDocumentingCustomConverter()]);
 
-	[Test]
-	public void CustomConverterWithDocumentedSchema()
+	[Test, MatrixDataSource]
+	public void CustomConverterWithDocumentedSchema(JsonSchemaDialect dialect)
 	{
 		this.Serializer = this.Serializer with { Converters = [new DocumentingCustomConverter()] };
-		this.AssertSchema([new CustomType(), null]);
+		this.AssertSchema(dialect, [new CustomType(), null]);
 	}
 
-	[Test]
-	public void SubTypeSchema() => this.AssertSchema([new BaseType { Message = "hi" }, new SubType { Message = "hi", Value = 5 }]);
+	[Test, MatrixDataSource]
+	public void SubTypeSchema(JsonSchemaDialect dialect) => this.AssertSchema(dialect, [new BaseType { Message = "hi" }, new SubType { Message = "hi", Value = 5 }]);
 
 	/// <summary>
 	/// Verify that registering converters while <see cref="MessagePackSerializer.PreserveReferences"/>
@@ -176,10 +199,28 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		Assert.DoesNotContain("ReferencePreservingConverter", schemaString);
 	}
 
-	private static void Record(JsonObject schema, string testName)
+	private static void Record(JsonObject schema, JsonSchemaDialect dialect, string testName)
 	{
 		string schemaString = SchemaToString(schema);
-		File.WriteAllText(Path.Combine(KnownGoodSchemasPath, testName + ".schema.json"), schemaString, Encoding.UTF8);
+		string path = GetKnownGoodSchemaPath(dialect, testName);
+
+		// Several tests intentionally share the same snapshot.
+		lock (RecordingLock)
+		{
+			Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+			File.WriteAllText(path, schemaString, Encoding.UTF8);
+		}
+	}
+
+	private static string GetKnownGoodSchemaPath(JsonSchemaDialect dialect, string testName)
+	{
+		string folder = dialect switch
+		{
+			JsonSchemaDialect.Draft4 => nameof(JsonSchemaDialect.Draft4),
+			JsonSchemaDialect.Draft2020_12 => nameof(JsonSchemaDialect.Draft2020_12),
+			_ => throw new ArgumentOutOfRangeException(nameof(dialect), dialect, "Unsupported snapshot dialect."),
+		};
+		return Path.Combine(KnownGoodSchemasPath, folder, testName + ".schema.json");
 	}
 
 	private static void DisallowAdditionalProperties(JSchema schema)
@@ -222,10 +263,10 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		}
 	}
 
-	private bool CheckMatchWithLKG(JsonObject schema, string testName)
+	private bool CheckMatchWithLKG(JsonObject schema, JsonSchemaDialect dialect, string testName)
 	{
 		string actual = SchemaToString(schema);
-		string expected = File.ReadAllText(Path.Combine(KnownGoodSchemasPath, testName + ".schema.json"));
+		string expected = File.ReadAllText(GetKnownGoodSchemaPath(dialect, testName));
 		if (expected != actual)
 		{
 			Console.WriteLine("Schema does not match the known good schema. The diff is shown below with expected as baseline.");
@@ -255,14 +296,14 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		return true;
 	}
 
-	private JSchema AssertSchema<T>(T?[]? sampleData = null, [CallerMemberName] string? testName = null)
+	private JSchema AssertSchema<T>(JsonSchemaDialect dialect, T?[]? sampleData = null, [CallerMemberName] string? testName = null)
 #if NET
 		where T : IShapeable<T>
 #endif
 	{
 		Requires.NotNull(testName!);
 
-		JsonObject schema = this.Serializer.GetJsonSchema<T>();
+		JsonObject schema = this.Serializer.GetJsonSchema<T>(new JsonSchemaOptions { Dialect = dialect });
 		string schemaString = SchemaToString(schema);
 
 #pragma warning disable CS0162 // Unreachable code detected
@@ -270,18 +311,18 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		{
 			// Log the schema in the test output and record it.
 			Console.WriteLine(schemaString);
-			Record(schema, testName);
+			Record(schema, dialect, testName);
 		}
 		else
 		{
 			// Verify that the schema matches the LKG copy.
-			if (this.CheckMatchWithLKG(schema, testName))
+			if (this.CheckMatchWithLKG(schema, dialect, testName))
 			{
 				Console.WriteLine(schemaString);
 			}
 			else
 			{
-				Assert.Fail("Schema does not match the known good schema.");
+				Assert.Fail($"Schema does not match the known good schema for {dialect}.");
 			}
 		}
 #pragma warning restore CS0162 // Unreachable code detected

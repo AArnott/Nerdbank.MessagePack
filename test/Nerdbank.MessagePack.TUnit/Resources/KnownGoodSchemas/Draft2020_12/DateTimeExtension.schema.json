@@ -1,0 +1,25 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SchemaTests\u002BHasDateTime"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "$defs": {
+    "System.DateTime": {
+      "type": "string",
+      "pattern": "^msgpack extension -1 as base64: "
+    },
+    "SchemaTests\u002BHasDateTime": {
+      "type": "object",
+      "properties": {
+        "Timestamp": {
+          "$ref": "#/$defs/System.DateTime"
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

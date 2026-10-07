@@ -366,13 +366,14 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 					aliasSchema["enum"] = new JsonArray(enumValue);
 				}
 
-				return new()
+				JsonObject tupleSchema = new()
 				{
 					["type"] = "array",
 					["minItems"] = 2,
 					["maxItems"] = 2,
-					["items"] = new JsonArray(aliasSchema, schema),
 				};
+				context.ApplyTupleSchema(tupleSchema, new JsonArray(aliasSchema, schema));
+				return tupleSchema;
 			}
 		}
 	}

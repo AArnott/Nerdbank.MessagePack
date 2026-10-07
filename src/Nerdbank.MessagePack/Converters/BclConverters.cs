@@ -46,16 +46,19 @@ internal class SystemDrawingPointConverter : MessagePackConverter<Point>
 	}
 
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
+	{
+		JsonObject schema = new()
 		{
 			["type"] = "array",
 			["minItems"] = 2,
 			["maxItems"] = 2,
-			["items"] = new JsonArray(
-				new JsonObject { ["type"] = "integer", ["format"] = "int32" },
-				new JsonObject { ["type"] = "integer", ["format"] = "int32" }),
-			["description"] = "A point represented by two integers.",
 		};
+		context.ApplyTupleSchema(schema, new JsonArray(
+			new JsonObject { ["type"] = "integer", ["format"] = "int32" },
+			new JsonObject { ["type"] = "integer", ["format"] = "int32" }));
+		schema["description"] = "A point represented by two integers.";
+		return schema;
+	}
 }
 
 internal class SystemGlobalizationCultureInfoConverter : MessagePackConverter<CultureInfo>

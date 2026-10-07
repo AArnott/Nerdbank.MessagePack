@@ -98,24 +98,20 @@ internal class ArrayWithFlattenedDimensionsConverter<TArray, TElement>(MessagePa
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
-		{
-			["type"] = "array",
-			["items"] = new JsonArray(
-				new JsonObject()
+		=> context.CreateTupleSchema(new JsonArray(
+			new JsonObject()
+			{
+				["type"] = "array",
+				["items"] = new JsonObject()
 				{
-					["type"] = "array",
-					["items"] = new JsonObject()
-					{
-						["type"] = "integer",
-					},
+					["type"] = "integer",
 				},
-				new JsonObject()
-				{
-					["type"] = "array",
-					["items"] = elementConverter.GetJsonSchema(context, typeShape),
-				}),
-		};
+			},
+			new JsonObject()
+			{
+				["type"] = "array",
+				["items"] = elementConverter.GetJsonSchema(context, typeShape),
+			}));
 
 	/// <summary>
 	/// Exposes an array of any rank as a flat span of elements.
