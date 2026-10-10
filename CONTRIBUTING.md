@@ -56,6 +56,7 @@ To publish the NativeAOT tests for a single framework and RID, run `dotnet publi
 NativeAOT builds of the TUnit project use separate `nativeaot` intermediate and output directories, so they do not disturb the managed build.
 Test builds keep dynamic code, startup hooks, and event tracing enabled for managed code coverage.
 The `ConfigureNativeAOTTestFeatures` target disables those features only in the native compiler's publish-time inputs, without rewriting the managed runtime configuration.
+The target preserves other runtime feature options, including each test project's globalization setting; the TUnit project explicitly enables full globalization. Test builds retain only English satellite resources.
 Shipping libraries targeting .NET 8 or later opt into NativeAOT compatibility analysis with `IsAotCompatible`.
 The `test/AotCompatibilityTest` project complements those analyzers by rooting the shipping assembly and passing it through the NativeAOT compiler during every traversal publish.
 Add each shipping assembly that must be validated as a `TrimmerRootAssembly` there, and keep this project publishable in `test/dirs.proj`.
