@@ -9,6 +9,7 @@
 #endif
 
 using System.ComponentModel;
+using System.Drawing;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -40,6 +41,13 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 	{
 		Male,
 		Female,
+	}
+
+	[Test, MatrixDataSource]
+	public void NullableColorSchema(JsonSchemaDialect dialect)
+	{
+		JSchema schema = this.AssertSchema(dialect, [new HasNullableColors(null, [null, Color.Empty, Color.FromArgb(0)])]);
+		Assert.False(JToken.Parse("""{"Color":true,"Colors":[]}""").IsValid(schema));
 	}
 
 	[Test, MatrixDataSource]
@@ -514,4 +522,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 			writer.WriteMapHeader(0);
 		}
 	}
+
+	[GenerateShape]
+	public partial record HasNullableColors(Color? Color, Color?[] Colors);
 }

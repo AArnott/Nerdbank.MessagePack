@@ -81,7 +81,7 @@ if ($isMTP) {
         ,'--results-directory',$testLogs
         ,'--report-trx'
     )
-    $tunitArgs = @($mtpArgs)
+    $tunitArgs = @($mtpArgs) + @('--treenode-filter=/*/*/*/*[TestCategory!=FailsInCloudTest]')
 
     if (-not $NoCoverage) {
         $coverageArgs = @(
@@ -173,13 +173,11 @@ if ($isMTP) {
         Write-Host "Running IL TUnit tests for $framework from '$($testAssemblies[0].FullName)'." -ForegroundColor Cyan
         if ($framework -eq 'net472') {
             & $testAssemblies[0].FullName `
-                '--treenode-filter=/*/*/*/*[TestCategory!=FailsInCloudTest]' `
                 @ilRunArgs `
                 @dumpSwitches `
                 @extraArgs
         } else {
             & $dotnet $testAssemblies[0].FullName `
-                '--treenode-filter=/*/*/*/*[TestCategory!=FailsInCloudTest]' `
                 @ilRunArgs `
                 @dumpSwitches `
                 @extraArgs
