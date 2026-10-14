@@ -84,7 +84,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 				return from resourceName in System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceNames()
 					   where resourceName.StartsWith(additionalFilePrefix, StringComparison.Ordinal)
 					   let content = ReadManifestResource(System.Reflection.Assembly.GetExecutingAssembly(), resourceName)
-					   select (filename: resourceName.Substring(additionalFilePrefix.Length), SourceText.From(content));
+					   select (Filename: resourceName.Substring(additionalFilePrefix.Length), SourceText.From(content));
 			});
 		}
 

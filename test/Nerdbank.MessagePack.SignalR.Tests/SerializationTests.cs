@@ -70,7 +70,7 @@ public partial class SerializationTests
 		Assert.Equal("123", invocation.InvocationId);
 		Assert.Equal("TestMethod", invocation.Target);
 		Assert.Equal(2, invocation.Arguments?.Length);
-		Assert.Equal("hello", invocation.Arguments![0]);
+		Assert.Equal("hello", (invocation.Arguments!)[0]);
 		Assert.Equal(42, invocation.Arguments[1]);
 	}
 

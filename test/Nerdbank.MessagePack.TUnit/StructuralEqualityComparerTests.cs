@@ -141,7 +141,8 @@ public abstract partial class StructuralEqualityComparerTests
 			new Tree([new Fruit(3, "Red"), new Fruit(4, "Yellow")], 4, FruitKind.Apple),
 			new Tree([new Fruit(3, "Red"), new Fruit(4, "Green")], 4, FruitKind.Banana),
 			new Tree([new Fruit(4, "Red")], 4, FruitKind.Banana),
-			new Tree([new Fruit(3, "Yellow")], 4, FruitKind.Apple)]);
+			new Tree([new Fruit(3, "Yellow")], 4, FruitKind.Apple),
+		]);
 
 	[Test]
 	public void CustomType_Fruit() => this.AssertEqualityComparerBehavior(

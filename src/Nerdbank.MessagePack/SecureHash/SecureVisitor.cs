@@ -10,6 +10,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// A visitor that creates a hash collision resistant <see cref="IEqualityComparer{T}"/> for a given type shape
 /// that compares values by value (deeply).
 /// </summary>
+/// <param name="context">The context for generating equality comparers.</param>
 internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
 	private const string EmptyTypeCannotHashKey = "ObjectTarget";
@@ -59,7 +60,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 			SecureAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
 				.. from property in objectShape.Properties
 			   where property.HasGetter
-			   select (SecureEqualityComparer<T>)property.Accept(this, null)!]);
+			   select (SecureEqualityComparer<T>)property.Accept(this, null)!,]);
 
 			if (aggregatingEqualityComparer.IsEmpty && state != IsUnionSentinel)
 			{
@@ -80,7 +81,7 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 		SecureEqualityComparer<TUnion> baseComparer = (SecureEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this, IsUnionSentinel)!;
 		SecureEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
-			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this, IsUnionSentinel)!)];
+			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this, IsUnionSentinel)!),];
 		return new SecureUnionEqualityComparer<TUnion>(
 			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}
