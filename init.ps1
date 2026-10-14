@@ -90,17 +90,11 @@ try {
 
     if (!$NoRestore -and $PSCmdlet.ShouldProcess("NuGet packages", "Restore")) {
         Write-Host "Restoring NuGet packages" -ForegroundColor $HeaderColor
-        dotnet restore @RestoreArguments
+        dotnet restore "$PSScriptRoot/tools/dirs.proj" @RestoreArguments
         if ($lastexitcode -ne 0) {
             throw "Failure while restoring packages."
         }
 
-        # The TUnit project's normal build remains IL, while its publish builds are NativeAOT.
-        # Restore the NativeAOT graph separately so --no-restore publish builds have the ILC packs available.
-        dotnet restore "$PSScriptRoot/test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj" -p:NativeAOT=true @RestoreArguments
-        if ($lastexitcode -ne 0) {
-            throw "Failure while restoring NativeAOT test packages."
-        }
     }
 
     if (!$NoToolRestore -and $PSCmdlet.ShouldProcess("dotnet tool", "restore")) {

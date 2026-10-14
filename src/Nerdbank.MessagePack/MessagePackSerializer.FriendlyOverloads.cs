@@ -10,6 +10,9 @@ using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
+/// <content>
+/// Serialization overloads for common input and output types.
+/// </content>
 public partial record MessagePackSerializer
 {
 	private static readonly StreamPipeWriterOptions PipeWriterOptions = new(MemoryPool<byte>.Shared, leaveOpen: true);

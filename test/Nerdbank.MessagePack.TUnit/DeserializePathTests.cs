@@ -161,7 +161,7 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(new ContainerWithCollection(null), this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
-		MessagePackSerializer.DeserializePathOptions<ContainerWithCollection, int> options = new(c => c.Values![2])
+		MessagePackSerializer.DeserializePathOptions<ContainerWithCollection, int> options = new(c => (c.Values!)[2])
 		{
 			DefaultForUndiscoverablePath = false,
 		};
@@ -180,7 +180,7 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<ContainerWithCollection, Witness>(new ContainerWithCollection(null), this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
-		MessagePackSerializer.DeserializePathOptions<ContainerWithCollection, int> options = new(c => c.Values![2])
+		MessagePackSerializer.DeserializePathOptions<ContainerWithCollection, int> options = new(c => (c.Values!)[2])
 		{
 			DefaultForUndiscoverablePath = true,
 		};
@@ -325,7 +325,7 @@ public partial class DeserializePathTests : MessagePackSerializerTestBase
 		byte[] msgpack = this.Serializer.Serialize<ComplexContainer, Witness>(container, this.TimeoutToken);
 		this.LogMsgPack(msgpack);
 
-		MessagePackSerializer.DeserializePathOptions<ComplexContainer, short> options = new(c => c.Outer!.Values["key2"]![1]);
+		MessagePackSerializer.DeserializePathOptions<ComplexContainer, short> options = new(c => (c.Outer!.Values["key2"]!)[1]);
 		short result = this.Serializer.DeserializePath<ComplexContainer, short, Witness>(msgpack, options, this.TimeoutToken);
 
 		Assert.Equal(5, result);

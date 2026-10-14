@@ -401,7 +401,7 @@ public class MigrationCodeFix : CodeFixProvider
 				bool hasExplicitImplementations = methods.Count > 0;
 				string[] newMethodNames = ["OnAfterSerialize", "OnBeforeDeserialize"];
 				MethodDeclarationSyntax[] newMethods = [.. newMethodNames.Select(name =>
-				MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), name).WithBody(Block()))];
+				MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), name).WithBody(Block())),];
 				for (int i = 0; i < newMethods.Length; i++)
 				{
 					newMethods[i] = hasExplicitImplementations

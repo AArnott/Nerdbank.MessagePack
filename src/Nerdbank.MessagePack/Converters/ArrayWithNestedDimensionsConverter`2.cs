@@ -16,6 +16,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TArray">The type of the array.</typeparam>
 /// <typeparam name="TElement">The type of element stored in the array.</typeparam>
+/// <param name="elementConverter">The converter for array elements.</param>
+/// <param name="rank">The number of array dimensions.</param>
 /// <remarks>
 /// <para>
 /// The msgpack spec doesn't define how to encode multi-dimensional arrays,

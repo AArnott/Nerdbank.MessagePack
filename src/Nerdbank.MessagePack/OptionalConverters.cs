@@ -139,7 +139,8 @@ public static class OptionalConverters
 		{
 			Converters = [
 				..serializer.Converters,
-				format switch {
+				format switch
+				{
 					GuidStringFormat.StringN => new GuidAsStringConverter { Format = 'N' },
 					GuidStringFormat.StringD => new GuidAsStringConverter { Format = 'D' },
 					GuidStringFormat.StringB => new GuidAsStringConverter { Format = 'B' },

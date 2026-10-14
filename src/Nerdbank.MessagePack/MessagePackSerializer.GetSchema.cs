@@ -6,6 +6,9 @@ using Microsoft;
 
 namespace Nerdbank.MessagePack;
 
+/// <content>
+/// JSON Schema generation APIs.
+/// </content>
 public partial record MessagePackSerializer
 {
 #if NET

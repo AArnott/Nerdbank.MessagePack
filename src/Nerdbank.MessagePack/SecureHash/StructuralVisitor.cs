@@ -9,6 +9,7 @@ namespace Nerdbank.MessagePack.SecureHash;
 /// <summary>
 /// A visitor that creates an <see cref="IEqualityComparer{T}"/> for a given type shape that compares values by value (deeply).
 /// </summary>
+/// <param name="context">The context for generating equality comparers.</param>
 internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisitor, ITypeShapeFunc
 {
 	private static readonly object IsUnionSentinel = new();
@@ -45,7 +46,7 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 		StructuralAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
 			.. from property in objectShape.Properties
 			   where property.HasGetter
-			   select (IEqualityComparer<T>)property.Accept(this, null)!]);
+			   select (IEqualityComparer<T>)property.Accept(this, null)!,]);
 
 		if (aggregatingEqualityComparer.IsEmpty && state != IsUnionSentinel)
 		{
@@ -61,7 +62,7 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 		IEqualityComparer<TUnion> baseComparer = (IEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this, IsUnionSentinel)!;
 		IEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
-			unionCase => (IEqualityComparer<TUnion>)unionCase.Accept(this, IsUnionSentinel)!)];
+			unionCase => (IEqualityComparer<TUnion>)unionCase.Accept(this, IsUnionSentinel)!),];
 		return new StructuralUnionEqualityComparer<TUnion>(
 			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}

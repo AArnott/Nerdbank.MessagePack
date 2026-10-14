@@ -11,6 +11,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TEnum">The enum type.</typeparam>
 /// <typeparam name="TUnderlyingType">The underlying integer type.</typeparam>
+/// <param name="primitiveConverter">The converter for the underlying integer type.</param>
 internal class EnumAsOrdinalConverter<TEnum, TUnderlyingType>(MessagePackConverter<TUnderlyingType> primitiveConverter) : MessagePackConverter<TEnum>
 	where TEnum : struct, Enum
 {

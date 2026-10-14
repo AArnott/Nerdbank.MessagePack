@@ -864,6 +864,10 @@ public partial record MessagePackSerializer
 		return this.CreateSerializationContextCore(provider, startingContext, startingContext.CancellationToken);
 	}
 
+	/// <inheritdoc cref="MessagePackConverter.ShouldWrapSerializationException(Exception, CancellationToken)"/>
+	private static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
+		=> MessagePackConverter.ShouldWrapSerializationException(ex, cancellationToken);
+
 	/// <summary>
 	/// Deserializes a sequence of values in a larger msgpack structure such that each element is produced individually.
 	/// </summary>
@@ -1181,10 +1185,6 @@ public partial record MessagePackSerializer
 			throw new NotSupportedException($"Enumeration is not supported when {nameof(this.PreserveReferences)} is enabled.");
 		}
 	}
-
-	/// <inheritdoc cref="MessagePackConverter.ShouldWrapSerializationException(Exception, CancellationToken)"/>
-	private static bool ShouldWrapSerializationException(Exception ex, CancellationToken cancellationToken)
-		=> MessagePackConverter.ShouldWrapSerializationException(ex, cancellationToken);
 
 	/// <summary>
 	/// A wrapper around <see cref="SerializationContext"/> that makes disposal easier.

@@ -49,9 +49,10 @@ There may be tests that are known to be unstable or have special requirements. T
 
 To build both managed and NativeAOT tests, run `dotnet build tools/dirs.proj -t:build,pack,publish -c Release`.
 Then run `./tools/dotnet-test-cloud.ps1 -Configuration Release -IncludeNativeAOT`.
-This repo publishes its NativeAOT tests through the `MultiRIDProjectReference` items in `test/dirs.proj`, which publish `Nerdbank.MessagePack.TUnit` with `NativeAOT=true` for `net9.0` and `net10.0` (not `net8.0` until microsoft/testfx#7153 is fixed).
-The template's per-project NativeAOT test discovery is therefore disabled repo-wide with `<PublishNativeAOTTests>false</PublishNativeAOTTests>` in `test/Directory.Build.props`, so those tests are not published twice.
-Keep test projects in the solution as well: managed test runs use the solution and the TUnit project.
+The `test/dirs.proj` traversal discovers and publishes NativeAOT tests through `GetNativeAOTTestVariants`.
+`Nerdbank.MessagePack.TUnit` opts into this with `PublishNativeAOTTests` for `net9.0` and `net10.0` (not `net8.0` until microsoft/testfx#7153 is fixed).
+Other test projects remain managed-only via the default `<PublishNativeAOTTests>false</PublishNativeAOTTests>` in `test/Directory.Build.props`.
+Keep all test projects in the solution for managed runs. The cloud test script runs the solution, then uses `tools/Get-NativeAOTTestProjects.ps1` to locate the expected NativeAOT images.
 To publish the NativeAOT tests for a single framework and RID, run `dotnet publish test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj -c Release -f net10.0 -r <RID> -p:NativeAOT=true`.
 NativeAOT builds of the TUnit project use separate `nativeaot` intermediate and output directories, so they do not disturb the managed build.
 Test builds keep dynamic code, startup hooks, and event tracing enabled for managed code coverage.
@@ -90,6 +91,9 @@ When your repo builds with Azure Pipelines, use the `azure-pipelines/release.yml
 Trigger the pipeline by adding the `auto-release` tag on a run of your main `azure-pipelines.yml` pipeline.
 
 ## Tutorial and API documentation
+
+Markup links are checked in CI with [mlc](https://github.com/becheran/mlc).
+Run `mlc` from the repository root to use the same settings, configured in `.mlc.toml`.
 
 The site at https://aarnott.github.io/Nerdbank.MessagePack builds from this repo's `docfx/` directory.
 The site is updated on every push to the `main` branch.
