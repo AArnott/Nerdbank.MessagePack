@@ -56,7 +56,7 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
-	public void Write_JsonNode_WithFloatingPoint()
+	public void Write_JsonNode_WithDouble()
 	{
 		// Test that we can serialize JsonNode containing floating point numbers
 		JsonNode node = JsonValue.Create(3.14);
@@ -66,6 +66,53 @@ public partial class JsonNodeConverterTests : MessagePackSerializerTestBase
 		// Verify we can convert back to JSON
 		string converted = this.Serializer.ConvertToJson(msgpack);
 		Assert.Equal("3.14", converted);
+	}
+
+	[Test]
+	public void Write_JsonNode_WithSingle()
+	{
+		// Test that we can serialize JsonNode containing floating point numbers
+		JsonNode node = JsonValue.Create(3.14f);
+		byte[] msgpack = this.Serializer.Serialize<JsonNode, Witness>(node, this.TimeoutToken);
+		this.LogMsgPack(msgpack);
+
+		// Verify we can convert back to JSON
+		string converted = this.Serializer.ConvertToJson(msgpack);
+		Assert.Equal("3.14", converted);
+	}
+
+	[Test]
+	public void Write_JsonNode_WithIntegerTypes()
+	{
+		JsonNode[] nodes =
+		[
+			JsonValue.Create(byte.MinValue),
+			JsonValue.Create(byte.MaxValue),
+			JsonValue.Create(sbyte.MinValue),
+			JsonValue.Create(sbyte.MaxValue),
+			JsonValue.Create(ushort.MinValue),
+			JsonValue.Create(ushort.MaxValue),
+			JsonValue.Create(short.MinValue),
+			JsonValue.Create(short.MaxValue),
+			JsonValue.Create(uint.MinValue),
+			JsonValue.Create(uint.MaxValue),
+			JsonValue.Create(int.MinValue),
+			JsonValue.Create(int.MaxValue),
+			JsonValue.Create(ulong.MinValue),
+			JsonValue.Create(ulong.MaxValue),
+			JsonValue.Create(long.MinValue),
+			JsonValue.Create(long.MaxValue),
+		];
+
+		foreach (JsonNode node in nodes)
+		{
+			byte[] msgpack = this.Serializer.Serialize<JsonNode, Witness>(node, this.TimeoutToken);
+			this.LogMsgPack(msgpack);
+
+			MessagePackReader reader = new(msgpack);
+			Assert.Equal(MessagePackType.Integer, reader.NextMessagePackType);
+			Assert.Equal(node.ToJsonString(), this.Serializer.ConvertToJson(msgpack));
+		}
 	}
 
 	[Test]
