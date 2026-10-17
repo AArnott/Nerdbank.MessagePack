@@ -27,7 +27,10 @@ public partial class SchemaTests
 	public void DialectValues_FollowPublicationOrder()
 	{
 		Assert.Equal(4, (int)JsonSchemaDialect.Draft4);
+		Assert.Equal(7, (int)JsonSchemaDialect.Draft7);
 		Assert.Equal(9, (int)JsonSchemaDialect.Draft2020_12);
+		Assert.True(JsonSchemaDialect.Draft7 > JsonSchemaDialect.Draft4);
+		Assert.True(JsonSchemaDialect.Draft2020_12 > JsonSchemaDialect.Draft7);
 		Assert.True(JsonSchemaDialect.Draft2020_12 > JsonSchemaDialect.Draft4);
 	}
 
@@ -51,7 +54,9 @@ public partial class SchemaTests
 	public void DialectOptions_SwitchingDoesNotReuseOtherDialectSchemas()
 	{
 		this.AssertDialectSchema(new RecursiveType(), JsonSchemaDialect.Draft4);
+		this.AssertDialectSchema(new RecursiveType(), JsonSchemaDialect.Draft7);
 		this.AssertDialectSchema(new RecursiveType(), JsonSchemaDialect.Draft2020_12);
+		this.AssertDialectSchema(new RecursiveType(), JsonSchemaDialect.Draft7);
 		this.AssertDialectSchema(new RecursiveType(), JsonSchemaDialect.Draft4);
 	}
 
@@ -62,7 +67,7 @@ public partial class SchemaTests
 		Assert.Throws<ArgumentNullException>(() => this.Serializer.GetJsonSchema(shape, null!));
 		Assert.Throws<ArgumentNullException>(() => this.Serializer.GetJsonSchema(null!, new JsonSchemaOptions()));
 		Assert.Throws<ArgumentOutOfRangeException>(() => this.Serializer.GetJsonSchema(shape, new JsonSchemaOptions { Dialect = (JsonSchemaDialect)int.MaxValue }));
-		foreach (int reservedValue in new[] { 0, 1, 2, 3, 5, 6, 7, 8 })
+		foreach (int reservedValue in new[] { 0, 1, 2, 3, 5, 6, 8 })
 		{
 			Assert.Throws<ArgumentOutOfRangeException>(() => this.Serializer.GetJsonSchema(shape, new JsonSchemaOptions { Dialect = (JsonSchemaDialect)reservedValue }));
 		}
@@ -110,7 +115,7 @@ public partial class SchemaTests
 		root.DefineField("Repeat", firstList, FieldAttributes.Public);
 		ITypeShapeProvider provider = PolyType.ReflectionProvider.ReflectionTypeShapeProvider.Default;
 		JsonObject schema = this.Serializer.GetJsonSchema(provider.GetTypeShape(root.CreateTypeInfo()!.AsType())!, new JsonSchemaOptions { Dialect = dialect });
-		string definitionsKeyword = dialect == JsonSchemaDialect.Draft4 ? "definitions" : "$defs";
+		string definitionsKeyword = dialect < JsonSchemaDialect.Draft2020_12 ? "definitions" : "$defs";
 		JsonObject definitions = schema[definitionsKeyword]!.AsObject();
 		Assert.Equal(5, definitions.Count);
 		Assert.DoesNotContain("Version=", schema.ToJsonString());
@@ -183,7 +188,7 @@ public partial class SchemaTests
 		Assert.False(JToken.Parse("[1]").IsValid(schema));
 		Assert.False(JToken.Parse("[1,\"value\",3]").IsValid(schema));
 		this.Serializer = this.Serializer with { Converters = [new SingleDialectCustomConverter()] };
-		if (dialect == JsonSchemaDialect.Draft4)
+		if (dialect < JsonSchemaDialect.Draft2020_12)
 		{
 			Assert.Throws<NotSupportedException>(() => this.Serializer.GetJsonSchema<CustomType>(new JsonSchemaOptions { Dialect = dialect }));
 		}
@@ -197,10 +202,16 @@ public partial class SchemaTests
 	{
 		ITypeShape<T> shape = DialectWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<T>();
 		JsonObject schema = this.Serializer.GetJsonSchema(shape, new JsonSchemaOptions { Dialect = dialect });
-		string definitions = dialect == JsonSchemaDialect.Draft4 ? "definitions" : "$defs";
-		string schemaUri = dialect == JsonSchemaDialect.Draft4 ? "http://json-schema.org/draft-04/schema#" : "https://json-schema.org/draft/2020-12/schema";
+		string definitions = dialect < JsonSchemaDialect.Draft2020_12 ? "definitions" : "$defs";
+		string schemaUri = dialect switch
+		{
+			JsonSchemaDialect.Draft4 => "http://json-schema.org/draft-04/schema#",
+			JsonSchemaDialect.Draft7 => "http://json-schema.org/draft-07/schema#",
+			JsonSchemaDialect.Draft2020_12 => "https://json-schema.org/draft/2020-12/schema",
+			_ => throw new ArgumentOutOfRangeException(nameof(dialect)),
+		};
 		Assert.Equal(schemaUri, schema["$schema"]!.GetValue<string>());
-		Assert.False(schema.ContainsKey(dialect == JsonSchemaDialect.Draft4 ? "$defs" : "definitions"));
+		Assert.False(schema.ContainsKey(dialect < JsonSchemaDialect.Draft2020_12 ? "$defs" : "definitions"));
 		AssertSchemaKeywords(schema);
 		JSchema parsed = JSchema.Parse(schema.ToJsonString());
 		byte[] msgpack = this.Serializer.Serialize(value, shape);
@@ -216,7 +227,7 @@ public partial class SchemaTests
 					Assert.StartsWith($"#/{definitions}/", reference.GetValue<string>());
 				}
 
-				if (dialect == JsonSchemaDialect.Draft4)
+				if (dialect < JsonSchemaDialect.Draft2020_12)
 				{
 					Assert.False(obj.ContainsKey("prefixItems"));
 				}

@@ -15,7 +15,7 @@ internal partial class JsonSchemaExport
         MessagePackSerializer serializer = new();
         JsonObject schema = serializer.GetJsonSchema<Person>(new JsonSchemaOptions
         {
-            Dialect = JsonSchemaDialect.Draft4,
+            Dialect = JsonSchemaDialect.Draft7,
         });
         #endregion
     }
