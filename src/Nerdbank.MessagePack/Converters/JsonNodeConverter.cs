@@ -100,17 +100,46 @@ internal class JsonNodeConverter : MessagePackConverter<JsonNode>
 				writer.Write(value.GetValue<string>());
 				break;
 			case System.Text.Json.JsonValueKind.Number:
-				if (value.AsValue().TryGetValue<ulong>(out ulong unsigned))
+				JsonValue valueAsValue = value.AsValue();
+				if (valueAsValue.TryGetValue(out ulong unsigned))
 				{
 					writer.Write(unsigned);
 				}
-				else if (value.AsValue().TryGetValue<long>(out long signed))
+				else if (valueAsValue.TryGetValue(out long signed))
 				{
 					writer.Write(signed);
 				}
-				else if (value.AsValue().TryGetValue<double>(out double floatingPoint))
+				else if (valueAsValue.TryGetValue(out uint unsigned32))
 				{
-					writer.Write(floatingPoint);
+					writer.Write(unsigned32);
+				}
+				else if (valueAsValue.TryGetValue(out int signed32))
+				{
+					writer.Write(signed32);
+				}
+				else if (valueAsValue.TryGetValue(out ushort unsigned16))
+				{
+					writer.Write(unsigned16);
+				}
+				else if (valueAsValue.TryGetValue(out short signed16))
+				{
+					writer.Write(signed16);
+				}
+				else if (valueAsValue.TryGetValue(out byte unsigned8))
+				{
+					writer.Write(unsigned8);
+				}
+				else if (valueAsValue.TryGetValue(out sbyte signed8))
+				{
+					writer.Write(signed8);
+				}
+				else if (valueAsValue.TryGetValue(out double doubleFloat))
+				{
+					writer.Write(doubleFloat);
+				}
+				else if (valueAsValue.TryGetValue(out float singleFloat))
+				{
+					writer.Write(singleFloat);
 				}
 				else
 				{
