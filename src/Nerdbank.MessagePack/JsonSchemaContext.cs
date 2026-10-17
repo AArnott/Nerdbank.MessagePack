@@ -42,7 +42,7 @@ public class JsonSchemaContext
 	/// </summary>
 	internal string DefinitionsKeyword => this.Dialect switch
 	{
-		JsonSchemaDialect.Draft4 => "definitions",
+		JsonSchemaDialect.Draft4 or JsonSchemaDialect.Draft7 => "definitions",
 		JsonSchemaDialect.Draft2020_12 => "$defs",
 		_ => throw new NotSupportedException($"Unsupported JSON Schema dialect: {this.Dialect}."),
 	};
@@ -53,6 +53,7 @@ public class JsonSchemaContext
 	internal string SchemaUri => this.Dialect switch
 	{
 		JsonSchemaDialect.Draft4 => "http://json-schema.org/draft-04/schema#",
+		JsonSchemaDialect.Draft7 => "http://json-schema.org/draft-07/schema#",
 		JsonSchemaDialect.Draft2020_12 => "https://json-schema.org/draft/2020-12/schema",
 		_ => throw new NotSupportedException($"Unsupported JSON Schema dialect: {this.Dialect}."),
 	};
@@ -95,7 +96,7 @@ public class JsonSchemaContext
 		Requires.Argument(items.Count > 0, nameof(items), "At least one positional schema is required.");
 		string keyword = this.Dialect switch
 		{
-			JsonSchemaDialect.Draft4 => "items",
+			JsonSchemaDialect.Draft4 or JsonSchemaDialect.Draft7 => "items",
 			JsonSchemaDialect.Draft2020_12 => "prefixItems",
 			_ => throw new NotSupportedException($"Unsupported JSON Schema dialect: {this.Dialect}."),
 		};

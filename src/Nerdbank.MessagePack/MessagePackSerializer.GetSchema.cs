@@ -82,7 +82,7 @@ public partial record MessagePackSerializer
 	{
 		Requires.NotNull(typeShape);
 		Requires.NotNull(options);
-		if (options.Dialect is not (JsonSchemaDialect.Draft4 or JsonSchemaDialect.Draft2020_12))
+		if (options.Dialect is not (JsonSchemaDialect.Draft4 or JsonSchemaDialect.Draft7 or JsonSchemaDialect.Draft2020_12))
 		{
 			throw new ArgumentOutOfRangeException(nameof(options), options.Dialect, "Unsupported JSON Schema dialect.");
 		}

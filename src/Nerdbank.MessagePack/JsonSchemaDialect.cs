@@ -19,6 +19,11 @@ public enum JsonSchemaDialect
 	Draft4 = 4,
 
 	/// <summary>
+	/// JSON Schema Draft 7.
+	/// </summary>
+	Draft7 = 7,
+
+	/// <summary>
 	/// JSON Schema Draft 2020-12.
 	/// </summary>
 	Draft2020_12 = 9,

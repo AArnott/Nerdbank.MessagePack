@@ -225,6 +225,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 		string folder = dialect switch
 		{
 			JsonSchemaDialect.Draft4 => nameof(JsonSchemaDialect.Draft4),
+			JsonSchemaDialect.Draft7 => nameof(JsonSchemaDialect.Draft7),
 			JsonSchemaDialect.Draft2020_12 => nameof(JsonSchemaDialect.Draft2020_12),
 			_ => throw new ArgumentOutOfRangeException(nameof(dialect), dialect, "Unsupported snapshot dialect."),
 		};

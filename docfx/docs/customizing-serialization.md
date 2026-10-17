@@ -266,11 +266,11 @@ Obtaining a JSON schema can be useful for aiding in publishing a formal spec for
 The generated schema defaults to JSON Schema Draft 2020-12.
 This default is fixed: adding support for future dialects will not change it.
 To select a dialect explicitly, pass <xref:Nerdbank.MessagePack.JsonSchemaOptions> to an overload of <xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*>.
-<xref:Nerdbank.MessagePack.JsonSchemaDialect> supports Draft 2020-12 and Draft 4, the dialect previously emitted by this library.
+<xref:Nerdbank.MessagePack.JsonSchemaDialect> supports Draft 2020-12, Draft 7 (for use in OpenRPC documents), and Draft 4, the dialect previously emitted by this library.
 
 [!code-csharp[](../../samples/cs/JsonSchemaExport.cs#SelectDialect)]
 
-Draft 4 uses `definitions` and array-valued `items` for positional arrays; Draft 2020-12 uses `$defs` and `prefixItems`.
+Draft 4 and Draft 7 use `definitions` and array-valued `items` for positional arrays; Draft 2020-12 uses `$defs` and `prefixItems`.
 Selecting a dialect does not change the MessagePack serialization format.
 Unsupported dialect values are rejected rather than silently replaced with another version.
 
