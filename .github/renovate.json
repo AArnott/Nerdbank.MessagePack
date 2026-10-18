@@ -47,11 +47,6 @@
 		{
 			"matchJsonata": [ "sharedVariableName='RoslynVersionForAnalyzers'" ],
 			"enabled": false
-		},
-		{
-			"matchPackageNames": [ "MessagePack" ],
-			"matchUpdateTypes": "patch",
-			"enabled": false
 		}
 	]
 }
