@@ -1,65 +1,10 @@
 # Copilot instructions for this repository
 
-**ALWAYS follow these instructions first and only fallback to additional search and context gathering if the information here is incomplete or found to be in error.**
+## High level guidance
 
 * Review the `CONTRIBUTING.md` file for instructions to build and test the software.
 * Run the `.github/Prime-ForCopilot.ps1` script (once) before running any `dotnet` or `msbuild` commands.
   If you see any build errors about not finding git objects or a shallow clone, it may be time to run this script again.
-
-## Working Effectively
-
-### Bootstrap and Build
-**CRITICAL**: Set the `NBGV_GitEngine` environment variable to `Disabled` before running ANY `dotnet` or `msbuild` commands.
-
-```bash
-export NBGV_GitEngine=Disabled
-```
-
-**Setup dependencies** (takes ~2-3 seconds):
-```bash
-./init.ps1 -UpgradePrerequisites -NoNuGetCredProvider
-```
-
-**Build the repository** (takes 7-76 seconds depending on cache - do not cancel unless it exceeds 10-15 minutes, set timeout to 10-15 minutes):
-```bash
-dotnet build tools/dirs.proj -t:build,pack --no-restore -c Release
-```
-
-### Testing
-**Run tests** (takes ~25 seconds - NEVER CANCEL, set timeout to 5-10 minutes):
-```bash
-dotnet test --no-build -c Release -- --treenode-filter "/*/*/*/*[TestCategory!=FailsInCloudTest]"
-```
-
-### Code Quality
-**Verify code formatting** (takes ~71 seconds - NEVER CANCEL, set timeout to 90+ minutes):
-```bash
-dotnet format --verify-no-changes --no-restore
-```
-
-**Build documentation** (takes ~19 seconds):
-```bash
-DocFx=true dotnet docfx docfx/docfx.json --warningsAsErrors --disableGitFeatures
-```
-
-**NEVER CANCEL**: Code formatting verification takes approximately 71 seconds. This is normal and expected.
-
-## Validation Scenarios
-**ALWAYS test functionality after making changes by running validation scenarios:**
-
-**Test AOT Native Console sample**:
-```bash
-cd test/AotNativeConsole
-dotnet run --no-build -c Release
-```
-Expected output: JSON data followed by tree structure with fruits and seeds, ending with "Success".
-
-**Test ASP.NET MVC integration**:
-```bash
-cd samples/AspNetMvc
-dotnet run --no-build -c Release
-```
-Should start web server without errors (web UI testing limited in this environment).
 
 ## Performance optimization
 
@@ -96,76 +41,11 @@ Should start web server without errors (web UI testing limited in this environme
 * Design APIs to be highly testable, and all functionality should be tested.
 * Avoid introducing binary breaking changes in public APIs of projects under `src` unless their project files have `IsPackable` set to `false`.
 
-## Testing
-
-**IMPORTANT**: This repository uses [TUnit](https://tunit.dev) on Microsoft.Testing.Platform (MTP v2). Neither the traditional VSTest `--filter` syntax nor xunit's `--filter-method`/`--filter-trait` options work. Use `--treenode-filter` as shown below.
-
-* There should generally be one test project (under the `test` directory) per shipping project (under the `src` directory). Test projects are named after the project being tested with a `.Tests` suffix.
-* Tests are written with TUnit (`[Test]`, `[Arguments(...)]`, etc.). Assertions use the `xunit.v3.assert` / `xunit.v3.assert.aot` packages.
-* Some tests are known to be unstable. When running tests, you should skip the unstable ones by using `-- --treenode-filter "/*/*/*/*[TestCategory!=FailsInCloudTest]"`.
-
-### Running Tests
-
-**Run all tests**:
-```bash
-dotnet test --no-build -c Release
-```
-
-**Run tests for a specific test project**:
-```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release
-```
-
-**Run a single test method**:
-```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release -- --treenode-filter "/*/*/ClassName/MethodName"
-```
-
-**Run all tests in a test class**:
-```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release -- --treenode-filter "/*/*/ClassName/*"
-```
-
-**Run tests with wildcard matching** (supports wildcards at beginning and/or end):
-```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release -- --treenode-filter "/*/*/*/*Pattern*"
-```
-
-**Run tests with a specific trait** (equivalent to category filtering):
-```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release -- --filter-trait "TraitName=value"
-```
-
-**Exclude tests with a specific trait** (skip unstable tests):
-```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release -- --treenode-filter "/*/*/*/*[TestCategory!=FailsInCloudTest]"
-```
-
-**Run tests for a specific framework only**:
-```bash
-dotnet test --project test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj --no-build -c Release --framework net10.0
-```
-
-**List all available tests without running them**:
-```bash
-cd test/Nerdbank.MessagePack.TUnit
-dotnet run --no-build -c Release --framework net10.0 -- --list-tests
-```
-
-**Key points about test filtering with TUnit / MTP v2**:
-- Options after `--` are passed to the test runner, not to `dotnet test`
-- Use `--treenode-filter` to select tests by assembly, namespace, class, method, or property
-- Traditional VSTest `--filter` expressions and xunit's `--filter-*` options do NOT work
-- Wildcards `*` are supported in tree node segments
-- Append `[Property=value]` or `[Property!=value]` to filter on test properties such as `TestCategory`
-- See `--help` for query filter language for advanced scenarios
-
-## Coding Style
+## Coding style
 
 * Honor StyleCop rules and fix any reported build warnings *after* getting tests to pass.
 * In C# files, use namespace *statements* instead of namespace *blocks* for all new files.
-* Add API doc comments to all new public and internal members.
-* Always run `dotnet format --verify-no-changes --no-restore` before committing changes or CI will fail.
+* Add API doc comments to all new public and internal members in shipping code under `src`. Tests and samples do not require XML API documentation; do not add XML docs to test or sample members solely to satisfy this rule.
 
 ## Documentation
 
