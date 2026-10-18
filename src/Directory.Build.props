@@ -8,10 +8,16 @@
     <None Condition="Exists('README.md')" Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' != '.proj'">
+    <!-- Keep this at the most recently published stable NuGet version. The SDK only downloads it for packable projects. -->
+    <PackageValidationBaselineVersion>1.4.80</PackageValidationBaselineVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- These framework-specific assets are intentionally retired in favor of .NET 10. -->
     <PackageValidationBaselineFrameworkToIgnore Include="net8.0;net9.0" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />
+
 </Project>

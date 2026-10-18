@@ -44,8 +44,8 @@ internal static class ManyModels
 			new Version(2, 0),
 			[
 				new Capybara(Guid.NewGuid(), new Vector2(64f, 0f), 0.1f),
-					new SnowLeopard(Guid.NewGuid(), new Vector2(64f, 128f), 0.1f, null),
-					new KomodoDragon(Guid.NewGuid(), new Vector2(64f, 256f), 0f, 0.1f, Color.White, Rectangle.Empty, false, 0.5f)
+				new SnowLeopard(Guid.NewGuid(), new Vector2(64f, 128f), 0.1f, null),
+				new KomodoDragon(Guid.NewGuid(), new Vector2(64f, 256f), 0f, 0.1f, Color.White, Rectangle.Empty, false, 0.5f),
 			]);
 
 		return shape;

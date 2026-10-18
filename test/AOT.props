@@ -1,19 +1,46 @@
 <Project>
   <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <RuntimeIdentifiers>$(AvailableRuntimeIdentifiers)</RuntimeIdentifiers>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
+    <SatelliteResourceLanguages Condition="'$(SatelliteResourceLanguages)' == ''">en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <!-- Non-test AOT apps (AotNativeConsole, AotCompatibilityTest): match pre-merge RID/SelfContained. -->
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true'">
     <OutputType>Exe</OutputType>
     <SelfContained>true</SelfContained>
-    <PublishAot>true</PublishAot>
-    <!--<PublishReadyToRun>true</PublishReadyToRun>
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>-->
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <RuntimeIdentifiers>$(AvailableRuntimeIdentifiers)</RuntimeIdentifiers>
     <RuntimeIdentifier>$(DefaultRuntimeIdentifier)</RuntimeIdentifier>
+    <DynamicCodeSupport>false</DynamicCodeSupport>
+    <StartupHookSupport>false</StartupHookSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <!-- Preserve managed coverage in the build output; native compilation overrides these at publish time. -->
+    <DynamicCodeSupport>true</DynamicCodeSupport>
+    <StartupHookSupport>true</StartupHookSupport>
+    <EventSourceSupport>true</EventSourceSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ProjectReference>
-      <!-- Suppress spreading the RID being built here to RID-neutral projects. -->
-      <GlobalPropertiesToRemove>RuntimeIdentifier</GlobalPropertiesToRemove>
+      <GlobalPropertiesToRemove>%(ProjectReference.GlobalPropertiesToRemove);RuntimeIdentifier;NativeAOT</GlobalPropertiesToRemove>
     </ProjectReference>
   </ItemDefinitionGroup>
+
+  <Target Name="ConfigureNativeAOTTestFeatures"
+          BeforeTargets="_ComputeAssembliesToCompileToNative"
+          Condition="'$(NativeAOT)' == 'true'">
+    <PropertyGroup>
+      <DynamicCodeSupport>false</DynamicCodeSupport>
+      <StartupHookSupport>false</StartupHookSupport>
+      <EventSourceSupport>false</EventSourceSupport>
+    </PropertyGroup>
+    <ItemGroup>
+      <RuntimeHostConfigurationOption>
+        <Value Condition="'%(RuntimeHostConfigurationOption.Identity)' == 'System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported' or '%(RuntimeHostConfigurationOption.Identity)' == 'System.StartupHookProvider.IsSupported' or '%(RuntimeHostConfigurationOption.Identity)' == 'System.Diagnostics.Tracing.EventSource.IsSupported'">false</Value>
+      </RuntimeHostConfigurationOption>
+    </ItemGroup>
+  </Target>
 </Project>

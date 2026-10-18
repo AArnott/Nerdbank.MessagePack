@@ -27,7 +27,11 @@ In the @"Nerdbank.MessagePack.MessagePackConverter`1.Read*" method, use @Nerdban
 
 If you have nothing to serialize (e.g. because the value to serialize is empty), you should either use @Nerdbank.MessagePack.MessagePackWriter.WriteNil or use @Nerdbank.MessagePack.MessagePackWriter.WriteMapHeader* or @Nerdbank.MessagePack.MessagePackWriter.WriteArrayHeader* with an argument of 0.
 
-Custom converters are encouraged to override @Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*?displayProperty=nameWithType to support the @Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType methods.
+Custom converters are encouraged to override <xref:Nerdbank.MessagePack.MessagePackConverter`1.GetJsonSchema*?displayProperty=nameWithType> to support the <xref:Nerdbank.MessagePack.MessagePackSerializer.GetJsonSchema*?displayProperty=nameWithType> methods.
+The returned fragment must conform to <xref:Nerdbank.MessagePack.JsonSchemaContext.Dialect>.
+Use <xref:Nerdbank.MessagePack.JsonSchemaContext.CreateTupleSchema*> or <xref:Nerdbank.MessagePack.JsonSchemaContext.ApplyTupleSchema*> for positional array constraints, and <xref:Nerdbank.MessagePack.JsonSchemaContext.GetJsonSchema*> for schemas of delegated values (including references).
+If a converter cannot support the requested dialect, throw <xref:System.NotSupportedException>.
+Arbitrary custom schema fragments are not automatically translated between dialects.
 
 Data types and custom converters should typically be declared as `public` so that when these data types are used by other assemblies (directly or indirectly), the type shapes required for serialization and any custom converters are accessible by those assemblies.
 

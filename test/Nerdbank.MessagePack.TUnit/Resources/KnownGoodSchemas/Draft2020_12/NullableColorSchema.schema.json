@@ -1,0 +1,70 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SchemaTests\u002BHasNullableColors"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "$defs": {
+    "System.Drawing.Color": {
+      "anyOf": [
+        {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        {
+          "type": "integer",
+          "format": "int32"
+        }
+      ],
+      "description": "An ARGB color value, or false for Color.Empty."
+    },
+    "System.Nullable\u00601[System.Drawing.Color][]": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/System.Drawing.Color"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "SchemaTests\u002BHasNullableColors": {
+      "type": "object",
+      "properties": {
+        "Color": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/System.Drawing.Color"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "Colors": {
+          "$ref": "#/$defs/System.Nullable%601%5BSystem.Drawing.Color%5D%5B%5D"
+        }
+      },
+      "required": [
+        "Color",
+        "Colors"
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

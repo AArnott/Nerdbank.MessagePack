@@ -1,13 +1,13 @@
 ﻿{
   "oneOf": [
     {
-      "$ref": "#/definitions/SchemaTests\u002BTypeWithNonDocumentingCustomConverter"
+      "$ref": "#/$defs/SchemaTests\u002BTypeWithNonDocumentingCustomConverter"
     },
     {
       "type": "null"
     }
   ],
-  "definitions": {
+  "$defs": {
     "SchemaTests\u002BTypeWithNonDocumentingCustomConverter": {
       "type": [
         "number",
@@ -21,5 +21,5 @@
       "description": "The schema of this object is unknown as it is determined by the SchemaTests\u002BNonDocumentingCustomConverter converter which does not override GetJsonSchema."
     }
   },
-  "$schema": "http://json-schema.org/draft-04/schema"
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

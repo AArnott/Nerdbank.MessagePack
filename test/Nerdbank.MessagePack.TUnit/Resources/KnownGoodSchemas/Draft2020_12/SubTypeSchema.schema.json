@@ -1,0 +1,65 @@
+﻿{
+  "anyOf": [
+    {
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "Message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer",
+              "enum": [
+                1
+              ]
+            },
+            {
+              "$ref": "#/$defs/SchemaTests\u002BSubType"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "$defs": {
+    "SchemaTests\u002BSubType": {
+      "type": "object",
+      "properties": {
+        "Value": {
+          "type": "integer"
+        },
+        "Message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

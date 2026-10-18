@@ -31,8 +31,8 @@ namespace PrimitiveDeserialization
             MessagePackReader reader = new(msgpack);
             object? deserialized = serializer.DeserializePrimitives(ref reader);
             var map = (IReadOnlyDictionary<object, object?>)deserialized!;
-            string prop1 = (string)map!["Prop1"]!;
-            int prop2 = (int)map!["Prop2"]!;
+            string prop1 = (string)map["Prop1"]!;
+            int prop2 = (int)map["Prop2"]!;
             bool deeperBool = (bool)((IReadOnlyDictionary<object, object?>)map["deeper"]!)["IsAdult"]!;
             int age = (int)((IReadOnlyDictionary<object, object?>)((IReadOnlyDictionary<object, object?>)map["People"]!)[3]!)["Age"]!;
 

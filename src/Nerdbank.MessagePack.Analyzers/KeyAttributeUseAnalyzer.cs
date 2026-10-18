@@ -248,7 +248,7 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 		static bool IsImplicitStructConstructor(IMethodSymbol ctor) =>
 			ctor.ContainingType.TypeKind == TypeKind.Struct && ctor.Parameters.IsEmpty && ctor.IsImplicitlyDeclared;
 		IMethodSymbol[] publicConstructors = [.. typeSymbol.InstanceConstructors
-			.Where(ctor => ctor.DeclaredAccessibility == Accessibility.Public && !IsImplicitStructConstructor(ctor))];
+			.Where(ctor => ctor.DeclaredAccessibility == Accessibility.Public && !IsImplicitStructConstructor(ctor)),];
 
 		if (publicConstructors is [{ } candidate])
 		{

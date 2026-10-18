@@ -1,13 +1,13 @@
 ﻿{
   "oneOf": [
     {
-      "$ref": "#/definitions/SchemaTests\u002BArrayOfValuesObject"
+      "$ref": "#/$defs/SchemaTests\u002BArrayOfValuesObject"
     },
     {
       "type": "null"
     }
   ],
-  "definitions": {
+  "$defs": {
     "SchemaTests\u002BSex": {
       "type": "integer",
       "enum": [
@@ -16,7 +16,7 @@
       ],
       "description": "0 = Male, 1 = Female"
     },
-    "System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]": {
+    "System.Collections.Generic.Dictionary\u00602[System.String,System.Int32]": {
       "type": "object",
       "additionalProperties": {
         "type": "integer"
@@ -30,7 +30,7 @@
           "description": "The name of the person."
         },
         "Sex": {
-          "$ref": "#/definitions/SchemaTests\u002BSex"
+          "$ref": "#/$defs/SchemaTests\u002BSex"
         },
         "Age": {
           "type": [
@@ -40,7 +40,7 @@
           "default": 18
         },
         "PetsAndAges": {
-          "$ref": "#/definitions/System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+          "$ref": "#/$defs/System.Collections.Generic.Dictionary%602%5BSystem.String,System.Int32%5D"
         }
       },
       "required": [
@@ -68,7 +68,7 @@
         "3": {
           "oneOf": [
             {
-              "$ref": "#/definitions/SchemaTests\u002BPerson",
+              "$ref": "#/$defs/SchemaTests\u002BPerson",
               "description": "Person"
             },
             {
@@ -77,7 +77,7 @@
           ]
         }
       },
-      "items": [
+      "prefixItems": [
         {
           "type": [
             "string",
@@ -104,7 +104,7 @@
         {
           "oneOf": [
             {
-              "$ref": "#/definitions/SchemaTests\u002BPerson",
+              "$ref": "#/$defs/SchemaTests\u002BPerson",
               "description": "Person"
             },
             {
@@ -115,5 +115,5 @@
       ]
     }
   },
-  "$schema": "http://json-schema.org/draft-04/schema"
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

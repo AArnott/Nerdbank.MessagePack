@@ -1,0 +1,17 @@
+﻿{
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SchemaTests\u002BCustomType"
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "$defs": {
+    "SchemaTests\u002BCustomType": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

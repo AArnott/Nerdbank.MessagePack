@@ -93,6 +93,9 @@ internal static class HashCollisionResistantPrimitives
 	internal class DateTimeOffsetEqualityComparer : CollisionResistantHasherUnmanaged<DateTimeOffset>
 	{
 		/// <inheritdoc/>
+		public override bool Equals(DateTimeOffset x, DateTimeOffset y) => x.Equals(y);
+
+		/// <inheritdoc/>
 		public override unsafe long GetSecureHashCode(DateTimeOffset value) => SecureHash(value.UtcDateTime.Ticks);
 	}
 

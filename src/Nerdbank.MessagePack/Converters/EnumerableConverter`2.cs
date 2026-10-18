@@ -14,6 +14,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// </summary>
 /// <typeparam name="TEnumerable">The concrete type of enumerable.</typeparam>
 /// <typeparam name="TElement">The type of element in the enumerable.</typeparam>
+/// <param name="getEnumerable">The delegate that enumerates elements, or <see langword="null"/> when only asynchronous enumeration is supported.</param>
+/// <param name="elementConverter">The converter for enumerable elements.</param>
 internal class EnumerableConverter<TEnumerable, TElement>(Func<TEnumerable, IEnumerable<TElement>>? getEnumerable, MessagePackConverter<TElement> elementConverter) : MessagePackConverter<TEnumerable>
 {
 	/// <inheritdoc />

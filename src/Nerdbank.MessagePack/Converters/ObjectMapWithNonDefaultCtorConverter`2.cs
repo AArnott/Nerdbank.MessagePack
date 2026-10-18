@@ -10,8 +10,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TDeclaringType">The type of objects that can be serialized or deserialized with this converter.</typeparam>
 /// <typeparam name="TArgumentState">The state object that stores individual member values until the constructor delegate can be invoked.</typeparam>
 /// <param name="serializable">Tools for serializing individual property values.</param>
-/// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="argStateCtor">The constructor for the <typeparamref name="TArgumentState"/> that is later passed to the <typeparamref name="TDeclaringType"/> constructor.</param>
+/// <param name="unusedDataProperty">The special <see cref="UnusedDataPacket"/> property, if declared.</param>
 /// <param name="ctor">The data type's constructor helper.</param>
 /// <param name="parameters">Tools for deserializing individual property values.</param>
 /// <param name="parameterShapes">The parameter shapes.</param>

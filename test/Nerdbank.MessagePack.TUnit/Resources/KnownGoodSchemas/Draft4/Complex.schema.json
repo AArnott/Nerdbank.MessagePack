@@ -1,4 +1,4 @@
-{
+﻿{
   "oneOf": [
     {
       "$ref": "#/definitions/SchemaTests\u002BFamily"
@@ -16,7 +16,7 @@
       ],
       "description": "0 = Male, 1 = Female"
     },
-    "System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]": {
+    "System.Collections.Generic.Dictionary\u00602[System.String,System.Int32]": {
       "type": "object",
       "additionalProperties": {
         "type": "integer"
@@ -40,7 +40,7 @@
           "default": 18
         },
         "PetsAndAges": {
-          "$ref": "#/definitions/System.Collections.Generic.Dictionary\u00602[[System.String, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=x.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+          "$ref": "#/definitions/System.Collections.Generic.Dictionary%602%5BSystem.String,System.Int32%5D"
         }
       },
       "required": [
@@ -48,7 +48,7 @@
       ],
       "description": "A human person."
     },
-    "System.Collections.Generic.List\u00601[[SchemaTests\u002BPerson, Nerdbank.MessagePack.TUnit, Version=x.x.x.x, Culture=neutral, PublicKeyToken=d4b172c8050bbbc3]]": {
+    "System.Collections.Generic.List\u00601[SchemaTests\u002BPerson]": {
       "type": "array",
       "items": {
         "$ref": "#/definitions/SchemaTests\u002BPerson"
@@ -79,10 +79,10 @@
           ]
         },
         "progeny": {
-          "$ref": "#/definitions/System.Collections.Generic.List\u00601[[SchemaTests\u002BPerson, Nerdbank.MessagePack.TUnit, Version=x.x.x.x, Culture=neutral, PublicKeyToken=d4b172c8050bbbc3]]"
+          "$ref": "#/definitions/System.Collections.Generic.List%601%5BSchemaTests\u002BPerson%5D"
         }
       }
     }
   },
-  "$schema": "http://json-schema.org/draft-04/schema"
+  "$schema": "http://json-schema.org/draft-04/schema#"
 }

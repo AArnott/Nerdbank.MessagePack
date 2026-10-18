@@ -825,13 +825,9 @@ internal class HiFiDateTimeConverter : MessagePackConverter<DateTime>
 		{
 			["oneOf"] = new JsonArray(
 				CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
-				new JsonObject
-				{
-					["type"] = "array",
-					["items"] = new JsonArray(
-						new JsonObject { ["type"] = "integer", ["minimum"] = DateTime.MinValue.Ticks, ["maximum"] = DateTime.MaxValue.Ticks },
-						new JsonObject { ["type"] = "integer", ["minimum"] = 0, ["maximum"] = 2 }),
-				}),
+				context.CreateTupleSchema(new JsonArray(
+					new JsonObject { ["type"] = "integer", ["minimum"] = DateTime.MinValue.Ticks, ["maximum"] = DateTime.MaxValue.Ticks },
+					new JsonObject { ["type"] = "integer", ["minimum"] = 0, ["maximum"] = 2 }))),
 		};
 }
 
@@ -865,13 +861,9 @@ internal class DateTimeOffsetConverter : MessagePackConverter<DateTimeOffset>
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
-		=> new()
-		{
-			["type"] = "array",
-			["items"] = new JsonArray(
-				CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
-				new JsonObject { ["type"] = "integer" }),
-		};
+		=> context.CreateTupleSchema(new JsonArray(
+			CreateMsgPackExtensionSchema(ReservedMessagePackExtensionTypeCode.DateTime),
+			new JsonObject { ["type"] = "integer" }));
 }
 
 #if NET

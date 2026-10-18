@@ -1,0 +1,35 @@
+﻿{
+  "anyOf": [
+    {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SurrogateTests\u002BOriginalType\u002BMarshaledType"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    {
+      "type": "null"
+    }
+  ],
+  "$defs": {
+    "SurrogateTests\u002BOriginalType\u002BMarshaledType": {
+      "type": "object",
+      "properties": {
+        "A": {
+          "type": "integer"
+        },
+        "B": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "A",
+        "B"
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

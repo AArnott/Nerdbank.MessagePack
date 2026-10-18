@@ -1,13 +1,13 @@
 ﻿{
   "oneOf": [
     {
-      "$ref": "#/definitions/SchemaTests\u002BArrayOfValuesWithRequired"
+      "$ref": "#/$defs/SchemaTests\u002BArrayOfValuesWithRequired"
     },
     {
       "type": "null"
     }
   ],
-  "definitions": {
+  "$defs": {
     "SchemaTests\u002BArrayOfValuesWithRequired": {
       "type": [
         "object",
@@ -26,7 +26,7 @@
           "description": "Property1"
         }
       },
-      "items": [
+      "prefixItems": [
         {
           "type": [
             "string",
@@ -45,5 +45,5 @@
       "minItems": 1
     }
   },
-  "$schema": "http://json-schema.org/draft-04/schema"
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

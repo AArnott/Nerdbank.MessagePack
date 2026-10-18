@@ -65,42 +65,25 @@ internal class OneOfConverter<T0, T1> : MessagePackConverter<OneOf<T0, T1>>
         };
     }
 
-    public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => new JsonObject
+    public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
     {
-        ["oneOf"] = new JsonArray
+        return new JsonObject
         {
-            new JsonObject
-            {
-                ["type"] = "array",
-                ["minItems"] = 2,
-                ["maxItems"] = 2,
-                ["items"] = new JsonArray
-                    {
-                        new JsonObject
-                        {
-                            ["type"] = "integer",
-                            ["enum"] = new JsonArray(0),
-                        },
-                        context.GetJsonSchema(typeShape.Provider.GetTypeShapeOrThrow<T0>()),
-                    },
-            },
-            new JsonObject
-            {
-                ["type"] = "array",
-                ["minItems"] = 2,
-                ["maxItems"] = 2,
-                ["items"] = new JsonArray
-                    {
-                        new JsonObject
-                        {
-                            ["type"] = "integer",
-                            ["enum"] = new JsonArray(1),
-                        },
-                        context.GetJsonSchema(typeShape.Provider.GetTypeShapeOrThrow<T1>()),
-                    },
-            },
-        },
-        ["description"] = "OneOf<T0, T1> serialized as [typeIndex, value]",
-    };
+            ["oneOf"] = new JsonArray(
+                CreateCaseSchema(0, context.GetJsonSchema(typeShape.Provider.GetTypeShapeOrThrow<T0>())),
+                CreateCaseSchema(1, context.GetJsonSchema(typeShape.Provider.GetTypeShapeOrThrow<T1>()))),
+            ["description"] = "OneOf<T0, T1> serialized as [typeIndex, value]",
+        };
+
+        JsonObject CreateCaseSchema(int tag, JsonObject valueSchema)
+        {
+            JsonObject schema = context.CreateTupleSchema(new JsonArray(
+                new JsonObject { ["type"] = "integer", ["enum"] = new JsonArray(tag) },
+                valueSchema));
+            schema["minItems"] = 2;
+            schema["maxItems"] = 2;
+            return schema;
+        }
+    }
 }
 #endregion

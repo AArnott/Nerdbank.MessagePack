@@ -141,7 +141,8 @@ public abstract partial class StructuralEqualityComparerTests
 			new Tree([new Fruit(3, "Red"), new Fruit(4, "Yellow")], 4, FruitKind.Apple),
 			new Tree([new Fruit(3, "Red"), new Fruit(4, "Green")], 4, FruitKind.Banana),
 			new Tree([new Fruit(4, "Red")], 4, FruitKind.Banana),
-			new Tree([new Fruit(3, "Yellow")], 4, FruitKind.Apple)]);
+			new Tree([new Fruit(3, "Yellow")], 4, FruitKind.Apple),
+		]);
 
 	[Test]
 	public void CustomType_Fruit() => this.AssertEqualityComparerBehavior(
@@ -301,6 +302,18 @@ public abstract partial class StructuralEqualityComparerTests
 		}
 
 		[Test]
+		public void DateTimeOffsetEquality()
+		{
+			IEqualityComparer<DateTimeOffset> comparer = this.GetEqualityComparer<DateTimeOffset, Witness>();
+			DateTimeOffset maxValue = DateTimeOffset.MaxValue;
+			DateTimeOffset sameInstantWithDifferentOffset = maxValue.ToOffset(TimeSpan.FromHours(-1));
+
+			Assert.True(comparer.Equals(maxValue, maxValue));
+			Assert.True(comparer.Equals(maxValue, sameInstantWithDifferentOffset));
+			Assert.Equal(comparer.GetHashCode(maxValue), comparer.GetHashCode(sameInstantWithDifferentOffset));
+		}
+
+		[Test]
 		public void Uri()
 		{
 			IEqualityComparer<Uri> comparer = this.GetEqualityComparer<Uri, Witness>();
@@ -345,6 +358,7 @@ public abstract partial class StructuralEqualityComparerTests
 	[GenerateShapeFor<byte[]>]
 	[GenerateShapeFor<decimal>]
 	[GenerateShapeFor<Dictionary<string, int>>]
+	[GenerateShapeFor<DateTimeOffset>]
 	[GenerateShapeFor<Uri>]
 	[GenerateShapeFor<CustomHasher>]
 	internal partial class Witness;
