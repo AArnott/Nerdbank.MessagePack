@@ -9,6 +9,10 @@
   <ItemGroup>
     <Compile Include="Program.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Central package management disables the SDK's implicit FSharp.Core reference. -->
+    <PackageReference Include="FSharp.Core" />
+  </ItemGroup>
 
   <Import Project="$(RepoRootPath)test/AnalyzerConsumer.targets" />
 
