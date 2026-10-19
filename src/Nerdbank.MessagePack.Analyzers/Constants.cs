@@ -9,6 +9,10 @@ public static class Constants
 	{
 		public const string TypeName = "PropertyShapeAttribute";
 		public const string IgnoreProperty = "Ignore";
+		/// <summary>
+		/// The name of the property that overrides a serialized member name.
+		/// </summary>
+		public const string NameProperty = "Name";
 		public const string IsRequiredProperty = "IsRequired";
 		public static readonly ImmutableArray<string> Namespace = ["PolyType"];
 	}

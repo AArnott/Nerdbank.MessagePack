@@ -316,6 +316,17 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 		}
 
 		Optional<object?> constant = context.SemanticModel.GetConstantValue(value, context.CancellationToken);
+		if (constant.HasValue && parameter is { HasExplicitDefaultValue: true })
+		{
+			// The initializer operation includes the conversion to the member's declared type.
+			constant = context.SemanticModel.GetOperation(value.Parent!, context.CancellationToken) switch
+			{
+				IFieldInitializerOperation initializer => initializer.Value.ConstantValue,
+				IPropertyInitializerOperation initializer => initializer.Value.ConstantValue,
+				_ => constant,
+			};
+		}
+
 		if (constant.HasValue && (parameter is { HasExplicitDefaultValue: true }
 			? Equals(constant.Value, parameter.ExplicitDefaultValue)
 			: constant.Value is (null or false or '\0' or
@@ -361,7 +372,7 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 					return operation is IParameterReferenceOperation parameterReference &&
 						parameter is not null &&
 						SymbolEqualityComparer.Default.Equals(parameterReference.Parameter.OriginalDefinition, parameter.OriginalDefinition) &&
-						SymbolEqualityComparer.Default.Equals(parameterReference.Parameter.Type, memberType) &&
+						SymbolEqualityComparer.Default.Equals(parameter.Type, memberType) &&
 						parameterReference.Parameter.DeclaringSyntaxReferences.Any(reference =>
 							reference.GetSyntax(context.CancellationToken) is ParameterSyntax { Parent: ParameterListSyntax { Parent: TypeDeclarationSyntax } });
 			}

@@ -26,6 +26,98 @@ public class DefaultValueInitializerAnalyzerTests
 #endif
 
 	[Test]
+	public async Task RenamedMembersAndGenericForwarding()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class Renamed(int number = 42, int field = 7)
+			{
+				[PropertyShape(Name = "number")]
+				public int Value { get; set; } = number;
+				[PropertyShape(Name = "field")]
+				public int Other = field;
+				public int {|NBMsgPack110:Copy|} = number;
+			}
+
+			[GenerateShape]
+			public partial class RenamedConstant(int number = 42)
+			{
+				[PropertyShape(Name = "number")]
+				public int Value { get; set; } = 42;
+				public int Original() => number;
+			}
+
+			[GenerateShapeFor<Box<int>>]
+			[GenerateShapeFor<Box<string>>]
+			public partial class Witness;
+
+			public class Box<T>(T value)
+			{
+				public T Value { get; set; } = value;
+				public T {|NBMsgPack110:Copy|} = value;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task ConvertedConstructorDefaults()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			public enum Choice : byte { None, Selected = 42 }
+
+			[GenerateShape]
+			public partial class Model(long wide = 42, short narrow = 42, uint unsigned = 42,
+				ulong unsignedWide = 42, float single = 16777217, double real = 42,
+				byte small = 42, sbyte signed = 42, ushort unsignedSmall = 42,
+				Choice choice = Choice.Selected, string text = null, bool flag = false, char letter = 'a')
+			{
+				public long Wide = 42;
+				public short Narrow = 42;
+				public uint Unsigned = 42;
+				public ulong UnsignedWide = 42;
+				public float Single = 16777217;
+				public double Real = 42;
+				public byte Small = 42;
+				public sbyte Signed = 42;
+				public ushort UnsignedSmall = 42;
+				public Choice Choice = Choice.Selected;
+				public string Text = null;
+				public bool Flag = false;
+				public char Letter = 'a';
+
+				public object[] Original() => new object[] { wide, narrow, unsigned, unsignedWide, single, real,
+					small, signed, unsignedSmall, choice, text, flag, letter };
+			}
+
+			[GenerateShape]
+			public partial class PropertyModel(long number = 42)
+			{
+				public long Number { get; set; } = 42;
+				public long Original() => number;
+			}
+
+			[GenerateShape]
+			public partial class Different(long number = 43, float real = 16777218, Choice choice = Choice.Selected)
+			{
+				public long {|NBMsgPack110:Number|} = 42;
+				public float {|NBMsgPack110:Real|} = 16777217;
+				public Choice {|NBMsgPack110:Choice|} = 0;
+				public long OriginalNumber() => number;
+				public float OriginalReal() => real;
+				public Choice OriginalChoice() => choice;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
 	public async Task ConstructorBindingAndConstructedMemberTypes()
 	{
 		string source = /* lang=c#-test */ """

@@ -5,6 +5,7 @@ The member type must support C# constant values that can be represented as attri
 Members of collection and other non-constant types are not reported.
 Constant initializers equal to the serializer's omission default are not reported.
 This is normally the member type's C# default value, such as `false`, numeric zero, `null`, or `default`, but a matching optional parameter in the deserializing constructor supplies its default instead.
+Constant values are compared after conversion to the member type, and constructor parameter matching honors configured `[PropertyShape(Name = "...")]` names.
 Initializers that directly forward the parameter bound to that member in the deserializing primary constructor are also not reported, including parentheses and identity conversions.
 Forwarding another member's parameter, or a parameter from a primary constructor not selected for deserialization, is not exempt.
 This exemption does not cover expressions that transform the parameter value, non-identity conversions, or unrelated initializers in the same type.
