@@ -14,13 +14,16 @@
     <PackageReference Include="BenchmarkDotNet" />
     <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Condition="'$(OS)'=='Windows_NT'" />
     <PackageReference Include="MessagePack" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="PolyType.Roslyn" />
     <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nerdbank.MessagePack\Nerdbank.MessagePack.csproj" />
+    <ProjectReference Include="..\..\src\Nerdbank.MessagePack.Analyzers\Nerdbank.MessagePack.Analyzers.csproj" />
   </ItemGroup>
 
 </Project>

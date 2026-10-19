@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using PolyType.Roslyn;
 
 namespace Nerdbank.MessagePack.Analyzers;
@@ -95,23 +95,41 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				}
 			}
 
-			context.RegisterSyntaxNodeAction(
-				nodeContext =>
+			Dictionary<SyntaxTree, List<(ISymbol Member, SyntaxReference Declaration)>> membersByTree = [];
+			foreach (ISymbol member in serializedMembers)
+			{
+				foreach (SyntaxReference declaration in member.DeclaringSyntaxReferences)
 				{
-					EqualsValueClauseSyntax? initializer = nodeContext.Node switch
+					if (!membersByTree.TryGetValue(declaration.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration)>? members))
+					{
+						membersByTree.Add(declaration.SyntaxTree, members = []);
+					}
+
+					members.Add((member, declaration));
+				}
+			}
+
+			context.RegisterSemanticModelAction(modelContext =>
+			{
+				if (!membersByTree.TryGetValue(modelContext.SemanticModel.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration)>? members))
+				{
+					return;
+				}
+
+				foreach ((ISymbol member, SyntaxReference declaration) in members)
+				{
+					EqualsValueClauseSyntax? initializer = declaration.GetSyntax(modelContext.CancellationToken) switch
 					{
 						VariableDeclaratorSyntax variable => variable.Initializer,
 						PropertyDeclarationSyntax property => property.Initializer,
 						_ => null,
 					};
-					if (initializer is not null &&
-						nodeContext.SemanticModel.GetDeclaredSymbol(nodeContext.Node, nodeContext.CancellationToken) is { } member)
+					if (initializer is not null)
 					{
-						AnalyzeInitializer(nodeContext, member, initializer.Value, serializedMembers, defaultValueAttribute);
+						AnalyzeInitializer(modelContext, member, initializer.Value, serializedMembers, defaultValueAttribute);
 					}
-				},
-				SyntaxKind.VariableDeclarator,
-				SyntaxKind.PropertyDeclaration);
+				}
+			});
 		});
 	}
 
@@ -249,7 +267,7 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				SpecialType.System_String;
 
 	private static void AnalyzeInitializer(
-		SyntaxNodeAnalysisContext context,
+		SemanticModelAnalysisContext context,
 		ISymbol member,
 		ExpressionSyntax value,
 		HashSet<ISymbol> serializedMembers,
@@ -279,6 +297,11 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 			return;
 		}
 
+		if (IsPrimaryConstructorParameterForwarding(context, value, memberType))
+		{
+			return;
+		}
+
 		if (member.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
 		{
 			return;
@@ -286,5 +309,32 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 
 		Location location = member.Locations.FirstOrDefault() ?? Location.None;
 		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, member.Name));
+	}
+
+	private static bool IsPrimaryConstructorParameterForwarding(SemanticModelAnalysisContext context, ExpressionSyntax value, ITypeSymbol memberType)
+	{
+		while (value is ParenthesizedExpressionSyntax parenthesizedExpression)
+		{
+			value = parenthesizedExpression.Expression;
+		}
+
+		IOperation? operation = context.SemanticModel.GetOperation(value, context.CancellationToken);
+		while (true)
+		{
+			switch (operation)
+			{
+				case IParenthesizedOperation parenthesized:
+					operation = parenthesized.Operand;
+					break;
+				case IConversionOperation { Conversion.IsIdentity: true } conversion:
+					operation = conversion.Operand;
+					break;
+				default:
+					return operation is IParameterReferenceOperation parameterReference &&
+						SymbolEqualityComparer.Default.Equals(parameterReference.Parameter.Type, memberType) &&
+						parameterReference.Parameter.DeclaringSyntaxReferences.Any(reference =>
+							reference.GetSyntax(context.CancellationToken) is ParameterSyntax { Parent: ParameterListSyntax { Parent: TypeDeclarationSyntax } });
+			}
+		}
 	}
 }

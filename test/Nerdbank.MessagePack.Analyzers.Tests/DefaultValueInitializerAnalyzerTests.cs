@@ -38,6 +38,94 @@ public class DefaultValueInitializerAnalyzerTests
 	}
 
 	[Test]
+	public async Task NoIssues_PrimaryConstructorParameterForwarding()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
+
+			[GenerateShape]
+			public partial class Foo(int number, bool enabled, string name)
+			{
+				public int Number { get; init; } = number;
+				public bool Enabled = ((enabled));
+				public string Name { get; init; } = (string)(name);
+			}
+
+			[GenerateShape]
+			public partial class Optional(int number = 42)
+			{
+				public int Number { get; init; } = number;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task PrimaryConstructorDoesNotExemptOtherInitializers()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
+
+			[GenerateShape]
+			public partial class Foo(int number, string name)
+			{
+				public int Number { get; init; } = number;
+				public int {|NBMsgPack110:Offset|} { get; init; } = number + 1;
+				public string {|NBMsgPack110:Name|} { get; init; } = name ?? "unknown";
+				public long {|NBMsgPack110:Widened|} = number;
+				public short {|NBMsgPack110:Narrowed|} = (short)number;
+				public int {|NBMsgPack110:Transformed|} = (int)(long)number;
+				public int {|NBMsgPack110:Constant|} { get; init; } = 42;
+				public int {|NBMsgPack110:Computed|} = GetValue();
+				public int {|NBMsgPack110:Lambda|} = ((System.Func<int, int>)(value => value))(42);
+
+				private static int GetValue() => 42;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task SharedInheritedAndPartialMembersReportedOnce()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShapeFor<First>]
+			[GenerateShapeFor<Second>]
+			public partial class Witness;
+
+			public class Base
+			{
+				public int {|NBMsgPack110:Inherited|} { get; set; } = 42;
+			}
+
+			public partial class First : Base;
+			public class Second : Base;
+			""";
+		string otherFile = /* lang=c#-test */ """
+			public partial class First
+			{
+				public int {|NBMsgPack110:OtherFile|} { get; set; } = 42;
+			}
+			""";
+
+		var test = new VerifyCS.Test
+		{
+			TestCode = source,
+			TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+		};
+		test.TestState.Sources.Add(otherFile);
+		await test.RunAsync();
+	}
+
+	[Test]
 	public async Task NoIssues_HasDefaultValueAttribute()
 	{
 		string source = /* lang=c#-test */ """
