@@ -47,6 +47,7 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 			}
 
 			KnownSymbols knownSymbols = new(context.Compilation);
+			INamedTypeSymbol? parameterShapeAttribute = context.Compilation.GetTypeByMetadataName("PolyType.ParameterShapeAttribute");
 
 			// Get the DefaultValue attribute symbol
 			INamedTypeSymbol? defaultValueAttribute = context.Compilation.GetTypeByMetadataName("System.ComponentModel.DefaultValueAttribute");
@@ -89,11 +90,15 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 			Dictionary<SyntaxTree, List<(ISymbol Member, SyntaxReference Declaration, IParameterSymbol? Parameter)>> membersByTree = [];
 			foreach (ObjectDataModel model in generator.GeneratedModels.Values.OfType<ObjectDataModel>())
 			{
-				IMethodSymbol? constructor = model.Constructors
-					.Select(candidate => candidate.Constructor)
-					.FirstOrDefault(candidate => candidate is not null && candidate.FindAttributes(referenceSymbols.ConstructorShapeAttribute).Any());
-				constructor ??= model.Constructors.Length == 1 ? model.Constructors[0].Constructor :
-					model.Constructors.Select(candidate => candidate.Constructor).FirstOrDefault(candidate => candidate is { Parameters.Length: 0 });
+				ConstructorDataModel constructor = model.Constructors
+					.FirstOrDefault(candidate => candidate.Constructor is not null && candidate.Constructor.FindAttributes(referenceSymbols.ConstructorShapeAttribute).Any());
+				if (constructor.Constructor is null)
+				{
+					constructor = model.Constructors.Length == 1 ? model.Constructors[0] :
+						model.Constructors.FirstOrDefault(candidate => candidate.Constructor is { Parameters.Length: 0 });
+				}
+
+				Dictionary<string, IParameterSymbol?> parametersByName = GetShapeParameters(model, constructor, parameterShapeAttribute);
 				foreach (PropertyDataModel property in model.Properties)
 				{
 					if (IsRequired(property, referenceSymbols))
@@ -103,11 +108,10 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 
 					ISymbol member = property.PropertySymbol;
 					string name = property.LogicalName ?? property.Name;
-					IParameterSymbol? parameter = constructor?.Parameters.FirstOrDefault(parameter => parameter.Name == name);
-					if (parameter is null && constructor is not null)
+					if (!parametersByName.TryGetValue(name, out IParameterSymbol? parameter))
 					{
-						IParameterSymbol[] matches = constructor.Parameters.Where(parameter => string.Equals(parameter.Name, name, StringComparison.OrdinalIgnoreCase)).ToArray();
-						parameter = matches.Length == 1 ? matches[0] : null;
+						KeyValuePair<string, IParameterSymbol?>[] matches = parametersByName.Where(entry => string.Equals(entry.Key, name, StringComparison.OrdinalIgnoreCase)).ToArray();
+						parameter = matches.Length == 1 ? matches[0].Value : null;
 					}
 
 					foreach (SyntaxReference declaration in member.OriginalDefinition.DeclaringSyntaxReferences)
@@ -150,6 +154,67 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 			});
 		});
 	}
+
+	/// <summary>
+	/// Resolves shape parameter names before applying the serializer's exact-name precedence.
+	/// </summary>
+	/// <param name="model">The declaring object shape model.</param>
+	/// <param name="constructor">The selected constructor model.</param>
+	/// <param name="parameterShapeAttribute">The parameter configuration attribute type.</param>
+	/// <returns>Shape parameter names mapped to method parameters, or null for member initializers.</returns>
+	private static Dictionary<string, IParameterSymbol?> GetShapeParameters(ObjectDataModel model, ConstructorDataModel constructor, INamedTypeSymbol? parameterShapeAttribute)
+	{
+		Dictionary<string, IParameterSymbol?> result = new(StringComparer.Ordinal);
+		if (constructor.Constructor is null)
+		{
+			return result;
+		}
+
+		foreach (ParameterDataModel parameter in constructor.Parameters)
+		{
+			PropertyDataModel? matchingProperty = null;
+			foreach (PropertyDataModel property in model.Properties)
+			{
+				if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
+					MatchesCamelCase(parameter.Parameter.Name, property.Name))
+				{
+					matchingProperty = property;
+					break;
+				}
+			}
+
+			AttributeData? attribute = parameterShapeAttribute is null ? null : parameter.Parameter.FindAttributes(parameterShapeAttribute).FirstOrDefault();
+			string? configuredName = attribute?.NamedArguments.FirstOrDefault(argument => argument.Key == Constants.PropertyShapeAttribute.NameProperty).Value.Value as string;
+			string name = configuredName ?? matchingProperty?.LogicalName ?? matchingProperty?.Name ?? parameter.Parameter.Name;
+			result[name] = parameter.Parameter;
+		}
+
+		if (constructor.Parameters.Length > 0 || constructor.MemberInitializers.Any(property => property.IsRequiredBySyntax || property.IsRequiredByPolicy is true || property.IsInitOnly))
+		{
+			foreach (PropertyDataModel property in constructor.MemberInitializers)
+			{
+				string name = property.LogicalName ?? property.Name;
+				if (!result.ContainsKey(name))
+				{
+					// An exact member-initializer match must beat a case-insensitive method-parameter match.
+					result.Add(name, null);
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Matches declared names using PolyType's first-character-only Pascal/camel case convention.
+	/// </summary>
+	/// <param name="left">The parameter name.</param>
+	/// <param name="right">The member name.</param>
+	/// <returns>Whether the names differ only in the casing of their first character.</returns>
+	private static bool MatchesCamelCase(string left, string right) =>
+		left.Length == right.Length && (left.Length == 0 ||
+			(char.ToLowerInvariant(left[0]) == char.ToLowerInvariant(right[0]) &&
+				string.CompareOrdinal(left, 1, right, 1, left.Length - 1) == 0));
 
 	private static void CollectShapeRoots(
 		INamedTypeSymbol typeSymbol,

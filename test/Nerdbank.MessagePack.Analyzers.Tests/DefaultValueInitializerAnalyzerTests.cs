@@ -26,6 +26,55 @@ public class DefaultValueInitializerAnalyzerTests
 #endif
 
 	[Test]
+	public async Task ShapeConstructorParameterNamesAndMemberInitializers()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class Forwarded(int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int Number { get; set; } = number;
+			}
+
+			[GenerateShape]
+			public partial class Matching(int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int Number { get; set; } = 42;
+				public int Original() => number;
+			}
+
+			[GenerateShape]
+			public partial class Different(int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int {|NBMsgPack110:Number|} { get; set; } = 0;
+				public int Original() => number;
+			}
+
+			[GenerateShape]
+			public partial class CaseDistinct
+			{
+				public CaseDistinct(int value = 42) { this.value = value; }
+				public int value { get; set; }
+				public int {|NBMsgPack110:Value|} { get; set; } = 42;
+				public int {|NBMsgPack110:VALUE|} { get; set; } = 42;
+			}
+
+			[GenerateShape]
+			public partial class ParameterOverride([ParameterShape(Name = "wire_number")] int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int Number { get; set; } = number;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
 	public async Task RenamedMembersAndGenericForwarding()
 	{
 		string source = /* lang=c#-test */ """
