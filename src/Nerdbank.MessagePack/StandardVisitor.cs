@@ -304,21 +304,54 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			};
 		}
 
+		IUnionTypeAliasProvider? aliasProvider = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? this.owner.UnionTypeAliasProvider : null;
+		if (aliasProvider is UnionCaseMappingCollection mappings && mappings.ValidateUnionCases(unionShape) is VisitorError mappingError)
+		{
+			return ConverterResult.Err(mappingError);
+		}
+
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 		Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
+		Dictionary<DerivedTypeIdentifier, Type> casesByAlias = [];
 		List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
 		object? unionCaseState = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? CSharpUnionCaseSentinel : null;
 		foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
 		{
 			bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
-			DerivedTypeIdentifier alias = useTag ? new(unionCase.Tag) : new(unionCase.Name);
+			DerivedTypeIdentifier? customAlias = aliasProvider?.GetAlias(unionShape, unionCase);
+			DerivedTypeIdentifier alias = customAlias ?? (useTag ? new(unionCase.Tag) : new(unionCase.Name));
+			if (alias.Type == DerivedTypeIdentifier.AliasType.None)
+			{
+				return ConverterResult.Err(new ArgumentException($"The alias for case '{unionCase.UnionCaseType.Type}' of union '{unionShape.Type}' must be initialized."));
+			}
+
 			ConverterResult caseConverter = (ConverterResult)unionCase.Accept(this, unionCaseState)!;
 			if (caseConverter.TryPrepareFailPath(unionCase, out failureResult))
 			{
 				return failureResult;
 			}
 
-			deserializerByIntAlias.Add(unionCase.Tag, caseConverter.Value);
+			// Preserve inferred read tags only for cases whose aliases have not been overridden.
+			DerivedTypeIdentifier[] readAliases = customAlias is null && alias.Type == DerivedTypeIdentifier.AliasType.String
+				? [alias, new(unionCase.Tag)]
+				: [alias];
+			foreach (DerivedTypeIdentifier readAlias in readAliases)
+			{
+				if (casesByAlias.TryGetValue(readAlias, out Type? previousCase))
+				{
+					string identifier = readAlias.Type == DerivedTypeIdentifier.AliasType.String
+						? readAlias.StringAlias
+						: readAlias.IntAlias.ToString(System.Globalization.CultureInfo.InvariantCulture);
+					return ConverterResult.Err(new ArgumentException($"Duplicate alias '{identifier}' in union '{unionShape.Type}' for cases '{previousCase}' and '{unionCase.UnionCaseType.Type}'."));
+				}
+
+				casesByAlias.Add(readAlias, unionCase.UnionCaseType.Type);
+				if (readAlias.Type == DerivedTypeIdentifier.AliasType.Integer)
+				{
+					deserializerByIntAlias.Add(readAlias.IntAlias, caseConverter.Value);
+				}
+			}
+
 			serializers.Add((alias, caseConverter.Value, unionCase.UnionCaseType));
 		}
 

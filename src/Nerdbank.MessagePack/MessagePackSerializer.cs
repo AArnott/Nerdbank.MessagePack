@@ -151,6 +151,13 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { DerivedTypeUnions = value };
 	}
 
+	/// <inheritdoc cref="SerializerConfiguration.UnionTypeAliasProvider"/>
+	public IUnionTypeAliasProvider? UnionTypeAliasProvider
+	{
+		get => this.configuration.UnionTypeAliasProvider;
+		init => this.configuration = this.configuration with { UnionTypeAliasProvider = value };
+	}
+
 	/// <inheritdoc cref="SerializerConfiguration.UseDiscriminatorObjects"/>
 	public bool UseDiscriminatorObjects
 	{
