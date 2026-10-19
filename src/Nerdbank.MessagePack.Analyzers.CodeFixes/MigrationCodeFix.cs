@@ -698,9 +698,11 @@ public class MigrationCodeFix : CodeFixProvider
 
 			MethodDeclarationSyntax ReplaceOptionsParameterWithContext(MethodDeclarationSyntax method, int paramIndex)
 			{
-				return method.ParameterList.Parameters.Count <= paramIndex ? method : method.ReplaceNode(
-					method.ParameterList.Parameters[paramIndex],
-					Parameter(ContextParameterName.Identifier).WithType(NameInNamespace(IdentifierName("SerializationContext"))));
+				return method.ParameterList.Parameters.Count <= paramIndex
+					? method
+					: method.ReplaceNode(
+						method.ParameterList.Parameters[paramIndex],
+						Parameter(ContextParameterName.Identifier).WithType(NameInNamespace(IdentifierName("SerializationContext"))));
 			}
 		}
 

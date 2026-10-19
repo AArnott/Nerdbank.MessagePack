@@ -14,15 +14,15 @@ internal class ByteMemoryEqualityComparer : IEqualityComparer<ReadOnlyMemory<byt
 		=> x.Span.SequenceEqual(y.Span);
 
 	/// <inheritdoc/>
-	public int GetHashCode(ReadOnlyMemory<byte> buffer)
+	public int GetHashCode(ReadOnlyMemory<byte> obj)
 	{
 		var hc = default(HashCode);
 #if NET
-		hc.AddBytes(buffer.Span);
+		hc.AddBytes(obj.Span);
 #else
-		for (int i = 0; i < buffer.Length; i++)
+		for (int i = 0; i < obj.Length; i++)
 		{
-			hc.Add(buffer.Span[i]);
+			hc.Add(obj.Span[i]);
 		}
 #endif
 		return hc.ToHashCode();

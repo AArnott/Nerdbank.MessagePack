@@ -635,13 +635,6 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 		Assert.Equal(derived.ExtraProperty, back.ExtraProperty);
 	}
 
-	[GenerateShapeFor<DerivedGeneric<int>>]
-	internal partial class Witness;
-
-	[GenerateShape]
-	[DerivedTypeShape(typeof(BaseTypeExplicitBase), Name = "Me", Tag = 3)]
-	internal partial class BaseTypeExplicitBase;
-
 	[GenerateShape]
 	[DerivedTypeShape(typeof(DerivedA), Tag = 1)]
 	[DerivedTypeShape(typeof(DerivedAA), Tag = 2)]
@@ -861,8 +854,8 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 			public MarshaledData? Marshal(MarshaledBaseType? value)
 				=> value is null ? null : new(value.value, value.name);
 
-			public MarshaledBaseType? Unmarshal(MarshaledData? surrogate)
-				=> surrogate.HasValue ? new MarshaledBaseType(surrogate.Value.Value, surrogate.Value.Name) : null;
+			public MarshaledBaseType? Unmarshal(MarshaledData? value)
+				=> value.HasValue ? new MarshaledBaseType(value.Value.Value, value.Value.Name) : null;
 		}
 	}
 
@@ -887,8 +880,8 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 			public MarshaledDerivedData? Marshal(MarshaledDerivedType? value)
 				=> value is null ? null : new(value.Value, value.Name, value.extraProperty);
 
-			public MarshaledDerivedType? Unmarshal(MarshaledDerivedData? surrogate)
-				=> surrogate.HasValue ? new MarshaledDerivedType(surrogate.Value.Value, surrogate.Value.Name, surrogate.Value.ExtraProperty) : null;
+			public MarshaledDerivedType? Unmarshal(MarshaledDerivedData? value)
+				=> value.HasValue ? new MarshaledDerivedType(value.Value.Value, value.Value.Name, value.Value.ExtraProperty) : null;
 		}
 	}
 
@@ -923,12 +916,12 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 				  _ => new MarshaledData(value.Value, value.Name),
 			  };
 
-			public MarshaledBaseType2? Unmarshal(MarshaledData? surrogate)
-				=> surrogate switch
+			public MarshaledBaseType2? Unmarshal(MarshaledData? value)
+				=> value switch
 				{
 					null => null,
 					MarshaledDerivedType2.MarshaledDerivedData d => MarshaledDerivedType2.MarshaledDerivedType2Marshaler.Instance.Unmarshal(d),
-					_ => new MarshaledBaseType2(surrogate.Value, surrogate.Name),
+					_ => new MarshaledBaseType2(value.Value, value.Name),
 				};
 		}
 	}
@@ -955,8 +948,15 @@ public partial class DerivedTypeTests : MessagePackSerializerTestBase
 			public MarshaledDerivedData? Marshal(MarshaledDerivedType2? value)
 				=> value is null ? null : new(value.Value, value.Name, value.extraProperty);
 
-			public MarshaledDerivedType2? Unmarshal(MarshaledDerivedData? surrogate)
-				=> surrogate is null ? null : new MarshaledDerivedType2(surrogate.Value, surrogate.Name, surrogate.ExtraProperty);
+			public MarshaledDerivedType2? Unmarshal(MarshaledDerivedData? value)
+				=> value is null ? null : new MarshaledDerivedType2(value.Value, value.Name, value.ExtraProperty);
 		}
 	}
+
+	[GenerateShapeFor<DerivedGeneric<int>>]
+	internal partial class Witness;
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(BaseTypeExplicitBase), Name = "Me", Tag = 3)]
+	internal partial class BaseTypeExplicitBase;
 }
