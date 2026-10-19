@@ -2,12 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using PolyType.Roslyn;
 
 namespace Nerdbank.MessagePack.Analyzers;
 
 /// <summary>
-/// Analyzer that detects fields and properties with initializers but no DefaultValueAttribute
+/// Analyzer that detects optional fields and properties with initializers but no DefaultValueAttribute
 /// on types that have source-generated shapes.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -46,6 +47,7 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 			}
 
 			KnownSymbols knownSymbols = new(context.Compilation);
+			INamedTypeSymbol? parameterShapeAttribute = context.Compilation.GetTypeByMetadataName("PolyType.ParameterShapeAttribute");
 
 			// Get the DefaultValue attribute symbol
 			INamedTypeSymbol? defaultValueAttribute = context.Compilation.GetTypeByMetadataName("System.ComponentModel.DefaultValueAttribute");
@@ -85,26 +87,134 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				}
 			}
 
-			Dictionary<INamedTypeSymbol, TypeDataModel> generatedModelsBySourceDeclaration = new(SymbolEqualityComparer.Default);
-			foreach (KeyValuePair<ITypeSymbol, TypeDataModel> generatedModel in generator.GeneratedModels)
+			Dictionary<SyntaxTree, List<(ISymbol Member, SyntaxReference Declaration, IParameterSymbol? Parameter)>> membersByTree = [];
+			foreach (ObjectDataModel model in generator.GeneratedModels.Values.OfType<ObjectDataModel>())
 			{
-				if (GetSourceDeclaration(generatedModel.Key) is { } sourceDeclaration && !generatedModelsBySourceDeclaration.ContainsKey(sourceDeclaration))
+				ConstructorDataModel constructor = model.Constructors
+					.FirstOrDefault(candidate => candidate.Constructor is not null && candidate.Constructor.FindAttributes(referenceSymbols.ConstructorShapeAttribute).Any());
+				if (constructor.Constructor is null)
 				{
-					generatedModelsBySourceDeclaration.Add(sourceDeclaration, generatedModel.Value);
+					constructor = model.Constructors.Length == 1 ? model.Constructors[0] :
+						model.Constructors.FirstOrDefault(candidate => candidate.Constructor is { Parameters.Length: 0 });
+				}
+
+				Dictionary<string, IParameterSymbol?> parametersByName = GetShapeParameters(model, constructor, parameterShapeAttribute);
+				foreach (PropertyDataModel property in model.Properties)
+				{
+					if (IsRequired(property, referenceSymbols))
+					{
+						continue;
+					}
+
+					ISymbol member = property.PropertySymbol;
+					string name = property.LogicalName ?? property.Name;
+					if (!parametersByName.TryGetValue(name, out IParameterSymbol? parameter))
+					{
+						KeyValuePair<string, IParameterSymbol?>[] matches = parametersByName.Where(entry => string.Equals(entry.Key, name, StringComparison.OrdinalIgnoreCase)).ToArray();
+						parameter = matches.Length == 1 ? matches[0].Value : null;
+					}
+
+					foreach (SyntaxReference declaration in member.OriginalDefinition.DeclaringSyntaxReferences)
+					{
+						if (!membersByTree.TryGetValue(declaration.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration, IParameterSymbol? Parameter)>? members))
+						{
+							membersByTree.Add(declaration.SyntaxTree, members = []);
+						}
+
+						members.Add((member, declaration, parameter));
+					}
 				}
 			}
 
-			context.RegisterSymbolAction(
-				symbolContext =>
+			context.RegisterSemanticModelAction(modelContext =>
+			{
+				if (!membersByTree.TryGetValue(modelContext.SemanticModel.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration, IParameterSymbol? Parameter)>? members))
 				{
-					if (generatedModelsBySourceDeclaration.TryGetValue((INamedTypeSymbol)symbolContext.Symbol, out TypeDataModel? model))
+					return;
+				}
+
+				HashSet<ISymbol> reportedMembers = new(SymbolEqualityComparer.Default);
+				foreach ((ISymbol member, SyntaxReference declaration, IParameterSymbol? parameter) in members)
+				{
+					EqualsValueClauseSyntax? initializer = declaration.GetSyntax(modelContext.CancellationToken) switch
 					{
-						this.AnalyzeTypeModel(symbolContext, model, defaultValueAttribute, referenceSymbols);
+						VariableDeclaratorSyntax variable => variable.Initializer,
+						PropertyDeclarationSyntax property => property.Initializer,
+						_ => null,
+					};
+					if (initializer is not null)
+					{
+						if (AnalyzeInitializer(modelContext, member, initializer.Value, parameter, defaultValueAttribute) is { } diagnostic &&
+							reportedMembers.Add(member.OriginalDefinition))
+						{
+							modelContext.ReportDiagnostic(diagnostic);
+						}
 					}
-				},
-				SymbolKind.NamedType);
+				}
+			});
 		});
 	}
+
+	/// <summary>
+	/// Resolves shape parameter names before applying the serializer's exact-name precedence.
+	/// </summary>
+	/// <param name="model">The declaring object shape model.</param>
+	/// <param name="constructor">The selected constructor model.</param>
+	/// <param name="parameterShapeAttribute">The parameter configuration attribute type.</param>
+	/// <returns>Shape parameter names mapped to method parameters, or null for member initializers.</returns>
+	private static Dictionary<string, IParameterSymbol?> GetShapeParameters(ObjectDataModel model, ConstructorDataModel constructor, INamedTypeSymbol? parameterShapeAttribute)
+	{
+		Dictionary<string, IParameterSymbol?> result = new(StringComparer.Ordinal);
+		if (constructor.Constructor is null)
+		{
+			return result;
+		}
+
+		foreach (ParameterDataModel parameter in constructor.Parameters)
+		{
+			PropertyDataModel? matchingProperty = null;
+			foreach (PropertyDataModel property in model.Properties)
+			{
+				if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
+					MatchesCamelCase(parameter.Parameter.Name, property.Name))
+				{
+					matchingProperty = property;
+					break;
+				}
+			}
+
+			AttributeData? attribute = parameterShapeAttribute is null ? null : parameter.Parameter.FindAttributes(parameterShapeAttribute).FirstOrDefault();
+			string? configuredName = attribute?.NamedArguments.FirstOrDefault(argument => argument.Key == Constants.PropertyShapeAttribute.NameProperty).Value.Value as string;
+			string name = configuredName ?? matchingProperty?.LogicalName ?? matchingProperty?.Name ?? parameter.Parameter.Name;
+			result[name] = parameter.Parameter;
+		}
+
+		if (constructor.Parameters.Length > 0 || constructor.MemberInitializers.Any(property => property.IsRequiredBySyntax || property.IsRequiredByPolicy is true || property.IsInitOnly))
+		{
+			foreach (PropertyDataModel property in constructor.MemberInitializers)
+			{
+				string name = property.LogicalName ?? property.Name;
+				if (!result.ContainsKey(name))
+				{
+					// An exact member-initializer match must beat a case-insensitive method-parameter match.
+					result.Add(name, null);
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Matches declared names using PolyType's first-character-only Pascal/camel case convention.
+	/// </summary>
+	/// <param name="left">The parameter name.</param>
+	/// <param name="right">The member name.</param>
+	/// <returns>Whether the names differ only in the casing of their first character.</returns>
+	private static bool MatchesCamelCase(string left, string right) =>
+		left.Length == right.Length && (left.Length == 0 ||
+			(char.ToLowerInvariant(left[0]) == char.ToLowerInvariant(right[0]) &&
+				string.CompareOrdinal(left, 1, right, 1, left.Length - 1) == 0));
 
 	private static void CollectShapeRoots(
 		INamedTypeSymbol typeSymbol,
@@ -156,12 +266,15 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 		}
 	}
 
-	private static bool HasCustomShapeConfiguration(AttributeData attribute) => !attribute.NamedArguments.IsEmpty;
-
-	private static INamedTypeSymbol? GetSourceDeclaration(ITypeSymbol typeSymbol)
+	private static bool IsRequired(PropertyDataModel property, ReferenceSymbols referenceSymbols)
 	{
-		return typeSymbol is INamedTypeSymbol namedType ? namedType.OriginalDefinition : null;
+		AttributeData? attribute = property.PropertySymbol.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
+		bool? requiredByAttribute = attribute?.NamedArguments
+			.FirstOrDefault(argument => argument.Key == Constants.PropertyShapeAttribute.IsRequiredProperty).Value.Value as bool?;
+		return requiredByAttribute ?? property.IsRequiredByPolicy ?? property.IsRequiredBySyntax;
 	}
+
+	private static bool HasCustomShapeConfiguration(AttributeData attribute) => !attribute.NamedArguments.IsEmpty;
 
 	private static IEnumerable<INamedTypeSymbol> GetDeclaredTypes(INamespaceOrTypeSymbol container)
 	{
@@ -244,103 +357,90 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				SpecialType.System_Single or
 				SpecialType.System_String;
 
-	private void AnalyzeTypeModel(SymbolAnalysisContext context, TypeDataModel model, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
+	private static Diagnostic? AnalyzeInitializer(
+		SemanticModelAnalysisContext context,
+		ISymbol member,
+		ExpressionSyntax value,
+		IParameterSymbol? parameter,
+		INamedTypeSymbol defaultValueAttribute)
 	{
-		// Only analyze object types that have properties
-		if (model is not ObjectDataModel objectModel)
+		if (member.IsStatic || member.IsImplicitlyDeclared)
 		{
-			return;
+			return null;
 		}
 
-		// Check all properties from the model
-		foreach (PropertyDataModel property in objectModel.Properties)
+		ITypeSymbol? memberType = member switch
 		{
-			ISymbol member = property.PropertySymbol;
-
-			if (member.IsStatic || member.IsImplicitlyDeclared)
-			{
-				continue;
-			}
-
-			if (member is IFieldSymbol field)
-			{
-				this.AnalyzeField(context, field, defaultValueAttribute, referenceSymbols);
-			}
-			else if (member is IPropertySymbol propertySymbol)
-			{
-				this.AnalyzeProperty(context, propertySymbol, defaultValueAttribute, referenceSymbols);
-			}
+			IFieldSymbol { IsConst: false } field => field.Type,
+			IPropertySymbol { IsIndexer: false } property => property.Type,
+			_ => null,
+		};
+		if (memberType is null || !IsAttributeCompatibleType(memberType))
+		{
+			return null;
 		}
+
+		Optional<object?> constant = context.SemanticModel.GetConstantValue(value, context.CancellationToken);
+		if (constant.HasValue && parameter is { HasExplicitDefaultValue: true })
+		{
+			// The initializer operation includes the conversion to the member's declared type.
+			constant = context.SemanticModel.GetOperation(value.Parent!, context.CancellationToken) switch
+			{
+				IFieldInitializerOperation initializer => initializer.Value.ConstantValue,
+				IPropertyInitializerOperation initializer => initializer.Value.ConstantValue,
+				_ => constant,
+			};
+		}
+
+		if (constant.HasValue && (parameter is { HasExplicitDefaultValue: true }
+			? Equals(constant.Value, parameter.ExplicitDefaultValue)
+			: constant.Value is (null or false or '\0' or
+				(byte)0 or (sbyte)0 or (short)0 or (ushort)0 or
+				0 or 0U or 0L or 0UL or 0F or 0D)))
+		{
+			return null;
+		}
+
+		if (IsPrimaryConstructorParameterForwarding(context, value, memberType, parameter))
+		{
+			return null;
+		}
+
+		if (member.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
+		{
+			return null;
+		}
+
+		Location location = member.Locations.FirstOrDefault() ?? Location.None;
+		return Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, member.Name);
 	}
 
-	private void AnalyzeField(SymbolAnalysisContext context, IFieldSymbol field, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
+	private static bool IsPrimaryConstructorParameterForwarding(SemanticModelAnalysisContext context, ExpressionSyntax value, ITypeSymbol memberType, IParameterSymbol? parameter)
 	{
-		// Skip static, const, or compiler-generated fields
-		if (field.IsConst)
+		while (value is ParenthesizedExpressionSyntax parenthesizedExpression)
 		{
-			return;
+			value = parenthesizedExpression.Expression;
 		}
 
-		// Check if the field type supports a value that can be represented by DefaultValueAttribute.
-		if (!IsAttributeCompatibleType(field.Type) || !this.HasInitializer(field))
+		IOperation? operation = context.SemanticModel.GetOperation(value, context.CancellationToken);
+		while (true)
 		{
-			return;
-		}
-
-		// Check if field already has DefaultValueAttribute
-		if (field.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
-		{
-			return;
-		}
-
-		// Report diagnostic
-		Location location = field.Locations.FirstOrDefault() ?? Location.None;
-		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, field.Name));
-	}
-
-	private void AnalyzeProperty(SymbolAnalysisContext context, IPropertySymbol property, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
-	{
-		// Skip static, indexers, or compiler-generated properties
-		if (property.IsIndexer)
-		{
-			return;
-		}
-
-		// Check if the property type supports a value that can be represented by DefaultValueAttribute.
-		if (!IsAttributeCompatibleType(property.Type) || !this.HasInitializer(property))
-		{
-			return;
-		}
-
-		// Check if property already has DefaultValueAttribute
-		if (property.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
-		{
-			return;
-		}
-
-		// Report diagnostic
-		Location location = property.Locations.FirstOrDefault() ?? Location.None;
-		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, property.Name));
-	}
-
-	private bool HasInitializer(ISymbol symbol)
-	{
-		// Check if the symbol has a syntax reference (declaration)
-		foreach (SyntaxReference syntaxRef in symbol.DeclaringSyntaxReferences)
-		{
-			SyntaxNode node = syntaxRef.GetSyntax();
-
-			if (node is VariableDeclaratorSyntax variableDeclarator && variableDeclarator.Initializer is not null)
+			switch (operation)
 			{
-				return true;
-			}
-
-			if (node is PropertyDeclarationSyntax propertyDeclaration && propertyDeclaration.Initializer is not null)
-			{
-				return true;
+				case IParenthesizedOperation parenthesized:
+					operation = parenthesized.Operand;
+					break;
+				case IConversionOperation { Conversion.IsIdentity: true } conversion:
+					operation = conversion.Operand;
+					break;
+				default:
+					return operation is IParameterReferenceOperation parameterReference &&
+						parameter is not null &&
+						SymbolEqualityComparer.Default.Equals(parameterReference.Parameter.OriginalDefinition, parameter.OriginalDefinition) &&
+						SymbolEqualityComparer.Default.Equals(parameter.Type, memberType) &&
+						parameterReference.Parameter.DeclaringSyntaxReferences.Any(reference =>
+							reference.GetSyntax(context.CancellationToken) is ParameterSyntax { Parent: ParameterListSyntax { Parent: TypeDeclarationSyntax } });
 			}
 		}
-
-		return false;
 	}
 }

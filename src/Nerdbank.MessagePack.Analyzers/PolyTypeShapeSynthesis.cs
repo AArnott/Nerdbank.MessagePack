@@ -23,7 +23,7 @@ internal class PolyTypeShapeSynthesis : TypeDataModelGenerator
 			return base.IncludeField(field, out customName, out order, out includeGetter, out includeSetter);
 		}
 
-		customName = null;
+		customName = attribute.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.NameProperty).Value.Value as string;
 		order = 0;
 		includeGetter = true;
 		includeSetter = !field.IsReadOnly;
@@ -38,7 +38,7 @@ internal class PolyTypeShapeSynthesis : TypeDataModelGenerator
 			return base.IncludeProperty(property, out customName, out order, out includeGetter, out includeSetter);
 		}
 
-		customName = null;
+		customName = attribute.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.NameProperty).Value.Value as string;
 		order = 0;
 		includeGetter = property.GetMethod is not null;
 		includeSetter = property.SetMethod is not null;

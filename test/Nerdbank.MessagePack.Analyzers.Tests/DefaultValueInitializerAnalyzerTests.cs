@@ -5,6 +5,209 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.DefaultValueInit
 
 public class DefaultValueInitializerAnalyzerTests
 {
+#if !NET
+	private const string RequiredMemberPolyfills = /* lang=c#-test */ """
+
+		namespace System.Runtime.CompilerServices
+		{
+			[System.AttributeUsage(System.AttributeTargets.All)]
+			internal sealed class RequiredMemberAttribute : System.Attribute { }
+
+			[System.AttributeUsage(System.AttributeTargets.All)]
+			internal sealed class CompilerFeatureRequiredAttribute(string featureName) : System.Attribute
+			{
+				public string FeatureName => featureName;
+				public bool IsOptional { get; init; }
+			}
+
+			internal static class IsExternalInit { }
+		}
+		""";
+#endif
+
+	[Test]
+	public async Task ShapeConstructorParameterNamesAndMemberInitializers()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class Forwarded(int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int Number { get; set; } = number;
+			}
+
+			[GenerateShape]
+			public partial class Matching(int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int Number { get; set; } = 42;
+				public int Original() => number;
+			}
+
+			[GenerateShape]
+			public partial class Different(int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int {|NBMsgPack110:Number|} { get; set; } = 0;
+				public int Original() => number;
+			}
+
+			[GenerateShape]
+			public partial class CaseDistinct
+			{
+				public CaseDistinct(int value = 42) { this.value = value; }
+				public int value { get; set; }
+				public int {|NBMsgPack110:Value|} { get; set; } = 42;
+				public int {|NBMsgPack110:VALUE|} { get; set; } = 42;
+			}
+
+			[GenerateShape]
+			public partial class ParameterOverride([ParameterShape(Name = "wire_number")] int number = 42)
+			{
+				[PropertyShape(Name = "wire_number")]
+				public int Number { get; set; } = number;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task RenamedMembersAndGenericForwarding()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class Renamed(int number = 42, int field = 7)
+			{
+				[PropertyShape(Name = "number")]
+				public int Value { get; set; } = number;
+				[PropertyShape(Name = "field")]
+				public int Other = field;
+				public int {|NBMsgPack110:Copy|} = number;
+			}
+
+			[GenerateShape]
+			public partial class RenamedConstant(int number = 42)
+			{
+				[PropertyShape(Name = "number")]
+				public int Value { get; set; } = 42;
+				public int Original() => number;
+			}
+
+			[GenerateShapeFor<Box<int>>]
+			[GenerateShapeFor<Box<string>>]
+			public partial class Witness;
+
+			public class Box<T>(T value)
+			{
+				public T Value { get; set; } = value;
+				public T {|NBMsgPack110:Copy|} = value;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task ConvertedConstructorDefaults()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			public enum Choice : byte { None, Selected = 42 }
+
+			[GenerateShape]
+			public partial class Model(long wide = 42, short narrow = 42, uint unsigned = 42,
+				ulong unsignedWide = 42, float single = 16777217, double real = 42,
+				byte small = 42, sbyte signed = 42, ushort unsignedSmall = 42,
+				Choice choice = Choice.Selected, string text = null, bool flag = false, char letter = 'a')
+			{
+				public long Wide = 42;
+				public short Narrow = 42;
+				public uint Unsigned = 42;
+				public ulong UnsignedWide = 42;
+				public float Single = 16777217;
+				public double Real = 42;
+				public byte Small = 42;
+				public sbyte Signed = 42;
+				public ushort UnsignedSmall = 42;
+				public Choice Choice = Choice.Selected;
+				public string Text = null;
+				public bool Flag = false;
+				public char Letter = 'a';
+
+				public object[] Original() => new object[] { wide, narrow, unsigned, unsignedWide, single, real,
+					small, signed, unsignedSmall, choice, text, flag, letter };
+			}
+
+			[GenerateShape]
+			public partial class PropertyModel(long number = 42)
+			{
+				public long Number { get; set; } = 42;
+				public long Original() => number;
+			}
+
+			[GenerateShape]
+			public partial class Different(long number = 43, float real = 16777218, Choice choice = Choice.Selected)
+			{
+				public long {|NBMsgPack110:Number|} = 42;
+				public float {|NBMsgPack110:Real|} = 16777217;
+				public Choice {|NBMsgPack110:Choice|} = 0;
+				public long OriginalNumber() => number;
+				public float OriginalReal() => real;
+				public Choice OriginalChoice() => choice;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task ConstructorBindingAndConstructedMemberTypes()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShapeFor<Box<object>>]
+			[GenerateShapeFor<Box<int>>]
+			[GenerateShapeFor<Box<string>>]
+			public partial class Witness;
+
+			public class Box<T>
+			{
+				public T {|NBMsgPack110:Value|} = (T)(object)42;
+			}
+
+			[GenerateShape]
+			public partial class Model(int number = 42)
+			{
+				public int {|NBMsgPack110:Number|} { get; set; } = 0;
+				public int {|NBMsgPack110:Copy|} { get; set; } = number;
+			}
+
+			[GenerateShape]
+			public partial class Alternate(int number)
+			{
+				public int {|NBMsgPack110:Number|} { get; set; } = number;
+				[ConstructorShape]
+				public Alternate() : this(42) { }
+			}
+
+			[GenerateShape]
+			public partial class Matching(int number = 42)
+			{
+				public int Number { get; set; } = 42;
+				public int GetOriginalNumber() => number;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
 	[Test]
 	public async Task NoIssues_NoGenerateShapeAttribute()
 	{
@@ -34,6 +237,150 @@ public class DefaultValueInitializerAnalyzerTests
 			}
 			""";
 
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task NoIssues_PrimaryConstructorParameterForwarding()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
+
+			[GenerateShape]
+			public partial class Foo(int number, bool enabled, string name)
+			{
+				public int Number { get; init; } = number;
+				public bool Enabled = ((enabled));
+				public string Name { get; init; } = (string)(name);
+			}
+
+			[GenerateShape]
+			public partial class Optional(int number = 42)
+			{
+				public int Number { get; init; } = number;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task PrimaryConstructorDoesNotExemptOtherInitializers()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
+
+			[GenerateShape]
+			public partial class Foo(int number, string name)
+			{
+				public int Number { get; init; } = number;
+				public int {|NBMsgPack110:Offset|} { get; init; } = number + 1;
+				public string {|NBMsgPack110:Name|} { get; init; } = name ?? "unknown";
+				public long {|NBMsgPack110:Widened|} = number;
+				public short {|NBMsgPack110:Narrowed|} = (short)number;
+				public int {|NBMsgPack110:Transformed|} = (int)(long)number;
+				public int {|NBMsgPack110:Constant|} { get; init; } = 42;
+				public int {|NBMsgPack110:Computed|} = GetValue();
+				public int {|NBMsgPack110:Lambda|} = ((System.Func<int, int>)(value => value))(42);
+
+				private static int GetValue() => 42;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task SharedInheritedAndPartialMembersReportedOnce()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShapeFor<First>]
+			[GenerateShapeFor<Second>]
+			public partial class Witness;
+
+			public class Base
+			{
+				public int {|NBMsgPack110:Inherited|} { get; set; } = 42;
+			}
+
+			public partial class First : Base;
+			public class Second : Base;
+			""";
+		string otherFile = /* lang=c#-test */ """
+			public partial class First
+			{
+				public int {|NBMsgPack110:OtherFile|} { get; set; } = 42;
+			}
+			""";
+
+		var test = new VerifyCS.Test
+		{
+			TestCode = source,
+			TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+		};
+		test.TestState.Sources.Add(otherFile);
+		await test.RunAsync();
+	}
+
+	[Test]
+	public async Task NoIssues_RequiredMembers()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				[PropertyShape(IsRequired = true)]
+				public int ConstantField = 42;
+				[PropertyShape(IsRequired = true)]
+				public int ComputedField = GetValue();
+				[PropertyShape(IsRequired = true)]
+				public int ConstantProperty { get; set; } = 42;
+				[PropertyShape(IsRequired = true)]
+				public int ComputedProperty { get; set; } = GetValue();
+				public required int RequiredField = 42;
+				public required int RequiredProperty { get; set; } = GetValue();
+
+				private static int GetValue() => 42;
+			}
+			""";
+
+#if !NET
+		source += RequiredMemberPolyfills;
+#endif
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task OptionalPolicyOverridesRequiredModifier()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				[PropertyShape(IsRequired = false)]
+				public required int {|NBMsgPack110:Field|} = 42;
+				[PropertyShape(IsRequired = false)]
+				public required int {|NBMsgPack110:Property|} { get; set; } = GetValue();
+				[PropertyShape(IsRequired = false)]
+				public int {|NBMsgPack110:Optional|} { get; set; } = 42;
+
+				private static int GetValue() => 42;
+			}
+			""";
+
+#if !NET
+		source += RequiredMemberPolyfills;
+#endif
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
@@ -460,7 +807,7 @@ public class DefaultValueInitializerAnalyzerTests
 	}
 
 	[Test]
-	public async Task CodeFix_CastsDefaultLiteralInitializer()
+	public async Task NoIssues_RedundantInitializers()
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
@@ -468,22 +815,57 @@ public class DefaultValueInitializerAnalyzerTests
 			[GenerateShape]
 			public partial class MyType
 			{
-				public int {|NBMsgPack110:MyProperty|} { get; set; } = default;
+				public bool IsEnabled { get; set; } = false;
+				public byte Byte { get; set; } = 0;
+				public sbyte SByte { get; set; } = (sbyte)0;
+				public short Short { get; set; } = (short)0;
+				public ushort UShort { get; set; } = (ushort)0;
+				public int Int { get; set; } = 0;
+				public uint UInt { get; set; } = 0U;
+				public long Long { get; set; } = 0L;
+				public ulong ULong { get; set; } = 0UL;
+				public float Float { get; set; } = 0F;
+				public double Double { get; set; } = 0D;
+				public char Char { get; set; } = '\0';
+				public string String { get; set; } = null;
+				public TestEnum Enum { get; set; } = TestEnum.None;
+				public bool BooleanField = false;
+				public int DefaultLiteral = default;
+				public int DefaultExpression { get; set; } = default(int);
+				public string DefaultString { get; set; } = default;
+				public TestEnum DefaultEnum = default(TestEnum);
+				public int ConstantExpression = 1 - 1;
+				public int Zero = 0, AlsoZero = default;
 			}
+
+			public enum TestEnum { None = 0, Other = 1 }
 			""";
 
-		string fixedSource = /* lang=c#-test */ """
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task NonDefaultInitializersStillReported()
+	{
+		string source = /* lang=c#-test */ """
 			using PolyType;
 
 			[GenerateShape]
 			public partial class MyType
 			{
-			|[global::System.ComponentModel.DefaultValue((int)default)]
-			|public int MyProperty { get; set; } = default;
+				public bool {|NBMsgPack110:IsEnabled|} { get; set; } = true;
+				public string {|NBMsgPack110:EmptyString|} { get; set; } = "";
+				public char {|NBMsgPack110:Char|} = 'a';
+				public float {|NBMsgPack110:Float|} = float.NaN;
+				public double {|NBMsgPack110:Double|} = double.Epsilon;
+				public int Zero = 0, {|NBMsgPack110:NonZero|} = 1;
+				public TestEnum {|NBMsgPack110:Enum|} = TestEnum.First;
 			}
-			""".Replace("|", "    ");
 
-		await VerifyCodeFixWithGeneratedSourcesSkippedAsync(source, fixedSource);
+			public enum TestEnum { First = 1 }
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
 	[Test]

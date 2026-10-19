@@ -27,4 +27,16 @@ namespace Samples.AnalyzerDocs.NBMsgPack110
         }
         #endregion
     }
+
+    namespace Required
+    {
+        #region RequiredFix
+        [GenerateShape]
+        public partial class MyType
+        {
+            [PropertyShape(IsRequired = true)]
+            public int Age { get; set; } = System.Environment.TickCount;
+        }
+        #endregion
+    }
 }
