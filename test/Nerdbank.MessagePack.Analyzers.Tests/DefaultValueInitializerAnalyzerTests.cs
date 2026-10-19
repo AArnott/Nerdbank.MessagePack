@@ -5,6 +5,26 @@ using VerifyCS = CodeFixVerifier<Nerdbank.MessagePack.Analyzers.DefaultValueInit
 
 public class DefaultValueInitializerAnalyzerTests
 {
+#if !NET
+	private const string RequiredMemberPolyfills = /* lang=c#-test */ """
+
+		namespace System.Runtime.CompilerServices
+		{
+			[System.AttributeUsage(System.AttributeTargets.All)]
+			internal sealed class RequiredMemberAttribute : System.Attribute { }
+
+			[System.AttributeUsage(System.AttributeTargets.All)]
+			internal sealed class CompilerFeatureRequiredAttribute(string featureName) : System.Attribute
+			{
+				public string FeatureName => featureName;
+				public bool IsOptional { get; init; }
+			}
+
+			internal static class IsExternalInit { }
+		}
+		""";
+#endif
+
 	[Test]
 	public async Task NoIssues_NoGenerateShapeAttribute()
 	{
@@ -123,6 +143,62 @@ public class DefaultValueInitializerAnalyzerTests
 		};
 		test.TestState.Sources.Add(otherFile);
 		await test.RunAsync();
+	}
+
+	[Test]
+	public async Task NoIssues_RequiredMembers()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				[PropertyShape(IsRequired = true)]
+				public int ConstantField = 42;
+				[PropertyShape(IsRequired = true)]
+				public int ComputedField = GetValue();
+				[PropertyShape(IsRequired = true)]
+				public int ConstantProperty { get; set; } = 42;
+				[PropertyShape(IsRequired = true)]
+				public int ComputedProperty { get; set; } = GetValue();
+				public required int RequiredField = 42;
+				public required int RequiredProperty { get; set; } = GetValue();
+
+				private static int GetValue() => 42;
+			}
+			""";
+
+#if !NET
+		source += RequiredMemberPolyfills;
+#endif
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task OptionalPolicyOverridesRequiredModifier()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShape]
+			public partial class MyType
+			{
+				[PropertyShape(IsRequired = false)]
+				public required int {|NBMsgPack110:Field|} = 42;
+				[PropertyShape(IsRequired = false)]
+				public required int {|NBMsgPack110:Property|} { get; set; } = GetValue();
+				[PropertyShape(IsRequired = false)]
+				public int {|NBMsgPack110:Optional|} { get; set; } = 42;
+
+				private static int GetValue() => 42;
+			}
+			""";
+
+#if !NET
+		source += RequiredMemberPolyfills;
+#endif
+		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
 	[Test]

@@ -8,7 +8,7 @@ using PolyType.Roslyn;
 namespace Nerdbank.MessagePack.Analyzers;
 
 /// <summary>
-/// Analyzer that detects fields and properties with initializers but no DefaultValueAttribute
+/// Analyzer that detects optional fields and properties with initializers but no DefaultValueAttribute
 /// on types that have source-generated shapes.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -91,7 +91,10 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 			{
 				foreach (PropertyDataModel property in model.Properties)
 				{
-					serializedMembers.Add(property.PropertySymbol.OriginalDefinition);
+					if (!IsRequired(property, referenceSymbols))
+					{
+						serializedMembers.Add(property.PropertySymbol.OriginalDefinition);
+					}
 				}
 			}
 
@@ -181,6 +184,14 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				}
 			}
 		}
+	}
+
+	private static bool IsRequired(PropertyDataModel property, ReferenceSymbols referenceSymbols)
+	{
+		AttributeData? attribute = property.PropertySymbol.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
+		bool? requiredByAttribute = attribute?.NamedArguments
+			.FirstOrDefault(argument => argument.Key == Constants.PropertyShapeAttribute.IsRequiredProperty).Value.Value as bool?;
+		return requiredByAttribute ?? property.IsRequiredByPolicy ?? property.IsRequiredBySyntax;
 	}
 
 	private static bool HasCustomShapeConfiguration(AttributeData attribute) => !attribute.NamedArguments.IsEmpty;
