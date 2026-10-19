@@ -460,7 +460,7 @@ public class DefaultValueInitializerAnalyzerTests
 	}
 
 	[Test]
-	public async Task CodeFix_CastsDefaultLiteralInitializer()
+	public async Task NoIssues_RedundantInitializers()
 	{
 		string source = /* lang=c#-test */ """
 			using PolyType;
@@ -468,22 +468,57 @@ public class DefaultValueInitializerAnalyzerTests
 			[GenerateShape]
 			public partial class MyType
 			{
-				public int {|NBMsgPack110:MyProperty|} { get; set; } = default;
+				public bool IsEnabled { get; set; } = false;
+				public byte Byte { get; set; } = 0;
+				public sbyte SByte { get; set; } = (sbyte)0;
+				public short Short { get; set; } = (short)0;
+				public ushort UShort { get; set; } = (ushort)0;
+				public int Int { get; set; } = 0;
+				public uint UInt { get; set; } = 0U;
+				public long Long { get; set; } = 0L;
+				public ulong ULong { get; set; } = 0UL;
+				public float Float { get; set; } = 0F;
+				public double Double { get; set; } = 0D;
+				public char Char { get; set; } = '\0';
+				public string String { get; set; } = null;
+				public TestEnum Enum { get; set; } = TestEnum.None;
+				public bool BooleanField = false;
+				public int DefaultLiteral = default;
+				public int DefaultExpression { get; set; } = default(int);
+				public string DefaultString { get; set; } = default;
+				public TestEnum DefaultEnum = default(TestEnum);
+				public int ConstantExpression = 1 - 1;
+				public int Zero = 0, AlsoZero = default;
 			}
+
+			public enum TestEnum { None = 0, Other = 1 }
 			""";
 
-		string fixedSource = /* lang=c#-test */ """
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task NonDefaultInitializersStillReported()
+	{
+		string source = /* lang=c#-test */ """
 			using PolyType;
 
 			[GenerateShape]
 			public partial class MyType
 			{
-			|[global::System.ComponentModel.DefaultValue((int)default)]
-			|public int MyProperty { get; set; } = default;
+				public bool {|NBMsgPack110:IsEnabled|} { get; set; } = true;
+				public string {|NBMsgPack110:EmptyString|} { get; set; } = "";
+				public char {|NBMsgPack110:Char|} = 'a';
+				public float {|NBMsgPack110:Float|} = float.NaN;
+				public double {|NBMsgPack110:Double|} = double.Epsilon;
+				public int Zero = 0, {|NBMsgPack110:NonZero|} = 1;
+				public TestEnum {|NBMsgPack110:Enum|} = TestEnum.First;
 			}
-			""".Replace("|", "    ");
 
-		await VerifyCodeFixWithGeneratedSourcesSkippedAsync(source, fixedSource);
+			public enum TestEnum { First = 1 }
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
 
 	[Test]

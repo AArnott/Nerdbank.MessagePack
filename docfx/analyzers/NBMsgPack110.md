@@ -1,8 +1,9 @@
 # NBMsgPack110: Add DefaultValueAttribute when using non-default initializers
 
-This diagnostic is emitted for a serialized field or property that has an initializer but no <xref:System.ComponentModel.DefaultValueAttribute>.
+This diagnostic is emitted for a serialized field or property that has a non-default initializer but no <xref:System.ComponentModel.DefaultValueAttribute>.
 The member type must support C# constant values that can be represented as attribute arguments, such as a primitive, string, or enum.
 Members of collection and other non-constant types are not reported.
+Constant initializers equal to the member type's C# default value, such as `false`, numeric zero, `null`, or `default`, are not reported because they do not change the value assigned without an initializer.
 
 The warning is particularly relevant when <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues> is set to a value other than its default, <xref:Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always>.
 Under such a policy, the serializer may omit the C# default value for the member type, while deserialization leaves the member at the different value assigned by its initializer.

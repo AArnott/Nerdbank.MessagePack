@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using PolyType.Roslyn;
 
@@ -85,24 +86,32 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				}
 			}
 
-			Dictionary<INamedTypeSymbol, TypeDataModel> generatedModelsBySourceDeclaration = new(SymbolEqualityComparer.Default);
-			foreach (KeyValuePair<ITypeSymbol, TypeDataModel> generatedModel in generator.GeneratedModels)
+			HashSet<ISymbol> serializedMembers = new(SymbolEqualityComparer.Default);
+			foreach (ObjectDataModel model in generator.GeneratedModels.Values.OfType<ObjectDataModel>())
 			{
-				if (GetSourceDeclaration(generatedModel.Key) is { } sourceDeclaration && !generatedModelsBySourceDeclaration.ContainsKey(sourceDeclaration))
+				foreach (PropertyDataModel property in model.Properties)
 				{
-					generatedModelsBySourceDeclaration.Add(sourceDeclaration, generatedModel.Value);
+					serializedMembers.Add(property.PropertySymbol.OriginalDefinition);
 				}
 			}
 
-			context.RegisterSymbolAction(
-				symbolContext =>
+			context.RegisterSyntaxNodeAction(
+				nodeContext =>
 				{
-					if (generatedModelsBySourceDeclaration.TryGetValue((INamedTypeSymbol)symbolContext.Symbol, out TypeDataModel? model))
+					EqualsValueClauseSyntax? initializer = nodeContext.Node switch
 					{
-						this.AnalyzeTypeModel(symbolContext, model, defaultValueAttribute, referenceSymbols);
+						VariableDeclaratorSyntax variable => variable.Initializer,
+						PropertyDeclarationSyntax property => property.Initializer,
+						_ => null,
+					};
+					if (initializer is not null &&
+						nodeContext.SemanticModel.GetDeclaredSymbol(nodeContext.Node, nodeContext.CancellationToken) is { } member)
+					{
+						AnalyzeInitializer(nodeContext, member, initializer.Value, serializedMembers, defaultValueAttribute);
 					}
 				},
-				SymbolKind.NamedType);
+				SyntaxKind.VariableDeclarator,
+				SyntaxKind.PropertyDeclaration);
 		});
 	}
 
@@ -157,11 +166,6 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 	}
 
 	private static bool HasCustomShapeConfiguration(AttributeData attribute) => !attribute.NamedArguments.IsEmpty;
-
-	private static INamedTypeSymbol? GetSourceDeclaration(ITypeSymbol typeSymbol)
-	{
-		return typeSymbol is INamedTypeSymbol namedType ? namedType.OriginalDefinition : null;
-	}
 
 	private static IEnumerable<INamedTypeSymbol> GetDeclaredTypes(INamespaceOrTypeSymbol container)
 	{
@@ -244,103 +248,43 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				SpecialType.System_Single or
 				SpecialType.System_String;
 
-	private void AnalyzeTypeModel(SymbolAnalysisContext context, TypeDataModel model, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
+	private static void AnalyzeInitializer(
+		SyntaxNodeAnalysisContext context,
+		ISymbol member,
+		ExpressionSyntax value,
+		HashSet<ISymbol> serializedMembers,
+		INamedTypeSymbol defaultValueAttribute)
 	{
-		// Only analyze object types that have properties
-		if (model is not ObjectDataModel objectModel)
+		if (member.IsStatic || member.IsImplicitlyDeclared || !serializedMembers.Contains(member.OriginalDefinition))
 		{
 			return;
 		}
 
-		// Check all properties from the model
-		foreach (PropertyDataModel property in objectModel.Properties)
+		ITypeSymbol? memberType = member switch
 		{
-			ISymbol member = property.PropertySymbol;
-
-			if (member.IsStatic || member.IsImplicitlyDeclared)
-			{
-				continue;
-			}
-
-			if (member is IFieldSymbol field)
-			{
-				this.AnalyzeField(context, field, defaultValueAttribute, referenceSymbols);
-			}
-			else if (member is IPropertySymbol propertySymbol)
-			{
-				this.AnalyzeProperty(context, propertySymbol, defaultValueAttribute, referenceSymbols);
-			}
-		}
-	}
-
-	private void AnalyzeField(SymbolAnalysisContext context, IFieldSymbol field, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
-	{
-		// Skip static, const, or compiler-generated fields
-		if (field.IsConst)
+			IFieldSymbol { IsConst: false } field => field.Type,
+			IPropertySymbol { IsIndexer: false } property => property.Type,
+			_ => null,
+		};
+		if (memberType is null || !IsAttributeCompatibleType(memberType))
 		{
 			return;
 		}
 
-		// Check if the field type supports a value that can be represented by DefaultValueAttribute.
-		if (!IsAttributeCompatibleType(field.Type) || !this.HasInitializer(field))
+		Optional<object?> constant = context.SemanticModel.GetConstantValue(value, context.CancellationToken);
+		if (constant.HasValue && constant.Value is (null or false or '\0' or
+			(byte)0 or (sbyte)0 or (short)0 or (ushort)0 or
+			0 or 0U or 0L or 0UL or 0F or 0D))
 		{
 			return;
 		}
 
-		// Check if field already has DefaultValueAttribute
-		if (field.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
+		if (member.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
 		{
 			return;
 		}
 
-		// Report diagnostic
-		Location location = field.Locations.FirstOrDefault() ?? Location.None;
-		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, field.Name));
-	}
-
-	private void AnalyzeProperty(SymbolAnalysisContext context, IPropertySymbol property, INamedTypeSymbol defaultValueAttribute, ReferenceSymbols referenceSymbols)
-	{
-		// Skip static, indexers, or compiler-generated properties
-		if (property.IsIndexer)
-		{
-			return;
-		}
-
-		// Check if the property type supports a value that can be represented by DefaultValueAttribute.
-		if (!IsAttributeCompatibleType(property.Type) || !this.HasInitializer(property))
-		{
-			return;
-		}
-
-		// Check if property already has DefaultValueAttribute
-		if (property.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
-		{
-			return;
-		}
-
-		// Report diagnostic
-		Location location = property.Locations.FirstOrDefault() ?? Location.None;
-		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, property.Name));
-	}
-
-	private bool HasInitializer(ISymbol symbol)
-	{
-		// Check if the symbol has a syntax reference (declaration)
-		foreach (SyntaxReference syntaxRef in symbol.DeclaringSyntaxReferences)
-		{
-			SyntaxNode node = syntaxRef.GetSyntax();
-
-			if (node is VariableDeclaratorSyntax variableDeclarator && variableDeclarator.Initializer is not null)
-			{
-				return true;
-			}
-
-			if (node is PropertyDeclarationSyntax propertyDeclaration && propertyDeclaration.Initializer is not null)
-			{
-				return true;
-			}
-		}
-
-		return false;
+		Location location = member.Locations.FirstOrDefault() ?? Location.None;
+		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, member.Name));
 	}
 }
