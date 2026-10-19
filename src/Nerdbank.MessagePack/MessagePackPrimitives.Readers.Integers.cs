@@ -12,9 +12,6 @@ using System.Buffers;
 
 namespace Nerdbank.MessagePack;
 
-/// <summary>
-/// Primitive msgpack encoding/decoding methods.
-/// </summary>
 partial class MessagePackPrimitives
 {
 	/// <summary>

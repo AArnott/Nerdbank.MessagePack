@@ -35,7 +35,7 @@ internal static class HashCollisionResistantPrimitives
 	{
 		internal static readonly BooleanEqualityComparer Instance = new();
 
-		public override long GetSecureHashCode(bool value) => base.GetSecureHashCode(value is true);
+		public override long GetSecureHashCode(bool obj) => base.GetSecureHashCode(obj is true);
 
 		public override bool Equals(bool x, bool y) => x is true == y is true;
 	}
@@ -45,11 +45,11 @@ internal static class HashCollisionResistantPrimitives
 	internal class HalfEqualityComparer : CollisionResistantHasherUnmanaged<Half>
 	{
 		/// <inheritdoc/>
-		public override unsafe long GetSecureHashCode(Half value)
+		public override unsafe long GetSecureHashCode(Half obj)
 			=> base.GetSecureHashCode(
-				value == (Half)0.0 ? (Half)0 : // Special check for 0.0 so that the hash of 0.0 and -0.0 will equal.
-				value == Half.NaN ? Half.NaN : // Standardize on the binary representation of NaN prior to hashing.
-				value);
+				obj == (Half)0.0 ? (Half)0 : // Special check for 0.0 so that the hash of 0.0 and -0.0 will equal.
+				obj == Half.NaN ? Half.NaN : // Standardize on the binary representation of NaN prior to hashing.
+				obj);
 	}
 
 #endif
@@ -59,12 +59,12 @@ internal static class HashCollisionResistantPrimitives
 		internal static readonly SingleEqualityComparer Instance = new();
 
 		/// <inheritdoc/>
-		public override unsafe long GetSecureHashCode(float value)
-			=> base.GetSecureHashCode(value switch
+		public override unsafe long GetSecureHashCode(float obj)
+			=> base.GetSecureHashCode(obj switch
 			{
 				0.0f => 0, // Special check for 0.0 so that the hash of 0.0 and -0.0 will equal.
 				float.NaN => float.NaN, // Standardize on the binary representation of NaN prior to hashing.
-				_ => value,
+				_ => obj,
 			});
 	}
 
@@ -73,12 +73,12 @@ internal static class HashCollisionResistantPrimitives
 		internal static readonly DoubleEqualityComparer Instance = new();
 
 		/// <inheritdoc/>
-		public override unsafe long GetSecureHashCode(double value)
-			=> base.GetSecureHashCode(value switch
+		public override unsafe long GetSecureHashCode(double obj)
+			=> base.GetSecureHashCode(obj switch
 			{
 				0.0 => 0, // Special check for 0.0 so that the hash of 0.0 and -0.0 will equal.
 				double.NaN => double.NaN, // Standardize on the binary representation of NaN prior to hashing.
-				_ => value,
+				_ => obj,
 			});
 	}
 
@@ -87,7 +87,7 @@ internal static class HashCollisionResistantPrimitives
 		internal static readonly DateTimeEqualityComparer Instance = new();
 
 		/// <inheritdoc/>
-		public override unsafe long GetSecureHashCode(DateTime value) => SecureHash(value.Ticks);
+		public override unsafe long GetSecureHashCode(DateTime obj) => SecureHash(obj.Ticks);
 	}
 
 	internal class DateTimeOffsetEqualityComparer : CollisionResistantHasherUnmanaged<DateTimeOffset>
@@ -96,7 +96,7 @@ internal static class HashCollisionResistantPrimitives
 		public override bool Equals(DateTimeOffset x, DateTimeOffset y) => x.Equals(y);
 
 		/// <inheritdoc/>
-		public override unsafe long GetSecureHashCode(DateTimeOffset value) => SecureHash(value.UtcDateTime.Ticks);
+		public override unsafe long GetSecureHashCode(DateTimeOffset obj) => SecureHash(obj.UtcDateTime.Ticks);
 	}
 
 	internal class StringEqualityComparer : SecureEqualityComparer<string?>
@@ -104,10 +104,10 @@ internal static class HashCollisionResistantPrimitives
 		internal static readonly StringEqualityComparer Instance = new();
 
 		/// <inheritdoc/>
-		public override long GetSecureHashCode(string? value)
+		public override long GetSecureHashCode(string? obj)
 		{
 			// The Cast call could result in OverflowException at runtime if value is greater than 1bn chars in length.
-			return SecureHash(MemoryMarshal.Cast<char, byte>(value.AsSpan()));
+			return SecureHash(MemoryMarshal.Cast<char, byte>(obj.AsSpan()));
 		}
 
 		/// <inheritdoc/>

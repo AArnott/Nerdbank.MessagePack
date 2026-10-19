@@ -15,9 +15,6 @@ using System.Buffers;
 
 namespace Nerdbank.MessagePack;
 
-/// <summary>
-/// Primitive msgpack encoding/decoding methods.
-/// </summary>
 partial class MessagePackPrimitives
 {<#
 IEnumerable<string> signedTypes = new Type[] { typeof(sbyte), typeof(short), typeof(int), typeof(long) }.Select(t => t.Name);

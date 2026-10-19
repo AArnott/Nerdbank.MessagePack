@@ -25,8 +25,8 @@ public partial class SurrogateTests
 
 		internal class Marshaler : IMarshaler<OriginalType, MarshaledType?>
 		{
-			public OriginalType? Unmarshal(MarshaledType? surrogate)
-				=> surrogate.HasValue ? new(surrogate.Value.A, surrogate.Value.B) : null;
+			public OriginalType? Unmarshal(MarshaledType? value)
+				=> value.HasValue ? new(value.Value.A, value.Value.B) : null;
 
 			public MarshaledType? Marshal(OriginalType? value)
 				=> value is null ? null : new(value.a, value.b);

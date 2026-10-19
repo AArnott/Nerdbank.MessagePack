@@ -424,18 +424,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 
 				SerializePropertyAsync<TDeclaringType> serializeAsync =
-					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) => throw converter.Error!.ThrowException() :
-					async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
-					{
-						try
+					typedConverter is null
+						? async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) => throw converter.Error!.ThrowException()
+						: async (TDeclaringType container, MessagePackAsyncWriter writer, SerializationContext context) =>
 						{
-							await typedConverter.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
-						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-						{
-							throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
-						}
-					};
+							try
+							{
+								await typedConverter.WriteAsync(writer, getter(ref container), context).ConfigureAwait(false);
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateWriteFailMessage(propertyShape), ex);
+							}
+						};
 				msgpackWriters = (serialize, serializeAsync);
 			}
 		}
@@ -486,19 +487,20 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 
 				DeserializePropertyAsync<TDeclaringType> deserializeAsync =
-					typedConverter is null ? async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) => throw converter.Error!.ThrowException() :
-					async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
-					{
-						try
+					typedConverter is null
+						? async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) => throw converter.Error!.ThrowException()
+						: async (TDeclaringType container, MessagePackAsyncReader reader, SerializationContext context) =>
 						{
-							setter(ref container, (await typedConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
-							return container;
-						}
-						catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
-						{
-							throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
-						}
-					};
+							try
+							{
+								setter(ref container, (await typedConverter.ReadAsync(reader, context).ConfigureAwait(false))!);
+								return container;
+							}
+							catch (Exception ex) when (MessagePackConverter.ShouldWrapSerializationException(ex, context.CancellationToken))
+							{
+								throw new MessagePackSerializationException(CreateReadFailMessage(propertyShape), ex);
+							}
+						};
 				msgpackReaders = (deserialize, deserializeAsync);
 				suppressIfNoConstructorParameter = false;
 			}
