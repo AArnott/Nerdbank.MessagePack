@@ -86,40 +86,51 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				}
 			}
 
-			HashSet<ISymbol> serializedMembers = new(SymbolEqualityComparer.Default);
+			Dictionary<SyntaxTree, List<(ISymbol Member, SyntaxReference Declaration, IParameterSymbol? Parameter)>> membersByTree = [];
 			foreach (ObjectDataModel model in generator.GeneratedModels.Values.OfType<ObjectDataModel>())
 			{
+				IMethodSymbol? constructor = model.Constructors
+					.Select(candidate => candidate.Constructor)
+					.FirstOrDefault(candidate => candidate is not null && candidate.FindAttributes(referenceSymbols.ConstructorShapeAttribute).Any());
+				constructor ??= model.Constructors.Length == 1 ? model.Constructors[0].Constructor :
+					model.Constructors.Select(candidate => candidate.Constructor).FirstOrDefault(candidate => candidate is { Parameters.Length: 0 });
 				foreach (PropertyDataModel property in model.Properties)
 				{
-					if (!IsRequired(property, referenceSymbols))
+					if (IsRequired(property, referenceSymbols))
 					{
-						serializedMembers.Add(property.PropertySymbol.OriginalDefinition);
-					}
-				}
-			}
-
-			Dictionary<SyntaxTree, List<(ISymbol Member, SyntaxReference Declaration)>> membersByTree = [];
-			foreach (ISymbol member in serializedMembers)
-			{
-				foreach (SyntaxReference declaration in member.DeclaringSyntaxReferences)
-				{
-					if (!membersByTree.TryGetValue(declaration.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration)>? members))
-					{
-						membersByTree.Add(declaration.SyntaxTree, members = []);
+						continue;
 					}
 
-					members.Add((member, declaration));
+					ISymbol member = property.PropertySymbol;
+					string name = property.LogicalName ?? property.Name;
+					IParameterSymbol? parameter = constructor?.Parameters.FirstOrDefault(parameter => parameter.Name == name);
+					if (parameter is null && constructor is not null)
+					{
+						IParameterSymbol[] matches = constructor.Parameters.Where(parameter => string.Equals(parameter.Name, name, StringComparison.OrdinalIgnoreCase)).ToArray();
+						parameter = matches.Length == 1 ? matches[0] : null;
+					}
+
+					foreach (SyntaxReference declaration in member.OriginalDefinition.DeclaringSyntaxReferences)
+					{
+						if (!membersByTree.TryGetValue(declaration.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration, IParameterSymbol? Parameter)>? members))
+						{
+							membersByTree.Add(declaration.SyntaxTree, members = []);
+						}
+
+						members.Add((member, declaration, parameter));
+					}
 				}
 			}
 
 			context.RegisterSemanticModelAction(modelContext =>
 			{
-				if (!membersByTree.TryGetValue(modelContext.SemanticModel.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration)>? members))
+				if (!membersByTree.TryGetValue(modelContext.SemanticModel.SyntaxTree, out List<(ISymbol Member, SyntaxReference Declaration, IParameterSymbol? Parameter)>? members))
 				{
 					return;
 				}
 
-				foreach ((ISymbol member, SyntaxReference declaration) in members)
+				HashSet<ISymbol> reportedMembers = new(SymbolEqualityComparer.Default);
+				foreach ((ISymbol member, SyntaxReference declaration, IParameterSymbol? parameter) in members)
 				{
 					EqualsValueClauseSyntax? initializer = declaration.GetSyntax(modelContext.CancellationToken) switch
 					{
@@ -129,7 +140,11 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 					};
 					if (initializer is not null)
 					{
-						AnalyzeInitializer(modelContext, member, initializer.Value, serializedMembers, defaultValueAttribute);
+						if (AnalyzeInitializer(modelContext, member, initializer.Value, parameter, defaultValueAttribute) is { } diagnostic &&
+							reportedMembers.Add(member.OriginalDefinition))
+						{
+							modelContext.ReportDiagnostic(diagnostic);
+						}
 					}
 				}
 			});
@@ -277,16 +292,16 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 				SpecialType.System_Single or
 				SpecialType.System_String;
 
-	private static void AnalyzeInitializer(
+	private static Diagnostic? AnalyzeInitializer(
 		SemanticModelAnalysisContext context,
 		ISymbol member,
 		ExpressionSyntax value,
-		HashSet<ISymbol> serializedMembers,
+		IParameterSymbol? parameter,
 		INamedTypeSymbol defaultValueAttribute)
 	{
-		if (member.IsStatic || member.IsImplicitlyDeclared || !serializedMembers.Contains(member.OriginalDefinition))
+		if (member.IsStatic || member.IsImplicitlyDeclared)
 		{
-			return;
+			return null;
 		}
 
 		ITypeSymbol? memberType = member switch
@@ -297,32 +312,34 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 		};
 		if (memberType is null || !IsAttributeCompatibleType(memberType))
 		{
-			return;
+			return null;
 		}
 
 		Optional<object?> constant = context.SemanticModel.GetConstantValue(value, context.CancellationToken);
-		if (constant.HasValue && constant.Value is (null or false or '\0' or
-			(byte)0 or (sbyte)0 or (short)0 or (ushort)0 or
-			0 or 0U or 0L or 0UL or 0F or 0D))
+		if (constant.HasValue && (parameter is { HasExplicitDefaultValue: true }
+			? Equals(constant.Value, parameter.ExplicitDefaultValue)
+			: constant.Value is (null or false or '\0' or
+				(byte)0 or (sbyte)0 or (short)0 or (ushort)0 or
+				0 or 0U or 0L or 0UL or 0F or 0D)))
 		{
-			return;
+			return null;
 		}
 
-		if (IsPrimaryConstructorParameterForwarding(context, value, memberType))
+		if (IsPrimaryConstructorParameterForwarding(context, value, memberType, parameter))
 		{
-			return;
+			return null;
 		}
 
 		if (member.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultValueAttribute)))
 		{
-			return;
+			return null;
 		}
 
 		Location location = member.Locations.FirstOrDefault() ?? Location.None;
-		context.ReportDiagnostic(Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, member.Name));
+		return Diagnostic.Create(MissingDefaultValueAttributeDescriptor, location, member.Name);
 	}
 
-	private static bool IsPrimaryConstructorParameterForwarding(SemanticModelAnalysisContext context, ExpressionSyntax value, ITypeSymbol memberType)
+	private static bool IsPrimaryConstructorParameterForwarding(SemanticModelAnalysisContext context, ExpressionSyntax value, ITypeSymbol memberType, IParameterSymbol? parameter)
 	{
 		while (value is ParenthesizedExpressionSyntax parenthesizedExpression)
 		{
@@ -342,6 +359,8 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 					break;
 				default:
 					return operation is IParameterReferenceOperation parameterReference &&
+						parameter is not null &&
+						SymbolEqualityComparer.Default.Equals(parameterReference.Parameter.OriginalDefinition, parameter.OriginalDefinition) &&
 						SymbolEqualityComparer.Default.Equals(parameterReference.Parameter.Type, memberType) &&
 						parameterReference.Parameter.DeclaringSyntaxReferences.Any(reference =>
 							reference.GetSyntax(context.CancellationToken) is ParameterSyntax { Parent: ParameterListSyntax { Parent: TypeDeclarationSyntax } });

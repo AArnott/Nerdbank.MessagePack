@@ -3,8 +3,10 @@
 This diagnostic is emitted for an optional serialized field or property that has a non-default initializer but no <xref:System.ComponentModel.DefaultValueAttribute>.
 The member type must support C# constant values that can be represented as attribute arguments, such as a primitive, string, or enum.
 Members of collection and other non-constant types are not reported.
-Constant initializers equal to the member type's C# default value, such as `false`, numeric zero, `null`, or `default`, are not reported because they do not change the value assigned without an initializer.
-Initializers that directly forward a primary-constructor parameter are also not reported, including parentheses and identity conversions.
+Constant initializers equal to the serializer's omission default are not reported.
+This is normally the member type's C# default value, such as `false`, numeric zero, `null`, or `default`, but a matching optional parameter in the deserializing constructor supplies its default instead.
+Initializers that directly forward the parameter bound to that member in the deserializing primary constructor are also not reported, including parentheses and identity conversions.
+Forwarding another member's parameter, or a parameter from a primary constructor not selected for deserialization, is not exempt.
 This exemption does not cover expressions that transform the parameter value, non-identity conversions, or unrelated initializers in the same type.
 
 The warning is particularly relevant when <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeDefaultValues> is set to a value other than its default, <xref:Nerdbank.MessagePack.SerializeDefaultValuesPolicy.Always>.

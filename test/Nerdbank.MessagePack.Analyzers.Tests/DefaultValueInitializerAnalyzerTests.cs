@@ -26,6 +26,48 @@ public class DefaultValueInitializerAnalyzerTests
 #endif
 
 	[Test]
+	public async Task ConstructorBindingAndConstructedMemberTypes()
+	{
+		string source = /* lang=c#-test */ """
+			using PolyType;
+
+			[GenerateShapeFor<Box<object>>]
+			[GenerateShapeFor<Box<int>>]
+			[GenerateShapeFor<Box<string>>]
+			public partial class Witness;
+
+			public class Box<T>
+			{
+				public T {|NBMsgPack110:Value|} = (T)(object)42;
+			}
+
+			[GenerateShape]
+			public partial class Model(int number = 42)
+			{
+				public int {|NBMsgPack110:Number|} { get; set; } = 0;
+				public int {|NBMsgPack110:Copy|} { get; set; } = number;
+			}
+
+			[GenerateShape]
+			public partial class Alternate(int number)
+			{
+				public int {|NBMsgPack110:Number|} { get; set; } = number;
+				[ConstructorShape]
+				public Alternate() : this(42) { }
+			}
+
+			[GenerateShape]
+			public partial class Matching(int number = 42)
+			{
+				public int Number { get; set; } = 42;
+				public int GetOriginalNumber() => number;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
 	public async Task NoIssues_NoGenerateShapeAttribute()
 	{
 		string source = /* lang=c#-test */ """
