@@ -106,6 +106,10 @@ The site is updated on every push to the `main` branch.
 You can make changes and host the site locally to preview them by switching to that directory and running the `dotnet docfx --serve` command.
 After making a change, you can rebuild the docs site while the localhost server is running by running `dotnet docfx` again from a separate terminal.
 
+DocFX metadata extraction suppresses `NU1901` through `NU1904` in `docfx/docfx.json` to match the nonfatal NuGet audit warning policy in `.github/workflows/build.yml`.
+DocFX otherwise turns MSBuild workspace warnings into fatal documentation warnings under `--warningsAsErrors`.
+Normal builds still report these audit warnings, and other documentation warnings remain fatal in CI.
+
 [Learn more about docfx](https://dotnet.github.io/docfx/).
 
 ## Updating dependencies
