@@ -19,6 +19,33 @@ public partial class MessagePackReaderTests
 	private delegate void WriterEncoder(ref MessagePackWriter writer);
 
 	[Test]
+	[Arguments(0UL)]
+	[Arguments(1UL)]
+	[Arguments(1048575UL)]
+	[Arguments(1048576UL)]
+	[Arguments(1048577UL)]
+	[Arguments((ulong)uint.MaxValue)]
+	[Arguments(2UL * uint.MaxValue)]
+	public void AddFiller_ReusesBackingBuffer(ulong bytes)
+	{
+		using Sequence<byte> sequence = new();
+		byte[] prefix = [1, 2, 3];
+		sequence.Append(prefix);
+
+		AddFiller(sequence, bytes);
+
+		Assert.Equal(prefix.Length + (long)bytes, sequence.Length);
+		Assert.Equal(prefix, sequence.AsReadOnlySequence.Slice(0, prefix.Length).ToArray());
+		ReadOnlySequence<byte> filler = sequence.AsReadOnlySequence.Slice(prefix.Length);
+		ReadOnlyMemory<byte> buffer = filler.First;
+		Assert.True(buffer.Length <= 1024 * 1024);
+		foreach (ReadOnlyMemory<byte> segment in filler)
+		{
+			Assert.True(segment.Equals(buffer.Slice(0, segment.Length)));
+		}
+	}
+
+	[Test]
 	public void ReadSingle_ReadIntegersOfVariousLengthsAndMagnitudes()
 	{
 		foreach ((System.Numerics.BigInteger value, ReadOnlySequence<byte> encoded) in this.integersOfInterest)
@@ -449,16 +476,15 @@ public partial class MessagePackReaderTests
 	/// <param name="bytes">The number of bytes to append.</param>
 	/// <remarks>
 	/// This can be useful to exercise code paths beyond a minimal length remaining check.
-	/// This method may allocate large amounts of memory and should be used only when there are no alternatives
-	/// to exercise the code paths of interest.
+	/// Segments share a single backing buffer so large logical lengths do not require large allocations.
 	/// </remarks>
 	private static void AddFiller(Sequence<byte> seq, ulong bytes)
 	{
+		byte[] buffer = new byte[1024 * 1024];
 		while (bytes > 0)
 		{
-			int len = bytes > int.MaxValue ? Array.MaxLength : Math.Min((int)bytes, Array.MaxLength);
-			byte[] buffer = new byte[len];
-			seq.Append(buffer);
+			int len = (int)Math.Min(bytes, (ulong)buffer.Length);
+			seq.Append(buffer.AsMemory(0, len));
 			bytes -= (ulong)len;
 		}
 	}
@@ -532,7 +558,6 @@ public partial class MessagePackReaderTests
 		}
 	}
 
-	[NotInParallel("MemorySensitiveTestCollection")]
 	public class LargeValue
 	{
 		[Test, MatrixDataSource]
