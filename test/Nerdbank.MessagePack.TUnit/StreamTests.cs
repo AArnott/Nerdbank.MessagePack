@@ -83,6 +83,95 @@ public partial class StreamTests : MessagePackSerializerTestBase
 		Assert.NotEqual(person1, deserialized);
 	}
 
+	[Test]
+	public async Task SerializeAsync_Stream_FailureDoesNotFlushPendingBytes()
+	{
+		WriteTrackingStream stream = new();
+		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.SerializeAsync(stream, new FailsMidSerialization { First = new string('a', 100 * 1024) }, this.TimeoutToken));
+		Assert.IsType<InvalidOperationException>(ex.GetBaseException());
+
+		Assert.Equal(0, stream.BytesWritten);
+		Assert.False(stream.IsDisposed);
+	}
+
+	[Test]
+	public async Task SerializeObjectAsync_Stream_FailureDoesNotFlushPendingBytes()
+	{
+		WriteTrackingStream stream = new();
+		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(async () => await this.Serializer.SerializeObjectAsync(stream, new FailsMidSerialization { First = new string('a', 100 * 1024) }, GetShape<FailsMidSerialization>(), this.TimeoutToken));
+		Assert.IsType<InvalidOperationException>(ex.GetBaseException());
+
+		Assert.Equal(0, stream.BytesWritten);
+		Assert.False(stream.IsDisposed);
+	}
+
+	private static ITypeShape GetShape<T>()
+#if NET
+		where T : IShapeable<T> => T.GetTypeShape();
+#else
+		=> TypeShapeResolver.ResolveDynamicOrThrow<T>();
+#endif
+
 	[GenerateShape]
 	public partial record Person(string FirstName, string LastName);
+
+	[GenerateShape]
+	public partial class FailsMidSerialization
+	{
+		public string? First { get; set; }
+
+		public string Second
+		{
+			get => throw new InvalidOperationException("Serialization failed.");
+			set { }
+		}
+	}
+
+	// Deliberately not a MemoryStream so the PipeWriter-based code path is used.
+	private class WriteTrackingStream : Stream
+	{
+		public long BytesWritten { get; private set; }
+
+		public bool IsDisposed { get; private set; }
+
+		public override bool CanRead => false;
+
+		public override bool CanSeek => false;
+
+		public override bool CanWrite => true;
+
+		public override long Length => throw new NotSupportedException();
+
+		public override long Position
+		{
+			get => throw new NotSupportedException();
+			set => throw new NotSupportedException();
+		}
+
+		public override void Flush()
+		{
+		}
+
+		public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+		public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+		public override void SetLength(long value) => throw new NotSupportedException();
+
+		public override void Write(byte[] buffer, int offset, int count) => this.BytesWritten += count;
+
+#if NET
+		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+		{
+			this.BytesWritten += buffer.Length;
+			return default;
+		}
+#endif
+
+		protected override void Dispose(bool disposing)
+		{
+			this.IsDisposed = true;
+			base.Dispose(disposing);
+		}
+	}
 }

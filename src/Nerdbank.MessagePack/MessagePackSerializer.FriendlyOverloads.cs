@@ -120,8 +120,18 @@ public partial record MessagePackSerializer
 		}
 
 		PipeWriter pipeWriter = PipeWriter.Create(stream, PipeWriterOptions);
-		await this.SerializeAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
-		await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		try
+		{
+			await this.SerializeAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
+			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		}
+		catch (Exception ex)
+		{
+			// Completing with the exception releases buffers without flushing partial output.
+			await pipeWriter.CompleteAsync(ex).ConfigureAwait(false);
+			throw;
+		}
+
 		await pipeWriter.CompleteAsync().ConfigureAwait(false);
 	}
 
@@ -145,8 +155,18 @@ public partial record MessagePackSerializer
 		}
 
 		PipeWriter pipeWriter = PipeWriter.Create(stream, PipeWriterOptions);
-		await this.SerializeObjectAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
-		await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		try
+		{
+			await this.SerializeObjectAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
+			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		}
+		catch (Exception ex)
+		{
+			// Completing with the exception releases buffers without flushing partial output.
+			await pipeWriter.CompleteAsync(ex).ConfigureAwait(false);
+			throw;
+		}
+
 		await pipeWriter.CompleteAsync().ConfigureAwait(false);
 	}
 
@@ -289,9 +309,14 @@ public partial record MessagePackSerializer
 		}
 
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		T? result = await this.DeserializeAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
-		return result;
+		try
+		{
+			return await this.DeserializeAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <summary>
@@ -313,9 +338,14 @@ public partial record MessagePackSerializer
 		}
 
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		object? result = await this.DeserializeObjectAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
-		return result;
+		try
+		{
+			return await this.DeserializeObjectAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <summary><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/summary"/></summary>
@@ -324,16 +354,31 @@ public partial record MessagePackSerializer
 	/// <param name="shape"><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
-	/// <remarks><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/remarks"/></remarks>
+	/// <remarks>
+	/// <para>
+	/// The content read from <paramref name="stream"/> must be a sequence of msgpack-encoded values with no envelope (e.g. an array).
+	/// After the <paramref name="stream"/> is exhausted, the sequence will end.
+	/// </para>
+	/// <para>
+	/// See <see cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
+	/// or any other overload that takes a <see cref="StreamingEnumerationOptions{T, TElement}"/> parameter
+	/// for streaming a sequence of values that is nested within a larger msgpack structure.
+	/// </para>
+	/// </remarks>
 	public async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(Stream stream, ITypeShape<T> shape, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		await foreach (T? result in this.DeserializeEnumerableAsync<T>(pipeReader, shape, cancellationToken).ConfigureAwait(false))
+		try
 		{
-			yield return result;
+			await foreach (T? result in this.DeserializeEnumerableAsync<T>(pipeReader, shape, cancellationToken).ConfigureAwait(false))
+			{
+				yield return result;
+			}
 		}
-
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <summary><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/summary"/></summary>
@@ -344,16 +389,31 @@ public partial record MessagePackSerializer
 	/// <param name="options"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='options']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/returns"/></returns>
-	/// <remarks><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/remarks"/></remarks>
+	/// <remarks>
+	/// <para>
+	/// The content read from <paramref name="stream"/> must be a single msgpack structure that contains, at the location identified by the path in <paramref name="options"/>, an array whose elements are enumerated.
+	/// The sequence ends after that array's elements have been produced (and any remaining processing of the enclosing structure has completed), not necessarily when the <paramref name="stream"/> is exhausted.
+	/// </para>
+	/// <para>
+	/// See <see cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>
+	/// or any other overload that does not take a <see cref="StreamingEnumerationOptions{T, TElement}"/> parameter
+	/// for streaming a sequence of values that are each top-level structures in the stream (with no envelope).
+	/// </para>
+	/// </remarks>
 	public async IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<T, TElement>(Stream stream, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		await foreach (TElement? result in this.DeserializePathEnumerableAsync(pipeReader, shape, options, cancellationToken).ConfigureAwait(false))
+		try
 		{
-			yield return result;
+			await foreach (TElement? result in this.DeserializePathEnumerableAsync(pipeReader, shape, options, cancellationToken).ConfigureAwait(false))
+			{
+				yield return result;
+			}
 		}
-
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
