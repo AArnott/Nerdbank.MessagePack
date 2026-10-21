@@ -106,7 +106,11 @@ public partial class StreamTests : MessagePackSerializerTestBase
 	}
 
 	private static ITypeShape GetShape<T>()
+#if NET
 		where T : IShapeable<T> => T.GetTypeShape();
+#else
+		=> TypeShapeResolver.ResolveDynamicOrThrow<T>();
+#endif
 
 	[GenerateShape]
 	public partial record Person(string FirstName, string LastName);
@@ -156,11 +160,13 @@ public partial class StreamTests : MessagePackSerializerTestBase
 
 		public override void Write(byte[] buffer, int offset, int count) => this.BytesWritten += count;
 
+#if NET
 		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
 		{
 			this.BytesWritten += buffer.Length;
 			return default;
 		}
+#endif
 
 		protected override void Dispose(bool disposing)
 		{
