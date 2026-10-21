@@ -1,4 +1,4 @@
-// Copyright (c) Andrew Arnott. All rights reserved.
+﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
@@ -125,10 +125,14 @@ public partial record MessagePackSerializer
 			await this.SerializeAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
 			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
 		}
-		finally
+		catch (Exception ex)
 		{
-			await pipeWriter.CompleteAsync().ConfigureAwait(false);
+			// Completing with the exception releases buffers without flushing partial output.
+			await pipeWriter.CompleteAsync(ex).ConfigureAwait(false);
+			throw;
 		}
+
+		await pipeWriter.CompleteAsync().ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -156,10 +160,14 @@ public partial record MessagePackSerializer
 			await this.SerializeObjectAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
 			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
 		}
-		finally
+		catch (Exception ex)
 		{
-			await pipeWriter.CompleteAsync().ConfigureAwait(false);
+			// Completing with the exception releases buffers without flushing partial output.
+			await pipeWriter.CompleteAsync(ex).ConfigureAwait(false);
+			throw;
 		}
+
+		await pipeWriter.CompleteAsync().ConfigureAwait(false);
 	}
 
 	/// <inheritdoc cref="Deserialize{T}(in ReadOnlySequence{byte}, ITypeShape{T}, CancellationToken)"/>
@@ -383,8 +391,8 @@ public partial record MessagePackSerializer
 	/// <returns><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/returns"/></returns>
 	/// <remarks>
 	/// <para>
-	/// The content read from <paramref name="stream"/> must be a sequence of msgpack-encoded values with no envelope (e.g. an array).
-	/// After the <paramref name="stream"/> is exhausted, the sequence will end.
+	/// The content read from <paramref name="stream"/> must be a single msgpack structure that contains, at the location identified by the path in <paramref name="options"/>, an array whose elements are enumerated.
+	/// The sequence ends after that array's elements have been produced (and any remaining processing of the enclosing structure has completed), not necessarily when the <paramref name="stream"/> is exhausted.
 	/// </para>
 	/// <para>
 	/// See <see cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>
