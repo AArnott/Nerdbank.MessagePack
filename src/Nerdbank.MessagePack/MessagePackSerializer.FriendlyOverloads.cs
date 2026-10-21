@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #pragma warning disable RS0026 // optional parameter on a method with overloads
@@ -346,7 +346,17 @@ public partial record MessagePackSerializer
 	/// <param name="shape"><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
-	/// <remarks><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/remarks"/></remarks>
+	/// <remarks>
+	/// <para>
+	/// The content read from <paramref name="stream"/> must be a sequence of msgpack-encoded values with no envelope (e.g. an array).
+	/// After the <paramref name="stream"/> is exhausted, the sequence will end.
+	/// </para>
+	/// <para>
+	/// See <see cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>
+	/// or any other overload that takes a <see cref="StreamingEnumerationOptions{T, TElement}"/> parameter
+	/// for streaming a sequence of values that is nested within a larger msgpack structure.
+	/// </para>
+	/// </remarks>
 	public async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(Stream stream, ITypeShape<T> shape, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
@@ -371,7 +381,17 @@ public partial record MessagePackSerializer
 	/// <param name="options"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='options']"/></param>
 	/// <param name="cancellationToken"><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
 	/// <returns><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/returns"/></returns>
-	/// <remarks><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/remarks"/></remarks>
+	/// <remarks>
+	/// <para>
+	/// The content read from <paramref name="stream"/> must be a sequence of msgpack-encoded values with no envelope (e.g. an array).
+	/// After the <paramref name="stream"/> is exhausted, the sequence will end.
+	/// </para>
+	/// <para>
+	/// See <see cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>
+	/// or any other overload that does not take a <see cref="StreamingEnumerationOptions{T, TElement}"/> parameter
+	/// for streaming a sequence of values that are each top-level structures in the stream (with no envelope).
+	/// </para>
+	/// </remarks>
 	public async IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<T, TElement>(Stream stream, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
