@@ -120,9 +120,15 @@ public partial record MessagePackSerializer
 		}
 
 		PipeWriter pipeWriter = PipeWriter.Create(stream, PipeWriterOptions);
-		await this.SerializeAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
-		await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-		await pipeWriter.CompleteAsync().ConfigureAwait(false);
+		try
+		{
+			await this.SerializeAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
+			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			await pipeWriter.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <summary>
@@ -145,9 +151,15 @@ public partial record MessagePackSerializer
 		}
 
 		PipeWriter pipeWriter = PipeWriter.Create(stream, PipeWriterOptions);
-		await this.SerializeObjectAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
-		await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-		await pipeWriter.CompleteAsync().ConfigureAwait(false);
+		try
+		{
+			await this.SerializeObjectAsync(pipeWriter, value, shape, cancellationToken).ConfigureAwait(false);
+			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			await pipeWriter.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <inheritdoc cref="Deserialize{T}(in ReadOnlySequence{byte}, ITypeShape{T}, CancellationToken)"/>
@@ -289,9 +301,14 @@ public partial record MessagePackSerializer
 		}
 
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		T? result = await this.DeserializeAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
-		return result;
+		try
+		{
+			return await this.DeserializeAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <summary>
@@ -313,9 +330,14 @@ public partial record MessagePackSerializer
 		}
 
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		object? result = await this.DeserializeObjectAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
-		return result;
+		try
+		{
+			return await this.DeserializeObjectAsync(pipeReader, shape, cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <summary><inheritdoc cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)" path="/summary"/></summary>
@@ -328,12 +350,17 @@ public partial record MessagePackSerializer
 	public async IAsyncEnumerable<T?> DeserializeEnumerableAsync<T>(Stream stream, ITypeShape<T> shape, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		await foreach (T? result in this.DeserializeEnumerableAsync<T>(pipeReader, shape, cancellationToken).ConfigureAwait(false))
+		try
 		{
-			yield return result;
+			await foreach (T? result in this.DeserializeEnumerableAsync<T>(pipeReader, shape, cancellationToken).ConfigureAwait(false))
+			{
+				yield return result;
+			}
 		}
-
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <summary><inheritdoc cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)" path="/summary"/></summary>
@@ -348,12 +375,17 @@ public partial record MessagePackSerializer
 	public async IAsyncEnumerable<TElement?> DeserializePathEnumerableAsync<T, TElement>(Stream stream, ITypeShape<T> shape, StreamingEnumerationOptions<T, TElement> options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		PipeReader pipeReader = PipeReader.Create(stream, PipeReaderOptions);
-		await foreach (TElement? result in this.DeserializePathEnumerableAsync(pipeReader, shape, options, cancellationToken).ConfigureAwait(false))
+		try
 		{
-			yield return result;
+			await foreach (TElement? result in this.DeserializePathEnumerableAsync(pipeReader, shape, options, cancellationToken).ConfigureAwait(false))
+			{
+				yield return result;
+			}
 		}
-
-		await pipeReader.CompleteAsync().ConfigureAwait(false);
+		finally
+		{
+			await pipeReader.CompleteAsync().ConfigureAwait(false);
+		}
 	}
 
 	/// <inheritdoc cref="DeserializePath{T, TElement}(ref MessagePackReader, ITypeShape{T}, in DeserializePathOptions{T, TElement}, CancellationToken)"/>
