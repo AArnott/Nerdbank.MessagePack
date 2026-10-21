@@ -45,6 +45,9 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 	/// The buffer, for use in creating a <see cref="MessagePackReader"/>, which will contain at least <paramref name="minimumDesiredBufferedStructures"/> top-level structures and may include more.
 	/// Also returns the number of top-level structures included in the buffer that were counted (up to <paramref name="countUpTo"/>).
 	/// </returns>
+	/// <remarks>
+	/// Scan progress is preserved while waiting for more data, but all buffered bytes remain available for deserialization.
+	/// </remarks>
 	/// <exception cref="OperationCanceledException">Thrown if <see cref="SerializationContext.CancellationToken"/> is canceled or <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCanceled"/> is <see langword="true" />.</exception>
 	/// <exception cref="EndOfStreamException">Thrown if <see cref="PipeReader.ReadAsync(CancellationToken)"/> returns a result where <see cref="ReadResult.IsCompleted"/> is <see langword="true" /> and yet the buffer is not sufficient to satisfy <paramref name="minimumDesiredBufferedStructures"/>.</exception>
 	public async ValueTask<int> BufferNextStructuresAsync(int minimumDesiredBufferedStructures, int countUpTo, SerializationContext context)
@@ -54,6 +57,7 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 		this.ThrowIfReaderNotReturned();
 
 		int skipCount = 0;
+		long bytesSkipped = 0;
 		while (skipCount < minimumDesiredBufferedStructures)
 		{
 			if (this.refresh is null)
@@ -61,12 +65,21 @@ public class MessagePackAsyncReader(PipeReader pipeReader) : IDisposable
 				await this.ReadAsync().ConfigureAwait(false);
 			}
 
-			skipCount = this.GetBufferedStructuresCount(countUpTo, context, out _);
+			// A refreshed buffer may use entirely different memory. Resume by offset, not SequencePosition,
+			// and scan without consuming bytes that the deserializer still needs.
+			MessagePackStreamingReader.BufferRefresh refresh = this.Refresh;
+			MessagePackStreamingReader scanner = new(refresh with { Buffer = refresh.Buffer.Slice(bytesSkipped) });
+			while (skipCount < countUpTo && scanner.TrySkip(ref context) is MessagePackPrimitives.DecodeResult.Success)
+			{
+				skipCount++;
+			}
+
 			if (skipCount >= minimumDesiredBufferedStructures)
 			{
 				break;
 			}
 
+			bytesSkipped += scanner.SequenceReader.Consumed;
 			await this.ReadAsync().ConfigureAwait(false);
 		}
 
