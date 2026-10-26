@@ -95,6 +95,8 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		TDeclaringType value = ctor(ref argState);
+		argState.Return();
+
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
 		{
 			this.UnusedDataProperty.Setter(ref value, unused);
@@ -274,6 +276,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 
 		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
 		TDeclaringType value = ctor(ref argState);
+		argState.Return();
 
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
 		{
