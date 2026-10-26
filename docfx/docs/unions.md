@@ -51,6 +51,25 @@ Each `Animal` object is also nested as the second element in an array whose firs
 Deserializing this will recreate each object with its original derived type and full set of properties.
 It works even if `Animal` is an `abstract` class.
 
+## Inferring union cases automatically
+
+Consider using <xref:PolyType.TypeShapeAttribute.InferClosedTypePolymorphism?displayProperty=nameWithType> to automatically infer union cases for closed type hierarchies.
+This requires C# 15's `closed` modifier.
+The compiler records the permitted derived types, allowing PolyType to discover the union cases without listing each one with <xref:PolyType.DerivedTypeShapeAttribute>.
+
+Here is the same farm modeled with a closed animal hierarchy:
+
+[!code-csharp[](../../samples/cs/Unions.cs#InferredFarmAnimal)]
+
+Serializing this `Farm` preserves the `Cow`, `Horse`, and `Dog` types and their properties, just like the explicitly registered farm above.
+The `closed` modifier prevents additional animal types from being defined outside the hierarchy permitted by the compiler.
+If a derived type is itself `closed`, PolyType recursively discovers its terminal, non-closed derived types, producing a flat union rather than nested unions.
+
+[Learn more about inferring union cases automatically](https://eiriktsarpalis.github.io/PolyType/docs/shape-providers.html#closed-class-hierarchies) from PolyType documentation.
+
+Explicit <xref:PolyType.DerivedTypeShapeAttribute> registrations take precedence over inference.
+Use explicit registrations when you need to control case names or assign stable numeric tags, since inferred numeric tags can change when the hierarchy changes.
+
 ## Unions
 
 A type that stands in for itself and/or a collection of derived types is called a union.

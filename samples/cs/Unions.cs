@@ -263,6 +263,24 @@ namespace DuckTyping
 }
 
 #if NET11_0_OR_GREATER
+namespace InferredFarmAnimals
+{
+    #region InferredFarmAnimal
+    [GenerateShape]
+    public partial class Farm
+    {
+        public List<Animal> Animals { get; set; } = [];
+    }
+
+    [TypeShape(InferClosedTypePolymorphism = true)]
+    public closed record Animal(string Name);
+
+    public sealed record Cow(string Name, int Weight) : Animal(Name);
+    public sealed record Horse(string Name, int Speed) : Animal(Name);
+    public sealed record Dog(string Name, string Color) : Animal(Name);
+    #endregion
+}
+
 namespace CSharpUnions
 {
     #region CSharpUnion
