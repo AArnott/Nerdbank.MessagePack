@@ -8,7 +8,7 @@
     <RoslynVersion>5.9.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26226.5</CodeAnalysisAnalyzerVersion>
-    <PolyTypeVersion>2.0.0-rc.1</PolyTypeVersion>
+    <PolyTypeVersion>2.0.0-rc.2</PolyTypeVersion>
     <!-- Add the -unstable suffix here when PolyTypeVersion moves to a stable release. -->
     <PolyTypeUnstableVersion>$(PolyTypeVersion)</PolyTypeUnstableVersion>
   </PropertyGroup>
@@ -69,8 +69,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsTestProject)'=='true' or '$(MSBuildProjectName)'=='Benchmarks'">
     <PackageVersion Update="System.Collections.Immutable" Version="10.0.5" />
-    <PackageVersion Update="System.IO.Pipelines" Version="10.0.10" />
-    <PackageVersion Update="System.Text.Json" Version="10.0.10" />
+    <PackageVersion Update="System.IO.Pipelines" Version="11.0.0-rc.3.26522.148" />
+    <PackageVersion Update="System.Text.Json" Version="11.0.0-rc.3.26522.148" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
