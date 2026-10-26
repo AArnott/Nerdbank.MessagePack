@@ -114,6 +114,7 @@ DocFX metadata extraction suppresses `NU1901` through `NU1904` in `docfx/docfx.j
 DocFX otherwise turns MSBuild workspace warnings into fatal documentation warnings under `--warningsAsErrors`.
 Normal builds still report these audit warnings, and other documentation warnings remain fatal in CI.
 
+The `.github/workflows/docs.yml` GitHub Actions workflow publishes the content of these docs to github.io if the workflow itself and [GitHub Pages is enabled for your repository](https://docs.github.com/en/pages/quickstart).
 [Learn more about docfx](https://dotnet.github.io/docfx/).
 
 ## Updating dependencies
