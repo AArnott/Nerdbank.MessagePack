@@ -12,25 +12,58 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TUnion">The base type.</typeparam>
 /// <param name="inner">The converter that actually serializes <typeparamref name="TUnionCase"/>.</param>
 /// <param name="marshaler">The marshaler to change between <typeparamref name="TUnion"/> and <typeparamref name="TUnionCase"/>.</param>
-internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnionCase> inner, IMarshaler<TUnionCase, TUnion> marshaler) : MessagePackConverter<TUnion>
+/// <param name="depthStep">Whether the case represents a nested C# union payload rather than a view of the union itself.</param>
+internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnionCase> inner, IMarshaler<TUnionCase, TUnion> marshaler, bool depthStep) : MessagePackConverter<TUnion>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
 
 	/// <inheritdoc/>
-	public override TUnion? Read(ref MessagePackReader reader, SerializationContext context) => marshaler.Marshal(inner.Read(ref reader, context));
+	public override TUnion? Read(ref MessagePackReader reader, SerializationContext context)
+	{
+		if (depthStep)
+		{
+			context.DepthStep();
+		}
+
+		return marshaler.Marshal(inner.Read(ref reader, context));
+	}
 
 	/// <inheritdoc/>
-	public override void Write(ref MessagePackWriter writer, in TUnion? value, SerializationContext context) => inner.Write(ref writer, marshaler.Unmarshal(value), context);
+	public override void Write(ref MessagePackWriter writer, in TUnion? value, SerializationContext context)
+	{
+		if (depthStep)
+		{
+			context.DepthStep();
+		}
+
+		inner.Write(ref writer, marshaler.Unmarshal(value), context);
+	}
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => inner.GetJsonSchema(context, typeShape);
 
 	/// <inheritdoc/>
-	public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context) => marshaler.Marshal(await inner.ReadAsync(reader, context).ConfigureAwait(false));
+	public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
+	{
+		if (depthStep)
+		{
+			context.DepthStep();
+		}
+
+		return marshaler.Marshal(await inner.ReadAsync(reader, context).ConfigureAwait(false));
+	}
 
 	/// <inheritdoc/>
-	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context) => inner.WriteAsync(writer, marshaler.Unmarshal(value), context);
+	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context)
+	{
+		if (depthStep)
+		{
+			context.DepthStep();
+		}
+
+		return inner.WriteAsync(writer, marshaler.Unmarshal(value), context);
+	}
 
 	/// <inheritdoc/>
 	public override ValueTask<bool> SkipToIndexValueAsync(MessagePackAsyncReader reader, object? index, SerializationContext context) => inner.SkipToIndexValueAsync(reader, index, context);

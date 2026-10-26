@@ -384,7 +384,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return failureResult;
 		}
 
-		return ConverterResult.Ok(new UnionCaseConverter<TUnionCase, TUnion>((MessagePackConverter<TUnionCase>)caseConverter.Value, unionCaseShape.Marshaler));
+		return ConverterResult.Ok(new UnionCaseConverter<TUnionCase, TUnion>((MessagePackConverter<TUnionCase>)caseConverter.Value, unionCaseShape.Marshaler, depthStep: state == CSharpUnionCaseSentinel));
 	}
 
 	/// <inheritdoc/>

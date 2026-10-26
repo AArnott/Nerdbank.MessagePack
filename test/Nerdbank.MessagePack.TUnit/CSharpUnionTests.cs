@@ -162,6 +162,83 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		Assert.Equal(true, inner.Value);
 	}
 
+	[Test, MatrixDataSource]
+	public async Task RecursiveDeclaredUnion_DepthLimit(bool async, bool discriminatorObjects, bool exceedsLimit)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = discriminatorObjects };
+		int depth = this.Serializer.StartingContext.MaxDepth + (exceedsLimit ? 1 : 0);
+		Sequence<byte> buffer = new();
+		MessagePackWriter writer = new(buffer);
+		for (int i = 0; i < depth; i++)
+		{
+			if (discriminatorObjects)
+			{
+				writer.WriteMapHeader(1);
+			}
+			else
+			{
+				writer.WriteArrayHeader(2);
+			}
+
+			writer.Write(i == depth - 1 ? "Boolean" : "BoolOrNested");
+		}
+
+		writer.Write(true);
+		writer.Flush();
+
+		if (exceedsLimit)
+		{
+			MessagePackSerializationException ex = async
+				? await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.DeserializeAsync(new MemoryStream(buffer.AsReadOnlySequence.ToArray()), GetShape<BoolOrNested>(), this.TimeoutToken).AsTask())
+				: Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Deserialize(buffer.AsReadOnlySequence, GetShape<BoolOrNested>(), this.TimeoutToken));
+			Assert.Contains("Exceeded maximum depth", GetFullMessage(ex));
+		}
+		else
+		{
+			BoolOrNested result = async
+				? await this.Serializer.DeserializeAsync(new MemoryStream(buffer.AsReadOnlySequence.ToArray()), GetShape<BoolOrNested>(), this.TimeoutToken)
+				: this.Serializer.Deserialize(buffer.AsReadOnlySequence, GetShape<BoolOrNested>(), this.TimeoutToken);
+			for (int i = 1; i < depth; i++)
+			{
+				result = Assert.IsType<BoolOrNested>(result.Value);
+			}
+
+			Assert.Equal(true, result.Value);
+		}
+	}
+
+	[Test, MatrixDataSource]
+	public async Task RecursiveDeclaredUnion_SerializeDepthLimit(bool async, bool exceedsLimit)
+	{
+		int depth = this.Serializer.StartingContext.MaxDepth + (exceedsLimit ? 1 : 0);
+		BoolOrNested value = new(true);
+		for (int i = 1; i < depth; i++)
+		{
+			value = new(value);
+		}
+
+		using MemoryStream stream = new();
+		if (exceedsLimit)
+		{
+			if (async)
+			{
+				await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeAsync(stream, value, GetShape<BoolOrNested>(), this.TimeoutToken).AsTask());
+			}
+			else
+			{
+				Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize(value, GetShape<BoolOrNested>(), this.TimeoutToken));
+			}
+		}
+		else if (async)
+		{
+			await this.Serializer.SerializeAsync(stream, value, GetShape<BoolOrNested>(), this.TimeoutToken);
+		}
+		else
+		{
+			this.Serializer.Serialize(value, GetShape<BoolOrNested>(), this.TimeoutToken);
+		}
+	}
+
 	[Test]
 	public void StructWithTryGetValue()
 	{
