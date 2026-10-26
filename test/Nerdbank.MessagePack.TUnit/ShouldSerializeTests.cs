@@ -76,6 +76,50 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	[Arguments(0)]
+	[Arguments(42)]
+	public void RenamedPrimaryConstructorParameter_DefaultSerializationSuppressed(int number)
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+		RenamedPrimaryConstructorParameter? roundtripped = this.Roundtrip(new RenamedPrimaryConstructorParameter(number));
+		Assert.NotNull(roundtripped);
+		Assert.Equal(number, roundtripped.Number);
+
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(number == 42 ? 0 : 1, reader.ReadMapHeader());
+		if (number != 42)
+		{
+			Assert.Equal("wire_number", reader.ReadString());
+			Assert.Equal(number, reader.ReadInt32());
+		}
+
+		Assert.True(reader.End);
+	}
+
+	[Test]
+	[Arguments(0)]
+	[Arguments(42)]
+	[Arguments(7)]
+	public void OptionalPrimaryConstructorParameter_DefaultSerializationSuppressed(int number)
+	{
+		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Never };
+		OptionalPrimaryConstructorParameter value = new(number);
+		OptionalPrimaryConstructorParameter? roundtripped = this.Roundtrip(value);
+		Assert.NotNull(roundtripped);
+		Assert.Equal(number, roundtripped.Number);
+
+		MessagePackReader reader = new(this.lastRoundtrippedMsgpack);
+		Assert.Equal(number == 42 ? 0 : 1, reader.ReadMapHeader());
+		if (number != 42)
+		{
+			Assert.Equal(nameof(OptionalPrimaryConstructorParameter.Number), reader.ReadString());
+			Assert.Equal(number, reader.ReadInt32());
+		}
+
+		Assert.True(reader.End);
+	}
+
+	[Test]
 	public void SerializeDefaultValues()
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = SerializeDefaultValuesPolicy.Always };
@@ -266,6 +310,19 @@ public partial class ShouldSerializeTests : MessagePackSerializerTestBase
 	{
 		this.Serializer = this.Serializer with { SerializeDefaultValues = policy };
 		this.AssertRoundtrip(new PropertyWithNonDefaultInitializer { A = false });
+	}
+
+	[GenerateShape]
+	public partial class RenamedPrimaryConstructorParameter(int number = 42)
+	{
+		[PropertyShape(Name = "wire_number")]
+		public int Number { get; set; } = number;
+	}
+
+	[GenerateShape]
+	public partial class OptionalPrimaryConstructorParameter(int number = 42)
+	{
+		public int Number { get; init; } = number;
 	}
 
 	[GenerateShape]
