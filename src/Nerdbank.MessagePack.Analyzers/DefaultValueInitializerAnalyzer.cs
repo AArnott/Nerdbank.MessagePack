@@ -94,8 +94,9 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 					.FirstOrDefault(candidate => candidate.Constructor is not null && candidate.Constructor.FindAttributes(referenceSymbols.ConstructorShapeAttribute).Any());
 				if (constructor.Constructor is null)
 				{
-					constructor = model.Constructors.Length == 1 ? model.Constructors[0] :
-						model.Constructors.FirstOrDefault(candidate => candidate.Constructor is { Parameters.Length: 0 });
+					constructor = model.Constructors.Length == 1
+						? model.Constructors[0]
+						: model.Constructors.FirstOrDefault(candidate => candidate.Constructor is { Parameters.Length: 0 });
 				}
 
 				Dictionary<string, IParameterSymbol?> parametersByName = GetShapeParameters(model, constructor, parameterShapeAttribute);
