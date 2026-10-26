@@ -99,8 +99,6 @@ jobs:
       if: runner.os == 'Linux'
     - name: 📚 Verify docfx build
       run: dotnet docfx docfx/docfx.json --warningsAsErrors --disableGitFeatures
-      env:
-        DocFx: true # Workaround https://github.com/dotnet/docfx/issues/10808
       if: runner.os == 'Linux'
     - name: ⚙ Update pipeline variables based on build outputs
       run: tools/variables/_define.ps1
