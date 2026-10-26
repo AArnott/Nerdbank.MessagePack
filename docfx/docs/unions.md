@@ -26,7 +26,7 @@ Deserializing this `Farm` will produce a bunch of `Animal` objects.
 If `Animal` were an `abstract` class, this would not be deserializable at all.
 
 You can preserve polymorphic type metadata across serialization using the <xref:PolyType.DerivedTypeShapeAttribute>, which you apply to the type that is used as the declared base type.
-Since `Animal` is used as the collection element type, we apply the attributes on the declaraiton of that type:
+Since `Animal` is used as the collection element type, we apply the attributes on the declaration of that type:
 
 [!code-csharp[](../../samples/cs/Unions.cs#RoundtrippingFarmAnimal)]
 
@@ -248,7 +248,7 @@ C# union types have a few characteristics that differ from type hierarchies:
 Types that implement the C# union member pattern without using the `union` keyword are also supported.
 
 > [!NOTE]
-> The `union` samples above require C# 15 and target .NET 11 or later.
+> The `union` samples above require C# 15 or later.
 
 ### Custom C# union case identifiers
 
