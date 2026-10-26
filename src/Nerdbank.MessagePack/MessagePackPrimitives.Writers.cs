@@ -9,16 +9,6 @@ using System.Runtime.InteropServices;
 
 namespace Nerdbank.MessagePack;
 
-/// <summary>
-/// Primitive msgpack encoding/decoding methods.
-/// </summary>
-/// <devremarks>
-/// This class makes aggressive use of `ref byte`-based APIs rather than the simpler and safer span-indexing based APIs.
-/// The reason for this is it makes an appreciable reduction in assembly code size and improved performance.
-/// We don't give up safety because we always check the buffer length ourselves first.
-/// See <see href="https://sharplab.io/#v2:EYLgtghglgdgNAFxBAzmAPgAQEwEYCwAUJgAwAEmuAdAEICuAZgwKYBOKtsErAngNxFSFagCU6MBFDDMqAYQD2YAA5QANmwDKbAG5QAxsxQDi5SlTESpMgJIS28pVta6DRwQGYK2MrLIBvIjIgik9KADYyYHl5VTIAFV4AdVYoBGYAOTUACg0lCBgAHmAeNIA+MgATQ0kYCEl5eDJ5OgQyWFbitJRk1LSYAEoiAMIASE7DHoQ+sgBeMlxjEagGMiyqlBq6qAaqABlmGABzBAALMgLIkomUqYPB0eGRkcwAdjIGCFUUZkWAXyIiCMALLMMDyXhA7goE6fKgAcWYCBEzBYrAOBjW1S49QGszIJAAHgAOYzBMgAenJ602OIA2iQALp4wkkwGvMgIVh0H5Ef6EMmYTxRGJkXL5WxVAnMCo0VDSnJ5QrjcrUuBtCRkbT9fyBMnBZaral7A7HM4XAAs2uGeptFDeHy+PP5tr5trIuptKAA7qk9GcslqPXrrW7gno5ecyHRoeCEFRIQSAGqfbkgIOh4KTZg0KCHACiMAqUHymI2tOoVAZavEfuYegA1vKstGTrH+lr+qSM3rgGiIPW+G708FXd2ycOguzOdyu0FR5OhdFYsiGLLvhUFfkilcVdU1e1NVaJ20VqW4/sjqdI5adc6M+yHd9Z3r53rj2iVuNKtUV3iP2QQTBCEoRhVR4URFc2HRZgz07Y9vV9f1AzvYNjzJcNvkjFtY3jCAkxTZg0xQscsxzfNC2LGAsn/ABVGAUAgFgqAAQQqDd/2pFc1VwfpqxgWsGybbDWAQdt+jg4ju17Zh+0HW1j1fMdjynLknTJPkRiUFJtDqZhhAiTBzTIUjcwLIsSzFJUd2/DZsW2RoDx01RuXuJ4ZnKQDwR4SF2FAqgszPOyGjVHMEAUGBtDYNJWCoawUF2Xp1DMyiyAAfjIHNal4AAFFIwFSKBIo4ZFIvYZhkvyGBDBQAMCO1EBNTqxYtMK3T9IoIyTPI8yqP/L9qSChyNSclzARGdyyDohimKzOjPlzKr2JRGyaXskLUnC0roti+LEvKij8jSjKuByvKCqK8xmFK74KpgKqUBqkbmHqxrnOe4xfiAA=">this sample code</see>
-/// to see how much smaller the code is by following these patterns.
-/// </devremarks>
 public static partial class MessagePackPrimitives
 {
 	/// <summary>

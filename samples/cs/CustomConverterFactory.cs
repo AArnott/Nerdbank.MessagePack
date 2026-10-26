@@ -30,8 +30,9 @@ namespace CustomConverterFactory
     {
         // perform type check, then defer to generic method.
         public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
-            => shape is IEnumerableTypeShape enumShape && enumShape.Type.GetGenericTypeDefinition() == typeof(List<>) ?
-                (MessagePackConverter?)shape.Accept(Visitor.Instance) : null;
+            => shape is IEnumerableTypeShape enumShape && enumShape.Type.GetGenericTypeDefinition() == typeof(List<>)
+                ? (MessagePackConverter?)shape.Accept(Visitor.Instance)
+                : null;
 
         private class Visitor : TypeShapeVisitor
         {

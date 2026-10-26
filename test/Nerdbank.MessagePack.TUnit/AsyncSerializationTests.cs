@@ -181,10 +181,6 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		Assert.Equal(CapacityTrackingPocoDictionary.MaxAcceptedCapacity, CapacityTrackingPocoDictionary.LastCapacity);
 	}
 
-	[GenerateShapeFor<string>]
-	[GenerateShapeFor<int>]
-	private partial class Witness;
-
 	[GenerateShape]
 	public partial record Poco(int X, int Y)
 	{
@@ -397,4 +393,8 @@ public partial class AsyncSerializationTests : MessagePackSerializerTestBase
 		public override ValueTask WriteAsync(MessagePackAsyncWriter writer, DictionaryOfPocos? value, SerializationContext context)
 			=> context.GetConverter<ImmutableDictionary<string, Poco>>(context.TypeShapeProvider).WriteAsync(writer, value?.Pocos, context);
 	}
+
+	[GenerateShapeFor<string>]
+	[GenerateShapeFor<int>]
+	private partial class Witness;
 }

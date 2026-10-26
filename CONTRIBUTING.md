@@ -65,6 +65,15 @@ Add each shipping assembly that must be validated as a `TrimmerRootAssembly` the
 Do not add `TrimmerRootAssembly` to `test/AotNativeConsole`: it is the NativeAOT image size guard, and rooting the library there inflates the image.
 Root `Directory.Build.props` supplies project-reference defaults for both traversal and SDK projects that remove the `_IsPublishing` global property for managed dependencies, avoiding duplicate project instances that write to the same outputs during parallel publishing.
 
+## Analyzer benchmarks
+
+Run `dotnet run --project test\Benchmarks\Benchmarks.csproj -c Release -f net10.0 -- --filter "*DefaultValueInitializerAnalysis*" --job short` to measure NBMsgPack110 analysis time and managed allocations.
+The deterministic workload includes fully shaped, sparsely shaped, and unshaped compilations, with redundant defaults, primary-constructor forwarding, transformations, and non-default initializers.
+Each invocation creates a fresh compilation from cached syntax trees and metadata references, so semantic binding and analyzer execution are measured without reusing bound compilation state.
+Setup validates compiler errors and expected diagnostic counts outside the measured operation.
+The PolyType source generator is not run; the benchmark includes compiler binding and analyzer execution, including the analyzer's own shape synthesis.
+Use the same runtime, job, and workloads when comparing analyzer implementations; retain the BenchmarkDotNet reports separately for each revision.
+
 ## Releases
 
 Use `nbgv tag` to create a tag for a particular commit that you mean to release.
@@ -102,6 +111,11 @@ The site is updated on every push to the `main` branch.
 You can make changes and host the site locally to preview them by switching to that directory and running the `dotnet docfx --serve` command.
 After making a change, you can rebuild the docs site while the localhost server is running by running `dotnet docfx` again from a separate terminal.
 
+DocFX metadata extraction suppresses `NU1901` through `NU1904` in `docfx/docfx.json` to match the nonfatal NuGet audit warning policy in `.github/workflows/build.yml`.
+DocFX otherwise turns MSBuild workspace warnings into fatal documentation warnings under `--warningsAsErrors`.
+Normal builds still report these audit warnings, and other documentation warnings remain fatal in CI.
+
+The `.github/workflows/docs.yml` GitHub Actions workflow publishes the content of these docs to github.io if the workflow itself and [GitHub Pages is enabled for your repository](https://docs.github.com/en/pages/quickstart).
 [Learn more about docfx](https://dotnet.github.io/docfx/).
 
 ## Updating dependencies

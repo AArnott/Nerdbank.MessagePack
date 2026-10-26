@@ -11,15 +11,6 @@ using Microsoft;
 namespace Nerdbank.MessagePack.Converters;
 
 
-/// <summary>
-/// Contains a bunch of converters for arrays of primitives.
-/// </summary>
-/// <remarks>
-/// These aren't strictly necessary, but because we can predict their max encoded representation and embed the
-/// direct reader/writer calls, we can avoid the overhead of many tiny calls to
-/// <see cref="MessagePackWriter.GetSpan(int)"/> and <see cref="MessagePackWriter.Advance(int)"/>,
-/// which speeds things up considerably.
-/// </remarks>
 internal static partial class ArraysOfPrimitivesConverters
 {
 	/// <summary>

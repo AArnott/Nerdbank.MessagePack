@@ -40,12 +40,12 @@ internal class CollisionResistantHasherUnmanaged<T> : SecureEqualityComparer<T>
 	}
 
 	/// <inheritdoc/>
-	public override long GetSecureHashCode(T value)
+	public override long GetSecureHashCode(T obj)
 	{
 #if NET
-		Span<T> span = new(ref value);
+		Span<T> span = new(ref obj);
 #else
-		Span<T> span = stackalloc T[1] { value };
+		Span<T> span = stackalloc T[1] { obj };
 #endif
 		return SipHash.Default.Compute(MemoryMarshal.Cast<T, byte>(span));
 	}

@@ -126,7 +126,7 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 
 		internal class Marshaler : IMarshaler<OriginalTypeWithSurrogateAndConverter, MarshaledType?>
 		{
-			public OriginalTypeWithSurrogateAndConverter? Unmarshal(MarshaledType? surrogate)
+			public OriginalTypeWithSurrogateAndConverter? Unmarshal(MarshaledType? value)
 				=> throw new Exception("Marshaler should not be used.");
 
 			public MarshaledType? Marshal(OriginalTypeWithSurrogateAndConverter? value)
@@ -172,8 +172,8 @@ public partial class SurrogateTests : MessagePackSerializerTestBase
 
 		internal class Marshaler : IMarshaler<OpenGenericDataType<T>, MarshaledType?>
 		{
-			public OpenGenericDataType<T>? Unmarshal(MarshaledType? surrogate)
-				=> surrogate.HasValue ? new() { Value = surrogate.Value.Value } : null;
+			public OpenGenericDataType<T>? Unmarshal(MarshaledType? value)
+				=> value.HasValue ? new() { Value = value.Value.Value } : null;
 
 			public MarshaledType? Marshal(OpenGenericDataType<T>? value)
 				=> value is null ? null : new(value.Value);

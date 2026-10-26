@@ -119,8 +119,9 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 			throw new NotSupportedException("IAsyncEnumerable<T> cannot be effectively compared by value.");
 		}
 
-		return typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable)) ? new SecureIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType)) :
-			new SecureEnumerableEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType), enumerableShape.GetGetEnumerable());
+		return typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable))
+			? new SecureIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType))
+			: new SecureEnumerableEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType), enumerableShape.GetGetEnumerable());
 	}
 
 	/// <inheritdoc/>

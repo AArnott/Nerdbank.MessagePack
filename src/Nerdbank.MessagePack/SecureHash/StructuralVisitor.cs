@@ -91,8 +91,9 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 			throw new NotSupportedException("IAsyncEnumerable<T> cannot be effectively compared by value.");
 		}
 
-		return typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable)) ? new StructuralIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType)) :
-				new StructuralEnumerableEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType), enumerableShape.GetGetEnumerable());
+		return typeof(IReadOnlyList<TElement>).IsAssignableFrom(typeof(TEnumerable))
+			? new StructuralIReadOnlyListEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType))
+			: new StructuralEnumerableEqualityComparer<TEnumerable, TElement>(this.GetEqualityComparer(enumerableShape.ElementType), enumerableShape.GetGetEnumerable());
 	}
 
 	/// <inheritdoc/>

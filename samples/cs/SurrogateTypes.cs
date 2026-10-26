@@ -48,8 +48,8 @@ namespace FocusOnAddedTypes
             public MarshaledType? Marshal(OriginalType? value)
                 => value is null ? null : new(value.a, value.b);
 
-            public OriginalType? Unmarshal(MarshaledType? surrogate)
-                => surrogate.HasValue ? new(surrogate.Value.A, surrogate.Value.B) : null;
+            public OriginalType? Unmarshal(MarshaledType? value)
+                => value.HasValue ? new(value.Value.A, value.Value.B) : null;
         }
         #endregion
     }
@@ -80,8 +80,8 @@ partial class CompleteSample
             public MarshaledType? Marshal(OriginalType? value)
                 => value is null ? null : new(value.a, value.b);
 
-            public OriginalType? Unmarshal(MarshaledType? surrogate)
-                => surrogate.HasValue ? new(surrogate.Value.A, surrogate.Value.B) : null;
+            public OriginalType? Unmarshal(MarshaledType? value)
+                => value.HasValue ? new(value.Value.A, value.Value.B) : null;
         }
     }
     #endregion
@@ -96,8 +96,8 @@ partial class CompleteSample
 
         internal class Marshaler : IMarshaler<OpenGenericDataType<T>, MarshaledType?>
         {
-            public OpenGenericDataType<T>? Unmarshal(MarshaledType? surrogate)
-                => surrogate.HasValue ? new() { Value = surrogate.Value.Value } : null;
+            public OpenGenericDataType<T>? Unmarshal(MarshaledType? value)
+                => value.HasValue ? new() { Value = value.Value.Value } : null;
 
             public MarshaledType? Marshal(OpenGenericDataType<T>? value)
                 => value is null ? null : new(value.Value);
@@ -148,12 +148,12 @@ namespace MixingMarshaledAndUnion
                     _ => new MarshaledData(value.Value, value.Name),
                 };
 
-            public MarshaledBaseType? Unmarshal(MarshaledData? surrogate)
-                => surrogate switch
+            public MarshaledBaseType? Unmarshal(MarshaledData? value)
+                => value switch
                 {
                     null => null,
                     MarshaledDerivedType.MarshaledDerivedData d => MarshaledDerivedType.MarshaledDerivedTypeMarshaler.Instance.Unmarshal(d),
-                    _ => new MarshaledBaseType(surrogate.Value, surrogate.Name),
+                    _ => new MarshaledBaseType(value.Value, value.Name),
                 };
         }
     }
@@ -180,8 +180,8 @@ namespace MixingMarshaledAndUnion
             public MarshaledDerivedData? Marshal(MarshaledDerivedType? value)
                 => value is null ? null : new(value.Value, value.Name, value.extraProperty);
 
-            public MarshaledDerivedType? Unmarshal(MarshaledDerivedData? surrogate)
-                => surrogate is null ? null : new MarshaledDerivedType(surrogate.Value, surrogate.Name, surrogate.ExtraProperty);
+            public MarshaledDerivedType? Unmarshal(MarshaledDerivedData? value)
+                => value is null ? null : new MarshaledDerivedType(value.Value, value.Name, value.ExtraProperty);
         }
     }
     #endregion
