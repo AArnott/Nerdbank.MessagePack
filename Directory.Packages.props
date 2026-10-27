@@ -8,7 +8,7 @@
     <RoslynVersion>5.9.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26226.5</CodeAnalysisAnalyzerVersion>
-    <PolyTypeVersion>2.0.0-rc.2</PolyTypeVersion>
+    <PolyTypeVersion>2.0.0-rc.3</PolyTypeVersion>
     <!-- Add the -unstable suffix here when PolyTypeVersion moves to a stable release. -->
     <PolyTypeUnstableVersion>$(PolyTypeVersion)</PolyTypeUnstableVersion>
   </PropertyGroup>
