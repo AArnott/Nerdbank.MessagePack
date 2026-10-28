@@ -16,7 +16,7 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.15.8" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
-    <PackageVersion Include="FSharp.Core" Version="10.1.402" />
+    <PackageVersion Include="FSharp.Core" Version="10.1.403" />
     <PackageVersion Include="GodotSharp" Version="4.7.2" />
     <PackageVersion Include="MessagePack" Version="3.1.12" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.13" />
