@@ -55,6 +55,7 @@ Other test projects remain managed-only via the default `<PublishNativeAOTTests>
 Keep all test projects in the solution for managed runs. The cloud test script runs the solution, then uses `tools/Get-NativeAOTTestProjects.ps1` to locate the expected NativeAOT images.
 To publish the NativeAOT tests for a single framework and RID, run `dotnet publish test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj -c Release -f net10.0 -r <RID> -p:NativeAOT=true`.
 NativeAOT builds of the TUnit project use separate `nativeaot` intermediate and output directories, so they do not disturb the managed build.
+NativeAOT test publishes omit the test assembly's XML documentation, which the SDK's optimized publish build does not copy to the managed output directory.
 Test builds keep dynamic code, startup hooks, and event tracing enabled for managed code coverage.
 The `ConfigureNativeAOTTestFeatures` target disables those features only in the native compiler's publish-time inputs, without rewriting the managed runtime configuration.
 The target preserves other runtime feature options, including each test project's globalization setting; the TUnit project explicitly enables full globalization. Test builds retain only English satellite resources.

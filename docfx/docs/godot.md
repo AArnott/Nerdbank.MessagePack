@@ -1,7 +1,7 @@
 # Godot support
 
 The `Nerdbank.MessagePack.Godot` package adds compact MessagePack converters for common Godot Engine value types.
-It supports Godot projects targeting .NET 8 or later and is compatible with Native AOT.
+It supports Godot projects targeting .NET 10 or later and is compatible with Native AOT.
 
 ## Installation
 

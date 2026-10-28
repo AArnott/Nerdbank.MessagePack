@@ -8,6 +8,12 @@ Consume this library via one of its NuGet packages.
 [![Nerdbank.MessagePack.SignalR NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.SignalR.svg?label=Nerdbank.MessagePack.SignalR)](https://www.nuget.org/packages/Nerdbank.MessagePack.SignalR)<br />
 [![Nerdbank.MessagePack.AspNetCoreMvcFormatter NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.AspNetCoreMvcFormatter.svg?label=Nerdbank.MessagePack.AspNetCoreMvcFormatter)](https://www.nuget.org/packages/Nerdbank.MessagePack.AspNetCoreMvcFormatter)
 
+### Supported frameworks
+
+The library targets .NET 10, .NET Framework 4.7.2, and .NET Standard 2.0.
+Dedicated .NET 8 and .NET 9 targets are no longer provided; applications on those runtimes can use the .NET Standard APIs, but the generic APIs constrained to <xref:PolyType.IShapeable`1> and Native AOT support require .NET 10 or later.
+The Godot integration requires .NET 10 or later.
+
 ### C# language version
 
 The best experience comes when you use **C# 14**.

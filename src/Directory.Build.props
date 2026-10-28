@@ -13,6 +13,11 @@
     <PackageValidationBaselineVersion>1.4.80</PackageValidationBaselineVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- These framework-specific assets are intentionally retired in favor of .NET 10. -->
+    <PackageValidationBaselineFrameworkToIgnore Include="net8.0;net9.0" />
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />
 
 </Project>

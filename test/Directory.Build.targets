@@ -12,6 +12,8 @@
 
   <PropertyGroup Condition="'$(NativeAOT)' == 'true' and '$(PublishNativeAOTTests)' == 'true'">
     <NoWarn>$(NoWarn);IL2104;IL3053</NoWarn>
+    <!-- NativeAOT's optimized publish build skips copying XML docs to the managed output directory. -->
+    <PublishDocumentationFile>false</PublishDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' != 'false'">

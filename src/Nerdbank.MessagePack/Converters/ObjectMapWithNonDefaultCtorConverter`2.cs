@@ -39,36 +39,44 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 		UnusedDataPacket.Map? unused = null;
+		TDeclaringType value;
 
-		if (parameters.Readers is not null)
+		try
 		{
-			int count = reader.ReadMapHeader();
-			for (int i = 0; i < count; i++)
+			if (parameters.Readers is not null)
 			{
-				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
-				if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
+				int count = reader.ReadMapHeader();
+				for (int i = 0; i < count; i++)
 				{
-					propertyReader.Read(ref argState, ref reader, context);
-				}
-				else if (this.UnusedDataProperty?.Setter is not null)
-				{
-					unused ??= new();
-					unused.Add(propertyName, reader.ReadRaw(context));
-				}
-				else
-				{
-					reader.Skip(context);
+					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
+					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
+					{
+						propertyReader.Read(ref argState, ref reader, context);
+					}
+					else if (this.UnusedDataProperty?.Setter is not null)
+					{
+						unused ??= new();
+						unused.Add(propertyName, reader.ReadRaw(context));
+					}
+					else
+					{
+						reader.Skip(context);
+					}
 				}
 			}
-		}
-		else
-		{
-			// We have nothing to read into, so just skip any data in the object.
-			reader.Skip(context);
-		}
+			else
+			{
+				// We have nothing to read into, so just skip any data in the object.
+				reader.Skip(context);
+			}
 
-		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
-		TDeclaringType value = ctor(ref argState);
+			ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
+			value = ctor(ref argState);
+		}
+		finally
+		{
+			argState.Return();
+		}
 
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
 		{
@@ -102,124 +110,132 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		context.DepthStep();
 		TArgumentState argState = argStateCtor();
 		UnusedDataPacket.Map? unused = null;
+		TDeclaringType value;
 
-		if (parameters.Readers is not null)
+		try
 		{
-			int mapEntries;
-			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
+			if (parameters.Readers is not null)
 			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
-			// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
-			// But when we run out of buffer, if the next thing to read is async, we'll read it async.
-			reader.ReturnReader(ref streamingReader);
-			int remainingEntries = mapEntries;
-			while (remainingEntries > 0)
-			{
-				int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
-				MessagePackReader syncReader = reader.CreateBufferedReader();
-				int bufferedEntries = bufferedStructures / 2;
-				for (int i = 0; i < bufferedEntries; i++)
+				int mapEntries;
+				while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
 				{
-					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
-					{
-						propertyReader.Read(ref argState, ref syncReader, context);
-					}
-					else if (this.UnusedDataProperty?.Setter is not null)
-					{
-						unused ??= new();
-						unused.Add(propertyName, syncReader.ReadRaw(context));
-					}
-					else
-					{
-						syncReader.Skip(context);
-					}
-
-					remainingEntries--;
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 				}
 
-				if (remainingEntries > 0)
+				// We're going to read in bursts. Anything we happen to get in one buffer, we'll read synchronously regardless of whether the property is async.
+				// But when we run out of buffer, if the next thing to read is async, we'll read it async.
+				reader.ReturnReader(ref streamingReader);
+				int remainingEntries = mapEntries;
+				while (remainingEntries > 0)
 				{
-					// To know whether the next property is async, we need to know its name.
-					// If its name isn't in the buffer, we'll just loop around and get it in the next buffer.
-					if (bufferedStructures % 2 == 1)
+					int bufferedStructures = await reader.BufferNextStructuresAsync(1, remainingEntries * 2, context).ConfigureAwait(false);
+					MessagePackReader syncReader = reader.CreateBufferedReader();
+					int bufferedEntries = bufferedStructures / 2;
+					for (int i = 0; i < bufferedEntries; i++)
 					{
-						// The property name has already been buffered.
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
 						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
 						{
-							if (propertyReader.PreferAsyncSerialization)
-							{
-								// The next property value is async, so turn in our sync reader and read it asynchronously.
-								reader.ReturnReader(ref syncReader);
-								argState = await propertyReader.ReadAsync(argState, reader, context).ConfigureAwait(false);
-								remainingEntries--;
-								continue;
-							}
-							else
-							{
-								// Deserialize the value synchronously.
-								reader.ReturnReader(ref syncReader);
-								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
-								syncReader = reader.CreateBufferedReader();
-								propertyReader.Read(ref argState, ref syncReader, context);
-								reader.ReturnReader(ref syncReader);
-								remainingEntries--;
-								continue;
-							}
+							propertyReader.Read(ref argState, ref syncReader, context);
+						}
+						else if (this.UnusedDataProperty?.Setter is not null)
+						{
+							unused ??= new();
+							unused.Add(propertyName, syncReader.ReadRaw(context));
 						}
 						else
 						{
-							// We don't recognize the property name, so skip the value.
-							reader.ReturnReader(ref syncReader);
+							syncReader.Skip(context);
+						}
 
-							streamingReader = reader.CreateStreamingReader();
-							if (this.UnusedDataProperty?.Setter is not null)
+						remainingEntries--;
+					}
+
+					if (remainingEntries > 0)
+					{
+						// To know whether the next property is async, we need to know its name.
+						// If its name isn't in the buffer, we'll just loop around and get it in the next buffer.
+						if (bufferedStructures % 2 == 1)
+						{
+							// The property name has already been buffered.
+							ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
+							if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
 							{
-								unused ??= new();
-								RawMessagePack msgpack;
-								ReadOnlyMemory<byte> propertyNameMemory = UnusedDataPacket.Map.GetPropertyNameMemory(propertyName);
-								while (streamingReader.TryReadRaw(ref context, out msgpack).NeedsMoreBytes())
+								if (propertyReader.PreferAsyncSerialization)
 								{
-									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+									// The next property value is async, so turn in our sync reader and read it asynchronously.
+									reader.ReturnReader(ref syncReader);
+									argState = await propertyReader.ReadAsync(argState, reader, context).ConfigureAwait(false);
+									remainingEntries--;
+									continue;
 								}
-
-								unused.Add(propertyNameMemory, msgpack);
+								else
+								{
+									// Deserialize the value synchronously.
+									reader.ReturnReader(ref syncReader);
+									await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+									syncReader = reader.CreateBufferedReader();
+									propertyReader.Read(ref argState, ref syncReader, context);
+									reader.ReturnReader(ref syncReader);
+									remainingEntries--;
+									continue;
+								}
 							}
 							else
 							{
-								while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+								// We don't recognize the property name, so skip the value.
+								reader.ReturnReader(ref syncReader);
+
+								streamingReader = reader.CreateStreamingReader();
+								if (this.UnusedDataProperty?.Setter is not null)
 								{
-									streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+									unused ??= new();
+									RawMessagePack msgpack;
+									ReadOnlyMemory<byte> propertyNameMemory = UnusedDataPacket.Map.GetPropertyNameMemory(propertyName);
+									while (streamingReader.TryReadRaw(ref context, out msgpack).NeedsMoreBytes())
+									{
+										streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+									}
+
+									unused.Add(propertyNameMemory, msgpack);
 								}
+								else
+								{
+									while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+									{
+										streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
+									}
+								}
+
+								reader.ReturnReader(ref streamingReader);
+
+								remainingEntries--;
+								continue;
 							}
-
-							reader.ReturnReader(ref streamingReader);
-
-							remainingEntries--;
-							continue;
 						}
 					}
+
+					reader.ReturnReader(ref syncReader);
+				}
+			}
+			else
+			{
+				// We have nothing to read into, so just skip any data in the object.
+				while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
+				{
+					streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
 				}
 
-				reader.ReturnReader(ref syncReader);
+				reader.ReturnReader(ref streamingReader);
 			}
+
+			ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
+			value = ctor(ref argState);
 		}
-		else
+		finally
 		{
-			// We have nothing to read into, so just skip any data in the object.
-			while (streamingReader.TrySkip(ref context).NeedsMoreBytes())
-			{
-				streamingReader = new(await streamingReader.FetchMoreBytesAsync().ConfigureAwait(false));
-			}
-
-			reader.ReturnReader(ref streamingReader);
+			argState.Return();
 		}
-
-		ThrowIfMissingRequiredProperties(argState, parameterShapes, deserializeDefaultValuesPolicy);
-		TDeclaringType value = ctor(ref argState);
 
 		if (unused is not null && value is not null && this.UnusedDataProperty?.Setter is not null)
 		{

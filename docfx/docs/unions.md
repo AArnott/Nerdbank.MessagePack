@@ -26,7 +26,7 @@ Deserializing this `Farm` will produce a bunch of `Animal` objects.
 If `Animal` were an `abstract` class, this would not be deserializable at all.
 
 You can preserve polymorphic type metadata across serialization using the <xref:PolyType.DerivedTypeShapeAttribute>, which you apply to the type that is used as the declared base type.
-Since `Animal` is used as the collection element type, we apply the attributes on the declaraiton of that type:
+Since `Animal` is used as the collection element type, we apply the attributes on the declaration of that type:
 
 [!code-csharp[](../../samples/cs/Unions.cs#RoundtrippingFarmAnimal)]
 
@@ -50,6 +50,25 @@ Each `Animal` object is also nested as the second element in an array whose firs
 
 Deserializing this will recreate each object with its original derived type and full set of properties.
 It works even if `Animal` is an `abstract` class.
+
+## Inferring union cases automatically
+
+Consider using <xref:PolyType.TypeShapeAttribute.InferClosedTypePolymorphism?displayProperty=nameWithType> to automatically infer union cases for closed type hierarchies.
+This requires C# 15's `closed` modifier.
+The compiler records the permitted derived types, allowing PolyType to discover the union cases without listing each one with <xref:PolyType.DerivedTypeShapeAttribute>.
+
+Here is the same farm modeled with a closed animal hierarchy:
+
+[!code-csharp[](../../samples/cs/Unions.cs#InferredFarmAnimal)]
+
+Serializing this `Farm` preserves the `Cow`, `Horse`, and `Dog` types and their properties, just like the explicitly registered farm above.
+The `closed` modifier prevents additional animal types from being defined outside the hierarchy permitted by the compiler.
+If a derived type is itself `closed`, PolyType recursively discovers its terminal, non-closed derived types, producing a flat union rather than nested unions.
+
+[Learn more about inferring union cases automatically](https://eiriktsarpalis.github.io/PolyType/docs/shape-providers.html#closed-class-hierarchies) from PolyType documentation.
+
+Explicit <xref:PolyType.DerivedTypeShapeAttribute> registrations take precedence over inference.
+Use explicit registrations when you need to control case names or assign stable numeric tags, since inferred numeric tags can change when the hierarchy changes.
 
 ## Unions
 
@@ -221,6 +240,87 @@ Open generic types are also supported with PolyType 1.4.1 or later, provided the
 [!code-csharp[](../../samples/cs/Unions.cs#OpenGenericSubTypes)]
 
 For `Base<int>`, the registered union case resolves to `Derived<int>`.
+
+## C# union types
+
+C# 15 introduces [union types](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-15.0/unions.md), which allow a value to be exactly one of a closed set of case types, even when those types do not share a common base type.
+Nerdbank.MessagePack serializes C# union types with no additional attributes beyond those that you already use to generate type shapes:
+
+[!code-csharp[](../../samples/cs/Unions.cs#CSharpUnion)]
+
+A `Pet` round-trips like any other type, using the same union schema described above:
+
+[!code-csharp[](../../samples/cs/Unions.cs#CSharpUnionUsage)]
+
+C# union types have a few characteristics that differ from type hierarchies:
+
+* By default, each union case is identified by the name of its case type (e.g. `Int32`, `String` or `Dog`).
+  Without a [custom identifier](#custom-c-union-case-identifiers), renaming a case type changes the serialized schema.
+  When <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability> is set to `true`, integer identifiers are inferred from the order in which the cases are declared.
+  Reordering or inserting cases changes these identifiers.
+* A union whose payload is `null` is serialized as the first case that accepts `null`.
+  For example, `union Result(int, string?)` holding `null` serializes as `["String", null]`.
+* A union value that doesn't match any case (such as `default` for a struct union with no nullable case) cannot be serialized.
+* Union types can be recursive, such as `union Tree(int, Tree[])`.
+* The [union serialization format](#union-serialization-format) options apply to C# unions as well.
+
+Types that implement the C# union member pattern without using the `union` keyword are also supported.
+
+> [!NOTE]
+> The `union` samples above require C# 15 or later.
+
+### Custom C# union case identifiers
+
+Set <xref:Nerdbank.MessagePack.MessagePackSerializer.UnionTypeAliasProvider> to assign stable string or integer identifiers to C# union cases.
+This does not change which cases belong to a union or how payloads are serialized.
+It does not affect type hierarchy or F# unions.
+
+#### Explicit aliases for primitive cases
+
+Start with a union over `string` and `int`.
+Use <xref:Nerdbank.MessagePack.UnionCaseMapping> to replace their default identifiers, `String` and `Int32`, with `text` and `number`:
+
+[!code-csharp[](../../samples/cs/UnionCaseAliases.cs#PrimitiveUnionCaseAliases)]
+
+No interface or common base type is required.
+The aliases can also be integers: for example, replace `"text"` and `"number"` in the registrations with `1` and `2`.
+The same payload type can have different identifiers in different unions.
+No type shape provider or inheritance relationship is required for registration.
+<xref:Nerdbank.MessagePack.UnionCaseMappingCollection> implements <xref:Nerdbank.MessagePack.IUnionTypeAliasProvider> and freezes each mapping during construction, before it is assigned to a serializer.
+Subsequent attempts to add entries to those mappings throw <xref:System.InvalidOperationException>.
+Duplicate union registrations, payload types, and identifiers within a mapping are rejected.
+Registered payload types are checked against the union's cases when its converter is constructed.
+
+#### Aliases supplied by static interface members
+
+For more complex cases, your payload types may already expose stable names in code.
+For example, error types can implement an interface with a static abstract member:
+
+[!code-csharp[](../../samples/cs/UnionCaseAliases.cs#UnionCaseAliasTypes)]
+
+Rather than repeat those names in the mapping, use a constrained generic registration helper to read each type's static member:
+
+[!code-csharp[](../../samples/cs/UnionCaseAliases.cs#UnionCaseAliasMapping)]
+
+The helper's interface constraint makes `TError.Name` available without reflection.
+The mapping still only associates payload types with identifiers; it does not require the union itself to implement the interface.
+
+#### A registry shared by multiple unions
+
+If you already have a registry shared by many unions, use <xref:Nerdbank.MessagePack.DelegateUnionTypeAliasProvider> to look up aliases without registering each union separately:
+
+[!code-csharp[](../../samples/cs/UnionCaseAliases.cs#UnionCaseAliasRegistry)]
+
+The delegate receives both the containing union type and its case's payload type, so it can also resolve union-specific identifiers.
+For access to the full union and case shapes, implement <xref:Nerdbank.MessagePack.IUnionTypeAliasProvider> directly.
+Providers and delegates must be thread-safe and return consistent results while in use.
+Identifiers are resolved during converter construction, not for every serialized value.
+
+Returning `null` from a provider, or leaving a case unregistered in a mapping, preserves the normal identifier selection for that case.
+Custom identifiers take precedence over <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability>.
+They apply to serialization, deserialization, and generated JSON schemas in both union formats.
+An overridden case accepts only its custom identifier, not its original name or inferred integer tag.
+Identifiers must be unique within a union, including any inferred read tags retained for cases that are not overridden.
 
 ## Runtime derived type registration
 

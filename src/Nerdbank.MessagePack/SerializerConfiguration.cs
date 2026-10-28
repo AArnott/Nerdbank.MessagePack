@@ -20,6 +20,7 @@ internal record SerializerConfiguration
 	private ConverterTypeCollection converterTypes = [];
 	private ImmutableArray<IMessagePackConverterFactory> converterFactories = [];
 	private DerivedTypeUnionCollection derivedTypeUnions = [];
+	private IUnionTypeAliasProvider? unionTypeAliasProvider;
 	private bool perfOverSchemaStability;
 	private bool ignoreKeyAttributes;
 	private bool serializeEnumValuesByName;
@@ -85,6 +86,28 @@ internal record SerializerConfiguration
 	}
 
 	/// <summary>
+	/// Gets a provider of custom string or integer identifiers for C# union cases.
+	/// </summary>
+	/// <value>The default is <see langword="null"/>, which uses the identifiers supplied by the type shapes.</value>
+	/// <remarks>
+	/// <para>
+	/// Custom identifiers take precedence over <see cref="PerfOverSchemaStability"/>.
+	/// A provider may return <see langword="null"/> for a case to preserve its normal identifier.
+	/// Explicitly overridden cases do not also accept their inferred names or declaration-order integer tags.
+	/// </para>
+	/// <para>
+	/// Use <see cref="DelegateUnionTypeAliasProvider"/> for a registry lookup, or <see cref="UnionCaseMappingCollection"/>
+	/// for immutable per-union mappings. Custom providers must be thread-safe and return consistent results.
+	/// This setting does not affect type hierarchy or F# unions.
+	/// </para>
+	/// </remarks>
+	public IUnionTypeAliasProvider? UnionTypeAliasProvider
+	{
+		get => this.unionTypeAliasProvider;
+		init => this.ChangeSetting(ref this.unionTypeAliasProvider, value);
+	}
+
+	/// <summary>
 	/// Gets a value indicating whether to boost performance
 	/// using methods that may compromise the stability of the serialized schema.
 	/// </summary>
@@ -99,7 +122,7 @@ internal record SerializerConfiguration
 	/// Examples of behavioral changes that may occur when this setting is <see langword="true" />:
 	/// <list type="bullet">
 	/// <item>All objects are serialized with an array of their values instead of maps that include their property names.</item>
-	/// <item>Polymorphic type identifiers are always integers.</item>
+	/// <item>Polymorphic type identifiers are integers unless a custom identifier is supplied by <see cref="UnionTypeAliasProvider"/> or a runtime derived type mapping.</item>
 	/// </list>
 	/// </para>
 	/// <para>

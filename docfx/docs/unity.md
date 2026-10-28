@@ -19,7 +19,7 @@ A trivial Unity 'game' that demonstrates serializing and deserializing a custom 
 ### .NET Standard APIs only
 
 Unity is currently limited to .NET Framework or .NET Standard 2.1 libraries.
-Some of the preferred APIs in Nerdbank.MessagePack are exposed uniquely to .NET 8+ projects.
+Some of the preferred APIs in Nerdbank.MessagePack are exposed uniquely to .NET 10+ projects.
 As a result, when reviewing documentation and samples for this library, be sure to look at the samples in their ".NET Standard" form.
 
 Be sure to have this at the top of each code file that uses the serializer so that extension methods are available to you, which fills in most of the gaps for non-.NET targeting projects:

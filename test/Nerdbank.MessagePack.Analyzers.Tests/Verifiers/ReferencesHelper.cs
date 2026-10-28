@@ -1,4 +1,4 @@
-﻿// Copyright (c) Andrew Arnott. All rights reserved.
+// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using PolyType;
@@ -6,7 +6,10 @@ using PolyType;
 internal static class ReferencesHelper
 {
 #if NET
-	internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net80;
+	internal static ReferenceAssemblies References = new(
+		"net10.0",
+		new PackageIdentity("Microsoft.NETCore.App.Ref", "10.0.0"),
+		Path.Combine("ref", "net10.0"));
 #else
 	internal static ReferenceAssemblies References = ReferenceAssemblies.NetFramework.Net472.Default
 		.WithPackages([
