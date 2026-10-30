@@ -277,6 +277,12 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <inheritdoc/>
 	public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
 	{
+		if (unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion &&
+			this.TryGetCustomOrPrimitiveConverter(unionShape, unionShape.AttributeProvider, out ConverterResult? customConverter))
+		{
+			return customConverter;
+		}
+
 		ConverterResult baseTypeConverter = (ConverterResult)unionShape.BaseType.Accept(this)!;
 		if (baseTypeConverter.TryPrepareFailPath("union base type", out ConverterResult? failureResult))
 		{

@@ -19,6 +19,27 @@ using PolyType.Tests;
 /// </remarks>
 public partial class CSharpUnionTests : MessagePackSerializerTestBase
 {
+	[Test]
+	[Arguments("instance")]
+	[Arguments("type")]
+	[Arguments("factory")]
+	public async Task CustomConverterOverridesUnion(string registration)
+	{
+		this.Serializer = registration switch
+		{
+			"instance" => this.Serializer with { Converters = [new IntOrBoolConverter()] },
+			"type" => this.Serializer with { ConverterTypes = [typeof(IntOrBoolConverter)] },
+			"factory" => this.Serializer with { ConverterFactories = [new IntOrBoolConverterFactory()] },
+			_ => throw new ArgumentOutOfRangeException(nameof(registration)),
+		};
+
+		IntOrBool value = new(42);
+		Assert.Equal(42, this.Roundtrip(value).Value);
+		Assert.Equal("42", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		Assert.Equal(42, (await this.RoundtripAsync(value)).Value);
+		Assert.Equal("42", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+	}
+
 	[Test, MatrixDataSource]
 	public async Task ValueCase(bool async)
 	{
@@ -277,6 +298,27 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		=> TypeShapeResolver.ResolveDynamicOrThrow<T>();
 #endif
 
+	public class IntOrBoolConverter : MessagePackConverter<IntOrBool>
+	{
+		public override IntOrBool Read(ref MessagePackReader reader, SerializationContext context)
+			=> reader.NextMessagePackType == MessagePackType.Boolean ? new(reader.ReadBoolean()) : new(reader.ReadInt32());
+
+		public override void Write(ref MessagePackWriter writer, in IntOrBool value, SerializationContext context)
+		{
+			switch (value.Value)
+			{
+				case int number:
+					writer.Write(number);
+					break;
+				case bool boolean:
+					writer.Write(boolean);
+					break;
+				default:
+					throw new MessagePackSerializationException("The union has no matching case.");
+			}
+		}
+	}
+
 #pragma warning disable SA1201 // StyleCop does not yet recognize union declarations.
 	[GenerateShape]
 	public partial union Pet(Cat, Dog);
@@ -351,5 +393,19 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		public PetClassUnion? Second { get; set; }
 
 		public PetClassUnion? Third { get; set; }
+	}
+
+	private class IntOrBoolConverterFactory : IMessagePackConverterFactory
+	{
+		public MessagePackConverter? CreateConverter(Type type, ITypeShape? shape, in ConverterContext context)
+		{
+			if (type != typeof(IntOrBool))
+			{
+				return null;
+			}
+
+			Assert.IsAssignableFrom<IUnionTypeShape<IntOrBool>>(shape);
+			return new IntOrBoolConverter();
+		}
 	}
 }
