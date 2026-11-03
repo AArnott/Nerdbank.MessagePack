@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicrosoftTestingPlatformVersion>2.5.1</MicrosoftTestingPlatformVersion>
+    <MicrosoftTestingPlatformVersion>2.5.2</MicrosoftTestingPlatformVersion>
     <RoslynVersion>5.9.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.11.0</RoslynVersionForAnalyzers>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26226.5</CodeAnalysisAnalyzerVersion>
@@ -49,7 +49,7 @@
     <PackageVersion Include="System.Memory.Data" Version="8.0.1" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
     <PackageVersion Include="TUnit" Version="1.72.10" />
-    <PackageVersion Include="TUnit.Engine" Version="1.76.28" />
+    <PackageVersion Include="TUnit.Engine" Version="1.78.0" />
     <PackageVersion Include="Vogen" Version="8.0.6" />
     <PackageVersion Include="xunit.v3.assert" Version="4.0.2" />
     <PackageVersion Include="xunit.v3.assert.aot" Version="4.0.2" />
