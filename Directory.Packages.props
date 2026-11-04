@@ -20,16 +20,16 @@
     <PackageVersion Include="GodotSharp" Version="4.7.2" />
     <PackageVersion Include="MessagePack" Version="3.1.12" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.13" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.33" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="8.0.33" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.14" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.13" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.33" />
-    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.33" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" />
     <PackageVersion Include="Microsoft.CodeCoverage.MSBuild" Version="18.12.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersion)" />
@@ -45,8 +45,8 @@
     <PackageVersion Include="PolyType" Version="$(PolyTypeVersion)" />
     <PackageVersion Include="PolyType.Roslyn" Version="$(PolyTypeUnstableVersion)" />
     <PackageVersion Include="PolyType.TestCases" Version="$(PolyTypeUnstableVersion)" />
-    <PackageVersion Include="System.IO.Pipelines" Version="8.0.0" />
-    <PackageVersion Include="System.Memory.Data" Version="8.0.1" />
+    <PackageVersion Include="System.IO.Pipelines" Version="10.0.14" />
+    <PackageVersion Include="System.Memory.Data" Version="10.0.14" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
     <PackageVersion Include="TUnit" Version="1.78.0" />
     <PackageVersion Include="TUnit.Engine" Version="1.78.0" />
@@ -57,18 +57,19 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'!='.NETCoreApp' or '$(MSBuildProjectName)'=='Benchmarks'">
     <!-- The versions specified here should be the latest ones supported by the OLDEST .NET runtime version that is still supported
          so that as someone references the .NET Standard version and then runs against the .NET build, they don't get an older
-         dependency than they were expecting or needlessly bring in a 9.0 assembly to an 8.0 runtime. -->
+         dependency than they were expecting or needlessly bring in an 11.0 assembly to a 10.0 runtime. -->
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-    <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.6" />
+    <PackageVersion Include="System.Collections.Immutable" Version="10.0.14" />
+    <PackageVersion Include="System.Text.Json" Version="10.0.14" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
+    <!-- Match the version used by the minimum supported Roslyn host. -->
     <PackageVersion Update="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsTestProject)'=='true' or '$(MSBuildProjectName)'=='Benchmarks'">
-    <PackageVersion Update="System.Collections.Immutable" Version="10.0.5" />
+    <PackageVersion Update="System.Collections.Immutable" Version="10.0.14" />
     <PackageVersion Update="System.IO.Pipelines" Version="11.0.0-rc.3.26522.148" />
     <PackageVersion Update="System.Text.Json" Version="11.0.0-rc.3.26522.148" />
   </ItemGroup>
