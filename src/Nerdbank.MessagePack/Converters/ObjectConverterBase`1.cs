@@ -79,9 +79,19 @@ internal abstract class ObjectConverterBase<T> : MessagePackConverter<T>
 	/// <returns>The dictionary.</returns>
 	protected static Dictionary<string, IParameterShape>? CreatePropertyAndParameterDictionary(IObjectTypeShape objectShape)
 	{
-		Dictionary<string, IParameterShape>? ctorParams = objectShape.Constructor?.Parameters
-			.Where(p => p.Kind is ParameterKind.MethodParameter || p.IsRequired)
-			.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, IParameterShape>? ctorParams = null;
+		if (objectShape.Constructor is { } constructor)
+		{
+			ctorParams = new(StringComparer.Ordinal);
+			foreach ((IParameterShape parameter, IPropertyShape? property) in new ConstructorParameterMapping(constructor).Parameters)
+			{
+				if (property is not null && (parameter.Kind is ParameterKind.MethodParameter || parameter.IsRequired))
+				{
+					ctorParams.Add(property.Name, parameter);
+				}
+			}
+		}
+
 		return ctorParams;
 	}
 

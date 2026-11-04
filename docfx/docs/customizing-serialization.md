@@ -108,6 +108,15 @@ And in fact there is no default constructor defined, so the deserializer must in
 Important point to note is that the constructor parameter name matches the property name, modulo the PascalCase name to camelCase name.
 This is how the deserializer matches up.
 
+Nerdbank.MessagePack prefers an exact name match, then accepts a case-insensitive match only when it identifies a single property.
+This accommodates acronym differences such as a constructor parameter named `ilDelta` and a property named `ILDelta`.
+If PolyType exposes a separate optional member initializer for that same property and the parameter and property types are identical, Nerdbank.MessagePack uses the constructor parameter and leaves the initializer unset, preserving the value established by the constructor.
+The same association is used for map and array encodings, default-value handling, and JSON schema generation.
+
+Ambiguous matches, conflicting argument types, multiple constructor parameters targeting the same property, and duplicate serialized keys throw <xref:Nerdbank.MessagePack.MessagePackSerializationException> with details about the conflicting names.
+A separate required member initializer cannot be discarded in favor of a constructor parameter and also produces an explanatory exception.
+Resolve these conflicts by making the names unambiguous with <xref:PolyType.PropertyShapeAttribute> or <xref:PolyType.ParameterShapeAttribute>, adjusting the constructor or property declarations, or providing a [custom converter](custom-converters.md).
+
 Let's consider a variant where the serialized name does not match the property name:
 
 [!code-csharp[](../../samples/cs/CustomizingSerialization.cs#DeserializingConstructorsPropertyRenamed)]
