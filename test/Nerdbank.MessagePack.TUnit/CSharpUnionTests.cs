@@ -666,6 +666,64 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		Assert.NotEqual(handwrittenText, handwrittenArray);
 	}
 
+	[Test, MatrixDataSource]
+	public async Task NilPrefersNullableCase(bool async, bool allowNull, bool aliasNullable)
+	{
+		this.Serializer = this.Serializer with
+		{
+			DeserializeDefaultValues = allowNull ? DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties : DeserializeDefaultValuesPolicy.Default,
+			UnionTypeAliasProvider = aliasNullable ? new DelegateUnionTypeAliasProvider((u, c) => c == typeof(int[]) ? new("array") : null) : null,
+		};
+		byte[] nil = [MessagePackCode.Nil];
+		async Task<AnnotatedReferences> Read() => async
+			? await this.Serializer.DeserializeAsync<AnnotatedReferences>(new MemoryStream(nil), this.TimeoutToken)
+			: this.Serializer.Deserialize<AnnotatedReferences>(nil, this.TimeoutToken);
+		if (aliasNullable && !allowNull)
+		{
+			await Assert.ThrowsAsync<MessagePackSerializationException>(Read);
+		}
+		else
+		{
+			AnnotatedReferences result = await Read();
+			Assert.Null(result.Value);
+			Assert.Equal(aliasNullable ? typeof(string) : typeof(int[]), result.SelectedType);
+		}
+	}
+
+	[Test, MatrixDataSource]
+	public async Task NilNonNullableCasesRespectPolicy(bool async, bool allowNull)
+	{
+		this.Serializer = this.Serializer with
+		{
+			DeserializeDefaultValues = allowNull ? DeserializeDefaultValuesPolicy.AllowMissingValuesForRequiredProperties : DeserializeDefaultValuesPolicy.Default,
+		};
+		byte[] nil = [MessagePackCode.Nil];
+		async Task<NonNullableReferences> Read() => async
+			? await this.Serializer.DeserializeAsync<NonNullableReferences>(new MemoryStream(nil), this.TimeoutToken)
+			: this.Serializer.Deserialize<NonNullableReferences>(nil, this.TimeoutToken);
+		if (allowNull)
+		{
+			NonNullableReferences result = await Read();
+			Assert.Null(result.Value);
+			Assert.Equal(typeof(string), result.SelectedType);
+		}
+		else
+		{
+			await Assert.ThrowsAsync<MessagePackSerializationException>(Read);
+		}
+	}
+
+	[Test, MatrixDataSource]
+	public async Task NilObliviousCasesUseFirstReference(bool async)
+	{
+		byte[] nil = [MessagePackCode.Nil];
+		ObliviousReferences result = async
+			? await this.Serializer.DeserializeAsync<ObliviousReferences>(new MemoryStream(nil), this.TimeoutToken)
+			: this.Serializer.Deserialize<ObliviousReferences>(nil, this.TimeoutToken);
+		Assert.Null(result.Value);
+		Assert.Equal(typeof(string), result.SelectedType);
+	}
+
 	[Test]
 	public void OptionalNullPayloadPresence()
 	{
@@ -911,6 +969,68 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 
 		public Type SelectedType { get; }
 	}
+
+	[Union, GenerateShape]
+	public readonly partial struct AnnotatedReferences
+	{
+		public AnnotatedReferences(string value)
+		{
+			this.Value = value;
+			this.SelectedType = typeof(string);
+		}
+
+		public AnnotatedReferences(int[]? value)
+		{
+			this.Value = value;
+			this.SelectedType = typeof(int[]);
+		}
+
+		public object? Value { get; }
+
+		public Type SelectedType { get; }
+	}
+
+	[Union, GenerateShape]
+	public readonly partial struct NonNullableReferences
+	{
+		public NonNullableReferences(string value)
+		{
+			this.Value = value;
+			this.SelectedType = typeof(string);
+		}
+
+		public NonNullableReferences(int[] value)
+		{
+			this.Value = value;
+			this.SelectedType = typeof(int[]);
+		}
+
+		public object? Value { get; }
+
+		public Type SelectedType { get; }
+	}
+
+#nullable disable
+	[Union, GenerateShape]
+	public readonly partial struct ObliviousReferences
+	{
+		public ObliviousReferences(string value)
+		{
+			this.Value = value;
+			this.SelectedType = typeof(string);
+		}
+
+		public ObliviousReferences(int[] value)
+		{
+			this.Value = value;
+			this.SelectedType = typeof(int[]);
+		}
+
+		public object Value { get; }
+
+		public Type SelectedType { get; }
+	}
+#nullable restore
 
 	/// <summary>A hand-authored union implemented as a class, so that reference preservation applies to the union itself.</summary>
 	[Union, GenerateShape]

@@ -26,6 +26,10 @@ public enum DeserializeDefaultValuesPolicy
 	/// <summary>
 	/// Allow a <see langword="null" /> value to be deserialized into a non-nullable property.
 	/// </summary>
+	/// <remarks>
+	/// Also permits a naked nil to select the first untagged reference case of a C# struct union
+	/// when none of its untagged reference cases admits a null payload.
+	/// </remarks>
 	AllowNullValuesForNonNullableProperties = 0x1,
 
 	/// <summary>

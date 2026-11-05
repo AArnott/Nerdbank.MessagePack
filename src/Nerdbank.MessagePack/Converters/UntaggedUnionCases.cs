@@ -7,7 +7,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// Selects untagged C# union cases using native MessagePack encodings.
 /// </summary>
 /// <param name="preserveReferences">Whether payload converters preserve references, including delayed converters.</param>
-internal sealed class UntaggedUnionCases(bool preserveReferences)
+/// <param name="allowNonNullableNull">Whether nil may select a non-nullable reference case when no nullable case is available.</param>
+internal sealed class UntaggedUnionCases(bool preserveReferences, bool allowNonNullableNull)
 {
 	private readonly Dictionary<MessagePackType, MessagePackConverter> convertersByType = [];
 	private readonly Dictionary<byte, MessagePackConverter> convertersByCode = [];
@@ -16,6 +17,7 @@ internal sealed class UntaggedUnionCases(bool preserveReferences)
 	private readonly Dictionary<MessagePackConverter, Func<object, bool>> nullPayloadTests = [];
 	private readonly Dictionary<Type, MessagePackConverter> referenceConverters = [];
 	private MessagePackConverter? nilConverter;
+	private MessagePackConverter? firstReferenceConverter;
 	private int collectionCount;
 
 	/// <summary>Gets a value indicating whether an array case is untagged.</summary>
@@ -30,7 +32,8 @@ internal sealed class UntaggedUnionCases(bool preserveReferences)
 	/// <param name="shape">The payload shape.</param>
 	/// <param name="converter">The marshaling case converter.</param>
 	/// <param name="caseInfo">The payload converter and integer encoding options.</param>
-	internal void Add(ITypeShape shape, MessagePackConverter converter, CSharpUnionCase caseInfo)
+	/// <param name="isNullable">Whether the union case admits a null payload.</param>
+	internal void Add(ITypeShape shape, MessagePackConverter converter, CSharpUnionCase caseInfo, bool isNullable)
 	{
 		MessagePackConverter payload = ((IMessagePackConverterInternal)caseInfo.PayloadConverter!).UnwrapReferencePreservation();
 		if (payload.GetType().Assembly != typeof(UntaggedUnionCases).Assembly)
@@ -105,7 +108,12 @@ internal sealed class UntaggedUnionCases(bool preserveReferences)
 
 		if (!type.IsValueType)
 		{
-			this.nilConverter ??= converter;
+			this.firstReferenceConverter ??= converter;
+			if (isNullable)
+			{
+				this.nilConverter ??= converter;
+			}
+
 			if (preserveReferences)
 			{
 				this.referenceConverters.Add(type, converter);
@@ -155,7 +163,8 @@ internal sealed class UntaggedUnionCases(bool preserveReferences)
 		if (code == MessagePackCode.Nil)
 		{
 			return allowNilCase
-				? this.nilConverter ?? throw new MessagePackSerializationException("No untagged C# union case accepts nil. Null object payloads require a discriminator.")
+				? this.nilConverter ?? (allowNonNullableNull ? this.firstReferenceConverter : null)
+					?? throw new MessagePackSerializationException("No nullable untagged C# union case accepts nil. Null object payloads require a discriminator; non-nullable reference cases require AllowNullValuesForNonNullableProperties.")
 				: null;
 		}
 

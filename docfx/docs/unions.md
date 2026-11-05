@@ -281,7 +281,9 @@ Collections also serialize without a discriminator, including binary byte collec
 Converter construction rejects more than one untagged collection case, even if the collection kinds differ.
 Multiple collection cases are supported when you assign [explicit discriminators](#custom-c-union-case-identifiers) to enough of them that at most one collection case remains untagged.
 For example, a union containing an array and a list is supported if either or both collection cases have explicit discriminators.
-When several untagged reference cases can serialize as `nil`, such as `string` and an array, a naked `nil` selects the first such case in declaration order.
+For a struct union, a naked `nil` selects the first untagged reference case whose PolyType metadata admits null, in declaration order.
+Cases declared with nullable annotations disabled also admit null.
+If no such case exists, <xref:Nerdbank.MessagePack.DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties> permits selecting the first untagged reference case instead; otherwise deserialization throws.
 Cases with explicit discriminator mappings do not participate in this selection because their null payloads require a discriminator.
 Assign explicit aliases when preserving the null case's identity is important.
 

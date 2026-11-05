@@ -310,7 +310,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
 		Dictionary<DerivedTypeIdentifier, Type> casesByAlias = [];
 		List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
-		UntaggedUnionCases? untaggedCases = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? new(this.owner.PreserveReferences != ReferencePreservationMode.Off) : null;
+		UntaggedUnionCases? untaggedCases = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion
+			? new(
+				this.owner.PreserveReferences != ReferencePreservationMode.Off,
+				(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != 0)
+			: null;
 		foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
 		{
 			CSharpUnionCase? unionCaseState = untaggedCases is not null ? new() : null;
@@ -333,7 +337,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			{
 				try
 				{
-					untaggedCases.Add(unionCase.UnionCaseType, caseConverter.Value, unionCaseState!);
+					untaggedCases.Add(unionCase.UnionCaseType, caseConverter.Value, unionCaseState!, unionCase.IsNullable);
 				}
 				catch (NotSupportedException ex)
 				{
