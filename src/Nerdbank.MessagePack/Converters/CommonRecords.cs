@@ -50,6 +50,9 @@ internal delegate ValueTask<TDeclaringType> DeserializePropertyAsync<TDeclaringT
 /// </summary>
 internal interface IArrayConstructorVisitorInputs
 {
+	/// <summary>Gets the constructor argument mapping.</summary>
+	ConstructorParameterMapping? ParameterMapping { get; }
+
 	/// <summary>
 	/// Gets the number of properties.
 	/// </summary>
@@ -68,8 +71,8 @@ internal interface IArrayConstructorVisitorInputs
 /// </summary>
 internal interface IMapConstructorVisitorInputs
 {
-	/// <summary>Gets the collection of constructor parameters, with any conflicting names removed.</summary>
-	Dictionary<string, IParameterShape> ParametersByName { get; }
+	/// <summary>Gets the constructor argument mapping.</summary>
+	ConstructorParameterMapping ParameterMapping { get; }
 }
 
 /// <summary>
@@ -241,12 +244,12 @@ internal class DirectPropertyAccess<TDeclaringType, TValue>(
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
 /// <param name="serializers">Serializable properties on the data type.</param>
 /// <param name="deserializers">Deserializable properties on the data type.</param>
-/// <param name="parametersByName">A collection of constructor parameters, with any conflicting names removed.</param>
+/// <param name="parameterMapping">The constructor argument mapping.</param>
 /// <param name="unusedDataProperty">The special unused data property, if present.</param>
 internal class MapConstructorVisitorInputs<TDeclaringType>(
 	MapSerializableProperties<TDeclaringType> serializers,
 	MapDeserializableProperties<TDeclaringType> deserializers,
-	Dictionary<string, IParameterShape> parametersByName,
+	ConstructorParameterMapping parameterMapping,
 	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty) : IMapConstructorVisitorInputs
 {
 	/// <summary>Gets the serializable properties on the data type.</summary>
@@ -256,7 +259,7 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 	public MapDeserializableProperties<TDeclaringType> Deserializers => deserializers;
 
 	/// <inheritdoc />
-	public Dictionary<string, IParameterShape> ParametersByName => parametersByName;
+	public ConstructorParameterMapping ParameterMapping => parameterMapping;
 
 	/// <summary>Gets the special unused data property, if present.</summary>
 	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
@@ -268,13 +271,18 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 /// </summary>
 /// <typeparam name="TDeclaringType">The data type whose constructor is to be visited.</typeparam>
 /// <param name="properties">The accessors to use for accessing each array element.</param>
+/// <param name="parameterMapping">The constructor argument mapping, if any.</param>
 /// <param name="unusedDataProperty">The special unused data property, if present.</param>
 internal class ArrayConstructorVisitorInputs<TDeclaringType>(
 	List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> properties,
+	ConstructorParameterMapping? parameterMapping,
 	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty) : IArrayConstructorVisitorInputs
 {
 	/// <summary>Gets the accessors to use for accessing each array element.</summary>
 	public List<(string Name, PropertyAccessors<TDeclaringType> Accessors)?> Properties => properties;
+
+	/// <inheritdoc/>
+	public ConstructorParameterMapping? ParameterMapping => parameterMapping;
 
 	/// <summary>Gets the special unused data property, if present.</summary>
 	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
@@ -283,7 +291,7 @@ internal class ArrayConstructorVisitorInputs<TDeclaringType>(
 	int IArrayConstructorVisitorInputs.Count => this.Properties.Count;
 
 	/// <inheritdoc/>
-	public string? GetPropertyNameByIndex(int index) => this.Properties[index]?.Name;
+	public string? GetPropertyNameByIndex(int index) => this.Properties[index]?.Accessors.Shape.Name;
 
 	/// <summary>
 	/// Constructs an array of just the property accessors (without property names).
