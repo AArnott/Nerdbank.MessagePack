@@ -1,7 +1,7 @@
 ﻿{
   "anyOf": [
     {
-      "oneOf": [
+      "anyOf": [
         {
           "$ref": "#/$defs/SurrogateTests\u002BOriginalType\u002BMarshaledType"
         },

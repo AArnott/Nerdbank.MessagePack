@@ -13,4 +13,7 @@ internal sealed class CSharpUnionCase
 
 	/// <summary>Gets or sets a value indicating whether integer writes must preserve width and signedness.</summary>
 	internal bool UseFixedWidthIntegers { get; set; }
+
+	/// <summary>Gets or sets the test for a null payload in a reference-typed union.</summary>
+	internal Func<object, bool>? IsNullPayload { get; set; }
 }

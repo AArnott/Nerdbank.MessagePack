@@ -1,5 +1,5 @@
 ﻿{
-  "oneOf": [
+  "anyOf": [
     {
       "$ref": "#/$defs/SchemaTests\u002BFamily"
     },
@@ -58,7 +58,7 @@
       "type": "object",
       "properties": {
         "Mother": {
-          "oneOf": [
+          "anyOf": [
             {
               "$ref": "#/$defs/SchemaTests\u002BPerson"
             },
@@ -68,7 +68,7 @@
           ]
         },
         "Father": {
-          "oneOf": [
+          "anyOf": [
             {
               "$ref": "#/$defs/SchemaTests\u002BPerson",
               "description": "The father."

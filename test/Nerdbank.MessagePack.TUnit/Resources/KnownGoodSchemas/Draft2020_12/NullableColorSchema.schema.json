@@ -1,5 +1,5 @@
 ﻿{
-  "oneOf": [
+  "anyOf": [
     {
       "$ref": "#/$defs/SchemaTests\u002BHasNullableColors"
     },
@@ -26,7 +26,7 @@
     "System.Nullable\u00601[System.Drawing.Color][]": {
       "type": "array",
       "items": {
-        "oneOf": [
+        "anyOf": [
           {
             "$ref": "#/$defs/System.Drawing.Color"
           },
@@ -42,7 +42,7 @@
         "Color": {
           "anyOf": [
             {
-              "oneOf": [
+              "anyOf": [
                 {
                   "$ref": "#/$defs/System.Drawing.Color"
                 },

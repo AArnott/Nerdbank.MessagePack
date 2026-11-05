@@ -6,12 +6,14 @@ namespace Nerdbank.MessagePack.Converters;
 /// <summary>
 /// Selects untagged C# union cases using native MessagePack encodings.
 /// </summary>
-internal sealed class UntaggedUnionCases
+/// <param name="preserveReferences">Whether payload converters preserve references, including delayed converters.</param>
+internal sealed class UntaggedUnionCases(bool preserveReferences)
 {
 	private readonly Dictionary<MessagePackType, MessagePackConverter> convertersByType = [];
 	private readonly Dictionary<byte, MessagePackConverter> convertersByCode = [];
 	private readonly List<(byte Code, long Min, ulong Max, MessagePackConverter Converter, CSharpUnionCase Case)> integers = [];
 	private readonly HashSet<MessagePackConverter> converters = [];
+	private readonly Dictionary<MessagePackConverter, Func<object, bool>> nullPayloadTests = [];
 	private readonly Dictionary<Type, MessagePackConverter> referenceConverters = [];
 	private MessagePackConverter? nilConverter;
 	private int collectionCount;
@@ -104,10 +106,15 @@ internal sealed class UntaggedUnionCases
 		if (!type.IsValueType)
 		{
 			this.nilConverter ??= converter;
-			if (payload != caseInfo.PayloadConverter)
+			if (preserveReferences)
 			{
 				this.referenceConverters.Add(type, converter);
 			}
+		}
+
+		if (caseInfo.IsNullPayload is { } isNullPayload)
+		{
+			this.nullPayloadTests.Add(converter, isNullPayload);
 		}
 
 		this.convertersByType.Add(wireType, converter);
@@ -128,6 +135,12 @@ internal sealed class UntaggedUnionCases
 	/// <param name="converter">The case converter.</param>
 	/// <returns>Whether the converter is untagged.</returns>
 	internal bool Contains(MessagePackConverter converter) => this.converters.Contains(converter);
+
+	/// <summary>Determines whether an untagged case contains a null payload requiring a discriminator.</summary>
+	/// <param name="converter">The case converter.</param>
+	/// <param name="value">The non-null union instance.</param>
+	/// <returns>Whether a discriminator is required to preserve the containing union instance.</returns>
+	internal bool HasNullPayload(MessagePackConverter converter, object value) => this.nullPayloadTests.TryGetValue(converter, out Func<object, bool>? test) && test(value);
 
 	/// <summary>
 	/// Selects a converter without consuming the value.

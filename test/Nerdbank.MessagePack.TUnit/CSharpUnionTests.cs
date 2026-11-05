@@ -659,6 +659,49 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		Assert.Equal("""["Int32","8"]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
 	}
 
+	[Test, MatrixDataSource]
+	public async Task ClassUnionNullPayload(bool async, bool discriminatorObjects)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = discriminatorObjects };
+		NullableClassUnion input = new((string?)null);
+		NullableClassUnion? result = async ? await this.RoundtripAsync(input) : this.Roundtrip(input);
+		Assert.NotNull(result);
+		Assert.Null(result.Value);
+		Assert.Equal(discriminatorObjects ? """{"String":null}""" : """["String",null]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		Assert.True(this.DataMatchesSchema<NullableClassUnion>(this.lastRoundtrippedMsgpack));
+	}
+
+	[Test, MatrixDataSource]
+	public async Task ClassUnionNativePayload(bool async)
+	{
+		NullableClassUnion? result = async ? await this.RoundtripAsync(new NullableClassUnion("text")) : this.Roundtrip(new NullableClassUnion("text"));
+		Assert.NotNull(result);
+		Assert.Equal("text", result.Value);
+		Assert.Equal("\"text\"", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		result = async ? await this.RoundtripAsync<NullableClassUnion>(null) : this.Roundtrip<NullableClassUnion>(null);
+		Assert.Null(result);
+		Assert.Equal("null", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+	}
+
+	[Test, MatrixDataSource]
+	public async Task RecursiveArrayReferencePreservation(bool async)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
+		Tree[] children = [new(1)];
+		Tree[] input = [new(children), new(children)];
+		Tree[]? result = async ? await this.RoundtripAsync<Tree[], TreeArrayShape>(input) : this.Roundtrip<Tree[], TreeArrayShape>(input);
+		Assert.NotNull(result);
+		Assert.Same(result[0].Value, result[1].Value);
+	}
+
+	[Test]
+	public void RecursiveClassUnionNullSchema()
+	{
+		Assert.True(this.DataMatchesSchema<NullableClassUnion>(new(this.Serializer.Serialize<NullableClassUnion>(null, this.TimeoutToken))));
+		Assert.True(this.DataMatchesSchema<NullableClassUnion>(new(this.Serializer.Serialize(new NullableClassUnion(new NullableClassUnion((string?)null)), this.TimeoutToken))));
+		Assert.True(this.DataMatchesSchema<NullableUnionHolder>(new(this.Serializer.Serialize(new NullableUnionHolder(), this.TimeoutToken))));
+	}
+
 	public class IntOrBoolConverter : MessagePackConverter<IntOrBool>
 	{
 		public override IntOrBool Read(ref MessagePackReader reader, SerializationContext context)
@@ -748,6 +791,9 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 
 	[GenerateShape]
 	public partial union TextOrArray(string?, int[]?);
+
+	[GenerateShape]
+	public partial union Tree(int, Tree[]);
 #pragma warning restore SA1201
 
 	/// <summary>A hand-authored struct union that implements the non-boxing access pattern.</summary>
@@ -844,6 +890,25 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		public CSharpScalarUnion[] Text { get; set; } = [];
 
 		public TextOrArray[] Mixed { get; set; } = [];
+	}
+
+	[Union, GenerateShape]
+	public sealed partial class NullableClassUnion
+	{
+		public NullableClassUnion(string? value) => this.Value = value;
+
+		public NullableClassUnion(NullableClassUnion value) => this.Value = value;
+
+		public object? Value { get; }
+	}
+
+	[GenerateShapeFor<Tree[]>]
+	public partial class TreeArrayShape;
+
+	[GenerateShape]
+	public partial class NullableUnionHolder
+	{
+		public NullableClassUnion? Union { get; set; }
 	}
 
 	private class IntOrBoolConverterFactory : IMessagePackConverterFactory

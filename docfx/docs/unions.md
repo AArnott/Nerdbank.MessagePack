@@ -264,6 +264,7 @@ C# union types have a few characteristics that differ from type hierarchies:
 * Null payloads follow their case's encoding: a null string is bare `nil`, while a null object payload retains its discriminator.
   For example, `union Result(int, string?)` holding `null` serializes as `nil`, while a null `Apple` case serializes as `["Apple", null]`.
   Selection of a null case on serialization follows the type shape; C# unions that do not retain null case identity select the first nullable case.
+  For reference-typed unions, a null payload always retains its discriminator so that a non-null union instance is distinguishable from a null union reference, which uses bare `nil`.
 * A union value that doesn't match any case (such as `default` for a struct union with no nullable case) cannot be serialized.
 * Union types can be recursive, such as `union Tree(int, Tree[])`.
 * The [union serialization format](#union-serialization-format) options apply to tagged C# union cases.

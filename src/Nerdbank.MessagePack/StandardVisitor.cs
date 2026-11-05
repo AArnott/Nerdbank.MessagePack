@@ -310,7 +310,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
 		Dictionary<DerivedTypeIdentifier, Type> casesByAlias = [];
 		List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
-		UntaggedUnionCases? untaggedCases = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? new() : null;
+		UntaggedUnionCases? untaggedCases = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? new(this.owner.PreserveReferences != ReferencePreservationMode.Off) : null;
 		foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
 		{
 			CSharpUnionCase? unionCaseState = untaggedCases is not null ? new() : null;
@@ -405,6 +405,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (csharpCase is not null)
 		{
 			csharpCase.PayloadConverter = caseConverter.Value;
+			if (!typeof(TUnion).IsValueType && !typeof(TUnionCase).IsValueType)
+			{
+				csharpCase.IsNullPayload = value => unionCaseShape.Marshaler.Unmarshal((TUnion)value) is null;
+			}
 		}
 
 		return ConverterResult.Ok(new UnionCaseConverter<TUnionCase, TUnion>((MessagePackConverter<TUnionCase>)caseConverter.Value, unionCaseShape.Marshaler, csharpCase));

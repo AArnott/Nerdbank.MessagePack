@@ -117,7 +117,8 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		}
 
 		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value));
-		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true)
+		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true &&
+			(typeof(TUnion).IsValueType || !this.untaggedCases.HasNullPayload(nativeCase.Converter, value)))
 		{
 			nativeCase.Converter.WriteObject(ref writer, value, context);
 			return;
@@ -285,7 +286,8 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		}
 
 		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value));
-		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true)
+		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true &&
+			(typeof(TUnion).IsValueType || !this.untaggedCases.HasNullPayload(nativeCase.Converter, value)))
 		{
 			await nativeCase.Converter.WriteObjectAsync(writer, value, context).ConfigureAwait(false);
 			return;
@@ -354,6 +356,10 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			}
 
 			oneOfArray.Add(this.untaggedCases?.Contains(converter) == true ? schema : (JsonNode)CreateOneOfElement(alias, schema));
+			if (this.untaggedCases?.Contains(converter) == true && !typeof(TUnion).IsValueType && !shape.Type.IsValueType)
+			{
+				oneOfArray.Add((JsonNode)CreateOneOfElement(alias, new() { ["type"] = "null" }));
+			}
 		}
 
 		JsonObject unionSchema = new()
