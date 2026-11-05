@@ -649,6 +649,56 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		Assert.Equal(aliasFirstCase ? typeof(int[]) : typeof(string), result.SelectedType);
 	}
 
+	[Test]
+	public void NullPayloadIdentity()
+	{
+		TextOrApple text = new((string?)null);
+		TextOrApple apple = new((Apple?)null);
+		Assert.Equal(text, apple);
+		Assert.Null(text.Value);
+		Assert.Null(apple.Value);
+
+		NullableReferences handwrittenText = new((string?)null);
+		NullableReferences handwrittenArray = new((int[]?)null);
+		Assert.Null(handwrittenText.Value);
+		Assert.Null(handwrittenArray.Value);
+		Assert.NotEqual(handwrittenText.SelectedType, handwrittenArray.SelectedType);
+		Assert.NotEqual(handwrittenText, handwrittenArray);
+	}
+
+	[Test]
+	public void OptionalNullPayloadPresence()
+	{
+		TextOrApple? absent = default;
+		TextOrApple? present = new TextOrApple((string?)null);
+		Assert.False(absent.HasValue);
+		Assert.True(present.HasValue);
+		Assert.Null(present.Value.Value);
+		Assert.NotNull((object?)present);
+	}
+
+	[Test]
+	public void HandwrittenOptionalNullPayloadPresence()
+	{
+		NullableReferences? absent = default;
+		NullableReferences? present = new NullableReferences((int[]?)null);
+		Assert.False(absent.HasValue);
+		Assert.True(present.HasValue);
+		Assert.Null(present.Value.Value);
+		Assert.Equal(typeof(int[]), present.Value.SelectedType);
+		Assert.NotNull((object?)present);
+	}
+
+	[Test, MatrixDataSource]
+	public async Task HandwrittenNullPayloadRoundtrip(bool async, bool array)
+	{
+		NullableReferences input = array ? new((int[]?)null) : new((string?)null);
+		NullableReferences result = async ? await this.RoundtripAsync(input) : this.Roundtrip(input);
+		Assert.Null(result.Value);
+		Assert.Equal(typeof(string), result.SelectedType);
+		Assert.Equal("null", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+	}
+
 	[Test, MatrixDataSource]
 	public async Task CustomPrimitiveConverterRetainsDiscriminator(bool async)
 	{
