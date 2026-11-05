@@ -11,7 +11,8 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <remarks>
 /// No type shape provider is needed. The union shape supplies the payload shapes and conversions.
-/// Types not registered in this mapping retain their normal identifiers.
+/// Registered types always use a discriminator, including primitive and collection cases.
+/// Types not registered in this mapping retain their normal encoding, which may omit a discriminator.
 /// Adding a mapping to a collection freezes it, preventing further mutation.
 /// </remarks>
 public sealed class UnionCaseMapping : IReadOnlyCollection<KeyValuePair<Type, DerivedTypeIdentifier>>

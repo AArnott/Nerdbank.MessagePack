@@ -223,7 +223,12 @@ internal class ReferenceEqualityTracker : IPoolableObject
 		return value;
 	}
 
-	private object? GetDeserializedObject(int id)
+	/// <summary>
+	/// Resolves an object reference, applying the active cycle policy.
+	/// </summary>
+	/// <param name="id">The reference identifier.</param>
+	/// <returns>The previously deserialized object.</returns>
+	internal object? GetDeserializedObject(int id)
 	{
 		if (this.deserializedObjects[id] is object result)
 		{

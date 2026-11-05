@@ -8,5 +8,5 @@ namespace Nerdbank.MessagePack;
 /// </summary>
 /// <param name="unionType">The containing union type.</param>
 /// <param name="caseType">The payload type of the union case.</param>
-/// <returns>The custom identifier, or <see langword="null"/> to use the normal identifier.</returns>
+/// <returns>The custom identifier, or <see langword="null"/> to use the case's normal encoding, which may omit a discriminator.</returns>
 public delegate DerivedTypeIdentifier? UnionCaseAliasResolver(Type unionType, Type caseType);

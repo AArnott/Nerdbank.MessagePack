@@ -254,15 +254,48 @@ A `Pet` round-trips like any other type, using the same union schema described a
 
 C# union types have a few characteristics that differ from type hierarchies:
 
-* By default, each union case is identified by the name of its case type (e.g. `Int32`, `String` or `Dog`).
-  Without a [custom identifier](#custom-c-union-case-identifiers), renaming a case type changes the serialized schema.
-  When <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability> is set to `true`, integer identifiers are inferred from the order in which the cases are declared.
-  Reordering or inserting cases changes these identifiers.
-* A union whose payload is `null` is serialized as the first case that accepts `null`.
-  For example, `union Result(int, string?)` holding `null` serializes as `["String", null]`.
+* Native scalar cases (`bool`, `string`, `char`, the eight 8- through 64-bit integer types, `float`, and `double`) serialize without a discriminator.
+  For example, `union Result(int, string)` containing `42` serializes simply as `42`, and a string payload serializes simply as a MessagePack string.
+* Other cases, including objects and nested unions, use the discriminator format described above.
+  The default identifier is the case type's name, or its inferred integer tag when <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability> is `true`.
+  Renaming a tagged case changes its default string identifier, and reordering or inserting cases changes inferred integer identifiers.
+* A [custom identifier](#custom-c-union-case-identifiers) always forces a discriminator, even for a primitive or collection case.
+  Custom payload converters also retain discriminators because their wire representation is not necessarily the type's native representation.
+* Null payloads follow their case's encoding: a null string is bare `nil`, while a null object payload retains its discriminator.
+  For example, `union Result(int, string?)` holding `null` serializes as `nil`, while a null `Apple` case serializes as `["Apple", null]`.
+  Selection of a null case on serialization follows the type shape; C# unions that do not retain null case identity select the first nullable case.
 * A union value that doesn't match any case (such as `default` for a struct union with no nullable case) cannot be serialized.
 * Union types can be recursive, such as `union Tree(int, Tree[])`.
-* The [union serialization format](#union-serialization-format) options apply to C# unions as well.
+* The [union serialization format](#union-serialization-format) options apply to tagged C# union cases.
+
+When a union has several unaliased native integer cases, each is written using its exact-width, signed or unsigned MessagePack encoding.
+For example, `union Number(int, short)` writes an `int` containing `8` as an `int32` and a `short` containing `8` as an `int16`, preserving the original case.
+With just one unaliased native integer case, the shortest encoding is used instead.
+On deserialization, a matching integer encoding takes precedence; otherwise, the smallest case that can represent the value is chosen, preferring signed integers when their widths are equal.
+Thus, a positive fixint containing `8` selects `short` in `union Number(int, short)`.
+The native `float32` and `float64` encodings distinguish `float` and `double` cases without additional headers.
+Cases such as `char` and `ushort` have the same native integer encoding and require an explicit alias on at least one case.
+
+Collections also serialize without a discriminator, including binary byte collections.
+Converter construction rejects more than one untagged collection case, even if the collection kinds differ.
+Multiple collection cases are supported when you assign [explicit discriminators](#custom-c-union-case-identifiers) to enough of them that at most one collection case remains untagged.
+For example, a union containing an array and a list is supported if either or both collection cases have explicit discriminators.
+When several untagged reference cases can serialize as `nil`, such as `string` and an array, a naked `nil` selects the first such case in declaration order.
+Cases with explicit discriminator mappings do not participate in this selection because their null payloads require a discriminator.
+Assign explicit aliases when preserving the null case's identity is important.
+
+C# unions automatically select a discriminator wrapper that cannot be confused with an untagged collection case.
+An untagged array case selects map discriminator wrappers, while an untagged dictionary case selects array discriminator wrappers.
+This choice overrides <xref:Nerdbank.MessagePack.MessagePackSerializer.UseDiscriminatorObjects> for that union and applies to reading, writing, and generated schemas, including cases with explicit aliases.
+Without an untagged array or dictionary case, the configured wrapper format is retained.
+Binary collections do not conflict with either wrapper format.
+
+The wrapper selection depends on the declared cases, not the current value.
+Adding or removing an untagged collection case can therefore change the wire format of the union's tagged cases.
+For a stable protocol, explicitly tag the collection case and configure the desired wrapper format.
+
+Untagged object payloads are not inferred by duck typing.
+This C# union encoding does not change derived-type or F# union serialization.
 
 Types that implement the C# union member pattern without using the `union` keyword are also supported.
 
@@ -272,13 +305,14 @@ Types that implement the C# union member pattern without using the `union` keywo
 ### Custom C# union case identifiers
 
 Set <xref:Nerdbank.MessagePack.MessagePackSerializer.UnionTypeAliasProvider> to assign stable string or integer identifiers to C# union cases.
-This does not change which cases belong to a union or how payloads are serialized.
+This does not change which cases belong to a union or the payload's own converter.
+Providing an identifier forces that case to use a discriminator wrapper, including primitive and collection cases that would otherwise be untagged.
 It does not affect type hierarchy or F# unions.
 
 #### Explicit aliases for primitive cases
 
 Start with a union over `string` and `int`.
-Use <xref:Nerdbank.MessagePack.UnionCaseMapping> to replace their default identifiers, `String` and `Int32`, with `text` and `number`:
+Use <xref:Nerdbank.MessagePack.UnionCaseMapping> to give these otherwise untagged cases the identifiers `text` and `number`:
 
 [!code-csharp[](../../samples/cs/UnionCaseAliases.cs#PrimitiveUnionCaseAliases)]
 
@@ -316,7 +350,7 @@ For access to the full union and case shapes, implement <xref:Nerdbank.MessagePa
 Providers and delegates must be thread-safe and return consistent results while in use.
 Identifiers are resolved during converter construction, not for every serialized value.
 
-Returning `null` from a provider, or leaving a case unregistered in a mapping, preserves the normal identifier selection for that case.
+Returning `null` from a provider, or leaving a case unregistered in a mapping, preserves the normal encoding for that case, including omission of a discriminator for native scalar and collection cases.
 Custom identifiers take precedence over <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability>.
 They apply to serialization, deserialization, and generated JSON schemas in both union formats.
 An overridden case accepts only its custom identifier, not its original name or inferred integer tag.

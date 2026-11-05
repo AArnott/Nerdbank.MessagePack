@@ -174,9 +174,9 @@ public partial class UnionTypeAliasProviderTests : MessagePackSerializerTestBase
 		Assert.Equal(42, this.Roundtrip(new Scalar(42)).Value);
 		Assert.Equal("""["number",42]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
 		Assert.Equal("hello", this.Roundtrip(new Scalar("hello")).Value);
-		Assert.Equal("""["String","hello"]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		Assert.Equal("\"hello\"", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
 		Assert.Equal(42, this.Roundtrip(new ReorderedScalar(42)).Value);
-		Assert.Equal("""["Int32",42]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		Assert.Equal("42", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
 	}
 
 	[Test]
@@ -235,10 +235,10 @@ public partial class UnionTypeAliasProviderTests : MessagePackSerializerTestBase
 		Assert.Equal("""["custom.Int32",42]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
 		this.Serializer = this.Serializer with { UnionTypeAliasProvider = null };
 		this.Roundtrip(new Scalar(42));
-		Assert.Equal("""["Int32",42]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		Assert.Equal("42", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
 		this.Serializer = original;
 		this.Roundtrip(new Scalar(42));
-		Assert.Equal("""["Int32",42]""", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		Assert.Equal("42", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
 	}
 
 	[Test, MatrixDataSource]

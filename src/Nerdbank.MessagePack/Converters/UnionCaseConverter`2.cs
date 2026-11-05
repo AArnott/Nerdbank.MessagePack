@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
 namespace Nerdbank.MessagePack.Converters;
@@ -12,8 +13,8 @@ namespace Nerdbank.MessagePack.Converters;
 /// <typeparam name="TUnion">The base type.</typeparam>
 /// <param name="inner">The converter that actually serializes <typeparamref name="TUnionCase"/>.</param>
 /// <param name="marshaler">The marshaler to change between <typeparamref name="TUnion"/> and <typeparamref name="TUnionCase"/>.</param>
-/// <param name="depthStep">Whether the case represents a nested C# union payload rather than a view of the union itself.</param>
-internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnionCase> inner, IMarshaler<TUnionCase, TUnion> marshaler, bool depthStep) : MessagePackConverter<TUnion>
+/// <param name="csharpCase">The encoding options for a C# union payload, or null for a view of the union itself.</param>
+internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnionCase> inner, IMarshaler<TUnionCase, TUnion> marshaler, CSharpUnionCase? csharpCase) : MessagePackConverter<TUnion>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => inner.PreferAsyncSerialization;
@@ -21,7 +22,7 @@ internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnio
 	/// <inheritdoc/>
 	public override TUnion? Read(ref MessagePackReader reader, SerializationContext context)
 	{
-		if (depthStep)
+		if (csharpCase is not null)
 		{
 			context.DepthStep();
 		}
@@ -30,15 +31,25 @@ internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnio
 	}
 
 	/// <inheritdoc/>
+#pragma warning disable NBMsgPack031 // WriteFixedWidthInteger writes exactly one scalar.
 	public override void Write(ref MessagePackWriter writer, in TUnion? value, SerializationContext context)
 	{
-		if (depthStep)
+		if (csharpCase is not null)
 		{
 			context.DepthStep();
 		}
 
-		inner.Write(ref writer, marshaler.Unmarshal(value), context);
+		TUnionCase? payload = marshaler.Unmarshal(value);
+		if (csharpCase?.UseFixedWidthIntegers == true)
+		{
+			WriteFixedWidthInteger(ref writer, payload!);
+		}
+		else
+		{
+			inner.Write(ref writer, payload, context);
+		}
 	}
+#pragma warning restore NBMsgPack031
 
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape) => inner.GetJsonSchema(context, typeShape);
@@ -46,7 +57,7 @@ internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnio
 	/// <inheritdoc/>
 	public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
-		if (depthStep)
+		if (csharpCase is not null)
 		{
 			context.DepthStep();
 		}
@@ -57,7 +68,12 @@ internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnio
 	/// <inheritdoc/>
 	public override ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context)
 	{
-		if (depthStep)
+		if (csharpCase?.UseFixedWidthIntegers == true)
+		{
+			return base.WriteAsync(writer, value, context);
+		}
+
+		if (csharpCase is not null)
 		{
 			context.DepthStep();
 		}
@@ -82,4 +98,48 @@ internal class UnionCaseConverter<TUnionCase, TUnion>(MessagePackConverter<TUnio
 
 	/// <inheritdoc/>
 	internal override MessagePackConverter<TUnion> WrapWithReferencePreservation() => throw new NotImplementedException();
+
+	private static void WriteFixedWidthInteger(ref MessagePackWriter writer, TUnionCase value)
+	{
+		if (typeof(TUnionCase) == typeof(sbyte))
+		{
+			writer.WriteInt8(Unsafe.As<TUnionCase, sbyte>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(byte))
+		{
+			writer.WriteUInt8(Unsafe.As<TUnionCase, byte>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(short))
+		{
+			writer.WriteInt16(Unsafe.As<TUnionCase, short>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(ushort))
+		{
+			writer.WriteUInt16(Unsafe.As<TUnionCase, ushort>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(char))
+		{
+			writer.WriteUInt16(Unsafe.As<TUnionCase, char>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(int))
+		{
+			writer.WriteInt32(Unsafe.As<TUnionCase, int>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(uint))
+		{
+			writer.WriteUInt32(Unsafe.As<TUnionCase, uint>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(long))
+		{
+			writer.WriteInt64(Unsafe.As<TUnionCase, long>(ref value));
+		}
+		else if (typeof(TUnionCase) == typeof(ulong))
+		{
+			writer.WriteUInt64(Unsafe.As<TUnionCase, ulong>(ref value));
+		}
+		else
+		{
+			throw new InvalidOperationException("The union case is not a native integer.");
+		}
+	}
 }

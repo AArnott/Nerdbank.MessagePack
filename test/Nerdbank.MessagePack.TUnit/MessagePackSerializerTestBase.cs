@@ -116,6 +116,13 @@ public abstract partial class MessagePackSerializerTestBase
 		return schemaString;
 	}
 
+	protected bool DataMatchesSchema<T>(ReadOnlySequence<byte> msgpack)
+#if NET
+		where T : IShapeable<T> => this.DataMatchesSchema(msgpack, T.GetTypeShape());
+#else
+		=> this.DataMatchesSchema(msgpack, TypeShapeResolver.ResolveDynamicOrThrow<T>());
+#endif
+
 	protected bool DataMatchesSchema(ReadOnlySequence<byte> msgpack, ITypeShape shape)
 	{
 		JsonObject schema = this.Serializer.GetJsonSchema(shape);
