@@ -285,6 +285,9 @@ When several untagged reference cases can serialize as `nil`, such as `string` a
 Cases with explicit discriminator mappings do not participate in this selection because their null payloads require a discriminator.
 Assign explicit aliases when preserving the null case's identity is important.
 
+When reference preservation is enabled for a reference-typed union, reference-type payload cases retain their discriminators.
+This keeps references to payload objects distinguishable from references to the containing union instances.
+
 C# unions automatically select a discriminator wrapper that cannot be confused with an untagged collection case.
 An untagged array case selects map discriminator wrappers, while an untagged dictionary case selects array discriminator wrappers.
 This choice overrides <xref:Nerdbank.MessagePack.MessagePackSerializer.UseDiscriminatorObjects> for that union and applies to reading, writing, and generated schemas, including cases with explicit aliases.

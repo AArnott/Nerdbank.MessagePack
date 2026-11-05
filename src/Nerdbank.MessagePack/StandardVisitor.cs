@@ -328,7 +328,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				return failureResult;
 			}
 
-			if (customAlias is null && untaggedCases is not null)
+			if (customAlias is null && untaggedCases is not null &&
+				(typeof(TUnion).IsValueType || this.owner.PreserveReferences == ReferencePreservationMode.Off || unionCase.UnionCaseType.Type.IsValueType))
 			{
 				try
 				{

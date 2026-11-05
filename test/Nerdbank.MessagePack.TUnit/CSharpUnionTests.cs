@@ -702,6 +702,19 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 		Assert.True(this.DataMatchesSchema<NullableUnionHolder>(new(this.Serializer.Serialize(new NullableUnionHolder(), this.TimeoutToken))));
 	}
 
+	[Test, MatrixDataSource]
+	public async Task ClassUnionsSharingNativePayload(bool async, bool discriminatorObjects)
+	{
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles, UseDiscriminatorObjects = discriminatorObjects };
+		string text = new('x', 30);
+		ClassUnionReferences input = new() { First = new(text), Second = new(text) };
+		ClassUnionReferences? result = async ? await this.RoundtripAsync(input) : this.Roundtrip(input);
+		Assert.NotNull(result?.First);
+		Assert.NotNull(result.Second);
+		Assert.NotSame(result.First, result.Second);
+		Assert.Same(result.First.Value, result.Second.Value);
+	}
+
 	public class IntOrBoolConverter : MessagePackConverter<IntOrBool>
 	{
 		public override IntOrBool Read(ref MessagePackReader reader, SerializationContext context)
@@ -909,6 +922,14 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 	public partial class NullableUnionHolder
 	{
 		public NullableClassUnion? Union { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class ClassUnionReferences
+	{
+		public NullableClassUnion? First { get; set; }
+
+		public NullableClassUnion? Second { get; set; }
 	}
 
 	private class IntOrBoolConverterFactory : IMessagePackConverterFactory
