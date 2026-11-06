@@ -212,6 +212,44 @@ public class KeyAttributeUseAnalyzerTests
 	}
 
 	[Test]
+	public async Task DataContractStatusChangesAcrossHierarchy()
+	{
+		string source = /* lang=c#-test */ """
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+
+			[DataContract]
+			public class Derived : Middle
+			{
+				[DataMember, Key(0)]
+				public int Id { get; set; }
+
+				public int Ignored { get; set; }
+			}
+
+			public class Middle : Base
+			{
+				[Key(1)]
+				public int Version { get; set; }
+
+				[IgnoreDataMember]
+				public int IgnoredField;
+			}
+
+			[DataContract]
+			public class Base
+			{
+				[DataMember, Key(2)]
+				public int BaseId { get; set; }
+
+				public int IgnoredBaseField;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
 	public async Task KeyReuseInOneClass()
 	{
 		string source = /* lang=c#-test */ """
