@@ -210,8 +210,18 @@ public static class AnalyzerUtilities
 
 		AttributeData? propertyShapeAttribute = member.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
 		bool? ignored = propertyShapeAttribute?.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.IgnoreProperty).Value.Value as bool?;
-		return ignored is not true &&
-			(member.DeclaredAccessibility is Accessibility.Public || propertyShapeAttribute is not null);
+		if (propertyShapeAttribute is not null)
+		{
+			return ignored is not true;
+		}
+
+		if (member.ContainingType.FindAttributes("DataContractAttribute", ["System", "Runtime", "Serialization"]).Any())
+		{
+			return member.FindAttributes("DataMemberAttribute", ["System", "Runtime", "Serialization"]).Any();
+		}
+
+		return member.DeclaredAccessibility is Accessibility.Public &&
+			!member.FindAttributes("IgnoreDataMemberAttribute", ["System", "Runtime", "Serialization"]).Any();
 	}
 
 	internal static bool IsUnusedDataPacketMember(ISymbol member, ReferenceSymbols referenceSymbols)

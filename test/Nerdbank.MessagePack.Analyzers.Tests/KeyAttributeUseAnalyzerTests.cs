@@ -38,6 +38,180 @@ public class KeyAttributeUseAnalyzerTests
 	}
 
 	[Test]
+	public async Task DataContractIgnoresUnannotatedMembers()
+	{
+		string source = /* lang=c#-test */ """
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+
+			[DataContract]
+			public sealed class State
+			{
+				[DataMember, Key(0)]
+				public int Version { get; set; }
+
+				public string EntityConflict { get; internal set; }
+
+				public int IgnoredField;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	[Arguments("[DataContract]")]
+	[Arguments("[TypeShape]")]
+	public async Task DataContractOnBaseType(string derivedAttribute)
+	{
+		string source = /* lang=c#-test */ $$"""
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+			using PolyType;
+
+			{{derivedAttribute}}
+			public class Derived : Base
+			{
+				[DataMember, Key(0)]
+				public int Id { get; set; }
+			}
+
+			[DataContract]
+			public class Base
+			{
+				public string EntityConflict { get; internal set; }
+
+				[PropertyShape]
+				internal UnusedDataPacket UnusedData { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task IgnoreDataMemberWithoutDataContract()
+	{
+		string source = /* lang=c#-test */ """
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+
+			public class State
+			{
+				[Key(0)]
+				public int Version { get; set; }
+
+				[IgnoreDataMember]
+				public string EntityConflict { get; set; }
+
+				[IgnoreDataMember]
+				public int IgnoredField;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	[Arguments("public int Value { get; set; }")]
+	[Arguments("private int Value { get; set; }")]
+	[Arguments("public int Value;")]
+	[Arguments("private int Value;")]
+	public async Task DataContractAttributePrecedence(string member)
+	{
+		string source = /* lang=c#-test */ $$"""
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+			using PolyType;
+
+			[DataContract]
+			public class DataMemberIncluded
+			{
+				[DataMember, IgnoreDataMember, Key(0)]
+				{{member}}
+			}
+
+			[DataContract]
+			public class PropertyShapeIncluded
+			{
+				[PropertyShape, IgnoreDataMember, Key(0)]
+				{{member}}
+			}
+
+			[DataContract]
+			public class PropertyShapeIgnored
+			{
+				[DataMember, PropertyShape(Ignore = true), {|NBMsgPack002:Key(0)|}]
+				{{member}}
+			}
+
+			public class PropertyShapeOverridesIgnoreDataMember
+			{
+				[PropertyShape, IgnoreDataMember, Key(0)]
+				{{member}}
+			}
+
+			public class DataMemberWithoutDataContract
+			{
+				[DataMember, IgnoreDataMember, {|NBMsgPack002:Key(0)|}]
+				{{member}}
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task MissingKeyOnDataMember()
+	{
+		string source = /* lang=c#-test */ """
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+
+			[DataContract]
+			public class State
+			{
+				[DataMember, Key(0)]
+				public int Version { get; set; }
+
+				[DataMember]
+				private int {|NBMsgPack001:Property|} { get; set; }
+
+				[DataMember]
+				private int {|NBMsgPack001:Field|};
+
+				[{|NBMsgPack002:Key(1)|}]
+				public int Ignored { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task DataContractDoesNotApplyToBaseMembers()
+	{
+		string source = /* lang=c#-test */ """
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+
+			[DataContract]
+			public class Derived : Base
+			{
+				[DataMember, Key(0)]
+				public int Id { get; set; }
+			}
+
+			public class Base
+			{
+				public string {|NBMsgPack001:EntityConflict|} { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
 	public async Task KeyReuseInOneClass()
 	{
 		string source = /* lang=c#-test */ """
