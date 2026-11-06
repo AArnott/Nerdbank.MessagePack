@@ -8,6 +8,8 @@ namespace Nerdbank.MessagePack.Analyzers;
 
 public static class AnalyzerUtilities
 {
+	private static readonly ImmutableArray<string> SerializationNamespace = ["System", "Runtime", "Serialization"];
+
 	public static IEnumerable<AttributeData> FindAttributes(this ISymbol symbol, string name, ImmutableArray<string> containingNamespaces)
 	{
 		foreach (AttributeData att in symbol.GetAttributes())
@@ -195,8 +197,9 @@ public static class AnalyzerUtilities
 	/// </summary>
 	/// <param name="member">The symbol.</param>
 	/// <param name="referenceSymbols">The known symbols.</param>
+	/// <param name="containingTypeHasDataContract">Whether the member's declaring type has a data contract, or <see langword="null" /> to discover it.</param>
 	/// <returns><see langword="true" /> if the member is a field or property that will get a property shape; <see langword="false" /> otherwise.</returns>
-	internal static bool HasPropertyShape(ISymbol member, ReferenceSymbols referenceSymbols)
+	internal static bool HasPropertyShape(ISymbol member, ReferenceSymbols referenceSymbols, bool? containingTypeHasDataContract = null)
 	{
 		if (member is not (IFieldSymbol or IPropertySymbol))
 		{
@@ -210,9 +213,26 @@ public static class AnalyzerUtilities
 
 		AttributeData? propertyShapeAttribute = member.FindAttributes(referenceSymbols.PropertyShapeAttribute).FirstOrDefault();
 		bool? ignored = propertyShapeAttribute?.NamedArguments.FirstOrDefault(a => a.Key == Constants.PropertyShapeAttribute.IgnoreProperty).Value.Value as bool?;
-		return ignored is not true &&
-			(member.DeclaredAccessibility is Accessibility.Public || propertyShapeAttribute is not null);
+		if (propertyShapeAttribute is not null)
+		{
+			return ignored is not true;
+		}
+
+		if (containingTypeHasDataContract ?? HasDataContract(member.ContainingType))
+		{
+			return !member.IsStatic && HasSerializationAttribute(member, "DataMemberAttribute");
+		}
+
+		return member.DeclaredAccessibility is Accessibility.Public &&
+			!HasSerializationAttribute(member, "IgnoreDataMemberAttribute");
 	}
+
+	/// <summary>
+	/// Checks whether a type declares a data contract.
+	/// </summary>
+	/// <param name="type">The declaring type.</param>
+	/// <returns>Whether the type has a data contract attribute.</returns>
+	internal static bool HasDataContract(INamedTypeSymbol type) => HasSerializationAttribute(type, "DataContractAttribute");
 
 	internal static bool IsUnusedDataPacketMember(ISymbol member, ReferenceSymbols referenceSymbols)
 	{
@@ -225,5 +245,20 @@ public static class AnalyzerUtilities
 		}
 
 		return SymbolEqualityComparer.Default.Equals(memberType, referenceSymbols.UnusedDataPacket);
+	}
+
+	private static bool HasSerializationAttribute(ISymbol symbol, string name)
+	{
+		foreach (AttributeData attribute in symbol.GetAttributes())
+		{
+			if (attribute.AttributeClass is { } attributeClass &&
+				attributeClass.Name == name &&
+				IsInNamespace(attributeClass, SerializationNamespace.AsSpan()))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
