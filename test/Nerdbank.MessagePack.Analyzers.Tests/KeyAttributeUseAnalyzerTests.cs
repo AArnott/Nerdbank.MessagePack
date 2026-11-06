@@ -180,6 +180,9 @@ public class KeyAttributeUseAnalyzerTests
 				[DataMember]
 				private int {|NBMsgPack001:Field|};
 
+				[DataMember, {|NBMsgPack002:Key(1)|}]
+				private static int Cache { get; set; }
+
 				[{|NBMsgPack002:Key(1)|}]
 				public int Ignored { get; set; }
 			}

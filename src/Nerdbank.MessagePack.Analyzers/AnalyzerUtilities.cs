@@ -220,7 +220,7 @@ public static class AnalyzerUtilities
 
 		if (containingTypeHasDataContract ?? HasDataContract(member.ContainingType))
 		{
-			return HasSerializationAttribute(member, "DataMemberAttribute");
+			return !member.IsStatic && HasSerializationAttribute(member, "DataMemberAttribute");
 		}
 
 		return member.DeclaredAccessibility is Accessibility.Public &&
