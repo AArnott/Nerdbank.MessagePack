@@ -363,7 +363,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		{
 			JsonObject schema = context.GetJsonSchema(shape);
 			bool isUntagged = this.untaggedCases?.Contains(converter) == true;
-			if (!shape.Type.IsValueType && (!isUntagged || this.untaggedCases!.CanSelectNil(converter)))
+			if (this.untaggedCases is not null && !shape.Type.IsValueType && (!isUntagged || this.untaggedCases.CanSelectNil(converter)))
 			{
 				schema = ApplyJsonSchemaNullability(schema);
 			}
