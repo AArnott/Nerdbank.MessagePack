@@ -1,5 +1,5 @@
 ﻿{
-  "oneOf": [
+  "anyOf": [
     {
       "$ref": "#/$defs/SchemaTests\u002BArrayOfValuesObject"
     },
@@ -66,7 +66,7 @@
           "description": "GappedProperty"
         },
         "3": {
-          "oneOf": [
+          "anyOf": [
             {
               "$ref": "#/$defs/SchemaTests\u002BPerson",
               "description": "Person"
@@ -102,7 +102,7 @@
           "description": "GappedProperty"
         },
         {
-          "oneOf": [
+          "anyOf": [
             {
               "$ref": "#/$defs/SchemaTests\u002BPerson",
               "description": "Person"

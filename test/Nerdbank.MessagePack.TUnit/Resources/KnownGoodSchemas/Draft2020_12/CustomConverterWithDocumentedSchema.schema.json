@@ -1,5 +1,5 @@
 ﻿{
-  "oneOf": [
+  "anyOf": [
     {
       "$ref": "#/$defs/SchemaTests\u002BCustomType"
     },

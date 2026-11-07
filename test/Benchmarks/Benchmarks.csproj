@@ -17,7 +17,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Nerdbank.Streams" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="PolyType.Roslyn" />
+    <PackageReference Include="PolyType.Roslyn" PrivateAssets="all" />
     <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
 

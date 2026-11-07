@@ -368,6 +368,11 @@ internal record SerializerConfiguration
 	/// This setting affects interoperability with other MessagePack libraries that may use different conventions
 	/// for encoding polymorphic types. Both serialization and deserialization must use the same setting.
 	/// </para>
+	/// <para>
+	/// C# unions with an untagged array case always use object discriminator wrappers, while those with an
+	/// untagged dictionary case always use array discriminator wrappers, overriding this setting to avoid ambiguity.
+	/// Explicitly tagging the collection case restores this setting's control over the wrapper format.
+	/// </para>
 	/// </remarks>
 	public bool UseDiscriminatorObjects
 	{

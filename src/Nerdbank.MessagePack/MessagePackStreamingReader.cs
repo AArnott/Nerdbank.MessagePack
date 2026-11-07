@@ -876,6 +876,8 @@ public ref partial struct MessagePackStreamingReader
 						return self.InsufficientBytes;
 					}
 
+				case MessagePackCode.NeverUsed:
+					throw MessagePackReader.ThrowInvalidCode(code);
 				default:
 					// We don't actually expect to ever hit this point, since every code is supported.
 					Debug.Fail("Missing handler for code: " + code);

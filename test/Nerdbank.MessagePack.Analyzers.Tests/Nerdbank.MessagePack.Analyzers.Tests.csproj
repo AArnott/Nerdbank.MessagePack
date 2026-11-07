@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="PolyType" />
-    <PackageReference Include="PolyType.Roslyn" />
+    <PackageReference Include="PolyType.Roslyn" PrivateAssets="all" />
     <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
 
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="$(PkgPolyType)\analyzers\dotnet\cs\PolyType.SourceGenerator.dll" />
+    <Reference Include="$(PkgPolyType)\analyzers\dotnet\cs\PolyType.SourceGenerator.dll" Aliases="PolyTypeSourceGenerator" />
   </ItemGroup>
 
 </Project>

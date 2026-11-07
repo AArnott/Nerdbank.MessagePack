@@ -27,11 +27,6 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	private static readonly InterningStringConverter InterningStringConverter = new();
 	private static readonly MessagePackConverter<string> ReferencePreservingInterningStringConverter = InterningStringConverter.WrapWithReferencePreservation();
 
-	/// <summary>
-	/// A sentinel state object passed to <see cref="VisitUnionCase{TUnionCase, TUnion}"/> for cases of a C# union.
-	/// </summary>
-	private static readonly object CSharpUnionCaseSentinel = new();
-
 	private readonly ConverterCache owner;
 	private readonly TypeGenerationContext context;
 
@@ -315,9 +310,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		Dictionary<int, MessagePackConverter> deserializerByIntAlias = new(unionShape.UnionCases.Count);
 		Dictionary<DerivedTypeIdentifier, Type> casesByAlias = [];
 		List<(DerivedTypeIdentifier Alias, MessagePackConverter Converter, ITypeShape Shape)> serializers = new(unionShape.UnionCases.Count);
-		object? unionCaseState = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? CSharpUnionCaseSentinel : null;
+		UntaggedUnionCases? untaggedCases = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion
+			? new(
+				this.owner.PreserveReferences != ReferencePreservationMode.Off,
+				(this.owner.DeserializeDefaultValues & DeserializeDefaultValuesPolicy.AllowNullValuesForNonNullableProperties) != 0)
+			: null;
 		foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
 		{
+			CSharpUnionCase? unionCaseState = untaggedCases is not null ? new() : null;
 			bool useTag = unionCase.IsTagSpecified || this.owner.PerfOverSchemaStability;
 			DerivedTypeIdentifier? customAlias = aliasProvider?.GetAlias(unionShape, unionCase);
 			DerivedTypeIdentifier alias = customAlias ?? (useTag ? new(unionCase.Tag) : new(unionCase.Name));
@@ -330,6 +330,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			if (caseConverter.TryPrepareFailPath(unionCase, out failureResult))
 			{
 				return failureResult;
+			}
+
+			if (customAlias is null && untaggedCases is not null &&
+				(typeof(TUnion).IsValueType || this.owner.PreserveReferences == ReferencePreservationMode.Off || unionCase.UnionCaseType.Type.IsValueType))
+			{
+				try
+				{
+					untaggedCases.Add(unionCase.UnionCaseType, caseConverter.Value, unionCaseState!, unionCase.IsNullable);
+				}
+				catch (NotSupportedException ex)
+				{
+					return ConverterResult.Err(ex);
+				}
 			}
 
 			// Preserve inferred read tags only for cases whose aliases have not been overridden.
@@ -356,6 +369,14 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			serializers.Add((alias, caseConverter.Value, unionCase.UnionCaseType));
 		}
 
+		untaggedCases?.Complete();
+		bool useDiscriminatorObjects = untaggedCases switch
+		{
+			{ HasArray: true } => true,
+			{ HasMap: true } => false,
+			_ => this.owner.UseDiscriminatorObjects,
+		};
+
 		SubTypes<TUnion> subTypes = new()
 		{
 			DeserializersByIntAlias = deserializerByIntAlias.ToFrozenDictionary(),
@@ -367,7 +388,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			TryGetSerializer = (ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (serializers[idx].Alias, serializers[idx].Converter) : null,
 		};
 
-		return ConverterResult.Ok(new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, subTypes, this.owner.UseDiscriminatorObjects));
+		return ConverterResult.Ok(new UnionConverter<TUnion>((MessagePackConverter<TUnion>)baseTypeConverter.Value, subTypes, useDiscriminatorObjects, untaggedCases));
 	}
 
 	/// <inheritdoc/>
@@ -377,7 +398,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		// so they must be resolved through the generation context.
 		// Type hierarchy and F# union cases describe a view of the union value itself, so we bypass the cache
 		// (and the reference preservation wrapper, which the union converter already applies).
-		ConverterResult caseConverter = state == CSharpUnionCaseSentinel
+		CSharpUnionCase? csharpCase = state as CSharpUnionCase;
+		ConverterResult caseConverter = csharpCase is not null
 			? this.GetConverter(unionCaseShape.UnionCaseType)
 			: (ConverterResult)unionCaseShape.UnionCaseType.Accept(this)!;
 		if (caseConverter.TryPrepareFailPath(unionCaseShape, out ConverterResult? failureResult))
@@ -385,7 +407,16 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return failureResult;
 		}
 
-		return ConverterResult.Ok(new UnionCaseConverter<TUnionCase, TUnion>((MessagePackConverter<TUnionCase>)caseConverter.Value, unionCaseShape.Marshaler, depthStep: state == CSharpUnionCaseSentinel));
+		if (csharpCase is not null)
+		{
+			csharpCase.PayloadConverter = caseConverter.Value;
+			if (!typeof(TUnionCase).IsValueType)
+			{
+				csharpCase.IsNullPayload = value => unionCaseShape.Marshaler.Unmarshal((TUnion)value) is null;
+			}
+		}
+
+		return ConverterResult.Ok(new UnionCaseConverter<TUnionCase, TUnion>((MessagePackConverter<TUnionCase>)caseConverter.Value, unionCaseShape.Marshaler, csharpCase));
 	}
 
 	/// <inheritdoc/>
@@ -788,7 +819,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return failure;
 		}
 
-		return ConverterResult.Ok(new OptionalConverter<TOptional, TElement>((MessagePackConverter<TElement>)converter.Value, optionalShape.GetDeconstructor(), optionalShape.GetNoneConstructor(), optionalShape.GetSomeConstructor()));
+		bool tagCSharpUnionNullPayload = optionalShape.ElementType is IUnionTypeShape { UnionKind: UnionTypeShapeKind.CSharpUnion };
+		return ConverterResult.Ok(new OptionalConverter<TOptional, TElement>(
+			(MessagePackConverter<TElement>)converter.Value,
+			optionalShape.GetDeconstructor(),
+			optionalShape.GetNoneConstructor(),
+			optionalShape.GetSomeConstructor(),
+			tagCSharpUnionNullPayload));
 	}
 
 	/// <inheritdoc/>

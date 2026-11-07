@@ -1,5 +1,5 @@
 ﻿{
-  "oneOf": [
+  "anyOf": [
     {
       "$ref": "#/$defs/SchemaTests\u002BRecursiveType"
     },
@@ -12,7 +12,7 @@
       "type": "object",
       "properties": {
         "Child": {
-          "oneOf": [
+          "anyOf": [
             {
               "$ref": "#/$defs/SchemaTests\u002BRecursiveType"
             },

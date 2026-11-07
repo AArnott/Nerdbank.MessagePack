@@ -17,6 +17,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	private readonly SubTypes<TUnion> subTypes;
 	private readonly bool useDiscriminatorObjects;
 	private readonly bool canPreserveUnknownUnionCase;
+	private readonly UntaggedUnionCases? untaggedCases;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="UnionConverter{TUnion}"/> class.
@@ -24,13 +25,15 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <param name="baseConverter">The converter to use for the base type.</param>
 	/// <param name="subTypes">The map of subtypes and their converters.</param>
 	/// <param name="useDiscriminatorObjects">Indicates whether to serialize as objects instead of arrays.</param>
-	public UnionConverter(MessagePackConverter<TUnion> baseConverter, SubTypes<TUnion> subTypes, bool useDiscriminatorObjects)
+	/// <param name="untaggedCases">Native encodings for C# union cases, if applicable.</param>
+	public UnionConverter(MessagePackConverter<TUnion> baseConverter, SubTypes<TUnion> subTypes, bool useDiscriminatorObjects, UntaggedUnionCases? untaggedCases = null)
 	{
 		Requires.Argument(!subTypes.Disabled, nameof(subTypes), "This union is disabled.");
 
 		this.baseConverter = baseConverter;
 		this.subTypes = subTypes;
 		this.useDiscriminatorObjects = useDiscriminatorObjects;
+		this.untaggedCases = untaggedCases;
 		this.PreferAsyncSerialization = baseConverter.PreferAsyncSerialization || subTypes.Serializers.Any(t => t.Converter.PreferAsyncSerialization);
 		this.canPreserveUnknownUnionCase = this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true };
 	}
@@ -41,6 +44,11 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <inheritdoc/>
 	public override TUnion? Read(ref MessagePackReader reader, SerializationContext context)
 	{
+		if (this.untaggedCases?.Select(reader, typeof(TUnion).IsValueType, context) is { } nativeConverter)
+		{
+			return (TUnion?)nativeConverter.ReadObject(ref reader, context);
+		}
+
 		if (reader.TryReadNil())
 		{
 			return default;
@@ -102,10 +110,24 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TUnion? value, SerializationContext context)
 	{
-		if (value is null)
+		bool tagNullPayload = context.TagCSharpUnionNullPayload;
+		context.TagCSharpUnionNullPayload = false;
+		if (!typeof(TUnion).IsValueType && value is null)
 		{
 			writer.WriteNil();
 			return;
+		}
+
+		ref TUnion nonNullValue = ref Unsafe.AsRef(in value!);
+		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref nonNullValue);
+		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true)
+		{
+			bool nullPayload = this.untaggedCases.HasNullPayload(nativeCase.Converter, nonNullValue!);
+			if (!nullPayload || (!tagNullPayload && typeof(TUnion).IsValueType))
+			{
+				nativeCase.Converter.WriteObject(ref writer, value, context);
+				return;
+			}
 		}
 
 		// Write header based on format (object vs array)
@@ -122,12 +144,12 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 
 		// Write discriminator and value (same for both formats after header)
 		MessagePackConverter converter;
-		if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+		if (subtype is { } taggedCase)
 		{
-			writer.WriteRaw(subtype.Alias.MsgPackAlias.Span);
-			converter = subtype.Converter;
+			writer.WriteRaw(taggedCase.Alias.MsgPackAlias.Span);
+			converter = taggedCase.Converter;
 		}
-		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(value, out RawMessagePack discriminator))
+		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(nonNullValue, out RawMessagePack discriminator))
 		{
 			writer.WriteRaw(discriminator);
 			converter = this.baseConverter;
@@ -144,6 +166,31 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <inheritdoc/>
 	public override async ValueTask<TUnion?> ReadAsync(MessagePackAsyncReader reader, SerializationContext context)
 	{
+		if (this.untaggedCases is not null)
+		{
+			// Integer fallback and reference extension selection need more than the leading code.
+			MessagePackStreamingReader peek = reader.CreateStreamingReader();
+			byte code;
+			while (peek.TryPeekNextCode(out code).NeedsMoreBytes())
+			{
+				peek = new(await peek.FetchMoreBytesAsync().ConfigureAwait(false));
+			}
+
+			reader.ReturnReader(ref peek);
+			if (MessagePackCode.ToMessagePackType(code) is MessagePackType.Integer or MessagePackType.Extension)
+			{
+				await reader.BufferNextStructureAsync(context).ConfigureAwait(false);
+			}
+
+			MessagePackReader buffered = reader.CreateBufferedReader();
+			MessagePackConverter? nativeConverter = this.untaggedCases.Select(buffered, typeof(TUnion).IsValueType, context);
+			reader.ReturnReader(ref buffered);
+			if (nativeConverter is not null)
+			{
+				return (TUnion?)await nativeConverter.ReadObjectAsync(reader, context).ConfigureAwait(false);
+			}
+		}
+
 		MessagePackStreamingReader streamingReader = reader.CreateStreamingReader();
 		bool success;
 		while (streamingReader.TryReadNil(out success).NeedsMoreBytes())
@@ -238,10 +285,24 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <inheritdoc/>
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context)
 	{
-		if (value is null)
+		bool tagNullPayload = context.TagCSharpUnionNullPayload;
+		context.TagCSharpUnionNullPayload = false;
+		if (!typeof(TUnion).IsValueType && value is null)
 		{
 			writer.WriteNil();
 			return;
+		}
+
+		ref TUnion nonNullValue = ref Unsafe.AsRef(in value!);
+		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref nonNullValue);
+		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true)
+		{
+			bool nullPayload = this.untaggedCases.HasNullPayload(nativeCase.Converter, nonNullValue!);
+			if (!nullPayload || (!tagNullPayload && typeof(TUnion).IsValueType))
+			{
+				await nativeCase.Converter.WriteObjectAsync(writer, value, context).ConfigureAwait(false);
+				return;
+			}
 		}
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
@@ -258,12 +319,12 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		}
 
 		MessagePackConverter converter;
-		if (this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value)) is { } subtype)
+		if (subtype is { } taggedCase)
 		{
-			syncWriter.WriteRaw(subtype.Alias.MsgPackAlias.Span);
-			converter = subtype.Converter;
+			syncWriter.WriteRaw(taggedCase.Alias.MsgPackAlias.Span);
+			converter = taggedCase.Converter;
 		}
-		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(value, out RawMessagePack discriminator))
+		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(nonNullValue, out RawMessagePack discriminator))
 		{
 			syncWriter.WriteRaw(discriminator);
 			converter = this.baseConverter;
@@ -292,17 +353,33 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
 		var unionTypeShape = (IUnionTypeShape)typeShape;
-		JsonArray oneOfArray = new(CreateOneOfElement(null, this.baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(this.baseConverter.GetType())));
-
-		foreach ((DerivedTypeIdentifier alias, _, ITypeShape shape) in this.subTypes.Serializers)
+		JsonArray oneOfArray = [];
+		if (this.untaggedCases is null)
 		{
-			oneOfArray.Add((JsonNode)CreateOneOfElement(alias, context.GetJsonSchema(shape)));
+			oneOfArray.Add((JsonNode)CreateOneOfElement(null, this.baseConverter.GetJsonSchema(context, unionTypeShape.BaseType) ?? CreateUndocumentedSchema(this.baseConverter.GetType())));
 		}
 
-		return new()
+		foreach ((DerivedTypeIdentifier alias, MessagePackConverter converter, ITypeShape shape) in this.subTypes.Serializers)
 		{
-			["oneOf"] = oneOfArray,
+			JsonObject schema = context.GetJsonSchema(shape);
+			bool isUntagged = this.untaggedCases?.Contains(converter) == true;
+			if (this.untaggedCases is not null && !shape.Type.IsValueType && (!isUntagged || this.untaggedCases.CanSelectNil(converter)))
+			{
+				schema = ApplyJsonSchemaNullability(schema);
+			}
+
+			oneOfArray.Add(isUntagged ? schema : (JsonNode)CreateOneOfElement(alias, schema));
+			if (isUntagged && !shape.Type.IsValueType)
+			{
+				oneOfArray.Add((JsonNode)CreateOneOfElement(alias, new() { ["type"] = "null" }));
+			}
+		}
+
+		JsonObject unionSchema = new()
+		{
+			[this.untaggedCases is null ? "oneOf" : "anyOf"] = oneOfArray,
 		};
+		return this.untaggedCases is not null && !typeof(TUnion).IsValueType ? ApplyJsonSchemaNullability(unionSchema) : unionSchema;
 
 		JsonObject CreateOneOfElement(DerivedTypeIdentifier? alias, JsonObject schema)
 		{

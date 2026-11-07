@@ -17,13 +17,8 @@ public partial class ConstructorAcronymReproTests : MessagePackSerializerTestBas
 			shape.Constructor.Parameters,
 			parameter =>
 			{
-				Assert.Equal("ilDelta", parameter.Name);
-				Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
-			},
-			parameter =>
-			{
 				Assert.Equal("ILDelta", parameter.Name);
-				Assert.Equal(ParameterKind.MemberInitializer, parameter.Kind);
+				Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
 			});
 
 		Delta result = async ? await this.RoundtripAsync(new Delta(42)) : this.Roundtrip(new Delta(42));
@@ -97,7 +92,7 @@ public partial class ConstructorAcronymReproTests : MessagePackSerializerTestBas
 		MessagePackSerializationException exception = Assert.Throws<MessagePackSerializationException>(
 			() => this.Serializer.Deserialize<Delta>(empty));
 		Assert.Equal(MessagePackSerializationException.ErrorCode.MissingRequiredProperty, exception.Code);
-		Assert.Contains("ilDelta", GetFullMessage(exception));
+		Assert.Contains("ILDelta", GetFullMessage(exception));
 	}
 
 	[Test]
@@ -108,7 +103,7 @@ public partial class ConstructorAcronymReproTests : MessagePackSerializerTestBas
 		this.Serializer = this.Serializer with { PerfOverSchemaStability = array };
 		MessagePackSerializationException exception = Assert.Throws<MessagePackSerializationException>(
 			() => this.Serializer.Serialize(new RequiredDelta(42) { ILDelta = 42 }));
-		AssertConflictMessage<RequiredDelta>(exception, "ilDelta", "ILDelta", "MethodParameter", "MemberInitializer", "serialized key 'ILDelta'");
+		AssertConflictMessage<RequiredDelta>(exception, "ILDelta", "MethodParameter", "MemberInitializer", "serialized key 'ILDelta'");
 	}
 
 	[Test]
@@ -125,23 +120,23 @@ public partial class ConstructorAcronymReproTests : MessagePackSerializerTestBas
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public void MultipleMethodParametersAreNotSilentlyMerged(bool array)
+	public void AcronymAwareMatchingDoesNotMergeUnmatchedParameters(bool array)
 	{
 		this.Serializer = this.Serializer with { PerfOverSchemaStability = array };
 		MessagePackSerializationException exception = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Serialize(new MultipleParametersDelta(1, 2)));
-		AssertConflictMessage<MultipleParametersDelta>(exception, "ilDelta", "ILDELTA", "MethodParameter");
+			() => this.Roundtrip(new MultipleParametersDelta(1, 2)));
+		Assert.Contains("ILDELTA", GetFullMessage(exception));
 	}
 
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public void AmbiguousCaseInsensitiveMatchIsDescriptive(bool array)
+	public void AcronymAwareMatchingDoesNotUseLegacyFallback(bool array)
 	{
 		this.Serializer = this.Serializer with { PerfOverSchemaStability = array };
 		MessagePackSerializationException exception = Assert.Throws<MessagePackSerializationException>(
-			() => this.Serializer.Serialize(new AmbiguousDelta(42)));
-		AssertConflictMessage<AmbiguousDelta>(exception, "ildelta", "ILDelta", "IlDelta", "ambiguously");
+			() => this.Roundtrip(new AmbiguousDelta(42)));
+		Assert.Contains("ildelta", GetFullMessage(exception));
 	}
 
 	[Test]
@@ -196,10 +191,12 @@ public partial class ConstructorAcronymReproTests : MessagePackSerializerTestBas
 	}
 
 	[Test]
-	public void FirstCharacterOnlyCaseDifferenceRoundtrips()
+	public void LegacyFirstCharacterOnlyMatchIsNoLongerAccepted()
 	{
-		RenamedParameterDelta result = this.Roundtrip(new RenamedParameterDelta(42));
-		Assert.Equal(42, result.ILDelta);
+		MessagePackSerializationException exception = Assert.Throws<MessagePackSerializationException>(
+			() => this.Roundtrip(new RenamedParameterDelta(42)));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.MissingRequiredProperty, exception.Code);
+		Assert.Contains("iLDelta", GetFullMessage(exception));
 	}
 
 	[Test]

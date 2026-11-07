@@ -9,6 +9,7 @@ namespace Nerdbank.MessagePack;
 /// <remarks>
 /// Implementations must be thread-safe and return consistent results for the lifetime of a serializer that uses them.
 /// Aliases are resolved while constructing converters, not for each serialized value.
+/// A custom identifier forces a discriminator wrapper, including for otherwise untagged primitive and collection cases.
 /// </remarks>
 public interface IUnionTypeAliasProvider
 {
@@ -17,6 +18,6 @@ public interface IUnionTypeAliasProvider
 	/// </summary>
 	/// <param name="unionShape">The shape of the containing union.</param>
 	/// <param name="caseShape">A case belonging to <paramref name="unionShape"/>.</param>
-	/// <returns>The custom identifier, or <see langword="null"/> to use the normal identifier.</returns>
+	/// <returns>The custom identifier, or <see langword="null"/> to use the case's normal encoding, which may omit a discriminator.</returns>
 	DerivedTypeIdentifier? GetAlias(IUnionTypeShape unionShape, IUnionCaseShape caseShape);
 }

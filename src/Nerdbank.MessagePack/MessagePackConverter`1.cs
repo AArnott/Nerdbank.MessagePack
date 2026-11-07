@@ -241,7 +241,7 @@ public abstract class MessagePackConverter<T> : MessagePackConverter, IMessagePa
 		else
 		{
 			// This is probably a schema reference or a composition that may already allow null.
-			string compositionKeyword = schema.ContainsKey("oneOf") || schema.ContainsKey("anyOf") || schema.ContainsKey("allOf") ? "anyOf" : "oneOf";
+			string compositionKeyword = schema.ContainsKey("$ref") || schema.ContainsKey("oneOf") || schema.ContainsKey("anyOf") || schema.ContainsKey("allOf") ? "anyOf" : "oneOf";
 			schema = new()
 			{
 				[compositionKeyword] = new JsonArray(schema, new JsonObject { ["type"] = "null" }),
