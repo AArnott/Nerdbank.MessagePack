@@ -130,14 +130,22 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 
 		bool? keyAttributeApplied = null;
 		Dictionary<int, ISymbol>? keysAssigned = null;
+		INamedTypeSymbol? declaringType = null;
+		bool declaringTypeHasDataContract = false;
 		foreach (ISymbol memberSymbol in typeSymbol.GetAllMembers())
 		{
 			switch (memberSymbol)
 			{
 				case IPropertySymbol:
 				case IFieldSymbol:
+					if (!SymbolEqualityComparer.Default.Equals(declaringType, memberSymbol.ContainingType))
+					{
+						declaringType = memberSymbol.ContainingType;
+						declaringTypeHasDataContract = AnalyzerUtilities.HasDataContract(declaringType);
+					}
+
 					AttributeData? keyAttribute = memberSymbol.FindAttributes(referenceSymbols.KeyAttribute).FirstOrDefault();
-					if (!this.IsMemberSerialized(memberSymbol, ctorParameterNames, referenceSymbols))
+					if (!this.IsMemberSerialized(memberSymbol, ctorParameterNames, referenceSymbols, declaringTypeHasDataContract))
 					{
 						if (keyAttribute is not null)
 						{
@@ -202,7 +210,7 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 		}
 	}
 
-	private bool IsMemberSerialized(ISymbol member, ImmutableHashSet<string> ctorParameterNames, ReferenceSymbols referenceSymbols)
+	private bool IsMemberSerialized(ISymbol member, ImmutableHashSet<string> ctorParameterNames, ReferenceSymbols referenceSymbols, bool containingTypeHasDataContract)
 	{
 		bool isReadOnly = !ctorParameterNames.Contains(member.Name) && member switch
 		{
@@ -227,7 +235,7 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 			}
 		}
 
-		return AnalyzerUtilities.HasPropertyShape(member, referenceSymbols) && !isReadOnly;
+		return AnalyzerUtilities.HasPropertyShape(member, referenceSymbols, containingTypeHasDataContract) && !isReadOnly;
 	}
 
 	private IMethodSymbol? GetDeserializingConstructor(INamedTypeSymbol? typeSymbol, ReferenceSymbols referenceSymbols)
