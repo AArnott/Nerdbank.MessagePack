@@ -706,10 +706,12 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 			NonNullableReferences result = await Read();
 			Assert.Null(result.Value);
 			Assert.Equal(typeof(string), result.SelectedType);
+			Assert.True(this.DataMatchesSchema<NonNullableReferences>(new(nil)));
 		}
 		else
 		{
 			await Assert.ThrowsAsync<MessagePackSerializationException>(Read);
+			Assert.False(this.DataMatchesSchema<NonNullableReferences>(new(nil)));
 		}
 	}
 
@@ -769,6 +771,7 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 			: this.Roundtrip(input, shape);
 
 		Assert.Equal(present, result.HasValue);
+		Assert.True(this.DataMatchesSchema(this.lastRoundtrippedMsgpack, shape));
 		if (present)
 		{
 			NullableReferences resultValue = result.GetValueOrDefault();

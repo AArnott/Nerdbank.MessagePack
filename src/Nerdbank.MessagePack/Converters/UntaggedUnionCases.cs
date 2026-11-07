@@ -144,6 +144,12 @@ internal sealed class UntaggedUnionCases(bool preserveReferences, bool allowNonN
 	/// <returns>Whether the converter is untagged.</returns>
 	internal bool Contains(MessagePackConverter converter) => this.converters.Contains(converter);
 
+	/// <summary>Determines whether a case is selected for a nil value.</summary>
+	/// <param name="converter">The case converter.</param>
+	/// <returns>Whether a nil value selects the converter.</returns>
+	internal bool CanSelectNil(MessagePackConverter converter)
+		=> converter == this.nilConverter || (this.nilConverter is null && allowNonNullableNull && converter == this.firstReferenceConverter);
+
 	/// <summary>Determines whether an untagged case contains a null payload requiring a discriminator.</summary>
 	/// <param name="converter">The case converter.</param>
 	/// <param name="value">The non-null union instance.</param>

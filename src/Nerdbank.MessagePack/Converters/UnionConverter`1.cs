@@ -362,13 +362,14 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 		foreach ((DerivedTypeIdentifier alias, MessagePackConverter converter, ITypeShape shape) in this.subTypes.Serializers)
 		{
 			JsonObject schema = context.GetJsonSchema(shape);
-			if (this.untaggedCases is not null && !shape.Type.IsValueType)
+			bool isUntagged = this.untaggedCases?.Contains(converter) == true;
+			if (!shape.Type.IsValueType && (!isUntagged || this.untaggedCases!.CanSelectNil(converter)))
 			{
 				schema = ApplyJsonSchemaNullability(schema);
 			}
 
-			oneOfArray.Add(this.untaggedCases?.Contains(converter) == true ? schema : (JsonNode)CreateOneOfElement(alias, schema));
-			if (this.untaggedCases?.Contains(converter) == true && !typeof(TUnion).IsValueType && !shape.Type.IsValueType)
+			oneOfArray.Add(isUntagged ? schema : (JsonNode)CreateOneOfElement(alias, schema));
+			if (isUntagged && !shape.Type.IsValueType)
 			{
 				oneOfArray.Add((JsonNode)CreateOneOfElement(alias, new() { ["type"] = "null" }));
 			}
