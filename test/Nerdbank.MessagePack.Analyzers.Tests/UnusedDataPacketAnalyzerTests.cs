@@ -97,4 +97,24 @@ public class UnusedDataPacketAnalyzerTests
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
+
+	[Test]
+	public async Task DataContractMemberSelection()
+	{
+		string source = /* lang=c#-test */ """
+			using System.Runtime.Serialization;
+			using Nerdbank.MessagePack;
+
+			[DataContract]
+			public class Contracted
+			{
+				[DataMember]
+				private UnusedDataPacket Extension { get; set; }
+
+				private UnusedDataPacket {|NBMsgPack060:Unannotated|} { get; set; }
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
 }
