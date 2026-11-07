@@ -748,6 +748,42 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 	}
 
 	[Test, MatrixDataSource]
+	public async Task OptionalUnionNullPayloadRoundtrip(bool async, bool discriminatorObjects, bool present, bool array)
+	{
+		this.Serializer = this.Serializer with { UseDiscriminatorObjects = discriminatorObjects };
+		NullableReferences? input = null;
+		if (present)
+		{
+			NullableReferences union = array ? new((int[]?)null) : new((string?)null);
+			input = union;
+		}
+
+		ITypeShape<NullableReferences?> shape = (ITypeShape<NullableReferences?>)OptionalUnionWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow(typeof(NullableReferences?));
+		if (present)
+		{
+			Assert.True(((IOptionalTypeShape<NullableReferences?, NullableReferences>)shape).GetDeconstructor()(input, out _));
+		}
+
+		NullableReferences? result = async
+			? await this.RoundtripAsync(input, shape)
+			: this.Roundtrip(input, shape);
+
+		Assert.Equal(present, result.HasValue);
+		if (present)
+		{
+			NullableReferences resultValue = result.GetValueOrDefault();
+			Assert.Equal(typeof(string), resultValue.SelectedType);
+			Assert.Null(resultValue.Value);
+			Assert.NotEqual("null", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		}
+		else
+		{
+			Assert.Equal(1, this.lastRoundtrippedMsgpack.Length);
+			Assert.Equal("null", this.Serializer.ConvertToJson(this.lastRoundtrippedMsgpack));
+		}
+	}
+
+	[Test, MatrixDataSource]
 	public async Task HandwrittenNullPayloadRoundtrip(bool async, bool array)
 	{
 		NullableReferences input = array ? new((int[]?)null) : new((string?)null);
@@ -1032,6 +1068,12 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 	}
 #nullable restore
 
+	[GenerateShape]
+	public partial class OptionalNullableReferences
+	{
+		public NullableReferences? Value { get; set; }
+	}
+
 	/// <summary>A hand-authored union implemented as a class, so that reference preservation applies to the union itself.</summary>
 	[Union, GenerateShape]
 	public sealed partial class PetClassUnion
@@ -1115,4 +1157,7 @@ public partial class CSharpUnionTests : MessagePackSerializerTestBase
 			return new IntOrBoolConverter();
 		}
 	}
+
+	[GenerateShapeFor<OptionalNullableReferences>]
+	private partial class OptionalUnionWitness;
 }

@@ -109,11 +109,7 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 
 					ISymbol member = property.PropertySymbol;
 					string name = property.LogicalName ?? property.Name;
-					if (!parametersByName.TryGetValue(name, out IParameterSymbol? parameter))
-					{
-						KeyValuePair<string, IParameterSymbol?>[] matches = parametersByName.Where(entry => string.Equals(entry.Key, name, StringComparison.OrdinalIgnoreCase)).ToArray();
-						parameter = matches.Length == 1 ? matches[0].Value : null;
-					}
+					parametersByName.TryGetValue(name, out IParameterSymbol? parameter);
 
 					foreach (SyntaxReference declaration in member.OriginalDefinition.DeclaringSyntaxReferences)
 					{
@@ -173,16 +169,24 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 
 		foreach (ParameterDataModel parameter in constructor.Parameters)
 		{
-			PropertyDataModel? matchingProperty = null;
-			foreach (PropertyDataModel property in model.Properties)
-			{
-				if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
-					MatchesCamelCase(parameter.Parameter.Name, property.Name))
-				{
-					matchingProperty = property;
-					break;
-				}
-			}
+			PropertyDataModel[] exactMatches = model.Properties
+				.Where(property =>
+					SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
+					string.Equals(parameter.Parameter.Name, property.Name, StringComparison.Ordinal))
+				.ToArray();
+			PropertyDataModel? matchingProperty = exactMatches.Length == 1
+				? exactMatches[0]
+				: exactMatches.Length == 0
+					? model.Properties
+						.Where(property =>
+							SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
+							PolyType.CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
+						.ToArray() switch
+					{
+						[PropertyDataModel property] => property,
+						_ => null,
+					}
+					: null;
 
 			AttributeData? attribute = parameterShapeAttribute is null ? null : parameter.Parameter.FindAttributes(parameterShapeAttribute).FirstOrDefault();
 			string? configuredName = attribute?.NamedArguments.FirstOrDefault(argument => argument.Key == Constants.PropertyShapeAttribute.NameProperty).Value.Value as string;
@@ -205,17 +209,6 @@ public class DefaultValueInitializerAnalyzer : DiagnosticAnalyzer
 
 		return result;
 	}
-
-	/// <summary>
-	/// Matches declared names using PolyType's first-character-only Pascal/camel case convention.
-	/// </summary>
-	/// <param name="left">The parameter name.</param>
-	/// <param name="right">The member name.</param>
-	/// <returns>Whether the names differ only in the casing of their first character.</returns>
-	private static bool MatchesCamelCase(string left, string right) =>
-		left.Length == right.Length && (left.Length == 0 ||
-			(char.ToLowerInvariant(left[0]) == char.ToLowerInvariant(right[0]) &&
-				string.CompareOrdinal(left, 1, right, 1, left.Length - 1) == 0));
 
 	private static void CollectShapeRoots(
 		INamedTypeSymbol typeSymbol,

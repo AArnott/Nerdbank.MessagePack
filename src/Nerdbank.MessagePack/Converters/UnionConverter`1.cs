@@ -110,18 +110,24 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <inheritdoc/>
 	public override void Write(ref MessagePackWriter writer, in TUnion? value, SerializationContext context)
 	{
-		if (value is null)
+		bool tagNullPayload = context.TagCSharpUnionNullPayload;
+		context.TagCSharpUnionNullPayload = false;
+		if (!typeof(TUnion).IsValueType && value is null)
 		{
 			writer.WriteNil();
 			return;
 		}
 
-		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value));
-		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true &&
-			(typeof(TUnion).IsValueType || !this.untaggedCases.HasNullPayload(nativeCase.Converter, value)))
+		ref TUnion nonNullValue = ref Unsafe.AsRef(in value!);
+		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref nonNullValue);
+		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true)
 		{
-			nativeCase.Converter.WriteObject(ref writer, value, context);
-			return;
+			bool nullPayload = this.untaggedCases.HasNullPayload(nativeCase.Converter, nonNullValue!);
+			if (!nullPayload || (!tagNullPayload && typeof(TUnion).IsValueType))
+			{
+				nativeCase.Converter.WriteObject(ref writer, value, context);
+				return;
+			}
 		}
 
 		// Write header based on format (object vs array)
@@ -143,7 +149,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			writer.WriteRaw(taggedCase.Alias.MsgPackAlias.Span);
 			converter = taggedCase.Converter;
 		}
-		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(value, out RawMessagePack discriminator))
+		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(nonNullValue, out RawMessagePack discriminator))
 		{
 			writer.WriteRaw(discriminator);
 			converter = this.baseConverter;
@@ -279,18 +285,24 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <inheritdoc/>
 	public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, TUnion? value, SerializationContext context)
 	{
-		if (value is null)
+		bool tagNullPayload = context.TagCSharpUnionNullPayload;
+		context.TagCSharpUnionNullPayload = false;
+		if (!typeof(TUnion).IsValueType && value is null)
 		{
 			writer.WriteNil();
 			return;
 		}
 
-		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref Unsafe.AsRef(in value));
-		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true &&
-			(typeof(TUnion).IsValueType || !this.untaggedCases.HasNullPayload(nativeCase.Converter, value)))
+		ref TUnion nonNullValue = ref Unsafe.AsRef(in value!);
+		(DerivedTypeIdentifier Alias, MessagePackConverter Converter)? subtype = this.subTypes.TryGetSerializer(ref nonNullValue);
+		if (subtype is { } nativeCase && this.untaggedCases?.Contains(nativeCase.Converter) == true)
 		{
-			await nativeCase.Converter.WriteObjectAsync(writer, value, context).ConfigureAwait(false);
-			return;
+			bool nullPayload = this.untaggedCases.HasNullPayload(nativeCase.Converter, nonNullValue!);
+			if (!nullPayload || (!tagNullPayload && typeof(TUnion).IsValueType))
+			{
+				await nativeCase.Converter.WriteObjectAsync(writer, value, context).ConfigureAwait(false);
+				return;
+			}
 		}
 
 		MessagePackWriter syncWriter = writer.CreateWriter();
@@ -312,7 +324,7 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 			syncWriter.WriteRaw(taggedCase.Alias.MsgPackAlias.Span);
 			converter = taggedCase.Converter;
 		}
-		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(value, out RawMessagePack discriminator))
+		else if (this.baseConverter is IUnknownUnionCaseFallback<TUnion> { CanPreserveUnknownUnionCase: true } fallback && fallback.TryGetUnknownUnionDiscriminator(nonNullValue, out RawMessagePack discriminator))
 		{
 			syncWriter.WriteRaw(discriminator);
 			converter = this.baseConverter;

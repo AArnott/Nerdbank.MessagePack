@@ -1,10 +1,13 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
+using System.Text;
+
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// Associates constructor arguments with properties, preserving exact matches before considering case-insensitive matches.
+/// Associates constructor arguments with properties, preserving exact matches before considering acronym-aware matches.
 /// </summary>
 internal sealed class ConstructorParameterMapping
 {
@@ -67,6 +70,14 @@ internal sealed class ConstructorParameterMapping
 		}
 	}
 
+	private enum NameState
+	{
+		NotStarted,
+		UppercaseLetter,
+		LowercaseLetterOrDigit,
+		Space,
+	}
+
 	/// <summary>
 	/// Gets the arguments to deserialize and their associated properties, if any.
 	/// </summary>
@@ -100,18 +111,30 @@ internal sealed class ConstructorParameterMapping
 	private static IPropertyShape? FindProperty(IConstructorShape constructor, IParameterShape parameter)
 	{
 		IReadOnlyList<IPropertyShape> properties = constructor.DeclaringType.Properties;
-		return FindMatch(StringComparison.Ordinal) ?? FindMatch(StringComparison.OrdinalIgnoreCase);
+		string sourceParameterName = parameter.ParameterInfo?.Name ?? parameter.Name;
+		bool duplicateShapeName = constructor.Parameters.Count(candidate => string.Equals(candidate.Name, parameter.Name, StringComparison.Ordinal)) > 1;
+		Func<string, string, bool> exactMatch = (left, right) => string.Equals(left, right, StringComparison.Ordinal);
+		Func<string, string, bool> camelCaseMatch = (left, right) => CamelCaseInvariantEquals(left, right);
+		return duplicateShapeName
+			? FindMatch(sourceParameterName, exactMatch)
+				?? FindMatch(parameter.Name, exactMatch)
+				?? FindMatch(sourceParameterName, camelCaseMatch)
+				?? FindMatch(parameter.Name, camelCaseMatch)
+			: FindMatch(parameter.Name, exactMatch)
+				?? FindMatch(sourceParameterName, exactMatch)
+				?? FindMatch(parameter.Name, camelCaseMatch)
+				?? FindMatch(sourceParameterName, camelCaseMatch);
 
-		IPropertyShape? FindMatch(StringComparison comparison)
+		IPropertyShape? FindMatch(string name, Func<string, string, bool> matches)
 		{
 			IPropertyShape? result = null;
 			foreach (IPropertyShape property in properties)
 			{
-				if (string.Equals(parameter.Name, property.Name, comparison))
+				if (matches(name, property.Name))
 				{
 					if (result is not null)
 					{
-						throw new MessagePackSerializationException($"The type '{constructor.DeclaringType.Type.FullName}' has constructor argument '{parameter.Name}' ({parameter.Kind}, {parameter.ParameterType.Type.FullName}) that ambiguously matches properties '{result.Name}' ({result.PropertyType.Type.FullName}) and '{property.Name}' ({property.PropertyType.Type.FullName}). Rename the argument or use PropertyShapeAttribute/ParameterShapeAttribute to disambiguate the names, or write a custom converter.");
+						throw new MessagePackSerializationException($"The type '{constructor.DeclaringType.Type.FullName}' has constructor argument '{sourceParameterName}' ({parameter.Kind}, {parameter.ParameterType.Type.FullName}) that ambiguously matches properties '{result.Name}' ({result.PropertyType.Type.FullName}) and '{property.Name}' ({property.PropertyType.Type.FullName}). Rename the argument or use PropertyShapeAttribute/ParameterShapeAttribute to disambiguate the names, or write a custom converter.");
 					}
 
 					result = property;
@@ -120,5 +143,49 @@ internal sealed class ConstructorParameterMapping
 
 			return result;
 		}
+	}
+
+	private static bool CamelCaseInvariantEquals(string left, string right)
+		=> string.Equals(NormalizeCamelCase(left), NormalizeCamelCase(right), StringComparison.Ordinal);
+
+	private static string NormalizeCamelCase(string value)
+	{
+		StringBuilder normalized = new(value.Length);
+		NameState state = NameState.NotStarted;
+		for (int position = 0; position < value.Length; position++)
+		{
+			char character = value[position];
+			switch (char.GetUnicodeCategory(character))
+			{
+				case UnicodeCategory.UppercaseLetter:
+					bool startsWord = state is NameState.LowercaseLetterOrDigit or NameState.Space ||
+						(state is NameState.UppercaseLetter && position + 1 < value.Length && char.IsLower(value[position + 1]));
+					normalized.Append(startsWord ? character : char.ToLowerInvariant(character));
+					state = NameState.UppercaseLetter;
+					break;
+				case UnicodeCategory.LowercaseLetter:
+					normalized.Append(state is NameState.Space ? char.ToUpperInvariant(character) : character);
+					state = NameState.LowercaseLetterOrDigit;
+					break;
+				case UnicodeCategory.DecimalDigitNumber:
+					normalized.Append(character);
+					state = NameState.LowercaseLetterOrDigit;
+					break;
+				case UnicodeCategory.SpaceSeparator:
+					normalized.Append(character);
+					if (state is not NameState.NotStarted)
+					{
+						state = NameState.Space;
+					}
+
+					break;
+				default:
+					normalized.Append(character);
+					state = NameState.NotStarted;
+					break;
+			}
+		}
+
+		return normalized.ToString();
 	}
 }

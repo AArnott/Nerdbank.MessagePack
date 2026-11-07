@@ -1,12 +1,13 @@
 ﻿// Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+extern alias PolyTypeSourceGenerator;
+
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Text;
-using PolyType.SourceGenerator;
 
 internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 	where TAnalyzer : DiagnosticAnalyzer, new()
@@ -117,7 +118,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 				yield return sg;
 			}
 
-			yield return typeof(PolyTypeGenerator);
+			yield return typeof(PolyTypeSourceGenerator::PolyType.SourceGenerator.PolyTypeGenerator);
 		}
 
 		private static string ReadManifestResource(Assembly assembly, string resourceName)

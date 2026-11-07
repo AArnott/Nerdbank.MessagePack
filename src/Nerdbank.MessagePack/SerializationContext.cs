@@ -143,6 +143,9 @@ public record struct SerializationContext
 	/// <value>0 when no skip operation was suspended and is still incomplete.</value>
 	internal ulong MidSkipRemainingCount { get; set; }
 
+	/// <summary>Gets or sets a value indicating whether a present optional C# union should tag null payload cases.</summary>
+	internal bool TagCSharpUnionNullPayload { get; set; }
+
 	/// <summary>
 	/// Gets or sets special state to be exposed to converters during serialization.
 	/// </summary>

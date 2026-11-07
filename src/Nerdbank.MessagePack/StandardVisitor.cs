@@ -410,7 +410,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		if (csharpCase is not null)
 		{
 			csharpCase.PayloadConverter = caseConverter.Value;
-			if (!typeof(TUnion).IsValueType && !typeof(TUnionCase).IsValueType)
+			if (!typeof(TUnionCase).IsValueType)
 			{
 				csharpCase.IsNullPayload = value => unionCaseShape.Marshaler.Unmarshal((TUnion)value) is null;
 			}
@@ -819,7 +819,13 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return failure;
 		}
 
-		return ConverterResult.Ok(new OptionalConverter<TOptional, TElement>((MessagePackConverter<TElement>)converter.Value, optionalShape.GetDeconstructor(), optionalShape.GetNoneConstructor(), optionalShape.GetSomeConstructor()));
+		bool tagCSharpUnionNullPayload = optionalShape.ElementType is IUnionTypeShape { UnionKind: UnionTypeShapeKind.CSharpUnion };
+		return ConverterResult.Ok(new OptionalConverter<TOptional, TElement>(
+			(MessagePackConverter<TElement>)converter.Value,
+			optionalShape.GetDeconstructor(),
+			optionalShape.GetNoneConstructor(),
+			optionalShape.GetSomeConstructor(),
+			tagCSharpUnionNullPayload));
 	}
 
 	/// <inheritdoc/>

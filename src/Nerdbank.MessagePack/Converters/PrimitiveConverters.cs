@@ -1210,11 +1210,13 @@ internal class GuidAsStringConverter : MessagePackConverter<Guid>
 /// <param name="deconstructor">A function to unwrap an optional value.</param>
 /// <param name="createNone">A function to create a deserialized "missing" value.</param>
 /// <param name="createSome">A function to wrap a deserialized value.</param>
+/// <param name="tagCSharpUnionNullPayload">Whether to tag null payload cases when the optional contains a C# union.</param>
 internal class OptionalConverter<TOptional, TElement>(
 	MessagePackConverter<TElement> elementConverter,
 	OptionDeconstructor<TOptional, TElement> deconstructor,
 	Func<TOptional> createNone,
-	Func<TElement, TOptional> createSome) : MessagePackConverter<TOptional>
+	Func<TElement, TOptional> createSome,
+	bool tagCSharpUnionNullPayload) : MessagePackConverter<TOptional>
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => elementConverter.PreferAsyncSerialization;
@@ -1228,6 +1230,7 @@ internal class OptionalConverter<TOptional, TElement>(
 			return;
 		}
 
+		context.TagCSharpUnionNullPayload = tagCSharpUnionNullPayload;
 		elementConverter.Write(ref writer, element, context);
 	}
 
@@ -1237,8 +1240,10 @@ internal class OptionalConverter<TOptional, TElement>(
 		if (!deconstructor(value, out TElement? element))
 		{
 			writer.WriteNil();
+			return default;
 		}
 
+		context.TagCSharpUnionNullPayload = tagCSharpUnionNullPayload;
 		return elementConverter.WriteAsync(writer, element, context);
 	}
 
