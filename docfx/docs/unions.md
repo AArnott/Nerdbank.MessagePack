@@ -301,6 +301,11 @@ The wrapper selection depends on the declared cases, not the current value.
 Adding or removing an untagged collection case can therefore change the wire format of the union's tagged cases.
 For a stable protocol, explicitly tag the collection case and configure the desired wrapper format.
 
+Generated schemas describe the same native and tagged representations used by serialization.
+An untagged reference case accepts a naked `nil` in the schema only when deserialization can select that case under its nullability metadata and <xref:Nerdbank.MessagePack.DeserializeDefaultValuesPolicy>.
+Tagged null payloads are described with their discriminator envelope, and nullable unions also allow a bare `nil` for an absent value.
+See [understanding the schema](customizing-serialization.md#understanding-the-schema) for details on generating schemas.
+
 Untagged object payloads are not inferred by duck typing.
 This C# union encoding does not change derived-type or F# union serialization.
 
