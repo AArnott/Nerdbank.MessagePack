@@ -61,7 +61,8 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 			SecureAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
 				.. from property in objectShape.Properties
 			   where property.HasGetter
-			   select (SecureEqualityComparer<T>)property.Accept(this, null)!,]);
+			   select (SecureEqualityComparer<T>)property.Accept(this, null)!,
+			]);
 
 			if (aggregatingEqualityComparer.IsEmpty && state != IsUnionSentinel)
 			{
@@ -81,8 +82,10 @@ internal class SecureVisitor(TypeGenerationContext context) : TypeShapeVisitor, 
 	{
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 		SecureEqualityComparer<TUnion> baseComparer = (SecureEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this, IsUnionSentinel)!;
-		SecureEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
-			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this, unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? IsCSharpUnionCaseSentinel : IsUnionSentinel)!),];
+		SecureEqualityComparer<TUnion>[] comparers = [
+			.. unionShape.UnionCases.Select(
+			unionCase => (SecureEqualityComparer<TUnion>)unionCase.Accept(this, unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? IsCSharpUnionCaseSentinel : IsUnionSentinel)!),
+		];
 		return new SecureUnionEqualityComparer<TUnion>(
 			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}

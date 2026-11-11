@@ -170,7 +170,7 @@ public partial class SchemaTests : MessagePackSerializerTestBase
 				new Person { Name = "Bob", Sex = Sex.Male },
 			],
 		},
-		]);
+	]);
 
 	[Test, MatrixDataSource]
 	public void DateTimeExtension(JsonSchemaDialect dialect) => this.AssertSchema(dialect, [new HasDateTime { Timestamp = DateTime.Now }]);
