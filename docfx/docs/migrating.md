@@ -40,7 +40,7 @@ Learn more about this in our [Getting Started](getting-started.md) guide.
  }
 ```
 
-If your type implements `MessagePack.IMessagePackSerializationCallbackReceiver`, change it to implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks instead.
+If your type implements `MessagePack.IMessagePackSerializationCallbackReceiver`, change it to implement <xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks> instead.
 That interface is only supported on reference types, because calling its methods on a struct boxes a copy and mutations are lost.
 See [Callbacks](customizing-serialization.md#callbacks).
 

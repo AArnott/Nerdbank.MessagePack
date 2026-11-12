@@ -40,4 +40,4 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack105](NBMsgPack105.md) | Migration | Info | Implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks
 [NBMsgPack106](NBMsgPack106.md) | Migration | Info | Use <xref:PolyType.ConstructorShapeAttribute>
 [NBMsgPack110](NBMsgPack110.md) | Usage | Warning | Add DefaultValueAttribute when using non-default initializers
-[NBMsgPack120](NBMsgPack120.md) | Usage | Error | @Nerdbank.MessagePack.IMessagePackSerializationCallbacks is only supported on reference types
+[NBMsgPack120](NBMsgPack120.md) | Usage | Error | <xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks> is only supported on reference types
