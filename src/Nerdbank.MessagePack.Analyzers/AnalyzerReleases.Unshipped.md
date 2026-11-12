@@ -35,3 +35,4 @@ NBMsgPack104 | Migration | Info | Remove use of IgnoreMemberAttribute
 NBMsgPack105 | Migration | Info | Implement IMessagePackSerializationCallbacks
 NBMsgPack106 | Migration | Info | Use ConstructorShapeAttribute
 NBMsgPack110 | Usage | Warning | Add DefaultValueAttribute when using non-default initializers
+NBMsgPack120 | Usage | Error | IMessagePackSerializationCallbacks is only supported on reference types
