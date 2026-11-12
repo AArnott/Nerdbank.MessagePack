@@ -545,8 +545,9 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		}
 
 		Assert.Equal(0, writer.CompleteCalls);
-		Assert.True(writer.Written.Length >= expectedPrefix.Length);
-		Assert.Equal(expectedPrefix, writer.Written.Span[..expectedPrefix.Length].ToArray());
+		byte[] written = writer.Written.ToArray();
+		Assert.True(written.Length >= expectedPrefix.Length);
+		Assert.Equal(expectedPrefix, written.AsSpan(0, expectedPrefix.Length).ToArray());
 	}
 
 	private static async IAsyncEnumerable<CancelsOnGet> CancelsWhileWriting(CancellationTokenSource cancellationSource)
@@ -675,15 +676,15 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	/// </summary>
 	private sealed class FlushFailingWriter(FlushFailure failure) : PipeWriter
 	{
-		private readonly ArrayBufferWriter<byte> buffer = new();
+		private readonly Sequence<byte> buffer = new();
 
 		public int CompleteCalls { get; private set; }
 
-		public ReadOnlyMemory<byte> Written => this.buffer.WrittenMemory;
+		public ReadOnlySequence<byte> Written => this.buffer;
 
 		public override bool CanGetUnflushedBytes => true;
 
-		public override long UnflushedBytes => this.buffer.WrittenCount;
+		public override long UnflushedBytes => this.buffer.Length;
 
 		public override void Advance(int bytes) => this.buffer.Advance(bytes);
 
@@ -713,7 +714,7 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	/// </summary>
 	private sealed class OpaqueBufferedWriter(PipeWriter inner) : PipeWriter
 	{
-		private readonly ArrayBufferWriter<byte> buffer = new();
+		private readonly Sequence<byte> buffer = new();
 
 		public override bool CanGetUnflushedBytes => false;
 
@@ -729,10 +730,15 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 
 		public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
 		{
-			if (this.buffer.WrittenCount > 0)
+			ReadOnlySequence<byte> pending = this.buffer;
+			if (!pending.IsEmpty)
 			{
-				inner.Write(this.buffer.WrittenSpan);
-				this.buffer.Clear();
+				foreach (ReadOnlyMemory<byte> segment in pending)
+				{
+					inner.Write(segment.Span);
+				}
+
+				this.buffer.Reset();
 			}
 
 			return inner.FlushAsync(cancellationToken);
