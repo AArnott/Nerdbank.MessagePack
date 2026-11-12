@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Microsoft;
 
@@ -22,17 +21,6 @@ namespace Nerdbank.MessagePack;
 /// </remarks>
 public static partial class MessagePackSerializerExtensions
 {
-#if NET8_0
-	/// <summary>
-	/// A message to use as the argument to <see cref="RequiresDynamicCodeAttribute"/>
-	/// for methods that call into <see cref="TypeShapeResolver.ResolveDynamicOrThrow{T}"/>.
-	/// </summary>
-	/// <seealso href="https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751"/>
-	internal const string ResolveDynamicMessage =
-		"Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. " +
-		"It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.";
-#endif
-
 	/// <summary>
 	/// <inheritdoc cref="MessagePackSerializer.GetJsonSchema(ITypeShape)" path="/summary"/>
 	/// </summary>
@@ -45,9 +33,6 @@ public static partial class MessagePackSerializerExtensions
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}(MessagePackSerializer)"/> instead,
 	/// or use <see cref="MessagePackSerializer.GetJsonSchema{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -69,9 +54,6 @@ public static partial class MessagePackSerializerExtensions
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetJsonSchema{T, TProvider}(MessagePackSerializer)"/> instead,
 	/// or use <see cref="MessagePackSerializer.GetJsonSchema{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -92,9 +74,6 @@ public static partial class MessagePackSerializerExtensions
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
 	/// Use <see cref="MessagePackSerializer.GetJsonSchema{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -116,9 +95,6 @@ public static partial class MessagePackSerializerExtensions
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
 	/// Use <see cref="MessagePackSerializer.GetJsonSchema{T}(ITypeShapeProvider)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -134,9 +110,6 @@ public static partial class MessagePackSerializerExtensions
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetConverter{T, TProvider}(SerializationContext)"/> instead,
 	/// or use <see cref="SerializationContext.GetConverter{T}(ITypeShapeProvider?)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -151,9 +124,6 @@ public static partial class MessagePackSerializerExtensions
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
 	/// Use <see cref="SerializationContext.GetConverter{T}(ITypeShapeProvider?)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -169,9 +139,6 @@ public static partial class MessagePackSerializerExtensions
 	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="GetConverter{T, TProvider}(ConverterContext)"/> instead,
 	/// or use <see cref="ConverterContext.GetConverter{T}(ITypeShapeProvider?)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -186,9 +153,6 @@ public static partial class MessagePackSerializerExtensions
 	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
 	/// Use <see cref="ConverterContext.GetConverter{T}(ITypeShapeProvider?)"/> for an option that does not require source generation.
 	/// </remarks>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -206,9 +170,6 @@ public static partial class MessagePackSerializerExtensions
 	/// Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.
 	/// For array types, provides specific guidance on using witness types.
 	/// </exception>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 	private static ITypeShape<T> ResolveTypeShapeOrThrow<T>(ConverterCache? cache, bool contextualCall = false)
 	{
 		try
@@ -239,9 +200,6 @@ public static partial class MessagePackSerializerExtensions
 	/// Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.
 	/// For array types, provides specific guidance on using witness types.
 	/// </exception>
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 	private static ITypeShape<T> ResolveTypeShapeOrThrow<T, TProvider>(ConverterCache? cache, bool contextualCall = false)
 	{
 		try

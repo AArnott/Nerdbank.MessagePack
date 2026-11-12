@@ -209,9 +209,6 @@ internal class ConverterCache(SerializerConfiguration configuration)
 		=> (ConverterResult)this.CachedConverters.GetOrAddOrThrow(type, provider);
 
 	/// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T}()"/>
-#if NET8_0
-	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
 	internal ITypeShape<T> ResolveDynamicTypeShapeOrThrow<T>()
 	{
 		Type type = typeof(T);
@@ -227,9 +224,6 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	}
 
 	/// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T, TProvider}()"/>
-#if NET8_0
-	[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
 	internal ITypeShape<T> ResolveDynamicTypeShapeOrThrow<T, TProvider>()
 	{
 		(Type, Type) key = (typeof(T), typeof(TProvider));
