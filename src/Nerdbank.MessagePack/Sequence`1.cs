@@ -248,6 +248,29 @@ internal sealed class Sequence<T> : IBufferWriter<T>, IDisposable
 		this.first = this.last = null;
 	}
 
+	/// <summary>
+	/// Recycles buffers that contain only committed data and keeps the writable tail of the last segment.
+	/// </summary>
+	/// <remarks>
+	/// Callers such as <see cref="BufferMemoryWriter"/> may still hold memory from <see cref="GetMemory(int)"/>.
+	/// Returning that array to a shared pool would let the next write use memory that no longer belongs to this sequence.
+	/// </remarks>
+	internal void ReleaseCommittedBytes()
+	{
+		if (this.first is null)
+		{
+			return;
+		}
+
+		while (this.first != this.last)
+		{
+			this.first = this.RecycleAndGetNext(this.first!);
+		}
+
+		SequenceSegment tail = this.last!;
+		tail.AdvanceTo(tail.End);
+	}
+
 	private SequenceSegment GetSegment(int sizeHint)
 	{
 		Requires.Range(sizeHint >= 0, nameof(sizeHint));

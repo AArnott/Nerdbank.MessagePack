@@ -445,7 +445,8 @@ public partial record MessagePackSerializer
 				destination.Write(segment.Span);
 			}
 
-			this.staging.Reset();
+			// Drop copied bytes, but keep the last segment. The async writer may still have its tail checked out.
+			this.staging.ReleaseCommittedBytes();
 		}
 	}
 }

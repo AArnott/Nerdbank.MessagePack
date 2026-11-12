@@ -461,6 +461,22 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	}
 
 	[Test]
+	public async Task SerializeEnumerableAsync_FlushWhileBufferIsCheckedOut_KeepsLaterBytes()
+	{
+		MemoryStream stream = new();
+		await this.Serializer.SerializeEnumerableAsync(stream, One(new BufferProbe()), Shape<BufferProbe, BufferProbe>(), this.TimeoutToken);
+
+		MessagePackReader reader = new(stream.ToArray());
+		for (int i = 0; i < 200; i++)
+		{
+			Assert.Equal(1, reader.ReadInt32());
+		}
+
+		Assert.Equal(0x01020304, reader.ReadInt32());
+		Assert.True(reader.End);
+	}
+
+	[Test]
 	public async Task SerializeEnumerableAsync_FlushesWhenWriterCannotReportUnflushedBytes()
 	{
 		this.Serializer = this.Serializer with
@@ -502,6 +518,12 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	{
 		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(Stream.Null, FailingElements(), 3, Shape<ThrowsOnRead, Witness>(), this.TimeoutToken).AsTask());
 		Assert.Contains("index 1", GetFullMessage(ex), StringComparison.Ordinal);
+	}
+
+	private static async IAsyncEnumerable<T> One<T>(T value)
+	{
+		await Task.CompletedTask;
+		yield return value;
 	}
 
 	private static async IAsyncEnumerable<int> Count(int count)
@@ -668,6 +690,40 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		{
 			get => this.Before == 2 ? throw new InvalidOperationException("element failed") : 0;
 			set { }
+		}
+	}
+
+	[GenerateShape]
+	[MessagePackConverter(typeof(BufferProbeConverter))]
+	public partial class BufferProbe;
+
+	public sealed class BufferProbeConverter : MessagePackConverter<BufferProbe>
+	{
+		public override bool PreferAsyncSerialization => true;
+
+		public override BufferProbe? Read(ref MessagePackReader reader, SerializationContext context) => throw new NotSupportedException();
+
+		public override void Write(ref MessagePackWriter writer, in BufferProbe? value, SerializationContext context) => throw new NotSupportedException();
+
+		public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, BufferProbe? value, SerializationContext context)
+		{
+			MessagePackWriter syncWriter = writer.CreateWriter();
+			for (int i = 0; i < 200; i++)
+			{
+				syncWriter.Write(1);
+			}
+
+			writer.ReturnWriter(ref syncWriter);
+			writer.Flush();
+
+			// Check out the next buffer and then flush without writing into it.
+			syncWriter = writer.CreateWriter();
+			writer.ReturnWriter(ref syncWriter);
+			await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+
+			syncWriter = writer.CreateWriter();
+			syncWriter.Write(0x01020304);
+			writer.ReturnWriter(ref syncWriter);
 		}
 	}
 
