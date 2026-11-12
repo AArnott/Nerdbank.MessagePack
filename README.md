@@ -22,7 +22,7 @@ See [a side-by-side feature comparison across popular libraries](https://aarnott
 * Many [C# analyzers](https://aarnott.github.io/Nerdbank.MessagePack/analyzers/index.html) to help you avoid common mistakes.
 * [Great security](https://aarnott.github.io/Nerdbank.MessagePack/docs/security.html) for deserializing untrusted data.
 * [Polymorphic deserialization](https://aarnott.github.io/Nerdbank.MessagePack/docs/unions.html) lets you deserialize derived types.
-* True async and [streaming deserialization](https://aarnott.github.io/Nerdbank.MessagePack/docs/streaming-deserialization.html) for large or over-time sequences keeps your apps responsive and memory pressure low.
+* True async and [streaming serialization and deserialization](https://aarnott.github.io/Nerdbank.MessagePack/docs/streaming-deserialization.html) for large or over-time sequences keeps your apps responsive and memory pressure low.
 * Deserialize [just the fragment you require](https://aarnott.github.io/Nerdbank.MessagePack/docs/targeted-deserialization.html) with intuitive LINQ expressions.
 * [Preserve reference equality](https://aarnott.github.io/Nerdbank.MessagePack/api/Nerdbank.MessagePack.MessagePackSerializer.html#Nerdbank_MessagePack_MessagePackSerializer_PreserveReferences) across serialization/deserialization (optional).
 * [Forward compatible data retention](https://aarnott.github.io/Nerdbank.MessagePack/docs/customizing-serialization.html#retaining-unrecognized-data) allows you to deserialize and re-serialize data without dropping properties you didn't know about.

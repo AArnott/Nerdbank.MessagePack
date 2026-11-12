@@ -8,7 +8,7 @@
 * Many [C# analyzers](../analyzers/index.md) to help you avoid common mistakes.
 * [Great security](security.md) for deserializing untrusted data.
 * [Polymorphic deserialization](unions.md) lets you deserialize derived types, F# unions and [C# unions](unions.md#c-union-types).
-* True async and [streaming deserialization](streaming-deserialization.md) for large or over-time sequences keeps your apps responsive and memory pressure low.
+* True async and [streaming serialization and deserialization](streaming-deserialization.md) for large or over-time sequences keeps your apps responsive and memory pressure low.
 * Deserialize [just the fragment you require](targeted-deserialization.md) with intuitive LINQ expressions.
 * [Preserve reference equality](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) across serialization/deserialization (optional).
 * [Forward compatible data retention](customizing-serialization.md#retaining-unrecognized-data) allows you to deserialize and re-serialize data without dropping properties you didn't know about.
@@ -50,7 +50,7 @@ Trim-safe                 | ✅ | ❌ | ✅ |
 NativeAOT ready           | ✅ | ❌[^2] | ✅ |
 Unity                     | [✅](unity.md)[^3] | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp?tab=readme-ov-file#unity-support) | ❔ |
 Async                     | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*) | ❌ | ❌ |
-Endless streaming deserialization | [✅](streaming-deserialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream) | ❌ |
+Endless streaming serialization and deserialization | [✅](streaming-deserialization.md) | [✅](https://github.com/MessagePack-CSharp/MessagePack-CSharp/?tab=readme-ov-file#multiple-messagepack-structures-on-a-single-stream) | ❌ |
 Targeted partial deserialization | [✅](targeted-deserialization.md) | ❌ | ❌ |
 Reference preservation    | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ | ❌ |
 Cyclical references       | [✅](xref:Nerdbank.MessagePack.MessagePackSerializer.PreserveReferences) | ❌ | ❌ |

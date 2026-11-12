@@ -132,6 +132,34 @@ public partial record MessagePackSerializer
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where T : IShapeable<T> => this.SerializeAsync(stream, value, T.GetTypeShape(), cancellationToken);
 
+	/// <inheritdoc cref="SerializeEnumerableAsync{T}(PipeWriter, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeEnumerableAsync<T>(PipeWriter writer, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where T : IShapeable<T> => this.SerializeEnumerableAsync(writer, values, T.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="SerializeEnumerableAsync{T}(Stream, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeEnumerableAsync<T>(Stream stream, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where T : IShapeable<T> => this.SerializeEnumerableAsync(stream, values, T.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeArrayAsync<T>(PipeWriter writer, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where T : IShapeable<T> => this.SerializeArrayAsync(writer, values, count, T.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="SerializeArrayAsync{T}(Stream, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeArrayAsync<T>(Stream stream, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where T : IShapeable<T> => this.SerializeArrayAsync(stream, values, count, T.GetTypeShape(), cancellationToken);
+
 	/// <inheritdoc cref="Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)" />
 	[ExcludeFromCodeCoverage]
 	public void Serialize<T, TProvider>(ref MessagePackWriter writer, in T? value, CancellationToken cancellationToken = default)
@@ -247,6 +275,34 @@ public partial record MessagePackSerializer
 	public ValueTask SerializeAsync<T, TProvider>(Stream stream, in T? value, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		where TProvider : IShapeable<T> => this.SerializeAsync(stream, value, TProvider.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="SerializeEnumerableAsync{T}(PipeWriter, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeEnumerableAsync<T, TProvider>(PipeWriter writer, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where TProvider : IShapeable<T> => this.SerializeEnumerableAsync(writer, values, TProvider.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="SerializeEnumerableAsync{T}(Stream, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeEnumerableAsync<T, TProvider>(Stream stream, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where TProvider : IShapeable<T> => this.SerializeEnumerableAsync(stream, values, TProvider.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeArrayAsync<T, TProvider>(PipeWriter writer, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where TProvider : IShapeable<T> => this.SerializeArrayAsync(writer, values, count, TProvider.GetTypeShape(), cancellationToken);
+
+	/// <inheritdoc cref="SerializeArrayAsync{T}(Stream, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+	public ValueTask SerializeArrayAsync<T, TProvider>(Stream stream, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		where TProvider : IShapeable<T> => this.SerializeArrayAsync(stream, values, count, TProvider.GetTypeShape(), cancellationToken);
 }
 
 #endif
@@ -569,6 +625,86 @@ public static partial class MessagePackSerializerExtensions
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		=> Requires.NotNull(self).SerializeAsync(stream, value, ResolveTypeShapeOrThrow<T>(self.ConverterCache), cancellationToken);
 
+	/// <inheritdoc cref="MessagePackSerializer.SerializeEnumerableAsync{T}(PipeWriter, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="SerializeEnumerableAsync{T, TProvider}(MessagePackSerializer, PipeWriter, IAsyncEnumerable{T}, CancellationToken)"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeEnumerableAsync<T>(this MessagePackSerializer self, PipeWriter writer, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeEnumerableAsync(writer, values, ResolveTypeShapeOrThrow<T>(self.ConverterCache), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeEnumerableAsync{T}(Stream, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="SerializeEnumerableAsync{T, TProvider}(MessagePackSerializer, Stream, IAsyncEnumerable{T}, CancellationToken)"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeEnumerableAsync<T>(this MessagePackSerializer self, Stream stream, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeEnumerableAsync(stream, values, ResolveTypeShapeOrThrow<T>(self.ConverterCache), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="SerializeArrayAsync{T, TProvider}(MessagePackSerializer, PipeWriter, IAsyncEnumerable{T}, int, CancellationToken)"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeArrayAsync<T>(this MessagePackSerializer self, PipeWriter writer, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeArrayAsync(writer, values, count, ResolveTypeShapeOrThrow<T>(self.ConverterCache), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeArrayAsync{T}(Stream, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="T"/> has no type shape created via the <see cref="GenerateShapeAttribute"/> source generator.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="T"/> is decorated with the <see cref="GenerateShapeAttribute"/>.
+	/// For non-decorated types, apply <see cref="GenerateShapeForAttribute{T}"/> to a witness type and call <see cref="SerializeArrayAsync{T, TProvider}(MessagePackSerializer, Stream, IAsyncEnumerable{T}, int, CancellationToken)"/> instead,
+	/// or use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeArrayAsync<T>(this MessagePackSerializer self, Stream stream, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeArrayAsync(stream, values, count, ResolveTypeShapeOrThrow<T>(self.ConverterCache), cancellationToken);
+
 	/// <inheritdoc cref="MessagePackSerializer.Serialize{T}(ref MessagePackWriter, in T, ITypeShape{T}, CancellationToken)" />
 	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
 	/// <remarks>
@@ -864,4 +1000,80 @@ public static partial class MessagePackSerializerExtensions
 	public static ValueTask SerializeAsync<T, TProvider>(this MessagePackSerializer self, Stream stream, in T? value, CancellationToken cancellationToken = default)
 #pragma warning restore RS0027 // optional parameter on a method with overloads
 		=> Requires.NotNull(self).SerializeAsync(stream, value, ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeEnumerableAsync{T}(PipeWriter, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeEnumerableAsync<T, TProvider>(this MessagePackSerializer self, PipeWriter writer, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeEnumerableAsync(writer, values, ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeEnumerableAsync{T}(Stream, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeEnumerableAsync<T, TProvider>(this MessagePackSerializer self, Stream stream, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeEnumerableAsync(stream, values, ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeArrayAsync<T, TProvider>(this MessagePackSerializer self, PipeWriter writer, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeArrayAsync(writer, values, count, ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache), cancellationToken);
+
+	/// <inheritdoc cref="MessagePackSerializer.SerializeArrayAsync{T}(Stream, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" />
+	/// <exception cref="NotSupportedException">Thrown if <typeparamref name="TProvider"/> has no <see cref="GenerateShapeForAttribute{T}"/> source generator attribute for <typeparamref name="T"/>.</exception>
+	/// <remarks>
+	/// This overload should only be used when <typeparamref name="TProvider"/> is decorated with a <see cref="GenerateShapeForAttribute{T}"/>.
+	/// Use an overload that accepts a <see cref="ITypeShape{T}"/> for an option that does not require source generation.
+	/// </remarks>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]
+#if NET8_0
+	[RequiresDynamicCode(ResolveDynamicMessage)]
+#endif
+#if NET
+	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
+#endif
+	public static ValueTask SerializeArrayAsync<T, TProvider>(this MessagePackSerializer self, Stream stream, IAsyncEnumerable<T?> values, int count, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		=> Requires.NotNull(self).SerializeArrayAsync(stream, values, count, ResolveTypeShapeOrThrow<T, TProvider>(self.ConverterCache), cancellationToken);
 }
