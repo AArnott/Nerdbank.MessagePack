@@ -37,8 +37,12 @@ public partial record MessagePackSerializer
 	/// A consumer can therefore read the result with <see cref="DeserializeEnumerableAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/>.
 	/// </para>
 	/// <para>
-	/// Values are written as they are produced. The pipe is flushed when <see cref="SerializationContext.UnflushedBytesThreshold"/> is exceeded, so a long or unbounded source keeps a bounded buffer and applies backpressure.
+	/// Values are written as they are produced. Bytes stay in a private buffer until <see cref="SerializationContext.UnflushedBytesThreshold"/> is exceeded, and that count is kept by this method, so a destination that does not report <see cref="PipeWriter.UnflushedBytes"/> still flushes and applies backpressure.
 	/// Call <see cref="PipeWriter.FlushAsync(CancellationToken)"/> or <see cref="PipeWriter.CompleteAsync(Exception?)"/> after this method to publish any trailing bytes.
+	/// </para>
+	/// <para>
+	/// Cancellation is observed before each value is written, including when the source yields another value after the token is canceled.
+	/// If this method fails, bytes that have not yet been flushed are not committed to <paramref name="writer"/>. Bytes already flushed remain.
 	/// </para>
 	/// <para>
 	/// MessagePack arrays store their length before any element, so an asynchronous sequence of unknown length cannot be written as one array without buffering it.
@@ -126,11 +130,15 @@ public partial record MessagePackSerializer
 	/// <exception cref="MessagePackSerializationException">
 	/// Thrown when serialization of an element fails, or when <paramref name="values"/> does not produce exactly <paramref name="count"/> elements.
 	/// Elements already flushed before the failure remain on <paramref name="writer"/>.
+	/// Bytes that have not yet been flushed are not committed to <paramref name="writer"/>.
 	/// </exception>
 	/// <remarks>
 	/// <para>
 	/// A MessagePack array header contains the element count, so the length has to be known before the first element is written.
 	/// This method writes that header and then each element as <paramref name="values"/> produces it, flushing when <see cref="SerializationContext.UnflushedBytesThreshold"/> is exceeded.
+	/// The threshold is tracked by this method, including when <paramref name="writer"/> does not report <see cref="PipeWriter.UnflushedBytes"/>.
+	/// Cancellation is observed before each element is written.
+	/// Bytes that have not yet been flushed are not committed to <paramref name="writer"/> when this method fails.
 	/// The result is one array and can be read with <see cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/> of <typeparamref name="T"/>[] or with <see cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>.
 	/// </para>
 	/// <para>
@@ -222,36 +230,50 @@ public partial record MessagePackSerializer
 		// Each value is an independent top-level structure. Reference ids would not round-trip through DeserializeEnumerableAsync.
 		this.ThrowIfPreservingReferencesDuringEnumeration();
 
+		// Stage bytes privately so a failure cannot leave a partial value pending on the caller's writer,
+		// and so the flush threshold works when that writer cannot report an unflushed byte count.
+		StagingPipeWriter staging = new(writer);
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
-			MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
-			MessagePackAsyncWriter asyncWriter = new(writer);
-			int index = 0;
-			await foreach (T? value in values.WithCancellation(context.Value.CancellationToken).ConfigureAwait(false))
+			try
 			{
-				try
+				using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
+				MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
+				MessagePackAsyncWriter asyncWriter = new(staging);
+				int index = 0;
+				await foreach (T? value in values.WithCancellation(context.Value.CancellationToken).ConfigureAwait(false))
 				{
-					// Pass a fresh copy so each top-level value starts at the root depth while sharing context state such as string interning.
-					await converter.WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
-				}
-				catch (Exception ex) when (ShouldWrapSerializationException(ex, context.Value.CancellationToken))
-				{
-					throw new MessagePackSerializationException(MessagePackConverter.CreateFailWritingValueAtIndex(typeof(T), index), ex);
+					// WithCancellation only asks the source to stop. Converters such as a null array skip the token, so check it here.
+					context.Value.CancellationToken.ThrowIfCancellationRequested();
+
+					try
+					{
+						// Pass a fresh copy so each top-level value starts at the root depth while sharing context state such as string interning.
+						await converter.WriteAsync(asyncWriter, value, context.Value).ConfigureAwait(false);
+					}
+					catch (Exception ex) when (ShouldWrapSerializationException(ex, context.Value.CancellationToken))
+					{
+						throw new MessagePackSerializationException(MessagePackConverter.CreateFailWritingValueAtIndex(typeof(T), index), ex);
+					}
+
+					index++;
+
+					// WriteAsync only observes bytes already committed to its writer. Small values stay in the private buffer until committed.
+					asyncWriter.Flush();
+					await asyncWriter.FlushIfAppropriateAsync(context.Value).ConfigureAwait(false);
 				}
 
-				index++;
-
-				// WriteAsync only observes bytes already committed to the pipe. Small values stay in the private buffer until committed.
 				asyncWriter.Flush();
-				await asyncWriter.FlushIfAppropriateAsync(context.Value).ConfigureAwait(false);
+				staging.CommitTail();
 			}
-
-			asyncWriter.Flush();
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+			{
+				throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		finally
 		{
-			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+			staging.Discard();
 		}
 	}
 
@@ -277,63 +299,141 @@ public partial record MessagePackSerializer
 			throw new ArgumentOutOfRangeException(nameof(count), count, "The array length must be greater than or equal to zero.");
 		}
 
+		// Stage bytes privately so a failure cannot leave a partial array pending on the caller's writer,
+		// and so the flush threshold works when that writer cannot report an unflushed byte count.
+		StagingPipeWriter staging = new(writer);
 		try
 		{
-			using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
-			MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
-			MessagePackAsyncWriter asyncWriter = new(writer);
-
-			// A reference-preserving reader assigns the first id to the array object. Reserve it so element ids match.
-			object? containerToken = context.Value.ReferenceEqualityTracker?.BeginWritingContainer();
 			try
 			{
-				// One array is one object graph, so every element shares this depth and any reference-preservation state.
-				SerializationContext elementContext = context.Value;
-				elementContext.DepthStep();
-				asyncWriter.WriteArrayHeader(count);
+				using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
+				MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
+				MessagePackAsyncWriter asyncWriter = new(staging);
 
-				int written = 0;
-				await foreach (T? value in values.WithCancellation(elementContext.CancellationToken).ConfigureAwait(false))
+				// A reference-preserving reader assigns the first id to the array object. Reserve it so element ids match.
+				object? containerToken = context.Value.ReferenceEqualityTracker?.BeginWritingContainer();
+				try
 				{
-					if (written == count)
+					// One array is one object graph, so every element shares this depth and any reference-preservation state.
+					SerializationContext elementContext = context.Value;
+					elementContext.DepthStep();
+					asyncWriter.WriteArrayHeader(count);
+
+					int written = 0;
+					await foreach (T? value in values.WithCancellation(elementContext.CancellationToken).ConfigureAwait(false))
 					{
-						throw new InvalidOperationException($"The sequence produced more elements than the declared array length of {count}.");
+						// WithCancellation only asks the source to stop. Converters such as a null array skip the token, so check it here.
+						elementContext.CancellationToken.ThrowIfCancellationRequested();
+
+						if (written == count)
+						{
+							throw new InvalidOperationException($"The sequence produced more elements than the declared array length of {count}.");
+						}
+
+						try
+						{
+							await converter.WriteAsync(asyncWriter, value, elementContext).ConfigureAwait(false);
+						}
+						catch (Exception ex) when (ShouldWrapSerializationException(ex, elementContext.CancellationToken))
+						{
+							throw new MessagePackSerializationException(MessagePackConverter.CreateFailWritingValueAtIndex(typeof(T), written), ex);
+						}
+
+						written++;
+
+						// WriteAsync only observes bytes already committed to its writer. Small values stay in the private buffer until committed.
+						asyncWriter.Flush();
+						await asyncWriter.FlushIfAppropriateAsync(elementContext).ConfigureAwait(false);
 					}
 
-					try
+					if (written != count)
 					{
-						await converter.WriteAsync(asyncWriter, value, elementContext).ConfigureAwait(false);
-					}
-					catch (Exception ex) when (ShouldWrapSerializationException(ex, elementContext.CancellationToken))
-					{
-						throw new MessagePackSerializationException(MessagePackConverter.CreateFailWritingValueAtIndex(typeof(T), written), ex);
+						throw new InvalidOperationException($"The sequence produced {written} elements, fewer than the declared array length of {count}.");
 					}
 
-					written++;
-
-					// WriteAsync only observes bytes already committed to the pipe. Small values stay in the private buffer until committed.
 					asyncWriter.Flush();
-					await asyncWriter.FlushIfAppropriateAsync(elementContext).ConfigureAwait(false);
 				}
-
-				if (written != count)
+				finally
 				{
-					throw new InvalidOperationException($"The sequence produced {written} elements, fewer than the declared array length of {count}.");
+					if (containerToken is not null)
+					{
+						context.Value.ReferenceEqualityTracker!.CompleteWritingContainer(containerToken);
+					}
 				}
 
-				asyncWriter.Flush();
+				staging.CommitTail();
 			}
-			finally
+			catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
 			{
-				if (containerToken is not null)
-				{
-					context.Value.ReferenceEqualityTracker!.CompleteWritingContainer(containerToken);
-				}
+				throw new MessagePackSerializationException("An error occurred during serialization.", ex);
 			}
 		}
-		catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
+		finally
 		{
-			throw new MessagePackSerializationException("An error occurred during serialization.", ex);
+			staging.Discard();
+		}
+	}
+
+	/// <summary>
+	/// Buffers bytes until <see cref="FlushAsync(CancellationToken)"/> and reports that buffered length as <see cref="UnflushedBytes"/>.
+	/// </summary>
+	/// <param name="destination">The writer that receives bytes when they are flushed or when <see cref="CommitTail"/> is called.</param>
+	private sealed class StagingPipeWriter(PipeWriter destination) : PipeWriter
+	{
+		private readonly Sequence<byte> staging = new();
+
+		/// <inheritdoc/>
+		public override bool CanGetUnflushedBytes => true;
+
+		/// <inheritdoc/>
+		public override long UnflushedBytes => this.staging.Length;
+
+		/// <inheritdoc/>
+		public override void Advance(int bytes) => this.staging.Advance(bytes);
+
+		/// <inheritdoc/>
+		public override Memory<byte> GetMemory(int sizeHint = 0) => this.staging.GetMemory(sizeHint);
+
+		/// <inheritdoc/>
+		public override Span<byte> GetSpan(int sizeHint = 0) => this.staging.GetSpan(sizeHint);
+
+		/// <inheritdoc/>
+		public override void CancelPendingFlush() => destination.CancelPendingFlush();
+
+		/// <inheritdoc/>
+		public override void Complete(Exception? exception = null) => this.Discard();
+
+		/// <inheritdoc/>
+		public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+		{
+			this.CopyToDestination();
+			return destination.FlushAsync(cancellationToken);
+		}
+
+		/// <summary>
+		/// Copies buffered bytes to the destination without flushing it.
+		/// </summary>
+		public void CommitTail() => this.CopyToDestination();
+
+		/// <summary>
+		/// Drops buffered bytes without writing them to the destination.
+		/// </summary>
+		public void Discard() => this.staging.Reset();
+
+		private void CopyToDestination()
+		{
+			ReadOnlySequence<byte> pending = this.staging;
+			if (pending.IsEmpty)
+			{
+				return;
+			}
+
+			foreach (ReadOnlyMemory<byte> segment in pending)
+			{
+				destination.Write(segment.Span);
+			}
+
+			this.staging.Reset();
 		}
 	}
 }

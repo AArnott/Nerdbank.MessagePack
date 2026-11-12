@@ -1,6 +1,8 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Buffers;
+
 public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBase
 {
 	private static readonly byte[] ThreeIntsAsArray = [0x93, 1, 2, 3];
@@ -365,6 +367,88 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	}
 
 	[Test]
+	public async Task SerializeEnumerableAsync_YieldAfterCancel_DoesNotWriteTheNextValue()
+	{
+		using CancellationTokenSource cts = new();
+		Pipe pipe = new();
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.Serializer.SerializeEnumerableAsync(pipe.Writer, CancelThenNull(cts), Shape<string, Witness>(), cts.Token).AsTask());
+		Assert.Equal(0, pipe.Writer.UnflushedBytes);
+
+		await pipe.Writer.CompleteAsync();
+		ReadResult read = await pipe.Reader.ReadAsync(this.TimeoutToken);
+		Assert.True(read.Buffer.IsEmpty);
+	}
+
+	[Test]
+	public async Task SerializeArrayAsync_YieldNullAfterCancel_DoesNotWriteNil()
+	{
+		using CancellationTokenSource cts = new();
+		Pipe pipe = new();
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.Serializer.SerializeArrayAsync(pipe.Writer, CancelThenNullArray(cts), 2, Shape<int[], Witness>(), cts.Token).AsTask());
+		Assert.Equal(0, pipe.Writer.UnflushedBytes);
+
+		await pipe.Writer.CompleteAsync();
+		ReadResult read = await pipe.Reader.ReadAsync(this.TimeoutToken);
+		Assert.True(read.Buffer.IsEmpty);
+	}
+
+	[Test]
+	public async Task SerializeArrayAsync_Failure_DoesNotLeavePartialBytesOnThePipe()
+	{
+		Pipe pipe = new();
+		await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(pipe.Writer, Count(1), 2, Shape<int, Witness>(), this.TimeoutToken).AsTask());
+		Assert.Equal(0, pipe.Writer.UnflushedBytes);
+
+		await this.Serializer.SerializeEnumerableAsync(pipe.Writer, Count(1), Shape<int, Witness>(), this.TimeoutToken);
+		await pipe.Writer.CompleteAsync();
+
+		List<int> actual = [];
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync<int, Witness>(pipe.Reader, this.TimeoutToken))
+		{
+			actual.Add(value);
+		}
+
+		Assert.Equal([1], actual);
+	}
+
+	[Test]
+	public async Task SerializeEnumerableAsync_FlushesWhenWriterCannotReportUnflushedBytes()
+	{
+		this.Serializer = this.Serializer with
+		{
+			StartingContext = this.Serializer.StartingContext with { UnflushedBytesThreshold = 16 },
+		};
+
+		Pipe pipe = new();
+		OpaqueBufferedWriter writer = new(pipe.Writer);
+		TaskCompletionSource<bool> observed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+		Task writing = this.Serializer.SerializeEnumerableAsync(writer, BlockAfter(30, observed), Shape<int, Witness>(), this.TimeoutToken).AsTask();
+		try
+		{
+			using CancellationTokenSource readTimeout = new(TimeSpan.FromSeconds(2));
+			ReadResult read = await pipe.Reader.ReadAsync(readTimeout.Token);
+			Assert.False(read.Buffer.IsEmpty);
+			pipe.Reader.AdvanceTo(read.Buffer.Start);
+		}
+		finally
+		{
+			observed.TrySetResult(true);
+		}
+
+		await writing;
+		await writer.FlushAsync(this.TimeoutToken);
+		await pipe.Writer.CompleteAsync();
+
+		List<int> actual = [];
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync<int, Witness>(pipe.Reader, this.TimeoutToken))
+		{
+			actual.Add(value);
+		}
+
+		Assert.Equal(Enumerable.Range(0, 31), actual);
+	}
+
+	[Test]
 	public async Task SerializeArrayAsync_ElementFailure_IncludesIndex()
 	{
 		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(Stream.Null, FailingElements(), 3, Shape<ThrowsOnRead, Witness>(), this.TimeoutToken).AsTask());
@@ -392,6 +476,20 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 
 			yield return i;
 		}
+	}
+
+	private static async IAsyncEnumerable<string?> CancelThenNull(CancellationTokenSource cancellationSource)
+	{
+		yield return "a";
+		cancellationSource.Cancel();
+		yield return null;
+	}
+
+	private static async IAsyncEnumerable<int[]?> CancelThenNullArray(CancellationTokenSource cancellationSource)
+	{
+		yield return [1];
+		cancellationSource.Cancel();
+		yield return null;
 	}
 
 	private static async IAsyncEnumerable<int> CancelAfterFirst(CancellationTokenSource cancellationSource)
@@ -473,6 +571,37 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		{
 			get => this.Before == 2 ? throw new InvalidOperationException("element failed") : 0;
 			set { }
+		}
+	}
+
+	/// <summary>
+	/// A pipe writer that hides its unflushed byte count and publishes bytes only from <see cref="FlushAsync(CancellationToken)"/>.
+	/// </summary>
+	private sealed class OpaqueBufferedWriter(PipeWriter inner) : PipeWriter
+	{
+		private readonly ArrayBufferWriter<byte> buffer = new();
+
+		public override bool CanGetUnflushedBytes => false;
+
+		public override void Advance(int bytes) => this.buffer.Advance(bytes);
+
+		public override Memory<byte> GetMemory(int sizeHint = 0) => this.buffer.GetMemory(sizeHint);
+
+		public override Span<byte> GetSpan(int sizeHint = 0) => this.buffer.GetSpan(sizeHint);
+
+		public override void CancelPendingFlush() => inner.CancelPendingFlush();
+
+		public override void Complete(Exception? exception = null) => inner.Complete(exception);
+
+		public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+		{
+			if (this.buffer.WrittenCount > 0)
+			{
+				inner.Write(this.buffer.WrittenSpan);
+				this.buffer.Clear();
+			}
+
+			return inner.FlushAsync(cancellationToken);
 		}
 	}
 

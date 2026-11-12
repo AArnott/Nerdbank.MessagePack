@@ -41,7 +41,9 @@ However, not every valid C# expression will be accepted as a path.
 That is the same framing <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync*> reads.
 An empty sequence writes no bytes.
 Each value is written as it is produced, and the destination is flushed when the unflushed buffer exceeds <xref:Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold>, so a long or unbounded source stays bounded and applies backpressure.
+That byte count is kept by the serializer, so a <xref:System.IO.Pipelines.PipeWriter> that cannot report how many bytes are unflushed still flushes on the same threshold.
 The caller keeps ownership of the pipe or stream: pipes are not completed, and streams are not closed.
+Cancellation is checked before each value is written. If serialization fails, bytes that have not yet been flushed are dropped and are not left pending on the caller's pipe. Bytes already flushed remain.
 
 [!code-csharp[](../../samples/cs/StreamingSerialization.cs#TopLevelStreamingSerialization)]
 
@@ -58,7 +60,8 @@ Read it with <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync*>
 [!code-csharp[](../../samples/cs/StreamingSerialization.cs#ArrayStreamingSerialization)]
 
 The sequence must produce exactly the declared number of elements.
-A mismatch fails with <xref:Nerdbank.MessagePack.MessagePackSerializationException>, and any bytes already flushed stay written.
+A mismatch fails with <xref:Nerdbank.MessagePack.MessagePackSerializationException>.
+Bytes already flushed stay written. Bytes that have not yet been flushed are dropped, so a later flush of the same pipe does not publish the incomplete array.
 Reference preservation applies inside this array, because the array is one object graph.
 
 When the length is not known ahead of time, use <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumerableAsync*>.
