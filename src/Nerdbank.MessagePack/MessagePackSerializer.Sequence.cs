@@ -384,9 +384,12 @@ public partial record MessagePackSerializer
 	/// Buffers bytes until <see cref="FlushAsync(CancellationToken)"/> and reports that buffered length as <see cref="UnflushedBytes"/>.
 	/// </summary>
 	/// <param name="destination">The writer that receives bytes when they are flushed or when <see cref="CommitTail"/> is called.</param>
+	/// <remarks>
+	/// The staging buffer rents from <see cref="ArrayPool{T}.Shared"/> so backing arrays can be reused by later calls.
+	/// </remarks>
 	private sealed class StagingPipeWriter(PipeWriter destination) : PipeWriter
 	{
-		private readonly Sequence<byte> staging = new();
+		private readonly Sequence<byte> staging = new(ArrayPool<byte>.Shared);
 
 		/// <inheritdoc/>
 		public override bool CanGetUnflushedBytes => true;

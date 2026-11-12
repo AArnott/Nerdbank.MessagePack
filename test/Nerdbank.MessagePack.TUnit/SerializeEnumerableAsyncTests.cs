@@ -9,6 +9,13 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 
 	private static readonly byte[] ThreeIntsConcatenated = [1, 2, 3];
 
+	private enum FlushFailure
+	{
+		Throw,
+		Canceled,
+		Completed,
+	}
+
 	[Test]
 	public void Serialize_Int32Array_GoldenBytes_Unchanged()
 	{
@@ -430,6 +437,30 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	}
 
 	[Test]
+	public async Task SerializeSequence_DestinationFlushFailure_RetainsCopiedBytesAndDoesNotCompleteTheWriter()
+	{
+		this.Serializer = this.Serializer with
+		{
+			StartingContext = this.Serializer.StartingContext with { UnflushedBytesThreshold = 0 },
+		};
+
+		await AssertFailureAsync(FlushFailure.Throw);
+		await AssertFailureAsync(FlushFailure.Canceled);
+		await AssertFailureAsync(FlushFailure.Completed);
+
+		async Task AssertFailureAsync(FlushFailure failure)
+		{
+			FlushFailingWriter enumerableWriter = new(failure);
+			MessagePackSerializationException enumerable = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeEnumerableAsync(enumerableWriter, Count(1), Shape<int, Witness>(), this.TimeoutToken).AsTask());
+			AssertFlushFailure(enumerable, enumerableWriter, failure, [1]);
+
+			FlushFailingWriter arrayWriter = new(failure);
+			MessagePackSerializationException array = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(arrayWriter, Count(2), 2, Shape<int, Witness>(), this.TimeoutToken).AsTask());
+			AssertFlushFailure(array, arrayWriter, failure, [0x92, 1]);
+		}
+	}
+
+	[Test]
 	public async Task SerializeEnumerableAsync_FlushesWhenWriterCannotReportUnflushedBytes()
 	{
 		this.Serializer = this.Serializer with
@@ -494,6 +525,28 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 
 			yield return i;
 		}
+	}
+
+	private static void AssertFlushFailure(MessagePackSerializationException exception, FlushFailingWriter writer, FlushFailure failure, byte[] expectedPrefix)
+	{
+		switch (failure)
+		{
+			case FlushFailure.Throw:
+				Assert.IsType<IOException>(exception.InnerException);
+				Assert.Contains("flush failed", exception.InnerException.Message, StringComparison.Ordinal);
+				break;
+			case FlushFailure.Canceled:
+				Assert.IsType<OperationCanceledException>(exception.InnerException);
+				break;
+			case FlushFailure.Completed:
+				Assert.IsType<EndOfStreamException>(exception.InnerException);
+				Assert.Contains("stopped listening", exception.InnerException.Message, StringComparison.Ordinal);
+				break;
+		}
+
+		Assert.Equal(0, writer.CompleteCalls);
+		Assert.True(writer.Written.Length >= expectedPrefix.Length);
+		Assert.Equal(expectedPrefix, writer.Written.Span[..expectedPrefix.Length].ToArray());
 	}
 
 	private static async IAsyncEnumerable<CancelsOnGet> CancelsWhileWriting(CancellationTokenSource cancellationSource)
@@ -614,6 +667,44 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		{
 			get => this.Before == 2 ? throw new InvalidOperationException("element failed") : 0;
 			set { }
+		}
+	}
+
+	/// <summary>
+	/// A pipe writer that keeps copied bytes and then fails <see cref="FlushAsync(CancellationToken)"/>.
+	/// </summary>
+	private sealed class FlushFailingWriter(FlushFailure failure) : PipeWriter
+	{
+		private readonly ArrayBufferWriter<byte> buffer = new();
+
+		public int CompleteCalls { get; private set; }
+
+		public ReadOnlyMemory<byte> Written => this.buffer.WrittenMemory;
+
+		public override bool CanGetUnflushedBytes => true;
+
+		public override long UnflushedBytes => this.buffer.WrittenCount;
+
+		public override void Advance(int bytes) => this.buffer.Advance(bytes);
+
+		public override Memory<byte> GetMemory(int sizeHint = 0) => this.buffer.GetMemory(sizeHint);
+
+		public override Span<byte> GetSpan(int sizeHint = 0) => this.buffer.GetSpan(sizeHint);
+
+		public override void CancelPendingFlush()
+		{
+		}
+
+		public override void Complete(Exception? exception = null) => this.CompleteCalls++;
+
+		public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+		{
+			if (failure == FlushFailure.Throw)
+			{
+				throw new IOException("flush failed");
+			}
+
+			return new(new FlushResult(isCanceled: failure == FlushFailure.Canceled, isCompleted: failure == FlushFailure.Completed));
 		}
 	}
 
