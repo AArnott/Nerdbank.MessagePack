@@ -41,8 +41,10 @@ public partial record MessagePackSerializer
 	/// Call <see cref="PipeWriter.FlushAsync(CancellationToken)"/> or <see cref="PipeWriter.CompleteAsync(Exception?)"/> after this method to publish any trailing bytes.
 	/// </para>
 	/// <para>
-	/// Cancellation is observed before each value is written, including when the source yields another value after the token is canceled.
-	/// If this method fails, bytes that have not yet been flushed are not committed to <paramref name="writer"/>. Bytes already flushed remain.
+	/// Cancellation is observed before each value is written, including when the source yields another value after the token is canceled, and before a pending chunk is copied to <paramref name="writer"/>.
+	/// If this method fails before that copy, the pending bytes are dropped.
+	/// If the copy or the destination flush then fails, <paramref name="writer"/> may already hold that chunk and must be abandoned, because a <see cref="PipeWriter"/> cannot roll those bytes back.
+	/// Bytes that were flushed successfully remain.
 	/// </para>
 	/// <para>
 	/// MessagePack arrays store their length before any element, so an asynchronous sequence of unknown length cannot be written as one array without buffering it.
@@ -130,15 +132,17 @@ public partial record MessagePackSerializer
 	/// <exception cref="MessagePackSerializationException">
 	/// Thrown when serialization of an element fails, or when <paramref name="values"/> does not produce exactly <paramref name="count"/> elements.
 	/// Elements already flushed before the failure remain on <paramref name="writer"/>.
-	/// Bytes that have not yet been flushed are not committed to <paramref name="writer"/>.
+	/// Bytes not yet copied to <paramref name="writer"/> are dropped.
+	/// If a chunk was copied and flushing it failed, <paramref name="writer"/> must be abandoned because those bytes cannot be rolled back.
 	/// </exception>
 	/// <remarks>
 	/// <para>
 	/// A MessagePack array header contains the element count, so the length has to be known before the first element is written.
 	/// This method writes that header and then each element as <paramref name="values"/> produces it, flushing when <see cref="SerializationContext.UnflushedBytesThreshold"/> is exceeded.
 	/// The threshold is tracked by this method, including when <paramref name="writer"/> does not report <see cref="PipeWriter.UnflushedBytes"/>.
-	/// Cancellation is observed before each element is written.
-	/// Bytes that have not yet been flushed are not committed to <paramref name="writer"/> when this method fails.
+	/// Cancellation is observed before each element is written and before a pending chunk is copied to <paramref name="writer"/>.
+	/// Bytes not yet copied are dropped when this method fails.
+	/// If a chunk was copied and flushing it failed, <paramref name="writer"/> must be abandoned because those bytes cannot be rolled back.
 	/// The result is one array and can be read with <see cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/> of <typeparamref name="T"/>[] or with <see cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>.
 	/// </para>
 	/// <para>
@@ -264,6 +268,7 @@ public partial record MessagePackSerializer
 				}
 
 				asyncWriter.Flush();
+				cancellationToken.ThrowIfCancellationRequested();
 				staging.CommitTail();
 			}
 			catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
@@ -361,6 +366,7 @@ public partial record MessagePackSerializer
 					}
 				}
 
+				cancellationToken.ThrowIfCancellationRequested();
 				staging.CommitTail();
 			}
 			catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
@@ -406,6 +412,9 @@ public partial record MessagePackSerializer
 		/// <inheritdoc/>
 		public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
 		{
+			// Leave the bytes staged when the caller is already canceled so Discard can drop them.
+			// Once they are copied, a failed destination flush cannot take them back.
+			cancellationToken.ThrowIfCancellationRequested();
 			this.CopyToDestination();
 			return destination.FlushAsync(cancellationToken);
 		}

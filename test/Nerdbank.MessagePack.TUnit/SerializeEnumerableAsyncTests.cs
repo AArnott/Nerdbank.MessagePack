@@ -393,6 +393,24 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	}
 
 	[Test]
+	public async Task SerializeEnumerableAsync_CanceledDuringElement_DoesNotForwardTheChunk()
+	{
+		this.Serializer = this.Serializer with
+		{
+			StartingContext = this.Serializer.StartingContext with { UnflushedBytesThreshold = 0 },
+		};
+
+		using CancellationTokenSource cts = new();
+		Pipe pipe = new();
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.Serializer.SerializeEnumerableAsync(pipe.Writer, CancelsWhileWriting(cts), Shape<CancelsOnGet, Witness>(), cts.Token).AsTask());
+		Assert.Equal(0, pipe.Writer.UnflushedBytes);
+
+		await pipe.Writer.CompleteAsync();
+		ReadResult read = await pipe.Reader.ReadAsync(this.TimeoutToken);
+		Assert.True(read.Buffer.IsEmpty);
+	}
+
+	[Test]
 	public async Task SerializeArrayAsync_Failure_DoesNotLeavePartialBytesOnThePipe()
 	{
 		Pipe pipe = new();
@@ -478,10 +496,17 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		}
 	}
 
+	private static async IAsyncEnumerable<CancelsOnGet> CancelsWhileWriting(CancellationTokenSource cancellationSource)
+	{
+		await Task.CompletedTask;
+		yield return new CancelsOnGet(cancellationSource);
+	}
+
 	private static async IAsyncEnumerable<string?> CancelThenNull(CancellationTokenSource cancellationSource)
 	{
 		yield return "a";
 		cancellationSource.Cancel();
+		await Task.CompletedTask;
 		yield return null;
 	}
 
@@ -489,6 +514,7 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	{
 		yield return [1];
 		cancellationSource.Cancel();
+		await Task.CompletedTask;
 		yield return null;
 	}
 
@@ -560,6 +586,23 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	public partial class Node
 	{
 		public string? Name { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class CancelsOnGet(CancellationTokenSource source)
+	{
+		public int Value
+		{
+			get
+			{
+				source.Cancel();
+				return 1;
+			}
+
+			set
+			{
+			}
+		}
 	}
 
 	[GenerateShape]
@@ -660,6 +703,7 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	[GenerateShapeFor<Person[]>]
 	[GenerateShapeFor<Node>]
 	[GenerateShapeFor<Node[]>]
+	[GenerateShapeFor<CancelsOnGet>]
 	[GenerateShapeFor<ThrowsOnRead>]
 	private partial class Witness;
 }
