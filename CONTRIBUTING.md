@@ -50,7 +50,7 @@ There may be tests that are known to be unstable or have special requirements. T
 To build both managed and NativeAOT tests, run `dotnet build tools/dirs.proj -t:build,pack,publish -c Release`.
 Then run `./tools/dotnet-test-cloud.ps1 -Configuration Release -IncludeNativeAOT`.
 The `test/dirs.proj` traversal discovers and publishes NativeAOT tests through `GetNativeAOTTestVariants`.
-`Nerdbank.MessagePack.TUnit` opts into this with `PublishNativeAOTTests` for `net9.0` and `net10.0` (not `net8.0` until microsoft/testfx#7153 is fixed).
+`Nerdbank.MessagePack.TUnit` opts into this with `PublishNativeAOTTests` for `net10.0` and `net11.0`.
 Other test projects remain managed-only via the default `<PublishNativeAOTTests>false</PublishNativeAOTTests>` in `test/Directory.Build.props`.
 Keep all test projects in the solution for managed runs. The cloud test script runs the solution, then uses `tools/Get-NativeAOTTestProjects.ps1` to locate the expected NativeAOT images.
 To publish the NativeAOT tests for a single framework and RID, run `dotnet publish test/Nerdbank.MessagePack.TUnit/Nerdbank.MessagePack.TUnit.csproj -c Release -f net10.0 -r <RID> -p:NativeAOT=true`.
@@ -59,7 +59,7 @@ NativeAOT test publishes omit the test assembly's XML documentation, which the S
 Test builds keep dynamic code, startup hooks, and event tracing enabled for managed code coverage.
 The `ConfigureNativeAOTTestFeatures` target disables those features only in the native compiler's publish-time inputs, without rewriting the managed runtime configuration.
 The target preserves other runtime feature options, including each test project's globalization setting; the TUnit project explicitly enables full globalization. Test builds retain only English satellite resources.
-Shipping libraries targeting .NET 8 or later opt into NativeAOT compatibility analysis with `IsAotCompatible`.
+Shipping libraries targeting .NET 10 opt into NativeAOT compatibility analysis with `IsAotCompatible`.
 The `test/AotCompatibilityTest` project complements those analyzers by rooting the shipping assembly and passing it through the NativeAOT compiler during every traversal publish.
 Add each shipping assembly that must be validated as a `TrimmerRootAssembly` there, and keep this project publishable in `test/dirs.proj`.
 Do not add `TrimmerRootAssembly` to `test/AotNativeConsole`: it is the NativeAOT image size guard, and rooting the library there inflates the image.

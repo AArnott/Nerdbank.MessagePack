@@ -255,8 +255,10 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 		// For structs, filter out the implicit parameterless constructor.
 		static bool IsImplicitStructConstructor(IMethodSymbol ctor) =>
 			ctor.ContainingType.TypeKind == TypeKind.Struct && ctor.Parameters.IsEmpty && ctor.IsImplicitlyDeclared;
-		IMethodSymbol[] publicConstructors = [.. typeSymbol.InstanceConstructors
-			.Where(ctor => ctor.DeclaredAccessibility == Accessibility.Public && !IsImplicitStructConstructor(ctor)),];
+		IMethodSymbol[] publicConstructors = [
+			.. typeSymbol.InstanceConstructors
+			.Where(ctor => ctor.DeclaredAccessibility == Accessibility.Public && !IsImplicitStructConstructor(ctor)),
+		];
 
 		if (publicConstructors is [{ } candidate])
 		{

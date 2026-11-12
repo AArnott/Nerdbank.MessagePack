@@ -47,7 +47,8 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 		StructuralAggregatingEqualityComparer<T> aggregatingEqualityComparer = new([
 			.. from property in objectShape.Properties
 			   where property.HasGetter
-			   select (IEqualityComparer<T>)property.Accept(this, null)!,]);
+			   select (IEqualityComparer<T>)property.Accept(this, null)!,
+		]);
 
 		if (aggregatingEqualityComparer.IsEmpty && state != IsUnionSentinel)
 		{
@@ -62,8 +63,10 @@ internal class StructuralVisitor(TypeGenerationContext context) : TypeShapeVisit
 	{
 		Getter<TUnion, int> getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
 		IEqualityComparer<TUnion> baseComparer = (IEqualityComparer<TUnion>)unionShape.BaseType.Invoke(this, IsUnionSentinel)!;
-		IEqualityComparer<TUnion>[] comparers = [.. unionShape.UnionCases.Select(
-			unionCase => (IEqualityComparer<TUnion>)unionCase.Accept(this, unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? IsCSharpUnionCaseSentinel : IsUnionSentinel)!),];
+		IEqualityComparer<TUnion>[] comparers = [
+			.. unionShape.UnionCases.Select(
+			unionCase => (IEqualityComparer<TUnion>)unionCase.Accept(this, unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? IsCSharpUnionCaseSentinel : IsUnionSentinel)!),
+		];
 		return new StructuralUnionEqualityComparer<TUnion>(
 			(ref TUnion value) => getUnionCaseIndex(ref value) is int idx && idx >= 0 ? (comparers[idx], idx) : (baseComparer, null));
 	}
