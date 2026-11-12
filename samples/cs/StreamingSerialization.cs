@@ -21,21 +21,4 @@ namespace StreamingSerialization
         internal partial record Person(int Age);
         #endregion
     }
-
-    partial class ArrayStreamingSerialization
-    {
-        #region ArrayStreamingSerialization
-        private static readonly MessagePackSerializer Serializer = new();
-
-        async Task WriteFamilyAsync(PipeWriter writer, IAsyncEnumerable<Person?> members, int count)
-        {
-            // MessagePack stores the array length first, so the caller supplies count.
-            await Serializer.SerializeArrayAsync(writer, members, count);
-            await writer.FlushAsync();
-        }
-
-        [GenerateShape]
-        internal partial record Person(int Age);
-        #endregion
-    }
 }

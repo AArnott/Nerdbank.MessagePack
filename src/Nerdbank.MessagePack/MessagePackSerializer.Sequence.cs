@@ -47,9 +47,8 @@ public partial record MessagePackSerializer
 	/// Bytes that were flushed successfully remain.
 	/// </para>
 	/// <para>
-	/// MessagePack arrays store their length before any element, so an asynchronous sequence of unknown length cannot be written as one array without buffering it.
-	/// Use <see cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)"/> when the length is known.
-	/// <see cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/> of an <see cref="IEnumerable{T}"/> or <see cref="IAsyncEnumerable{T}"/> still buffers the values and writes one array.
+	/// MessagePack arrays store their length before any element, so this method does not write one array.
+	/// Callers that need one array should buffer the values and use <see cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/> of a <typeparamref name="T"/>[] or <see cref="IEnumerable{T}"/>.
 	/// </para>
 	/// </remarks>
 	/// <inheritdoc cref="ThrowIfPreservingReferencesDuringEnumeration" path="/exception"/>
@@ -101,107 +100,6 @@ public partial record MessagePackSerializer
 		try
 		{
 			await this.SerializeEnumerableAsync(pipeWriter, values, shape, cancellationToken).ConfigureAwait(false);
-			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-		}
-		catch (Exception ex)
-		{
-			// Completing with the exception releases buffers without flushing partial output.
-			await pipeWriter.CompleteAsync(ex).ConfigureAwait(false);
-			throw;
-		}
-
-		await pipeWriter.CompleteAsync().ConfigureAwait(false);
-	}
-
-	/// <summary>
-	/// Serializes an asynchronous sequence as one MessagePack array.
-	/// </summary>
-	/// <typeparam name="T">The type of element to serialize.</typeparam>
-	/// <param name="writer">
-	/// The writer to use.
-	/// This method commits bytes to <paramref name="writer"/> and flushes it when the unflushed buffer exceeds <see cref="SerializationContext.UnflushedBytesThreshold"/>, but it does not complete the writer.
-	/// </param>
-	/// <param name="values">The elements to serialize. The sequence must produce exactly <paramref name="count"/> elements.</param>
-	/// <param name="count">The number of elements in <paramref name="values"/>. This value is written into the array header before any element.</param>
-	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	/// <returns>A task that tracks the asynchronous serialization.</returns>
-	/// <exception cref="ArgumentNullException">Thrown if <paramref name="writer"/>, <paramref name="values"/>, or <paramref name="shape"/> is <see langword="null"/>.</exception>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="count"/> is negative.</exception>
-	/// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is canceled.</exception>
-	/// <exception cref="MessagePackSerializationException">
-	/// Thrown when serialization of an element fails, or when <paramref name="values"/> does not produce exactly <paramref name="count"/> elements.
-	/// Elements already flushed before the failure remain on <paramref name="writer"/>.
-	/// Bytes not yet copied to <paramref name="writer"/> are dropped.
-	/// If a chunk was copied and flushing it failed, <paramref name="writer"/> must be abandoned because those bytes cannot be rolled back.
-	/// </exception>
-	/// <remarks>
-	/// <para>
-	/// A MessagePack array header contains the element count, so the length has to be known before the first element is written.
-	/// This method writes that header and then each element as <paramref name="values"/> produces it, flushing when <see cref="SerializationContext.UnflushedBytesThreshold"/> is exceeded.
-	/// The threshold is tracked by this method, including when <paramref name="writer"/> does not report <see cref="PipeWriter.UnflushedBytes"/>.
-	/// Cancellation is observed before each element is written and before a pending chunk is copied to <paramref name="writer"/>.
-	/// Bytes not yet copied are dropped when this method fails.
-	/// If a chunk was copied and flushing it failed, <paramref name="writer"/> must be abandoned because those bytes cannot be rolled back.
-	/// The result is one array and can be read with <see cref="DeserializeAsync{T}(PipeReader, ITypeShape{T}, CancellationToken)"/> of <typeparamref name="T"/>[] or with <see cref="DeserializePathEnumerableAsync{T, TElement}(PipeReader, ITypeShape{T}, StreamingEnumerationOptions{T, TElement}, CancellationToken)"/>.
-	/// </para>
-	/// <para>
-	/// When the length is not known, <see cref="SerializeEnumerableAsync{T}(PipeWriter, IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)"/> writes each value as its own top-level structure.
-	/// <see cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/> of an <see cref="IEnumerable{T}"/> or <see cref="IAsyncEnumerable{T}"/> still buffers every element and then writes one array.
-	/// </para>
-	/// <para>
-	/// Reference preservation applies to the array as one object graph, using the same rules as <see cref="SerializeAsync{T}(PipeWriter, T, ITypeShape{T}, CancellationToken)"/>.
-	/// </para>
-	/// </remarks>
-	public ValueTask SerializeArrayAsync<T>(PipeWriter writer, IAsyncEnumerable<T?> values, int count, ITypeShape<T> shape, CancellationToken cancellationToken = default)
-		=> this.SerializeArrayCoreAsync(writer, values, count, shape, this.StartingContext, cancellationToken);
-
-	/// <summary>
-	/// Serializes an asynchronous sequence as one MessagePack array, using a caller-supplied starting context.
-	/// </summary>
-	/// <typeparam name="T"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
-	/// <param name="writer"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='writer']"/></param>
-	/// <param name="values"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='values']"/></param>
-	/// <param name="count"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='count']"/></param>
-	/// <param name="shape"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
-	/// <param name="startingContext"><inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/param[@name='startingContext']"/></param>
-	/// <returns><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
-	/// <inheritdoc cref="SerializeObject(ref MessagePackWriter, object?, ITypeShape, SerializationContext)" path="/exception"/>
-	/// <inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/remarks"/>
-	[OverloadResolutionPriority(-1)] // prefer the CancellationToken overload when the caller passes `default`.
-	public ValueTask SerializeArrayAsync<T>(PipeWriter writer, IAsyncEnumerable<T?> values, int count, ITypeShape<T> shape, SerializationContext startingContext)
-	{
-		startingContext.ThrowIfInitialized(nameof(startingContext));
-		return this.SerializeArrayCoreAsync(writer, values, count, shape, startingContext, startingContext.CancellationToken);
-	}
-
-	/// <summary>
-	/// Serializes an asynchronous sequence to a <see cref="Stream"/> as one MessagePack array.
-	/// </summary>
-	/// <typeparam name="T"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/typeparam[@name='T']"/></typeparam>
-	/// <param name="stream">The stream to write to. It is flushed but not disposed or closed.</param>
-	/// <param name="values"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='values']"/></param>
-	/// <param name="count"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='count']"/></param>
-	/// <param name="shape"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='shape']"/></param>
-	/// <param name="cancellationToken"><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/param[@name='cancellationToken']"/></param>
-	/// <returns><inheritdoc cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)" path="/returns"/></returns>
-	/// <exception cref="ArgumentNullException">Thrown if <paramref name="stream"/>, <paramref name="values"/>, or <paramref name="shape"/> is <see langword="null"/>.</exception>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="count"/> is negative.</exception>
-	/// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is canceled.</exception>
-	/// <exception cref="MessagePackSerializationException">Thrown when serialization of an element fails, or when <paramref name="values"/> does not produce exactly <paramref name="count"/> elements.</exception>
-	/// <remarks>
-	/// This overload adapts <paramref name="stream"/> to a <see cref="PipeWriter"/> and then calls <see cref="SerializeArrayAsync{T}(PipeWriter, IAsyncEnumerable{T}, int, ITypeShape{T}, CancellationToken)"/>.
-	/// </remarks>
-	public async ValueTask SerializeArrayAsync<T>(Stream stream, IAsyncEnumerable<T?> values, int count, ITypeShape<T> shape, CancellationToken cancellationToken = default)
-	{
-		Requires.NotNull(stream);
-		Requires.NotNull(values);
-		Requires.NotNull(shape);
-
-		PipeWriter pipeWriter = PipeWriter.Create(stream, PipeWriterOptions);
-		try
-		{
-			await this.SerializeArrayAsync(pipeWriter, values, count, shape, cancellationToken).ConfigureAwait(false);
 			await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
 		}
 		catch (Exception ex)
@@ -268,104 +166,6 @@ public partial record MessagePackSerializer
 				}
 
 				asyncWriter.Flush();
-				cancellationToken.ThrowIfCancellationRequested();
-				staging.CommitTail();
-			}
-			catch (Exception ex) when (ShouldWrapSerializationException(ex, cancellationToken))
-			{
-				throw new MessagePackSerializationException("An error occurred during serialization.", ex);
-			}
-		}
-		finally
-		{
-			staging.Discard();
-		}
-	}
-
-	/// <summary>
-	/// Serializes an asynchronous sequence as one MessagePack array.
-	/// </summary>
-	/// <typeparam name="T">The type of element to serialize.</typeparam>
-	/// <param name="writer">The writer to use.</param>
-	/// <param name="values">The elements to serialize.</param>
-	/// <param name="count">The number of elements <paramref name="values"/> must produce.</param>
-	/// <param name="shape">The shape of <typeparamref name="T"/>.</param>
-	/// <param name="startingContext">The context to base the job on.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	/// <returns>A task that tracks the asynchronous serialization.</returns>
-	/// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="count"/> is negative.</exception>
-	private async ValueTask SerializeArrayCoreAsync<T>(PipeWriter writer, IAsyncEnumerable<T?> values, int count, ITypeShape<T> shape, SerializationContext startingContext, CancellationToken cancellationToken)
-	{
-		Requires.NotNull(writer);
-		Requires.NotNull(values);
-		Requires.NotNull(shape);
-		if (count < 0)
-		{
-			throw new ArgumentOutOfRangeException(nameof(count), count, "The array length must be greater than or equal to zero.");
-		}
-
-		// Stage bytes privately so a failure cannot leave a partial array pending on the caller's writer,
-		// and so the flush threshold works when that writer cannot report an unflushed byte count.
-		StagingPipeWriter staging = new(writer);
-		try
-		{
-			try
-			{
-				using DisposableSerializationContext context = this.CreateSerializationContextCore(shape.Provider, startingContext, cancellationToken);
-				MessagePackConverter<T> converter = this.ConverterCache.GetOrAddConverterValue(shape);
-				MessagePackAsyncWriter asyncWriter = new(staging);
-
-				// A reference-preserving reader assigns the first id to the array object. Reserve it so element ids match.
-				object? containerToken = context.Value.ReferenceEqualityTracker?.BeginWritingContainer();
-				try
-				{
-					// One array is one object graph, so every element shares this depth and any reference-preservation state.
-					SerializationContext elementContext = context.Value;
-					elementContext.DepthStep();
-					asyncWriter.WriteArrayHeader(count);
-
-					int written = 0;
-					await foreach (T? value in values.WithCancellation(elementContext.CancellationToken).ConfigureAwait(false))
-					{
-						// WithCancellation only asks the source to stop. Converters such as a null array skip the token, so check it here.
-						elementContext.CancellationToken.ThrowIfCancellationRequested();
-
-						if (written == count)
-						{
-							throw new InvalidOperationException($"The sequence produced more elements than the declared array length of {count}.");
-						}
-
-						try
-						{
-							await converter.WriteAsync(asyncWriter, value, elementContext).ConfigureAwait(false);
-						}
-						catch (Exception ex) when (ShouldWrapSerializationException(ex, elementContext.CancellationToken))
-						{
-							throw new MessagePackSerializationException(MessagePackConverter.CreateFailWritingValueAtIndex(typeof(T), written), ex);
-						}
-
-						written++;
-
-						// WriteAsync only observes bytes already committed to its writer. Small values stay in the private buffer until committed.
-						asyncWriter.Flush();
-						await asyncWriter.FlushIfAppropriateAsync(elementContext).ConfigureAwait(false);
-					}
-
-					if (written != count)
-					{
-						throw new InvalidOperationException($"The sequence produced {written} elements, fewer than the declared array length of {count}.");
-					}
-
-					asyncWriter.Flush();
-				}
-				finally
-				{
-					if (containerToken is not null)
-					{
-						context.Value.ReferenceEqualityTracker!.CompleteWritingContainer(containerToken);
-					}
-				}
-
 				cancellationToken.ThrowIfCancellationRequested();
 				staging.CommitTail();
 			}

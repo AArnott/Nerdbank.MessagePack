@@ -252,146 +252,11 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	}
 
 	[Test]
-	public async Task SerializeArrayAsync_MatchesExistingArrayEncoding()
-	{
-		Person[] people = [new Person(1, "a"), new Person(2, "b")];
-		byte[] expected = this.Serializer.Serialize<Person[], Witness>(people, this.TimeoutToken);
-
-		MemoryStream stream = new();
-		await this.Serializer.SerializeArrayAsync(stream, Repeat(people), people.Length, Shape<Person, Witness>(), this.TimeoutToken);
-		Assert.Equal(expected, stream.ToArray());
-
-		stream.Position = 0;
-		Person[]? actual = await this.Serializer.DeserializeAsync<Person[], Witness>(stream, this.TimeoutToken);
-		Assert.Equal(people, actual);
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_Ints_UseStandardArrayHeader()
-	{
-		MemoryStream stream = new();
-		await this.Serializer.SerializeArrayAsync<int, Witness>(stream, Count(3), 3, this.TimeoutToken);
-		Assert.Equal(ThreeIntsAsArray, stream.ToArray());
-		Assert.NotEqual(ThreeIntsConcatenated, stream.ToArray());
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_Empty_WritesEmptyArrayHeader()
-	{
-		MemoryStream stream = new();
-		await this.Serializer.SerializeArrayAsync(stream, Empty<int>(), 0, Shape<int, Witness>(), this.TimeoutToken);
-		Assert.Equal(new byte[] { MessagePackCode.MinFixArray }, stream.ToArray());
-
-		stream.Position = 0;
-		int[]? actual = await this.Serializer.DeserializeAsync<int[], Witness>(stream, this.TimeoutToken);
-		Assert.NotNull(actual);
-		Assert.Empty(actual);
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_CountMismatch_Throws()
-	{
-		ITypeShape<int> shape = Shape<int, Witness>();
-		MessagePackSerializationException fewer = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(Stream.Null, Count(1), 2, shape, this.TimeoutToken).AsTask());
-		Assert.IsType<InvalidOperationException>(fewer.InnerException);
-		Assert.Contains("fewer", fewer.InnerException.Message, StringComparison.Ordinal);
-
-		MessagePackSerializationException more = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(Stream.Null, Count(3), 2, shape, this.TimeoutToken).AsTask());
-		Assert.IsType<InvalidOperationException>(more.InnerException);
-		Assert.Contains("more", more.InnerException.Message, StringComparison.Ordinal);
-
-		await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => this.Serializer.SerializeArrayAsync(Stream.Null, Count(1), -1, shape, this.TimeoutToken).AsTask());
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_FlushesBeforeSequenceCompletes()
-	{
-		this.Serializer = this.Serializer with
-		{
-			StartingContext = this.Serializer.StartingContext with { UnflushedBytesThreshold = 16 },
-		};
-
-		const int count = 40;
-		Pipe pipe = new();
-		TaskCompletionSource<bool> observed = new(TaskCreationOptions.RunContinuationsAsynchronously);
-		Task writing = this.Serializer.SerializeArrayAsync(pipe.Writer, BlockAfter(20, observed, count), count, Shape<int, Witness>(), this.TimeoutToken).AsTask();
-		try
-		{
-			using CancellationTokenSource readTimeout = new(TimeSpan.FromSeconds(2));
-			ReadResult read = await pipe.Reader.ReadAsync(readTimeout.Token);
-			Assert.False(read.Buffer.IsEmpty);
-
-			// Leave the bytes unconsumed so deserialization still sees the array header that was flushed early.
-			pipe.Reader.AdvanceTo(read.Buffer.Start);
-		}
-		finally
-		{
-			observed.TrySetResult(true);
-		}
-
-		await writing;
-		await pipe.Writer.CompleteAsync();
-
-		int[]? actual = await this.Serializer.DeserializeAsync<int[], Witness>(pipe.Reader, this.TimeoutToken);
-		Assert.Equal(Enumerable.Range(0, count), actual);
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_PreservesReferencesWithinTheArray()
-	{
-		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
-		Node shared = new() { Name = "shared" };
-		Node[] nodes = [shared, shared];
-		byte[] expected = this.Serializer.Serialize<Node[], Witness>(nodes, this.TimeoutToken);
-
-		MemoryStream stream = new();
-		await this.Serializer.SerializeArrayAsync(stream, SharedNodes(shared), nodes.Length, Shape<Node, Witness>(), this.TimeoutToken);
-		Assert.Equal(expected, stream.ToArray());
-
-		stream.Position = 0;
-		Node?[]? actual = await this.Serializer.DeserializeAsync<Node[], Witness>(stream, this.TimeoutToken);
-		Assert.NotNull(actual);
-		Assert.Equal(2, actual.Length);
-		Assert.Same(actual[0], actual[1]);
-		Assert.Equal("shared", actual[0]!.Name);
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_TopLevelArray_CanBeStreamedByPath()
-	{
-		Pipe pipe = new();
-		await this.Serializer.SerializeArrayAsync(pipe.Writer, Count(4), 4, Shape<int, Witness>(), this.TimeoutToken);
-		await pipe.Writer.CompleteAsync();
-
-		MessagePackSerializer.StreamingEnumerationOptions<int[], int> options = new(values => values);
-		List<int> actual = [];
-		await foreach (int value in this.Serializer.DeserializePathEnumerableAsync<int[], int, Witness>(pipe.Reader, options, this.TimeoutToken))
-		{
-			actual.Add(value);
-		}
-
-		Assert.Equal([1, 2, 3, 4], actual);
-	}
-
-	[Test]
 	public async Task SerializeEnumerableAsync_YieldAfterCancel_DoesNotWriteTheNextValue()
 	{
 		using CancellationTokenSource cts = new();
 		Pipe pipe = new();
 		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.Serializer.SerializeEnumerableAsync(pipe.Writer, CancelThenNull(cts), Shape<string, Witness>(), cts.Token).AsTask());
-		Assert.Equal(0, pipe.Writer.UnflushedBytes);
-
-		await pipe.Writer.CompleteAsync();
-		ReadResult read = await pipe.Reader.ReadAsync(this.TimeoutToken);
-		Assert.True(read.Buffer.IsEmpty);
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_YieldNullAfterCancel_DoesNotWriteNil()
-	{
-		using CancellationTokenSource cts = new();
-		Pipe pipe = new();
-		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.Serializer.SerializeArrayAsync(pipe.Writer, CancelThenNullArray(cts), 2, Shape<int[], Witness>(), cts.Token).AsTask());
 		Assert.Equal(0, pipe.Writer.UnflushedBytes);
 
 		await pipe.Writer.CompleteAsync();
@@ -418,25 +283,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	}
 
 	[Test]
-	public async Task SerializeArrayAsync_Failure_DoesNotLeavePartialBytesOnThePipe()
-	{
-		Pipe pipe = new();
-		await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(pipe.Writer, Count(1), 2, Shape<int, Witness>(), this.TimeoutToken).AsTask());
-		Assert.Equal(0, pipe.Writer.UnflushedBytes);
-
-		await this.Serializer.SerializeEnumerableAsync(pipe.Writer, Count(1), Shape<int, Witness>(), this.TimeoutToken);
-		await pipe.Writer.CompleteAsync();
-
-		List<int> actual = [];
-		await foreach (int value in this.Serializer.DeserializeEnumerableAsync<int, Witness>(pipe.Reader, this.TimeoutToken))
-		{
-			actual.Add(value);
-		}
-
-		Assert.Equal([1], actual);
-	}
-
-	[Test]
 	public async Task SerializeSequence_DestinationFlushFailure_RetainsCopiedBytesAndDoesNotCompleteTheWriter()
 	{
 		this.Serializer = this.Serializer with
@@ -453,10 +299,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 			FlushFailingWriter enumerableWriter = new(failure);
 			MessagePackSerializationException enumerable = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeEnumerableAsync(enumerableWriter, Count(1), Shape<int, Witness>(), this.TimeoutToken).AsTask());
 			AssertFlushFailure(enumerable, enumerableWriter, failure, [1]);
-
-			FlushFailingWriter arrayWriter = new(failure);
-			MessagePackSerializationException array = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(arrayWriter, Count(2), 2, Shape<int, Witness>(), this.TimeoutToken).AsTask());
-			AssertFlushFailure(array, arrayWriter, failure, [0x92, 1]);
 		}
 	}
 
@@ -511,13 +353,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		}
 
 		Assert.Equal(Enumerable.Range(0, 31), actual);
-	}
-
-	[Test]
-	public async Task SerializeArrayAsync_ElementFailure_IncludesIndex()
-	{
-		MessagePackSerializationException ex = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeArrayAsync(Stream.Null, FailingElements(), 3, Shape<ThrowsOnRead, Witness>(), this.TimeoutToken).AsTask());
-		Assert.Contains("index 1", GetFullMessage(ex), StringComparison.Ordinal);
 	}
 
 	private static async IAsyncEnumerable<T> One<T>(T value)
@@ -586,14 +421,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		yield return null;
 	}
 
-	private static async IAsyncEnumerable<int[]?> CancelThenNullArray(CancellationTokenSource cancellationSource)
-	{
-		yield return [1];
-		cancellationSource.Cancel();
-		await Task.CompletedTask;
-		yield return null;
-	}
-
 	private static async IAsyncEnumerable<int> CancelAfterFirst(CancellationTokenSource cancellationSource)
 	{
 		yield return 1;
@@ -608,15 +435,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		await Task.Yield();
 		yield return null;
 		yield return "b";
-	}
-
-	private static async IAsyncEnumerable<Person?> Repeat(Person[] people)
-	{
-		foreach (Person person in people)
-		{
-			await Task.Yield();
-			yield return person;
-		}
 	}
 
 	private static async IAsyncEnumerable<Person?> People()
@@ -640,13 +458,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		yield return new ThrowsOnRead { Before = 2 };
 	}
 
-	private static async IAsyncEnumerable<Node?> SharedNodes(Node shared)
-	{
-		yield return shared;
-		await Task.Yield();
-		yield return shared;
-	}
-
 	private static ITypeShape<T> Shape<T, TProvider>()
 #if NET
 		where TProvider : IShapeable<T>
@@ -657,12 +468,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 
 	[GenerateShape]
 	public partial record Person(int Id, string? Name);
-
-	[GenerateShape]
-	public partial class Node
-	{
-		public string? Name { get; set; }
-	}
 
 	[GenerateShape]
 	public partial class CancelsOnGet(CancellationTokenSource source)
@@ -852,10 +657,6 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	[GenerateShapeFor<int[]>]
 	[GenerateShapeFor<string>]
 	[GenerateShapeFor<IAsyncEnumerable<int>>]
-	[GenerateShapeFor<Person>]
-	[GenerateShapeFor<Person[]>]
-	[GenerateShapeFor<Node>]
-	[GenerateShapeFor<Node[]>]
 	[GenerateShapeFor<CancelsOnGet>]
 	[GenerateShapeFor<ThrowsOnRead>]
 	private partial class Witness;

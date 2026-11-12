@@ -55,18 +55,6 @@ A reference id would refer to another top-level value, and <xref:Nerdbank.Messag
 
 ### Writing one array
 
-A MessagePack array stores its length before any element, so an asynchronous sequence cannot be written as one array unless the length is already known.
-<xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeArrayAsync*> takes that length, writes the array header, and then writes each element as the sequence produces it.
-The result is an ordinary MessagePack array.
-Read it with <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync*>, or stream its elements with <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializePathEnumerableAsync*>.
-
-[!code-csharp[](../../samples/cs/StreamingSerialization.cs#ArrayStreamingSerialization)]
-
-The sequence must produce exactly the declared number of elements.
-A mismatch fails with <xref:Nerdbank.MessagePack.MessagePackSerializationException>.
-Bytes that were flushed successfully stay written. Bytes not yet copied to the pipe are dropped, so a later flush does not publish them.
-If a chunk was copied and flushing it failed, abandon that pipe: those bytes cannot be rolled back.
-Reference preservation applies inside this array, because the array is one object graph.
-
-When the length is not known ahead of time, use <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumerableAsync*>.
-<xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*> of an <xref:System.Collections.Generic.IEnumerable`1> or <xref:System.Collections.Generic.IAsyncEnumerable`1> is unchanged: it still buffers the elements and then writes one array.
+A MessagePack array stores its length before any element, so <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumerableAsync*> does not write one array.
+Callers that need one array should buffer the values and use <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*> of a `T[]` or <xref:System.Collections.Generic.IEnumerable`1>.
+That call still buffers every element and then writes one ordinary array.

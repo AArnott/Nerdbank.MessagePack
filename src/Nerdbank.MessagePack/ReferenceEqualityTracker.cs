@@ -59,33 +59,6 @@ internal class ReferenceEqualityTracker : IPoolableObject
 	}
 
 	/// <summary>
-	/// Reserves the next reference id for a container written outside the converter pipeline.
-	/// </summary>
-	/// <returns>A token to pass to <see cref="CompleteWritingContainer(object)"/> after the container's contents are written.</returns>
-	/// <remarks>
-	/// A reference-preserving reader assigns the first id in an array payload to the array object itself.
-	/// Streaming array serialization writes that header directly, so it reserves the same id before writing elements.
-	/// </remarks>
-	internal object BeginWritingContainer()
-	{
-		object token = new();
-		int assignedIndex = this.serializingObjectCounter++;
-		this.serializedObjects.Add(token, (assignedIndex, false));
-		return token;
-	}
-
-	/// <summary>
-	/// Marks a container reserved by <see cref="BeginWritingContainer"/> as fully written.
-	/// </summary>
-	/// <param name="token">The token returned by <see cref="BeginWritingContainer"/>.</param>
-	internal void CompleteWritingContainer(object token)
-	{
-		Requires.NotNull(token);
-		(int referenceId, bool _) = this.serializedObjects[token];
-		this.serializedObjects[token] = (referenceId, true);
-	}
-
-	/// <summary>
 	/// Writes an object to the stream, replacing the object with a reference if the object has been seen in this serialization before.
 	/// </summary>
 	/// <typeparam name="T">The type of value to be written.</typeparam>
