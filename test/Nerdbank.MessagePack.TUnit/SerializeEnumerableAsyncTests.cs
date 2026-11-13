@@ -319,6 +319,72 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 	}
 
 	[Test]
+	public async Task SerializeEnumerableAsync_CancellationAfterFlush_KeepsPrefixAndDropsStagedTail()
+	{
+		this.Serializer = this.Serializer with
+		{
+			StartingContext = this.Serializer.StartingContext with { UnflushedBytesThreshold = 4 },
+		};
+
+		using CancellationTokenSource cts = new();
+		Pipe pipe = new();
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => this.Serializer.SerializeEnumerableAsync(pipe.Writer, FlushThenCancel(cts, flushed: 5, staged: 4), Shape<int, Witness>(), cts.Token).AsTask());
+
+		// 5 one-byte integers exceed the threshold and are flushed. The next 4 stay staged until the canceled value, then are dropped.
+		Assert.Equal(0, pipe.Writer.UnflushedBytes);
+		await pipe.Writer.WriteAsync(new byte[] { 10 }, this.TimeoutToken);
+		await pipe.Writer.CompleteAsync();
+
+		List<int> actual = [];
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync<int, Witness>(pipe.Reader, this.TimeoutToken))
+		{
+			actual.Add(value);
+		}
+
+		Assert.Equal([1, 2, 3, 4, 5, 10], actual);
+	}
+
+	[Test]
+	public async Task SerializeEnumerableAsync_ElementFailureAfterFlush_KeepsPrefixAndDropsStagedTail()
+	{
+		this.Serializer = this.Serializer with
+		{
+			StartingContext = this.Serializer.StartingContext with { UnflushedBytesThreshold = 4 },
+		};
+
+		Pipe pipe = new();
+		MessagePackSerializationException exception = await Assert.ThrowsAsync<MessagePackSerializationException>(() => this.Serializer.SerializeEnumerableAsync(pipe.Writer, FlushThenFail(flushed: 5, staged: 4), Shape<int, Witness>(), this.TimeoutToken).AsTask());
+		Assert.Contains("later element failed", GetFullMessage(exception), StringComparison.Ordinal);
+		Assert.Equal(0, pipe.Writer.UnflushedBytes);
+		await pipe.Writer.WriteAsync(new byte[] { 10 }, this.TimeoutToken);
+		await pipe.Writer.CompleteAsync();
+
+		List<int> actual = [];
+		await foreach (int value in this.Serializer.DeserializeEnumerableAsync<int, Witness>(pipe.Reader, this.TimeoutToken))
+		{
+			actual.Add(value);
+		}
+
+		Assert.Equal([1, 2, 3, 4, 5, 10], actual);
+	}
+
+	[Test]
+	public async Task SerializeEnumerableAsync_FlushAcrossMultipleSegments_KeepsCheckedOutTail()
+	{
+		MemoryStream stream = new();
+		await this.Serializer.SerializeEnumerableAsync(stream, One(new MultiSegmentBufferProbe()), Shape<MultiSegmentBufferProbe, MultiSegmentBufferProbe>(), this.TimeoutToken);
+
+		byte[] expected = new byte[MultiSegmentBufferProbeConverter.PayloadLength + MultiSegmentBufferProbeConverter.Trailer.Length];
+		for (int i = 0; i < MultiSegmentBufferProbeConverter.PayloadLength; i++)
+		{
+			expected[i] = (byte)i;
+		}
+
+		MultiSegmentBufferProbeConverter.Trailer.CopyTo(expected.AsSpan(MultiSegmentBufferProbeConverter.PayloadLength));
+		Assert.Equal(expected, stream.ToArray());
+	}
+
+	[Test]
 	public async Task SerializeEnumerableAsync_FlushesWhenWriterCannotReportUnflushedBytes()
 	{
 		this.Serializer = this.Serializer with
@@ -419,6 +485,29 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 		cancellationSource.Cancel();
 		await Task.CompletedTask;
 		yield return null;
+	}
+
+	private static async IAsyncEnumerable<int> FlushThenCancel(CancellationTokenSource cancellationSource, int flushed, int staged)
+	{
+		for (int i = 1; i <= flushed + staged; i++)
+		{
+			yield return i;
+		}
+
+		cancellationSource.Cancel();
+		await Task.CompletedTask;
+		yield return flushed + staged + 1;
+	}
+
+	private static async IAsyncEnumerable<int> FlushThenFail(int flushed, int staged)
+	{
+		for (int i = 1; i <= flushed + staged; i++)
+		{
+			yield return i;
+		}
+
+		await Task.Yield();
+		throw new InvalidOperationException("later element failed");
 	}
 
 	private static async IAsyncEnumerable<int> CancelAfterFirst(CancellationTokenSource cancellationSource)
@@ -528,6 +617,47 @@ public partial class SerializeEnumerableAsyncTests : MessagePackSerializerTestBa
 
 			syncWriter = writer.CreateWriter();
 			syncWriter.Write(0x01020304);
+			writer.ReturnWriter(ref syncWriter);
+		}
+	}
+
+	[GenerateShape]
+	[MessagePackConverter(typeof(MultiSegmentBufferProbeConverter))]
+	public partial class MultiSegmentBufferProbe;
+
+	public sealed class MultiSegmentBufferProbeConverter : MessagePackConverter<MultiSegmentBufferProbe>
+	{
+		// Longer than the largest ArrayPool bucket, so the staging sequence needs more than one segment.
+		public const int PayloadLength = (1024 * 1024) + 4096;
+
+		public static ReadOnlySpan<byte> Trailer => [0xDE, 0xAD, 0xBE, 0xEF];
+
+		public override bool PreferAsyncSerialization => true;
+
+		public override MultiSegmentBufferProbe? Read(ref MessagePackReader reader, SerializationContext context) => throw new NotSupportedException();
+
+		public override void Write(ref MessagePackWriter writer, in MultiSegmentBufferProbe? value, SerializationContext context) => throw new NotSupportedException();
+
+		public override async ValueTask WriteAsync(MessagePackAsyncWriter writer, MultiSegmentBufferProbe? value, SerializationContext context)
+		{
+			byte[] payload = new byte[PayloadLength];
+			for (int i = 0; i < payload.Length; i++)
+			{
+				payload[i] = (byte)i;
+			}
+
+			MessagePackWriter syncWriter = writer.CreateWriter();
+			syncWriter.WriteRaw(payload);
+			writer.ReturnWriter(ref syncWriter);
+			writer.Flush();
+
+			// Check out the next buffer and then flush without writing into it, while earlier segments are eligible for recycling.
+			syncWriter = writer.CreateWriter();
+			writer.ReturnWriter(ref syncWriter);
+			await writer.FlushIfAppropriateAsync(context).ConfigureAwait(false);
+
+			syncWriter = writer.CreateWriter();
+			syncWriter.WriteRaw(Trailer);
 			writer.ReturnWriter(ref syncWriter);
 		}
 	}
