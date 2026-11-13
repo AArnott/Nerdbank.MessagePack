@@ -606,9 +606,6 @@ public static partial class MessagePackSerializerExtensions
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -626,9 +623,6 @@ public static partial class MessagePackSerializerExtensions
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -941,9 +935,6 @@ public static partial class MessagePackSerializerExtensions
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
@@ -960,9 +951,6 @@ public static partial class MessagePackSerializerExtensions
 	/// </remarks>
 #pragma warning disable RS0027 // optional parameter on a method with overloads
 	[ExcludeFromCodeCoverage]
-#if NET8_0
-	[RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
 #if NET
 	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
