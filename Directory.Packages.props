@@ -35,7 +35,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" />
-    <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.13.22" />
+    <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="18.7.19" />
     <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="Nerdbank.Streams" Version="2.14.411" />
     <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
