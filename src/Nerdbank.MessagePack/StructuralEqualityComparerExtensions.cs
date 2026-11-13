@@ -4,7 +4,6 @@
 #if !DOCFX
 
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Nerdbank.MessagePack;
 
@@ -31,9 +30,6 @@ public static class StructuralEqualityComparerExtensions
 		/// See the remarks on <see cref="StructuralEqualityComparer"/> for important notes about correctness of this implementation.
 		/// </para>
 		/// </remarks>
-#if NET8_0
-		[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
 #if NET
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		[Obsolete("Use the StructuralEqualityComparer.GetDefault<T>() method instead. Check that T actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
@@ -57,9 +53,6 @@ public static class StructuralEqualityComparerExtensions
 		/// See the remarks on <see cref="StructuralEqualityComparer"/> for important notes about correctness of this implementation.
 		/// </para>
 		/// </remarks>
-#if NET8_0
-		[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
 #if NET
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		[Obsolete("Use the StructuralEqualityComparer.GetHashCollisionResistant<T>() method instead. Check that T actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
@@ -83,9 +76,6 @@ public static class StructuralEqualityComparerExtensions
 		/// See the remarks on <see cref="StructuralEqualityComparer"/> for important notes about correctness of this implementation.
 		/// </para>
 		/// </remarks>
-#if NET8_0
-		[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
 #if NET
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		[Obsolete("Use the StructuralEqualityComparer.GetDefault<T, TProvider>() method instead. Check that TProvider actually has a [GenerateShapeFor<T>] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
@@ -109,9 +99,6 @@ public static class StructuralEqualityComparerExtensions
 		/// See the remarks on <see cref="StructuralEqualityComparer"/> for important notes about correctness of this implementation.
 		/// </para>
 		/// </remarks>
-#if NET8_0
-		[RequiresDynamicCode(MessagePackSerializerExtensions.ResolveDynamicMessage)]
-#endif
 #if NET
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		[Obsolete("Use the StructuralEqualityComparer.GetHashCollisionResistant<T, TProvider>() method instead. Check that TProvider actually has a [GenerateShapeFor<T>] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]

@@ -56,9 +56,6 @@ void WriteClass(bool targetNET) {
         string staticModifier = targetNET ? "" : "static ";
         string methodAttributes = targetNET ? "" : """
 
-            #if NET8_0
-            	[RequiresDynamicCode(ResolveDynamicMessage)]
-            #endif
             #if NET
             	[PreferDotNetAlternativeApi(MessagePackSerializer.PreferTypeConstrainedInstanceOverloads)]
             	[EditorBrowsable(EditorBrowsableState.Never)]
