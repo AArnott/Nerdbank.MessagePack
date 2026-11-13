@@ -4,8 +4,20 @@
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// An interface that may be implemented to receive callbacks before serialization and after deserialization.
+/// An interface that only reference types may implement to receive callbacks before serialization and after deserialization.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This interface is only supported on reference types.
+/// Object map and array converters invoke <see cref="OnBeforeSerialize"/>, <see cref="OnAfterSerialize"/>,
+/// <see cref="OnBeforeDeserialize"/>, and <see cref="OnAfterDeserialize"/> on the result of casting the value to
+/// <see cref="IMessagePackSerializationCallbacks"/>.
+/// When the implementing type is a <see langword="struct"/> or <see langword="record"/> <see langword="struct"/>, that cast boxes a copy,
+/// so mutations made by those methods are lost.
+/// Implement this interface on a class or <see langword="record"/> class.
+/// A struct that implements this interface produces diagnostic NBMsgPack120.
+/// </para>
+/// </remarks>
 public interface IMessagePackSerializationCallbacks
 {
 	/// <summary>

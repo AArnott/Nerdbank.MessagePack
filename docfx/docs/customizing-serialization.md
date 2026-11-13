@@ -131,7 +131,14 @@ To identify the intended constructor, apply the <xref:PolyType.ConstructorShapeA
 
 ## Callbacks
 
-A type may implement @Nerdbank.MessagePack.IMessagePackSerializationCallbacks in order to be notified of when it is about to be serialized or has just been deserialized.
+A reference type may implement <xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks> to be notified when it is about to be serialized or has just been deserialized.
+
+> [!IMPORTANT]
+> <xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks> is only supported on reference types.
+> Object map and array converters invoke `OnBeforeSerialize`, `OnAfterSerialize`, `OnBeforeDeserialize`, and `OnAfterDeserialize` by casting the value to the interface.
+> When the implementing type is a struct or record struct, that cast boxes a copy, and mutations made in those methods are lost.
+> Implement the interface on a class or record class.
+> The [NBMsgPack120](../analyzers/NBMsgPack120.md) analyzer reports an error when a struct implements it.
 
 ## Serialize objects with indexes for keys
 
