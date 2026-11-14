@@ -124,12 +124,13 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		// For shape-based unions, we create a oneOf schema without the array wrapper
 		JsonArray oneOfArray = [];
 
-		// The stored shapes may be union views of attributed hierarchies. The object converters describe the object view.
-		oneOfArray.Add((JsonNode?)this.baseConverter.GetJsonSchema(context, DuckTypingRequiredMembers.ObjectView(this.shapeMapping.BaseShape)) ?? CreateUndocumentedSchema(this.baseConverter.GetType()));
+		// Ask the case converter directly. JsonSchemaContext caches schemas by CLR type, so routing a
+		// hierarchy's object view through that cache would reuse a tagged union schema for this plain map.
+		oneOfArray.Add(CaseSchema(context, this.baseConverter, this.shapeMapping.BaseShape));
 
 		foreach (ITypeShape shape in this.shapeMapping.DerivedShapes.Span)
 		{
-			oneOfArray.Add((JsonNode)context.GetJsonSchema(DuckTypingRequiredMembers.ObjectView(shape)));
+			oneOfArray.Add(CaseSchema(context, this.convertersByType[shape.Type], shape));
 		}
 
 		return new JsonObject
@@ -137,6 +138,16 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 			["oneOf"] = oneOfArray,
 		};
 	}
+
+	/// <summary>
+	/// Builds one case schema from the converter that reads and writes that case.
+	/// </summary>
+	/// <param name="context">The schema context. Property schemas may still be cached here.</param>
+	/// <param name="converter">The object converter for the case.</param>
+	/// <param name="shape">The case shape. A hierarchy is described through its object view.</param>
+	/// <returns>The case schema.</returns>
+	private static JsonNode CaseSchema(JsonSchemaContext context, MessagePackConverter converter, ITypeShape shape)
+		=> (JsonNode)(converter.GetJsonSchema(context, DuckTypingRequiredMembers.ObjectView(shape)) ?? CreateUndocumentedSchema(converter.GetType()));
 
 	/// <summary>
 	/// Reads the string keys of a map without consuming <paramref name="reader"/>.

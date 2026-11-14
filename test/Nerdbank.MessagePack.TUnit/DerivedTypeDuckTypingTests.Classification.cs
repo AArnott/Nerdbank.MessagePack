@@ -130,6 +130,23 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[Test]
+	public void TaggedAndDuckTypedSchemasStayDistinct()
+	{
+		// Duck is declared first so its schema is built before the tagged horse. A type-keyed cache would then
+		// reuse the plain horse map for the tagged property.
+		this.Use(this.Shape<NestedAnimal>(), this.Shape<NestedHorse>(), this.Shape<NestedQuarterHorse>());
+		JsonObject schema = this.Serializer.GetJsonSchema(this.Shape<TaggedAndDuck>());
+		JsonObject definitions = Assert.IsType<JsonObject>(schema["$defs"]);
+		JsonObject model = Assert.IsType<JsonObject>(definitions.First(definition => definition.Key.Contains(nameof(TaggedAndDuck), StringComparison.Ordinal)).Value);
+		JsonObject properties = Assert.IsType<JsonObject>(model["properties"]);
+		string duck = Assert.IsType<JsonObject>(properties["Duck"]).ToJsonString();
+		string tagged = Assert.IsType<JsonObject>(properties["Tagged"]).ToJsonString();
+		Assert.Contains("\"Speed\"", duck, StringComparison.Ordinal);
+		Assert.DoesNotContain("prefixItems", duck, StringComparison.Ordinal);
+		Assert.Contains("prefixItems", tagged, StringComparison.Ordinal);
+	}
+
+	[Test]
 	public void DerivedCaseWithItsOwnHierarchyRoundtripsAsAMap()
 	{
 		this.Use(this.Shape<NestedAnimal>(), this.Shape<NestedHorse>(), this.Shape<NestedQuarterHorse>());
@@ -478,6 +495,9 @@ public partial class DerivedTypeDuckTypingTests
 
 	[GenerateShape]
 	public partial record NestedQuarterHorse(string Name, int Speed, string Color) : NestedHorse(Name, Speed);
+
+	[GenerateShape]
+	public partial record TaggedAndDuck(NestedAnimal? Duck, NestedHorse? Tagged);
 
 	[GenerateShape]
 	public abstract partial class KeyedBase;
