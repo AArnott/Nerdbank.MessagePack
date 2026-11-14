@@ -193,6 +193,7 @@ Required names are the names the object converter writes for required constructo
 A required constructor parameter must match a property, and a required property must have a getter. Otherwise the object converter does not write that member, so that case is rejected when the union is built.
 A required getter-only collection is also rejected when the type has a parameterized constructor, unless the collection is one of those parameters. That converter writes the collection and does not read it back.
 A case with its own converter is rejected when the converter is built. That converter may not write the required names, so the payload can be read as a different case.
+A required name that the object converter does not write is rejected for the same reason. A custom converter on a getter-only collection can omit that property.
 <xref:Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy> applies, except when <xref:PolyType.PropertyShapeAttribute.Name> sets the name.
 Comparison is ordinal.
 Two cases that require the same names are rejected when the union is built, including when a naming policy makes them the same.

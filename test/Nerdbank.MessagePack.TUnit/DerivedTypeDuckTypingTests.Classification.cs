@@ -363,6 +363,18 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[Test]
+	public void CustomConverterOnGetterOnlyCollectionIsRejectedWhenTheConverterIsBuilt()
+	{
+		this.Use(this.Shape<Bag>(), this.Shape<CustomListBag>(), this.Shape<EmptyBag>());
+		CustomListBag bag = new();
+		bag.Lives.Add(9);
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<Bag>(bag, this.TimeoutToken));
+		string message = this.FullMessage(ex);
+		Assert.Contains(nameof(CustomListBag.Lives), message, StringComparison.Ordinal);
+		Assert.Contains("does not write", message, StringComparison.Ordinal);
+	}
+
+	[Test]
 	public void GetterOnlyCollectionConstructorParameterRoundtrips()
 	{
 		this.Use(this.Shape<Bag>(), this.Shape<CtorListBag>(), this.Shape<NameBag>());
@@ -734,6 +746,31 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[GenerateShape]
+	public partial class CustomListBag : Bag
+	{
+		[PropertyShape(IsRequired = true)]
+		[MessagePackConverter(typeof(CountingListConverter))]
+		public List<int> Lives { get; } = [];
+	}
+
+	public class CountingListConverter : MessagePackConverter<List<int>>
+	{
+		public override List<int>? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			int count = reader.ReadInt32();
+			List<int> values = new(count);
+			for (int i = 0; i < count; i++)
+			{
+				values.Add(i);
+			}
+
+			return values;
+		}
+
+		public override void Write(ref MessagePackWriter writer, in List<int>? value, SerializationContext context) => writer.Write(value?.Count ?? 0);
+	}
+
+	[GenerateShape]
 	public partial class CtorListBag : Bag
 	{
 		public CtorListBag(string name, List<int> lives)
@@ -809,6 +846,7 @@ public partial class DerivedTypeDuckTypingTests
 	[GenerateShapeFor<NameBag>]
 	[GenerateShapeFor<EmptyBag>]
 	[GenerateShapeFor<OnlyListBag>]
+	[GenerateShapeFor<CustomListBag>]
 	[GenerateShapeFor<CtorListBag>]
 	[GenerateShapeFor<object>]
 	[GenerateShapeFor<int>]

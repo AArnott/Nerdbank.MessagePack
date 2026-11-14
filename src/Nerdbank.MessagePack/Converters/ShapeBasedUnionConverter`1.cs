@@ -84,6 +84,17 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 			string[] names = DuckTypingRequiredMembers.GetRequiredNames(
 				shape,
 				property => cache.GetSerializedPropertyName(property.Name, property.AttributeProvider));
+			if (converter is IObjectMapWriter writer)
+			{
+				foreach (string name in names)
+				{
+					if (!writer.WritesProperty(name))
+					{
+						throw new NotSupportedException($"Duck typing case '{shape.Type.FullName}' requires '{name}', but the object converter does not write that property. The payload can be read as a different case.");
+					}
+				}
+			}
+
 			cases[index] = new ObjectCaseClassifier.Case(shape.Type, names);
 			this.caseShapes[index] = shape;
 			convertersByType[shape.Type] = converter;

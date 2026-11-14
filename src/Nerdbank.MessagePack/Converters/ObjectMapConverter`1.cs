@@ -23,7 +23,7 @@ internal class ObjectMapConverter<T>(
 	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
 	IReadOnlyList<IPropertyShape> propertyShapes,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>, IUnknownUnionCaseFallback<T>
+	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>, IUnknownUnionCaseFallback<T>, IObjectMapWriter
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -35,6 +35,20 @@ internal class ObjectMapConverter<T>(
 	/// Gets the special <see cref="UnusedDataPacket"/> property, if declared.
 	/// </summary>
 	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
+
+	/// <inheritdoc/>
+	bool IObjectMapWriter.WritesProperty(string serializedName)
+	{
+		foreach (SerializableProperty<T> property in serializable.Properties.Span)
+		{
+			if (string.Equals(property.Name, serializedName, StringComparison.Ordinal))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 	/// <inheritdoc/>
 	void IUnknownUnionCaseFallback<T>.SetUnknownUnionDiscriminator(ref T value, in RawMessagePack discriminator)
