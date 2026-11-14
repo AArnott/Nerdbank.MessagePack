@@ -191,6 +191,7 @@ A case with no required properties is a catch-all: at most one is allowed, and i
 
 Required names are the names the object converter writes for required constructor parameters, `required` members, and <xref:PolyType.PropertyShapeAttribute.IsRequired>.
 A required constructor parameter must match a property, and a required property must have a getter. Otherwise the object converter does not write that member, so that case is rejected when the union is built.
+A required getter-only collection is also rejected when the type has a parameterized constructor, unless the collection is one of those parameters. That converter writes the collection and does not read it back.
 <xref:Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy> applies, except when <xref:PolyType.PropertyShapeAttribute.Name> sets the name.
 Comparison is ordinal.
 Two cases that require the same names are rejected when the union is built, including when a naming policy makes them the same.

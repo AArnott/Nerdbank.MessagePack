@@ -344,6 +344,42 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[Test]
+	public void Constructor_RejectsRequiredGetterOnlyCollectionOnParameterizedType()
+	{
+		NotSupportedException ex = Assert.Throws<NotSupportedException>(() => new DerivedTypeDuckTyping(this.Shape<CollectionAnimal>(), this.Shape<TaggedListCat>(), this.Shape<PlainCollectionAnimal>()));
+		Assert.Contains(nameof(TaggedListCat.Lives), ex.Message, StringComparison.Ordinal);
+		Assert.Contains("getter-only collection", ex.Message, StringComparison.Ordinal);
+	}
+
+	[Test]
+	public void GetterOnlyCollectionOnParameterlessTypeRoundtrips()
+	{
+		this.Use(this.Shape<Bag>(), this.Shape<OnlyListBag>(), this.Shape<EmptyBag>());
+		OnlyListBag bag = new();
+		bag.Lives.Add(9);
+		OnlyListBag roundtrip = Assert.IsType<OnlyListBag>(this.Deserialize<Bag>(this.Serializer.Serialize<Bag>(bag, this.TimeoutToken)));
+		Assert.Equal([9], roundtrip.Lives);
+		Assert.IsType<EmptyBag>(this.Deserialize<Bag>(this.Map()));
+	}
+
+	[Test]
+	public void GetterOnlyCollectionConstructorParameterRoundtrips()
+	{
+		this.Use(this.Shape<Bag>(), this.Shape<CtorListBag>(), this.Shape<NameBag>());
+		CtorListBag bag = new("Ada", [9]);
+		CtorListBag roundtrip = Assert.IsType<CtorListBag>(this.Deserialize<Bag>(this.Serializer.Serialize<Bag>(bag, this.TimeoutToken)));
+		Assert.Equal("Ada", roundtrip.Name);
+		Assert.Equal([9], roundtrip.Lives);
+	}
+
+	[Test]
+	public void GetterOnlyArrayIsNotEvidence()
+	{
+		ArgumentException ex = Assert.Throws<ArgumentException>(() => new DerivedTypeDuckTyping(this.Shape<CollectionAnimal>(), this.Shape<TaggedArrayCat>(), this.Shape<PlainCollectionAnimal>()));
+		Assert.Contains("same properties", ex.Message, StringComparison.Ordinal);
+	}
+
+	[Test]
 	public void GetterOnlyMemberIsNotEvidence()
 	{
 		this.Use(this.Shape<EvidenceBase>(), this.Shape<ComputedCatchAll>(), this.Shape<RealValue>());
@@ -630,6 +666,59 @@ public partial class DerivedTypeDuckTypingTests
 	public partial record TaggedAndDuck(NestedAnimal? Duck, NestedHorse? Tagged);
 
 	[GenerateShape]
+	public abstract partial record CollectionAnimal(string Name);
+
+	[GenerateShape]
+	public partial record PlainCollectionAnimal(string Name) : CollectionAnimal(Name);
+
+	[GenerateShape]
+	public partial record TaggedListCat(string Name) : CollectionAnimal(Name)
+	{
+		[PropertyShape(IsRequired = true)]
+		public List<int> Lives { get; } = [];
+	}
+
+	[GenerateShape]
+	public partial record TaggedArrayCat(string Name) : CollectionAnimal(Name)
+	{
+		[PropertyShape(IsRequired = true)]
+		public int[] Scores { get; } = [4];
+	}
+
+	[GenerateShape]
+	public abstract partial class Bag;
+
+	[GenerateShape]
+	public partial class EmptyBag : Bag;
+
+	[GenerateShape]
+	public partial class NameBag : Bag
+	{
+		public required string Name { get; set; }
+	}
+
+	[GenerateShape]
+	public partial class OnlyListBag : Bag
+	{
+		[PropertyShape(IsRequired = true)]
+		public List<int> Lives { get; } = [];
+	}
+
+	[GenerateShape]
+	public partial class CtorListBag : Bag
+	{
+		public CtorListBag(string name, List<int> lives)
+		{
+			this.Name = name;
+			this.Lives = lives;
+		}
+
+		public string Name { get; }
+
+		public List<int> Lives { get; }
+	}
+
+	[GenerateShape]
 	public abstract partial class KeyedBase;
 
 	[GenerateShape]
@@ -682,6 +771,15 @@ public partial class DerivedTypeDuckTypingTests
 	[GenerateShapeFor<KeyedBase>]
 	[GenerateShapeFor<KeyedDog>]
 	[GenerateShapeFor<KeyedCat>]
+	[GenerateShapeFor<CollectionAnimal>]
+	[GenerateShapeFor<PlainCollectionAnimal>]
+	[GenerateShapeFor<TaggedListCat>]
+	[GenerateShapeFor<TaggedArrayCat>]
+	[GenerateShapeFor<Bag>]
+	[GenerateShapeFor<NameBag>]
+	[GenerateShapeFor<EmptyBag>]
+	[GenerateShapeFor<OnlyListBag>]
+	[GenerateShapeFor<CtorListBag>]
 	[GenerateShapeFor<object>]
 	[GenerateShapeFor<int>]
 	[GenerateShapeFor<string>]

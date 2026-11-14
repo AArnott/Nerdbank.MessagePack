@@ -29,6 +29,7 @@ namespace Nerdbank.MessagePack;
 /// using each property's serialized name.
 /// A required constructor parameter that does not match a property is rejected, because that parameter is not written and the case would not round-trip.
 /// A required property with no getter is rejected for the same reason: the object converter omits it, so deserialization would miss the case or select the catch-all.
+/// A required getter-only collection is rejected when the type has a parameterized constructor and the collection is not a constructor parameter. That converter writes the collection and then skips it on read.
 /// <see cref="MessagePackSerializer.PropertyNamingPolicy"/> is applied when the converter is built.
 /// An explicit <see cref="PropertyShapeAttribute.Name"/> is not rewritten by the policy.
 /// Names are compared ordinally.
