@@ -84,8 +84,8 @@ public partial class DerivedTypeDuckTypingTests
 			this.Shape<Circle>()));
 #else
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => new DerivedTypeDuckTyping(
-			TypeShapeResolver.ResolveDynamicOrThrow<object>(),
-			TypeShapeResolver.ResolveDynamicOrThrow<PlainColor>(),
+			TypeShapeResolver.ResolveDynamicOrThrow<object, ClassificationWitness>(),
+			TypeShapeResolver.ResolveDynamicOrThrow<PlainColor, ClassificationWitness>(),
 			this.Shape<Circle>()));
 #endif
 		Assert.Contains("object types", ex.Message, StringComparison.Ordinal);
