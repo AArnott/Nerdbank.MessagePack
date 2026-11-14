@@ -5,6 +5,8 @@
 
 using System.Buffers;
 using System.Text.Json.Nodes;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 
 public partial class DerivedTypeDuckTypingTests
 {
@@ -127,6 +129,57 @@ public partial class DerivedTypeDuckTypingTests
 		this.Use(this.Shape<TaggedAnimal>(), this.Shape<TaggedDog>());
 		JsonObject schema = this.Serializer.GetJsonSchema(this.Shape<TaggedAnimal>());
 		Assert.Contains("oneOf", schema.ToJsonString(), StringComparison.Ordinal);
+	}
+
+	[Test]
+	public void SchemaSelectsTheMostSpecificConcreteCase()
+	{
+		this.Use(this.Shape<Edit>(), this.Shape<TextEdit>(), this.Shape<AnnotatedEdit>());
+		JsonObject schema = this.Serializer.GetJsonSchema(this.Shape<Edit>());
+		JsonArray branches = this.UnionBranches(schema);
+		Assert.Equal(2, branches.Count);
+		Assert.Contains("\"not\"", branches.ToJsonString(), StringComparison.Ordinal);
+
+		JSchema parsed = JSchema.Parse(schema.ToJsonString());
+		Assert.True(this.PayloadMatches(parsed, """{"Range":"r","NewText":"n"}"""));
+		Assert.True(this.PayloadMatches(parsed, """{"Range":"r","NewText":"n","AnnotationId":"a"}"""));
+		Assert.False(this.PayloadMatches(parsed, "{}"));
+	}
+
+	[Test]
+	public void SchemaRejectsAmbiguousPayloadsAndOmitsAbstractBases()
+	{
+		this.Use(this.Shape<Creature>(), this.Shape<VolumeDog>(), this.Shape<VolumeCat>());
+		JsonObject schema = this.Serializer.GetJsonSchema(this.Shape<Creature>());
+		Assert.Equal(2, this.UnionBranches(schema).Count);
+
+		JSchema parsed = JSchema.Parse(schema.ToJsonString());
+		Assert.True(this.PayloadMatches(parsed, """{"BarkVolume":1}"""));
+
+		// VolumeCat's constructor parameter does not match its property, so the reader requires the parameter name.
+		Assert.True(this.PayloadMatches(parsed, """{"pitch":1}"""));
+		Assert.False(this.PayloadMatches(parsed, """{"MeowPitch":2}"""));
+	}
+
+	[Test]
+	public void SchemaRejectsPayloadsThatMatchIncomparableCases()
+	{
+		this.Use(this.Shape<Animal2>(), this.Shape<Cat2>(), this.Shape<Dog2>());
+		JSchema parsed = JSchema.Parse(this.Serializer.GetJsonSchema(this.Shape<Animal2>()).ToJsonString());
+		Assert.True(this.PayloadMatches(parsed, """{"Name":"Ada"}"""));
+		Assert.True(this.PayloadMatches(parsed, """{"Name":"Ada","Lives":9}"""));
+		Assert.True(this.PayloadMatches(parsed, """{"Name":"Ada","Breed":"collie"}"""));
+		Assert.False(this.PayloadMatches(parsed, """{"Name":"Ada","Lives":9,"Breed":"collie"}"""));
+	}
+
+	[Test]
+	public void SchemaUsesTheCatchAllOnlyWhenNothingElseMatches()
+	{
+		this.Use(this.Shape<Drawing>(), this.Shape<Circle>());
+		JSchema parsed = JSchema.Parse(this.Serializer.GetJsonSchema(this.Shape<Drawing>()).ToJsonString());
+		Assert.True(this.PayloadMatches(parsed, "{}"));
+		Assert.True(this.PayloadMatches(parsed, """{"Radius":1}"""));
+		Assert.True(this.PayloadMatches(parsed, """{"Radius":1,"Extra":true}"""));
 	}
 
 	[Test]
@@ -327,6 +380,30 @@ public partial class DerivedTypeDuckTypingTests
 		=> this.Serializer.Deserialize<T>(msgpack, this.TimeoutToken);
 
 	private string FullMessage(Exception exception) => GetFullMessage(exception);
+
+	private JsonArray UnionBranches(JsonObject schema)
+	{
+		if (schema["oneOf"] is JsonArray direct)
+		{
+			return direct;
+		}
+
+		if (schema["anyOf"] is JsonArray alternatives)
+		{
+			foreach (JsonNode? alternative in alternatives)
+			{
+				if (alternative is JsonObject branch && branch["oneOf"] is JsonArray oneOf)
+				{
+					return oneOf;
+				}
+			}
+		}
+
+		throw new InvalidOperationException("The duck-typing schema has no oneOf branches: " + schema.ToJsonString());
+	}
+
+	private bool PayloadMatches(JSchema schema, string json)
+		=> JObject.Parse(json).IsValid(schema);
 
 	private byte[] Map(params (string Key, object? Value)[] properties)
 	{

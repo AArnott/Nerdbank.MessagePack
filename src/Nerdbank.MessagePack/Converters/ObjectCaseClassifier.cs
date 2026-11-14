@@ -35,6 +35,38 @@ internal sealed class ObjectCaseClassifier
 	}
 
 	/// <summary>
+	/// Determines whether <paramref name="candidate"/> contains every name in <paramref name="smaller"/> and at least one more.
+	/// </summary>
+	/// <param name="candidate">The sorted names that may be a superset.</param>
+	/// <param name="smaller">The sorted names that would be the subset.</param>
+	/// <returns><see langword="true"/> when <paramref name="candidate"/> is a strict superset.</returns>
+	internal static bool IsStrictSuperset(string[] candidate, string[] smaller)
+	{
+		if (candidate.Length <= smaller.Length)
+		{
+			return false;
+		}
+
+		int i = 0;
+		for (int j = 0; j < smaller.Length; j++)
+		{
+			while (i < candidate.Length && string.CompareOrdinal(candidate[i], smaller[j]) < 0)
+			{
+				i++;
+			}
+
+			if (i == candidate.Length || !string.Equals(candidate[i], smaller[j], StringComparison.Ordinal))
+			{
+				return false;
+			}
+
+			i++;
+		}
+
+		return true;
+	}
+
+	/// <summary>
 	/// Selects the case whose required names are satisfied by <paramref name="present"/>.
 	/// </summary>
 	/// <param name="present">The property names present on the payload. Comparison is ordinal.</param>
@@ -186,38 +218,6 @@ internal sealed class ObjectCaseClassifier
 			{
 				return false;
 			}
-		}
-
-		return true;
-	}
-
-	/// <summary>
-	/// Determines whether <paramref name="candidate"/> contains every name in <paramref name="smaller"/> and at least one more.
-	/// </summary>
-	/// <param name="candidate">The sorted names that may be a superset.</param>
-	/// <param name="smaller">The sorted names that would be the subset.</param>
-	/// <returns><see langword="true"/> when <paramref name="candidate"/> is a strict superset.</returns>
-	private static bool IsStrictSuperset(string[] candidate, string[] smaller)
-	{
-		if (candidate.Length <= smaller.Length)
-		{
-			return false;
-		}
-
-		int i = 0;
-		for (int j = 0; j < smaller.Length; j++)
-		{
-			while (i < candidate.Length && string.CompareOrdinal(candidate[i], smaller[j]) < 0)
-			{
-				i++;
-			}
-
-			if (i == candidate.Length || !string.Equals(candidate[i], smaller[j], StringComparison.Ordinal))
-			{
-				return false;
-			}
-
-			i++;
 		}
 
 		return true;

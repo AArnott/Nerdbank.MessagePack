@@ -1305,7 +1305,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		try
 		{
-			return ConverterResult.Ok(new ShapeBasedUnionConverter<TBase>(baseTypeConverter, duckTyping, convertersByType, this.owner));
+			return ConverterResult.Ok(new ShapeBasedUnionConverter<TBase>(duckTyping, convertersByType, this.owner));
 		}
 		catch (Exception ex) when (ex is NotSupportedException or MessagePackSerializationException)
 		{
