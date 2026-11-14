@@ -136,9 +136,9 @@ Cases do not have to share a base type.
 * Objects, nested unions, custom converters, and any case with a [custom identifier](#custom-case-identifiers) keep a tag.
   The default tag is the case name, or an inferred integer when <xref:Nerdbank.MessagePack.MessagePackSerializer.PerfOverSchemaStability> is set.
   Renaming a tagged case changes its string tag, and reordering cases changes inferred integers.
-* A null scalar is bare `nil`.
-  A null object case keeps its tag, and a null union reference is bare `nil`, so the two stay distinct.
-  On a struct union, bare `nil` selects the first untagged reference case that admits null.
+* A missing reference union is bare `nil`.
+  A present case with a null value keeps its tag, for a scalar or an object, so it is not read as a missing union.
+  A struct union cannot be missing. Bare `nil` selects the untagged case that admits null.
 * A union value that matches no case cannot be serialized.
 * Unions may be recursive (`union Tree(int, Tree[])`).
 * At most one collection case may be untagged.
