@@ -1,7 +1,7 @@
-# Streaming deserialization
+# Streaming sequences
 
-While typical @Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync* and @Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync* methods exist, these are methods that complete only when the entire job is done.
-In particular for @Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync*, this means that no subset of the deserialized data is available until it is fully deserialized.
+While typical <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*> and <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync*> methods exist, these are methods that complete only when the entire job is done.
+In particular for <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeAsync*>, this means that no subset of the deserialized data is available until it is fully deserialized.
 
 There are times however where progressively obtaining the deserialized elements can be useful.
 For example, perhaps the stream contains a very long sequence of elements, and processing them incrementally instead of all at once can save memory or improve performance.
@@ -34,3 +34,27 @@ Navigating through the envelope is done by an expression provided to the <xref:N
 
 The paths from envelope to sequence may include stepping through properties, indexing into arrays or even dictionaries.
 However, not every valid C# expression will be accepted as a path.
+
+## Serializing a sequence
+
+<xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumerableAsync*> writes an <xref:System.Collections.Generic.IAsyncEnumerable`1> as concatenated top-level MessagePack values, with no array around them.
+That is the same framing <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync*> reads.
+An empty sequence writes no bytes.
+Each value is written as it is produced, and the destination is flushed when the unflushed buffer exceeds <xref:Nerdbank.MessagePack.SerializationContext.UnflushedBytesThreshold>, so a long or unbounded source stays bounded and applies backpressure.
+That byte count is kept by the serializer, so a <xref:System.IO.Pipelines.PipeWriter> that cannot report how many bytes are unflushed still flushes on the same threshold.
+The caller keeps ownership of the pipe or stream: pipes are not completed, and streams are not closed.
+Cancellation is checked before each value is written and before a pending chunk is copied to the caller's pipe.
+If serialization fails before that copy, the pending bytes are dropped.
+If the copy or the destination flush then fails, the pipe may already hold that chunk and must be abandoned, because a pipe writer cannot roll those bytes back.
+Bytes that were flushed successfully remain.
+
+[!code-csharp[](../../samples/cs/StreamingSerialization.cs#TopLevelStreamingSerialization)]
+
+Reference preservation is not supported for this framing.
+A reference id would refer to another top-level value, and <xref:Nerdbank.MessagePack.MessagePackSerializer.DeserializeEnumerableAsync*> rejects reference preservation for the same reason.
+
+### Writing one array
+
+A MessagePack array stores its length before any element, so <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeEnumerableAsync*> does not write one array.
+Callers that need one array should buffer the values and use <xref:Nerdbank.MessagePack.MessagePackSerializer.SerializeAsync*> of a `T[]` or <xref:System.Collections.Generic.IEnumerable`1>.
+That call still buffers every element and then writes one ordinary array.

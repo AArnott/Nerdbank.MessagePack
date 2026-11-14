@@ -199,6 +199,27 @@ void WriteClass(bool targetNET) {
 		<#=typeConstraint#>=> <#= thisKeyword #>.SerializeAsync(<#=firstArg#>, value, <#=getShape#>, cancellationToken);
 <#
         }
+
+        foreach (SerializeAsyncTransport transport in Enum.GetValues(typeof(SerializeAsyncTransport)))
+        {
+            string firstParameterModifier = "";
+            (string firstParameterType, string firstParameterName) = transport switch
+            {
+                SerializeAsyncTransport.PipeWriter => ("PipeWriter", "writer"),
+                SerializeAsyncTransport.Stream => ("Stream", "stream"),
+                _ => throw new NotSupportedException(),
+            };
+            AssembleInputs(firstParameterModifier, firstParameterType, firstParameterName, false, out string firstParameter, out string firstArg, out string firstParameterDocId);
+#>
+
+	/// <inheritdoc cref="<#=serializerClassQualifier#>SerializeEnumerableAsync{T}(<#=firstParameterDocId#>IAsyncEnumerable{T}, ITypeShape{T}, CancellationToken)" /><#= sourceGenRequiredDocs($"SerializeEnumerableAsync{{T, TProvider}}({thisParameterDocId}{firstParameterDocId}IAsyncEnumerable{{T}}, CancellationToken)") #>
+#pragma warning disable RS0027 // optional parameter on a method with overloads
+	[ExcludeFromCodeCoverage]<#= methodAttributes #>
+	public <#= staticModifier #>ValueTask SerializeEnumerableAsync<<#=genericTypeParameters#>>(<#=thisParameter#><#=firstParameter#>, IAsyncEnumerable<T?> values, CancellationToken cancellationToken = default)
+#pragma warning restore RS0027 // optional parameter on a method with overloads
+		<#=typeConstraint#>=> <#= thisKeyword #>.SerializeEnumerableAsync(<#=firstArg#>, values, <#=getShape#>, cancellationToken);
+<#
+        }
     }
 }
 #>
