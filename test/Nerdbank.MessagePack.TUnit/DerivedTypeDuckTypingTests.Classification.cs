@@ -155,10 +155,8 @@ public partial class DerivedTypeDuckTypingTests
 
 		JSchema parsed = JSchema.Parse(schema.ToJsonString());
 		Assert.True(this.PayloadMatches(parsed, """{"BarkVolume":1}"""));
-
-		// VolumeCat's constructor parameter does not match its property, so the reader requires the parameter name.
-		Assert.True(this.PayloadMatches(parsed, """{"pitch":1}"""));
-		Assert.False(this.PayloadMatches(parsed, """{"MeowPitch":2}"""));
+		Assert.True(this.PayloadMatches(parsed, """{"MeowPitch":2}"""));
+		Assert.False(this.PayloadMatches(parsed, """{"MeowPitch":"sharp"}"""));
 	}
 
 	[Test]
@@ -239,8 +237,19 @@ public partial class DerivedTypeDuckTypingTests
 		this.Use(this.Shape<Creature>(), this.Shape<VolumeDog>(), this.Shape<VolumeCat>());
 		VolumeDog dog = Assert.IsType<VolumeDog>(this.Deserialize<Creature>(this.Map(("BarkVolume", 5))));
 		Assert.Equal(5, dog.BarkVolume);
+		VolumeCat cat = Assert.IsType<VolumeCat>(this.Deserialize<Creature>(this.Map(("MeowPitch", 4))));
+		Assert.Equal(4, cat.MeowPitch);
+		byte[] written = this.Serializer.Serialize<Creature>(new VolumeCat(4), this.TimeoutToken);
+		Assert.Equal(4, Assert.IsType<VolumeCat>(this.Deserialize<Creature>(written)).MeowPitch);
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Deserialize<Creature>(this.Map(("barkVolume", 5))));
 		Assert.Contains("does not match", this.FullMessage(ex), StringComparison.Ordinal);
+	}
+
+	[Test]
+	public void Constructor_RejectsRequiredParameterThatNoPropertyWrites()
+	{
+		NotSupportedException ex = Assert.Throws<NotSupportedException>(() => new DerivedTypeDuckTyping(this.Shape<Creature>(), this.Shape<UnmatchedPitch>(), this.Shape<VolumeDog>()));
+		Assert.Contains("pitch", ex.Message, StringComparison.Ordinal);
 	}
 
 	[Test]
@@ -474,7 +483,15 @@ public partial class DerivedTypeDuckTypingTests
 	[GenerateShape]
 	public partial class VolumeCat : Creature
 	{
-		public VolumeCat(int pitch) => this.MeowPitch = pitch;
+		public VolumeCat(int meowPitch) => this.MeowPitch = meowPitch;
+
+		public int MeowPitch { get; }
+	}
+
+	[GenerateShape]
+	public partial class UnmatchedPitch : Creature
+	{
+		public UnmatchedPitch(int pitch) => this.MeowPitch = pitch;
 
 		public int MeowPitch { get; }
 	}
@@ -616,6 +633,7 @@ public partial class DerivedTypeDuckTypingTests
 	[GenerateShapeFor<Creature>]
 	[GenerateShapeFor<VolumeDog>]
 	[GenerateShapeFor<VolumeCat>]
+	[GenerateShapeFor<UnmatchedPitch>]
 	[GenerateShapeFor<RenamedCat>]
 	[GenerateShapeFor<OptionalNameOnly>]
 	[GenerateShapeFor<OptionalWithDefault>]

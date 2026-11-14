@@ -15,10 +15,10 @@ internal static class DuckTypingRequiredMembers
 	/// <param name="getSerializedName">Maps a property to the name written on the wire. Shape names are used when no naming policy applies yet.</param>
 	/// <returns>The names, sorted ordinally, with no duplicates. Empty when the case is a catch-all.</returns>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="shape"/> is not an object, or when two required members share a name.</exception>
+	/// <exception cref="NotSupportedException">Thrown when a required constructor parameter does not match a property. The object converter does not write that parameter, so the case cannot round-trip.</exception>
 	/// <remarks>
-	/// A member counts when the object converter would require it and can read it:
-	/// a required constructor parameter, a <see cref="PropertyShapeAttribute"/> with <see cref="PropertyShapeAttribute.IsRequired"/> set,
-	/// or a required parameter that has no matching property (its parameter name is used as written, without a naming policy).
+	/// A member counts when the object converter would write it and require it:
+	/// a required constructor parameter that matches a property, a <see langword="required"/> property, or <see cref="PropertyShapeAttribute.IsRequired"/>.
 	/// Getter-only computed members are omitted. <see cref="UnusedDataPacket"/> is omitted.
 	/// A property with a setter, a constructor parameter, or a mutable collection or dictionary is readable.
 	/// </remarks>
@@ -65,8 +65,8 @@ internal static class DuckTypingRequiredMembers
 					continue;
 				}
 
-				// The object converter writes an unmatched parameter under its parameter name and does not apply the naming policy.
-				AddName(shape, names, parameter.Name);
+				// The map converter can read this parameter, but it has no property to write. A duck-typed case would not round-trip.
+				throw new NotSupportedException($"Duck typing case '{shape.Type.FullName}' has required constructor parameter '{parameter.Name}' that does not match a property. The object converter does not write that parameter, so the case cannot round-trip.");
 			}
 		}
 

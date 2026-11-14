@@ -24,9 +24,10 @@ namespace Nerdbank.MessagePack;
 /// Nil deserializes as <see langword="null"/>. Any other non-map value throws.
 /// </para>
 /// <para>
-/// Required names come from the same members the object converter requires: required constructor parameters
+/// Required names come from the members the object converter writes and requires: required constructor parameters that match a property
 /// (including <see langword="required"/> properties and <see cref="PropertyShapeAttribute.IsRequired"/>),
 /// using each property's serialized name.
+/// A required constructor parameter that does not match a property is rejected, because that parameter is not written and the case would not round-trip.
 /// <see cref="MessagePackSerializer.PropertyNamingPolicy"/> is applied when the converter is built.
 /// An explicit <see cref="PropertyShapeAttribute.Name"/> is not rewritten by the policy.
 /// Names are compared ordinally.
@@ -58,6 +59,7 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 	/// Thrown when fewer than two concrete types are registered, a derived type is abstract, an interface, not assignable to the base, duplicated, or not an object,
 	/// or when two cases require the same shape property names or more than one case has no required properties.
 	/// </exception>
+	/// <exception cref="NotSupportedException">Thrown when a required constructor parameter does not match a property.</exception>
 	public DerivedTypeDuckTyping(ITypeShape baseShape, params ReadOnlySpan<ITypeShape> derivedTypeShapes)
 	{
 		Requires.NotNull(baseShape);
