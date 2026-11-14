@@ -373,6 +373,24 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[Test]
+	public void CustomConverterCaseIsRejectedWhenTheConverterIsBuilt()
+	{
+		this.Use(this.Shape<Animal>(), this.Shape<Dog>(), this.Shape<AliasCat>());
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<Animal>(new Dog("Buddy", 5), this.TimeoutToken));
+		string message = this.FullMessage(ex);
+		Assert.Contains(nameof(AliasCat), message, StringComparison.Ordinal);
+		Assert.Contains("custom converter", message, StringComparison.Ordinal);
+	}
+
+	[Test]
+	public void ReferencePreservationStillRoundtrips()
+	{
+		this.Use(this.Shape<Animal>(), this.Shape<Dog>(), this.Shape<Cat>());
+		this.Serializer = this.Serializer with { PreserveReferences = ReferencePreservationMode.RejectCycles };
+		this.AssertRoundtrip<Animal>(new Dog("Buddy", 5));
+	}
+
+	[Test]
 	public void GetterOnlyArrayIsNotEvidence()
 	{
 		ArgumentException ex = Assert.Throws<ArgumentException>(() => new DerivedTypeDuckTyping(this.Shape<CollectionAnimal>(), this.Shape<TaggedArrayCat>(), this.Shape<PlainCollectionAnimal>()));
@@ -615,6 +633,17 @@ public partial class DerivedTypeDuckTypingTests
 	public partial record Dog2(string Name, string Breed) : Animal2(Name);
 
 	[GenerateShape]
+	[MessagePackConverter(typeof(AliasCatConverter))]
+	public partial record AliasCat(string Name, int Lives) : Animal(Name);
+
+	public class AliasCatConverter : MessagePackConverter<AliasCat>
+	{
+		public override AliasCat? Read(ref MessagePackReader reader, SerializationContext context) => new(reader.ReadString() ?? string.Empty, 0);
+
+		public override void Write(ref MessagePackWriter writer, in AliasCat? value, SerializationContext context) => writer.Write(value!.Name);
+	}
+
+	[GenerateShape]
 	public abstract partial record PairBase;
 
 	[GenerateShape]
@@ -760,6 +789,7 @@ public partial class DerivedTypeDuckTypingTests
 	[GenerateShapeFor<Animal2>]
 	[GenerateShapeFor<Cat2>]
 	[GenerateShapeFor<Dog2>]
+	[GenerateShapeFor<AliasCat>]
 	[GenerateShapeFor<PairBase>]
 	[GenerateShapeFor<LeftTwin>]
 	[GenerateShapeFor<RightTwin>]

@@ -68,12 +68,26 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		void AddCase(ITypeShape shape)
 		{
 			DuckTypingRequiredMembers.EnsureNameKeyedMap(shape, cache.IgnoreKeyAttributes);
+			MessagePackConverter converter = convertersByType[shape.Type];
+			if (converter is IMessagePackConverterInternal internalConverter)
+			{
+				// The union converter is itself wrapped when references are preserved.
+				// Keeping the case wrapper would track the same instance twice.
+				converter = internalConverter.UnwrapReferencePreservation();
+			}
+
+			if (!IsObjectMapConverter(converter))
+			{
+				throw new NotSupportedException($"Duck typing case '{shape.Type.FullName}' uses a custom converter. Duck typing matches the required properties of a name-keyed map, which that converter may not write, so the payload can be read as a different case.");
+			}
+
 			string[] names = DuckTypingRequiredMembers.GetRequiredNames(
 				shape,
 				property => cache.GetSerializedPropertyName(property.Name, property.AttributeProvider));
 			cases[index] = new ObjectCaseClassifier.Case(shape.Type, names);
 			this.caseShapes[index] = shape;
-			this.convertersByCase[index] = convertersByType[shape.Type];
+			convertersByType[shape.Type] = converter;
+			this.convertersByCase[index] = converter;
 			index++;
 		}
 	}
@@ -150,6 +164,24 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <returns>The case schema.</returns>
 	private static JsonNode CaseSchema(JsonSchemaContext context, MessagePackConverter converter, ITypeShape shape)
 		=> (JsonNode)(converter.GetJsonSchema(context, DuckTypingRequiredMembers.ObjectView(shape)) ?? CreateUndocumentedSchema(converter.GetType()));
+
+	/// <summary>
+	/// Determines whether a case converter writes and reads a name-keyed object map.
+	/// </summary>
+	/// <param name="converter">The case converter, after reference preservation has been unwrapped.</param>
+	/// <returns><see langword="true"/> when <paramref name="converter"/> is an <see cref="ObjectMapConverter{T}"/>.</returns>
+	private static bool IsObjectMapConverter(MessagePackConverter converter)
+	{
+		for (Type? type = converter.GetType(); type is not null; type = type.BaseType)
+		{
+			if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ObjectMapConverter<>))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 	/// <summary>
 	/// Reads the string keys of a map without consuming <paramref name="reader"/>.
