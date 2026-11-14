@@ -246,6 +246,14 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[Test]
+	public void Constructor_RejectsRequiredPropertyThatHasNoGetter()
+	{
+		NotSupportedException ex = Assert.Throws<NotSupportedException>(() => new DerivedTypeDuckTyping(this.Shape<Creature>(), this.Shape<SetterOnlyRequired>(), this.Shape<VolumeDog>()));
+		Assert.Contains(nameof(SetterOnlyRequired.BarkVolume), ex.Message, StringComparison.Ordinal);
+		Assert.Contains("getter", ex.Message, StringComparison.Ordinal);
+	}
+
+	[Test]
 	public void Constructor_RejectsRequiredParameterThatNoPropertyWrites()
 	{
 		NotSupportedException ex = Assert.Throws<NotSupportedException>(() => new DerivedTypeDuckTyping(this.Shape<Creature>(), this.Shape<UnmatchedPitch>(), this.Shape<VolumeDog>()));
@@ -489,6 +497,16 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[GenerateShape]
+	public partial class SetterOnlyRequired : Creature
+	{
+		public SetterOnlyRequired(int barkVolume) => this.Stored = barkVolume;
+
+		public int BarkVolume { set => this.Stored = value; }
+
+		public int Stored { get; private set; }
+	}
+
+	[GenerateShape]
 	public partial class UnmatchedPitch : Creature
 	{
 		public UnmatchedPitch(int pitch) => this.MeowPitch = pitch;
@@ -634,6 +652,7 @@ public partial class DerivedTypeDuckTypingTests
 	[GenerateShapeFor<VolumeDog>]
 	[GenerateShapeFor<VolumeCat>]
 	[GenerateShapeFor<UnmatchedPitch>]
+	[GenerateShapeFor<SetterOnlyRequired>]
 	[GenerateShapeFor<RenamedCat>]
 	[GenerateShapeFor<OptionalNameOnly>]
 	[GenerateShapeFor<OptionalWithDefault>]

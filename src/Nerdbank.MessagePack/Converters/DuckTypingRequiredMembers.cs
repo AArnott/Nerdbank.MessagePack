@@ -15,11 +15,11 @@ internal static class DuckTypingRequiredMembers
 	/// <param name="getSerializedName">Maps a property to the name written on the wire. Shape names are used when no naming policy applies yet.</param>
 	/// <returns>The names, sorted ordinally, with no duplicates. Empty when the case is a catch-all.</returns>
 	/// <exception cref="ArgumentException">Thrown when <paramref name="shape"/> is not an object, or when two required members share a name.</exception>
-	/// <exception cref="NotSupportedException">Thrown when a required constructor parameter does not match a property. The object converter does not write that parameter, so the case cannot round-trip.</exception>
+	/// <exception cref="NotSupportedException">Thrown when a required member is not written: a constructor parameter with no matching property, or a required property with no getter. The case cannot round-trip.</exception>
 	/// <remarks>
 	/// A member counts when the object converter would write it and require it:
-	/// a required constructor parameter that matches a property, a <see langword="required"/> property, or <see cref="PropertyShapeAttribute.IsRequired"/>.
-	/// Getter-only computed members are omitted. <see cref="UnusedDataPacket"/> is omitted.
+	/// a required constructor parameter that matches a property with a getter, a <see langword="required"/> property, or <see cref="PropertyShapeAttribute.IsRequired"/>.
+	/// Getter-only computed members are omitted. A required property with no getter is rejected. <see cref="UnusedDataPacket"/> is omitted.
 	/// A property with a setter, a constructor parameter, or a mutable collection or dictionary is readable.
 	/// </remarks>
 	internal static string[] GetRequiredNames(ITypeShape shape, Func<IPropertyShape, string> getSerializedName)
@@ -51,6 +51,11 @@ internal static class DuckTypingRequiredMembers
 			if (!IsRequired(property, parameter))
 			{
 				continue;
+			}
+
+			if (!property.HasGetter)
+			{
+				throw new NotSupportedException($"Duck typing case '{shape.Type.FullName}' requires '{property.Name}', but the object converter does not write it because the property has no getter. The case cannot round-trip.");
 			}
 
 			AddName(shape, names, getSerializedName(property));

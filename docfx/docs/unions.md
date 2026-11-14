@@ -190,7 +190,7 @@ If no match is more specific, deserialization throws <xref:Nerdbank.MessagePack.
 A case with no required properties is a catch-all: at most one is allowed, and it is used only when nothing else matches.
 
 Required names are the names the object converter writes for required constructor parameters, `required` members, and <xref:PolyType.PropertyShapeAttribute.IsRequired>.
-A required constructor parameter must match a property. An unmatched parameter is not written, so that case is rejected when the union is built.
+A required constructor parameter must match a property, and a required property must have a getter. Otherwise the object converter does not write that member, so that case is rejected when the union is built.
 <xref:Nerdbank.MessagePack.MessagePackSerializer.PropertyNamingPolicy> applies, except when <xref:PolyType.PropertyShapeAttribute.Name> sets the name.
 Comparison is ordinal.
 Two cases that require the same names are rejected when the union is built, including when a naming policy makes them the same.
