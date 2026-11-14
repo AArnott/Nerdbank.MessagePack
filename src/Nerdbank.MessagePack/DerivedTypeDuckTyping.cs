@@ -38,7 +38,7 @@ namespace Nerdbank.MessagePack;
 /// Duck typing reads and writes name-keyed maps. Tuples, <see cref="KeyAttribute"/> layouts, and
 /// <see cref="MessagePackSerializer.PerfOverSchemaStability"/> are not supported.
 /// Identifying a case may buffer the value.
-/// The generated schema accepts a payload only when the reader would select exactly one case, and it has no branch for an abstract or interface base.
+/// The generated schema accepts a payload only when the reader would select exactly one case from property names, then that case's values match. Property types do not choose the case. An abstract or interface base has no branch.
 /// This API is experimental.
 /// </para>
 /// </remarks>

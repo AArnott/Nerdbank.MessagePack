@@ -170,6 +170,9 @@ public partial class DerivedTypeDuckTypingTests
 		Assert.True(this.PayloadMatches(parsed, """{"Name":"Ada","Lives":9}"""));
 		Assert.True(this.PayloadMatches(parsed, """{"Name":"Ada","Breed":"collie"}"""));
 		Assert.False(this.PayloadMatches(parsed, """{"Name":"Ada","Lives":9,"Breed":"collie"}"""));
+
+		// Lives is not an integer, so the cat object schema fails, but both cases still match by name.
+		Assert.False(this.PayloadMatches(parsed, """{"Name":"Ada","Lives":"nine","Breed":"collie"}"""));
 	}
 
 	[Test]
@@ -382,24 +385,39 @@ public partial class DerivedTypeDuckTypingTests
 	private string FullMessage(Exception exception) => GetFullMessage(exception);
 
 	private JsonArray UnionBranches(JsonObject schema)
-	{
-		if (schema["oneOf"] is JsonArray direct)
-		{
-			return direct;
-		}
+		=> this.FindOneOf(schema) ?? throw new InvalidOperationException("The duck-typing schema has no oneOf branches: " + schema.ToJsonString());
 
-		if (schema["anyOf"] is JsonArray alternatives)
+	private JsonArray? FindOneOf(JsonNode? node)
+	{
+		if (node is JsonObject obj)
 		{
-			foreach (JsonNode? alternative in alternatives)
+			if (obj["oneOf"] is JsonArray oneOf)
 			{
-				if (alternative is JsonObject branch && branch["oneOf"] is JsonArray oneOf)
+				return oneOf;
+			}
+
+			foreach (KeyValuePair<string, JsonNode?> property in obj)
+			{
+				JsonArray? found = this.FindOneOf(property.Value);
+				if (found is not null)
 				{
-					return oneOf;
+					return found;
+				}
+			}
+		}
+		else if (node is JsonArray array)
+		{
+			foreach (JsonNode? item in array)
+			{
+				JsonArray? found = this.FindOneOf(item);
+				if (found is not null)
+				{
+					return found;
 				}
 			}
 		}
 
-		throw new InvalidOperationException("The duck-typing schema has no oneOf branches: " + schema.ToJsonString());
+		return null;
 	}
 
 	private bool PayloadMatches(JSchema schema, string json)

@@ -120,17 +120,24 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 	/// <inheritdoc/>
 	public override JsonObject? GetJsonSchema(JsonSchemaContext context, ITypeShape typeShape)
 	{
-		// oneOf stays in place so an ambiguous payload, which matches more than one case, is rejected.
-		// Each branch excludes more specific cases; otherwise a specific payload would match its general case too.
-		JsonArray oneOfArray = [];
+		// Names choose the case. Property types must not, or a value that fails one case's type would
+		// leave exactly one oneOf branch and accept a payload the reader rejects as ambiguous.
+		JsonNode?[] nameBranches = new JsonNode[this.caseShapes.Length];
+		JsonNode?[] typedBranches = new JsonNode[this.caseShapes.Length];
 		for (int i = 0; i < this.caseShapes.Length; i++)
 		{
-			oneOfArray.Add(this.SchemaBranch(context, i));
+			nameBranches[i] = this.NameConstraints(i);
+			typedBranches[i] = new JsonObject
+			{
+				["allOf"] = new JsonArray(this.NameConstraints(i), CaseSchema(context, this.convertersByCase[i], this.caseShapes[i])),
+			};
 		}
 
 		return new JsonObject
 		{
-			["oneOf"] = oneOfArray,
+			["allOf"] = new JsonArray(
+				new JsonObject { ["oneOf"] = new JsonArray(nameBranches) },
+				new JsonObject { ["anyOf"] = new JsonArray(typedBranches) }),
 		};
 	}
 
@@ -194,17 +201,15 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 	}
 
 	/// <summary>
-	/// Builds the schema branch for one concrete case.
+	/// Builds the name constraints for one concrete case.
 	/// </summary>
-	/// <param name="context">The schema context.</param>
 	/// <param name="index">The case index.</param>
 	/// <returns>
-	/// The case schema, constrained to the required names the reader uses for this case
-	/// and excluding every case with a strictly larger required-name set.
+	/// A schema that matches when the reader would select this case from property names alone.
+	/// It requires this case's names and excludes every strict superset. It does not check property types.
 	/// </returns>
-	private JsonNode SchemaBranch(JsonSchemaContext context, int index)
+	private JsonObject NameConstraints(int index)
 	{
-		JsonNode caseSchema = CaseSchema(context, this.convertersByCase[index], this.caseShapes[index]);
 		string[] mine = this.caseMetadata[index].RequiredNames;
 		int exclusionCount = 0;
 		for (int other = 0; other < this.caseMetadata.Length; other++)
@@ -215,21 +220,18 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 			}
 		}
 
-		// The object schema can omit a required constructor parameter that has no matching property.
-		// State that requirement here so the branch accepts only payloads this case would be chosen for.
 		bool stateRequiredNames = mine.Length > 0;
 		if (exclusionCount == 0 && !stateRequiredNames)
 		{
-			return caseSchema;
+			return new JsonObject();
 		}
 
 		// Construct the array directly. JsonArray.Add<T> is incompatible with trimming.
-		JsonNode?[] branches = new JsonNode[(stateRequiredNames ? 1 : 0) + exclusionCount + 1];
-		branches[0] = caseSchema;
-		int slot = 1;
+		JsonNode?[] constraints = new JsonNode[(stateRequiredNames ? 1 : 0) + exclusionCount];
+		int slot = 0;
 		if (stateRequiredNames)
 		{
-			branches[slot++] = new JsonObject
+			constraints[slot++] = new JsonObject
 			{
 				["required"] = RequiredNames(mine),
 			};
@@ -243,7 +245,7 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 				continue;
 			}
 
-			branches[slot++] = new JsonObject
+			constraints[slot++] = new JsonObject
 			{
 				["not"] = new JsonObject
 				{
@@ -252,9 +254,14 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 			};
 		}
 
+		if (constraints.Length == 1)
+		{
+			return (JsonObject)constraints[0]!;
+		}
+
 		return new JsonObject
 		{
-			["allOf"] = new JsonArray(branches),
+			["allOf"] = new JsonArray(constraints),
 		};
 	}
 }
