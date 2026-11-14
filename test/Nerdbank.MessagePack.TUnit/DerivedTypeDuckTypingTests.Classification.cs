@@ -4,6 +4,7 @@
 #pragma warning disable DuckTyping // Experimental API
 
 using System.Buffers;
+using System.Text.Json.Nodes;
 
 public partial class DerivedTypeDuckTypingTests
 {
@@ -118,6 +119,29 @@ public partial class DerivedTypeDuckTypingTests
 		this.Use(this.Shape<TaggedAnimal>(), this.Shape<TaggedDog>());
 		Assert.Equal(new TaggedAnimal("Ada"), this.Deserialize<TaggedAnimal>(this.Map(("Name", "Ada"))));
 		Assert.Equal(new TaggedDog("Rex", 3), this.Deserialize<TaggedAnimal>(this.Map(("Name", "Rex"), ("BarkVolume", 3))));
+	}
+
+	[Test]
+	public void AttributedHierarchySchemaUsesTheObjectView()
+	{
+		this.Use(this.Shape<TaggedAnimal>(), this.Shape<TaggedDog>());
+		JsonObject schema = this.Serializer.GetJsonSchema(this.Shape<TaggedAnimal>());
+		Assert.Contains("oneOf", schema.ToJsonString(), StringComparison.Ordinal);
+	}
+
+	[Test]
+	public void DerivedCaseWithItsOwnHierarchyRoundtripsAsAMap()
+	{
+		this.Use(this.Shape<NestedAnimal>(), this.Shape<NestedHorse>(), this.Shape<NestedQuarterHorse>());
+		NestedHorse horse = new("Spirit", 20);
+		byte[] horseBytes = this.Serializer.Serialize<NestedAnimal>(horse, this.TimeoutToken);
+		Assert.StartsWith("{", this.Serializer.ConvertToJson(horseBytes), StringComparison.Ordinal);
+		Assert.Equal(horse, this.Deserialize<NestedAnimal>(horseBytes));
+
+		NestedQuarterHorse quarterHorse = new("Spirit", 20, "bay");
+		byte[] quarterBytes = this.Serializer.Serialize<NestedAnimal>(quarterHorse, this.TimeoutToken);
+		Assert.StartsWith("{", this.Serializer.ConvertToJson(quarterBytes), StringComparison.Ordinal);
+		Assert.Equal(quarterHorse, this.Deserialize<NestedAnimal>(quarterBytes));
 	}
 
 	[Test]
@@ -443,6 +467,17 @@ public partial class DerivedTypeDuckTypingTests
 
 	[GenerateShape]
 	public partial record NulSplit([property: PropertyShape(Name = "A")] int Left, [property: PropertyShape(Name = "B")] int Right) : NulBase;
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(NestedHorse))]
+	public partial record NestedAnimal(string Name);
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(NestedQuarterHorse))]
+	public partial record NestedHorse(string Name, int Speed) : NestedAnimal(Name);
+
+	[GenerateShape]
+	public partial record NestedQuarterHorse(string Name, int Speed, string Color) : NestedHorse(Name, Speed);
 
 	[GenerateShape]
 	public abstract partial class KeyedBase;

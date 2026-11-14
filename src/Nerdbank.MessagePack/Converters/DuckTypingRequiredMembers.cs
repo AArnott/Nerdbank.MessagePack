@@ -125,7 +125,7 @@ internal static class DuckTypingRequiredMembers
 	/// <remarks>
 	/// C# and F# union shapes are left unchanged. Their base view is an empty object and is not the case's data.
 	/// </remarks>
-	private static ITypeShape ObjectView(ITypeShape shape)
+	internal static ITypeShape ObjectView(ITypeShape shape)
 	{
 		if (shape is IUnionTypeShape { UnionKind: UnionTypeShapeKind.TypeHierarchy or UnionTypeShapeKind.Unknown } union
 			&& union.BaseType is IObjectTypeShape)

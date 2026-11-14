@@ -1293,7 +1293,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				throw new ArgumentException($"Type '{shape.Type}' is not assignable to base type '{typeof(TBase)}'.", nameof(duckTyping));
 			}
 
-			ConverterResult converter = this.GetConverterByAccept(shape);
+			// A derived case that declares its own hierarchy must serialize as that type's object, not as a tagged union.
+			ConverterResult converter = this.GetConverterByAccept(DuckTypingRequiredMembers.ObjectView(shape));
 			if (converter.TryPrepareFailPath(shape, out ConverterResult? failureResult))
 			{
 				return failureResult;

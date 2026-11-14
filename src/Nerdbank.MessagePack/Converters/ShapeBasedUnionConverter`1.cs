@@ -124,13 +124,12 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		// For shape-based unions, we create a oneOf schema without the array wrapper
 		JsonArray oneOfArray = [];
 
-		// Add base type schema
-		oneOfArray.Add((JsonNode?)this.baseConverter.GetJsonSchema(context, this.shapeMapping.BaseShape) ?? CreateUndocumentedSchema(this.baseConverter.GetType()));
+		// The stored shapes may be union views of attributed hierarchies. The object converters describe the object view.
+		oneOfArray.Add((JsonNode?)this.baseConverter.GetJsonSchema(context, DuckTypingRequiredMembers.ObjectView(this.shapeMapping.BaseShape)) ?? CreateUndocumentedSchema(this.baseConverter.GetType()));
 
-		// Add schemas for each derived type.
 		foreach (ITypeShape shape in this.shapeMapping.DerivedShapes.Span)
 		{
-			oneOfArray.Add((JsonNode)context.GetJsonSchema(shape));
+			oneOfArray.Add((JsonNode)context.GetJsonSchema(DuckTypingRequiredMembers.ObjectView(shape)));
 		}
 
 		return new JsonObject
