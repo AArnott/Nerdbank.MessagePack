@@ -113,6 +113,22 @@ public partial class DerivedTypeDuckTypingTests
 	}
 
 	[Test]
+	public void AttributedHierarchyIsDuckTypedThroughItsObjectShape()
+	{
+		this.Use(this.Shape<TaggedAnimal>(), this.Shape<TaggedDog>());
+		Assert.Equal(new TaggedAnimal("Ada"), this.Deserialize<TaggedAnimal>(this.Map(("Name", "Ada"))));
+		Assert.Equal(new TaggedDog("Rex", 3), this.Deserialize<TaggedAnimal>(this.Map(("Name", "Rex"), ("BarkVolume", 3))));
+	}
+
+	[Test]
+	public void RequiredNamesContainingNulStayDistinct()
+	{
+		this.Use(this.Shape<NulBase>(), this.Shape<NulJoined>(), this.Shape<NulSplit>());
+		Assert.Equal(new NulJoined(1), this.Deserialize<NulBase>(this.Map(("A\0B", 1))));
+		Assert.Equal(new NulSplit(1, 2), this.Deserialize<NulBase>(this.Map(("A", 1), ("B", 2))));
+	}
+
+	[Test]
 	public void Constructor_RejectsTypesThatDifferOnlyByAnOptionalMember()
 	{
 		// A parameter with a default is not required, so these cases have the same required name.
@@ -411,6 +427,22 @@ public partial class DerivedTypeDuckTypingTests
 
 	[GenerateShape]
 	public partial record SquareShape(int Side) : ShapeBase;
+
+	[GenerateShape]
+	[DerivedTypeShape(typeof(TaggedDog))]
+	public partial record TaggedAnimal(string Name);
+
+	[GenerateShape]
+	public partial record TaggedDog(string Name, int BarkVolume) : TaggedAnimal(Name);
+
+	[GenerateShape]
+	public abstract partial record NulBase;
+
+	[GenerateShape]
+	public partial record NulJoined([property: PropertyShape(Name = "A\0B")] int Value) : NulBase;
+
+	[GenerateShape]
+	public partial record NulSplit([property: PropertyShape(Name = "A")] int Left, [property: PropertyShape(Name = "B")] int Right) : NulBase;
 
 	[GenerateShape]
 	public abstract partial class KeyedBase;

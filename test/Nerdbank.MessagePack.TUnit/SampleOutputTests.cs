@@ -56,7 +56,7 @@ public partial class SampleOutputTests
 		}
 #pragma warning restore CS0162 // Unreachable code detected
 
-		string expected = File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal);
+		string expected = File.ReadAllText(path).Replace("\r\n", "\n");
 		if (expected != actual)
 		{
 			Console.WriteLine(Diff(expected, actual));

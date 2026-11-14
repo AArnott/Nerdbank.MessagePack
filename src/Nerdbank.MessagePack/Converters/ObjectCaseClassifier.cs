@@ -123,7 +123,7 @@ internal sealed class ObjectCaseClassifier
 				continue;
 			}
 
-			string signature = string.Join("\0", cases[i].RequiredNames);
+			string signature = Signature(cases[i].RequiredNames);
 			if (signatures.TryGetValue(signature, out int previous))
 			{
 				throw CreateCollisionException(
@@ -142,6 +142,25 @@ internal sealed class ObjectCaseClassifier
 		}
 
 		return catchAllCount == 0 ? -1 : catchAllIndex;
+	}
+
+	/// <summary>
+	/// Builds an injective signature for a sorted set of required names.
+	/// </summary>
+	/// <param name="names">The required names. A name may itself contain NUL.</param>
+	/// <returns>A length-prefixed encoding that differs when the name sequences differ.</returns>
+	private static string Signature(string[] names)
+	{
+		StringBuilder builder = new();
+		for (int i = 0; i < names.Length; i++)
+		{
+			builder.Append(names[i].Length);
+			builder.Append(':');
+			builder.Append(names[i]);
+			builder.Append('\0');
+		}
+
+		return builder.ToString();
 	}
 
 	/// <summary>

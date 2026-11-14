@@ -24,6 +24,7 @@ internal static class DuckTypingRequiredMembers
 	/// </remarks>
 	internal static string[] GetRequiredNames(ITypeShape shape, Func<IPropertyShape, string> getSerializedName)
 	{
+		shape = ObjectView(shape);
 		if (shape is not IObjectTypeShape objectShape)
 		{
 			throw new ArgumentException($"Duck typing cases must be object types, but '{shape.Type.FullName}' is not.", nameof(shape));
@@ -86,6 +87,7 @@ internal static class DuckTypingRequiredMembers
 	/// <exception cref="NotSupportedException">Thrown when the case is a tuple or uses <see cref="KeyAttribute"/>.</exception>
 	internal static void EnsureNameKeyedMap(ITypeShape shape, bool ignoreKeyAttributes)
 	{
+		shape = ObjectView(shape);
 		if (shape is not IObjectTypeShape objectShape)
 		{
 			return;
@@ -113,6 +115,25 @@ internal static class DuckTypingRequiredMembers
 				throw new NotSupportedException($"Duck typing case '{shape.Type.FullName}' uses {nameof(KeyAttribute)}. Duck typing matches name-keyed maps.");
 			}
 		}
+	}
+
+	/// <summary>
+	/// Returns the object shape behind a derived-type hierarchy.
+	/// </summary>
+	/// <param name="shape">A case shape. A <see cref="DerivedTypeShapeAttribute"/> hierarchy is a union shape whose object view is <see cref="IUnionTypeShape.BaseType"/>.</param>
+	/// <returns>The object view when <paramref name="shape"/> is a type hierarchy; otherwise <paramref name="shape"/>.</returns>
+	/// <remarks>
+	/// C# and F# union shapes are left unchanged. Their base view is an empty object and is not the case's data.
+	/// </remarks>
+	private static ITypeShape ObjectView(ITypeShape shape)
+	{
+		if (shape is IUnionTypeShape { UnionKind: UnionTypeShapeKind.TypeHierarchy or UnionTypeShapeKind.Unknown } union
+			&& union.BaseType is IObjectTypeShape)
+		{
+			return union.BaseType;
+		}
+
+		return shape;
 	}
 
 	/// <summary>

@@ -19,6 +19,7 @@ namespace Nerdbank.MessagePack;
 /// </para>
 /// <para>
 /// The concrete base type is a case. An abstract or interface base is not a case and is not used as a fallback.
+/// A <see cref="DerivedTypeShapeAttribute"/> hierarchy is read through its object shape, so runtime duck typing can replace that attribute.
 /// Serializing a runtime type that was not registered throws <see cref="MessagePackSerializationException"/>.
 /// Nil deserializes as <see langword="null"/>. Any other non-map value throws.
 /// </para>

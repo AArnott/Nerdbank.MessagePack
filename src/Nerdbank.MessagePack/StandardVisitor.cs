@@ -279,12 +279,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return failureResult;
 		}
 
-		if (baseTypeConverter.Value is UnionConverter<TUnion>)
+		if (baseTypeConverter.Value is UnionConverter<TUnion> or ShapeBasedUnionConverter<TUnion>)
 		{
-			// A runtime mapping *and* attributes are defined for the same base type.
-			// The runtime mapping has already been applied and that trumps attributes.
-			// Just return the union converter we created for the runtime mapping to avoid
-			// double-nesting.
+			// VisitObject already applied a runtime union for this base type.
+			// That mapping replaces attributes. Returning the converter avoids wrapping it again.
 			return baseTypeConverter;
 		}
 
