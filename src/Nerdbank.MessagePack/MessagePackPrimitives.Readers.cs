@@ -346,6 +346,11 @@ partial class MessagePackPrimitives
 	/// <param name="value">Receives the timestamp if successful.</param>
 	/// <param name="tokenSize">Receives the number of bytes read from the source, or the minimum length of <paramref name="source"/> required to read the data.</param>
 	/// <returns>The result classification of the read operation.</returns>
+	/// <exception cref="MessagePackSerializationException">
+	/// Thrown when the buffer contains a timestamp extension whose length is not 4, 8, or 12 bytes,
+	/// or whose value is outside the range <see cref="DateTime"/> can represent
+	/// (<c>0001-01-01T00:00:00.0000000Z</c> through <c>9999-12-31T23:59:59.9999999Z</c>).
+	/// </exception>
 	/// <remarks>
 	/// Reads the extension header using <see cref="TryReadExtensionHeader(ReadOnlySpan{byte}, out ExtensionHeader, out int)"/>
 	/// then the extension itself using <see cref="TryRead(ReadOnlySpan{byte}, ExtensionHeader, out DateTime, out int)"/>.
@@ -372,6 +377,12 @@ partial class MessagePackPrimitives
 	/// <param name="value">Receives the timestamp if successful.</param>
 	/// <param name="tokenSize">Receives the number of bytes read from the source, or the minimum length of <paramref name="source"/> required to read the data.</param>
 	/// <returns>The result classification of the read operation.</returns>
+	/// <exception cref="MessagePackSerializationException">
+	/// Thrown when <paramref name="header"/> describes a timestamp whose length is not 4, 8, or 12 bytes,
+	/// or whose value is outside the range <see cref="DateTime"/> can represent
+	/// (<c>0001-01-01T00:00:00.0000000Z</c> through <c>9999-12-31T23:59:59.9999999Z</c>).
+	/// The message includes the timestamp's seconds and nanoseconds.
+	/// </exception>
 	public static DecodeResult TryRead(ReadOnlySpan<byte> source, ExtensionHeader header, out DateTime value, out int tokenSize)
 	{
 		if (header.TypeCode != ReservedMessagePackExtensionTypeCode.DateTime)
@@ -393,23 +404,39 @@ partial class MessagePackPrimitives
 			return DecodeResult.InsufficientBuffer;
 		}
 
+		// AddSeconds and AddTicks throw ArgumentOutOfRangeException for instants outside DateTime's range.
+		// Preserve that conversion and report the msgpack seconds and nanoseconds that caused it.
+		static DateTime ToDateTime(long seconds, long nanoseconds)
+		{
+			try
+			{
+				return DateTimeConstants.UnixEpoch.AddSeconds(seconds).AddTicks(nanoseconds / DateTimeConstants.NanosecondsPerTick);
+			}
+			catch (ArgumentOutOfRangeException ex)
+			{
+				throw new MessagePackSerializationException(
+					$"The msgpack timestamp ({seconds} seconds and {nanoseconds} nanoseconds since the Unix epoch) is outside the range System.DateTime can represent (0001-01-01T00:00:00.0000000Z through 9999-12-31T23:59:59.9999999Z).",
+					ex);
+			}
+		}
+
 		switch (header.Length)
 		{
 			case 4:
 				AssumesTrue(TryReadBigEndian(source, out uint uintValue));
-				value = DateTimeConstants.UnixEpoch.AddSeconds(uintValue);
+				value = ToDateTime(uintValue, nanoseconds: 0);
 				return DecodeResult.Success;
 			case 8:
 				AssumesTrue(TryReadBigEndian(source, out ulong ulongValue));
 				long nanoseconds = (long)(ulongValue >> 34);
-				ulong seconds = ulongValue & 0x00000003ffffffffL;
-				value = DateTimeConstants.UnixEpoch.AddSeconds(seconds).AddTicks(nanoseconds / DateTimeConstants.NanosecondsPerTick);
+				long seconds = checked((long)(ulongValue & 0x00000003ffffffffL));
+				value = ToDateTime(seconds, nanoseconds);
 				return DecodeResult.Success;
 			case 12:
 				AssumesTrue(TryReadBigEndian(source, out uintValue));
 				nanoseconds = uintValue;
 				AssumesTrue(TryReadBigEndian(source.Slice(sizeof(uint)), out long longValue));
-				value = DateTimeConstants.UnixEpoch.AddSeconds(longValue).AddTicks(nanoseconds / DateTimeConstants.NanosecondsPerTick);
+				value = ToDateTime(longValue, nanoseconds);
 				return DecodeResult.Success;
 			default:
 				value = default;

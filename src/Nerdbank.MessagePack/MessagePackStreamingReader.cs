@@ -379,6 +379,11 @@ public ref partial struct MessagePackStreamingReader
 	/// </summary>
 	/// <param name="value">The decoded value if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
+	/// <exception cref="MessagePackSerializationException">
+	/// Thrown when the next value is a timestamp extension whose length is not 4, 8, or 12 bytes,
+	/// or whose value is outside the range <see cref="DateTime"/> can represent
+	/// (<c>0001-01-01T00:00:00.0000000Z</c> through <c>9999-12-31T23:59:59.9999999Z</c>).
+	/// </exception>
 	public DecodeResult TryRead(out DateTime value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, out value, out int tokenSize);
@@ -425,6 +430,11 @@ public ref partial struct MessagePackStreamingReader
 	/// <param name="extensionHeader">The extension header that was previously read.</param>
 	/// <param name="value">The decoded value if the read was successful.</param>
 	/// <returns>The success or error code.</returns>
+	/// <exception cref="MessagePackSerializationException">
+	/// Thrown when <paramref name="extensionHeader"/> describes a timestamp whose length is not 4, 8, or 12 bytes,
+	/// or whose value is outside the range <see cref="DateTime"/> can represent
+	/// (<c>0001-01-01T00:00:00.0000000Z</c> through <c>9999-12-31T23:59:59.9999999Z</c>).
+	/// </exception>
 	public DecodeResult TryRead(ExtensionHeader extensionHeader, out DateTime value)
 	{
 		DecodeResult readResult = MessagePackPrimitives.TryRead(this.reader.UnreadSpan, extensionHeader, out value, out int tokenSize);

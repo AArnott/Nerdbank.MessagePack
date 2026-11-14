@@ -509,6 +509,11 @@ public ref partial struct MessagePackReader
 	/// Expects extension type code <see cref="ReservedMessagePackExtensionTypeCode.DateTime"/>.
 	/// </summary>
 	/// <returns>The value.</returns>
+	/// <exception cref="MessagePackSerializationException">
+	/// Thrown when the next value is not a timestamp extension, or when the timestamp is outside the range
+	/// <see cref="DateTime"/> can represent
+	/// (<c>0001-01-01T00:00:00.0000000Z</c> through <c>9999-12-31T23:59:59.9999999Z</c>).
+	/// </exception>
 	public DateTime ReadDateTime()
 	{
 		switch (this.streamingReader.TryRead(out DateTime value))
@@ -534,6 +539,11 @@ public ref partial struct MessagePackReader
 	/// </summary>
 	/// <param name="header">The extension header that was already read.</param>
 	/// <returns>The value.</returns>
+	/// <exception cref="MessagePackSerializationException">
+	/// Thrown when <paramref name="header"/> is not a timestamp extension, or when the timestamp is outside the range
+	/// <see cref="DateTime"/> can represent
+	/// (<c>0001-01-01T00:00:00.0000000Z</c> through <c>9999-12-31T23:59:59.9999999Z</c>).
+	/// </exception>
 	public DateTime ReadDateTime(ExtensionHeader header)
 	{
 		switch (this.streamingReader.TryRead(header, out DateTime value))
