@@ -7,23 +7,36 @@ using Microsoft;
 namespace Nerdbank.MessagePack;
 
 /// <summary>
-/// A shape-based union that can distinguish between union cases
-/// based on their structural characteristics rather than explicit aliases.
+/// A shape-based union that distinguishes object cases by their required properties.
 /// </summary>
 /// <remarks>
 /// <para>
-/// This union strategy analyzes the provided type shapes to identify distinguishing characteristics such as:
-/// </para>
-/// <list type="bullet">
-/// <item>Required properties that appear only in specific union cases</item>
-/// </list>
-/// <para>
-/// The resulting converter does not use explicit type aliases and instead inspects the MessagePack structure
-/// during deserialization to determine the appropriate union case to deserialize into.
+/// A case matches a map when every required serialized property name is present.
+/// Extra properties do not reject a case; the case converter skips them or stores them in <see cref="UnusedDataPacket"/>.
+/// When several cases match, the case whose required names are a strict superset of the others is chosen.
+/// If no match is more specific, deserialization throws <see cref="MessagePackSerializationException"/>.
+/// A case with no required properties is a catch-all: at most one is allowed, and it is chosen only when no other case matches.
 /// </para>
 /// <para>
-/// Note that this approach may be slower than alias-based unions
-/// as it may require buffering the entire value for analysis.
+/// The concrete base type is a case. An abstract or interface base is not a case and is not used as a fallback.
+/// Serializing a runtime type that was not registered throws <see cref="MessagePackSerializationException"/>.
+/// Nil deserializes as <see langword="null"/>. Any other non-map value throws.
+/// </para>
+/// <para>
+/// Required names come from the same members the object converter requires: required constructor parameters
+/// (including <see langword="required"/> properties and <see cref="PropertyShapeAttribute.IsRequired"/>),
+/// using each property's serialized name.
+/// <see cref="MessagePackSerializer.PropertyNamingPolicy"/> is applied when the converter is built.
+/// An explicit <see cref="PropertyShapeAttribute.Name"/> is not rewritten by the policy.
+/// Names are compared ordinally.
+/// A <see cref="MessagePackSerializer.SerializeDefaultValues"/> policy that omits a required member can make a case fail to match, because a missing name is missing evidence.
+/// The constructor rejects identical required-name sets and more than one catch-all using shape names.
+/// The same check runs again with serialized names when the converter is built, so a naming policy that collapses two cases fails before any value is read.
+/// </para>
+/// <para>
+/// Duck typing reads and writes name-keyed maps. Tuples, <see cref="KeyAttribute"/> layouts, and
+/// <see cref="MessagePackSerializer.PerfOverSchemaStability"/> are not supported.
+/// Identifying a case may buffer the value. This API is experimental.
 /// </para>
 /// </remarks>
 [Experimental("DuckTyping")]
@@ -31,38 +44,55 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 {
 	private readonly ITypeShape baseShape;
 	private readonly ReadOnlyMemory<ITypeShape> derivedTypeShapes;
-	private readonly Dictionary<Type, ITypeShape> typeToShapeMap;
-	private readonly List<Filter> steps;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="DerivedTypeDuckTyping"/> class.
 	/// </summary>
-	/// <param name="baseShape">The shape of the base type.</param>
-	/// <param name="derivedTypeShapes">The shapes of the derived types.</param>
+	/// <param name="baseShape">The shape of the base type. A concrete base is one of the cases.</param>
+	/// <param name="derivedTypeShapes">The shapes of the derived types. Each must be a concrete object assignable to <paramref name="baseShape"/>.</param>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="baseShape"/> or a derived shape is <see langword="null"/>.</exception>
+	/// <exception cref="ArgumentException">
+	/// Thrown when fewer than two concrete types are registered, a derived type is abstract, an interface, not assignable to the base, duplicated, or not an object,
+	/// or when two cases require the same shape property names or more than one case has no required properties.
+	/// </exception>
 	public DerivedTypeDuckTyping(ITypeShape baseShape, params ReadOnlySpan<ITypeShape> derivedTypeShapes)
 	{
 		Requires.NotNull(baseShape);
-
 		this.baseShape = baseShape;
-
-		// Make sure we have an immutable copy
 		this.derivedTypeShapes = derivedTypeShapes.ToArray();
 
-		this.typeToShapeMap = new(derivedTypeShapes.Length + 1);
+		List<ITypeShape> cases = new(derivedTypeShapes.Length + 1);
+		HashSet<Type> seen = [];
 		if (baseShape.Type is { IsAbstract: false, IsInterface: false })
 		{
-			this.typeToShapeMap.Add(baseShape.Type, baseShape);
+			seen.Add(baseShape.Type);
+			cases.Add(baseShape);
 		}
 
 		foreach (ITypeShape derivedTypeShape in derivedTypeShapes)
 		{
-			Requires.Argument(derivedTypeShape.Type is { IsAbstract: false, IsInterface: false }, nameof(derivedTypeShape), $"Derived types must be concrete, but {derivedTypeShape.Type.FullName} is not.");
-			this.typeToShapeMap.Add(derivedTypeShape.Type, derivedTypeShape);
+			if (derivedTypeShape is null)
+			{
+				throw new ArgumentNullException(nameof(derivedTypeShapes));
+			}
+
+			Requires.Argument(derivedTypeShape.Type is { IsAbstract: false, IsInterface: false }, nameof(derivedTypeShapes), $"Derived types must be concrete, but {derivedTypeShape.Type.FullName} is not.");
+			Requires.Argument(baseShape.Type.IsAssignableFrom(derivedTypeShape.Type), nameof(derivedTypeShapes), $"Type '{derivedTypeShape.Type.FullName}' is not assignable to base type '{baseShape.Type.FullName}'.");
+			Requires.Argument(seen.Add(derivedTypeShape.Type), nameof(derivedTypeShapes), $"The type '{derivedTypeShape.Type.FullName}' is registered more than once.");
+			cases.Add(derivedTypeShape);
 		}
 
-		Requires.Argument(this.typeToShapeMap.Count > 1, nameof(derivedTypeShapes), "At least two type shapes must be provided. The base shape only counts if it is a concrete type.");
+		Requires.Argument(cases.Count > 1, nameof(derivedTypeShapes), "At least two concrete types must be provided. The base type only counts if it is concrete.");
 
-		this.steps = BuildMapping(derivedTypeShapes) ?? throw new ArgumentException("The type shapes given do not include (enough) unique characteristics.");
+		ObjectCaseClassifier.Case[] classified = new ObjectCaseClassifier.Case[cases.Count];
+		for (int i = 0; i < cases.Count; i++)
+		{
+			string[] names = DuckTypingRequiredMembers.GetRequiredNames(cases[i], static property => property.Name);
+			classified[i] = new ObjectCaseClassifier.Case(cases[i].Type, names);
+		}
+
+		// Shape names, before the serializer's naming policy. The converter repeats this check with serialized names.
+		_ = new ObjectCaseClassifier(baseShape.Type, classified, namingPolicyApplied: false);
 	}
 
 	/// <inheritdoc/>
@@ -74,174 +104,10 @@ public class DerivedTypeDuckTyping : DerivedTypeUnion
 	internal ITypeShape BaseShape => this.baseShape;
 
 	/// <summary>
-	/// Gets a list of the derived type shapes.
+	/// Gets the derived type shapes, not including the base type.
 	/// </summary>
 	internal ReadOnlyMemory<ITypeShape> DerivedShapes => this.derivedTypeShapes;
 
-	/// <summary>
-	/// Attempts to identify the runtime type based on MessagePack data.
-	/// </summary>
-	/// <param name="reader">A reader positioned at the start of the value to analyze.</param>
-	/// <param name="serializationContext">The serialization context.</param>
-	/// <param name="typeShape">The identified type shape, if successful.</param>
-	/// <returns>True if exactly one matching type was identified; false otherwise.</returns>
-#pragma warning disable NBMsgPack050 // Use ref parameters for ref structs -- acts as a peek reader
-	internal bool TryIdentifyType(in MessagePackReader reader, in SerializationContext serializationContext, [NotNullWhen(true)] out ITypeShape? typeShape)
-#pragma warning restore NBMsgPack050 // Use ref parameters for ref structs
-	{
-		DuckTypingContext context = new(reader, serializationContext, new HashSet<Type>(this.typeToShapeMap.Keys));
-
-		foreach (Filter step in this.steps)
-		{
-			step.Execute(ref context);
-
-			if (context.RemainingCandidateTypes.Count == 1)
-			{
-				typeShape = this.typeToShapeMap[context.RemainingCandidateTypes.First()];
-				return true;
-			}
-		}
-
-		typeShape = null;
-		return false;
-	}
-
 	/// <inheritdoc/>
 	internal override void InternalDerivationsOnly() => throw new NotImplementedException();
-
-	private static List<Filter> BuildMapping(ReadOnlySpan<ITypeShape> typeShapes)
-	{
-		List<Filter> steps = [];
-
-		AnalyzeRequiredProperties(typeShapes, steps);
-
-		return steps;
-	}
-
-	private static void AnalyzeRequiredProperties(ReadOnlySpan<ITypeShape> typeShapes, List<Filter> steps)
-	{
-		Dictionary<string, (HashSet<Type> WithProperty, HashSet<Type> WithoutProperty)> propertyAnalysis = new(StringComparer.Ordinal);
-
-		foreach (ITypeShape typeShape in typeShapes)
-		{
-			if (typeShape is not IObjectTypeShape { Constructor.Parameters: { Count: > 0 } parameters })
-			{
-				continue;
-			}
-
-			List<string> requiredProperties = [];
-			foreach (IParameterShape parameter in parameters)
-			{
-				if (parameter.IsRequired)
-				{
-					requiredProperties.Add(parameter.Name);
-				}
-			}
-
-			if (requiredProperties.Count > 0)
-			{
-				steps.Add(new RequiredPropertyStep(typeShape.Type, requiredProperties));
-			}
-		}
-	}
-
-	private ref struct DuckTypingContext
-	{
-		private readonly MessagePackReader reader;
-		private readonly SerializationContext context;
-		private Dictionary<string, MessagePackType>? propertyTypes;
-		private HashSet<Type> remainingCandidateTypes;
-
-		internal DuckTypingContext(in MessagePackReader reader, in SerializationContext context, HashSet<Type> remainingCandidateTypes)
-		{
-			this.reader = reader;
-			this.context = context;
-			this.remainingCandidateTypes = remainingCandidateTypes;
-		}
-
-		[UnscopedRef]
-		internal ref readonly MessagePackReader Reader => ref this.reader;
-
-		[UnscopedRef]
-		internal ref readonly SerializationContext Context => ref this.context;
-
-		internal IReadOnlyCollection<Type> RemainingCandidateTypes => this.remainingCandidateTypes;
-
-		internal bool HasProperty(string propertyName) => this.TryGetPropertyType(propertyName, out _);
-
-		internal bool TryGetPropertyType(string propertyName, out MessagePackType propertyType)
-		{
-			this.InitProperties();
-			return this.propertyTypes.TryGetValue(propertyName, out propertyType);
-		}
-
-		internal bool RemoveCandidateType(Type type) => this.remainingCandidateTypes.Remove(type);
-
-		[MemberNotNull(nameof(propertyTypes))]
-		private void InitProperties()
-		{
-			if (this.propertyTypes is null)
-			{
-				MessagePackReader peekReader = this.reader.CreatePeekReader();
-
-				this.propertyTypes = [];
-				if (peekReader.NextMessagePackType == MessagePackType.Map)
-				{
-					int count = peekReader.ReadMapHeader();
-					for (int i = 0; i < count; i++)
-					{
-						string? propertyName;
-						if (peekReader.NextMessagePackType == MessagePackType.String)
-						{
-							propertyName = peekReader.ReadString()!;
-
-							// Record the type of this property's value.
-							this.propertyTypes.Add(propertyName, peekReader.NextMessagePackType);
-						}
-						else
-						{
-							propertyName = null;
-
-							// Non-string key, skip it.
-							peekReader.Skip(this.context);
-						}
-
-						// Skip the value.
-						peekReader.Skip(this.context);
-					}
-				}
-			}
-		}
-	}
-
-	/// <summary>
-	/// A filtering step that narrows down candidate types.
-	/// </summary>
-	private abstract class Filter
-	{
-		/// <summary>
-		/// Executes the filter to hopefully narrow down the candidate types to be deserialized.
-		/// </summary>
-		/// <param name="context">The duck typing context.</param>
-		internal abstract void Execute(ref DuckTypingContext context);
-	}
-
-	/// <summary>
-	/// A step that checks for the presence or absence of required properties.
-	/// </summary>
-	private class RequiredPropertyStep(Type type, IReadOnlyCollection<string> requiredPropertyNames) : Filter
-	{
-		/// <inheritdoc/>
-		internal override void Execute(ref DuckTypingContext context)
-		{
-			foreach (string propertyName in requiredPropertyNames)
-			{
-				if (!context.HasProperty(propertyName))
-				{
-					context.RemoveCandidateType(type);
-					break;
-				}
-			}
-		}
-	}
 }

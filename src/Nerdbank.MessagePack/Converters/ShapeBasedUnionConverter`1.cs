@@ -8,8 +8,8 @@ using System.Text.Json.Nodes;
 namespace Nerdbank.MessagePack.Converters;
 
 /// <summary>
-/// A converter for union types that distinguishes between member types based on their shape characteristics
-/// rather than explicit aliases.
+/// A converter for a <see cref="DerivedTypeDuckTyping"/> union.
+/// Cases are chosen by required property names. There is no fallback to the base converter.
 /// </summary>
 /// <typeparam name="TUnion">The union base type.</typeparam>
 internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
@@ -17,22 +17,70 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 	private readonly MessagePackConverter<TUnion> baseConverter;
 	private readonly DerivedTypeDuckTyping shapeMapping;
 	private readonly Dictionary<Type, MessagePackConverter> convertersByType;
+	private readonly MessagePackConverter[] convertersByCase;
+	private readonly ObjectCaseClassifier classifier;
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="ShapeBasedUnionConverter{TUnion}"/> class.
 	/// </summary>
-	/// <param name="baseConverter">The converter for the base type.</param>
-	/// <param name="shapeMapping">The shape-based mapping for distinguishing between types.</param>
-	/// <param name="convertersByType">Converters for each member type.</param>
+	/// <param name="baseConverter">The object converter for the base type. It is a case only when the base type is concrete.</param>
+	/// <param name="shapeMapping">The duck-typing union.</param>
+	/// <param name="convertersByType">Converters for each concrete case, including the base type when it is concrete.</param>
+	/// <param name="cache">The serializer cache, used for serialized property names and keyed-layout settings.</param>
+	/// <exception cref="NotSupportedException">Thrown when a case is not serialized as a name-keyed map.</exception>
+	/// <exception cref="MessagePackSerializationException">Thrown when a naming policy makes two cases indistinguishable.</exception>
 	public ShapeBasedUnionConverter(
 		MessagePackConverter<TUnion> baseConverter,
 		DerivedTypeDuckTyping shapeMapping,
-		Dictionary<Type, MessagePackConverter> convertersByType)
+		Dictionary<Type, MessagePackConverter> convertersByType,
+		ConverterCache cache)
 	{
 		this.baseConverter = baseConverter;
 		this.shapeMapping = shapeMapping;
 		this.convertersByType = convertersByType;
+
+		int caseCount = (shapeMapping.BaseType is { IsAbstract: false, IsInterface: false } ? 1 : 0) + shapeMapping.DerivedShapes.Length;
+		ObjectCaseClassifier.Case[] cases = new ObjectCaseClassifier.Case[caseCount];
+		this.convertersByCase = new MessagePackConverter[caseCount];
+		int index = 0;
+		if (shapeMapping.BaseType is { IsAbstract: false, IsInterface: false })
+		{
+			AddCase(shapeMapping.BaseShape);
+		}
+
+		foreach (ITypeShape shape in shapeMapping.DerivedShapes.Span)
+		{
+			AddCase(shape);
+		}
+
+		this.classifier = new ObjectCaseClassifier(typeof(TUnion), cases, namingPolicyApplied: true);
+
+		bool preferAsync = false;
+		for (int i = 0; i < this.convertersByCase.Length; i++)
+		{
+			if (this.convertersByCase[i].PreferAsyncSerialization)
+			{
+				preferAsync = true;
+				break;
+			}
+		}
+
+		this.PreferAsyncSerialization = preferAsync;
+
+		void AddCase(ITypeShape shape)
+		{
+			DuckTypingRequiredMembers.EnsureNameKeyedMap(shape, cache.IgnoreKeyAttributes);
+			string[] names = DuckTypingRequiredMembers.GetRequiredNames(
+				shape,
+				property => cache.GetSerializedPropertyName(property.Name, property.AttributeProvider));
+			cases[index] = new ObjectCaseClassifier.Case(shape.Type, names);
+			this.convertersByCase[index] = convertersByType[shape.Type];
+			index++;
+		}
 	}
+
+	/// <inheritdoc/>
+	public override bool PreferAsyncSerialization { get; }
 
 	/// <inheritdoc/>
 	public override TUnion? Read(ref MessagePackReader reader, SerializationContext context)
@@ -42,17 +90,14 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 			return default;
 		}
 
-		// Try to identify the type based on shape analysis
-		if (this.shapeMapping.TryIdentifyType(reader, context, out ITypeShape? identifiedShape))
+		if (reader.NextMessagePackType != MessagePackType.Map)
 		{
-			if (this.convertersByType.TryGetValue(identifiedShape.Type, out MessagePackConverter? converter))
-			{
-				return (TUnion?)converter.ReadObject(ref reader, context);
-			}
+			throw new MessagePackSerializationException($"Duck-typed union '{typeof(TUnion).FullName}' expects a map, but the value was {reader.NextMessagePackType}.");
 		}
 
-		// Fall back to base converter if no specific type could be identified
-		return this.baseConverter.Read(ref reader, context);
+		HashSet<string> names = ReadMapKeys(ref reader, context);
+		int selected = this.classifier.Select(names);
+		return (TUnion?)this.convertersByCase[selected].ReadObject(ref reader, context);
 	}
 
 	/// <inheritdoc/>
@@ -65,16 +110,12 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		}
 
 		Type actualType = value.GetType();
+		if (!this.convertersByType.TryGetValue(actualType, out MessagePackConverter? converter))
+		{
+			throw new MessagePackSerializationException($"No duck-typing union case is registered for type '{actualType.FullName}' in '{typeof(TUnion).FullName}'.");
+		}
 
-		// Use specific converter if available, otherwise fallback to base converter.
-		if (this.convertersByType.TryGetValue(actualType, out MessagePackConverter? converter))
-		{
-			converter.WriteObject(ref writer, value, context);
-		}
-		else
-		{
-			this.baseConverter.Write(ref writer, value, context);
-		}
+		converter.WriteObject(ref writer, value, context);
 	}
 
 	/// <inheritdoc/>
@@ -96,5 +137,38 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		{
 			["oneOf"] = oneOfArray,
 		};
+	}
+
+	/// <summary>
+	/// Reads the string keys of a map without consuming <paramref name="reader"/>.
+	/// Integer keys contribute no names.
+	/// </summary>
+	/// <param name="reader">A reader positioned at the map. The reader's position is not advanced.</param>
+	/// <param name="context">The serialization context. Depth consumed while skipping values is not taken from this instance.</param>
+	/// <returns>The string keys present on the map.</returns>
+	private static HashSet<string> ReadMapKeys(ref MessagePackReader reader, SerializationContext context)
+	{
+		MessagePackReader peek = reader.CreatePeekReader();
+		int count = peek.ReadMapHeader();
+		HashSet<string> names = new(StringComparer.Ordinal);
+		for (int i = 0; i < count; i++)
+		{
+			if (peek.NextMessagePackType == MessagePackType.String)
+			{
+				string? name = peek.ReadString();
+				if (name is not null)
+				{
+					names.Add(name);
+				}
+			}
+			else
+			{
+				peek.Skip(context);
+			}
+
+			peek.Skip(context);
+		}
+
+		return names;
 	}
 }
