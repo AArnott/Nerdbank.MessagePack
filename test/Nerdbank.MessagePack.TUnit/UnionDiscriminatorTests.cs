@@ -238,6 +238,33 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void KeyedCamelCase_AllowsDistinctIndexesWithTheSameName()
+	{
+		this.Serializer = this.Serializer with { PropertyNamingPolicy = MessagePackNamingPolicy.CamelCase };
+		KeyedCaseCollision? value = this.Roundtrip(new KeyedCaseCollision { kind = "file:///a.cs" });
+		Assert.Equal("file:///a.cs", value!.kind);
+		Assert.Equal("create", value.Kind);
+	}
+
+	[Test]
+	public void MemberConverter_CanUseTheConstructionContext()
+	{
+		DelegatingCode? value = this.Roundtrip(new DelegatingCode());
+		Assert.Equal(1, value!.Code);
+		Assert.Contains("\"Code\":91", this.Json(), StringComparison.Ordinal);
+	}
+
+	[Test]
+	public void CapturedInteger_UsesTheEncodedSign()
+	{
+		SignedHuge? value = this.Roundtrip(new SignedHuge());
+		Assert.Equal(ulong.MaxValue, value!.Code);
+		Assert.Contains("\"Code\":-1", this.Json(), StringComparison.Ordinal);
+		JsonObject schema = ObjectSchema(this.Serializer.GetJsonSchema(this.Shape<SignedHuge>()));
+		Assert.Equal("-1", schema["properties"]!["Code"]!["const"]!.ToJsonString());
+	}
+
+	[Test]
 	public void MemberConverter_WritesAndChecksTheEncodedValue()
 	{
 		EncryptedCode? value = this.Roundtrip(new EncryptedCode());
@@ -742,5 +769,55 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 		public override int Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt32() ^ 0x5A;
 
 		public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => writer.Write(value ^ 0x5A);
+	}
+
+	[GenerateShape]
+	public partial class KeyedCaseCollision
+	{
+		[Key(0), UnionDiscriminator("create")]
+		public string Kind => "create";
+
+		[Key(1)]
+#pragma warning disable SA1300 // The camel-case collision requires this spelling.
+		public string? kind { get; set; }
+#pragma warning restore SA1300
+	}
+
+	[GenerateShape]
+	public partial record DelegatingCode
+	{
+		[MessagePackConverter(typeof(DelegatingIntConverter))]
+		[UnionDiscriminator(1)]
+		public int Code => 1;
+	}
+
+	public class DelegatingIntConverter : MessagePackConverter<int>
+	{
+		public override int Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			context.DepthStep();
+			return context.GetConverter<int>(context.TypeShapeProvider).Read(ref reader, context) ^ 0x5A;
+		}
+
+		public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context)
+		{
+			context.DepthStep();
+			context.GetConverter<int>(context.TypeShapeProvider).Write(ref writer, value ^ 0x5A, context);
+		}
+	}
+
+	[GenerateShape]
+	public partial record SignedHuge
+	{
+		[MessagePackConverter(typeof(SignedULongConverter))]
+		[UnionDiscriminator(ulong.MaxValue)]
+		public ulong Code => ulong.MaxValue;
+	}
+
+	public class SignedULongConverter : MessagePackConverter<ulong>
+	{
+		public override ulong Read(ref MessagePackReader reader, SerializationContext context) => unchecked((ulong)reader.ReadInt64());
+
+		public override void Write(ref MessagePackWriter writer, in ulong value, SerializationContext context) => writer.Write(unchecked((long)value));
 	}
 }

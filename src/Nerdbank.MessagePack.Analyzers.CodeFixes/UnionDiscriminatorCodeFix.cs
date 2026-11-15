@@ -43,7 +43,7 @@ public sealed class UnionDiscriminatorCodeFix : CodeFixProvider
 		AttributeSyntax? attribute = member?.AttributeLists.SelectMany(list => list.Attributes).FirstOrDefault(candidate => IsDiscriminator(semanticModel, candidate, context.CancellationToken));
 		ExpressionSyntax? constant = member is null ? null : ConstantExpression(member);
 		Optional<object?> constantValue = constant is null ? default : semanticModel.GetConstantValue(constant, context.CancellationToken);
-		if (attribute is null || constant is null || !constantValue.HasValue)
+		if (attribute is null || constant is null || !constantValue.HasValue || constantValue.Value is null)
 		{
 			return;
 		}

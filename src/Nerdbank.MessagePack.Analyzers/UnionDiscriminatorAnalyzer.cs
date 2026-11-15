@@ -287,7 +287,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		}
 
 		int? keyIndex = keyAttribute is not null && TryGetKeyIndex(member, keyAttribute, out int index) ? index : null;
-		return new DiscriminatorFact(name, Token(tokenType, tokenValue, serializedEnumName: true), keyIndex);
+		return new DiscriminatorFact(name, Token(tokenType, tokenValue, serializedEnumName: true), keyIndex, ComparableValue: !HasConverterAttribute(member));
 	}
 
 	private static void AnalyzeUnion(INamedTypeSymbol union, IEnumerable<INamedTypeSymbol> cases, Dictionary<INamedTypeSymbol, DiscriminatorFact> facts, List<Diagnostic> diagnostics)
@@ -315,13 +315,16 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 					return;
 				}
 
-				if (ContainsCollision(nameValues, fact.Token))
+				if (fact.ComparableValue && ContainsCollision(nameValues, fact.Token))
 				{
 					diagnostics.Add(Diagnostic.Create(UnionCases, union.Locations.FirstOrDefault(), $"Union '{union.Name}' repeats discriminator value {fact.Token.Display}."));
 					return;
 				}
 
-				nameValues.Add(fact.Token);
+				if (fact.ComparableValue)
+				{
+					nameValues.Add(fact.Token);
+				}
 			}
 			else
 			{
@@ -335,13 +338,16 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 					return;
 				}
 
-				if (ContainsCollision(keyValues, fact.Token))
+				if (fact.ComparableValue && ContainsCollision(keyValues, fact.Token))
 				{
 					diagnostics.Add(Diagnostic.Create(UnionCases, union.Locations.FirstOrDefault(), $"Union '{union.Name}' repeats discriminator value {fact.Token.Display}."));
 					return;
 				}
 
-				keyValues.Add(fact.Token);
+				if (fact.ComparableValue)
+				{
+					keyValues.Add(fact.Token);
+				}
 			}
 		}
 	}
@@ -410,7 +416,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 	{
 		foreach (ISymbol member in type.GetMembers())
 		{
-			if (SymbolEqualityComparer.Default.Equals(member.ContainingType, type) && HasAttribute(member, keyAttribute))
+			if (IsIncludedInShape(member) && HasAttribute(member, keyAttribute))
 			{
 				return true;
 			}
@@ -578,6 +584,19 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		return false;
 	}
 
+	private static bool HasConverterAttribute(ISymbol member)
+	{
+		foreach (AttributeData attribute in member.GetAttributes())
+		{
+			if (attribute.AttributeClass?.Name == "MessagePackConverterAttribute")
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private static bool HasAttribute(ISymbol symbol, INamedTypeSymbol? attribute)
 		=> attribute is not null && symbol.GetAttributes().Any(candidate => SymbolEqualityComparer.Default.Equals(candidate.AttributeClass, attribute));
 
@@ -731,7 +750,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		return false;
 	}
 
-	private readonly record struct DiscriminatorFact(string Name, DiscriminatorToken Token, int? KeyIndex);
+	private readonly record struct DiscriminatorFact(string Name, DiscriminatorToken Token, int? KeyIndex, bool ComparableValue = true);
 
 	private readonly record struct DiscriminatorToken(char Kind, string? Type, string? Member, string Text)
 	{

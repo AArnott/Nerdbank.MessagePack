@@ -76,6 +76,23 @@ public class UnionDiscriminatorAnalyzerTests
 	}
 
 	[Test]
+	public async Task NullConstant_HasNoCodeFix()
+	{
+		string source = """
+			#nullable enable
+			using Nerdbank.MessagePack;
+
+			public class Create
+			{
+				[UnionDiscriminator("create")]
+				public string? {|NBMsgPack130:Kind|} => null;
+			}
+			""";
+
+		await VerifyCS.VerifyNoCodeFixAsync(source, VerifyCS.Diagnostic("NBMsgPack130").WithSpan(7, 17, 7, 21).WithArguments("Kind"));
+	}
+
+	[Test]
 	public async Task MissingKeyOnKeyedType_IsAnError()
 	{
 		string source = """
@@ -241,6 +258,70 @@ public class UnionDiscriminatorAnalyzerTests
 			{
 				[UnionDiscriminator(AlsoCreate.Create)]
 				public AlsoCreate Kind => AlsoCreate.Create;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task CustomConverter_IsNotADuplicate()
+	{
+		string source = """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			[DerivedTypeShape(typeof(Plain))]
+			[DerivedTypeShape(typeof(Encoded))]
+			public partial class Change
+			{
+			}
+
+			public partial class Plain
+			{
+				[UnionDiscriminator(1)]
+				public int Code => 1;
+			}
+
+			public partial class Encoded
+			{
+				[MessagePackConverter(typeof(XorIntConverter))]
+				[UnionDiscriminator(1)]
+				public int Code => 1;
+			}
+
+			public class XorIntConverter : MessagePackConverter<int>
+			{
+				public override int Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt32();
+
+				public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => writer.Write(value);
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task IgnoredKey_DoesNotMakeTheTypeKeyed()
+	{
+		string source = """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public class Create
+			{
+				[Key(0), PropertyShape(Ignore = true)]
+				public int Hidden { get; set; }
+
+				[UnionDiscriminator("create")]
+				public string Kind => "create";
+			}
+
+			[UnionDiscriminator("Kind", "create")]
+			public class Named
+			{
+				[Key(0), PropertyShape(Ignore = true)]
+				public int Hidden { get; set; }
 			}
 			""";
 

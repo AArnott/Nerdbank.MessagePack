@@ -25,8 +25,9 @@ internal sealed class UnionDiscriminatorBinding
 	private readonly string schemaType;
 	private readonly object schemaValue;
 	private readonly byte[] valueBytes;
+	private readonly SerializationContext captureContext;
 
-	private UnionDiscriminatorBinding(string name, IPropertyShape? source, int? keyIndex, object expected, MessagePackConverter? converter, bool enumByName)
+	private UnionDiscriminatorBinding(string name, IPropertyShape? source, int? keyIndex, object expected, MessagePackConverter? converter, bool enumByName, SerializationContext captureContext)
 	{
 		this.Name = name;
 		this.Source = source;
@@ -34,9 +35,10 @@ internal sealed class UnionDiscriminatorBinding
 		this.expected = expected;
 		this.converter = converter;
 		this.enumByName = enumByName;
+		this.captureContext = captureContext;
 		StringEncoding.GetEncodedStringBytes(name, out this.utf8Name, out this.msgpackName);
-		this.valueBytes = CaptureValue(this);
-		(this.schemaType, this.schemaValue) = SchemaFromCaptured(this.valueBytes, expected);
+		this.valueBytes = CaptureValue(this, captureContext);
+		(this.schemaType, this.schemaValue) = SchemaFromCaptured(this.valueBytes);
 	}
 
 	/// <summary>Gets the serialized map key.</summary>
@@ -103,7 +105,7 @@ internal sealed class UnionDiscriminatorBinding
 		bool arrayLayout = shape.IsTupleType || owner.PerfOverSchemaStability || anyKey;
 		if (member is not null)
 		{
-			UnionDiscriminatorBinding binding = MemberBinding<T>.Create(member, memberLevel!, owner, getConverter, shape);
+			UnionDiscriminatorBinding binding = MemberBinding<T>.Create(member, memberLevel!, owner, getConverter, shape, checkUniqueName: !arrayLayout);
 			int? keyIndex = arrayLayout ? ArrayIndex(typeof(T), binding.Name, KeyOf(member, owner), memberDeclarationIndex, owner, shape.IsTupleType) : null;
 			return binding.WithKeyIndex(keyIndex);
 		}
@@ -323,15 +325,16 @@ internal sealed class UnionDiscriminatorBinding
 		string name = attribute.PropertyName!;
 		RejectReservedName(declaringType, name);
 		object value = attribute.Value;
+		SerializationContext captureContext = SerializationContext.ForConstruction(owner, provider: null);
 		if (value is string or bool)
 		{
-			return ForScalar(name, source: null, keyIndex: null, value, converter: null, enumByName: false);
+			return ForScalar(name, source: null, keyIndex: null, value, converter: null, enumByName: false, captureContext);
 		}
 
 		if (value.GetType().IsEnum)
 		{
 			bool byName = owner.SerializeEnumValuesByName && Enum.GetName(value.GetType(), value) is not null;
-			return ForScalar(name, source: null, keyIndex: null, value, converter: null, byName);
+			return ForScalar(name, source: null, keyIndex: null, value, converter: null, byName, captureContext);
 		}
 
 		if (!IsInteger(value.GetType()))
@@ -339,13 +342,13 @@ internal sealed class UnionDiscriminatorBinding
 			throw new NotSupportedException($"Type '{declaringType.FullName}' declares a union discriminator of type '{value.GetType().FullName}', which is not a string, boolean, integer, or enum.");
 		}
 
-		return ForScalar(name, source: null, keyIndex: null, value, converter: null, enumByName: false);
+		return ForScalar(name, source: null, keyIndex: null, value, converter: null, enumByName: false, captureContext);
 	}
 
-	private static UnionDiscriminatorBinding ForScalar(string name, IPropertyShape? source, int? keyIndex, object expected, MessagePackConverter? converter, bool enumByName)
-		=> new(name, source, keyIndex, expected, converter, enumByName);
+	private static UnionDiscriminatorBinding ForScalar(string name, IPropertyShape? source, int? keyIndex, object expected, MessagePackConverter? converter, bool enumByName, SerializationContext captureContext)
+		=> new(name, source, keyIndex, expected, converter, enumByName, captureContext);
 
-	private static (string Type, object Value) SchemaFromCaptured(byte[] valueBytes, object expected)
+	private static (string Type, object Value) SchemaFromCaptured(byte[] valueBytes)
 	{
 		MessagePackReader reader = new(valueBytes);
 		switch (reader.NextMessagePackType)
@@ -354,12 +357,12 @@ internal sealed class UnionDiscriminatorBinding
 				return ("string", reader.ReadString() ?? string.Empty);
 			case MessagePackType.Boolean:
 				return ("boolean", reader.ReadBoolean());
-			case MessagePackType.Integer when IsUnsigned(expected):
-				return ("integer", reader.ReadUInt64());
-			case MessagePackType.Integer:
+			case MessagePackType.Integer when MessagePackCode.IsSignedInteger(reader.NextCode):
 				return ("integer", reader.ReadInt64());
+			case MessagePackType.Integer:
+				return ("integer", reader.ReadUInt64());
 			default:
-				throw new NotSupportedException($"Union discriminator value of type '{expected.GetType().FullName}' did not encode as a scalar.");
+				throw new NotSupportedException("A union discriminator did not encode as a scalar.");
 		}
 	}
 
@@ -460,7 +463,7 @@ internal sealed class UnionDiscriminatorBinding
 			return this;
 		}
 
-		return new UnionDiscriminatorBinding(this.Name, this.Source, keyIndex, this.expected, this.converter, this.enumByName);
+		return new UnionDiscriminatorBinding(this.Name, this.Source, keyIndex, this.expected, this.converter, this.enumByName, this.captureContext);
 	}
 
 	private string Token()
@@ -472,17 +475,24 @@ internal sealed class UnionDiscriminatorBinding
 #endif
 	}
 
-	private static byte[] CaptureValue(UnionDiscriminatorBinding binding)
+	private static byte[] CaptureValue(UnionDiscriminatorBinding binding, SerializationContext context)
 	{
 		using Sequence<byte> buffer = new();
 		MessagePackWriter writer = new(buffer);
-		if (binding.converter is IMessagePackConverterInternal preserved)
+		try
 		{
-			preserved.UnwrapReferencePreservation().WriteObject(ref writer, binding.expected, default);
+			if (binding.converter is IMessagePackConverterInternal preserved)
+			{
+				preserved.UnwrapReferencePreservation().WriteObject(ref writer, binding.expected, context);
+			}
+			else
+			{
+				binding.WriteValue(ref writer, context);
+			}
 		}
-		else
+		finally
 		{
-			binding.WriteValue(ref writer, default);
+			context.End();
 		}
 
 		writer.Flush();
@@ -516,10 +526,10 @@ internal sealed class UnionDiscriminatorBinding
 
 	private static class MemberBinding<TDeclaring>
 	{
-		internal static UnionDiscriminatorBinding Create(IPropertyShape property, UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape)
-			=> property.Accept(new Factory(attribute, owner, getConverter, shape)) as UnionDiscriminatorBinding ?? throw new NotSupportedException($"Union discriminator '{property.Name}' on '{typeof(TDeclaring).FullName}' must be an object property.");
+		internal static UnionDiscriminatorBinding Create(IPropertyShape property, UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape, bool checkUniqueName)
+			=> property.Accept(new Factory(attribute, owner, getConverter, shape, checkUniqueName)) as UnionDiscriminatorBinding ?? throw new NotSupportedException($"Union discriminator '{property.Name}' on '{typeof(TDeclaring).FullName}' must be an object property.");
 
-		private sealed class Factory(UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape) : TypeShapeVisitor
+		private sealed class Factory(UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape, bool checkUniqueName) : TypeShapeVisitor
 		{
 			public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
 				=> this.CreateProperty(propertyShape);
@@ -581,7 +591,11 @@ internal sealed class UnionDiscriminatorBinding
 
 				string name = owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 				RejectReservedName(typeof(TDeclaringType), name);
-				EnsureUniqueName(shape, name, property, owner);
+				if (checkUniqueName)
+				{
+					EnsureUniqueName(shape, name, property, owner);
+				}
+
 				bool canProbe = !typeof(TDeclaringType).IsAbstract;
 				TProperty expected;
 				if (attribute.HasValue)
@@ -614,7 +628,8 @@ internal sealed class UnionDiscriminatorBinding
 				MessagePackConverter converter = getConverter(property.PropertyType, property.AttributeProvider);
 				MessagePackConverter bare = ((IMessagePackConverterInternal)converter).UnwrapReferencePreservation();
 				bool byName = expected is Enum && bare.GetType().Name.StartsWith("EnumAsStringConverter", StringComparison.Ordinal);
-				return ForScalar(name, property, keyIndex: null, expected, converter, byName);
+				SerializationContext captureContext = SerializationContext.ForConstruction(owner, property.PropertyType.Provider);
+				return ForScalar(name, property, keyIndex: null, expected, converter, byName, captureContext);
 			}
 
 			private static bool IsSupported(Type type)

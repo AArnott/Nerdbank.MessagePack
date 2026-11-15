@@ -323,6 +323,24 @@ public record struct SerializationContext
 	}
 
 	/// <summary>
+	/// Creates a context that can encode a value while a converter is being built.
+	/// </summary>
+	/// <param name="cache">The converter cache.</param>
+	/// <param name="provider">The shape provider for nested converters, when the value has one.</param>
+	/// <returns>A context with the cache, extension type codes, and the default depth budget.</returns>
+	/// <remarks>
+	/// This context does not carry <see cref="MessagePackSerializer.StartingContext"/>.
+	/// Converter construction has no caller-supplied context.
+	/// </remarks>
+	internal static SerializationContext ForConstruction(ConverterCache cache, ITypeShapeProvider? provider)
+		=> new()
+		{
+			Cache = cache,
+			ExtensionTypeCodes = cache.LibraryExtensionTypeCodes,
+			TypeShapeProvider = provider,
+		};
+
+	/// <summary>
 	/// Starts a new serialization operation.
 	/// </summary>
 	/// <param name="owner">The owning serializer.</param>
