@@ -31,6 +31,20 @@ public partial class SampleOutputTests
 
 	public static IEnumerable<string> OutputNames()
 	{
+		foreach (string name in KnownOutputNames())
+		{
+#if !NET11_0_OR_GREATER
+			if (name == "Unions.DocumentChange.json")
+			{
+				continue;
+			}
+#endif
+			yield return name;
+		}
+	}
+
+	public static IEnumerable<string> KnownOutputNames()
+	{
 		yield return "Unions.LossyFarm.json";
 		yield return "Unions.RoundtrippingFarmAnimal.json";
 		yield return "Unions.HorsePen.json";
@@ -39,6 +53,7 @@ public partial class SampleOutputTests
 		yield return "Unions.FlattenedAnimal.json";
 		yield return "Unions.DuckTyping.json";
 		yield return "Unions.WireFormat.json";
+		yield return "Unions.DocumentChange.json";
 	}
 
 	[Test]
@@ -67,7 +82,7 @@ public partial class SampleOutputTests
 	[Test]
 	public void OutputDirectoryHasNoExtraFiles()
 	{
-		HashSet<string> names = new(OutputNames(), StringComparer.Ordinal);
+		HashSet<string> names = new(KnownOutputNames(), StringComparer.Ordinal);
 		if (!Directory.Exists(OutputPath))
 		{
 			Assert.Fail($"Sample output directory '{OutputPath}' does not exist.");
@@ -108,6 +123,10 @@ public partial class SampleOutputTests
 			"Unions.FlattenedAnimal.json" => Line<Sample1.FlattenedAnimal.Farm, Witness>(serializer, UnionSampleOutput.Graphs.FlattenedAnimal()),
 			"Unions.DuckTyping.json" => DuckTypingLines(),
 			"Unions.WireFormat.json" => WireFormatLines(serializer),
+#if NET11_0_OR_GREATER
+			"Unions.DocumentChange.json" => Line<CSharpUnions.DocumentChange, Witness>(serializer, UnionSampleOutput.Graphs.DocumentChangeCreate())
+				+ Line<CSharpUnions.DocumentChange, Witness>(serializer, UnionSampleOutput.Graphs.DocumentChangeEdit()),
+#endif
 			_ => throw new ArgumentException($"No sample produces '{name}'.", nameof(name)),
 		};
 	}
@@ -189,5 +208,8 @@ public partial class SampleOutputTests
 	[GenerateShapeFor<Sample1.HorseBreeds.BreedPen>]
 	[GenerateShapeFor<MultiLevelAnimals.Farm>]
 	[GenerateShapeFor<Sample1.FlattenedAnimal.Farm>]
+#if NET11_0_OR_GREATER
+	[GenerateShapeFor<CSharpUnions.DocumentChange>]
+#endif
 	private partial class Witness;
 }

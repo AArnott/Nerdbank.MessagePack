@@ -754,6 +754,24 @@ internal class ObjectArrayConverter<T>(
 					continue;
 				}
 
+				if (property is DiscriminatorPropertyAccessors<T> discriminatorProperty)
+				{
+					JsonObject discriminatorSchema = discriminatorProperty.CreateSchema(context);
+					string discriminatorName = i.ToString(CultureInfo.InvariantCulture);
+					propertiesObject.Add(discriminatorName, discriminatorSchema);
+					while (items.Count < i)
+					{
+						items.Add((JsonNode)new JsonObject
+						{
+							["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
+							["description"] = "This is an undocumented element that is ignored by the deserializer and always serialized as null.",
+						});
+					}
+
+					items.Add(discriminatorSchema.DeepClone());
+					continue;
+				}
+
 				IParameterShape? associatedParameter = null;
 				ctorParams?.TryGetValue(property.Shape.Name, out associatedParameter);
 

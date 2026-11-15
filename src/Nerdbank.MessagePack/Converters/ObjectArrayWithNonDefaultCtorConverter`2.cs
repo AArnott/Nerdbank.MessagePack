@@ -47,6 +47,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		TArgumentState argState = argStateCtor();
 		UnusedDataPacket.Array? unused = null;
 		TDeclaringType value;
+		bool discriminatorSeen = false;
 
 		try
 		{
@@ -60,6 +61,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					if (index >= 0 && index < properties.Length && parameters[index] is { } deserialize)
 					{
 						deserialize.Read(ref argState, ref reader, context);
+					}
+					else if (this.TryReadKeyedDiscriminator(index, ref reader, context, ref discriminatorSeen))
+					{
 					}
 					else
 					{
@@ -83,6 +87,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 					if (parameters.Length > i && parameters[i] is { } deserialize)
 					{
 						deserialize.Read(ref argState, ref reader, context);
+					}
+					else if (this.TryReadKeyedDiscriminator(i, ref reader, context, ref discriminatorSeen))
+					{
 					}
 					else if (this.UnusedDataProperty?.Setter is not null)
 					{
@@ -137,6 +144,7 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		TArgumentState argState = argStateCtor();
 		UnusedDataPacket.Array? unused = null;
 		TDeclaringType value;
+		bool discriminatorSeen = false;
 
 		try
 		{
@@ -169,6 +177,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 						if (propertyIndex >= 0 && propertyIndex < parameters.Length && parameters[propertyIndex] is { Read: { } deserialize })
 						{
 							deserialize(ref argState, ref syncReader, context);
+						}
+						else if (this.TryReadKeyedDiscriminator(propertyIndex, ref syncReader, context, ref discriminatorSeen))
+						{
 						}
 						else if (this.UnusedDataProperty?.Setter is not null)
 						{
@@ -238,6 +249,9 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 							{
 								deserialize(ref argState, ref syncReader, context);
 							}
+							else if (this.TryReadKeyedDiscriminator(i, ref syncReader, context, ref discriminatorSeen))
+							{
+							}
 							else if (this.UnusedDataProperty?.Setter is not null)
 							{
 								unused ??= new();
@@ -303,5 +317,31 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 		}
 
 		return value;
+	}
+
+	/// <summary>Reads a keyed union discriminator at <paramref name="index"/>.</summary>
+	/// <param name="index">The array or int-map index.</param>
+	/// <param name="reader">The reader positioned at the value.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="seen">Whether this discriminator has already been read.</param>
+	/// <returns><see langword="true"/> when <paramref name="index"/> is the discriminator.</returns>
+	private bool TryReadKeyedDiscriminator(int index, ref MessagePackReader reader, SerializationContext context, ref bool seen)
+	{
+		if (index < 0 || index >= properties.Length || properties[index] is not DiscriminatorPropertyAccessors<TDeclaringType> discriminator)
+		{
+			return false;
+		}
+
+		if (seen)
+		{
+			throw new MessagePackSerializationException($"The property '{discriminator.Binding.Name}' has already been assigned a value.")
+			{
+				Code = MessagePackSerializationException.ErrorCode.DoublePropertyAssignment,
+			};
+		}
+
+		seen = true;
+		discriminator.Read(ref reader, context);
+		return true;
 	}
 }

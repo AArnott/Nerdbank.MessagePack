@@ -36,3 +36,8 @@ NBMsgPack105 | Migration | Info | Implement IMessagePackSerializationCallbacks
 NBMsgPack106 | Migration | Info | Use ConstructorShapeAttribute
 NBMsgPack110 | Usage | Warning | Add DefaultValueAttribute when using non-default initializers
 NBMsgPack120 | Usage | Error | IMessagePackSerializationCallbacks is only supported on reference types
+NBMsgPack130 | Usage | Warning | Union discriminator must be a matching constant
+NBMsgPack131 | Usage | Error | Union discriminator must be one get-only member
+NBMsgPack132 | Usage | Error | Union discriminator value type is not supported
+NBMsgPack133 | Usage | Error | Union cases must share a discriminator name and distinct values
+NBMsgPack134 | Usage | Warning | Key the union discriminator at 0

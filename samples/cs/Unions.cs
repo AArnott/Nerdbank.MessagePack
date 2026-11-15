@@ -368,6 +368,23 @@ namespace CSharpUnions
             #endregion
         }
     }
+
+    #region DocumentChange
+    [GenerateShape]
+    public partial union DocumentChange(CreateFile, TextDocumentEdit);
+
+    public record CreateFile(string Uri)
+    {
+        [UnionDiscriminator("create")]
+        public string Kind => "create";
+    }
+
+    public record TextDocumentEdit(TextDocument TextDocument, TextEdit[] Edits);
+
+    public record TextDocument(string Uri);
+
+    public record TextEdit(string NewText);
+    #endregion
 }
 #endif
 
@@ -440,5 +457,11 @@ namespace UnionSampleOutput
         public static DuckTyping.Cat Cat() => new("Whiskers", 13);
 
         public static RuntimeSubTypes.UseDiscriminatorObjectsSample.A DiscriminatorObject() => new(1);
+
+#if NET11_0_OR_GREATER
+        public static CSharpUnions.DocumentChange DocumentChangeCreate() => new CSharpUnions.CreateFile("file:///a.cs");
+
+        public static CSharpUnions.DocumentChange DocumentChangeEdit() => new CSharpUnions.TextDocumentEdit(new("file:///a.cs"), []);
+#endif
     }
 }
