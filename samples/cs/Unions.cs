@@ -305,6 +305,17 @@ namespace DuckTyping
         };
     }
     #endregion
+
+    #region OutOfOrderDiscriminator
+    public class TrustedAnimalShelter
+    {
+        public MessagePackSerializer Serializer { get; } = new()
+        {
+            // A discriminator that is not the first property buffers the whole union value.
+            AllowOutOfOrderDiscriminator = true,
+        };
+    }
+    #endregion
 }
 
 #if NET11_0_OR_GREATER

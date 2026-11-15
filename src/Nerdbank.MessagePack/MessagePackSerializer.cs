@@ -165,6 +165,13 @@ public partial record MessagePackSerializer
 		init => this.configuration = this.configuration with { UseDiscriminatorObjects = value };
 	}
 
+	/// <inheritdoc cref="SerializerConfiguration.AllowOutOfOrderDiscriminator"/>
+	public bool AllowOutOfOrderDiscriminator
+	{
+		get => this.configuration.AllowOutOfOrderDiscriminator;
+		init => this.configuration = this.configuration with { AllowOutOfOrderDiscriminator = value };
+	}
+
 	/// <summary>
 	/// Gets the starting context to begin (de)serializations with.
 	/// </summary>
