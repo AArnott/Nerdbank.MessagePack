@@ -93,6 +93,9 @@ internal class ConverterCache(SerializerConfiguration configuration)
 	/// <inheritdoc cref="SerializerConfiguration.UseDiscriminatorObjects"/>
 	internal bool UseDiscriminatorObjects => configuration.UseDiscriminatorObjects;
 
+	/// <inheritdoc cref="SerializerConfiguration.LibraryExtensionTypeCodes"/>
+	internal LibraryReservedMessagePackExtensionTypeCode LibraryExtensionTypeCodes => configuration.LibraryExtensionTypeCodes;
+
 	/// <inheritdoc cref="SerializerConfiguration.UnionTypeAliasProvider"/>
 	internal IUnionTypeAliasProvider? UnionTypeAliasProvider => configuration.UnionTypeAliasProvider;
 

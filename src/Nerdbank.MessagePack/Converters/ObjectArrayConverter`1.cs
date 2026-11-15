@@ -623,6 +623,18 @@ internal class ObjectArrayConverter<T>(
 					{
 						// The property name has already been buffered.
 						int propertyIndex = syncReader.ReadInt32();
+						if (propertyIndex >= 0 && propertyIndex < properties.Length && properties.Span[propertyIndex] is DiscriminatorPropertyAccessors<T> { Shape.Position: int discriminatorPosition } discriminator)
+						{
+							collisionDetection.MarkAsRead(discriminatorPosition);
+							reader.ReturnReader(ref syncReader);
+							await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+							syncReader = reader.CreateBufferedReader();
+							discriminator.Read(ref syncReader, context);
+							reader.ReturnReader(ref syncReader);
+							remainingEntries--;
+							continue;
+						}
+
 						if (propertyIndex >= 0 && propertyIndex < properties.Length && properties.Span[propertyIndex] is { PreferAsyncSerialization: true, MsgPackReaders: { } propertyReader, Shape.Position: int shapePosition })
 						{
 							collisionDetection.MarkAsRead(shapePosition);
@@ -751,6 +763,24 @@ internal class ObjectArrayConverter<T>(
 			{
 				if (properties.Span[i] is not PropertyAccessors<T> property)
 				{
+					continue;
+				}
+
+				if (property is DiscriminatorPropertyAccessors<T> discriminatorProperty)
+				{
+					JsonObject discriminatorSchema = discriminatorProperty.CreateSchema(context);
+					string discriminatorName = i.ToString(CultureInfo.InvariantCulture);
+					propertiesObject.Add(discriminatorName, discriminatorSchema);
+					while (items.Count < i)
+					{
+						items.Add((JsonNode)new JsonObject
+						{
+							["type"] = new JsonArray("number", "integer", "string", "boolean", "object", "array", "null"),
+							["description"] = "This is an undocumented element that is ignored by the deserializer and always serialized as null.",
+						});
+					}
+
+					items.Add(discriminatorSchema.DeepClone());
 					continue;
 				}
 

@@ -246,11 +246,13 @@ internal class DirectPropertyAccess<TDeclaringType, TValue>(
 /// <param name="deserializers">Deserializable properties on the data type.</param>
 /// <param name="parameterMapping">The constructor argument mapping.</param>
 /// <param name="unusedDataProperty">The special unused data property, if present.</param>
+/// <param name="discriminator">The name-keyed union discriminator, when the type declares one.</param>
 internal class MapConstructorVisitorInputs<TDeclaringType>(
 	MapSerializableProperties<TDeclaringType> serializers,
 	MapDeserializableProperties<TDeclaringType> deserializers,
 	ConstructorParameterMapping parameterMapping,
-	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty) : IMapConstructorVisitorInputs
+	DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? unusedDataProperty,
+	UnionDiscriminatorBinding? discriminator = null) : IMapConstructorVisitorInputs
 {
 	/// <summary>Gets the serializable properties on the data type.</summary>
 	public MapSerializableProperties<TDeclaringType> Serializers => serializers;
@@ -263,6 +265,9 @@ internal class MapConstructorVisitorInputs<TDeclaringType>(
 
 	/// <summary>Gets the special unused data property, if present.</summary>
 	public DirectPropertyAccess<TDeclaringType, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
+
+	/// <summary>Gets the name-keyed union discriminator, when the type declares one.</summary>
+	public UnionDiscriminatorBinding? Discriminator => discriminator;
 }
 
 /// <summary>

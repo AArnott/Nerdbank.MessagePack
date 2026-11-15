@@ -17,13 +17,15 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="constructor">The default constructor, if present.</param>
 /// <param name="propertyShapes">The property shapes.</param>
 /// <param name="defaultValuesPolicy">The policy for whether to serialize properties. When not <see cref="SerializeDefaultValuesPolicy.Always"/>, the <see cref="SerializableProperty{TDeclaringType}.ShouldSerialize"/> property will be consulted prior to serialization.</param>
+/// <param name="discriminator">The union discriminator, when this object is a name-keyed map that declares one.</param>
 internal class ObjectMapConverter<T>(
 	MapSerializableProperties<T> serializable,
 	MapDeserializableProperties<T>? deserializable,
 	DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty,
 	Func<T>? constructor,
 	IReadOnlyList<IPropertyShape> propertyShapes,
-	SerializeDefaultValuesPolicy defaultValuesPolicy) : ObjectConverterBase<T>, IUnknownUnionCaseFallback<T>, IObjectMapWriter
+	SerializeDefaultValuesPolicy defaultValuesPolicy,
+	UnionDiscriminatorBinding? discriminator = null) : ObjectConverterBase<T>, IUnknownUnionCaseFallback<T>, IObjectMapWriter
 {
 	/// <inheritdoc/>
 	public override bool PreferAsyncSerialization => true;
@@ -36,9 +38,17 @@ internal class ObjectMapConverter<T>(
 	/// </summary>
 	protected DirectPropertyAccess<T, UnusedDataPacket>? UnusedDataProperty => unusedDataProperty;
 
+	/// <summary>Gets the name-keyed union discriminator, when the type declares one.</summary>
+	private protected UnionDiscriminatorBinding? MapDiscriminator => discriminator;
+
 	/// <inheritdoc/>
 	bool IObjectMapWriter.WritesProperty(string serializedName)
 	{
+		if (discriminator is not null && string.Equals(discriminator.Name, serializedName, StringComparison.Ordinal))
+		{
+			return true;
+		}
+
 		foreach (SerializableProperty<T> property in serializable.Properties.Span)
 		{
 			if (string.Equals(property.Name, serializedName, StringComparison.Ordinal))
@@ -97,7 +107,7 @@ internal class ObjectMapConverter<T>(
 			SerializableProperty<T>[] include = ArrayPool<SerializableProperty<T>>.Shared.Rent(serializable.Properties.Length);
 			try
 			{
-				WriteProperties(ref writer, value, this.GetPropertiesToSerialize(value, include.AsMemory()).Span, unusedDataProperty, context);
+				WriteProperties(ref writer, value, this.GetPropertiesToSerialize(value, include.AsMemory()).Span, unusedDataProperty, discriminator, context);
 			}
 			finally
 			{
@@ -106,15 +116,16 @@ internal class ObjectMapConverter<T>(
 		}
 		else
 		{
-			WriteProperties(ref writer, value, serializable.Properties.Span, unusedDataProperty, context);
+			WriteProperties(ref writer, value, serializable.Properties.Span, unusedDataProperty, discriminator, context);
 		}
 
 		callbacks?.OnAfterSerialize();
 
-		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty, in SerializationContext context)
+		static void WriteProperties(ref MessagePackWriter writer, in T value, ReadOnlySpan<SerializableProperty<T>> properties, DirectPropertyAccess<T, UnusedDataPacket>? unusedDataProperty, UnionDiscriminatorBinding? discriminator, in SerializationContext context)
 		{
 			UnusedDataPacket.Map? unused = unusedDataProperty?.Getter?.Invoke(ref Unsafe.AsRef(in value)) as UnusedDataPacket.Map;
-			writer.WriteMapHeader(properties.Length + (unused?.Count ?? 0));
+			writer.WriteMapHeader(properties.Length + (unused?.Count ?? 0) + (discriminator is null ? 0 : 1));
+			discriminator?.Write(ref writer, context);
 			foreach (SerializableProperty<T> property in properties)
 			{
 				writer.WriteRaw(property.RawPropertyNameString.Span);
@@ -154,7 +165,12 @@ internal class ObjectMapConverter<T>(
 			}
 
 			MessagePackWriter syncWriter = writer.CreateWriter();
-			syncWriter.WriteMapHeader(propertiesToSerialize.Length + (unused?.Count ?? 0));
+			syncWriter.WriteMapHeader(propertiesToSerialize.Length + (unused?.Count ?? 0) + (discriminator is null ? 0 : 1));
+			if (discriminator is not null)
+			{
+				discriminator.Write(ref syncWriter, context);
+			}
+
 			for (int i = 0; i < propertiesToSerialize.Length; i++)
 			{
 				SerializableProperty<T> property = propertiesToSerialize.Span[i];
@@ -209,7 +225,7 @@ internal class ObjectMapConverter<T>(
 			return default;
 		}
 
-		if (constructor is null || deserializable is null)
+		if (constructor is null || (deserializable is null && discriminator is null))
 		{
 			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
 		}
@@ -220,19 +236,23 @@ internal class ObjectMapConverter<T>(
 		callbacks?.OnBeforeDeserialize();
 		PropertyCollisionDetection collisionDetection = new(propertyShapes);
 		UnusedDataPacket.Map? unused = null;
+		bool discriminatorSeen = false;
 
 		if (!typeof(T).IsValueType)
 		{
 			context.ReportObjectConstructed(value);
 		}
 
-		if (deserializable.Readers is not null)
+		if (deserializable?.Readers is not null || discriminator is not null)
 		{
 			int count = reader.ReadMapHeader();
 			for (int i = 0; i < count; i++)
 			{
 				ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
-				if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
+				if (this.TryReadDiscriminator(propertyName, ref reader, context, ref discriminatorSeen))
+				{
+				}
+				else if (deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader) is true)
 				{
 					collisionDetection.MarkAsRead(propertyReader.ShapePosition);
 					propertyReader.Read(ref value, ref reader, context);
@@ -280,7 +300,7 @@ internal class ObjectMapConverter<T>(
 			return default;
 		}
 
-		if (constructor is null || deserializable is null)
+		if (constructor is null || (deserializable is null && discriminator is null))
 		{
 			throw new NotSupportedException($"The {typeof(T).FullName} type cannot be deserialized.");
 		}
@@ -291,13 +311,14 @@ internal class ObjectMapConverter<T>(
 		callbacks?.OnBeforeDeserialize();
 		PropertyCollisionDetection collisionDetection = new(propertyShapes);
 		UnusedDataPacket.Map? unused = null;
+		bool discriminatorSeen = false;
 
 		if (!typeof(T).IsValueType)
 		{
 			context.ReportObjectConstructed(value);
 		}
 
-		if (deserializable.Readers is not null)
+		if (deserializable?.Readers is not null || discriminator is not null)
 		{
 			int mapEntries;
 			while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -317,7 +338,10 @@ internal class ObjectMapConverter<T>(
 				for (int i = 0; i < bufferedEntries; i++)
 				{
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-					if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
+					if (this.TryReadDiscriminator(propertyName, ref syncReader, context, ref discriminatorSeen))
+					{
+					}
+					else if (deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader) is true)
 					{
 						collisionDetection.MarkAsRead(propertyReader.ShapePosition);
 						propertyReader.Read(ref value, ref syncReader, context);
@@ -343,7 +367,26 @@ internal class ObjectMapConverter<T>(
 					{
 						// The property name has already been buffered.
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-						if (deserializable.Readers.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader))
+						if (discriminator?.Matches(propertyName) is true)
+						{
+							if (discriminatorSeen)
+							{
+								throw new MessagePackSerializationException($"The property '{discriminator.Name}' has already been assigned a value.")
+								{
+									Code = MessagePackSerializationException.ErrorCode.DoublePropertyAssignment,
+								};
+							}
+
+							reader.ReturnReader(ref syncReader);
+							await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+							syncReader = reader.CreateBufferedReader();
+							discriminator.Read(ref syncReader, context);
+							discriminatorSeen = true;
+							reader.ReturnReader(ref syncReader);
+							remainingEntries--;
+							continue;
+						}
+						else if (deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader) is true)
 						{
 							collisionDetection.MarkAsRead(propertyReader.ShapePosition);
 							if (propertyReader.PreferAsyncSerialization)
@@ -435,11 +478,16 @@ internal class ObjectMapConverter<T>(
 			["type"] = "object",
 		};
 
-		if (objectShape.Properties.Count > 0)
+		if (objectShape.Properties.Count > 0 || discriminator is not null)
 		{
 			Dictionary<string, IParameterShape>? ctorParams = CreatePropertyAndParameterDictionary(objectShape);
 
 			JsonObject properties = new();
+			if (discriminator is not null)
+			{
+				properties.Add(discriminator.Name, discriminator.CreateSchema(context));
+			}
+
 			JsonArray? required = null;
 			for (int i = 0; i < serializable.Properties.Length; i++)
 			{
@@ -589,7 +637,38 @@ internal class ObjectMapConverter<T>(
 	/// </remarks>
 	private protected virtual bool TryMatchPropertyName(ReadOnlySpan<byte> propertyName, string expectedName)
 	{
+		if (discriminator?.Source is { } source && discriminator.Matches(propertyName) && source.Name == expectedName)
+		{
+			return true;
+		}
+
 		return deserializable?.Readers?.TryGetValue(propertyName, out DeserializableProperty<T>? propertyReader) is true && propertyReader.Name == expectedName;
+	}
+
+	/// <summary>Reads the union discriminator when <paramref name="propertyName"/> is its key.</summary>
+	/// <param name="propertyName">The UTF-8 map key.</param>
+	/// <param name="reader">The reader positioned at the value.</param>
+	/// <param name="context">The serialization context.</param>
+	/// <param name="seen">Whether this discriminator has already been read.</param>
+	/// <returns><see langword="true"/> when the key belonged to the discriminator.</returns>
+	private protected bool TryReadDiscriminator(ReadOnlySpan<byte> propertyName, ref MessagePackReader reader, SerializationContext context, ref bool seen)
+	{
+		if (discriminator is null || !discriminator.Matches(propertyName))
+		{
+			return false;
+		}
+
+		if (seen)
+		{
+			throw new MessagePackSerializationException($"The property '{discriminator.Name}' has already been assigned a value.")
+			{
+				Code = MessagePackSerializationException.ErrorCode.DoublePropertyAssignment,
+			};
+		}
+
+		seen = true;
+		discriminator.Read(ref reader, context);
+		return true;
 	}
 
 	private Memory<SerializableProperty<T>> GetPropertiesToSerialize(in T value, Memory<SerializableProperty<T>> include)

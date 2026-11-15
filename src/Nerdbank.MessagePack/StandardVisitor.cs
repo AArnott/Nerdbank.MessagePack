@@ -72,6 +72,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		return NonPrimitiveObjectHelper();
 		ConverterResult NonPrimitiveObjectHelper()
 		{
+			UnionDiscriminatorBinding? discriminator = UnionDiscriminatorBinding.Create(objectShape, this.owner, this.GetMemberConverterOrThrow);
 			IConstructorShape? ctorShape = objectShape.Constructor;
 
 			ConstructorParameterMapping? parameterMapping = ctorShape is not null ? new(ctorShape, property => this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider)) : null;
@@ -99,6 +100,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 
 				propertyIndex++;
+				if (discriminator?.Source is not null && ReferenceEquals(property, discriminator.Source))
+				{
+					continue;
+				}
+
 				string propertyName = this.owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 
 				IParameterShape? matchingConstructorParameter = parameterMapping?.GetParameter(property);
@@ -160,6 +166,23 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				}
 			}
 
+			if (discriminator?.KeyIndex is int discriminatorIndex)
+			{
+				propertyAccessors ??= new();
+				while (propertyAccessors.Count <= discriminatorIndex)
+				{
+					propertyAccessors.Add(null);
+				}
+
+				if (propertyAccessors[discriminatorIndex] is not null)
+				{
+					throw new NotSupportedException($"Type '{typeof(T).FullName}' assigns union discriminator index {discriminatorIndex}, which is already used.");
+				}
+
+				propertyAccessors[discriminatorIndex] = (discriminator.Name, new DiscriminatorPropertyAccessors<T>(discriminator));
+			}
+
+			UnionDiscriminatorBinding? mapDiscriminator = discriminator?.KeyIndex is null ? discriminator : null;
 			ConverterResult converter;
 			if (propertyAccessors is not null)
 			{
@@ -228,7 +251,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 					MapDeserializableProperties<T> deserializableMap = new(propertyReaders);
 					if (ctorShape is not null)
 					{
-						MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, parameterMapping!, unusedDataPropertyAccess);
+						MapConstructorVisitorInputs<T> inputs = new(serializableMap, deserializableMap, parameterMapping!, unusedDataPropertyAccess, mapDiscriminator);
 						converter = (ConverterResult)ctorShape.Accept(this, inputs)!;
 					}
 					else
@@ -240,7 +263,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 							unusedDataPropertyAccess,
 							ctor,
 							objectShape.Properties,
-							this.owner.SerializeDefaultValues));
+							this.owner.SerializeDefaultValues,
+							mapDiscriminator));
 					}
 				}
 			}
@@ -298,6 +322,7 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			};
 		}
 
+		UnionDiscriminatorBinding.ValidateUnion(unionShape.UnionCases.Select(static unionCase => unionCase.UnionCaseType), this.owner, this.GetMemberConverterOrThrow);
 		IUnionTypeAliasProvider? aliasProvider = unionShape.UnionKind == UnionTypeShapeKind.CSharpUnion ? this.owner.UnionTypeAliasProvider : null;
 		if (aliasProvider is UnionCaseMappingCollection mappings && mappings.ValidateUnionCases(unionShape) is VisitorError mappingError)
 		{
@@ -690,7 +715,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				new MapDeserializableProperties<TArgumentState>(parameters),
 				constructorShape.Parameters,
 				this.owner.SerializeDefaultValues,
-				this.owner.DeserializeDefaultValues));
+				this.owner.DeserializeDefaultValues,
+				inputs.Discriminator));
 		}
 
 		object? ArrayHelperNonEmptyCtor(ArrayConstructorVisitorInputs<TDeclaringType> inputs)
@@ -1029,6 +1055,11 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
 		=> ConverterResult.Err("Delegate types cannot be serialized.");
 
+	/// <summary>Gets a converter for <paramref name="shape"/>, or throws when one cannot be created.</summary>
+	/// <param name="shape">The type shape.</param>
+	/// <returns>The converter.</returns>
+	protected MessagePackConverter GetConverterOrThrow(ITypeShape shape) => this.GetConverter(shape).ValueOrThrow;
+
 	/// <summary>
 	/// Gets or creates a converter for the given type shape.
 	/// </summary>
@@ -1185,7 +1216,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			inputs.UnusedDataProperty,
 			defaultConstructor,
 			constructorShape.DeclaringType.Properties,
-			this.owner.SerializeDefaultValues));
+			this.owner.SerializeDefaultValues,
+			inputs.Discriminator));
 	}
 
 	private Result<SubTypes<TBaseType>, VisitorError> CreateSubTypes<TBaseType>(Type baseType, MessagePackConverter<TBaseType> baseTypeConverter, IDerivedTypeMapping mapping)
@@ -1194,6 +1226,8 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 		{
 			return SubTypes<TBaseType>.DisabledInstance;
 		}
+
+		UnionDiscriminatorBinding.ValidateUnion(mapping.GetDerivedTypesMapping().Values, this.owner, this.GetMemberConverterOrThrow);
 
 		Dictionary<int, MessagePackConverter> deserializeByIntData = new();
 		Dictionary<ReadOnlyMemory<byte>, MessagePackConverter> deserializeByUtf8Data = new();
@@ -1279,6 +1313,19 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return ConverterResult.Err(new NotSupportedException("Duck typing requires name-keyed maps, but PerfOverSchemaStability serializes objects as arrays."));
 		}
 
+		List<ITypeShape> discriminatorCases = new(duckTyping.DerivedShapes.Length + 1);
+		if (duckTyping.BaseType is { IsAbstract: false, IsInterface: false })
+		{
+			discriminatorCases.Add(duckTyping.BaseShape);
+		}
+
+		foreach (ITypeShape derivedShape in duckTyping.DerivedShapes.Span)
+		{
+			discriminatorCases.Add(DuckTypingRequiredMembers.ObjectView(derivedShape));
+		}
+
+		UnionDiscriminatorBinding.ValidateUnion(discriminatorCases, this.owner, this.GetMemberConverterOrThrow);
+
 		// The concrete base uses the object converter already built for this visit. Accepting the base shape again would re-enter the union.
 		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length + 1);
 		if (duckTyping.BaseType is { IsAbstract: false, IsInterface: false })
@@ -1363,6 +1410,15 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 
 		return this.TryGetConverterFromAttribute(type, typeShape, attributeProvider, out converter);
 	}
+
+	/// <summary>Gets a discriminator converter, honoring <see cref="MessagePackConverterAttribute"/> on the member.</summary>
+	/// <param name="shape">The discriminator value type.</param>
+	/// <param name="memberAttributes">The member attributes, or <see langword="null"/> when the discriminator is declared on the type.</param>
+	/// <returns>The converter.</returns>
+	private MessagePackConverter GetMemberConverterOrThrow(ITypeShape shape, IGenericCustomAttributeProvider? memberAttributes)
+		=> memberAttributes is null
+			? this.GetConverterOrThrow(shape)
+			: this.GetConverterForMemberOrParameter(shape, memberAttributes).ValueOrThrow;
 
 	private ConverterResult GetConverterForMemberOrParameter(ITypeShape typeShape, IGenericCustomAttributeProvider attributeProvider)
 	{

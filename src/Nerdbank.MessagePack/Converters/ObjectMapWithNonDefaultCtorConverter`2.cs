@@ -17,6 +17,7 @@ namespace Nerdbank.MessagePack.Converters;
 /// <param name="parameterShapes">The parameter shapes.</param>
 /// <param name="serializeDefaultValuesPolicy"><inheritdoc cref="ObjectMapConverter{T}.ObjectMapConverter" path="/param[@name='defaultValuesPolicy']"/></param>
 /// <param name="deserializeDefaultValuesPolicy">The policy to apply when deserializing properties.</param>
+/// <param name="mapDiscriminator">The name-keyed union discriminator, when the type declares one.</param>
 internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentState>(
 	MapSerializableProperties<TDeclaringType> serializable,
 	Func<TArgumentState> argStateCtor,
@@ -25,7 +26,8 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 	MapDeserializableProperties<TArgumentState> parameters,
 	IReadOnlyList<IParameterShape> parameterShapes,
 	SerializeDefaultValuesPolicy serializeDefaultValuesPolicy,
-	DeserializeDefaultValuesPolicy deserializeDefaultValuesPolicy) : ObjectMapConverter<TDeclaringType>(serializable, null, unusedDataProperty, null, [], serializeDefaultValuesPolicy)
+	DeserializeDefaultValuesPolicy deserializeDefaultValuesPolicy,
+	UnionDiscriminatorBinding? mapDiscriminator = null) : ObjectMapConverter<TDeclaringType>(serializable, null, unusedDataProperty, null, [], serializeDefaultValuesPolicy, mapDiscriminator)
 	where TArgumentState : IArgumentState
 {
 	/// <inheritdoc/>
@@ -41,15 +43,19 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		UnusedDataPacket.Map? unused = null;
 		TDeclaringType value;
 
+		bool discriminatorSeen = false;
 		try
 		{
-			if (parameters.Readers is not null)
+			if (parameters.Readers is not null || this.MapDiscriminator is not null)
 			{
 				int count = reader.ReadMapHeader();
 				for (int i = 0; i < count; i++)
 				{
 					ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref reader);
-					if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
+					if (this.TryReadDiscriminator(propertyName, ref reader, context, ref discriminatorSeen))
+					{
+					}
+					else if (parameters.Readers?.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader) is true)
 					{
 						propertyReader.Read(ref argState, ref reader, context);
 					}
@@ -112,9 +118,10 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 		UnusedDataPacket.Map? unused = null;
 		TDeclaringType value;
 
+		bool discriminatorSeen = false;
 		try
 		{
-			if (parameters.Readers is not null)
+			if (parameters.Readers is not null || this.MapDiscriminator is not null)
 			{
 				int mapEntries;
 				while (streamingReader.TryReadMapHeader(out mapEntries).NeedsMoreBytes())
@@ -134,7 +141,10 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 					for (int i = 0; i < bufferedEntries; i++)
 					{
 						ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-						if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
+						if (this.TryReadDiscriminator(propertyName, ref syncReader, context, ref discriminatorSeen))
+						{
+						}
+						else if (parameters.Readers?.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader) is true)
 						{
 							propertyReader.Read(ref argState, ref syncReader, context);
 						}
@@ -159,7 +169,26 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 						{
 							// The property name has already been buffered.
 							ReadOnlySpan<byte> propertyName = StringEncoding.ReadStringSpan(ref syncReader);
-							if (parameters.Readers.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader))
+							if (this.MapDiscriminator?.Matches(propertyName) is true)
+							{
+								if (discriminatorSeen)
+								{
+									throw new MessagePackSerializationException($"The property '{this.MapDiscriminator.Name}' has already been assigned a value.")
+									{
+										Code = MessagePackSerializationException.ErrorCode.DoublePropertyAssignment,
+									};
+								}
+
+								reader.ReturnReader(ref syncReader);
+								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+								syncReader = reader.CreateBufferedReader();
+								this.MapDiscriminator.Read(ref syncReader, context);
+								discriminatorSeen = true;
+								reader.ReturnReader(ref syncReader);
+								remainingEntries--;
+								continue;
+							}
+							else if (parameters.Readers?.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader) is true)
 							{
 								if (propertyReader.PreferAsyncSerialization)
 								{
@@ -253,6 +282,11 @@ internal class ObjectMapWithNonDefaultCtorConverter<TDeclaringType, TArgumentSta
 	/// <inheritdoc/>
 	private protected override bool TryMatchPropertyName(ReadOnlySpan<byte> propertyName, string expectedName)
 	{
+		if (this.MapDiscriminator?.Source is { } source && this.MapDiscriminator.Matches(propertyName) && source.Name == expectedName)
+		{
+			return true;
+		}
+
 		return parameters.Readers?.TryGetValue(propertyName, out DeserializableProperty<TArgumentState>? propertyReader) is true && propertyReader.Name == expectedName;
 	}
 }

@@ -1,0 +1,2 @@
+["CreateFile",{"Kind":"create","Uri":"file:///a.cs"}]
+["TextDocumentEdit",{"TextDocument":{"Uri":"file:///a.cs"},"Edits":[]}]

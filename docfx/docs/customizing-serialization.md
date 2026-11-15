@@ -288,6 +288,9 @@ To select a dialect explicitly, pass <xref:Nerdbank.MessagePack.JsonSchemaOption
 
 Draft 4 and Draft 7 use `definitions` and array-valued `items` for positional arrays; Draft 2020-12 uses `$defs` and `prefixItems`.
 Selecting a dialect does not change the MessagePack serialization format.
+<xref:Nerdbank.MessagePack.UnionDiscriminatorAttribute> adds an optional property.
+Its schema is a `const` (a single-value `enum` in Draft 4) and it is not included in `required`.
+A keyed layout places that `const` at the member's index in `properties` and `prefixItems`.
 Unsupported dialect values are rejected rather than silently replaced with another version.
 
 Consider that custom converters registered with an @Nerdbank.MessagePack.MessagePackSerializer instance and properties set on it can affect the schema.
