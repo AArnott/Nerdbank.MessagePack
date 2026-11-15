@@ -10,7 +10,8 @@ dotnet add package Nerdbank.MessagePack
 
 [![Nerdbank.MessagePack NuGet package](https://img.shields.io/nuget/v/Nerdbank.MessagePack.svg?label=Nerdbank.MessagePack)](https://www.nuget.org/packages/Nerdbank.MessagePack)
 
-SignalR and ASP.NET Core MVC packages are covered in [Getting Started](docs/getting-started.md#installation).
+[SignalR](docs/signalr.md), [ASP.NET Core MVC](docs/aspnetmvc.md) and [Godot](docs/godot.md) packages are available too.
+[Unity support](docs/unity.md) is also available and requires no additional package.
 
 ## Highlights
 

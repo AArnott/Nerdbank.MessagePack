@@ -11,17 +11,15 @@ Consume this library via one of its NuGet packages.
 ### Supported frameworks
 
 The library targets .NET 10, .NET Framework 4.7.2, and .NET Standard 2.0.
-Dedicated .NET 8 and .NET 9 targets are no longer provided; applications on those runtimes can use the .NET Standard APIs, but the generic APIs constrained to <xref:PolyType.IShapeable`1> and Native AOT support require .NET 10 or later.
-The Godot integration requires .NET 10 or later.
 
 ### C# language version
 
-The best experience comes when you use **C# 14**.
+This library is designed with APIs that take advantage of C# 14 features, but it can be used with older C# language versions as well.
 
 * C# 12 added support for generic attributes.
 * C# 14 added extension members.
 
-When your project targets anything less than .NET 10, C# may default to an older language version, but you can still use it, provided you build with Visual Studio 2026 or the .NET 10 SDK.
+When your project targets anything less than .NET 10, C# may default to an older language version, but you can still use a later language version, provided you build with Visual Studio 2026 or the .NET 10+ SDK.
 
 You can update your C# language version by adding the following snippet to your csproj or Directory.Build.props:
 

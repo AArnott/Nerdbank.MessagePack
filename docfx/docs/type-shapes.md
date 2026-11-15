@@ -1,4 +1,4 @@
-# Type shapes
+# User-defined types
 
 This library leverages PolyType as a source generator that provides fast startup time and a consistent set of attributes that may be used for many purposes within your application.
 

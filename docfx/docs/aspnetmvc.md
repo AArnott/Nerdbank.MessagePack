@@ -1,4 +1,4 @@
-# ASP.NET MVC formatters
+# ASP.NET MVC
 
 This library provides MessagePack-based formatters for [ASP.NET MVC](https://github.com/dotnet/aspnetcore), offering significant performance improvements over the default JSON protocol.
 
