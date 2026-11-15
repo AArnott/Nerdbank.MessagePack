@@ -42,15 +42,28 @@ public sealed class UnionDiscriminatorCodeFix : CodeFixProvider
 		MemberDeclarationSyntax? member = node.FirstAncestorOrSelf<MemberDeclarationSyntax>();
 		AttributeSyntax? attribute = member?.AttributeLists.SelectMany(list => list.Attributes).FirstOrDefault(candidate => IsDiscriminator(semanticModel, candidate, context.CancellationToken));
 		ExpressionSyntax? constant = member is null ? null : ConstantExpression(member);
-		if (attribute is null || constant is null || !semanticModel.GetConstantValue(constant, context.CancellationToken).HasValue)
+		Optional<object?> constantValue = constant is null ? default : semanticModel.GetConstantValue(constant, context.CancellationToken);
+		if (attribute is null || constant is null || !constantValue.HasValue)
 		{
 			return;
+		}
+
+		ExpressionSyntax argument = constant;
+		if (ContainsTargetTypedDefault(constant))
+		{
+			ITypeSymbol? constantType = semanticModel.GetTypeInfo(constant, context.CancellationToken).Type;
+			if (LiteralFor(constantValue.Value, constantType) is not { } literal)
+			{
+				return;
+			}
+
+			argument = literal;
 		}
 
 		context.RegisterCodeFix(
 			CodeAction.Create(
 				"Use the member's constant",
-				cancellationToken => ReplaceAsync(context.Document, attribute, constant, cancellationToken),
+				cancellationToken => ReplaceAsync(context.Document, attribute, argument, cancellationToken),
 				equivalenceKey: nameof(UnionDiscriminatorCodeFix)),
 			context.Diagnostics);
 	}
@@ -80,6 +93,51 @@ public sealed class UnionDiscriminatorCodeFix : CodeFixProvider
 		if (member is FieldDeclarationSyntax { Declaration.Variables: [VariableDeclaratorSyntax { Initializer: { } initializer }] })
 		{
 			return initializer.Value;
+		}
+
+		return null;
+	}
+
+	private static bool ContainsTargetTypedDefault(ExpressionSyntax expression)
+		=> expression.DescendantNodesAndSelf().OfType<LiteralExpressionSyntax>().Any(literal => literal.IsKind(SyntaxKind.DefaultLiteralExpression));
+
+	private static ExpressionSyntax? LiteralFor(object? value, ITypeSymbol? type)
+	{
+		if (value is null || type is null)
+		{
+			return null;
+		}
+
+		return value switch
+		{
+			bool boolean => SyntaxFactory.LiteralExpression(boolean ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression),
+			string text => SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(text)),
+			char character => SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal(character)),
+			sbyte or byte or short or ushort or int => SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture))),
+			uint unsigned => SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(unsigned)),
+			long signed => SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(signed)),
+			ulong unsigned => SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(unsigned)),
+			_ when type.TypeKind == TypeKind.Enum => EnumLiteral(type, value),
+			_ => null,
+		};
+	}
+
+	private static ExpressionSyntax? EnumLiteral(ITypeSymbol type, object value)
+	{
+		if (type is not INamedTypeSymbol named)
+		{
+			return null;
+		}
+
+		foreach (ISymbol member in named.GetMembers())
+		{
+			if (member is IFieldSymbol { IsConst: true, HasConstantValue: true, ConstantValue: { } constant } && Equals(constant, value))
+			{
+				return SyntaxFactory.MemberAccessExpression(
+					SyntaxKind.SimpleMemberAccessExpression,
+					SyntaxFactory.ParseTypeName(named.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)),
+					SyntaxFactory.IdentifierName(member.Name));
+			}
 		}
 
 		return null;

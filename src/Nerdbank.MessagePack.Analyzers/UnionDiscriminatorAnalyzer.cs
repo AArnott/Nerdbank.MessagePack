@@ -210,7 +210,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 			}
 		}
 
-		return new DiscriminatorFact(name, Token(value.Type, value.Value), KeyIndex: null);
+		return new DiscriminatorFact(name, Token(value.Type, value.Value, serializedEnumName: false), KeyIndex: null);
 	}
 
 	private static DiscriminatorFact? AnalyzeMember(INamedTypeSymbol type, ISymbol member, INamedTypeSymbol discriminatorAttribute, INamedTypeSymbol? keyAttribute, INamedTypeSymbol? constructorShapeAttribute, List<Diagnostic> diagnostics, SemanticModel model, CancellationToken cancellationToken)
@@ -287,7 +287,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		}
 
 		int? keyIndex = keyAttribute is not null && TryGetKeyIndex(member, keyAttribute, out int index) ? index : null;
-		return new DiscriminatorFact(name, Token(tokenType, tokenValue), keyIndex);
+		return new DiscriminatorFact(name, Token(tokenType, tokenValue, serializedEnumName: true), keyIndex);
 	}
 
 	private static void AnalyzeUnion(INamedTypeSymbol union, IEnumerable<INamedTypeSymbol> cases, Dictionary<INamedTypeSymbol, DiscriminatorFact> facts, List<Diagnostic> diagnostics)
@@ -627,11 +627,11 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		}
 	}
 
-	private static DiscriminatorToken Token(ITypeSymbol? type, object? value)
+	private static DiscriminatorToken Token(ITypeSymbol? type, object? value, bool serializedEnumName)
 	{
 		if (type?.TypeKind == TypeKind.Enum)
 		{
-			return new DiscriminatorToken('e', type.ToDisplayString(), EnumMemberName(type, value), FormatInteger(value));
+			return new DiscriminatorToken('e', type.ToDisplayString(), EnumMemberName(type, value, serializedEnumName), FormatInteger(value));
 		}
 
 		if (value is string text)
@@ -657,7 +657,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		return new DiscriminatorToken('o', type?.ToDisplayString(), null, value?.ToString() ?? string.Empty);
 	}
 
-	private static string? EnumMemberName(ITypeSymbol type, object? value)
+	private static string? EnumMemberName(ITypeSymbol type, object? value, bool serializedName)
 	{
 		if (type is not INamedTypeSymbol named || value is null)
 		{
@@ -666,9 +666,40 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 
 		foreach (ISymbol member in named.GetMembers())
 		{
-			if (member is IFieldSymbol { IsConst: true, HasConstantValue: true, ConstantValue: { } constant } && ValuesEqual(constant, value))
+			if (member is IFieldSymbol { IsConst: true, HasConstantValue: true, ConstantValue: { } constant } field && ValuesEqual(constant, value))
 			{
-				return member.Name;
+				if (serializedName && SerializedEnumName(field) is string renamed)
+				{
+					return renamed;
+				}
+
+				return field.Name;
+			}
+		}
+
+		return null;
+	}
+
+	private static string? SerializedEnumName(IFieldSymbol field)
+	{
+		foreach (AttributeData attribute in field.GetAttributes())
+		{
+			if (attribute.AttributeClass?.Name != "EnumMemberShapeAttribute")
+			{
+				continue;
+			}
+
+			foreach (KeyValuePair<string, TypedConstant> named in attribute.NamedArguments)
+			{
+				if (named.Key == "Name" && named.Value.Value is string name)
+				{
+					return name;
+				}
+			}
+
+			if (attribute.ConstructorArguments.FirstOrDefault().Value is string positional)
+			{
+				return positional;
 			}
 		}
 
@@ -714,11 +745,6 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 			}
 
 			if (this.Kind != 'e')
-			{
-				return true;
-			}
-
-			if (string.Equals(this.Type, other.Type, StringComparison.Ordinal))
 			{
 				return true;
 			}

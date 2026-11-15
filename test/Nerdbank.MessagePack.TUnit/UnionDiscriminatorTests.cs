@@ -229,6 +229,26 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void AbstractBase_UsesTheDeclaredConstant()
+	{
+		AbstractChange? value = this.Roundtrip<AbstractChange>(new ConcreteChange { Uri = "file:///a.cs" });
+		Assert.Equal("file:///a.cs", value!.Uri);
+		Assert.Equal("create", value.Kind);
+		Assert.Contains("\"Kind\":\"create\"", this.Json(), StringComparison.Ordinal);
+	}
+
+	[Test]
+	public void MemberConverter_WritesAndChecksTheEncodedValue()
+	{
+		EncryptedCode? value = this.Roundtrip(new EncryptedCode());
+		Assert.Equal(1, value!.Code);
+		Assert.Contains("\"Code\":91", this.Json(), StringComparison.Ordinal);
+
+		MessagePackSerializationException mismatch = Assert.Throws<MessagePackSerializationException>(() => this.Read<EncryptedCode>(this.MapInteger("Code", 1L)));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.DiscriminatorMismatch, mismatch.Code);
+	}
+
+	[Test]
 	public async Task KeyedIntMap_SplitAcrossReads_ChecksTheDiscriminator()
 	{
 		// The first chunk ends after the discriminator key, so its value arrives in the next read.
@@ -695,5 +715,32 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 	{
 		[UnionDiscriminator(DeleteKind.Delete)]
 		public DeleteKind Kind => DeleteKind.Delete;
+	}
+
+	[GenerateShape, DerivedTypeShape(typeof(ConcreteChange))]
+	public abstract partial record AbstractChange
+	{
+		[UnionDiscriminator("create")]
+		public string Kind => "create";
+
+		public string? Uri { get; set; }
+	}
+
+	[GenerateShape]
+	public partial record ConcreteChange : AbstractChange;
+
+	[GenerateShape]
+	public partial record EncryptedCode
+	{
+		[MessagePackConverter(typeof(XorIntConverter))]
+		[UnionDiscriminator(1)]
+		public int Code => 1;
+	}
+
+	public class XorIntConverter : MessagePackConverter<int>
+	{
+		public override int Read(ref MessagePackReader reader, SerializationContext context) => reader.ReadInt32() ^ 0x5A;
+
+		public override void Write(ref MessagePackWriter writer, in int value, SerializationContext context) => writer.Write(value ^ 0x5A);
 	}
 }

@@ -56,9 +56,9 @@ internal sealed class UnionDiscriminatorBinding
 	/// <typeparam name="T">The object type.</typeparam>
 	/// <param name="shape">The object shape.</param>
 	/// <param name="owner">The converter cache.</param>
-	/// <param name="getConverter">Resolves a converter for a discriminator value type.</param>
+	/// <param name="getConverter">Resolves a converter for a discriminator value type. The second argument is the member's attributes when the discriminator is a member.</param>
 	/// <returns>The binding, or <see langword="null"/>.</returns>
-	internal static UnionDiscriminatorBinding? Create<T>(IObjectTypeShape<T> shape, ConverterCache owner, Func<ITypeShape, MessagePackConverter> getConverter)
+	internal static UnionDiscriminatorBinding? Create<T>(IObjectTypeShape<T> shape, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter)
 	{
 		UnionDiscriminatorAttribute? typeLevel = FirstAttribute(shape.AttributeProvider);
 		UnionDiscriminatorAttribute? memberLevel = null;
@@ -132,8 +132,8 @@ internal sealed class UnionDiscriminatorBinding
 	/// </summary>
 	/// <param name="caseShapes">The case shapes, including a concrete base when it is itself a case.</param>
 	/// <param name="owner">The converter cache.</param>
-	/// <param name="getConverter">Resolves a converter for a discriminator value type.</param>
-	internal static void ValidateUnion(IEnumerable<ITypeShape> caseShapes, ConverterCache owner, Func<ITypeShape, MessagePackConverter> getConverter)
+	/// <param name="getConverter">Resolves a converter for a discriminator value type. The second argument is the member's attributes when the discriminator is a member.</param>
+	internal static void ValidateUnion(IEnumerable<ITypeShape> caseShapes, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter)
 	{
 		UnionDiscriminatorBinding? nameKeyed = null;
 		UnionDiscriminatorBinding? keyed = null;
@@ -292,7 +292,7 @@ internal sealed class UnionDiscriminatorBinding
 		return schema;
 	}
 
-	private static UnionDiscriminatorBinding? TryCreate(ITypeShape shape, ConverterCache owner, Func<ITypeShape, MessagePackConverter> getConverter)
+	private static UnionDiscriminatorBinding? TryCreate(ITypeShape shape, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter)
 	{
 		ITypeShape bare = shape is IUnionTypeShape union ? union.BaseType : shape;
 		return bare.Accept(new ObjectFactory(owner, getConverter)) as UnionDiscriminatorBinding;
@@ -516,10 +516,10 @@ internal sealed class UnionDiscriminatorBinding
 
 	private static class MemberBinding<TDeclaring>
 	{
-		internal static UnionDiscriminatorBinding Create(IPropertyShape property, UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape)
+		internal static UnionDiscriminatorBinding Create(IPropertyShape property, UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape)
 			=> property.Accept(new Factory(attribute, owner, getConverter, shape)) as UnionDiscriminatorBinding ?? throw new NotSupportedException($"Union discriminator '{property.Name}' on '{typeof(TDeclaring).FullName}' must be an object property.");
 
-		private sealed class Factory(UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape) : TypeShapeVisitor
+		private sealed class Factory(UnionDiscriminatorAttribute attribute, ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter, IObjectTypeShape<TDeclaring> shape) : TypeShapeVisitor
 		{
 			public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
 				=> this.CreateProperty(propertyShape);
@@ -582,19 +582,36 @@ internal sealed class UnionDiscriminatorBinding
 				string name = owner.GetSerializedPropertyName(property.Name, property.AttributeProvider);
 				RejectReservedName(typeof(TDeclaringType), name);
 				EnsureUniqueName(shape, name, property, owner);
-				TProperty actual = ReadConstant(property);
-				if (actual is null)
+				bool canProbe = !typeof(TDeclaringType).IsAbstract;
+				TProperty expected;
+				if (attribute.HasValue)
+				{
+					expected = ConvertValue<TProperty>(property.Name, attribute.Value);
+				}
+				else if (canProbe)
+				{
+					expected = ReadConstant(property);
+				}
+				else
+				{
+					throw new NotSupportedException($"Union discriminator '{property.Name}' on abstract type '{typeof(TDeclaringType).FullName}' must include its constant value.");
+				}
+
+				if (expected is null)
 				{
 					throw new NotSupportedException($"Union discriminator '{property.Name}' on '{typeof(TDeclaringType).FullName}' cannot be null.");
 				}
 
-				TProperty expected = attribute.HasValue ? ConvertValue<TProperty>(property.Name, attribute.Value) : actual;
-				if (!EqualityComparer<TProperty>.Default.Equals(actual, expected))
+				if (canProbe)
 				{
-					throw new NotSupportedException($"Union discriminator '{property.Name}' on '{typeof(TDeclaringType).FullName}' returns '{actual}' instead of '{expected}'.");
+					TProperty actual = ReadConstant(property);
+					if (!EqualityComparer<TProperty>.Default.Equals(actual, expected))
+					{
+						throw new NotSupportedException($"Union discriminator '{property.Name}' on '{typeof(TDeclaringType).FullName}' returns '{actual}' instead of '{expected}'.");
+					}
 				}
 
-				MessagePackConverter converter = getConverter(property.PropertyType);
+				MessagePackConverter converter = getConverter(property.PropertyType, property.AttributeProvider);
 				MessagePackConverter bare = ((IMessagePackConverterInternal)converter).UnwrapReferencePreservation();
 				bool byName = expected is Enum && bare.GetType().Name.StartsWith("EnumAsStringConverter", StringComparison.Ordinal);
 				return ForScalar(name, property, keyIndex: null, expected, converter, byName);
@@ -669,7 +686,7 @@ internal sealed class UnionDiscriminatorBinding
 		}
 	}
 
-	private sealed class ObjectFactory(ConverterCache owner, Func<ITypeShape, MessagePackConverter> getConverter) : TypeShapeVisitor
+	private sealed class ObjectFactory(ConverterCache owner, Func<ITypeShape, IGenericCustomAttributeProvider?, MessagePackConverter> getConverter) : TypeShapeVisitor
 	{
 		public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
 			=> Create(objectShape, owner, getConverter);

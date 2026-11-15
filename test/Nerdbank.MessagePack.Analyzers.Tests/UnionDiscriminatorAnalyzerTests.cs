@@ -50,6 +50,32 @@ public class UnionDiscriminatorAnalyzerTests
 	}
 
 	[Test]
+	public async Task TargetTypedDefault_CodeFixUsesTheConstantValue()
+	{
+		string source = """
+			using Nerdbank.MessagePack;
+
+			public class Create
+			{
+				[UnionDiscriminator(true)]
+				public bool {|NBMsgPack130:Kind|} => default;
+			}
+			""";
+
+		string fixedSource = """
+			using Nerdbank.MessagePack;
+
+			public class Create
+			{
+				[UnionDiscriminator(false)]
+				public bool Kind => default;
+			}
+			""";
+
+		await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
+	}
+
+	[Test]
 	public async Task MissingKeyOnKeyedType_IsAnError()
 	{
 		string source = """
@@ -161,6 +187,47 @@ public class UnionDiscriminatorAnalyzerTests
 			[DerivedTypeShape(typeof(Create))]
 			[DerivedTypeShape(typeof(Delete))]
 			public partial class {|NBMsgPack133:Change|}
+			{
+			}
+
+			public partial class Create
+			{
+				[UnionDiscriminator(CreateKind.Create)]
+				public CreateKind Kind => CreateKind.Create;
+			}
+
+			public partial class Delete
+			{
+				[UnionDiscriminator(AlsoCreate.Create)]
+				public AlsoCreate Kind => AlsoCreate.Create;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task RenamedEnumMembers_AreNotDuplicates()
+	{
+		string source = """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public enum CreateKind
+			{
+				[EnumMemberShape(Name = "create")]
+				Create = 0,
+			}
+
+			public enum AlsoCreate
+			{
+				[EnumMemberShape(Name = "delete")]
+				Create = 0,
+			}
+
+			[DerivedTypeShape(typeof(Create))]
+			[DerivedTypeShape(typeof(Delete))]
+			public partial class Change
 			{
 			}
 
