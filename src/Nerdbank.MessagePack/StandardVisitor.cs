@@ -279,12 +279,10 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 			return failureResult;
 		}
 
-		if (baseTypeConverter.Value is UnionConverter<TUnion>)
+		if (baseTypeConverter.Value is UnionConverter<TUnion> or ShapeBasedUnionConverter<TUnion>)
 		{
-			// A runtime mapping *and* attributes are defined for the same base type.
-			// The runtime mapping has already been applied and that trumps attributes.
-			// Just return the union converter we created for the runtime mapping to avoid
-			// double-nesting.
+			// VisitObject already applied a runtime union for this base type.
+			// That mapping replaces attributes. Returning the converter avoids wrapping it again.
 			return baseTypeConverter;
 		}
 
@@ -1276,8 +1274,18 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 	/// <returns>A dictionary of <see cref="MessagePackConverter{T}"/> objects, keyed by the alias by which they will be identified in the data stream.</returns>
 	private ConverterResult CreateDuckTypingUnionConverter<TBase>(DerivedTypeDuckTyping duckTyping, MessagePackConverter<TBase> baseTypeConverter)
 	{
-		// Create converters for each member type
-		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length);
+		if (this.owner.PerfOverSchemaStability)
+		{
+			return ConverterResult.Err(new NotSupportedException("Duck typing requires name-keyed maps, but PerfOverSchemaStability serializes objects as arrays."));
+		}
+
+		// The concrete base uses the object converter already built for this visit. Accepting the base shape again would re-enter the union.
+		Dictionary<Type, MessagePackConverter> convertersByType = new(duckTyping.DerivedShapes.Length + 1);
+		if (duckTyping.BaseType is { IsAbstract: false, IsInterface: false })
+		{
+			convertersByType.Add(duckTyping.BaseType, baseTypeConverter);
+		}
+
 		foreach (ITypeShape shape in duckTyping.DerivedShapes.Span)
 		{
 			if (!typeof(TBase).IsAssignableFrom(shape.Type))
@@ -1285,16 +1293,24 @@ internal class StandardVisitor : TypeShapeVisitor, ITypeShapeFunc
 				throw new ArgumentException($"Type '{shape.Type}' is not assignable to base type '{typeof(TBase)}'.", nameof(duckTyping));
 			}
 
-			ConverterResult converter = this.GetConverterByAccept(shape);
+			// A derived case that declares its own hierarchy must serialize as that type's object, not as a tagged union.
+			ConverterResult converter = this.GetConverterByAccept(DuckTypingRequiredMembers.ObjectView(shape));
 			if (converter.TryPrepareFailPath(shape, out ConverterResult? failureResult))
 			{
 				return failureResult;
 			}
 
-			convertersByType[shape.Type] = converter.Value;
+			convertersByType.Add(shape.Type, converter.Value);
 		}
 
-		return ConverterResult.Ok(new ShapeBasedUnionConverter<TBase>(baseTypeConverter, duckTyping, convertersByType));
+		try
+		{
+			return ConverterResult.Ok(new ShapeBasedUnionConverter<TBase>(duckTyping, convertersByType, this.owner));
+		}
+		catch (Exception ex) when (ex is NotSupportedException or MessagePackSerializationException)
+		{
+			return ConverterResult.Err(ex);
+		}
 	}
 
 #if NET

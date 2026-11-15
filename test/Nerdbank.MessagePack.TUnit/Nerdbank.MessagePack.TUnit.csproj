@@ -50,6 +50,9 @@
     <AssemblyMetadata Include="ResourcesPath">
       <Value>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)','Resources','KnownGoodSchemas'))</Value>
     </AssemblyMetadata>
+    <AssemblyMetadata Include="SampleOutputPath">
+      <Value>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)','..\..\samples\cs\Output'))</Value>
+    </AssemblyMetadata>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETCoreApp'">
     <PackageReference Include="xunit.v3.assert.aot" />
@@ -64,6 +67,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FSharpUnions\FSharpUnions.fsproj" />
+    <Compile Include="..\..\samples\cs\Unions.cs" Link="Samples\Unions.cs" />
     <Compile Include="..\..\src\Nerdbank.MessagePack\InternedBuffers.cs" Link="InternedBuffers.cs" />
     <Compile Update="MessagePackReaderTests.ReadInt.cs">
       <DesignTime>True</DesignTime>
