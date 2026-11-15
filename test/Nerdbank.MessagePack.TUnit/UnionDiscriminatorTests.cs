@@ -179,6 +179,72 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void UnsignedEnum_AboveInt64_BuildsAndRoundTrips()
+	{
+		HugeKind? value = this.Roundtrip(new HugeKind { Name = "a" });
+		Assert.Equal("a", value!.Name);
+		Assert.Contains("18446744073709551615", this.Json(), StringComparison.Ordinal);
+		JsonObject schema = ObjectSchema(this.Serializer.GetJsonSchema(this.Shape<HugeKind>()));
+		Assert.Equal("18446744073709551615", schema["properties"]!["Kind"]!["const"]!.ToJsonString());
+	}
+
+	[Test]
+	public void RenamedEnum_SchemaUsesTheSerializedName()
+	{
+		MessagePackSerializer named = new() { SerializeEnumValuesByName = true };
+		byte[] msgpack = named.Serialize(new RenamedEnumCase(), this.Shape<RenamedEnumCase>());
+		Assert.Equal("""{"Kind":"create"}""", named.ConvertToJson(msgpack));
+		JsonObject schema = ObjectSchema(named.GetJsonSchema(this.Shape<RenamedEnumCase>()));
+		Assert.Equal("\"create\"", schema["properties"]!["Kind"]!["const"]!.ToJsonString());
+	}
+
+	[Test]
+	public void ReferencePreservation_DoesNotBlockStringDiscriminatorConstruction()
+	{
+		MessagePackSerializer preserving = new() { PreserveReferences = ReferencePreservationMode.RejectCycles };
+		byte[] msgpack = preserving.Serialize(new KindFirst { Uri = "file:///a.cs" }, this.Shape<KindFirst>());
+		MessagePackReader reader = new(msgpack);
+		KindFirst? value = preserving.Deserialize(ref reader, this.Shape<KindFirst>());
+		Assert.Equal("file:///a.cs", value!.Uri);
+		Assert.Equal("create", value.Kind);
+	}
+
+	[Test]
+	public void OutOfRangeInteger_IsDiscriminatorMismatch()
+	{
+		MessagePackSerializationException mismatch = Assert.Throws<MessagePackSerializationException>(() => this.Read<IntCase>(this.MapInteger("Code", 2147483648UL)));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.DiscriminatorMismatch, mismatch.Code);
+
+		MessagePackSerializationException unsigned = Assert.Throws<MessagePackSerializationException>(() => this.Read<UnsignedCase>(this.MapInteger("Code", -1L)));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.DiscriminatorMismatch, unsigned.Code);
+	}
+
+	[Test]
+	public void DistinctEnumNames_AreDistinctWhenSerializedByName()
+	{
+		MessagePackSerializer named = new() { SerializeEnumValuesByName = true };
+		byte[] msgpack = named.Serialize<EnumNameChange>(new CreateByEnum(), this.Shape<EnumNameChange>());
+		MessagePackReader reader = new(msgpack);
+		Assert.IsType<CreateByEnum>(named.Deserialize(ref reader, this.Shape<EnumNameChange>()));
+	}
+
+	[Test]
+	public async Task KeyedIntMap_SplitAcrossReads_ChecksTheDiscriminator()
+	{
+		// The first chunk ends after the discriminator key, so its value arrives in the next read.
+		KeyedLater? later = await this.ReadSplitAsync<KeyedLater>(this.IntMap((1, "create"), (0, "file:///a.cs")), splitAt: 2);
+		Assert.Equal("file:///a.cs", later!.Uri);
+		Assert.Equal("create", later.Kind);
+
+		KeyedCreate? created = await this.ReadSplitAsync<KeyedCreate>(this.IntMap((0, "create"), (1, "file:///a.cs")), splitAt: 2);
+		Assert.Equal("file:///a.cs", created!.Uri);
+
+		MessagePackSerializationException mismatch = await Assert.ThrowsAsync<MessagePackSerializationException>(
+			() => this.ReadSplitAsync<KeyedLater>(this.IntMap((1, "delete"), (0, "file:///a.cs")), splitAt: 2));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.DiscriminatorMismatch, mismatch.Code);
+	}
+
+	[Test]
 	public void ProbeInstance_DoesNotFinalizeUninitializedState()
 	{
 		_ = this.Serializer.GetJsonSchema(this.Shape<FinalizerProbe>());
@@ -283,6 +349,38 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 
 		writer.Flush();
 		return buffer.AsReadOnlySequence.ToArray();
+	}
+
+	private byte[] MapInteger(string name, object value)
+	{
+		Sequence<byte> buffer = new();
+		MessagePackWriter writer = new(buffer);
+		writer.WriteMapHeader(1);
+		writer.Write(name);
+		switch (value)
+		{
+			case ulong unsigned:
+				writer.Write(unsigned);
+				break;
+			case long signed:
+				writer.Write(signed);
+				break;
+			default:
+				throw new ArgumentException($"Unsupported integer {value.GetType()}.", nameof(value));
+		}
+
+		writer.Flush();
+		return buffer.AsReadOnlySequence.ToArray();
+	}
+
+	private async Task<T?> ReadSplitAsync<T>(byte[] msgpack, int splitAt)
+#if NET
+		where T : IShapeable<T>
+#endif
+	{
+		ReadOnlySequence<byte> sequence = new(msgpack);
+		FragmentedPipeReader pipe = new(sequence, sequence.GetPosition(splitAt));
+		return await this.Serializer.DeserializeAsync(pipe, this.Shape<T>(), this.TimeoutToken);
 	}
 
 	[GenerateShape]
@@ -545,5 +643,57 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 	{
 		Red = 1,
 		Blue = 2,
+	}
+
+	public enum Huge : ulong
+	{
+		Max = ulong.MaxValue,
+	}
+
+	public enum RenamedKind
+	{
+		[EnumMemberShape(Name = "create")]
+		Create,
+	}
+
+	public enum CreateKind
+	{
+		Create = 0,
+	}
+
+	public enum DeleteKind
+	{
+		Delete = 0,
+	}
+
+	[GenerateShape]
+	[UnionDiscriminator("Kind", Huge.Max)]
+	public partial record HugeKind
+	{
+		public string? Name { get; set; }
+	}
+
+	[GenerateShape]
+	public partial record RenamedEnumCase
+	{
+		[UnionDiscriminator(RenamedKind.Create)]
+		public RenamedKind Kind => RenamedKind.Create;
+	}
+
+	[GenerateShape, DerivedTypeShape(typeof(CreateByEnum)), DerivedTypeShape(typeof(DeleteByEnum))]
+	public abstract partial record EnumNameChange;
+
+	[GenerateShape]
+	public partial record CreateByEnum : EnumNameChange
+	{
+		[UnionDiscriminator(CreateKind.Create)]
+		public CreateKind Kind => CreateKind.Create;
+	}
+
+	[GenerateShape]
+	public partial record DeleteByEnum : EnumNameChange
+	{
+		[UnionDiscriminator(DeleteKind.Delete)]
+		public DeleteKind Kind => DeleteKind.Delete;
 	}
 }

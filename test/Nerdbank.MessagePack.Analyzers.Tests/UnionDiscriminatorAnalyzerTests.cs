@@ -115,4 +115,68 @@ public class UnionDiscriminatorAnalyzerTests
 
 		await VerifyCS.VerifyAnalyzerAsync(source);
 	}
+
+	[Test]
+	public async Task DifferentEnumNames_AreNotDuplicates()
+	{
+		string source = """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public enum CreateKind { Create = 0 }
+			public enum DeleteKind { Delete = 0 }
+
+			[DerivedTypeShape(typeof(Create))]
+			[DerivedTypeShape(typeof(Delete))]
+			public partial class Change
+			{
+			}
+
+			public partial class Create
+			{
+				[UnionDiscriminator(CreateKind.Create)]
+				public CreateKind Kind => CreateKind.Create;
+			}
+
+			public partial class Delete
+			{
+				[UnionDiscriminator(DeleteKind.Delete)]
+				public DeleteKind Kind => DeleteKind.Delete;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
+
+	[Test]
+	public async Task SameEnumMemberNameAndNumber_AreDuplicates()
+	{
+		string source = """
+			using PolyType;
+			using Nerdbank.MessagePack;
+
+			public enum CreateKind { Create = 0 }
+			public enum AlsoCreate { Create = 0 }
+
+			[DerivedTypeShape(typeof(Create))]
+			[DerivedTypeShape(typeof(Delete))]
+			public partial class {|NBMsgPack133:Change|}
+			{
+			}
+
+			public partial class Create
+			{
+				[UnionDiscriminator(CreateKind.Create)]
+				public CreateKind Kind => CreateKind.Create;
+			}
+
+			public partial class Delete
+			{
+				[UnionDiscriminator(AlsoCreate.Create)]
+				public AlsoCreate Kind => AlsoCreate.Create;
+			}
+			""";
+
+		await VerifyCS.VerifyAnalyzerAsync(source);
+	}
 }

@@ -26,7 +26,7 @@ internal sealed class UnionDiscriminatorBinding
 	private readonly object schemaValue;
 	private readonly byte[] valueBytes;
 
-	private UnionDiscriminatorBinding(string name, IPropertyShape? source, int? keyIndex, object expected, MessagePackConverter? converter, bool enumByName, string schemaType, object schemaValue)
+	private UnionDiscriminatorBinding(string name, IPropertyShape? source, int? keyIndex, object expected, MessagePackConverter? converter, bool enumByName)
 	{
 		this.Name = name;
 		this.Source = source;
@@ -34,10 +34,9 @@ internal sealed class UnionDiscriminatorBinding
 		this.expected = expected;
 		this.converter = converter;
 		this.enumByName = enumByName;
-		this.schemaType = schemaType;
-		this.schemaValue = schemaValue;
 		StringEncoding.GetEncodedStringBytes(name, out this.utf8Name, out this.msgpackName);
 		this.valueBytes = CaptureValue(this);
+		(this.schemaType, this.schemaValue) = SchemaFromCaptured(this.valueBytes, expected);
 	}
 
 	/// <summary>Gets the serialized map key.</summary>
@@ -217,11 +216,16 @@ internal sealed class UnionDiscriminatorBinding
 			case bool boolean:
 				writer.Write(boolean);
 				break;
-			case ulong unsigned:
-				writer.Write(unsigned);
-				break;
 			default:
-				writer.Write(Convert.ToInt64(this.expected, CultureInfo.InvariantCulture));
+				if (IsUnsigned(this.expected))
+				{
+					writer.Write(Convert.ToUInt64(this.expected, CultureInfo.InvariantCulture));
+				}
+				else
+				{
+					writer.Write(Convert.ToInt64(this.expected, CultureInfo.InvariantCulture));
+				}
+
 				break;
 		}
 	}
@@ -238,7 +242,7 @@ internal sealed class UnionDiscriminatorBinding
 			{
 				actual = this.converter.ReadObject(ref reader, context);
 			}
-			catch (MessagePackSerializationException ex) when (ex.Code != MessagePackSerializationException.ErrorCode.DiscriminatorMismatch)
+			catch (Exception ex) when (IsPresentMismatch(ex))
 			{
 				throw Mismatch(this.Name, ex);
 			}
@@ -258,7 +262,7 @@ internal sealed class UnionDiscriminatorBinding
 				throw Mismatch(this.Name);
 			}
 		}
-		catch (MessagePackSerializationException ex) when (ex.Code != MessagePackSerializationException.ErrorCode.DiscriminatorMismatch)
+		catch (Exception ex) when (IsPresentMismatch(ex))
 		{
 			throw Mismatch(this.Name, ex);
 		}
@@ -339,34 +343,24 @@ internal sealed class UnionDiscriminatorBinding
 	}
 
 	private static UnionDiscriminatorBinding ForScalar(string name, IPropertyShape? source, int? keyIndex, object expected, MessagePackConverter? converter, bool enumByName)
+		=> new(name, source, keyIndex, expected, converter, enumByName);
+
+	private static (string Type, object Value) SchemaFromCaptured(byte[] valueBytes, object expected)
 	{
-		(string Type, object Value) schema = SchemaValue(expected, enumByName);
-		return new UnionDiscriminatorBinding(name, source, keyIndex, expected, converter, enumByName, schema.Type, schema.Value);
-	}
-
-	private static (string Type, object Value) SchemaValue(object expected, bool enumByName)
-	{
-		if (expected is string text)
+		MessagePackReader reader = new(valueBytes);
+		switch (reader.NextMessagePackType)
 		{
-			return ("string", text);
+			case MessagePackType.String:
+				return ("string", reader.ReadString() ?? string.Empty);
+			case MessagePackType.Boolean:
+				return ("boolean", reader.ReadBoolean());
+			case MessagePackType.Integer when IsUnsigned(expected):
+				return ("integer", reader.ReadUInt64());
+			case MessagePackType.Integer:
+				return ("integer", reader.ReadInt64());
+			default:
+				throw new NotSupportedException($"Union discriminator value of type '{expected.GetType().FullName}' did not encode as a scalar.");
 		}
-
-		if (expected is bool boolean)
-		{
-			return ("boolean", boolean);
-		}
-
-		if (expected is Enum && enumByName && Enum.GetName(expected.GetType(), expected) is string enumName)
-		{
-			return ("string", enumName);
-		}
-
-		if (expected is ulong || (expected is Enum && Enum.GetUnderlyingType(expected.GetType()) == typeof(ulong)))
-		{
-			return ("integer", Convert.ToUInt64(expected, CultureInfo.InvariantCulture));
-		}
-
-		return ("integer", Convert.ToInt64(expected, CultureInfo.InvariantCulture));
 	}
 
 	private static JsonNode CreateJsonNode(object value) => value switch
@@ -447,6 +441,12 @@ internal sealed class UnionDiscriminatorBinding
 		=> type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort)
 			|| type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong);
 
+	private static bool IsUnsigned(object value)
+		=> value is ulong || (value is Enum && Enum.GetUnderlyingType(value.GetType()) == typeof(ulong));
+
+	private static bool IsPresentMismatch(Exception ex)
+		=> ex is OverflowException || (ex is MessagePackSerializationException serialization && serialization.Code != MessagePackSerializationException.ErrorCode.DiscriminatorMismatch);
+
 	private static MessagePackSerializationException Mismatch(string name, Exception? inner = null)
 		=> new($"The union discriminator '{name}' does not match the expected value.", inner)
 		{
@@ -460,7 +460,7 @@ internal sealed class UnionDiscriminatorBinding
 			return this;
 		}
 
-		return new UnionDiscriminatorBinding(this.Name, this.Source, keyIndex, this.expected, this.converter, this.enumByName, this.schemaType, this.schemaValue);
+		return new UnionDiscriminatorBinding(this.Name, this.Source, keyIndex, this.expected, this.converter, this.enumByName);
 	}
 
 	private string Token()
@@ -476,7 +476,15 @@ internal sealed class UnionDiscriminatorBinding
 	{
 		using Sequence<byte> buffer = new();
 		MessagePackWriter writer = new(buffer);
-		binding.WriteValue(ref writer, default);
+		if (binding.converter is IMessagePackConverterInternal preserved)
+		{
+			preserved.UnwrapReferencePreservation().WriteObject(ref writer, binding.expected, default);
+		}
+		else
+		{
+			binding.WriteValue(ref writer, default);
+		}
+
 		writer.Flush();
 		return buffer.AsReadOnlySequence.ToArray();
 	}
@@ -498,7 +506,7 @@ internal sealed class UnionDiscriminatorBinding
 			return string.Equals(reader.ReadString(), Enum.GetName(this.expected.GetType(), this.expected), StringComparison.Ordinal);
 		}
 
-		if (this.expected is ulong || (this.expected is Enum && Enum.GetUnderlyingType(this.expected.GetType()) == typeof(ulong)))
+		if (IsUnsigned(this.expected))
 		{
 			return reader.ReadUInt64() == Convert.ToUInt64(this.expected, CultureInfo.InvariantCulture);
 		}

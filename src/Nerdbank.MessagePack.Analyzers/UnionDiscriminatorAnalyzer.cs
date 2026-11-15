@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -209,7 +210,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 			}
 		}
 
-		return Token(value.Value) is string token ? new DiscriminatorFact(name, token, KeyIndex: null) : null;
+		return new DiscriminatorFact(name, Token(value.Type, value.Value), KeyIndex: null);
 	}
 
 	private static DiscriminatorFact? AnalyzeMember(INamedTypeSymbol type, ISymbol member, INamedTypeSymbol discriminatorAttribute, INamedTypeSymbol? keyAttribute, INamedTypeSymbol? constructorShapeAttribute, List<Diagnostic> diagnostics, SemanticModel model, CancellationToken cancellationToken)
@@ -254,10 +255,12 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 
 		AttributeData attribute = member.GetAttributes().First(candidate => SymbolEqualityComparer.Default.Equals(candidate.AttributeClass, discriminatorAttribute));
 		bool hasConstant = TryGetConstant(member, model, cancellationToken, out object? actual);
+		ITypeSymbol tokenType = memberType;
 		object? tokenValue = actual;
 		if (attribute.ConstructorArguments.Length > 0)
 		{
-			object? expected = attribute.ConstructorArguments[0].Value;
+			TypedConstant argument = attribute.ConstructorArguments[0];
+			object? expected = argument.Value;
 			if (expected is null)
 			{
 				diagnostics.Add(Diagnostic.Create(UnsupportedType, location, member.Name, "null"));
@@ -265,6 +268,7 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 			}
 
 			tokenValue = expected;
+			tokenType = memberType.TypeKind == TypeKind.Enum ? memberType : argument.Type ?? memberType;
 			if (!hasConstant || !ValuesEqual(actual, expected))
 			{
 				diagnostics.Add(Diagnostic.Create(NotConstant, location, member.Name));
@@ -283,15 +287,15 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		}
 
 		int? keyIndex = keyAttribute is not null && TryGetKeyIndex(member, keyAttribute, out int index) ? index : null;
-		return Token(tokenValue) is string token ? new DiscriminatorFact(name, token, keyIndex) : null;
+		return new DiscriminatorFact(name, Token(tokenType, tokenValue), keyIndex);
 	}
 
 	private static void AnalyzeUnion(INamedTypeSymbol union, IEnumerable<INamedTypeSymbol> cases, Dictionary<INamedTypeSymbol, DiscriminatorFact> facts, List<Diagnostic> diagnostics)
 	{
 		string? name = null;
 		int? keyIndex = null;
-		HashSet<string> nameValues = new(StringComparer.Ordinal);
-		HashSet<string> keyValues = new(StringComparer.Ordinal);
+		List<DiscriminatorToken> nameValues = [];
+		List<DiscriminatorToken> keyValues = [];
 		foreach (INamedTypeSymbol caseType in cases)
 		{
 			if (!facts.TryGetValue(caseType, out DiscriminatorFact fact))
@@ -311,11 +315,13 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 					return;
 				}
 
-				if (!nameValues.Add(fact.Token))
+				if (ContainsCollision(nameValues, fact.Token))
 				{
-					diagnostics.Add(Diagnostic.Create(UnionCases, union.Locations.FirstOrDefault(), $"Union '{union.Name}' repeats discriminator value {fact.Token}."));
+					diagnostics.Add(Diagnostic.Create(UnionCases, union.Locations.FirstOrDefault(), $"Union '{union.Name}' repeats discriminator value {fact.Token.Display}."));
 					return;
 				}
+
+				nameValues.Add(fact.Token);
 			}
 			else
 			{
@@ -329,11 +335,13 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 					return;
 				}
 
-				if (!keyValues.Add(fact.Token))
+				if (ContainsCollision(keyValues, fact.Token))
 				{
-					diagnostics.Add(Diagnostic.Create(UnionCases, union.Locations.FirstOrDefault(), $"Union '{union.Name}' repeats discriminator value {fact.Token}."));
+					diagnostics.Add(Diagnostic.Create(UnionCases, union.Locations.FirstOrDefault(), $"Union '{union.Name}' repeats discriminator value {fact.Token.Display}."));
 					return;
 				}
+
+				keyValues.Add(fact.Token);
 			}
 		}
 	}
@@ -619,27 +627,110 @@ public sealed class UnionDiscriminatorAnalyzer : DiagnosticAnalyzer
 		}
 	}
 
-	private static string? Token(object? value)
+	private static DiscriminatorToken Token(ITypeSymbol? type, object? value)
 	{
-		if (value is null)
+		if (type?.TypeKind == TypeKind.Enum)
 		{
-			return null;
+			return new DiscriminatorToken('e', type.ToDisplayString(), EnumMemberName(type, value), FormatInteger(value));
 		}
 
 		if (value is string text)
 		{
-			return "s:" + text;
+			return new DiscriminatorToken('s', null, null, text);
 		}
 
 		if (value is bool boolean)
 		{
-			return "b:" + boolean;
+			return new DiscriminatorToken('b', null, null, boolean ? "true" : "false");
 		}
 
-		return TryNumber(value, out long number) ? "n:" + number : "o:" + value;
+		if (value is ulong unsigned && unsigned > long.MaxValue)
+		{
+			return new DiscriminatorToken('u', null, null, unsigned.ToString(CultureInfo.InvariantCulture));
+		}
+
+		if (TryNumber(value, out long number))
+		{
+			return new DiscriminatorToken('n', null, null, number.ToString(CultureInfo.InvariantCulture));
+		}
+
+		return new DiscriminatorToken('o', type?.ToDisplayString(), null, value?.ToString() ?? string.Empty);
 	}
 
-	private readonly record struct DiscriminatorFact(string Name, string Token, int? KeyIndex);
+	private static string? EnumMemberName(ITypeSymbol type, object? value)
+	{
+		if (type is not INamedTypeSymbol named || value is null)
+		{
+			return null;
+		}
+
+		foreach (ISymbol member in named.GetMembers())
+		{
+			if (member is IFieldSymbol { IsConst: true, HasConstantValue: true, ConstantValue: { } constant } && ValuesEqual(constant, value))
+			{
+				return member.Name;
+			}
+		}
+
+		return null;
+	}
+
+	private static string FormatInteger(object? value)
+	{
+		if (value is ulong unsigned)
+		{
+			return unsigned.ToString(CultureInfo.InvariantCulture);
+		}
+
+		return TryNumber(value, out long number)
+			? number.ToString(CultureInfo.InvariantCulture)
+			: Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
+	}
+
+	private static bool ContainsCollision(List<DiscriminatorToken> values, DiscriminatorToken token)
+	{
+		foreach (DiscriminatorToken existing in values)
+		{
+			if (existing.NecessarilyCollides(token))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private readonly record struct DiscriminatorFact(string Name, DiscriminatorToken Token, int? KeyIndex);
+
+	private readonly record struct DiscriminatorToken(char Kind, string? Type, string? Member, string Text)
+	{
+		internal string Display => this.Kind == 'e' ? this.Member ?? this.Text : this.Text;
+
+		internal bool NecessarilyCollides(DiscriminatorToken other)
+		{
+			if (this.Kind != other.Kind || !string.Equals(this.Text, other.Text, StringComparison.Ordinal))
+			{
+				return false;
+			}
+
+			if (this.Kind != 'e')
+			{
+				return true;
+			}
+
+			if (string.Equals(this.Type, other.Type, StringComparison.Ordinal))
+			{
+				return true;
+			}
+
+			if (this.Member is null && other.Member is null)
+			{
+				return true;
+			}
+
+			return this.Member is not null && string.Equals(this.Member, other.Member, StringComparison.Ordinal);
+		}
+	}
 
 	private sealed class Scan
 	{

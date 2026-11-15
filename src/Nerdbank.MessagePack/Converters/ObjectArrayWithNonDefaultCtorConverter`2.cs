@@ -202,6 +202,26 @@ internal class ObjectArrayWithNonDefaultCtorConverter<TDeclaringType, TArgumentS
 						{
 							// The property name has already been buffered.
 							int propertyIndex = syncReader.ReadInt32();
+							if (propertyIndex >= 0 && propertyIndex < properties.Length && properties[propertyIndex] is DiscriminatorPropertyAccessors<TDeclaringType> discriminator)
+							{
+								if (discriminatorSeen)
+								{
+									throw new MessagePackSerializationException($"The property '{discriminator.Binding.Name}' has already been assigned a value.")
+									{
+										Code = MessagePackSerializationException.ErrorCode.DoublePropertyAssignment,
+									};
+								}
+
+								reader.ReturnReader(ref syncReader);
+								await reader.BufferNextStructuresAsync(1, 1, context).ConfigureAwait(false);
+								syncReader = reader.CreateBufferedReader();
+								discriminator.Read(ref syncReader, context);
+								discriminatorSeen = true;
+								reader.ReturnReader(ref syncReader);
+								remainingEntries--;
+								continue;
+							}
+
 							if (propertyIndex >= 0 && propertyIndex < parameters.Length && parameters[propertyIndex] is { PreferAsyncSerialization: true, ReadAsync: { } deserializeAsync })
 							{
 								// The next property value is async, so turn in our sync reader and read it asynchronously.
