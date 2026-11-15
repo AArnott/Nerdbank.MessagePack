@@ -210,6 +210,17 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 	}
 
 	[Test]
+	public void ReferencePreservation_NestedStringLookup_CanCaptureTheDiscriminator()
+	{
+		MessagePackSerializer preserving = new() { PreserveReferences = ReferencePreservationMode.RejectCycles };
+		byte[] msgpack = preserving.Serialize(new DelegatingString(), this.Shape<DelegatingString>());
+		Assert.Contains("\"Kind\"", preserving.ConvertToJson(msgpack), StringComparison.Ordinal);
+		MessagePackReader reader = new(msgpack);
+		DelegatingString? value = preserving.Deserialize(ref reader, this.Shape<DelegatingString>());
+		Assert.Equal("create", value!.Kind);
+	}
+
+	[Test]
 	public void OutOfRangeInteger_IsDiscriminatorMismatch()
 	{
 		MessagePackSerializationException mismatch = Assert.Throws<MessagePackSerializationException>(() => this.Read<IntCase>(this.MapInteger("Code", 2147483648UL)));
@@ -789,6 +800,32 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 		[MessagePackConverter(typeof(DelegatingIntConverter))]
 		[UnionDiscriminator(1)]
 		public int Code => 1;
+	}
+
+	[GenerateShape]
+	public partial record DelegatingString
+	{
+		[MessagePackConverter(typeof(DelegatingStringConverter))]
+		[UnionDiscriminator("create")]
+		public string Kind => "create";
+	}
+
+	public class DelegatingStringConverter : MessagePackConverter<string>
+	{
+		public override string? Read(ref MessagePackReader reader, SerializationContext context)
+		{
+			context.DepthStep();
+			return context.GetConverter<string>(context.TypeShapeProvider).Read(ref reader, context);
+		}
+
+		public override void Write(ref MessagePackWriter writer, in string? value, SerializationContext context)
+		{
+			context.DepthStep();
+
+			// The reference-preserving wrapper is already tracking this instance. Write a copy so the nested converter emits the text.
+			string? written = value is null ? null : new string(value);
+			context.GetConverter<string>(context.TypeShapeProvider).Write(ref writer, written, context);
+		}
 	}
 
 	public class DelegatingIntConverter : MessagePackConverter<int>

@@ -225,7 +225,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		MessagePackConverter result = this.Cache.GetOrAddConverter(T.GetTypeShape()).ValueOrThrow;
-		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
+		return (MessagePackConverter<T>)this.SelectForContext(result);
 	}
 
 	/// <summary>
@@ -243,7 +243,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		MessagePackConverter result = this.Cache.GetOrAddConverter(TProvider.GetTypeShape()).ValueOrThrow;
-		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
+		return (MessagePackConverter<T>)this.SelectForContext(result);
 	}
 #endif
 
@@ -266,7 +266,7 @@ public record struct SerializationContext
 	{
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		MessagePackConverter result = this.Cache.GetOrAddConverter<T>(provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
-		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
+		return (MessagePackConverter<T>)this.SelectForContext(result);
 	}
 
 	/// <summary>
@@ -283,7 +283,7 @@ public record struct SerializationContext
 		Requires.NotNull(typeShape);
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		MessagePackConverter result = this.Cache.GetOrAddConverter(typeShape).ValueOrThrow;
-		return this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation();
+		return this.SelectForContext(result);
 	}
 
 	/// <summary>
@@ -301,7 +301,7 @@ public record struct SerializationContext
 		Requires.NotNull(typeShape);
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		MessagePackConverter result = this.Cache.GetOrAddConverter(typeShape).ValueOrThrow;
-		return (MessagePackConverter<T>)(this.ReferenceEqualityTracker is null ? result : ((IMessagePackConverterInternal)result).WrapWithReferencePreservation());
+		return (MessagePackConverter<T>)this.SelectForContext(result);
 	}
 
 	/// <summary>
@@ -319,7 +319,7 @@ public record struct SerializationContext
 		Requires.NotNull(type);
 		Verify.Operation(this.Cache is not null, "No serialization operation is in progress.");
 		IMessagePackConverterInternal result = (IMessagePackConverterInternal)this.Cache.GetOrAddConverter(type, provider ?? this.TypeShapeProvider ?? throw new UnreachableException()).ValueOrThrow;
-		return this.ReferenceEqualityTracker is null ? (MessagePackConverter)result : result.WrapWithReferencePreservation();
+		return this.SelectForContext((MessagePackConverter)result);
 	}
 
 	/// <summary>
@@ -331,6 +331,7 @@ public record struct SerializationContext
 	/// <remarks>
 	/// This context does not carry <see cref="MessagePackSerializer.StartingContext"/>.
 	/// Converter construction has no caller-supplied context.
+	/// <see cref="GetConverter{T}(ITypeShapeProvider?)"/> returns converters without reference preservation, because this context has no reference tracker.
 	/// </remarks>
 	internal static SerializationContext ForConstruction(ConverterCache cache, ITypeShapeProvider? provider)
 		=> new()
@@ -404,4 +405,14 @@ public record struct SerializationContext
 		ReusableObjectPool<ReferenceEqualityTracker>.Return(this.ReferenceEqualityTracker);
 		ReusableObjectPool<StringInterning>.Return(this.StringInterningCache);
 	}
+
+	/// <summary>
+	/// Returns the converter that can run with this context.
+	/// </summary>
+	/// <param name="converter">The cached converter, which may preserve references.</param>
+	/// <returns>The unwrapped converter when this context has no reference tracker. Otherwise the reference-preserving converter.</returns>
+	private MessagePackConverter SelectForContext(MessagePackConverter converter)
+		=> this.ReferenceEqualityTracker is null
+			? ((IMessagePackConverterInternal)converter).UnwrapReferencePreservation()
+			: ((IMessagePackConverterInternal)converter).WrapWithReferencePreservation();
 }
