@@ -171,7 +171,8 @@ It does not apply to derived-type or F# unions.
 
 Duck typing reads a name-keyed map as one of several object types by the required properties that are present.
 There is no type tag.
-It is slower than a tag because the map may be buffered to inspect its keys.
+A synchronous read scans those names in place.
+An asynchronous read buffers the whole value, then scans it.
 The API is experimental.
 
 Enable it at runtime with <xref:Nerdbank.MessagePack.DerivedTypeDuckTyping>.
@@ -186,7 +187,8 @@ An abstract or interface base is not a case, and it is not a fallback.
 A case matches when every required serialized name is present.
 Extra names do not reject it.
 If several cases match, the one whose required names are a strict superset of the others is chosen.
-If no match is more specific, deserialization throws <xref:Nerdbank.MessagePack.MessagePackSerializationException>.
+If no match is more specific, deserialization throws <xref:Nerdbank.MessagePack.MessagePackSerializationException> with <xref:Nerdbank.MessagePack.MessagePackSerializationException.ErrorCode.AmbiguousUnionCase>.
+A map that matches nothing throws with <xref:Nerdbank.MessagePack.MessagePackSerializationException.ErrorCode.NoMatchingUnionCase>.
 A case with no required properties is a catch-all: at most one is allowed, and it is used only when nothing else matches.
 
 Required names are the names the object converter writes for required constructor parameters, `required` members, and <xref:PolyType.PropertyShapeAttribute.IsRequired>.
@@ -226,6 +228,16 @@ Use it when the shapes have no derived-type metadata, or when that metadata is i
 <xref:Nerdbank.MessagePack.DerivedTypeUnion.CreateDisabled(System.Type)> ignores union attributes on a base type.
 
 [!code-csharp[](../../samples/cs/Unions.cs#RuntimeSubTypesDisabled)]
+
+## Security
+
+<xref:Nerdbank.MessagePack.MessagePackSerializer.AllowOutOfOrderDiscriminator> defaults to off, so a discriminator property must be the first entry of a name-keyed map.
+Turning it on buffers the whole union value when that property comes later, and nested unions can take quadratic time.
+Enable it only for trusted input.
+
+[!code-csharp[](../../samples/cs/Unions.cs#OutOfOrderDiscriminator)]
+Duck typing has no discriminator. It always scans property names, and an asynchronous read buffers the whole value with no separate size limit.
+See [Security](security.md).
 
 ## Custom converters
 

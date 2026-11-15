@@ -116,11 +116,16 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 
 		if (reader.NextMessagePackType != MessagePackType.Map)
 		{
-			throw new MessagePackSerializationException($"Duck-typed union '{typeof(TUnion).FullName}' expects a map, but the value was {reader.NextMessagePackType}.");
+			throw new MessagePackSerializationException($"Duck-typed union '{typeof(TUnion).FullName}' expects a map, but the value was {reader.NextMessagePackType}.")
+			{
+				Code = MessagePackSerializationException.ErrorCode.NoMatchingUnionCase,
+			};
 		}
 
-		HashSet<string> names = ReadMapKeys(ref reader, context);
-		int selected = this.classifier.Select(names);
+		// Property evidence always scans the map. A synchronous read does that in place.
+		// ReadAsync buffers the whole value first, like any sync-only converter, and then calls Read.
+		// AllowOutOfOrderDiscriminator does not apply: duck typing has no discriminator property.
+		int selected = this.SelectCase(ref reader, context);
 		return (TUnion?)this.convertersByCase[selected].ReadObject(ref reader, context);
 	}
 
@@ -136,7 +141,10 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		Type actualType = value.GetType();
 		if (!this.convertersByType.TryGetValue(actualType, out MessagePackConverter? converter))
 		{
-			throw new MessagePackSerializationException($"No duck-typing union case is registered for type '{actualType.FullName}' in '{typeof(TUnion).FullName}'.");
+			throw new MessagePackSerializationException($"No duck-typing union case is registered for type '{actualType.FullName}' in '{typeof(TUnion).FullName}'.")
+			{
+				Code = MessagePackSerializationException.ErrorCode.NoMatchingUnionCase,
+			};
 		}
 
 		converter.WriteObject(ref writer, value, context);
@@ -195,39 +203,6 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 	}
 
 	/// <summary>
-	/// Reads the string keys of a map without consuming <paramref name="reader"/>.
-	/// Integer keys contribute no names.
-	/// </summary>
-	/// <param name="reader">A reader positioned at the map. The reader's position is not advanced.</param>
-	/// <param name="context">The serialization context. Depth consumed while skipping values is not taken from this instance.</param>
-	/// <returns>The string keys present on the map.</returns>
-	private static HashSet<string> ReadMapKeys(ref MessagePackReader reader, SerializationContext context)
-	{
-		MessagePackReader peek = reader.CreatePeekReader();
-		int count = peek.ReadMapHeader();
-		HashSet<string> names = new(StringComparer.Ordinal);
-		for (int i = 0; i < count; i++)
-		{
-			if (peek.NextMessagePackType == MessagePackType.String)
-			{
-				string? name = peek.ReadString();
-				if (name is not null)
-				{
-					names.Add(name);
-				}
-			}
-			else
-			{
-				peek.Skip(context);
-			}
-
-			peek.Skip(context);
-		}
-
-		return names;
-	}
-
-	/// <summary>
 	/// Builds a JSON Schema <c>required</c> array for a sorted set of names.
 	/// </summary>
 	/// <param name="names">The required serialized names.</param>
@@ -241,6 +216,41 @@ internal class ShapeBasedUnionConverter<TUnion> : MessagePackConverter<TUnion>
 		}
 
 		return new JsonArray(items);
+	}
+
+	/// <summary>
+	/// Scans a map in place and chooses the case whose required names are present.
+	/// Names that no case requires are compared as UTF-8 and are not allocated. Integer keys contribute no names.
+	/// </summary>
+	/// <param name="reader">A reader positioned at the map. The reader's position is not advanced.</param>
+	/// <param name="context">The serialization context. Skipping a value honors its depth limit.</param>
+	/// <returns>The index of the selected case.</returns>
+	private int SelectCase(ref MessagePackReader reader, SerializationContext context)
+	{
+		MessagePackReader peek = reader.CreatePeekReader();
+		int count = peek.ReadMapHeader();
+		Span<ulong> present = this.classifier.WordCount <= 4 ? stackalloc ulong[4] : new ulong[this.classifier.WordCount];
+		present = present[..this.classifier.WordCount];
+		present.Clear();
+		for (int i = 0; i < count; i++)
+		{
+			if (peek.NextMessagePackType == MessagePackType.String)
+			{
+				int evidence = this.classifier.MatchEvidence(StringEncoding.ReadStringSpan(ref peek));
+				if (evidence >= 0)
+				{
+					present[evidence / 64] |= 1UL << (evidence % 64);
+				}
+			}
+			else
+			{
+				peek.Skip(context);
+			}
+
+			peek.Skip(context);
+		}
+
+		return this.classifier.Select(present);
 	}
 
 	/// <summary>

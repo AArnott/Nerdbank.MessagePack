@@ -87,7 +87,10 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 					return result;
 				}
 
-				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
+				throw new MessagePackSerializationException($"Unspecified alias {alias}.")
+				{
+					Code = MessagePackSerializationException.ErrorCode.NoMatchingUnionCase,
+				};
 			}
 		}
 		else
@@ -100,7 +103,10 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 					return result;
 				}
 
-				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".")
+				{
+					Code = MessagePackSerializationException.ErrorCode.NoMatchingUnionCase,
+				};
 			}
 		}
 
@@ -260,7 +266,10 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 					return await this.ReadUnknownUnionCaseAsync(reader, discriminator, context).ConfigureAwait(false);
 				}
 
-				throw new MessagePackSerializationException($"Unspecified alias {alias}.");
+				throw new MessagePackSerializationException($"Unspecified alias {alias}.")
+				{
+					Code = MessagePackSerializationException.ErrorCode.NoMatchingUnionCase,
+				};
 			}
 		}
 		else
@@ -274,7 +283,10 @@ internal class UnionConverter<TUnion> : MessagePackConverter<TUnion>
 					return await this.ReadUnknownUnionCaseAsync(reader, discriminator, context).ConfigureAwait(false);
 				}
 
-				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".");
+				throw new MessagePackSerializationException($"Unspecified alias \"{StringEncoding.UTF8.GetString(alias)}\".")
+				{
+					Code = MessagePackSerializationException.ErrorCode.NoMatchingUnionCase,
+				};
 			}
 		}
 
