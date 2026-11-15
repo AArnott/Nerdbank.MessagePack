@@ -1,7 +1,6 @@
 // Copyright (c) Andrew Arnott. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Buffers;
 using System.Text.Json.Nodes;
 
 #pragma warning disable SA1201 // Nested fixtures stay with the tests that use them.
@@ -233,7 +232,7 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 
 	private byte[] Map(params (string Name, string Value)[] properties)
 	{
-		ArrayBufferWriter<byte> buffer = new();
+		Sequence<byte> buffer = new();
 		MessagePackWriter writer = new(buffer);
 		writer.WriteMapHeader(properties.Length);
 		foreach ((string name, string value) in properties)
@@ -243,23 +242,23 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 		}
 
 		writer.Flush();
-		return buffer.WrittenSpan.ToArray();
+		return buffer.AsReadOnlySequence.ToArray();
 	}
 
 	private byte[] MapWithNil(string name)
 	{
-		ArrayBufferWriter<byte> buffer = new();
+		Sequence<byte> buffer = new();
 		MessagePackWriter writer = new(buffer);
 		writer.WriteMapHeader(1);
 		writer.Write(name);
 		writer.WriteNil();
 		writer.Flush();
-		return buffer.WrittenSpan.ToArray();
+		return buffer.AsReadOnlySequence.ToArray();
 	}
 
 	private byte[] Array(params string[] values)
 	{
-		ArrayBufferWriter<byte> buffer = new();
+		Sequence<byte> buffer = new();
 		MessagePackWriter writer = new(buffer);
 		writer.WriteArrayHeader(values.Length);
 		foreach (string value in values)
@@ -268,12 +267,12 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 		}
 
 		writer.Flush();
-		return buffer.WrittenSpan.ToArray();
+		return buffer.AsReadOnlySequence.ToArray();
 	}
 
 	private byte[] IntMap(params (int Key, string Value)[] entries)
 	{
-		ArrayBufferWriter<byte> buffer = new();
+		Sequence<byte> buffer = new();
 		MessagePackWriter writer = new(buffer);
 		writer.WriteMapHeader(entries.Length);
 		foreach ((int key, string value) in entries)
@@ -283,7 +282,7 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 		}
 
 		writer.Flush();
-		return buffer.WrittenSpan.ToArray();
+		return buffer.AsReadOnlySequence.ToArray();
 	}
 
 	[GenerateShape]
