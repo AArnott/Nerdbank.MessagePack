@@ -823,7 +823,7 @@ public partial class UnionDiscriminatorTests : MessagePackSerializerTestBase
 			context.DepthStep();
 
 			// The reference-preserving wrapper is already tracking this instance. Write a copy so the nested converter emits the text.
-			string? written = value is null ? null : new string(value);
+			string? written = value is null ? null : new string(value.ToCharArray());
 			context.GetConverter<string>(context.TypeShapeProvider).Write(ref writer, written, context);
 		}
 	}
