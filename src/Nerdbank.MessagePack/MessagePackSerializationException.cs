@@ -80,6 +80,26 @@ public class MessagePackSerializationException : Exception
 		/// that the deserializer was not expecting.
 		/// </summary>
 		UnexpectedExtensionTypeCode,
+
+		/// <summary>
+		/// Deserialization failed because more than one union case matched and none was a unique strict superset of the others.
+		/// </summary>
+		AmbiguousUnionCase,
+
+		/// <summary>
+		/// Deserialization failed because no union case matched the value.
+		/// </summary>
+		NoMatchingUnionCase,
+
+		/// <summary>
+		/// Deserialization failed because a tagged union value did not include its tag.
+		/// </summary>
+		UnionTagRequired,
+
+		/// <summary>
+		/// Deserialization failed because a discriminator value did not match the case being read.
+		/// </summary>
+		DiscriminatorMismatch,
 	}
 
 	/// <summary>

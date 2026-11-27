@@ -34,6 +34,7 @@ internal record SerializerConfiguration
 	private IComparerProvider? comparerProvider = SecureComparerProvider.Default;
 	private MultiDimensionalArrayFormat multiDimensionalArrayFormat = MultiDimensionalArrayFormat.Nested;
 	private bool useDiscriminatorObjects;
+	private bool allowOutOfOrderDiscriminator;
 
 	private SerializerConfiguration()
 	{
@@ -378,6 +379,27 @@ internal record SerializerConfiguration
 	{
 		get => this.useDiscriminatorObjects;
 		init => this.ChangeSetting(ref this.useDiscriminatorObjects, value);
+	}
+
+	/// <summary>
+	/// Gets a value indicating whether a union discriminator may appear after other properties of a name-keyed map.
+	/// </summary>
+	/// <value>The default is <see langword="false"/>: the discriminator must be the first property.</value>
+	/// <remarks>
+	/// <para>
+	/// <strong>Security:</strong> when a discriminator is not first, the union value is buffered in full before it is classified,
+	/// as with any sync-only converter. The reader scans and skips sibling values, however large, to find the discriminator.
+	/// Nested unions can make that work quadratic. Enable this only for trusted input.
+	/// </para>
+	/// <para>
+	/// There is no separate buffer limit. An asynchronous read buffers the whole value and classifies it synchronously.
+	/// Writers still put a discriminator first. Duck typing has no discriminator and always scans the map's property names.
+	/// </para>
+	/// </remarks>
+	public bool AllowOutOfOrderDiscriminator
+	{
+		get => this.allowOutOfOrderDiscriminator;
+		init => this.ChangeSetting(ref this.allowOutOfOrderDiscriminator, value);
 	}
 
 	/// <summary>

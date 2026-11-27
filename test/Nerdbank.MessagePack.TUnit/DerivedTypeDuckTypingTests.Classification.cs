@@ -242,6 +242,7 @@ public partial class DerivedTypeDuckTypingTests
 		byte[] written = this.Serializer.Serialize<Creature>(new VolumeCat(4), this.TimeoutToken);
 		Assert.Equal(4, Assert.IsType<VolumeCat>(this.Deserialize<Creature>(written)).MeowPitch);
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Deserialize<Creature>(this.Map(("barkVolume", 5))));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.NoMatchingUnionCase, ex.Code);
 		Assert.Contains("does not match", this.FullMessage(ex), StringComparison.Ordinal);
 	}
 
@@ -306,6 +307,7 @@ public partial class DerivedTypeDuckTypingTests
 	{
 		this.Use(this.Shape<Animal>(), this.Shape<Dog>(), this.Shape<Cat>());
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Deserialize<Animal>(this.Map(("Name", "x"), ("BarkVolume", 1), ("MeowPitch", 2))));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.AmbiguousUnionCase, ex.Code);
 		string message = this.FullMessage(ex);
 		Assert.Contains("more specific", message, StringComparison.Ordinal);
 		Assert.Contains(nameof(Dog), message, StringComparison.Ordinal);
@@ -328,9 +330,11 @@ public partial class DerivedTypeDuckTypingTests
 		this.Use(this.Shape<Animal2>(), this.Shape<Cat2>());
 		Assert.Equal(new Animal2("Ada"), this.Deserialize<Animal2>(this.Map(("Name", "Ada"))));
 		Assert.Equal(new Cat2("Ada", 9), this.Deserialize<Animal2>(this.Map(("Name", "Ada"), ("Lives", 9))));
-		Assert.Throws<MessagePackSerializationException>(() => this.Deserialize<Animal2>(this.Map(("Other", 1))));
+		MessagePackSerializationException unmatched = Assert.Throws<MessagePackSerializationException>(() => this.Deserialize<Animal2>(this.Map(("Other", 1))));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.NoMatchingUnionCase, unmatched.Code);
 
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Serializer.Serialize<Animal2>(new Dog2("Ada", "collie"), this.TimeoutToken));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.NoMatchingUnionCase, ex.Code);
 		Assert.Contains("No duck-typing union case is registered", this.FullMessage(ex), StringComparison.Ordinal);
 	}
 
@@ -339,8 +343,28 @@ public partial class DerivedTypeDuckTypingTests
 	{
 		this.Use(this.Shape<Drawing>(), this.Shape<Circle>());
 		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Deserialize<Drawing>(this.EmptyArray()));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.NoMatchingUnionCase, ex.Code);
 		Assert.Contains("expects a map", this.FullMessage(ex), StringComparison.Ordinal);
 		Assert.Null(this.Deserialize<Drawing>(this.Serializer.Serialize<Drawing>(null, this.TimeoutToken)));
+	}
+
+	[Test]
+	public async Task AsyncReadBuffersTheValueThenClassifiesIt()
+	{
+		this.Use(this.Shape<Animal>(), this.Shape<Dog>(), this.Shape<Cat>());
+		Dog dog = new("Ada", 5);
+#if NET
+		ITypeShape<Animal> shape = TypeShapeResolver.Resolve<Animal>();
+#else
+		ITypeShape<Animal> shape = TypeShapeResolver.ResolveDynamicOrThrow<Animal>();
+#endif
+		Assert.Equal(dog, Assert.IsType<Dog>(await this.RoundtripAsync<Animal>(dog, shape)));
+		Assert.False(this.Serializer.AllowOutOfOrderDiscriminator);
+
+		this.Serializer = this.Serializer with { AllowOutOfOrderDiscriminator = true };
+		Assert.Equal(dog, Assert.IsType<Dog>(await this.RoundtripAsync<Animal>(dog, shape)));
+		MessagePackSerializationException ex = Assert.Throws<MessagePackSerializationException>(() => this.Deserialize<Animal>(this.Map(("Name", "x"), ("BarkVolume", 1), ("MeowPitch", 2))));
+		Assert.Equal(MessagePackSerializationException.ErrorCode.AmbiguousUnionCase, ex.Code);
 	}
 
 	[Test]
