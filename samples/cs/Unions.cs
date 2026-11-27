@@ -30,11 +30,21 @@ namespace Sample1
         public record Cow(string Name, int Weight) : Animal(Name);
         public record Horse(string Name, int Speed) : Animal(Name);
         public record Dog(string Name, string Color) : Animal(Name);
+
+        public class Farm
+        {
+            public List<Animal> Animals { get; set; } = [];
+        }
     }
 
     class HorsePenWrapper
     {
-        public class Horse;
+        public class Horse
+        {
+            public string? Name { get; set; }
+
+            public int Speed { get; set; }
+        }
 
         #region HorsePen
         public class HorsePen
@@ -51,11 +61,16 @@ namespace Sample1
         #region HorseBreeds
         [DerivedTypeShape(typeof(QuarterHorse))]
         [DerivedTypeShape(typeof(Thoroughbred))]
-        public record Horse : Animal;
+        public record Horse(string Name, int Speed) : Animal;
 
-        public record QuarterHorse : Horse;
-        public record Thoroughbred : Horse;
+        public record QuarterHorse(string Name, int Speed) : Horse(Name, Speed);
+        public record Thoroughbred(string Name, int Speed) : Horse(Name, Speed);
         #endregion
+
+        public class BreedPen
+        {
+            public List<Horse> Horses { get; set; } = [];
+        }
     }
 
     class FlattenedAnimal
@@ -72,8 +87,13 @@ namespace Sample1
         public record Cow(string Name, int Weight) : Animal(Name);
         public record Dog(string Name, string Color) : Animal(Name);
         public record Horse(string Name) : Animal(Name);
-        public record QuarterHorse(string Name) : Horse(Name);
-        public record Thoroughbred(string Name) : Horse(Name);
+        public record QuarterHorse(string Name, int Speed) : Horse(Name);
+        public record Thoroughbred(string Name, int Speed) : Horse(Name);
+
+        public class Farm
+        {
+            public List<Animal> Animals { get; set; } = [];
+        }
     }
 }
 
@@ -233,6 +253,31 @@ namespace RuntimeSubTypes
     }
 }
 
+namespace MultiLevelAnimals
+{
+    #region MultiLevel
+    [DerivedTypeShape(typeof(Cow))]
+    [DerivedTypeShape(typeof(Horse))]
+    [DerivedTypeShape(typeof(Dog))]
+    public record Animal(string Name);
+
+    public record Cow(string Name, int Weight) : Animal(Name);
+    public record Dog(string Name, string Color) : Animal(Name);
+
+    [DerivedTypeShape(typeof(QuarterHorse))]
+    [DerivedTypeShape(typeof(Thoroughbred))]
+    public record Horse(string Name) : Animal(Name);
+
+    public record QuarterHorse(string Name, int Speed) : Horse(Name);
+    public record Thoroughbred(string Name, int Speed) : Horse(Name);
+
+    public class Farm
+    {
+        public List<Animal> Animals { get; set; } = [];
+    }
+    #endregion
+}
+
 namespace DuckTyping
 {
     #region DuckTyping
@@ -314,3 +359,75 @@ namespace CSharpUnions
     }
 }
 #endif
+
+namespace UnionSampleOutput
+{
+    internal static class Graphs
+    {
+        public static Sample1.LossyFarm.Farm LossyFarm() => new()
+        {
+            Animals =
+            [
+                new Sample1.LossyFarm.Cow("Bessie", 1400),
+                new Sample1.LossyFarm.Horse("Lighting", 45),
+                new Sample1.LossyFarm.Dog("Rover", "Brown"),
+            ],
+        };
+
+        public static Sample1.RoundtrippingFarmAnimal.Farm RoundtrippingFarm() => new()
+        {
+            Animals =
+            [
+                new Sample1.RoundtrippingFarmAnimal.Cow("Bessie", 1400),
+                new Sample1.RoundtrippingFarmAnimal.Horse("Lighting", 45),
+                new Sample1.RoundtrippingFarmAnimal.Dog("Rover", "Brown"),
+            ],
+        };
+
+        public static Sample1.HorsePenWrapper.HorsePen HorsePen() => new()
+        {
+            Horses =
+            [
+                new Sample1.HorsePenWrapper.Horse { Name = "Lighting", Speed = 45 },
+                new Sample1.HorsePenWrapper.Horse { Name = "Flash", Speed = 48 },
+            ],
+        };
+
+        public static Sample1.HorseBreeds.BreedPen HorseBreeds() => new()
+        {
+            Horses =
+            [
+                new Sample1.HorseBreeds.QuarterHorse("Lighting", 45),
+                new Sample1.HorseBreeds.Thoroughbred("Flash", 48),
+            ],
+        };
+
+        public static MultiLevelAnimals.Farm MultiLevel() => new()
+        {
+            Animals =
+            [
+                new MultiLevelAnimals.Cow("Bessie", 1400),
+                new MultiLevelAnimals.QuarterHorse("Lighting", 45),
+                new MultiLevelAnimals.Thoroughbred("Flash", 48),
+                new MultiLevelAnimals.Dog("Rover", "Brown"),
+            ],
+        };
+
+        public static Sample1.FlattenedAnimal.Farm FlattenedAnimal() => new()
+        {
+            Animals =
+            [
+                new Sample1.FlattenedAnimal.Cow("Bessie", 1400),
+                new Sample1.FlattenedAnimal.QuarterHorse("Lighting", 45),
+                new Sample1.FlattenedAnimal.Thoroughbred("Flash", 48),
+                new Sample1.FlattenedAnimal.Dog("Rover", "Brown"),
+            ],
+        };
+
+        public static DuckTyping.Dog Dog() => new("Rover", 10);
+
+        public static DuckTyping.Cat Cat() => new("Whiskers", 13);
+
+        public static RuntimeSubTypes.UseDiscriminatorObjectsSample.A DiscriminatorObject() => new(1);
+    }
+}
