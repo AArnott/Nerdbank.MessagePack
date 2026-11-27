@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net11.0;net10.0</TargetFrameworks>
     <IsAotCompatible>true</IsAotCompatible>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <PackageDescription>MessagePack converters for Godot Engine value types.</PackageDescription>
