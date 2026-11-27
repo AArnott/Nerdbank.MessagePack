@@ -41,3 +41,8 @@ Rule ID | Category | Severity | Notes
 [NBMsgPack106](NBMsgPack106.md) | Migration | Info | Use <xref:PolyType.ConstructorShapeAttribute>
 [NBMsgPack110](NBMsgPack110.md) | Usage | Warning | Add DefaultValueAttribute when using non-default initializers
 [NBMsgPack120](NBMsgPack120.md) | Usage | Error | <xref:Nerdbank.MessagePack.IMessagePackSerializationCallbacks> is only supported on reference types
+[NBMsgPack130](NBMsgPack130.md) | Usage | Warning | Union discriminator must be a matching constant
+[NBMsgPack131](NBMsgPack131.md) | Usage | Error | Union discriminator must be one get-only member
+[NBMsgPack132](NBMsgPack132.md) | Usage | Error | Union discriminator value type is not supported
+[NBMsgPack133](NBMsgPack133.md) | Usage | Error | Union cases must share a discriminator name and distinct values
+[NBMsgPack134](NBMsgPack134.md) | Usage | Warning | Key the union discriminator at 0

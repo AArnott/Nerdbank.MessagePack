@@ -212,6 +212,25 @@ public class KeyAttributeUseAnalyzer : DiagnosticAnalyzer
 
 	private bool IsMemberSerialized(ISymbol member, ImmutableHashSet<string> ctorParameterNames, ReferenceSymbols referenceSymbols, bool containingTypeHasDataContract)
 	{
+		if (IsUnionDiscriminator(member) && AnalyzerUtilities.HasPropertyShape(member, referenceSymbols, containingTypeHasDataContract))
+		{
+			return true;
+		}
+
+		static bool IsUnionDiscriminator(ISymbol member)
+		{
+			foreach (AttributeData attribute in member.GetAttributes())
+			{
+				INamedTypeSymbol? type = attribute.AttributeClass;
+				if (type?.Name == "UnionDiscriminatorAttribute" && type.ContainingNamespace?.ToDisplayString() == "Nerdbank.MessagePack")
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		bool isReadOnly = !ctorParameterNames.Contains(member.Name) && member switch
 		{
 			IPropertySymbol p => p.IsReadOnly,

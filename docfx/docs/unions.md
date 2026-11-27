@@ -128,6 +128,21 @@ Cases do not have to share a base type.
 > [!NOTE]
 > These samples require C# 15 or later.
 
+### Discriminator members
+
+<xref:Nerdbank.MessagePack.UnionDiscriminatorAttribute> adds a constant member to an object's own contract.
+The object converter always writes it, whether or not the value is serialized through a union.
+On read it is optional. A present value that does not match throws <xref:Nerdbank.MessagePack.MessagePackSerializationException>.
+In a name-keyed map the member is written ahead of the other properties.
+A keyed layout writes it at its <xref:Nerdbank.MessagePack.KeyAttribute> index. That member must also have <xref:Nerdbank.MessagePack.KeyAttribute>. `Key(0)` is recommended and is not required.
+
+[!code-csharp[](../../samples/cs/Unions.cs#DocumentChange)]
+
+[!code-json[](../../samples/cs/Output/Unions.DocumentChange.json)]
+
+`Kind` is part of `CreateFile`. `TextDocumentEdit` has no discriminator.
+These object cases are still wrapped in the union tag.
+
 * `bool`, `string`, `char`, the 8- through 64-bit integers, `float`, `double`, and a single collection or binary case are written without a tag.
   Several integer cases use each type's exact-width encoding; one integer case uses the shortest encoding.
   `float` and `double` stay distinct by their native encodings.
